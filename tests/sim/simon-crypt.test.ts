@@ -23,21 +23,24 @@ import { captiveDialogue, CARD_COLS } from '@game/scenes/free-hero';
 import { fontText } from '@game/hud/text';
 import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
 import type { MiniGameDef } from '@game/minigames';
+import { KEY_SAID, KeyItem, LockedDoor } from '@game/entities/objects/keys';
+import { levelTouchLabels } from '@game/touch-labels';
 import { captives, file, makeGame, useStorage, type H } from './heroes-harness';
 
-// Simon's dungeon and crypt under 5-4 (owner design, 0.4.7 batch B): in campaign play, riding
-// 5-4's down lift on past the bottom of the shaft carries the player down into a dungeon room
-// (5-4-dungeon) with a cracked wall; behind it, steps down into Simon's crypt (5-4-crypt), whose
-// doorway leads back up into 5-4 past the lift section, the clock running on throughout.
+// Simon's crypt (5-4-crypt, its id kept) and the retired dungeon (5-4-dungeon). Since 0.4.52 the
+// crypt is an area of 5-1: the locked door in 5-1-bonus (the key: tests/sim/keys.test.ts) leads
+// down into it, and its doorway leads back out of 5-1's pipe at column 163, the clock running on
+// throughout. The old way in (owner design, 0.4.7 batch B: riding 5-4's down lift past the bottom
+// of its shaft into the dungeon, through its cracked wall) is gone: 5-4's lift is classic again.
+// The dungeon is reached from nowhere now; its cracked wall and Koopa keep their tests here.
 
 useStorage();
 
 const none = { steps: [{ frame: 0, hold: [] as Action[] }] };
 const dungeon = () => getLevel('5-4-dungeon');
 const crypt = () => getLevel('5-4-crypt');
-const INTO_DUNGEON = { level: '5-4-dungeon', x: 13, y: 0, exitDir: 'fall' };
 const INTO_CRYPT = { level: '5-4-crypt', x: 1, y: 0, exitDir: 'fall' };
-const BACK_TO_5_4 = { level: '5-4', x: 99, y: 0, exitDir: 'fall' };
+const BACK_TO_5_1 = { level: '5-1', x: 163, y: 10, exitDir: 'up' };
 /** The cracked wall: column 5, rows 8-10. */
 const WALL = { x: 5, rows: [8, 9, 10] };
 const SIMON_AT = { x: 11, y: 11 };
@@ -64,22 +67,19 @@ function rideLeft(w: World): Action[] {
 }
 
 describe('the areas', () => {
-  it('5-4 has a sleeping descent zone over its lift shaft (columns 84-91); the campaign wakes it', () => {
+  it('5-4 has no descent zone any more (0.4.52): its lift is a plain lift, campaign or not', () => {
     const raw = getLevel('5-4');
-    expect(descents(raw.zones)).toEqual([
-      { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 }, campaign: true },
-    ]);
-    // The down lifts run in column 89, inside the zone.
-    expect(raw.entities.filter((e) => e.type === 'lift-down').map((e) => e.x)).toEqual([89, 89]);
+    expect(descents(raw.zones)).toEqual([]);
     const camp = campaignLevel(raw, () => true);
-    expect(descents(camp.zones)).toEqual([
-      { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 } },
-    ]);
-    // Nothing else of 5-4 changes (but the townsperson at the start wakes: tests/sim/partners.test.ts).
+    expect(descents(camp.zones)).toEqual([]);
+    // Nothing of 5-4's tiles or entities changes in the campaign (its townsperson moved to 5-1-bonus).
     expect(camp.tiles).toEqual(raw.tiles);
-    expect(camp.entities).toEqual(
-      raw.entities.map((e) => (e.type === 'partner' ? { ...e, props: { who: 'townsperson' } } : e)),
-    );
+    expect(camp.entities).toEqual(raw.entities);
+    expect(raw.entities.some((e) => e.type === 'partner')).toBe(false);
+    // No level leads into the retired dungeon.
+    for (const id of levelIds())
+      for (const z of getLevel(id).zones)
+        if ('target' in z && z.target) expect((z.target as { level: string }).level, id).not.toBe('5-4-dungeon');
   });
 
   it('the descent zone parses and writes back the same', () => {
@@ -105,19 +105,21 @@ describe('the areas', () => {
     expect(descents(parseTextMap(serializeTextMap(l)).zones)).toEqual(descents(l.zones));
   });
 
-  it('the dungeon and the crypt are areas of 5-4 that keep the clock, dropping in from above', () => {
+  it('the crypt is an area of 5-1 (the dungeon, retired, of 5-4): both keep the clock, dropping in from above', () => {
+    expect(crypt().parent).toBe('5-1');
+    expect([crypt().world, crypt().stage]).toEqual([5, 1]);
+    expect(dungeon().parent).toBe('5-4');
+    expect([dungeon().world, dungeon().stage]).toEqual([5, 4]);
     for (const l of [dungeon(), crypt()]) {
-      expect(l.parent).toBe('5-4');
       expect(l.time).toBeNull();
-      expect([l.world, l.stage]).toEqual([5, 4]);
       expect(l.startMode).toBe('fall');
       expect(l.camera).toBe('locked');
     }
     expect(dungeon().start).toEqual({ x: 13, y: 0 });
     expect(crypt().start).toEqual({ x: 1, y: 0 });
-    const main = getLevel('5-4');
-    expect(carryTime(main, dungeon(), 250)).toBe(250);
-    expect(carryTime(dungeon(), crypt(), 240)).toBe(240);
+    const main = getLevel('5-1');
+    const room = getLevel('5-1-bonus');
+    expect(carryTime(room, crypt(), 240)).toBe(240);
     expect(carryTime(crypt(), main, 230)).toBe(230);
   });
 
@@ -137,7 +139,7 @@ describe('the areas', () => {
       for (let y = 0; y < 11; y++) expect(tile(l, x, y)).toBe(x === 11 && y === 10 ? T.HARD : T.AIR);
   });
 
-  it('the crypt: Simon on the floor under the stained glass, candles, the doorway back to 5-4 at 99', () => {
+  it('the crypt: Simon on the floor under the stained glass, candles, the doorway back out of 5-1’s pipe at 163', () => {
     const l = crypt();
     expect(l.entities).toContainEqual({
       type: 'captive',
@@ -148,11 +150,13 @@ describe('the areas', () => {
     expect(l.entities.filter((e) => e.type === 'candle')).toHaveLength(3);
     expect(l.decor).toContainEqual({ kind: 'crypt:stained-glass', x: 10, y: 7 });
     expect(tile(l, SIMON_AT.x, 12)).toBe(T.CASTLE_BRICK);
-    expect(l.zones).toEqual([{ kind: 'pipe', x: 16, y: 10, dir: 'right', target: BACK_TO_5_4 }]);
-    // 5-4 at 99: open from the top down to the floor in row 13, past the shaft (84-91).
-    const main = getLevel('5-4');
-    for (let y = 0; y < 13; y++) expect(tile(main, 99, y), `5-4 99,${y}`).not.toBe(T.CASTLE_BRICK);
-    expect(tile(main, 99, 13)).toBe(T.CASTLE_BRICK);
+    expect(l.zones).toEqual([{ kind: 'pipe', x: 16, y: 10, dir: 'right', target: BACK_TO_5_1 }]);
+    // 5-1 at 163: the pipe (its top row 11) the coin room's own exit comes out of (5-1-bonus's pipe zone).
+    const main = getLevel('5-1');
+    expect([tile(main, 163, 11), tile(main, 164, 11)]).toEqual([T.PIPE_TL, T.PIPE_TR]);
+    expect(getLevel('5-1-bonus').zones).toContainEqual(
+      expect.objectContaining({ kind: 'pipe', target: BACK_TO_5_1 }),
+    );
   });
 });
 
@@ -174,193 +178,33 @@ describe('the HUD rows', () => {
   });
 });
 
-describe('the down lift into the dungeon (campaign)', () => {
-  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    '%s rides the down lift on past the bottom of the shaft and drops into the dungeon',
-    (_n, c) => {
+describe('5-4’s lift is classic again in the campaign (0.4.52)', () => {
+  it('no skull mark and no descent: riding the down lift past the bottom wraps it, as in classic play', () => {
+    for (const level of [campaignLevel(getLevel('5-4')), getLevel('5-4')]) {
       const r = runSim({
-        level: campaignLevel(getLevel('5-4')),
-        character: c,
+        level,
+        character: MARIO,
         script: none,
         start: { x: 89, y: 2, mode: 'stand', time: 250 },
         maxFrames: 600,
         controller: rideLeft,
       });
-      expect(r.outcome, c.name).toBe('pipe');
-      expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_DUNGEON });
-      // Carried down: the rider sank out of sight below the screen on the lift.
-      expect(toPx(r.world.player.body.y)).toBeGreaterThan(240);
-      expect(r.world.player.dead).toBe(false);
-    },
-  );
-
-  it('co-op: two riders on the down lift both go down into the dungeon, nobody hurt', () => {
-    let lift: Lift | undefined;
-    const r = runSim({
-      level: campaignLevel(getLevel('5-4')),
-      character: MARIO,
-      state: { character2: LUIGI, powerState2: 'small', hp2: 0 },
-      script: none,
-      start: { x: 89, y: 2, mode: 'stand', time: 250 },
-      maxFrames: 600,
-      controller: (w, f) => {
-        if (f === 1) {
-          // Both on the lift's left side (clear of the fire bar), side by side.
-          lift = w.entities.find(
-            (e): e is Lift => e instanceof Lift && e.kind === 'lift-down' && toPx(e.body.y) < 100,
-          );
-          const l = lift as Lift;
-          w.players.forEach((p, i) => {
-            p.body.x = l.body.x - px(4) + px(i * 8);
-            p.body.y = l.body.y - p.body.h;
-            p.body.vy = 0;
-          });
-        }
-        return [];
-      },
-    });
-    expect(r.world.players).toHaveLength(2);
-    expect(r.outcome).toBe('pipe');
-    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_DUNGEON });
-    expect(r.events.some((e) => e.type === 'died')).toBe(false);
-    for (const p of r.world.players) {
-      expect(p.dead).toBe(false);
-      expect(p.powerState).toBe('small');
-      expect(toPx(p.body.y)).toBeGreaterThan(240);
+      const lifts = r.world.entities.filter((e): e is Lift => e instanceof Lift && e.kind === 'lift-down');
+      expect(lifts.every((l) => l.descent === null)).toBe(true);
+      expect(r.events.some((e) => e.type === 'pipe')).toBe(false);
     }
   });
 
-  it('the fire bar at (92, 10) is three balls short in the campaign, so its tip clears any rider on the lift; other bars and plain 5-4 keep theirs', () => {
+  it('the fire bar at (92, 10) keeps its six balls in the campaign too', () => {
     const bars = (level: ReturnType<typeof getLevel>) =>
       runSim({ level, character: MARIO, script: none, start: { x: 89, y: 2, mode: 'stand' }, maxFrames: 2 })
         .world.entities.filter((e): e is Firebar => e instanceof Firebar)
         .map((b) => [toPx(b.body.x) >> 4, toPx(b.body.y) >> 4, b.len]);
-    const plain = bars(getLevel('5-4'));
-    const camp = bars(campaignLevel(getLevel('5-4')));
-    expect(plain).toContainEqual([92, 10, 6]);
-    expect(camp).toContainEqual([92, 10, 3]);
-    expect(camp.filter(([x]) => x !== 92)).toEqual(plain.filter(([x]) => x !== 92));
+    expect(bars(campaignLevel(getLevel('5-4')))).toEqual(bars(getLevel('5-4')));
+    expect(bars(getLevel('5-4'))).toContainEqual([92, 10, 6]);
   });
 
-  it('no hero is wider than a tile (the bar clears a tile of overhang past the lift)', () => {
-    for (const c of CHARACTERS)
-      for (const power of ['small', 'big', 'fire'] as const) {
-        const r = runSim({
-          level: getLevel('5-4'),
-          character: c,
-          script: none,
-          state: { powerState: power },
-          maxFrames: 1,
-        });
-        // The one exception is Sophia III's tank (19 px, SO-3): the bar is still clear of her
-        // wherever she stands on the lift (the next test sweeps her whole overhang).
-        expect(toPx(r.world.player.body.w), `${c.name} ${power}`).toBeLessThanOrEqual(
-          c.id === 'sophia' ? 19 : 16,
-        );
-      }
-  });
-
-  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    '%s anywhere on the lift, hanging off either end, is never hit, whatever the bar phase (16 phases)',
-    (_n, c) => {
-      const TURN = 65536;
-      // Lift: 24 px wide; the rider's body (12 px) overlaps it by 1 px at either extreme (the
-      // tank's 19 px from -18).
-      const offs = [-11, -8, -4, 0, 4, 8, 12, 16, 20, 23];
-      if (c.id === 'sophia') offs.unshift(-18, -15);
-      for (const off of offs)
-        for (let k = 0; k < 16; k++) {
-          let hurt = false;
-          let power = '';
-          const r = runSim({
-            level: campaignLevel(getLevel('5-4')),
-            character: c,
-            state: { powerState: 'big' },
-            script: none,
-            start: { x: 89, y: 2, mode: 'stand', time: 250 },
-            maxFrames: 600,
-            controller: (w, f) => {
-              if (f === 0)
-                for (const e of w.entities)
-                  if (e instanceof Firebar && toPx(e.body.x) >> 4 === 92) e.angle = (k * TURN) / 16;
-              const p = w.player;
-              if (f === 1) {
-                const lift = w.entities.find(
-                  (e): e is Lift => e instanceof Lift && e.kind === 'lift-down' && toPx(e.body.y) < 100,
-                ) as Lift;
-                p.body.x = lift.body.x + px(off);
-                p.body.y = lift.body.y - p.body.h;
-                p.body.vx = 0;
-                p.body.vy = 0;
-                power = p.powerState;
-              }
-              if (power && (p.invuln > 0 || p.dead || p.powerState !== power)) hurt = true;
-              return [];
-            },
-          });
-          expect(r.outcome, `${c.name} offset ${off} phase ${k}`).toBe('pipe');
-          expect(hurt, `${c.name} offset ${off} phase ${k}`).toBe(false);
-        }
-    },
-  );
-
-  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    '%s standing in the middle of the lift is never hit, whatever the bar phase (16 phases)',
-    (_n, c) => {
-      const TURN = 65536;
-      for (let k = 0; k < 16; k++) {
-        let hurt = false;
-        const r = runSim({
-          level: campaignLevel(getLevel('5-4')),
-          character: c,
-          script: none,
-          start: { x: 89, y: 2, mode: 'stand', time: 250 },
-          maxFrames: 600,
-          controller: (w, f) => {
-            if (f === 0)
-              for (const e of w.entities)
-                if (e instanceof Firebar && toPx(e.body.x) >> 4 === 92) e.angle = (k * TURN) / 16;
-            const p = w.player;
-            if (p.invuln > 0 || p.dead) hurt = true;
-            return [];
-          },
-        });
-        const p = r.world.player;
-        // Centred: the rider's middle is the lift's middle (column 89's, the lift drawn 4 px left).
-        expect(toPx(p.centerX), `${c.name} phase ${k}`).toBe(89 * 16 + 8);
-        expect(r.outcome, `${c.name} phase ${k}`).toBe('pipe');
-        expect(hurt, `${c.name} phase ${k}`).toBe(false);
-      }
-    },
-  );
-
-  it('the campaign lift bears the skull mark; outside the campaign it is a plain lift that wraps', () => {
-    const lifts = (w: World) =>
-      w.entities.filter((e): e is Lift => e instanceof Lift && e.kind === 'lift-down');
-    const camp = runSim({
-      level: campaignLevel(getLevel('5-4')),
-      character: MARIO,
-      script: none,
-      start: { x: 89, y: 2, mode: 'stand' },
-      maxFrames: 2,
-    });
-    expect(lifts(camp.world).map((l) => l.descent)).toEqual([
-      { level: '5-4-dungeon', x: 13, y: 0 },
-      { level: '5-4-dungeon', x: 13, y: 0 },
-    ]);
-    const plain = runSim({
-      level: getLevel('5-4'),
-      character: MARIO,
-      script: none,
-      start: { x: 89, y: 2, mode: 'stand', time: 250 },
-      maxFrames: 600,
-      controller: rideLeft,
-    });
-    expect(lifts(plain.world).every((l) => l.descent === null)).toBe(true);
-    expect(plain.events.some((e) => e.type === 'pipe')).toBe(false);
-  });
-
-  it('falling into the shaft without the lift still kills', () => {
+  it('falling into the shaft still kills', () => {
     for (const c of [MARIO, SIMON]) {
       const r = runSim({
         level: campaignLevel(getLevel('5-4')),
@@ -370,25 +214,7 @@ describe('the down lift into the dungeon (campaign)', () => {
         maxFrames: 400,
       });
       expect(r.outcome, c.name).toBe('died');
-      expect(r.events.some((e) => e.type === 'pipe')).toBe(false);
     }
-  });
-
-  it('jumping off the lift low in the shaft still kills', () => {
-    const r = runSim({
-      level: campaignLevel(getLevel('5-4')),
-      character: MARIO,
-      script: none,
-      start: { x: 89, y: 2, mode: 'stand', time: 250 },
-      maxFrames: 600,
-      controller: (w) => {
-        const b = w.player.body;
-        // Ride down to the shaft's floor level, then hop off to the left into the open shaft.
-        if (toPx(b.y) > 200) return ['left', 'jump'];
-        return b.onGround ? rideLeft(w) : ['left'];
-      },
-    });
-    expect(r.outcome).toBe('died');
   });
 });
 
@@ -601,28 +427,32 @@ function leftOverBlock(w: World, mem: { run: boolean }): Action[] {
   return w.frame % 4 < 2 ? ['left', 'jump'] : ['left'];
 }
 
-describe('every hero gets to Simon and back to 5-4', () => {
+describe('the retired dungeon (level select only)', () => {
+  it('still plays: with its wall down, down the steps and through the hole into the crypt', () => {
+    const mem = { run: false };
+    const d = runSim({
+      level: dungeon(),
+      character: MARIO,
+      script: none,
+      start: { time: 250 },
+      maxFrames: 900,
+      controller: (w, f) => {
+        if (f === 1) {
+          w.shatterWall(WALL.x, 9);
+          koopa(w)?.destroy();
+        }
+        return leftOverBlock(w, mem);
+      },
+    });
+    expect(d.outcome).toBe('pipe');
+    expect(d.events.find((e) => e.type === 'pipe')).toMatchObject({ target: INTO_CRYPT });
+  });
+});
+
+describe('every hero gets to Simon and back to 5-1', () => {
   it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    '%s: down the steps behind the broken wall into the crypt, past Simon, out of the doorway into 5-4',
+    '%s: dropped into the crypt, down the stair past Simon, out of the doorway and up out of 5-1’s pipe',
     (_n, c) => {
-      // The dungeon, wall already down: walk left down the steps and drop through the hole.
-      const mem = { run: false };
-      const d = runSim({
-        level: dungeon(),
-        character: c,
-        script: none,
-        start: { time: 250 },
-        maxFrames: 900,
-        controller: (w, f) => {
-          if (f === 1) {
-            w.shatterWall(WALL.x, 9);
-            koopa(w)?.destroy(); // out of the way (it stays gone with the wall down)
-          }
-          return leftOverBlock(w, mem);
-        },
-      });
-      expect(d.outcome, c.name).toBe('pipe');
-      expect(d.events.find((e) => e.type === 'pipe')).toMatchObject({ target: INTO_CRYPT });
       // The crypt: drop in, down the stair, up to Simon (talk range: 24 px), then on to the doorway.
       let reached = false;
       const r = runSim({
@@ -644,20 +474,19 @@ describe('every hero gets to Simon and back to 5-4', () => {
       });
       expect(reached, `${c.name} stood beside Simon`).toBe(true);
       expect(r.outcome, c.name).toBe('pipe');
-      expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: BACK_TO_5_4 });
+      expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: BACK_TO_5_1 });
       expect(r.world.time).toBeLessThanOrEqual(240);
-      // Back in 5-4: dropped in at 99, past the lift shaft, landing on the floor safely.
+      // Back in 5-1: up out of the pipe at 163, standing on its top.
       const back = runSim({
-        level: getLevel('5-4'),
+        level: getLevel('5-1'),
         character: c,
         script: none,
-        start: { x: 99, y: 0, mode: 'fall', time: 200, clearEnemies: 'keep-piranhas' },
-        maxFrames: 200,
+        start: { x: 163, y: 10, mode: 'pipe-exit', time: 200, clearEnemies: 'keep-piranhas' },
+        maxFrames: 120,
       });
-      expect(back.outcome, c.name).toBe('timeout');
+      expect(back.world.player.dead, c.name).toBe(false);
       expect(back.world.player.body.onGround).toBe(true);
-      expect(toPx(back.world.player.body.y + back.world.player.body.h)).toBe(13 * 16);
-      expect(toPx(back.world.player.body.x) >> 4).toBeGreaterThanOrEqual(92);
+      expect(toPx(back.world.player.body.y + back.world.player.body.h)).toBe(11 * 16);
     },
   );
 });
@@ -697,40 +526,6 @@ describe('co-op arrivals', () => {
     }
   });
 
-  it.each(CHARACTERS.map((c) => [c.name, c] as const))(
-    'back from the crypt into 5-4 at 99 (campaign): player 2 (%s) lands clear of the fire bar at (103, 11)',
-    (_n, c) => {
-      for (const power of ['small', 'big'] as const)
-        for (let k = 0; k < 4; k++) {
-          let hurt = false;
-          const r = runSim({
-            level: campaignLevel(getLevel('5-4')),
-            character: LUIGI,
-            state: { powerState: power, character2: c, powerState2: power, hp2: 0 },
-            script: none,
-            start: { x: 99, y: 0, mode: 'fall', time: 200, clearEnemies: 'keep-piranhas' },
-            maxFrames: 240,
-            controller: (w, f) => {
-              if (f === 0)
-                for (const e of w.entities)
-                  if (e instanceof Firebar && toPx(e.body.x) >> 4 === 103) e.angle = (k * 65536) / 4;
-              if (w.players.some((p) => p.invuln > 0 || p.dead)) hurt = true;
-              return [];
-            },
-          });
-          expect(r.world.players).toHaveLength(2);
-          expect(hurt, `${c.name} ${power} phase ${k}`).toBe(false);
-          expect(r.events.some((e) => e.type === 'died')).toBe(false);
-          for (const p of r.world.players) {
-            expect(p.body.onGround).toBe(true);
-            expect(toPx(p.body.y + p.body.h)).toBe(13 * 16);
-            expect(toPx(p.body.x) >> 4).toBeGreaterThanOrEqual(92);
-            expect(inWall(r.world, p.body)).toBe(false);
-          }
-        }
-    },
-  );
-
   it('every fall arrival of every level puts player 2 in the open, not inside or on top of a wall', () => {
     const bad: string[] = [];
     // Each level's own fall start, and every pit, descent and fall-exit transfer into a level.
@@ -768,53 +563,57 @@ describe('co-op arrivals', () => {
   });
 });
 
-/** File 1 open on World 5, then 5-4 from the map's flow (campaign variant), on the down lift. */
-function onTheLift(h: H): LevelScene {
-  file({
-    story: [],
-    cleared: ['1-0', '5-3'],
-    pages: ['smb-1', 'smb-5'],
-    position: { page: 'smb-5', node: '5-4' },
-  });
-  h.game.openFile(1);
-  expect(h.top()).toBeInstanceOf(WorldMapScene);
-  h.game.startLevel(getLevel('5-4'), { x: 89, y: 2, mode: 'stand', time: 250 });
-  h.step();
-  return h.top() as LevelScene;
-}
-
 const levelId = (h: H) => (h.top() as LevelScene).level?.id;
 
-describe('the whole way in campaign play', () => {
-  it('5-4 lift → dungeon → crypt → 5-4: the clock carries over, no secret and no clear recorded', () => {
+describe('the whole way in campaign play (0.4.52)', () => {
+  it('5-1 pipe → coin room: bump the key, PICK UP, the door opens, UP → crypt → out of 5-1’s pipe at 163', () => {
     const h = makeGame();
-    const l = onTheLift(h);
-    expect(descents(l.level.zones)[0]?.campaign).toBeUndefined();
-    for (let f = 0; f < 600 && levelId(h) === '5-4'; f++) h.step(rideLeft((h.top() as LevelScene).world));
-    expect(levelId(h)).toBe('5-4-dungeon');
-    const inDungeon = (h.top() as LevelScene).world;
-    const arrived = inDungeon.time as number;
-    expect(arrived).toBeLessThanOrEqual(250);
-    expect(arrived).toBeGreaterThan(240);
-    expect(h.game.mapProgress.secrets).toEqual([]);
-    expect(h.game.mapProgress.cleared).not.toContain('5-4');
+    file({ story: [], cleared: ['1-0'], pages: ['smb-1', 'smb-5'], position: { page: 'smb-5', node: '5-1' } });
+    h.game.openFile(1);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    // Down 5-1's pipe at 156 into the coin room (as the pipe zone sends a player).
+    h.game.startLevel(getLevel('5-1-bonus'), { x: 1, y: 0, mode: 'fall', time: 250 });
+    h.step();
+    expect(levelId(h)).toBe('5-1-bonus');
+    const room = (h.top() as LevelScene).world;
+    const p = room.player;
+    h.until(() => p.body.onGround, 120);
+    // On the pipe top under the box: a jump bumps it.
+    p.body.x = px(14 * 16 + 8) - (p.body.w >> 1);
+    p.body.y = px(11 * 16) - p.body.h;
+    h.idle(4);
+    for (let f = 0; f < 20; f++) h.step(['jump']);
+    h.idle(90);
+    expect(room.map.get(14, 7)).toBe(T.USED);
+    const key = room.entities.find((e): e is KeyItem => e instanceof KeyItem && e.alive)!;
+    expect(key.body.onGround).toBe(true);
+    p.body.x = key.body.x + px(8) - (p.body.w >> 1);
+    h.idle(4);
+    expect(levelTouchLabels(p, room).special).toBe('PICK UP');
+    h.tap('special');
+    expect(room.keyHolder).toBe(0);
+    expect(h.said).toContain(KEY_SAID.got);
+    for (let f = 0; f < 400 && room.keyHolder !== null; f++) h.step(['left']);
+    expect(h.said).toContain(KEY_SAID.opened);
+    const door = room.entities.find((e): e is LockedDoor => e instanceof LockedDoor)!;
+    expect(door.open).toBe(true);
+    for (let f = 0; f < 200 && Math.abs(toPx(p.centerX) - (toPx(door.body.x) + 8)) > 4; f++)
+      h.step([toPx(p.centerX) > toPx(door.body.x) + 8 ? 'left' : 'right']);
     h.idle(2);
-    inDungeon.shatterWall(WALL.x, 9);
-    koopa(inDungeon)?.destroy();
-    const mem = { run: false };
-    for (let f = 0; f < 900 && levelId(h) === '5-4-dungeon'; f++) h.step(leftOverBlock(inDungeon, mem));
-    expect(levelId(h)).toBe('5-4-crypt');
+    h.tap('up');
+    h.until(() => levelId(h) === '5-4-crypt', 120);
     const c = (h.top() as LevelScene).world;
+    expect(c.time).toBeLessThanOrEqual(250);
+    expect(c.time).toBeGreaterThan(200);
     h.idle(2);
     expect(captives(h.top() as LevelScene).map((x) => x.hero.id)).toEqual(['simon']);
     for (let f = 0; f < 900 && levelId(h) === '5-4-crypt'; f++) h.step(['right']);
-    expect(levelId(h)).toBe('5-4');
+    expect(levelId(h)).toBe('5-1');
     const main = (h.top() as LevelScene).world;
     expect(main.time).toBeLessThanOrEqual(c.time as number);
-    expect(main.time).toBeGreaterThan(arrived - 60);
-    expect(toPx(main.player.body.x) >> 4).toBe(99);
+    expect(toPx(main.player.body.x) >> 4).toBe(163);
     expect(h.game.mapProgress.secrets).toEqual([]);
-    expect(h.game.mapProgress.cleared).not.toContain('5-4');
+    expect(h.game.mapProgress.cleared).not.toContain('5-1');
   });
 });
 
@@ -844,16 +643,16 @@ describe('captive Simon', () => {
     expect(captives(h2.top() as LevelScene)).toHaveLength(0);
   });
 
-  it('the map hints at node 5-4 on World 5', () => {
+  it('the map hints at node 5-1 on World 5 (0.4.52: the crypt is an area of 5-1)', () => {
     expect(hiddenHeroes()).toContainEqual({
       hero: 'simon',
       level: '5-4-crypt',
-      main: '5-4',
+      main: '5-1',
       page: 'smb-5',
-      node: '5-4',
+      node: '5-1',
     });
-    expect(hiddenHeroesAt('smb-5', '5-4').map((x) => x.hero)).toEqual(['simon']);
-    expect(hiddenHeroesAt('smb-5', '5-3')).toEqual([]);
+    expect(hiddenHeroesAt('smb-5', '5-1').map((x) => x.hero)).toEqual(['simon']);
+    expect(hiddenHeroesAt('smb-5', '5-4')).toEqual([]);
   });
 
   it("his words: the stolen wand woke Dracula's curse in him, he is Dracula's thrall; every line fits", () => {

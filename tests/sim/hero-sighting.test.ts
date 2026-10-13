@@ -17,6 +17,10 @@ import {
   LINK_SIGHTING_TIMING,
   MEGAMAN_SIGHTING,
   MEGAMAN_SIGHTING_TIMING,
+  SAMUS_SIGHTING,
+  SAMUS_SIGHTING_TIMING,
+  SIMON_SIGHTING,
+  SIMON_SIGHTING_TIMING,
   SIGHTINGS,
   type SightingDraw,
   type SightingScript,
@@ -54,9 +58,11 @@ interface Into {
   p2?: string;
   mode?: 'stand' | 'fall';
   x?: number;
+  /** Let a level that starts with a fall in (4-2) land first (not with an explicit `mode: 'fall'`). */
+  land?: boolean;
 }
 
-function into(levelId: string, o: Into = {}): H {
+function intoLevel(levelId: string, o: Into = {}): H {
   const h = makeGame();
   file(reached(o.over));
   h.game.openFile(1);
@@ -66,10 +72,16 @@ function into(levelId: string, o: Into = {}): H {
   h.game.startLevel(getLevel(levelId), { mode: o.mode ?? 'stand', ...(o.x !== undefined ? { x: o.x } : {}) });
   // The level's first frames settle the players on the ground; a sighting starts on the next.
   for (let i = 0; i < 4 && h.top() instanceof LevelScene; i++) h.step();
+  if (o.land && o.mode !== 'fall') {
+    const grounded = () => level(h).world.players.every((p) => p.body.onGround);
+    for (let i = 0; i < 240 && h.top() instanceof LevelScene && !grounded(); i++) h.step();
+    if (h.top() instanceof LevelScene) h.step();
+  }
   return h;
 }
 
 const level = (h: H) => h.game.scenes.find((s) => s instanceof LevelScene) as LevelScene;
+const into = intoLevel;
 
 /** What the level holds that must come back exactly: the clock, frame, camera and every body. */
 function snapshot(l: LevelScene) {
@@ -114,8 +126,18 @@ function drawAll(scene: { render(r: Renderer): void }) {
 describe.each([
   ['link', '2-1', LINK_SIGHTING, MARIO.id, 'MARIO'],
   ['megaman', '3-1', MEGAMAN_SIGHTING, 'link', 'LINK'],
+  // 0.4.52: 4-2 (shown as 4-1 once World 4 is reordered) starts with a fall into the cave.
+  ['samus', '4-2', SAMUS_SIGHTING, 'megaman', 'MEGA MAN'],
+  ['simon', '5-1', SIMON_SIGHTING, 'samus', 'SAMUS'],
 ] as const)('%s’s sighting in %s', (id, levelId, script, p1, speaker) => {
-  const over = id === 'megaman' ? { freed: ['mario', 'luigi', 'link'], met: ['mario', 'luigi', 'link'] } : {};
+  const before: Record<string, string[]> = {
+    megaman: ['mario', 'luigi', 'link'],
+    samus: ['mario', 'luigi', 'link', 'megaman'],
+    simon: ['mario', 'luigi', 'link', 'megaman', 'samus'],
+  };
+  const over = before[id] ? { freed: before[id], met: before[id] } : {};
+  const land = levelId === '4-2';
+  const into = (lv: string, o: Into = {}) => intoLevel(lv, { land, ...o });
 
   it('play holds: the brainwashed hero acts it out, then player 1’s hero says the card, announced', () => {
     const h = into(levelId, { p1, over });
@@ -331,6 +353,73 @@ describe('what each sighting shows', () => {
     expect(top(T.beamAt + 1) - top(T.beamAt + 2)).toBe(8);
   });
 
+  it('Samus: back turned, looks back once, curls up, lays a bomb (steady with reduce flashing), bursts over the pit, rolls on', () => {
+    const T = SAMUS_SIGHTING_TIMING;
+    const at = (t: number, reduce: boolean) => sprites(SAMUS_SIGHTING.draw(t, reduce));
+    const samus = (t: number) => at(t, false).find((d) => /^(idle|ball-)/.test(d.frame))!;
+    expect(samus(1)).toMatchObject({ sheet: 'samus', frame: 'idle', flip: false, fx: true, x: T.x, feet: 208 });
+    expect(samus(T.lookAt).flip).toBe(true);
+    expect(samus(T.lookEnd).flip).toBe(false);
+    expect(samus(T.curlAt).frame).toMatch(/^ball-/);
+    const bombs = (reduce: boolean) => {
+      const out = new Set<string>();
+      for (let t = T.bombAt; t < T.burstAt; t++)
+        for (const d of at(t, reduce)) if (d.frame.startsWith('bomb-')) out.add(d.frame);
+      return out;
+    };
+    expect(bombs(false)).toEqual(new Set(['bomb-0', 'bomb-1']));
+    expect(bombs(true)).toEqual(new Set(['bomb-0']));
+    expect(at(T.burstAt, false).some((d) => d.frame === 'bomb-burst' && d.fx)).toBe(true);
+    expect(at(T.burstAt + T.burstFrames, false).some((d) => d.frame === 'bomb-burst')).toBe(false);
+    // The burst bounces the ball up and on to the right, over the next pit (columns 15-16), and off.
+    const mid = samus(T.burstAt + 16);
+    expect(mid.feet).toBeLessThan(208);
+    expect(mid.x).toBeGreaterThan(15 * 16 - 16);
+    const off = Array.from({ length: SAMUS_SIGHTING.frames }, (_, t) => t).find(
+      (t) => t > T.burstAt && sprites(SAMUS_SIGHTING.draw(t, false)).length === 0,
+    )!;
+    expect(SAMUS_SIGHTING.frames - off).toBeLessThanOrEqual(T.beat + 1);
+    // The ledge she stands on is real: 4-2's ground under her, its pits either side.
+    const l = getLevel('4-2');
+    const solid = (x: number) => l.tiles[13 * l.width + x] !== 0;
+    expect([11, 12].map(solid)).toEqual([false, false]);
+    expect([13, 14].map(solid)).toEqual([true, true]);
+    expect([15, 16].map(solid)).toEqual([false, false]);
+  });
+
+  it('Simon: looks back, walks (never runs) to the gate, it rises for him and slams shut behind him, padlock swinging', () => {
+    const T = SIMON_SIGHTING_TIMING;
+    const all = Array.from({ length: SIMON_SIGHTING.frames + 1 }, (_, t) => SIMON_SIGHTING.draw(t, true));
+    const simon = (t: number) => sprites(all[t]!).find((d) => d.sheet === 'simon');
+    const gate = (t: number) => all[t]!.find((d) => d.kind === 'gate') as
+      | { lift: number; swing: number; x: number; top: number }
+      | undefined;
+    expect(simon(1)).toMatchObject({ frame: 'idle', flip: false, x: T.x });
+    expect(simon(T.lookAt)!.flip).toBe(true);
+    // He walks at 0.75 px a frame, never faster.
+    for (let t = T.walkAt + 1; t < T.walkAt + 40; t++) expect(simon(t)!.x - simon(t - 1)!.x).toBeLessThanOrEqual(1);
+    expect(simon(T.walkAt + 8)!.frame).toMatch(/^walk-/);
+    // The gate is the level's own, at column 12 (its doorway rows 11-12): drawn raised over it.
+    expect(gate(T.raiseAt + 40)).toMatchObject({ x: 192, top: 176, lift: 32 });
+    expect(getLevel('5-1').entities).toContainEqual({
+      type: 'locked-gate',
+      x: 12,
+      y: 11,
+      props: { hero: 'simon', campaign: true },
+    });
+    // It drops behind him: he is gone once it is shut (CLANG), and the padlock swings.
+    const clang = all.findIndex((_ds, t) => t > T.dropAt && gate(t)?.lift === 0);
+    expect(simon(clang)).toBeUndefined();
+    expect(simon(clang - 1)).toBeDefined();
+    expect(SIMON_SIGHTING.sfx?.[clang]).toBe('bump');
+    const swings = new Set(all.slice(clang).map((_, k) => gate(clang + k)?.swing ?? 0));
+    expect(swings).toEqual(new Set([1, -1, 0]));
+    expect(all[clang]!.some((d) => d.kind === 'dust')).toBe(true);
+    // The bat (its own colours, not the captive's) is there, then flies off.
+    expect(sprites(all[20]!).some((d) => d.sheet === 'crypt' && !d.fx)).toBe(true);
+    expect(sprites(all[SIMON_SIGHTING.frames - 1]!)).toEqual([]);
+  });
+
   it('reduce flashing: the sparkles keep one colour each, never twinkle', () => {
     const h = into('2-1');
     const s = h.top() as HeroSightingScene;
@@ -354,7 +443,7 @@ describe('what each sighting shows', () => {
       expect(SIGHTING_HEROES).toContain(s.hero);
       expect(BURST_LIFE).toBeGreaterThan(0);
     }
-    expect(Object.keys(SIGHTINGS).sort()).toEqual(['2-1', '3-1']);
+    expect(Object.keys(SIGHTINGS).sort()).toEqual(['2-1', '3-1', '4-2', '5-1']);
   });
 });
 
