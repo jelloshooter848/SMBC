@@ -505,6 +505,13 @@ export class World {
   private readonly fallingIn = new Set<Player>();
   /** The column of the last checkpoint sent (World.checkZones); a map may hold several. */
   private lastCheckpointX = -Infinity;
+  /** A section's own tune (a `music` zone passed, story only), else null: the level's. */
+  sectionMusic: string | null = null;
+
+  /** The tune playing here: the section's (a `music` zone passed), else the level's. */
+  get music(): string {
+    return this.sectionMusic ?? this.level.music;
+  }
   /**
    * The campaign's fake Bowser unmasking before the axe (0.4.23, world/unmask.ts): play holds while
    * it runs; then the axe drops the bridge as usual.
@@ -1544,7 +1551,7 @@ export class World {
         this.camera.x = Math.max(before, a - px(ANCHOR_ROOM));
     }
     for (const p of this.players) {
-      if (p.star === 1) this.audio.playMusic(this.level.music);
+      if (p.star === 1) this.audio.playMusic(this.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
         // Carried down a descent shaft by its lift: into the area below, dropping in from above.
         const down = this.descentLift(p);
@@ -2025,7 +2032,7 @@ export class World {
         this.hurryPlayed = true;
         this.audio.playJingle('hurry', () => {
           this.audio.setTempoScale(1.4);
-          this.audio.playMusic(this.level.music);
+          this.audio.playMusic(this.music);
         });
       }
       if (this.time <= 0) {
@@ -2320,7 +2327,7 @@ export class World {
       this.hurryPlayed = false;
       this.audio.setTempoScale(1);
       // Under star power the star tune keeps playing; the level tune returns when it ends.
-      if (!this.players.some((p) => p.star > 0)) this.audio.playMusic(this.level.music);
+      if (!this.players.some((p) => p.star > 0)) this.audio.playMusic(this.music);
     }
   }
 
@@ -2913,6 +2920,26 @@ export class World {
       this.lastCheckpointX = best.x;
       this.events.push({ type: 'checkpoint', x: best.x, y: best.y });
     }
+    if (this.storyMode) this.checkSectionMusic();
+  }
+
+  /**
+   * A `music` zone (story only): the furthest one a player has passed sets the section's tune;
+   * when it changes it starts at once (the clock's tempo kept), unless a Starman's tune is on,
+   * whose end brings back this.music.
+   */
+  private checkSectionMusic(): void {
+    let best: { x: number; music: string } | null = null;
+    for (const z of this.level.zones)
+      if (
+        z.kind === 'music' &&
+        (!best || z.x > best.x) &&
+        this.players.some((p) => !p.dead && p.body.x >= tileToSub(z.x))
+      )
+        best = z;
+    if (!best || best.music === this.music) return;
+    this.sectionMusic = best.music;
+    if (!this.players.some((p) => p.star > 0)) this.audio.playMusic(this.music);
   }
 
   /* ---------- Level clear ---------- */

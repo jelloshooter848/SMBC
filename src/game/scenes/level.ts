@@ -219,9 +219,9 @@ export class LevelScene implements Scene {
     if (held.some((o) => o.given)) this.airship?.itemsGiven(this.game.state);
   }
 
-  /** The level's music (levelMusic), at the clock's tempo. */
+  /** The level's music (levelMusic), or its section's (World.sectionMusic), at the clock's tempo. */
   playMusic(): void {
-    const music = levelMusic(this.level, this.game.state.character);
+    const music = this.world.sectionMusic ?? levelMusic(this.level, this.game.state.character);
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
     this.game.ctx.audio.playMusic(music);
   }

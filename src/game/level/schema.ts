@@ -446,6 +446,12 @@ export type Zone =
    */
   | { kind: 'bowser-fire'; x: number }
   /**
+   * (0.4.55) Once a player passes column x, the level's tune becomes `music`, in the campaign's
+   * story only (World.storyMode; classic and dev play keep the level's own): BOWSER'S CASTLE's
+   * bridge section plays `bowser-king`.
+   */
+  | { kind: 'music'; x: number; music: string }
+  /**
    * Castle maze: walking right past column x with the body inside rows y0..y1 moves the player
    * to column `to` (same height), but only after passing its checkpoint columns (inside their
    * rows) since the last move: the wrong path loops back, the right path skips the repeat.

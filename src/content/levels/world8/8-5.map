@@ -91,6 +91,8 @@ loop 352 9 12 -> 320
 loop 384 3 7 -> 352
 checkpoint 408 9
 checkpoint 474 9
+;; The king's bridge (section F): his own tune, in the campaign's story only (classic and dev keep castle).
+music 480 bowser-king
 bowser-fire 506
 exit 557 next=end
 

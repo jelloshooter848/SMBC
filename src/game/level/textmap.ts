@@ -60,7 +60,7 @@ function parseProps(parts: string[]): Props {
  *                         the world map, MAP_EXIT), `exit x next=id`,
  *                         `checkpoint x [y]`, `scrollStop x`, `warp x w worlds=4,3,2 [text=..] [secret=key] [goto=level,x,y[,exit]] [until=secret]`,
  *                         `text x y triggerX "..."`,
- *                         `bowser-fire x`, `vine x y -> level x y`, `pit x -> level x y`,
+ *                         `bowser-fire x`, `music x song` (story only), `vine x y -> level x y`, `pit x -> level x y`,
  *                         `teleport x y -> level x y [exit=beam|fall] [block=bx,by]` (a pad),
  *                         `descent x w -> level x y [campaign]` (a down lift's shaft),
  *                         `trick x y h -> level x y [exit=up|fall] [campaign]` (a trick wall's spinning panel)
@@ -543,6 +543,10 @@ function parseZone(line: string): Zone {
     case 'bowser-fire':
       if (parts[1] === undefined) throw new Error('expected "bowser-fire x"');
       return { kind: 'bowser-fire', x: Number(parts[1]) };
+    case 'music':
+      // music x song (a section's own tune, story only)
+      if (parts[1] === undefined || parts[2] === undefined) throw new Error('expected "music x song"');
+      return { kind: 'music', x: Number(parts[1]), music: parts[2] };
     case 'loop': {
       // loop x y0 y1 -> to [check=x:y0:y1[,x:y0:y1...]] [any]
       const [, xs, y0, y1, arrow, to, ...rest] = parts;
@@ -754,6 +758,8 @@ function serializeZone(z: Zone): string {
       return `bullets ${z.x} ${z.w}`;
     case 'bowser-fire':
       return `bowser-fire ${z.x}`;
+    case 'music':
+      return `music ${z.x} ${z.music}`;
     case 'loop':
       return `loop ${z.x} ${z.y0} ${z.y1} -> ${z.to}${
         z.checks.length ? ` check=${z.checks.map((c) => `${c.x}:${c.y0}:${c.y1}`).join(',')}` : ''
