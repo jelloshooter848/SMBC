@@ -7,6 +7,9 @@ import { loadSave, type SaveFile } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
 import { gateScript, RIFT_SEALED_PAGES, riftPages, WELCOMES, type Page } from '@game/story/script';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
+import { aboveLook } from '@content/worldmap/above-render';
+import { overheadSheet } from '@game/town/hero';
+import { SPRITES } from '@content/sprites';
 import { ALL_STORY } from './story-seen';
 
 // The world gates and the welcomes (0.4.23, docs/STORY.md 2.3b, 2.7, 2.12; map/world-gate.ts,
@@ -217,8 +220,10 @@ describe('the welcomes (0.4.23)', () => {
 
   // Every world's local stands fully in view beside any hero on its start node: clear of the
   // hero, the roads, the nodes and anything else on the map, off the header and the hint line,
-  // and on open ground (no tree, rock or palm behind it).
+  // and on open ground (no tree, rock or palm behind it). Worlds 2 and 3 are drawn from above in
+  // campaign play (0.4.50): their ground is their look's sheet, and the hero is drawn from above.
   const OPEN_GROUND = /^map-[a-z]+:(ground|tuft|flowers-\d|drift|shore-[ns]-\d)$/;
+  const OPEN_GROUND_ABOVE = /^(grass|pavement)-\d$/;
   it.each([2, 3, 4, 5, 6, 7, 8])('World %i: the local is clear of every hero on the start node', (n) => {
     for (const c of CHARACTERS) {
       const h = open({
@@ -237,27 +242,47 @@ describe('the welcomes (0.4.23)', () => {
       });
       const local = boxes.find((s) => s.key === 'locals');
       if (!local) throw new Error(`World ${n}: no local drawn`);
-      const hits = (b: (typeof boxes)[0]) =>
+      // From above, a ground tile is its look's ground frame at its tile.
+      const look = aboveLook(map(h).page);
+      const ground0 = look?.ground(map(h).page).frames[0];
+      const isGround = (s: (typeof boxes)[0]) =>
+        s.key.startsWith('map@') ||
+        (!!look &&
+          s.key === look.sheet &&
+          s.x % 16 === 0 &&
+          s.y % 16 === 0 &&
+          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma)/.test(s.frame) &&
+          ground0?.[(s.y / 16) * 16 + s.x / 16] !== undefined);
+      const boxHits = (b: (typeof boxes)[0]) =>
         local.x < b.x + b.w && b.x < local.x + local.w && local.y < b.y + b.h && b.y < local.y + local.h;
+      // A road or marker from above is see-through round it: only its drawn pixels count.
+      const drawn = (b: (typeof boxes)[0], x: number, y: number) =>
+        (SPRITES[b.key]?.frames[b.frame]?.[y - b.y]?.[x - b.x] ?? '.') !== '.';
+      const hits = (b: (typeof boxes)[0]) => {
+        if (!boxHits(b)) return false;
+        if (!look || b.key !== look.sheet) return true;
+        for (let y = Math.max(local.y, b.y); y < Math.min(local.y + local.h, b.y + b.h); y++)
+          for (let x = Math.max(local.x, b.x); x < Math.min(local.x + local.w, b.x + b.w); x++)
+            if (drawn(local, x, y) && drawn(b, x, y)) return true;
+        return false;
+      };
       const where = `World ${n} with ${c.id}`;
       expect(local.y, where).toBeGreaterThanOrEqual(MAP_HEADER_H);
       expect(local.y + local.h, where).toBeLessThanOrEqual(MAP_HINT_Y);
       // The hero marker (its portrait), the roads' dots, the nodes, the hero marks, the seal.
-      const others = boxes.filter(
-        (s) => s !== local && !s.key.startsWith('map@') && !/^(enemies|decor)/.test(s.key),
-      );
+      const others = boxes.filter((s) => s !== local && !isGround(s) && !/^(enemies|decor)/.test(s.key));
       expect(
-        others.some((s) => s.key.startsWith(c.portrait.sheet)),
+        others.some((s) => s.key.startsWith(look ? overheadSheet(c) : c.portrait.sheet)),
         where,
       ).toBe(true);
       expect(
         others.filter(hits).map((s) => `${s.key}:${s.frame}`),
         where,
       ).toEqual([]);
-      const ground = boxes
-        .filter((s) => s.key.startsWith('map@') && hits(s))
-        .map((s) => `${s.key.slice(4)}:${s.frame}`);
-      for (const t of ground) expect(t, where).toMatch(OPEN_GROUND);
+      const ground = boxes.filter((s) => isGround(s) && hits(s));
+      for (const t of ground)
+        if (look) expect(t.frame, where).toMatch(OPEN_GROUND_ABOVE);
+        else expect(`${t.key.slice(4)}:${t.frame}`, where).toMatch(OPEN_GROUND);
     }
   });
 });

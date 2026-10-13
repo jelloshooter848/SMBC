@@ -143,6 +143,12 @@ export function localNode(progress: MapProgress, page: WorldMapPage): MapNode | 
 const LOCAL_COLUMN: Readonly<Record<string, number>> = { 'smb-3': 2 };
 
 /**
+ * Pixels a world's local stands lower than the default (locals show in campaign play only, where
+ * World 3 is drawn from above since 0.4.50): Roll's head clears the walkway's rim over her.
+ */
+const LOCAL_DROP: Readonly<Record<string, number>> = { 'smb-3': 1 };
+
+/**
  * Where page `page`'s local is drawn (its 16x20 sprite's top-left, px), or null without one:
  * beside the start node, down and to the right, its head just under the road on (every start
  * node is at the page's left edge, its road leaving to the right). That keeps it in full view of
@@ -153,7 +159,10 @@ export function localSpot(page: WorldMapPage): { x: number; y: number } | null {
   if (!welcomeOf(page.id)) return null;
   const start = page.nodes.find((n) => n.kind === 'start');
   if (!start) return null;
-  return { x: (start.x + (LOCAL_COLUMN[page.id] ?? 1)) * 16, y: start.y * 16 + 12 };
+  return {
+    x: (start.x + (LOCAL_COLUMN[page.id] ?? 1)) * 16,
+    y: start.y * 16 + 12 + (LOCAL_DROP[page.id] ?? 0),
+  };
 }
 
 /** The hint line on a start node with a local ('TALK TO THE HEALER'), or ''. */

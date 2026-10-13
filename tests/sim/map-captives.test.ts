@@ -79,7 +79,8 @@ const CASES: Case[] = [
       position: { page: 'smb-3', node: '3-1' },
     },
     level: '3-1',
-    side: -1,
+    // 0.4.50: Mega City from above keeps the tile east of 3-1 clear for him (world3-megacity.ts).
+    side: 1,
   },
   {
     hero: 'samus',
@@ -109,7 +110,7 @@ function onMap(over: Partial<SaveFile>, dev = false): { h: H; map: WorldMapScene
   return { h, map };
 }
 
-/** Node `id` of `page` as campaign play shows it (World 1 from above since 0.4.48). */
+/** Node `id` of `page` as campaign play shows it (Worlds 1-3 from above since 0.4.48 and 0.4.50). */
 const nodeOf = (page: string, id: string) =>
   (pageLook(mapPage(page), true) as WorldMapPage).nodes.find((n) => n.id === id) as MapNode;
 
