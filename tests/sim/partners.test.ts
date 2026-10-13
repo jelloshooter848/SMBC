@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel, levelIds } from '@content/levels';
 import { CHARACTERS } from '@game/characters/registry';
-import { beat } from '@game/story/beats';
+import { beat, SIGHTING_HEROES } from '@game/story/beats';
 import { MARIO } from '@game/characters/mario';
 import { startHp, type CharacterDef } from '@game/characters/character';
 import { Partner } from '@game/entities/objects/partner';
@@ -128,6 +128,9 @@ function campaignIn(
   h.game.markSeen(beat.luigiRuns);
   // Bowser in 8-4-end's bridge room (Fred's trap pipe is in it) is another story too.
   h.game.markSeen(beat.bowser84);
+  // So are the hero sightings at a world's first level's start (0.4.51; Irene in 6-2 and Lance in
+  // 7-3 stand on the start screens of Ryu's and Bill's, 0.4.53).
+  for (const id of SIGHTING_HEROES) h.game.markSeen(beat.sighting(id));
   const st = h.game.state;
   st.character = c;
   st.powerState = power as typeof st.powerState;
