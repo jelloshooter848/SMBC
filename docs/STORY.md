@@ -4485,12 +4485,13 @@ HATCH IN THE FOREST.
 ```
 
 (Before 0.4.55 World 8's road went straight on to Lost World 1 and was the rift itself, held shut by her spell; a
-build without the Valley still plays this reminder after the 8-4 credits, then the crack tears open on her release:)
+build without the Valley still plays this reminder after the 8-4 credits, then the crack tears open on her release;
+since 0.4.54 it speaks of the wand, not the king, as 8-4's king is a fake:)
 
 ```text
 TOAD:
 
-THE KING IS BEATEN, BUT
+THE WAND IS BROKEN, BUT
 THAT CRACK IS TOO SMALL TO
 GO THROUGH. SOMETHING'S
 HOLDING IT SHUT...
