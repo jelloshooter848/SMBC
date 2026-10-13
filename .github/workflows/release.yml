@@ -71,7 +71,8 @@ jobs:
         run: |
           if node -e "process.exit(require('./package.json').scripts['build:offline'] ? 0 : 1)"; then
             pnpm build:offline
-            (cd dist-offline && zip -q "$RUNNER_TEMP/release/smbc-$TAG-offline.zip" index.html README.txt)
+            # -MM: a missing file fails the release (plain zip would warn and ship without it).
+            (cd dist-offline && zip -q -MM "$RUNNER_TEMP/release/smbc-$TAG-offline.zip" index.html README.txt)
           else
             echo "$TAG has no build:offline: no download zip."
           fi
