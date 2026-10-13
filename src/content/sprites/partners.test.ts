@@ -55,7 +55,10 @@ describe('partners sheet', () => {
     const npcs = Object.keys(npcsDef.frames)
       .filter((f) => f.endsWith('-0'))
       .map((f) => f.slice(0, -2));
-    expect([...Object.keys(SIZES), ...BORROWED, ...npcs].sort()).toEqual(Object.keys(PARTNERS).sort());
+    // 0.4.52: 5-4's hall townsperson is drawn as the townsperson (objects/partner.ts LOOKS_LIKE).
+    expect([...Object.keys(SIZES), ...BORROWED, ...npcs, 'hall-townsperson'].sort()).toEqual(
+      Object.keys(PARTNERS).sort(),
+    );
     for (const f of ['jason-stand', 'fred-0']) {
       const rows = sophiaDef.frames[f] as readonly string[];
       expect([rows[0]?.length, rows.length], f).toEqual([16, 16]);

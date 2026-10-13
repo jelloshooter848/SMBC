@@ -447,9 +447,11 @@ describe('5-1’s crypt gate', () => {
     expect(gateOf(classic.world)).toBeUndefined();
   });
 
-  it('the old way in is gone: 5-4 has no descent zone and no townsperson; its lift is classic', () => {
+  it('the old way in is gone: 5-4 has no descent zone, and its townsperson no lift hints', () => {
     const l = campaignLevel(getLevel('5-4'));
     expect(l.zones.some((z) => z.kind === 'descent')).toBe(false);
-    expect(l.entities.some((e) => e.type === 'partner')).toBe(false);
+    expect(l.entities.filter((e) => e.type === 'partner').map((e) => e.props?.who)).toEqual([
+      'hall-townsperson',
+    ]);
   });
 });
