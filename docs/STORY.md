@@ -3131,6 +3131,24 @@ TEA. ...NO? ALWAYS RUNNING
 UP WALLS, THIS ONE.
 ```
 
+**6-2 (shown 6-1): the sighting.** NEW (0.4.53, `story/sightings.ts`). **Trigger:** the first time 6-2 starts on
+the file while Ryu is neither freed nor met and 6-2 is not cleared, once every player stands on the start screen
+(campaign only, never while a player is Ryu). Once per file (`sighting:ryu`). **Staging:** play holds. Brainwashed Ryu
+(the captive palette, wand sparkles drifting off him) **drops in spinning** from above the screen and lands crouched
+on the street between the hero and Irene, facing the hero. He dashes left to the **start castle's wall** and presses
+into it, and a panel there **spins him through**: the trick wall's own half turn, in the castle's brick, then back.
+It is scene-only (drawn only while it turns, with no shuriken mark): at rest it is the castle's own wall, and nothing
+in the level changes. A beat later player 1's hero speaks; JUMP, ATTACK or MENU skips to the card. Said: _A
+brainwashed Ryu drops in front of you, dashes to the castle wall, and a panel spins him through it._
+
+```text
+<HERO>:
+
+RYU? HE WENT RIGHT
+THROUGH THAT WALL! IT
+SPUN, AND HE WAS GONE.
+```
+
 **Hint NPC: Irene Lew.** KEEP, on the ground at the start of 6-2, before the first pipe (column 19), the pipe down
 to the room with the trick wall.
 
@@ -3494,6 +3512,24 @@ BILL! AT EASE, SOLDIER.
 YOU'RE OUT OF UNIFORM.
 ...NO SHIRT? AGAIN? FINE.
 CARRY ON.
+```
+
+**7-3 (shown 7-1): the sighting.** NEW (0.4.53, `story/sightings.ts`). **Trigger:** the first time 7-3 starts on
+the file while Bill is neither freed nor met and 7-3 is not cleared, once every player stands on the start screen
+(campaign only, never while a player is Bill). Once per file (`sighting:bill`). **Staging:** play holds. Brainwashed
+Bill lies prone on the stone blocks ahead, springs up and looks back at the hero (and Lance), then rolls off the edge
+and catches the underside of the **first bridge**: he goes **hand over hand** under the girder while the camera eases
+right with him, and out of view. Off screen he lets go: a falling whistle and a thud (never shown: the pit under that
+bridge is deadly), then far ahead a boom. The camera comes back. A beat later player 1's hero speaks; JUMP, ATTACK or
+MENU skips to the card. Said: _A brainwashed Bill swings hand over hand under the bridge and out of sight. He lets go;
+far ahead, something explodes._
+
+```text
+<HERO>:
+
+BILL! HE WENT HAND OVER
+HAND UNDER THE BRIDGE...
+THEN LET GO. THEN, BOOM!
 ```
 
 **Hint NPC: Lance.** KEEP, in the jungle at the start of 7-3, well before the marked bridge at column 128.

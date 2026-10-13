@@ -5,6 +5,7 @@ import { PALETTES, SPRITES } from './index';
 import { ninjaDef, ninjaPalettes } from './ninja';
 import { ryuDef } from './ryu';
 import { tilesDef } from './tiles';
+import { decorDef } from './decor';
 
 type Size = readonly [w: number, h: number];
 const S8: Size = [8, 8];
@@ -77,9 +78,11 @@ describe('ninja sheet', () => {
   it('is registered with its palettes, which share one index layout', () => {
     expect(SPRITES.ninja).toBe(ninjaDef);
     expect(ninjaDef.palette).toBe('ninja');
-    // 'ninja-ng-sewer': the trick panel in 6-2-bonus's sewer brick (World 6 as Ryu's world, 0.4.29)
+    // 'ninja-ng-sewer': the trick panel in 6-2-bonus's sewer brick (World 6 as Ryu's world, 0.4.29);
+    // 'ninja-castle-city': the panel in 6-2's start castle brick (Ryu's sighting, 0.4.53)
     expect(Object.keys(ninjaPalettes).sort()).toEqual([
       'ninja',
+      'ninja-castle-city',
       'ninja-flash',
       'ninja-ghost',
       'ninja-ng-sewer',
@@ -108,6 +111,24 @@ describe('ninja sheet', () => {
     const ghost = ninjaPalettes['ninja-ghost'] as string[];
     expect(new Set(ghost).size).toBeLessThanOrEqual(3);
     expect(ghost).not.toContain(base[0]);
+  });
+
+  it("Ryu's sighting panel (0.4.53) is 6-2's start castle wall exactly: the castle brick's colours", () => {
+    // The castle's bottom-right wall tile (x 64-80, the lowest row of castle-small) in the city's decor
+    // palette, and trick-wall-0 in ninja-castle-city: the same colour at every pixel but the
+    // building's outer edge column (its dark outline where it meets the sky).
+    const castle = decorDef.frames['castle-small'] as readonly string[];
+    const decor = PALETTES.default['decor-ninja-city'] as string[];
+    const pal = ninjaPalettes['ninja-castle-city'] as string[];
+    const face = rows('trick-wall-0');
+    const colour = (ch: string, p: readonly string[]) =>
+      ch === '.' ? null : (p[parseInt(ch, 36)] as string);
+    for (let y = 0; y < 16; y++)
+      for (let x = 0; x < 15; x++)
+        expect(colour(face[y]![x]!, pal), `${x},${y}`).toBe(colour(castle[64 + y]![64 + x]!, decor));
+    // Everything but the brick (the black hole either side, the wooden back) keeps the sheet's colours.
+    const base = ninjaPalettes.ninja as string[];
+    expect(pal.filter((c, i) => c !== base[i]).length).toBeLessThanOrEqual(3);
   });
 
   it("the trick wall's front is the underground brick, so the panel sits in the bonus room wall unseen", () => {

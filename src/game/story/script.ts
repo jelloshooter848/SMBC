@@ -769,17 +769,22 @@ export const LUIGI_RUNS_PAGE: Page = [
 /**
  * The hero sightings (story/sightings.ts): a brainwashed hero glimpsed at the start of their
  * world's first level. Each line is said by player 1's hero (sightingPage), at most CASTLE_COLS
- * (26) columns. Only the built ones are here (Link, Mega Man); the rest come with their worlds.
+ * (26) columns. Only the built ones are here (Link, Mega Man; Ryu, Bill); the rest come with their worlds.
  */
 const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   link: ['WAS THAT LINK? A VINE', 'GREW RIGHT OUT OF THE', 'GROUND, AND HE CLIMBED IT', 'INTO THE SKY!'],
   megaman: ['MEGA MAN? HE FLICKERED,', 'THEN BEAMED STRAIGHT UP', 'INTO THE NIGHT SKY!'],
+  // 0.4.53 (line A, owner).
+  ryu: ['RYU? HE WENT RIGHT', 'THROUGH THAT WALL! IT', 'SPUN, AND HE WAS GONE.'],
+  bill: ['BILL! HE WENT HAND OVER', 'HAND UNDER THE BRIDGE...', 'THEN LET GO. THEN, BOOM!'],
 };
 
 /** What the announcer says as each sighting starts (it has no text on screen until the card). */
 export const SIGHTING_SAID: Readonly<Record<string, string>> = {
   link: 'A brainwashed Link makes a vine grow out of the ground and climbs it into the sky. The vine follows him up.',
   megaman: 'A brainwashed Mega Man glitches, then beams up into the sky.',
+  ryu: 'A brainwashed Ryu drops in front of you, dashes to the castle wall, and a panel spins him through it.',
+  bill: 'A brainwashed Bill swings hand over hand under the bridge and out of sight. He lets go; far ahead, something explodes.',
 };
 
 /** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */

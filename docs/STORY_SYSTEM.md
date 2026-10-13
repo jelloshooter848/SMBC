@@ -101,7 +101,7 @@ time 1-1 starts while Luigi is not freed, `luigi-runs`) and then Mario's card, L
 `4-2-larry` (every run, not on TRY AGAIN), and Bowser's "no more stand-ins" on first entering
 `8-4-end` (`bowser-8-4`, in the prompt box with his laugh). The hero sightings (0.4.51,
 `sightings.ts`, `hero-sighting.ts`) play the same way, right after Luigi's check: the first time a
-world's first level starts on the file (`sighting:<hero>`; built: Link in 2-1, Mega Man in 3-1)
+world's first level starts on the file (`sighting:<hero>`; built: Link in 2-1, Mega Man in 3-1, Ryu in 6-2, Bill in 7-3)
 while that hero is neither freed nor met, the level is not cleared, no player is that hero, and every
 player stands on the start screen (`sightingDue`). One scene draws any hero's script (the hero in the
 captive palette, scene-only props such as Link's vine, sounds, an optional camera pan that is put
