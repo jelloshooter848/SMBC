@@ -277,7 +277,7 @@ export class LevelScene implements Scene {
         break;
       case 'partner':
         // A story partner: its pages over the frozen level, then play on (story/partners.ts).
-        if (this.world.storyMode) talkToPartner(game, this, ev.who);
+        if (this.world.storyMode) talkToPartner(game, this, ev.who, ev.player);
         break;
       case 'partner-near':
         game.deps.announcer?.say(

@@ -362,6 +362,11 @@ export interface WelcomeScript {
    * this page instead of the welcome's plea.
    */
   after?: readonly Page[];
+  /**
+   * Talking to it as the world's own hero (0.4.47: the healer seeing Link), freed or not: one or
+   * two pages, first of the three sets (map/world-gate.ts welcomePages).
+   */
+  own?: readonly Page[];
 }
 
 const welcome = (who: string, said: string, ...pages: string[][]): WelcomeScript => ({
@@ -376,148 +381,200 @@ const afterFreed = (w: WelcomeScript, ...lines: string[]): WelcomeScript => ({
   after: [[`${w.local}:`, '', ...lines]],
 });
 
+/** Welcome `w` with its own-hero pages (each one's `lines`, spoken by its local). */
+const ownHero = (w: WelcomeScript, ...pages: string[][]): WelcomeScript => ({
+  ...w,
+  own: pages.map((p) => [`${w.local}:`, '', ...p]),
+});
+
 /** The welcomes of worlds 2-8, by map page. */
 export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
-  'smb-2': afterFreed(
-    welcome(
-      'HEALER',
-      'A healer',
-      [
-        'WELCOME TO HYRULE,',
-        "TRAVELER. OR WHAT'S LEFT OF",
-        'IT. A SPELL DRAGGED OUR',
-        'LAND HERE, SEA AND ALL.',
-      ],
-      ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
-      [
-        'HE WAS LAST SEEN ON THE',
-        'GREAT FIELD. AN OLD MAN IN',
-        'A CAVE THERE KNOWS THINGS.',
-        'HE ALWAYS DOES.',
-      ],
-      ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
+  'smb-2': ownHero(
+    afterFreed(
+      welcome(
+        'HEALER',
+        'A healer',
+        [
+          'WELCOME TO HYRULE,',
+          "TRAVELER. OR WHAT'S LEFT OF",
+          'IT. A SPELL DRAGGED OUR',
+          'LAND HERE, SEA AND ALL.',
+        ],
+        ['OUR HERO LINK HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+        [
+          'HE WAS LAST SEEN ON THE',
+          'GREAT FIELD. AN OLD MAN IN',
+          'A CAVE THERE KNOWS THINGS.',
+          'HE ALWAYS DOES.',
+        ],
+        ['LET ME HEAL YOU BEFORE YOU', "GO. ...OH. YOU'RE FINE.", 'NEVER MIND.'],
+      ),
+      'LINK IS HIMSELF AGAIN!',
+      'THANK YOU, TRAVELER. GO ON',
+      'EAST, AND STAY HEALTHY...',
+      "I'M STILL OUT OF PATIENTS.",
     ),
-    'LINK IS HIMSELF AGAIN!',
-    'THANK YOU, TRAVELER. GO ON',
-    'EAST, AND STAY HEALTHY...',
-    "I'M STILL OUT OF PATIENTS.",
+    [
+      'LINK! YOU LOOK TERRIBLE.',
+      'SIT. LET ME... OH, YOU',
+      'HAVE A FAIRY IN A BOTTLE.',
+      "THAT'S CHEATING, DEAR.",
+    ],
   ),
-  'smb-3': afterFreed(
-    welcome(
-      'LAB ROBOT',
-      'A lab robot',
-      ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
-      ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
-      ['HIS LAST SIGNAL CAME FROM', 'THE RADIO MASTS. DR. LIGHT', 'IS OUT THERE, TRACKING IT.'],
+  'smb-3': ownHero(
+    afterFreed(
+      welcome(
+        'LAB ROBOT',
+        'A lab robot',
+        ['BEEP! WELCOME TO THE YEAR', '20XX. WELL, A CHUNK OF IT.', 'YOUR KINGDOM HAS ODD', 'PHYSICS.'],
+        ['OUR HERO MEGA MAN HAS BEEN', 'REPROGRAMMED BY SOMEONE.', 'PLEASE HELP! BEEP!'],
+        ['HIS LAST SIGNAL CAME FROM', 'THE RADIO MASTS. DR. LIGHT', 'IS OUT THERE, TRACKING IT.'],
+      ),
+      'BEEP! MEGA MAN IS BACK',
+      'ONLINE! DR. LIGHT SAYS',
+      'THANK YOU. THE ROAD AHEAD',
+      'IS CLEAR. BEEP BOOP!',
     ),
-    'BEEP! MEGA MAN IS BACK',
-    'ONLINE! DR. LIGHT SAYS',
-    'THANK YOU. THE ROAD AHEAD',
-    'IS CLEAR. BEEP BOOP!',
+    [
+      'BEEP! MEGA MAN! SCANNING...',
+      'ARM CANNON: ONLINE. HELMET:',
+      'SHINY. DR. LIGHT SAYS EAT',
+      'YOUR E-TANKS. BEEP BOOP!',
+    ],
   ),
-  'smb-4': afterFreed(
-    welcome(
-      'SCIENTIST',
-      'A scientist',
-      [
-        'WELCOME TO PLANET ZEBES...',
-        'OR A PIECE OF IT. OUR',
-        'WHOLE RESEARCH BASE CAME',
-        'ALONG FOR THE RIDE.',
-      ],
-      ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
-      ['HER LAST READING CAME FROM', "DEEP IN THE CAVERNS. THERE'S", 'AN OLD BIRD STATUE DOWN', 'THERE.'],
-      ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING OVER THE CAVERNS.', 'KEEP AN EYE ON THE SKY!'],
+  'smb-4': ownHero(
+    afterFreed(
+      welcome(
+        'SCIENTIST',
+        'A scientist',
+        [
+          'WELCOME TO PLANET ZEBES...',
+          'OR A PIECE OF IT. OUR',
+          'WHOLE RESEARCH BASE CAME',
+          'ALONG FOR THE RIDE.',
+        ],
+        ['THE HUNTER WHO GUARDS US,', 'SAMUS, HAS BEEN BRAINWASHED', 'BY SOMEONE. PLEASE HELP!'],
+        ['HER LAST READING CAME FROM', "DEEP IN THE CAVERNS. THERE'S", 'AN OLD BIRD STATUE DOWN', 'THERE.'],
+        ['ALSO, A KOOPA AIRSHIP KEEPS', 'CIRCLING OVER THE CAVERNS.', 'KEEP AN EYE ON THE SKY!'],
+      ),
+      'SAMUS IS BACK ON PATROL.',
+      'OUR BASE IS SAFE AGAIN,',
+      'THANKS TO YOU. ONWARD! THE',
+      'NEXT WORLD NEEDS YOU MORE.',
     ),
-    'SAMUS IS BACK ON PATROL.',
-    'OUR BASE IS SAFE AGAIN,',
-    'THANKS TO YOU. ONWARD! THE',
-    'NEXT WORLD NEEDS YOU MORE.',
+    ['SAMUS! WE LOGGED A NEW', 'RECORD FOR YOU: THREE', 'HOURS. THE TEAM BETS YOU', 'CAN DO IT IN ONE.'],
   ),
-  'smb-5': afterFreed(
-    welcome(
-      'MERCHANT',
-      'A merchant',
-      [
-        'WELCOME, STRANGER, TO',
-        'TRANSYLVANIA. A FOUL SPELL',
-        'CARRIED OUR WHOLE COUNTRY',
-        'HERE. EVEN THE NIGHTS.',
-      ],
-      ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
-      [
-        'HE WAS LAST SEEN IN THE',
-        'OLD CASTLE AT THE END OF',
-        'THE ROAD. A TOWNSPERSON',
-        'WAITS AT ITS GATE.',
-      ],
-      ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
+  'smb-5': ownHero(
+    afterFreed(
+      welcome(
+        'MERCHANT',
+        'A merchant',
+        [
+          'WELCOME, STRANGER, TO',
+          'TRANSYLVANIA. A FOUL SPELL',
+          'CARRIED OUR WHOLE COUNTRY',
+          'HERE. EVEN THE NIGHTS.',
+        ],
+        ['OUR HERO SIMON HAS BEEN', 'BRAINWASHED BY SOMEONE.', 'PLEASE HELP!'],
+        [
+          'HE WAS LAST SEEN IN THE',
+          'OLD CASTLE AT THE END OF',
+          'THE ROAD. A TOWNSPERSON',
+          'WAITS AT ITS GATE.',
+        ],
+        ['WANT TO BUY A WHITE', 'CRYSTAL? ...NO? NOBODY', 'EVER DOES.'],
+      ),
+      'SIMON WALKS FREE AGAIN!',
+      'YOU HAVE MY THANKS. NOW,',
+      'ON YOUR WAY... AND STILL',
+      'NO WHITE CRYSTAL? SHAME.',
     ),
-    'SIMON WALKS FREE AGAIN!',
-    'YOU HAVE MY THANKS. NOW,',
-    'ON YOUR WAY... AND STILL',
-    'NO WHITE CRYSTAL? SHAME.',
+    [
+      'SIMON! WELCOME HOME. A',
+      'LAUREL FOR THE ROAD? A',
+      'WHITE CRYSTAL? ...JUST',
+      'GARLIC? OF COURSE. ALWAYS.',
+    ],
   ),
-  'smb-6': afterFreed(
-    welcome(
-      'ELDER',
-      'The village elder',
-      ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
-      ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
-      ['HE WAS LAST SEEN IN THE', 'CITY STREETS AT NIGHT. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
-      ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
+  'smb-6': ownHero(
+    afterFreed(
+      welcome(
+        'ELDER',
+        'The village elder',
+        ['WELCOME TO OUR NINJA', 'VILLAGE. A DARK SPELL', 'BROUGHT IT HERE, SNOW AND', 'ALL.'],
+        ['OUR YOUNG MASTER RYU HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+        ['HE WAS LAST SEEN IN THE', 'CITY STREETS AT NIGHT. AN', 'AMERICAN AGENT IS ON HIS', 'TRAIL.'],
+        ['A NINJA IS SEEN ONLY IF HE', 'WISHES TO BE. DO NOT LOOK', 'FOR HIM. LOOK FOR WHAT', 'HIDES HIM.'],
+      ),
+      'MASTER RYU HAS RETURNED TO',
+      'HIMSELF. THE VILLAGE OWES',
+      'YOU A DEBT. GO NOW. THE',
+      'PATH AHEAD IS YOURS.',
     ),
-    'MASTER RYU HAS RETURNED TO',
-    'HIMSELF. THE VILLAGE OWES',
-    'YOU A DEBT. GO NOW. THE',
-    'PATH AHEAD IS YOURS.',
+    [
+      'RYU. YOU RETURN, AS YOUR',
+      'FATHER DID. SIT, DRINK',
+      'TEA. ...NO? ALWAYS RUNNING',
+      'UP WALLS, THIS ONE.',
+    ],
   ),
-  'smb-7': afterFreed(
-    welcome(
-      'SERGEANT',
-      'A sergeant',
-      ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
-      ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
-      [
-        'HE WAS LAST SEEN IN THE',
-        'DEEP JUNGLE, BY THE BRIDGES.',
-        'HIS PARTNER LANCE IS',
-        'WAITING THERE. MOVE OUT!',
-      ],
+  'smb-7': ownHero(
+    afterFreed(
+      welcome(
+        'SERGEANT',
+        'A sergeant',
+        ['WELCOME TO THE FRONT,', 'SOLDIER. SOME SPELL DROPPED', 'OUR WHOLE JUNGLE HERE,', 'ALIENS AND ALL.'],
+        ['OUR BEST MAN, BILL, HAS', 'BEEN BRAINWASHED BY', 'SOMEONE. PLEASE HELP!'],
+        [
+          'HE WAS LAST SEEN IN THE',
+          'DEEP JUNGLE, BY THE BRIDGES.',
+          'HIS PARTNER LANCE IS',
+          'WAITING THERE. MOVE OUT!',
+        ],
+      ),
+      "BILL'S BACK IN THE FIGHT!",
+      'GOOD WORK, SOLDIER. THE',
+      'WHOLE UNIT SALUTES YOU.',
+      'NOW MOVE OUT!',
     ),
-    "BILL'S BACK IN THE FIGHT!",
-    'GOOD WORK, SOLDIER. THE',
-    'WHOLE UNIT SALUTES YOU.',
-    'NOW MOVE OUT!',
+    ['BILL! AT EASE, SOLDIER.', "YOU'RE OUT OF UNIFORM.", '...NO SHIRT? AGAIN? FINE.', 'CARRY ON.'],
   ),
-  'smb-8': afterFreed(
-    welcome(
-      'MINER',
-      'A miner',
-      [
-        'WELCOME TO THE UNDERWORLD,',
-        'STRANGER. MUTANTS DOWN',
-        'BELOW, AND NOW A SPIKY KING',
-        'UPSTAIRS. LOVELY.',
-      ],
-      [
-        'OUR HERO IS A TANK CALLED',
-        'SOPHIA. SOMEONE BRAINWASHED',
-        'HER, AND HER PILOT IS LOST.',
-        'PLEASE HELP!',
-      ],
-      [
-        "THE BOY WENT INTO THE KING'S",
-        'OWN CASTLE AFTER HIS FROG.',
-        'THAT FROG TAKES THE PIPES',
-        'NOBODY ELSE DOES.',
-      ],
-      ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
+  'smb-8': ownHero(
+    afterFreed(
+      welcome(
+        'MINER',
+        'A miner',
+        [
+          'WELCOME TO THE UNDERWORLD,',
+          'STRANGER. MUTANTS DOWN',
+          'BELOW, AND NOW A SPIKY KING',
+          'UPSTAIRS. LOVELY.',
+        ],
+        [
+          'OUR HERO IS A TANK CALLED',
+          'SOPHIA. SOMEONE BRAINWASHED',
+          'HER, AND HER PILOT IS LOST.',
+          'PLEASE HELP!',
+        ],
+        [
+          "THE BOY WENT INTO THE KING'S",
+          'OWN CASTLE AFTER HIS FROG.',
+          'THAT FROG TAKES THE PIPES',
+          'NOBODY ELSE DOES.',
+        ],
+        ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
+      ),
+      "SOPHIA'S ROLLING AGAIN, AND",
+      "THE BOY'S BACK WITH HIS",
+      'FROG. THANK YOU, STRANGER!',
+      'MIND THE LAVA ON YOUR WAY.',
     ),
-    "SOPHIA'S ROLLING AGAIN, AND",
-    "THE BOY'S BACK WITH HIS",
-    'FROG. THANK YOU, STRANGER!',
-    'MIND THE LAVA ON YOUR WAY.',
+    [
+      'SOPHIA! YOU ROLLED ALL THE',
+      'WAY HERE? MIND THE LAVA, IT',
+      'EATS TREADS. AND SAY HI TO',
+      'THE BOY AND HIS FROG.',
+    ],
   ),
 };
 
@@ -678,11 +735,49 @@ export interface PartnerScript {
   hero?: string;
   /** What it says once `hero` is freed (NEW in 0.4.23; one to three pages since 0.4.40). */
   after?: readonly Page[];
+  /**
+   * What it says when the hero talking to it IS `hero`, its world's own hero (0.4.47: a Hyrule
+   * villager seeing Link): one or two pages, first of the three sets (partnerSet).
+   */
+  own?: readonly Page[];
+  /**
+   * Talked to again on the same visit while `hero` is still missing: one clearer page instead of
+   * `pages` (0.4.47, the fairy: her riddle first, then the plain way).
+   */
+  again?: readonly Page[];
 }
 
-/** The pages partner `script` says on a file where the heroes `freed` are free (story/partners.ts). */
-export function partnerPages(script: PartnerScript, freed: readonly string[]): readonly Page[] {
-  return script.hero && script.after && freed.includes(script.hero) ? script.after : script.pages;
+/** Which of its line sets a partner says (0.4.47): its own hero's, the plea, or the thanks. */
+export type PartnerSet = 'own' | 'missing' | 'freed';
+
+/**
+ * The set partner `script` says to hero `playing` on a file where the heroes `freed` are free:
+ * its own hero playing comes first (freed or not: an own hero still captive can play only through
+ * the dev "All heroes" flag), then the hero still missing, then the hero freed.
+ */
+export function partnerSet(script: PartnerScript, freed: readonly string[], playing?: string): PartnerSet {
+  if (script.hero && script.own && playing === script.hero) return 'own';
+  return script.hero && script.after && freed.includes(script.hero) ? 'freed' : 'missing';
+}
+
+/**
+ * The pages partner `script` says on a file where the heroes `freed` are free (story/partners.ts),
+ * to hero `playing` (0.4.47: its own hero hears `own`); `again` when talked to before on this
+ * visit (the fairy's clearer fallback).
+ */
+export function partnerPages(
+  script: PartnerScript,
+  freed: readonly string[],
+  opts: { playing?: string; again?: boolean } = {},
+): readonly Page[] {
+  switch (partnerSet(script, freed, opts.playing)) {
+    case 'own':
+      return script.own ?? script.pages;
+    case 'freed':
+      return script.after ?? script.pages;
+    default:
+      return opts.again && script.again ? script.again : script.pages;
+  }
 }
 
 /** Whether partner `script` has left on a file where `freed` are free (a hint NPC with no after line). */
@@ -713,6 +808,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'THAT WAS LUIGI? HE CAME BACK',
         'AND SAID SORRY. NICE GUY,',
         "WHEN HE'S NOT GLOWING.",
+      ],
+    ],
+    own: [
+      [
+        'VILLAGER:',
+        '',
+        "YOU AGAIN! ...OH, YOU'RE",
+        'NOT GLOWING. YOU STILL OWE',
+        'ME A CAP, LUIGI. A GREEN',
+        'ONE. IT SUITS YOU.',
       ],
     ],
   },
@@ -759,24 +864,39 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['OLD MAN:', '', 'ALSO, PAY ME FOR THE DOOR', 'REPAIR CHARGE. ...KIDDING.', 'THERE IS NO DOOR.'],
     ],
     after: [['OLD MAN:', '', 'THE SILENT ONE THANKED ME.', 'WELL, HE NODDED. SAME', 'THING.']],
+    own: [['OLD MAN:', '', 'LINK! I GAVE YOU A SWORD', 'ONCE. YOU STILL HAVE IT.', 'GOOD. NO REFUNDS.']],
   },
   // 2-1-sky, bobbing in the air at the arrival (2.5).
   fairy: {
     verb: 'TALK',
     name: 'A fairy',
     hero: 'link',
+    // 0.4.47 (#28): a riddle first; talked to again on the visit, one plain page (`again`).
     pages: [
-      ['FAIRY:', '', "THE SILENT ONE'S TEMPLE", 'FLOATS HIGHER STILL!'],
+      ['FAIRY:', '', 'THE SILENT ONE? HEE HEE!', 'I KNOW. BUT FAIRIES ONLY', 'SPEAK IN RIDDLES:'],
       [
         'FAIRY:',
         '',
-        'RIDE THE CLOUDS TO WHERE',
-        'THE COINS RUN OUT. THEN',
-        'JUMP, AND BUMP THE EMPTY',
-        'AIR. A VINE WILL GROW.',
+        'FOLLOW GOLD TILL GOLD IS',
+        'GONE. ON THE MIDDLE ISLE,',
+        'KNOCK UPON NOTHING, AND A',
+        'GREEN ROAD WILL ANSWER.',
+      ],
+    ],
+    again: [
+      [
+        'FAIRY:',
+        '',
+        'STILL LOST? FINE! RIDE THE',
+        'CLOUDS PAST THE COINS. ON',
+        'THE MIDDLE CLOUD, JUMP UP',
+        'AND BUMP THE AIR. A VINE!',
       ],
     ],
     after: [['FAIRY:', '', 'YOU FOUND HIM! NOW GO ON,', 'SHOO. FAIRIES NEED NAPS.']],
+    own: [
+      ['FAIRY:', '', 'LINK! YOU NEVER VISIT. ONLY', 'WHEN YOU NEED HEALING. I', 'SEE HOW IT IS. ...HUG?'],
+    ],
   },
   // 3-1, on the ground before the vine block (131) (2.6).
   'dr-light': {
@@ -802,6 +922,15 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
     after: [['DR. LIGHT:', '', 'THANK YOU FOR BRINGING MY', 'BOY BACK. TAKE GOOD CARE', 'OF EACH OTHER!']],
+    own: [
+      [
+        'DR. LIGHT:',
+        '',
+        'ROCK! MY BOY! LET ME LOOK',
+        "AT YOU. NO DENTS. YOU'VE",
+        'BEEN SAVING YOUR E-TANKS.',
+      ],
+    ],
   },
   // 4-2's Brinstar underground, before the vine block (64) (2.7). A caption: no speaker.
   chozo: {
@@ -818,6 +947,14 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
     after: [["THE STATUE'S EYES HAVE", 'GONE DARK. IT LOOKS...', 'PLEASED?']],
+    own: [
+      [
+        'THE STATUE KNOWS YOU. ITS',
+        'EYES GLOW WARM. ITS HANDS',
+        'ARE EMPTY: YOU TOOK THE',
+        'MORPH BALL LONG AGO.',
+      ],
+    ],
   },
   townsperson: {
     verb: 'TALK',
@@ -836,6 +973,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['TOWNSPERSON:', '', 'AND HIT THE CRACKED WALL', 'WITH YOUR HEAD TO MAKE A', 'HOLE. TRUST ME.'],
     ],
     after: [['TOWNSPERSON:', '', 'THE HUNTER IS FREE! WHAT A', 'WONDERFUL NIGHT TO HAVE NO', 'CURSE.']],
+    own: [
+      [
+        'TOWNSPERSON:',
+        '',
+        'SIMON! A HORRIBLE NIGHT,',
+        'BUT YOU ARE HERE. I WILL',
+        'SAY NOTHING USEFUL, AS',
+        'IS OUR TRADITION.',
+      ],
+    ],
   },
   irene: {
     verb: 'TALK',
@@ -860,6 +1007,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
     after: [['IRENE:', '', 'YOU FOUND HIM! HE THANKED', 'ME, THEN VANISHED. NINJAS.']],
+    own: [['IRENE:', '', 'RYU. YOU NEVER USE THE', "DOOR, DO YOU? ...IT'S", 'GOOD TO SEE YOU.']],
   },
   lance: {
     verb: 'TALK',
@@ -877,6 +1025,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
     after: [['LANCE:', '', 'THANKS FOR BRINGING MY', 'PARTNER BACK. I OWE YOU A', 'SPREAD GUN.']],
+    own: [
+      [
+        'LANCE:',
+        '',
+        'BILL! ABOUT TIME, PARTNER.',
+        'RACE YOU TO THE BASE. LAST',
+        'ONE THERE BUYS THE SPREAD',
+        'GUNS.',
+      ],
+    ],
   },
   // Fred the frog by 8-4-end's trap pipe (10): he can't talk, so his second page is a caption.
   // Once Sophia III is freed he is gone (home with Jason).
@@ -908,6 +1066,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
     after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
+    own: [
+      [
+        'JASON:',
+        '',
+        "SOPHIA! YOU'RE DRIVING",
+        'YOURSELF NOW? WITHOUT ME?',
+        "...I'M SO PROUD. AND A",
+        'LITTLE JEALOUS.',
+      ],
+    ],
   },
 
   /* -------------------------------------------- 0.4.40: an NPC in every level (World 1, Luigi) */
@@ -945,6 +1113,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'CAN HELP YOU FIND PEACH.',
       ],
     ],
+    own: [
+      [
+        'CAVE TOAD:',
+        '',
+        "LUIGI! YOU'RE YOU AGAIN!",
+        'SORRY, I THOUGHT YOU WERE',
+        'MARIO. ...KIDDING! NOBODY',
+        'THINKS THAT. WELL, ONE GUY.',
+      ],
+    ],
   },
   // 1-3, on the ground at the start, under the treetops.
   lookout: {
@@ -977,6 +1155,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'CLEAR THREE TREES IN ONE',
         "JUMP. DON'T TELL MARIO I",
         'SAID THAT.',
+      ],
+    ],
+    own: [
+      [
+        'LOOKOUT:',
+        '',
+        'LUIGI! I SAW YOU JUMP FROM',
+        'UP THERE. YOU JUMP HIGHER',
+        'THAN MARIO. EVERYBODY',
+        'KNOWS IT. NOBODY SAYS IT.',
       ],
     ],
   },
@@ -1014,6 +1202,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['RETAINER:', '', "AND IF THE PRINCESS ISN'T", 'IN THIS CASTLE... WELL.', 'THAT HAPPENS A LOT.'],
     ],
+    own: [
+      ['RETAINER:', '', 'LUIGI! THE PRINCESS IS IN', 'ANOTHER CASTLE. ...SORRY,', "IT'S A HABIT. GOOD LUCK!"],
+    ],
   },
 
   /* ---------------------------------------------------- World 2 (Hyrule, Link): Zelda II folk */
@@ -1039,6 +1230,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['ERROR:', '', 'I AM STILL ERROR.'],
       ['ERROR:', '', 'THE SILENT ONE IS FREE?', 'THEN NOTHING HERE IS AN', 'ERROR. EXCEPT ME.'],
     ],
+    own: [['ERROR:', '', 'I AM ERROR. YOU ARE LINK.', 'AT LAST, SOMEONE WHO GETS', 'MY NAME RIGHT!']],
   },
   // 2-3's start, before the stone bridges: the man who keeps them.
   'river-man': {
@@ -1060,6 +1252,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     after: [
       ['RIVER MAN:', '', 'HALT! NOBODY CROSSES', 'WITHOUT A NOTE FROM BAGU.'],
       ['RIVER MAN:', '', 'THE SILENT ONE WROTE YOU', "ONE? IT SAYS '...'.", 'GOOD ENOUGH. GO ON.'],
+    ],
+    own: [
+      [
+        'RIVER MAN:',
+        '',
+        'HALT! ...OH. LINK. YOU',
+        'NEVER CARRY A NOTE, DO',
+        'YOU? CROSS. CROSS. JUST',
+        "DON'T TELL BAGU.",
+      ],
     ],
   },
   // 2-4, at the foot of the palace's entrance steps, before its knight statues.
@@ -1096,6 +1298,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['WISE MAN:', '', '...NOTHING? HM. IT WORKS', "BETTER BACK HOME. YOU'RE", 'DOING FINE WITHOUT IT.'],
     ],
+    own: [
+      [
+        'WISE MAN:',
+        '',
+        'LINK. I TAUGHT YOU THE',
+        'SPELL OF LIFE ONCE. YOU',
+        'USED IT ON A BAT. TWICE.',
+        '...WE ALL LEARN.',
+      ],
+    ],
   },
 
   /* ------------------------------------- World 3 (Mega City, Mega Man): Dr. Light's robots */
@@ -1126,6 +1338,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'EVERY WEEK.',
       ],
     ],
+    own: [
+      [
+        'PRUNE BOT:',
+        '',
+        'BZZT! MEGA MAN! DO NOT',
+        'SHOOT ME. I AM ONLY A',
+        'PRUNE BOT. BZZT. WE ARE',
+        'FRIENDS NOW. BZZT?',
+      ],
+    ],
   },
   // 3-3's start, on the steel deck under the cloud platforms.
   'weather-bot': {
@@ -1146,6 +1368,15 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     after: [
       ['WEATHER BOT:', '', 'FORECAST: WINDY. CAUSE: AIR', 'MAN. MANY HEROES CANNOT', 'BEAT AIR MAN.'],
       ['WEATHER BOT:', '', 'MEGA MAN CAN. I CHECKED.', 'HAVE A NICE DAY.'],
+    ],
+    own: [
+      [
+        'WEATHER BOT:',
+        '',
+        'FORECAST: CLEAR SKIES,',
+        'NOW THAT MEGA MAN IS HERE.',
+        'CHANCE OF AIR MAN: 100%.',
+      ],
     ],
   },
   // 3-4, at the foot of the fortress's entrance steps: a guard robot on his break, shield up.
@@ -1178,6 +1409,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'THE BIG BOSS ALWAYS BEGGED',
         'FOR MERCY AT THE END. ON HIS',
         'KNEES. EVERY. TIME.',
+      ],
+    ],
+    own: [
+      [
+        'SNIPER JOE:',
+        '',
+        "HALT! ...IT'S THE BLUE ONE.",
+        "I'M ON MY BREAK. THE",
+        'SHIELD STAYS UP. NOTHING',
+        'PERSONAL.',
       ],
     ],
   },
@@ -1218,6 +1459,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['TROOPER:', '', "THE OTHER HALF THINK SHE'S", "A ROBOT. I DON'T ASK."],
     ],
+    own: [['TROOPER:', '', 'SAMUS! SALUTE! ...SORRY,', 'I SALUTE THE SUIT. THE', 'SUIT IS VERY SCARY.']],
   },
   // 4-3's start, in Norfair's heat.
   researcher: {
@@ -1245,6 +1487,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'SUIT. I HAVE A LAB COAT.',
       ],
     ],
+    own: [
+      [
+        'RESEARCHER:',
+        '',
+        'SAMUS! CAN I SEE THE',
+        'VARIA SUIT? FOR SCIENCE?',
+        '...NO TOUCHING. RIGHT. OF',
+        'COURSE.',
+      ],
+    ],
   },
   // 4-4, Tourian: a hatchling floating at the foot of the entrance steps. It can't talk, so its
   // second card is a caption (like Fred's).
@@ -1264,6 +1516,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     after: [
       ['BABY METROID:', '', 'CHIRP!'],
       ['IT THINKS THE HUNTER IS', 'ITS MOTHER. NOBODY HAS THE', 'HEART TO TELL IT.'],
+    ],
+    own: [
+      ['BABY METROID:', '', 'CHIRP! CHIRP! CHIRP!'],
+      ['IT CLINGS TO YOUR HELMET', 'AND WILL NOT LET GO. IT IS', 'VERY HAPPY. YOU ARE VERY', 'STICKY NOW.'],
     ],
   },
 
@@ -1297,6 +1553,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['OLD WOMAN:', '', 'GET A SILK BAG FROM THE', 'GRAVEYARD DUCK TO LIVE', 'LONGER.'],
       ['OLD WOMAN:', '', "...WHAT? IT'S GOOD ADVICE."],
     ],
+    own: [
+      [
+        'OLD WOMAN:',
+        '',
+        'SIMON, DEARIE! WIPE YOUR',
+        'BOOTS. AND TAKE A ROAST.',
+        'YOU FIND THEM IN WALLS,',
+        'YOU KNOW. NOBODY ASKS WHY.',
+      ],
+    ],
   },
   // 5-2's start, on the town street.
   'garlic-seller': {
@@ -1323,6 +1589,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'GARLIC. THEN HE DROPS IT',
         'IN A GRAVEYARD. EVERY TIME.',
       ],
+    ],
+    own: [
+      ['GARLIC SELLER:', '', 'SIMON! THE USUAL? ONE', 'CLOVE, FOR DROPPING IN A', 'GRAVEYARD? ON THE HOUSE.'],
     ],
   },
   // 5-3's way out, below the steps to the flag, past the flying Bullet Bills.
@@ -1359,6 +1628,15 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'HOPE.',
       ],
     ],
+    own: [
+      [
+        'CLOCKMAKER:',
+        '',
+        'SIMON! DAY AND NIGHT PASS',
+        'SO FAST WHEN YOU ARE HERE.',
+        'MY CLOCKS CANNOT KEEP UP.',
+      ],
+    ],
   },
 
   /* ------------------------ World 6 (Dragon Valley, Ryu): the ninja clan and a mountain hermit */
@@ -1390,6 +1668,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['NINJA:', '', 'TWO LEAPS. ONE STRIKE. THE', 'GRASS STILL TALKS ABOUT IT.'],
     ],
+    own: [['NINJA:', '', 'MASTER RYU! ...YOU SAW', 'ME FIRST. I WILL TRAIN', 'HARDER. MUCH HARDER.']],
   },
   // 6-3's start, at the foot of the snowy pass.
   hermit: {
@@ -1410,6 +1689,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     after: [
       ['HERMIT:', '', 'RYU IS FREE. GOOD. NOW, ON', 'THESE CLIFFS, A WARNING:'],
       ['HERMIT:', '', 'BEWARE THE BIRDS. EVERY', 'NINJA FEARS THE BIRDS.', 'THEY KNOW WHAT THEY DID.'],
+    ],
+    own: [
+      [
+        'HERMIT:',
+        '',
+        'RYU. YOU CLIMB THESE',
+        'CLIFFS LIKE YOUR FATHER.',
+        'HE ALSO FELL OFF THEM.',
+        'BIRDS. ALWAYS THE BIRDS.',
+      ],
     ],
   },
   // 6-4, at the foot of the demon temple's entrance steps.
@@ -1438,6 +1727,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'START AGAIN FROM FAR BELOW.',
       ],
       ['CLAN SCOUT:', '', "HERE? I DON'T KNOW. DON'T", 'FALL.'],
+    ],
+    own: [
+      [
+        'CLAN SCOUT:',
+        '',
+        'MASTER RYU! THE CLAN',
+        'SALUTES YOU. I ALSO',
+        'SALUTE. WITH BOTH HANDS.',
+        'I AM VERY EXCITED.',
+      ],
     ],
   },
 
@@ -1470,6 +1769,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
       ['CORPORAL:', '', 'SOMETHING ABOUT THIRTY', 'LIVES. I COULD USE THIRTY', 'LIVES.'],
     ],
+    own: [
+      ['CORPORAL:', '', 'BILL! SIR! TEACH ME THE', 'CODE AGAIN? UP, UP, DOWN,', 'DOWN... AND THEN WHAT?'],
+    ],
   },
   // 7-2's way out (7-2-exit), on the bank below the steps to the flag.
   'river-scout': {
@@ -1496,6 +1798,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'BILL AND LANCE ARE ROBOTS.',
       ],
       ['RIVER SCOUT:', '', "I'VE MET BILL. HE'S NOT A", 'ROBOT. ...PRETTY SURE.'],
+    ],
+    own: [
+      [
+        'RIVER SCOUT:',
+        '',
+        'BILL! YOU SWAM THAT RIVER',
+        'WITH ONLY YOUR HEAD UP,',
+        'LIKE ALWAYS. HOW DO YOU',
+        'SHOOT LIKE THAT?',
+      ],
     ],
   },
   // 7-4, at the foot of the alien lair's entrance steps.
@@ -1524,6 +1836,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'NEVER STAYS DOWN.',
       ],
     ],
+    own: [
+      [
+        'MEDIC:',
+        '',
+        'BILL! LET ME CHECK YOU.',
+        'ONE HIT, AND... NOPE. NO',
+        'MEDICINE FOR THAT. JUST',
+        'DUCK, OKAY?',
+      ],
+    ],
   },
 
   /* ------------------- World 8 (Bowser's Underworld, Sophia III): mutants and miners below */
@@ -1548,6 +1870,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ['MUTANT:', '', 'GRBL! THE TANK IS ROLLING', 'AGAIN! SHE BLASTED ME ONCE,', 'BACK WHEN I WAS A BOSS.'],
       ['MUTANT:', '', 'NO HARD FEELINGS. I WAS A', 'VERY BAD BOSS.'],
     ],
+    own: [['MUTANT:', '', 'GRBL! THE TANK! ...ARE YOU', "STILL MAD? I'M SORRY I WAS", 'A BOSS. GRBL.']],
   },
   // 8-2's start, before the techno castle's machines.
   engineer: {
@@ -1574,6 +1897,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'TANK, A SHORT FALL HURTS',
         'HIM BAD. SO HE STAYS IN',
         'THE TANK.',
+      ],
+    ],
+    own: [
+      [
+        'ENGINEER:',
+        '',
+        'SOPHIA! MAY I LOOK UNDER',
+        'YOUR HOOD? FOR SCIENCE.',
+        '...THE CANNON SAYS NO.',
+        'UNDERSTOOD.',
       ],
     ],
   },
@@ -1604,6 +1937,16 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'HIM AND FOUND A TANK.',
       ],
     ],
+    own: [
+      [
+        'ICE MINER:',
+        '',
+        'A TANK THAT CLIMBS WALLS,',
+        'ON MY ICE! SOPHIA, YOU',
+        'COULD DIG MORE GOLD THAN',
+        "ME. ...NOT THAT I'D ASK.",
+      ],
+    ],
   },
   // 8-4, on the floor past the first lava, before the piranha pipe (19): the king's worst guard.
   'castle-mutant': {
@@ -1630,6 +1973,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     after: [
       ['GUARD MUTANT:', '', "GRBL. TANK'S FREE, BOY'S", "HAPPY, FROG'S HOME. I'M", 'STILL HERE.'],
       ['GUARD MUTANT:', '', 'GO GET THE KING. I WILL', 'GUARD THE HALL. BADLY.'],
+    ],
+    own: [
+      ['GUARD MUTANT:', '', 'GRBL. HALT, TANK! ...I', 'MEAN, GO AHEAD. I GUARD', 'BADLY. THE KING KNOWS.'],
     ],
   },
 };

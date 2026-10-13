@@ -28,14 +28,20 @@ export function partnerNearSaid(
  * talked to again any time. Once its hero is freed on the file it says its after page instead
  * (0.4.23, script.ts partnerPages). The old man's coin (PartnerScript.coinAfter) pops out over him
  * once that page is read on with OK, at most once a visit to the level (Partner.giveCoin), and
- * only while his hero is still to be found.
+ * only while his hero is still to be found. 0.4.47: player `player`'s hero, when it is the
+ * partner's own hero, hears its own pages first; talked to again on the visit, the fairy gives her
+ * clearer page (PartnerScript.again).
  */
-export function talkToPartner(game: Game, level: LevelScene, who: string): void {
+export function talkToPartner(game: Game, level: LevelScene, who: string, player = 0): void {
   const script = PARTNERS[who];
   if (!script) return;
   const world = level.world;
   const partner = world.entities.find((e): e is Partner => e instanceof Partner && e.alive && e.who === who);
-  const pages = partnerPages(script, game.freed);
+  const playing = world.players[player]?.def.id;
+  const pages = partnerPages(script, game.freed, {
+    ...(playing ? { playing } : {}),
+    again: (partner?.talks ?? 0) > 1,
+  });
   playStoryCards(game, world, pages, () => level.resumePlay(), {
     onNext: (i) => {
       if (pages === script.pages && i === script.coinAfter) partner?.giveCoin(world);

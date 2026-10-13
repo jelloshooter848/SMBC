@@ -1558,6 +1558,7 @@ export class World {
       if (partner) {
         partner.prompt = false; // hidden under its pages; back on the next update in reach
         partner.talked = true;
+        partner.talks++;
         this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }

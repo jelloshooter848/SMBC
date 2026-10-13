@@ -382,8 +382,9 @@ level. The hints are now in the levels (below) and the news of the world comes f
 
 **Hint NPCs** (partners). Each hero's level has at least one NPC who says where the hero is and what to try, one
 step clearer than a riddle (the old rule: Toad hinted, a partner says what to try; now there is only the partner).
-They stand **before the way in**, campaign only, and never leave. Talked to again, they say the same pages. Once
-their hero is freed, each says one new page instead (NEW: a small "after" line, written with each NPC).
+They stand **before the way in**, campaign only, and never leave. Talked to again, they say the same pages (the
+fairy excepted since 0.4.47: her riddle first, then one clearer page). Once their hero is freed, each says one new
+page instead (NEW: a small "after" line, written with each NPC).
 
 **An NPC in every level** (0.4.40, owner: "put an NPC in every level"). Every main level 1-1 to 8-4 now has someone
 to talk to, from the world's own game: Toads, Zelda II folk, Dr. Light's robots, the Federation, Transylvania's
@@ -391,6 +392,16 @@ villagers, the ninja clan, soldiers of the front and the Underworld's miners and
 hero in two states, one to three cards each: while the hero is missing they plead and say where to look (by place,
 never by level number); once the hero is freed they thank you, or tell an easter egg about the hero's own game, in
 words only. Their lines are under each world's **Level NPCs**.
+
+**A world's own hero** (NEW, 0.4.47, owner). Every NPC who speaks for a hero (the hint NPCs and the level NPCs; not
+the pipe keeper, who speaks for no one, nor Fred, who is home before Sophia III can play) and every world's welcome
+local has a third set: one or two short cards for when the hero talking to them IS the world's own hero (a Hyrule
+villager seeing Link, a Mega City robot seeing Mega Man). Warm or funny, with easter eggs about the hero's own game
+in words only. Which set plays: **own hero playing > hero still missing > hero freed.** In a level it is the hero of
+the player who pressed TALK; on the map, either player's hero. An own hero who is not yet freed cannot happen in the
+campaign (a captive hero can't be picked: `Game.heroLocked`); only the dev "All heroes" flag allows it, and then the
+own set plays too, as the order says. The welcome's first arrival is a story beat, not a talk: it always plays the
+welcome. They are written under each NPC as "As <HERO>".
 
 **Freeing a hero** (2.13 has the shared parts): the hero's first card and challenge, the round, then (NEW) **the
 freed hero talks**, a few pages in their own voice, before the freed card. These talks carry the story now; each
@@ -570,6 +581,17 @@ AND SAID SORRY. NICE GUY,
 WHEN HE'S NOT GLOWING.
 ```
 
+As Luigi (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+VILLAGER:
+
+YOU AGAIN! ...OH, YOU'RE
+NOT GLOWING. YOU STILL OWE
+ME A CAP, LUIGI. A GREEN
+ONE. IT SUITS YOU.
+```
+
 **Luigi, captive:** KEEP (the shared first card, 2.13, then `I KNOW NO <HERO>... RACE ME TO THE FLAG`).
 
 **Luigi, freed.** NEW. The first freed hero, so the first to explain what is going on. **Trigger:** the race won,
@@ -690,6 +712,17 @@ LUIGI FOUND HIM. NOW HE
 CAN HELP YOU FIND PEACH.
 ```
 
+As Luigi (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+CAVE TOAD:
+
+LUIGI! YOU'RE YOU AGAIN!
+SORRY, I THOUGHT YOU WERE
+MARIO. ...KIDDING! NOBODY
+THINKS THAT. WELL, ONE GUY.
+```
+
 **1-3: a lookout.** NEW partner (`lookout`). A Toad in a pink-spotted cap and a green vest, on the ground
 at **1-3's start** (column 8), under the treetops he watches the road from.
 
@@ -720,6 +753,17 @@ LUIGI'S FREE! I WATCHED HIM
 CLEAR THREE TREES IN ONE
 JUMP. DON'T TELL MARIO I
 SAID THAT.
+```
+
+As Luigi (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+LOOKOUT:
+
+LUIGI! I SAW YOU JUMP FROM
+UP THERE. YOU JUMP HIGHER
+THAN MARIO. EVERYBODY
+KNOWS IT. NOBODY SAYS IT.
 ```
 
 **1-4: a retainer.** NEW partner (`retainer`). One of the princess's retainers (an orange-spotted cap, a
@@ -762,6 +806,16 @@ RETAINER:
 AND IF THE PRINCESS ISN'T
 IN THIS CASTLE... WELL.
 THAT HAPPENS A LOT.
+```
+
+As Luigi (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+RETAINER:
+
+LUIGI! THE PRINCESS IS IN
+ANOTHER CASTLE. ...SORRY,
+IT'S A HABIT. GOOD LUCK!
 ```
 
 **Castle 1-4** (a Goomba). The hero's remark (2.3a, reaching the axe):
@@ -895,6 +949,17 @@ EAST, AND STAY HEALTHY...
 I'M STILL OUT OF PATIENTS.
 ```
 
+As Link (NEW, 0.4.47: talking to the healer as the world's own hero, first of the three sets):
+
+```text
+HEALER:
+
+LINK! YOU LOOK TERRIBLE.
+SIT. LET ME... OH, YOU
+HAVE A FAIRY IN A BOTTLE.
+THAT'S CHEATING, DEAR.
+```
+
 **Hint NPC: the old man, moved to the vine.** MOVES (owner): from 2-1's start (column 8) to **beside the vine block
 (column 83)**: he stands on the ground a column or two before it, in front of his cave doorway (the
 `partners:cave` decor moves with him; where the ground there allows). His third page (the sky's second vine) moves
@@ -935,8 +1000,53 @@ WELL, HE NODDED. SAME
 THING.
 ```
 
+As Link (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+OLD MAN:
+
+LINK! I GAVE YOU A SWORD
+ONCE. YOU STILL HAVE IT.
+GOOD. NO REFUNDS.
+```
+
 **Hint NPC: a fairy in the clouds.** NEW partner (`fairy`, owner). A small Zelda-style fairy bobbing in the air by
 **2-1-sky's arrival** (column 7, beside the vine the player climbs in on at column 4), so nobody rides past her.
+
+REWRITTEN (0.4.47, owner: "too on the nose"): she speaks in a riddle. The gold is the coin trail along the cloud
+floor; the middle isle is the middle of the three small clouds past it; the nothing is the hidden vine block over it;
+the green road is the vine. The crystal ball (2.7) still pinpoints the spot.
+
+```text
+FAIRY:
+
+THE SILENT ONE? HEE HEE!
+I KNOW. BUT FAIRIES ONLY
+SPEAK IN RIDDLES:
+```
+
+```text
+FAIRY:
+
+FOLLOW GOLD TILL GOLD IS
+GONE. ON THE MIDDLE ISLE,
+KNOCK UPON NOTHING, AND A
+GREEN ROAD WILL ANSWER.
+```
+
+Talked to again on the same visit, while Link is still missing (NEW, 0.4.47: one clearer fallback, said on every
+talk after the first):
+
+```text
+FAIRY:
+
+STILL LOST? FINE! RIDE THE
+CLOUDS PAST THE COINS. ON
+THE MIDDLE CLOUD, JUMP UP
+AND BUMP THE AIR. A VINE!
+```
+
+Old:
 
 ```text
 FAIRY:
@@ -944,6 +1054,8 @@ FAIRY:
 THE SILENT ONE'S TEMPLE
 FLOATS HIGHER STILL!
 ```
+
+Old:
 
 ```text
 FAIRY:
@@ -961,6 +1073,16 @@ FAIRY:
 
 YOU FOUND HIM! NOW GO ON,
 SHOO. FAIRIES NEED NAPS.
+```
+
+As Link (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+FAIRY:
+
+LINK! YOU NEVER VISIT. ONLY
+WHEN YOU NEED HEALING. I
+SEE HOW IT IS. ...HUG?
 ```
 
 **Link, captive:** KEEP (`THE SHADOW... HOLDS ME...`, the Shadow Keep).
@@ -1056,6 +1178,16 @@ THEN NOTHING HERE IS AN
 ERROR. EXCEPT ME.
 ```
 
+As Link (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+ERROR:
+
+I AM ERROR. YOU ARE LINK.
+AT LAST, SOMEONE WHO GETS
+MY NAME RIGHT!
+```
+
 **2-3: the river man.** NEW partner (`river-man`). An old man in a green robe at **2-3's start** (column 5),
 before the stone bridges he keeps. In Hyrule nobody crosses his bridge without a note from Bagu.
 
@@ -1101,6 +1233,17 @@ ONE? IT SAYS '...'.
 GOOD ENOUGH. GO ON.
 ```
 
+As Link (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+RIVER MAN:
+
+HALT! ...OH. LINK. YOU
+NEVER CARRY A NOTE, DO
+YOU? CROSS. CROSS. JUST
+DON'T TELL BAGU.
+```
+
 **2-4: a wise man.** NEW partner (`wise-man`). An old man in a blue robe at the foot of **2-4's entrance steps**
 (column 7), before the knight statues. Freed, Link earns you a town's spell, and it does not work here.
 
@@ -1139,6 +1282,17 @@ WISE MAN:
 ...NOTHING? HM. IT WORKS
 BETTER BACK HOME. YOU'RE
 DOING FINE WITHOUT IT.
+```
+
+As Link (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+WISE MAN:
+
+LINK. I TAUGHT YOU THE
+SPELL OF LIFE ONCE. YOU
+USED IT ON A BAT. TWICE.
+...WE ALL LEARN.
 ```
 
 **Castle 2-4** (a Koopa Troopa). The hero's remark:
@@ -1604,6 +1758,17 @@ THANK YOU. THE ROAD AHEAD
 IS CLEAR. BEEP BOOP!
 ```
 
+As Mega Man (NEW, 0.4.47: talking to the lab robot as the world's own hero, first of the three sets):
+
+```text
+LAB ROBOT:
+
+BEEP! MEGA MAN! SCANNING...
+ARM CANNON: ONLINE. HELMET:
+SHINY. DR. LIGHT SAYS EAT
+YOUR E-TANKS. BEEP BOOP!
+```
+
 **Hint NPC: Dr. Light, moved to the vine.** MOVES (suggested): from 3-1's pipe room (`3-1-bonus`, which many players
 never enter) to **3-1's ground beside the vine block (column 131)**, at about column 128, so the hint cannot be
 missed. His first page now points at the vine; the second is as before. (If the owner prefers the pipe room, page
@@ -1635,6 +1800,16 @@ DR. LIGHT:
 THANK YOU FOR BRINGING MY
 BOY BACK. TAKE GOOD CARE
 OF EACH OTHER!
+```
+
+As Mega Man (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+DR. LIGHT:
+
+ROCK! MY BOY! LET ME LOOK
+AT YOU. NO DENTS. YOU'VE
+BEEN SAVING YOUR E-TANKS.
 ```
 
 **Mega Man, captive:** KEEP (`ERROR... ROGUE PROGRAM`, the dark copy).
@@ -1708,6 +1883,17 @@ JUST LEAVES. I RAKE THEM UP
 EVERY WEEK.
 ```
 
+As Mega Man (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+PRUNE BOT:
+
+BZZT! MEGA MAN! DO NOT
+SHOOT ME. I AM ONLY A
+PRUNE BOT. BZZT. WE ARE
+FRIENDS NOW. BZZT?
+```
+
 **3-3: a weather bot.** NEW partner (`weather-bot`). The lab robot in yellow, at **3-3's start** (column 8), on
 the steel deck under the cloud platforms. Its found lines are for every player who never beat Air Man.
 
@@ -1742,6 +1928,16 @@ WEATHER BOT:
 
 MEGA MAN CAN. I CHECKED.
 HAVE A NICE DAY.
+```
+
+As Mega Man (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+WEATHER BOT:
+
+FORECAST: CLEAR SKIES,
+NOW THAT MEGA MAN IS HERE.
+CHANCE OF AIR MAN: 100%.
 ```
 
 **3-4: Sniper Joe.** NEW partner (`sniper-joe`). The shielded guard of Mega Man's airship (`station` sheet,
@@ -1788,6 +1984,17 @@ SNIPER JOE:
 THE BIG BOSS ALWAYS BEGGED
 FOR MERCY AT THE END. ON HIS
 KNEES. EVERY. TIME.
+```
+
+As Mega Man (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+SNIPER JOE:
+
+HALT! ...IT'S THE BLUE ONE.
+I'M ON MY BREAK. THE
+SHIELD STAYS UP. NOTHING
+PERSONAL.
 ```
 
 **Castle 3-4** (a Buzzy Beetle). The hero's remark:
@@ -1912,6 +2119,17 @@ THANKS TO YOU. ONWARD! THE
 NEXT WORLD NEEDS YOU MORE.
 ```
 
+As Samus (NEW, 0.4.47: talking to the scientist as the world's own hero, first of the three sets):
+
+```text
+SCIENTIST:
+
+SAMUS! WE LOGGED A NEW
+RECORD FOR YOU: THREE
+HOURS. THE TEAM BETS YOU
+CAN DO IT IN ONE.
+```
+
 **Hint NPC: the Chozo statue, moved into 4-2.** MOVES: from 4-1's pipe room (`4-1-bonus`) into **4-2 itself**, on
 the floor of its Brinstar-look underground at about **column 61**, just before the vine block (64,5) that leads up
 to the vine area and its one working pipe. Its card has no speaker (prompt `READ`).
@@ -1935,6 +2153,15 @@ After Samus is freed:
 THE STATUE'S EYES HAVE
 GONE DARK. IT LOOKS...
 PLEASED?
+```
+
+As Samus (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+THE STATUE KNOWS YOU. ITS
+EYES GLOW WARM. ITS HANDS
+ARE EMPTY: YOU TOOK THE
+MORPH BALL LONG AGO.
 ```
 
 **Samus, captive:** KEEP (the parasite, the countdown).
@@ -2175,6 +2402,16 @@ THE OTHER HALF THINK SHE'S
 A ROBOT. I DON'T ASK.
 ```
 
+As Samus (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+TROOPER:
+
+SAMUS! SALUTE! ...SORRY,
+I SALUTE THE SUIT. THE
+SUIT IS VERY SCARY.
+```
+
 **4-3: a researcher.** NEW partner (`researcher`). The base's scientist in a yellow heat suit, at **4-3's start**
 (column 8), sweating in Norfair.
 
@@ -2206,6 +2443,17 @@ OF YEAR. SHE HAS A HEAT
 SUIT. I HAVE A LAB COAT.
 ```
 
+As Samus (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+RESEARCHER:
+
+SAMUS! CAN I SEE THE
+VARIA SUIT? FOR SCIENCE?
+...NO TOUCHING. RIGHT. OF
+COURSE.
+```
+
 **4-4: a baby Metroid.** NEW partner (`baby-metroid`, new art: a lime dome over three red nuclei). It floats and
 bobs in **4-4's** low corridor past the first lava pits (column 21); its talking reach is the floor under it. It
 can't talk, so its second card is a caption, like Fred's.
@@ -2235,6 +2483,21 @@ CHIRP!
 IT THINKS THE HUNTER IS
 ITS MOTHER. NOBODY HAS THE
 HEART TO TELL IT.
+```
+
+As Samus (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+BABY METROID:
+
+CHIRP! CHIRP! CHIRP!
+```
+
+```text
+IT CLINGS TO YOUR HELMET
+AND WILL NOT LET GO. IT IS
+VERY HAPPY. YOU ARE VERY
+STICKY NOW.
 ```
 
 **Castle 4-4** (a Spiny). The hero's remark:
@@ -2356,6 +2619,17 @@ ON YOUR WAY... AND STILL
 NO WHITE CRYSTAL? SHAME.
 ```
 
+As Simon (NEW, 0.4.47: talking to the merchant as the world's own hero, first of the three sets):
+
+```text
+MERCHANT:
+
+SIMON! WELCOME HOME. A
+LAUREL FOR THE ROAD? A
+WHITE CRYSTAL? ...JUST
+GARLIC? OF COURSE. ALWAYS.
+```
+
 **Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Simon: missing, they plead and say where
 to look (by place, never by level number); freed, their found lines, which quote the night town's famous advice.
 
@@ -2410,6 +2684,17 @@ OLD WOMAN:
 ...WHAT? IT'S GOOD ADVICE.
 ```
 
+As Simon (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+OLD WOMAN:
+
+SIMON, DEARIE! WIPE YOUR
+BOOTS. AND TAKE A ROAST.
+YOU FIND THEM IN WALLS,
+YOU KNOW. NOBODY ASKS WHY.
+```
+
 **5-2: a garlic seller.** NEW partner (`garlic-seller`). World 5's merchant in a green hood, his sack white with
 garlic, at **5-2's start** (column 7), on the town street.
 
@@ -2438,6 +2723,16 @@ SIMON CAME BY AND BOUGHT
 GARLIC. HE ALWAYS BUYS
 GARLIC. THEN HE DROPS IT
 IN A GRAVEYARD. EVERY TIME.
+```
+
+As Simon (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+GARLIC SELLER:
+
+SIMON! THE USUAL? ONE
+CLOVE, FOR DROPPING IN A
+GRAVEYARD? ON THE HOUSE.
 ```
 
 **5-3: the clockmaker.** NEW partner (`clockmaker`). The night town's townsperson in a grey hood and a blue smock,
@@ -2481,6 +2776,16 @@ SIMON'S FREE, SO I HAVE
 HOPE.
 ```
 
+As Simon (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+CLOCKMAKER:
+
+SIMON! DAY AND NIGHT PASS
+SO FAST WHEN YOU ARE HERE.
+MY CLOCKS CANNOT KEEP UP.
+```
+
 **Hint NPC: the townsperson.** KEEP, on the safe floor at the start of 5-4, before the lift at column 84.
 
 ```text
@@ -2516,6 +2821,17 @@ TOWNSPERSON:
 THE HUNTER IS FREE! WHAT A
 WONDERFUL NIGHT TO HAVE NO
 CURSE.
+```
+
+As Simon (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+TOWNSPERSON:
+
+SIMON! A HORRIBLE NIGHT,
+BUT YOU ARE HERE. I WILL
+SAY NOTHING USEFUL, AS
+IS OUR TRADITION.
 ```
 
 **Simon, captive:** KEEP, with the stolen wand in his curse (already built):
@@ -2686,6 +3002,17 @@ YOU A DEBT. GO NOW. THE
 PATH AHEAD IS YOURS.
 ```
 
+As Ryu (NEW, 0.4.47: talking to the elder as the world's own hero, first of the three sets):
+
+```text
+ELDER:
+
+RYU. YOU RETURN, AS YOUR
+FATHER DID. SIT, DRINK
+TEA. ...NO? ALWAYS RUNNING
+UP WALLS, THIS ONE.
+```
+
 **Hint NPC: Irene Lew.** KEEP, on the ground at the start of 6-2, before the first pipe (column 19), the pipe down
 to the room with the trick wall.
 
@@ -2714,6 +3041,16 @@ IRENE:
 
 YOU FOUND HIM! HE THANKED
 ME, THEN VANISHED. NINJAS.
+```
+
+As Ryu (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+IRENE:
+
+RYU. YOU NEVER USE THE
+DOOR, DO YOU? ...IT'S
+GOOD TO SEE YOU.
 ```
 
 **Ryu, captive:** KEEP (the Masked Ninja's curse; the Masked Ninja stays an original villain).
@@ -2794,6 +3131,16 @@ TWO LEAPS. ONE STRIKE. THE
 GRASS STILL TALKS ABOUT IT.
 ```
 
+As Ryu (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+NINJA:
+
+MASTER RYU! ...YOU SAW
+ME FIRST. I WILL TRAIN
+HARDER. MUCH HARDER.
+```
+
 **6-3: a hermit.** NEW partner (`hermit`). World 6's elder in a red-brown robe, at **6-3's start** (column 8), at
 the foot of the snowy pass. Freed, he warns of what every ninja on a cliff fears.
 
@@ -2829,6 +3176,17 @@ HERMIT:
 BEWARE THE BIRDS. EVERY
 NINJA FEARS THE BIRDS.
 THEY KNOW WHAT THEY DID.
+```
+
+As Ryu (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+HERMIT:
+
+RYU. YOU CLIMB THESE
+CLIFFS LIKE YOUR FATHER.
+HE ALSO FELL OFF THEM.
+BIRDS. ALWAYS THE BIRDS.
 ```
 
 **6-4: a clan scout.** NEW partner (`clan-scout`). The ninja in forest green with a yellow sash, at the foot of
@@ -2867,6 +3225,17 @@ CLAN SCOUT:
 
 HERE? I DON'T KNOW. DON'T
 FALL.
+```
+
+As Ryu (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+CLAN SCOUT:
+
+MASTER RYU! THE CLAN
+SALUTES YOU. I ALSO
+SALUTE. WITH BOTH HANDS.
+I AM VERY EXCITED.
 ```
 
 **Castle 6-4** (a Blooper). The hero's remark:
@@ -2979,6 +3348,17 @@ WHOLE UNIT SALUTES YOU.
 NOW MOVE OUT!
 ```
 
+As Bill (NEW, 0.4.47: talking to the sergeant as the world's own hero, first of the three sets):
+
+```text
+SERGEANT:
+
+BILL! AT EASE, SOLDIER.
+YOU'RE OUT OF UNIFORM.
+...NO SHIRT? AGAIN? FINE.
+CARRY ON.
+```
+
 **Hint NPC: Lance.** KEEP, in the jungle at the start of 7-3, well before the marked bridge at column 128.
 
 ```text
@@ -3006,6 +3386,17 @@ LANCE:
 THANKS FOR BRINGING MY
 PARTNER BACK. I OWE YOU A
 SPREAD GUN.
+```
+
+As Bill (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+LANCE:
+
+BILL! ABOUT TIME, PARTNER.
+RACE YOU TO THE BASE. LAST
+ONE THERE BUYS THE SPREAD
+GUNS.
 ```
 
 **Bill, captive:** KEEP (Red Falcon, `KING KOOPA'S SPELL LET THE ALIEN TAKE MY MIND`, and the Jungle Assault
@@ -3080,6 +3471,16 @@ LIVES. I COULD USE THIRTY
 LIVES.
 ```
 
+As Bill (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+CORPORAL:
+
+BILL! SIR! TEACH ME THE
+CODE AGAIN? UP, UP, DOWN,
+DOWN... AND THEN WHAT?
+```
+
 **7-2: a river scout.** NEW partner (`river-scout`). The sergeant in tan fatigues, on the bank below the steps to
 **7-2's flag** (7-2-exit, column 15), out of the river. Freed, the rumour from the lands where Bill's game was
 sold with robots in it.
@@ -3118,6 +3519,17 @@ I'VE MET BILL. HE'S NOT A
 ROBOT. ...PRETTY SURE.
 ```
 
+As Bill (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+RIVER SCOUT:
+
+BILL! YOU SWAM THAT RIVER
+WITH ONLY YOUR HEAD UP,
+LIKE ALWAYS. HOW DO YOU
+SHOOT LIKE THAT?
+```
+
 **7-4: a medic.** NEW partner (`medic`). The sergeant in white with a red medical pack, at the foot of **7-4's
 entrance steps** (column 8), in the alien lair.
 
@@ -3147,6 +3559,17 @@ BILL'S FREE, AND HE NEVER
 EVEN NEEDED ME. ONE HIT
 AND HE'S DOWN, SURE. BUT HE
 NEVER STAYS DOWN.
+```
+
+As Bill (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+MEDIC:
+
+BILL! LET ME CHECK YOU.
+ONE HIT, AND... NOPE. NO
+MEDICINE FOR THAT. JUST
+DUCK, OKAY?
 ```
 
 **Castle 7-4** (a Hammer Bro). The hero's remark:
@@ -3279,6 +3702,17 @@ FROG. THANK YOU, STRANGER!
 MIND THE LAVA ON YOUR WAY.
 ```
 
+As Sophia III (NEW, 0.4.47: talking to the miner as the world's own hero, first of the three sets):
+
+```text
+MINER:
+
+SOPHIA! YOU ROLLED ALL THE
+WAY HERE? MIND THE LAVA, IT
+EATS TREADS. AND SAY HI TO
+THE BOY AND HIS FROG.
+```
+
 (Peach clue 3. Nobody can explain it; it points at her SMB2 kit and the Lost Kingdom's turnips.)
 
 **Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Sophia III (and her lost pilot): missing,
@@ -3320,6 +3754,16 @@ NO HARD FEELINGS. I WAS A
 VERY BAD BOSS.
 ```
 
+As Sophia III (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+MUTANT:
+
+GRBL! THE TANK! ...ARE YOU
+STILL MAD? I'M SORRY I WAS
+A BOSS. GRBL.
+```
+
 **8-2: an engineer.** NEW partner (`engineer`). World 8's miner in a white helmet with a cyan lamp and a blue
 shirt, at **8-2's start** (column 6), before the techno castle's steps.
 
@@ -3357,6 +3801,17 @@ AND THE BOY? OUT OF THE
 TANK, A SHORT FALL HURTS
 HIM BAD. SO HE STAYS IN
 THE TANK.
+```
+
+As Sophia III (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+ENGINEER:
+
+SOPHIA! MAY I LOOK UNDER
+YOUR HOOD? FOR SCIENCE.
+...THE CANNON SAYS NO.
+UNDERSTOOD.
 ```
 
 **8-3: an ice miner.** NEW partner (`ice-miner`). The miner in a pale blue helmet and a teal shirt, at **8-3's
@@ -3398,6 +3853,17 @@ A HOLE. THE BOY FOLLOWED
 HIM AND FOUND A TANK.
 ```
 
+As Sophia III (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+ICE MINER:
+
+A TANK THAT CLIMBS WALLS,
+ON MY ICE! SOPHIA, YOU
+COULD DIG MORE GOLD THAN
+ME. ...NOT THAT I'D ASK.
+```
+
 **8-4: a guard mutant.** NEW partner (`castle-mutant`). The mutant in green, the king's worst guard, on the floor
 past **8-4's first lava** (column 14), before the piranha pipe. Fred and Jason (below) are at the castle's end; this
 one stays when Fred has gone home.
@@ -3434,6 +3900,16 @@ GUARD MUTANT:
 
 GO GET THE KING. I WILL
 GUARD THE HALL. BADLY.
+```
+
+As Sophia III (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+GUARD MUTANT:
+
+GRBL. HALT, TANK! ...I
+MEAN, GO AHEAD. I GUARD
+BADLY. THE KING KNOWS.
 ```
 
 **Hint NPC: Fred, by the trap pipe.** NEW partner (`fred`). Fred the frog sits beside **8-4-end's trap pipe
@@ -3489,6 +3965,17 @@ JASON:
 
 SOPHIA'S BACK, FRED'S BACK.
 BEST DAY EVER! THANK YOU!
+```
+
+As Sophia III (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+
+```text
+JASON:
+
+SOPHIA! YOU'RE DRIVING
+YOURSELF NOW? WITHOUT ME?
+...I'M SO PROUD. AND A
+LITTLE JEALOUS.
 ```
 
 **Sophia III, captive:** KEEP (the shared first card, then the brainwashing speaking through her computer):
