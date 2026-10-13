@@ -583,7 +583,15 @@ describe('pages, warp nodes and conditions', () => {
     nodes: [
       { id: 'start', kind: 'start', x: 1, y: 7 },
       { id: 'home', kind: 'warp', x: 1, y: 4, to: 'smb-1', toNode: 'bonus-1', label: 'RETURN TO WORLD 1' },
-      { id: 'lost', kind: 'warp', x: 4, y: 7, to: 'll-1', requires: 'gameCleared', hint: 'BEAT 8-4' },
+      {
+        id: 'lost',
+        kind: 'warp',
+        x: 4,
+        y: 7,
+        to: 'll-1',
+        requires: 'gameCleared',
+        hint: "BEAT BOWSER'S CASTLE",
+      },
       { id: 'never', kind: 'warp', x: 1, y: 10, to: 'hub', requires: 'never', hint: '???' },
     ],
     paths: [
@@ -713,7 +721,7 @@ describe('pages, warp nodes and conditions', () => {
     const never = HUB.nodes.find((n) => n.id === 'never')!;
     expect(isOpen(p, HUB, 'lost')).toBe(true);
     expect(isWarpOpen(p, lost, false, ALL)).toBe(false);
-    expect(warpText(p, lost, false, ALL)).toBe('BEAT 8-4');
+    expect(warpText(p, lost, false, ALL)).toBe("BEAT BOWSER'S CASTLE");
     const step = nextStep(HUB, p, 'start', 'right', ALL);
     expect(step && step.kind === 'node' ? step.to : null).toBe('lost');
     p.gameCleared = true;

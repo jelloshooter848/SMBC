@@ -443,6 +443,20 @@ export function clearLevel(
  * map is shown, so an old file is brought up to date with the roads drawn in.
  */
 export function openMetExits(progress: MapProgress, pages: readonly WorldMapPage[] = MAP_PAGES): string[] {
+  // A page opened here may have a road on that is open already (0.4.55: an old beaten file's
+  // VALLEY OF BOWSER, whose road on to the Lost Levels opens on gameCleared), so on until nothing
+  // more opens.
+  const out: string[] = [];
+  for (let pass = 0; pass <= pages.length; pass++) {
+    const step = openMetExitsOnce(progress, pages);
+    if (!step.length) break;
+    out.push(...step.filter((rid) => !out.includes(rid)));
+  }
+  return out;
+}
+
+/** One pass of openMetExits: the exits open now from pages open now. */
+function openMetExitsOnce(progress: MapProgress, pages: readonly WorldMapPage[]): string[] {
   const due = pages.flatMap((page) =>
     isPageOpen(progress, page.id)
       ? page.exits

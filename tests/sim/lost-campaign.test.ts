@@ -205,15 +205,15 @@ const menuItem = (scene: unknown, label: string): MenuItem | undefined =>
   (scene as { items: MenuItem[] }).items.find((i) => i.label === label);
 
 describe('Lost Levels campaign: maps, clears and warps', () => {
-  it("World 8's road → Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved", () => {
+  it("the Valley's road → Lost 1 → enter 1-1 → its exit → the Lost 1 map with 1-2 open and saved", () => {
     const h = makeGame();
     const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     open(
       h,
       file({
-        cleared: smb,
-        pages: [...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), 'll-1'],
-        position: { page: 'smb-8', node: '8-4' },
+        cleared: [...smb, '8-5'],
+        pages: [...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), 'valley-of-bowser', 'll-1'],
+        position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
       }),
     );
     h.tap('right');
@@ -360,27 +360,28 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
     expect(h.map().page.id).toBe(at(level).page);
   }
 
-  it('the story: SMB 8-4 → the road → Lost 1 → warps → Lost 8-4 → 9 → A → B → C → D-4, the final ending', () => {
+  it("the story: BOWSER'S CASTLE → the road → Lost 1 → warps → Lost 8-4 → 9 → A → B → C → D-4, the final ending", () => {
     const h = makeGame();
     open(
       h,
       file({
-        cleared: SMB.filter((id) => id !== '8-4'),
+        cleared: SMB,
         gameCleared: false,
-        pages: SMB_PAGES,
-        position: { page: 'smb-8', node: '8-4' },
+        pages: [...SMB_PAGES, 'valley-of-bowser'],
+        position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
       }),
     );
-    const road = page('smb-8').exits.find((e) => e.to === 'll-1');
-    expect(road?.from).toBe('8-4');
-    expect(isExitOpen(h.game.mapProgress, page('smb-8'), road!)).toBe(false);
-    // Nothing leads on from World 8's castle yet.
+    const valley = page('valley-of-bowser');
+    const road = valley.exits.find((e) => e.to === 'll-1');
+    expect(road?.from).toBe('bowsers-castle');
+    expect(isExitOpen(h.game.mapProgress, valley, road!)).toBe(false);
+    // Nothing leads on from Bowser's Castle yet.
     h.tap('right');
-    expect(h.map().page.id).toBe('smb-8');
+    expect(h.map().page.id).toBe('valley-of-bowser');
 
-    // SMB 8-4: "Your quest is over.", the credits, then World 8 with the road drawn in.
+    // BOWSER'S CASTLE (since 0.4.55; 8-4 before): the credits, then the Valley with the road drawn in.
     enterHere(h);
-    h.game.startLevel(getLevel('8-4-end'), { mode: 'stand' });
+    h.game.startLevel(getLevel('8-5'), { mode: 'stand' });
     h.step();
     // The real king's line plays once per file (story/level-beats.ts): this file has seen every
     // story beat already, so he says nothing here.
@@ -390,22 +391,25 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
     h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
     h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 8000);
-    expect(h.map().page.id).toBe('smb-8');
-    expect(h.map().node).toBe('8-4');
-    expect(h.game.pendingReveal).toContain(revealId('smb-8', exitId(road!)));
+    expect(h.map().page.id).toBe('valley-of-bowser');
+    expect(h.map().node).toBe('bowsers-castle');
+    expect(h.game.pendingReveal).toContain(revealId('valley-of-bowser', exitId(road!)));
     expect(h.map().revealing).toBe(true);
     h.until(() => h.map().mode === 'idle', 2000);
-    expect(isExitOpen(h.game.mapProgress, page('smb-8'), road!)).toBe(true);
-    expect(loadSave(1)).toMatchObject({ gameCleared: true, position: { page: 'smb-8', node: '8-4' } });
+    expect(isExitOpen(h.game.mapProgress, valley, road!)).toBe(true);
+    expect(loadSave(1)).toMatchObject({
+      gameCleared: true,
+      position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
+    });
     expect(loadSave(1)?.pages).toContain('ll-1');
 
-    // Walk the road to Lost World 1 (a slide), back to World 8 and on again.
+    // Walk the road to Lost World 1 (a slide), back to the Valley and on again.
     walkOn(h, 'll-1');
     expect(h.game.pendingReveal.filter((r) => r.startsWith('ll-1:'))).toEqual([]);
     expect(isOpen(h.game.mapProgress, page('ll-1'), at('ll-1-1').node)).toBe(true);
     h.tap('left');
-    h.until(() => h.map().page.id === 'smb-8' && h.map().mode === 'idle', 2000);
-    expect(h.map().node).toBe('8-4');
+    h.until(() => h.map().page.id === 'valley-of-bowser' && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe('bowsers-castle');
     walkOn(h, 'll-1');
 
     // Lost 1-1, then 1-2's warp zone (NES): on to World 3, skipping World 2.
@@ -544,7 +548,7 @@ describe("Lost Levels campaign: the story's extension (0.4.7), the game ends and
 });
 
 describe('Lost Levels campaign: files from before 0.4.7 load with nothing lost', () => {
-  it('a file that beat SMB 8-4 gets the road to Lost World 1, drawn in on World 8', () => {
+  it('a file that beat SMB 8-4 gets the Valley (drawn in on World 8) and its road on to Lost World 1', () => {
     const h = makeGame();
     const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     openStored(
@@ -556,11 +560,19 @@ describe('Lost Levels campaign: files from before 0.4.7 load with nothing lost',
         position: { page: 'smb-8', node: '8-4' },
       }),
     );
+    expect(h.game.mapProgress.pages).toContain('valley-of-bowser');
     expect(h.game.mapProgress.pages).toContain('ll-1');
     expect(loadSave(1)?.pages).toContain('ll-1');
-    // World 8's share drawn in when the map first showed (open waited for idle); Lost 1's waits.
+    // World 8's share drawn in when the map first showed (open waited for idle); the Valley's
+    // and Lost 1's wait for their pages. The castle stays open and uncleared.
     expect(h.game.pendingReveal.filter((r) => r.startsWith('smb-8:'))).toEqual([]);
     expect(h.game.pendingReveal).toContain(revealId('ll-1', startOf('ll-1')));
+    expect(h.game.mapProgress.cleared).not.toContain('8-5');
+    h.tap('right');
+    h.until(() => h.map().page.id === 'valley-of-bowser' && h.map().mode === 'idle', 2000);
+    // Up the stair road to the castle (open, uncleared), then on along the Lost Levels road.
+    h.tap('right');
+    h.until(() => h.map().node === 'bowsers-castle' && h.map().mode === 'idle', 2000);
     h.tap('right');
     h.until(() => h.map().page.id === 'll-1' && h.map().mode === 'idle', 2000);
     expect(isOpen(h.game.mapProgress, page('ll-1'), at('ll-1-1').node)).toBe(true);
@@ -573,12 +585,13 @@ describe('Lost Levels campaign: files from before 0.4.7 load with nothing lost',
       1,
       file({ cleared: smb, pages: ['smb-1', 'smb-2', 'smb-8'], position: { page: 'smb-2', node: '2-1' } }),
     );
-    expect(h.game.pendingReveal).toContain('smb-8:8-4>ll-1');
+    expect(h.game.pendingReveal).toContain('smb-8:8-4>valley-of-bowser');
+    expect(h.game.pendingReveal).toContain('valley-of-bowser:bowsers-castle>ll-1');
     h.until(() => h.map().mode === 'idle', 800);
-    expect(loadSave(1)?.pendingReveal).toContain('smb-8:8-4>ll-1');
+    expect(loadSave(1)?.pendingReveal).toContain('smb-8:8-4>valley-of-bowser');
   });
 
-  it('a file mid-Lost-Levels (reached through the hub) keeps every page and clear; Lost 1 walks back to World 8', () => {
+  it('a file mid-Lost-Levels (reached through the hub) keeps every page and clear; Lost 1 walks back to the Valley', () => {
     const h = makeGame();
     const smb = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     const lost = ['ll-1-1', 'll-1-2', 'll-1-3', 'll-1-4', 'll-2-1'];
@@ -589,12 +602,13 @@ describe('Lost Levels campaign: files from before 0.4.7 load with nothing lost',
     expect(h.map().node).toBe('start');
     const p = h.game.mapProgress;
     expect(p.cleared).toEqual(expect.arrayContaining([...smb, ...lost]));
-    expect([...p.pages].sort()).toEqual([...pages].sort());
+    // The Valley (0.4.55) opens between them: 8-4 is cleared, Sophia III freed.
+    expect([...p.pages].sort()).toEqual([...pages, 'valley-of-bowser'].sort());
     expect(loadSave(1)?.position).toEqual({ page: 'll-1', node: 'start' });
-    // Lost 1's start walks back along the road to World 8's castle, and on again.
+    // Lost 1's start walks back along the road to Bowser's Castle in the Valley, and on again.
     h.tap('left');
-    h.until(() => h.map().page.id === 'smb-8' && h.map().mode === 'idle', 2000);
-    expect(h.map().node).toBe('8-4');
+    h.until(() => h.map().page.id === 'valley-of-bowser' && h.map().mode === 'idle', 2000);
+    expect(h.map().node).toBe('bowsers-castle');
     h.tap('right');
     h.until(() => h.map().page.id === 'll-1' && h.map().mode === 'idle', 2000);
     // On to World 2 as before, where 2-1 is cleared and 2-2 open.

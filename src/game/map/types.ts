@@ -119,7 +119,7 @@ export interface MapNode {
   oneWay?: boolean;
   /** Warp nodes: what must hold for the warp to work (always works when absent). */
   requires?: MapCondition;
-  /** Warp nodes: the hint line while it is locked ('LOST LEVELS - BEAT 8-4 TO UNLOCK'). */
+  /** Warp nodes: the hint line while it is locked ("LOST LEVELS - BEAT BOWSER'S CASTLE TO UNLOCK"). */
   hint?: string;
   /** Warp nodes: the hint line while it is open ('LOST LEVELS'; default: the target page's title). */
   label?: string;

@@ -313,8 +313,10 @@ export class Game {
       const s = this.state;
       s.checkpoint = null;
       s.time = null;
-      if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
+      // The clear first, then the flag: the Valley's road on opens on either (castle-or-gameCleared),
+      // so the clear is what opens it, and it draws in (0.4.55).
       this.addReveal(this.recordClear(from));
+      if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
