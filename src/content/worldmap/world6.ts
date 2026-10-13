@@ -2,8 +2,9 @@ import type { WorldMapPage } from '@game/map/types';
 import { actor, autoShore, poly, worldNodes } from './build';
 
 /**
- * World 6, DRAGON VALLEY (0.4.29, owner notes 5, 18 and 21: each world is themed after the hero
- * freed there; World 6 is Ryu's): a ninja game's night map under a full moon. The Hayabusa
+ * World 6, GALESBURG (0.4.29, owner notes 5, 18 and 21: each world is themed after the hero
+ * freed there; World 6 is Ryu's; named after Ninja Gaiden's town since 0.4.49, DRAGON VALLEY
+ * before): a ninja game's night map under a full moon. The Hayabusa
  * village and its dojo stand by the start, a bamboo forest runs round 6-1, the night city's
  * rooftops and neon signs crowd round 6-2, snowy mountain passes rise round 6-3 (SNOW NIGHT's snow,
  * kept) and the demon temple, Jaquio's fortress, looms over 6-4. Every node and road is where
@@ -32,7 +33,7 @@ export const WORLD_6: WorldMapPage = {
   id: 'smb-6',
   group: 'smb',
   label: 'WORLD 6',
-  title: 'DRAGON VALLEY',
+  title: 'GALESBURG',
   theme: 'ninja',
   music: 'map-ninja',
   tiles: autoShore(SKETCH_6),

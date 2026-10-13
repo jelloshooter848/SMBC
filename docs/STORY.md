@@ -100,8 +100,8 @@ Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zo
 goes. Hint NPCs are partners: you walk up and talk with the **TALK button** (`TALK`, the statue `READ`; not up since 0.4.43), campaign only, and they
 never leave. The map titles: World 1's page is MUSHROOM KINGDOM since 0.4.36 (it was GRASS LAND), World 2's HYRULE
 since 0.4.24 (it was SEA SIDE), World 3's MEGA CITY since 0.4.26 (it was NIGHT HILLS), World 4's PLANET ZEBES since
-0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA since 0.4.28 (it was SKY TREES), World 6's DRAGON VALLEY since
-0.4.29 (it was SNOW NIGHT), World 7's GALUGA ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S
+0.4.27 (it was MUSHROOM WOODS), World 5's TRANSYLVANIA since 0.4.28 (it was SKY TREES), World 6's GALESBURG since
+0.4.49 (DRAGON VALLEY from 0.4.29, at first SNOW NIGHT), World 7's GALUGA ISLAND since 0.4.30 (it was CANNON COAST) and World 8's BOWSER'S
 UNDERWORLD since 0.4.31 (it was BOWSER'S LAND): every SMB world is themed now (see the open questions).
 
 ## 2. The scripts, in game order
@@ -168,7 +168,7 @@ the castle pages, Larry's crystal ball and crash cards, the rift pages.
    (0.4.28): its page is TRANSYLVANIA (it was SKY TREES), a Castlevania-style night map with a village, a graveyard,
    a dead forest, a moonlit lake, the clock tower by 5-3 and Dracula's castle on its crag under 5-4, and its levels
    wear Castlevania-style looks (the courtyard gate, the catacombs, the town, the storm, the underground lake, the
-   clock tower; 5-4 keeps its castle hall). World 6 followed (0.4.29): its page is DRAGON VALLEY (it was SNOW
+   clock tower; 5-4 keeps its castle hall). World 6 followed (0.4.29): its page is DRAGON VALLEY (GALESBURG since 0.4.49; it was SNOW
    NIGHT), a ninja game's night map under a full moon with the Hayabusa village and its dojo by the start, a bamboo
    forest, the night city's rooftops and neon by 6-2, snowy mountain passes and the demon temple, Jaquio's fortress,
    over 6-4, and its levels wear ninja-game looks (a moonlit bamboo field, the city's sewers, a night harbour, a

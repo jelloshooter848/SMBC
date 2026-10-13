@@ -1,3 +1,5 @@
+import { shareBase } from './site';
+
 /**
  * Encode text into a compact URL-safe string and back. Uses deflate via CompressionStream
  * when available ("z" prefix), otherwise plain base64url ("r" prefix).
@@ -45,4 +47,15 @@ export async function decodeShare(code: string): Promise<string> {
   }
   if (kind === 'r') return new TextDecoder().decode(body);
   throw new Error('unknown share code');
+}
+
+/**
+ * The level editor's share link: this page's address with `#level=<code>`, without its query or
+ * hash; on the public site when the page is the downloaded copy (file://, engine/site.ts).
+ */
+export function levelLink(code: string, href: string): string {
+  const url = new URL(shareBase(href));
+  url.search = '';
+  url.hash = `level=${code}`;
+  return url.toString();
 }

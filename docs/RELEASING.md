@@ -66,7 +66,8 @@ pnpm -s release:check --tag v0.2.0 --notes
 4. The **Release** workflow (`.github/workflows/release.yml`) runs on the tag: it checks the tag
    against `package.json` and the changelog, runs lint, typecheck and tests, builds with
    `RELEASE_TAG`, deploys GitHub Pages, and creates (or updates) the GitHub Release with the
-   changelog section as notes and `smbc-vX.Y.Z.zip` attached. If any check fails nothing is
+   changelog section as notes and two zips attached: `smbc-vX.Y.Z.zip` (the site) and
+   `smbc-vX.Y.Z-offline.zip` (the download, below). If any check fails nothing is
    deployed: fix it on `main`, delete the tag (`git push --delete origin vX.Y.Z`,
    `git tag -d vX.Y.Z`) and tag again.
 
@@ -76,6 +77,34 @@ patch instead.
 The zip is the exact site that was deployed. It is built for the `/SMBC/` path, so serve it from
 a folder of that name (for example `mkdir SMBC && unzip smbc-v0.2.0.zip -d SMBC && npx serve .`
 then open `/SMBC/`).
+
+### The download: `smbc-vX.Y.Z-offline.zip`
+
+For players who want the game on their disk (PC, Mac or Linux): unzip, double-click
+`index.html`, and play offline with nothing to install and no server. Tested in Chrome; it
+should work in Edge, Firefox and Safari (try them by hand before saying so in `README.txt`). The
+zip holds two files:
+
+- `index.html`: the whole game in one file, from `pnpm build:offline` (Vite's `offline` mode,
+  written to `dist-offline/`). `tools/offline/plugin.ts` puts the script inside the page as one
+  inline module (a file:// page can't load module scripts from other files) and the favicon as
+  a data: URL; art, music and levels are already in the script. There is no service worker,
+  manifest or Home Screen icon, and Options has no ADD TO HOME SCREEN row there.
+- `README.txt`: what it is, "double-click index.html", how to carry saves over with save codes,
+  and the browsers it was tested in (`tools/offline/README.txt`, with the version filled in).
+
+Opened from the disk, the game keeps its own saves (the browser's storage for file:// pages,
+apart from the website's). On its first launch it says so once, waiting for a press, and points
+to Options → Save files → COPY CODE / PASTE CODE. Chrome and Edge share one storage for all
+local files; Firefox keeps it per folder, so a copy moved to another folder starts empty (the
+README says to carry saves with a code, or update in the same folder).
+
+Links the download shares (save codes' resume links, the level editor's SHARE) are made on the
+public site, `SITE_URL` in `src/engine/site.ts`, never on its file:// address.
+
+`tests/tools/offline.test.ts` builds it and checks it is one file with no outside script, style
+or link. Play-test it from disk before a release by opening `dist-offline/index.html` in a
+browser (no `pnpm preview`): the title, the save note, a level, and a reload keeping the save.
 
 ### One-time setup: let tags deploy
 

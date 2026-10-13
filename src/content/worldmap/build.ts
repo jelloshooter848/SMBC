@@ -19,7 +19,7 @@ const INLAND = new Set([
   ...['Λ', 'ψ', 'χ', '«', '»', '┌', '┬', '┐', '└', '┴', '┘'],
   // Transylvania (World 5): the village, the clock tower and Dracula's castle.
   ...['Ħ', 'Ω', '║', '╔', '╦', '╗', '╚', '╩', '╝'],
-  // DRAGON VALLEY (World 6): neon towers, the dojo and the demon temple.
+  // GALESBURG (World 6): neon towers, the dojo and the demon temple.
   ...['¤', '⌐', '¬', '▛', '▀', '▜', '▙', '▄', '▟'],
   // GALUGA ISLAND (World 7): the energy zone's pylons, the enemy base and Red Falcon's lair.
   ...['Ж', 'Γ', 'Π', 'Δ', 'Σ', 'Ξ', 'Φ', '◤', '◆', '◥', '◣', '●', '◢'],

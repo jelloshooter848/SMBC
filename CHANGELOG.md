@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Play from a download: each release now also has `smbc-vX.Y.Z-offline.zip`. Unzip it and double-click
+  `index.html` to play offline, with nothing to install (tested in Chrome; it should work in Edge, Firefox and
+  Safari). The downloaded copy keeps its own saves; a one-time note on its first launch points to Options → Save
+  files → COPY CODE / PASTE CODE to move a save over. Links shared from it open the website.
+
+### Changed
+
+- The game starts quieter: the default master volume is 40% (6 dB lower than before), and the music fades in over
+  about a second when sound starts or comes back from the background. Players still on the old 80% default move to
+  the new one; any volume you chose yourself is kept.
+- World 6 is now called GALESBURG, after Ninja Gaiden's town.
+
 ## [0.4.48] - 2026-10-13
 
 ### Added

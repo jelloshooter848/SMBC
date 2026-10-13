@@ -1,3 +1,4 @@
+import { shareBase } from '@engine/site';
 import {
   highestWorld,
   migrateSave,
@@ -1101,10 +1102,11 @@ export function summaryText(save: SaveFile): string {
 /**
  * The resume link: this page's address with `#save=<code>` as its hash. The page's query is left
  * off, so a link made on a `?dev=1` or `?level=` page doesn't turn dev mode on for a friend or
- * start a level instead of asking.
+ * start a level instead of asking. The downloaded copy (file://) links to the public site
+ * instead (engine/site.ts): a friend can't open a file on someone else's disk.
  */
 export function saveLink(code: string, href: string): string {
-  const url = new URL(href);
+  const url = new URL(shareBase(href));
   url.search = '';
   url.hash = `save=${code}`;
   return url.toString();

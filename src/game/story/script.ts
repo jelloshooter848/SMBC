@@ -1690,7 +1690,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     ],
   },
 
-  /* ------------------------ World 6 (Dragon Valley, Ryu): the ninja clan and a mountain hermit */
+  /* ------------------------ World 6 (Galesburg, Ryu): the ninja clan and a mountain hermit */
 
   // 6-1's start, in the moonlit field.
   ninja: {

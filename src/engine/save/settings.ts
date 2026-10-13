@@ -29,7 +29,7 @@ export interface AssistSettings {
 }
 
 export interface Settings {
-  v: 1;
+  v: typeof SETTINGS_VERSION;
   video: { integerScale: boolean; palette: PaletteMode; reduceFlashing: boolean; showFps: boolean };
   audio: { master: number; music: number; sfx: number; muted: boolean };
   input: {
@@ -58,7 +58,8 @@ export interface Settings {
   /**
    * Home Screen notes shown once (0.4.44), kept with the settings, not a save file: the phone
    * tip after a first level (`tipDone`), and the Home Screen app's note on its own saves
-   * (`noticeDone`). Optional, so files saved before it existed need no migration.
+   * (`noticeDone`), and the downloaded copy's note on its own saves (`offlineDone`, 0.4.49).
+   * Optional, so files saved before it existed need no migration.
    */
   homeScreen?: HomeScreenFlags;
 }
@@ -66,15 +67,28 @@ export interface Settings {
 export interface HomeScreenFlags {
   tipDone: boolean;
   noticeDone: boolean;
+  offlineDone: boolean;
 }
 
 export const SETTINGS_KEY = 'smbc.settings';
 
+/** The settings file's version: 2 since the quieter default master volume (0.4.49). */
+export const SETTINGS_VERSION = 2;
+
+/**
+ * The master volume a new player starts at (0.4.49): 6 dB below the old 0.8, so the game starts
+ * about level with a phone's other media instead of far louder (1-1's music: RMS -17.6 dBFS,
+ * peak -6.7 dBFS, was -11.6 / -0.7). On the slider's 10% steps.
+ */
+export const DEFAULT_MASTER = 0.4;
+/** The default before 0.4.49: a v1 file still at exactly this never changed it (migration). */
+export const OLD_DEFAULT_MASTER = 0.8;
+
 export function defaultSettings(): Settings {
   return {
-    v: 1,
+    v: SETTINGS_VERSION,
     video: { integerScale: true, palette: 'default', reduceFlashing: false, showFps: false },
-    audio: { master: 0.8, music: 1, sfx: 1, muted: false },
+    audio: { master: DEFAULT_MASTER, music: 1, sfx: 1, muted: false },
     input: {
       bindings: [defaultBindings(0), defaultBindings(1)],
       touch: 'auto',
@@ -96,12 +110,21 @@ export function defaultSettings(): Settings {
     announce: true,
     dev: false,
     backupReminders: true,
-    homeScreen: { tipDone: false, noticeDone: false },
+    homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
   };
 }
 
 /** Ordered migrations from older stored versions; each maps v → v+1. */
-const migrations: Array<(old: Record<string, unknown>) => Record<string, unknown>> = [];
+const migrations: Array<(old: Record<string, unknown>) => Record<string, unknown>> = [
+  // v1 -> v2 (0.4.49): a master volume still at the old default moves to the new, quieter one;
+  // any other value is the player's own choice and is kept.
+  (old) => {
+    const audio = old.audio;
+    if (!audio || typeof audio !== 'object') return old;
+    const a = audio as Record<string, unknown>;
+    return a.master === OLD_DEFAULT_MASTER ? { ...old, audio: { ...a, master: DEFAULT_MASTER } } : old;
+  },
+];
 
 /** Deep-merge stored values over defaults so new fields always exist. */
 function merge<T>(base: T, over: unknown): T {
@@ -127,7 +150,7 @@ export function loadSettings(): Settings {
     v++;
   }
   const s = merge(defaultSettings(), stored);
-  s.v = 1;
+  s.v = SETTINGS_VERSION;
   // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';

@@ -151,6 +151,12 @@ export class Apu {
   /** The music voices' fade (AudioManager.fadeOutMusic), ahead of the music volume. */
   readonly musicFade: GainNode;
   readonly sfxGain: GainNode;
+  /**
+   * The start fade-in (0.4.49, AudioManager.fadeInMusic), after the music volume: the music
+   * rises from silence when sound starts or comes back. Its own stage, so it never fights the
+   * page fade (musicFade), the volume sliders or mute.
+   */
+  readonly startFade: GainNode;
   readonly voices: ApuVoices;
 
   constructor(readonly ctx: BaseAudioContext) {
@@ -159,7 +165,11 @@ export class Apu {
     this.master.connect(ctx.destination);
     this.musicGain = ctx.createGain();
     this.sfxGain = ctx.createGain();
-    this.musicGain.connect(this.master);
+    // The music: voices -> musicFade (page fade) -> musicGain (volume) -> startFade -> master.
+    this.startFade = ctx.createGain();
+    this.startFade.gain.value = 1;
+    this.startFade.connect(this.master);
+    this.musicGain.connect(this.startFade);
     this.musicFade = ctx.createGain();
     this.musicFade.gain.value = 1;
     this.musicFade.connect(this.musicGain);

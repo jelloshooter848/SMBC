@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Apu } from './apu';
-import { AudioManager, NULL_AUDIO } from './audio-manager';
+import { AudioManager, MUSIC_FADE_IN_S, NULL_AUDIO } from './audio-manager';
 
 // The music fade (0.4.48, for the world map's page changes): the music voices run through their
 // own fade gain before the music volume, so fading a song out never touches the player's
@@ -159,5 +159,53 @@ describe('the music fade', () => {
   it('is optional on a sink and a no-op before the first unlock', () => {
     expect(NULL_AUDIO.fadeOutMusic).toBeUndefined();
     expect(() => new AudioManager().fadeOutMusic(1)).not.toThrow();
+  });
+});
+
+// Both fades (0.4.49): the start fade-in (Apu.startFade, audio-start-fade.test.ts) is its own
+// stage after the music volume, in series with this page fade, so neither stomps the other.
+describe('the page fade with the start fade-in', () => {
+  it('the music runs through both, in series: page fade, music volume, start fade-in, master', () => {
+    const apu = new Apu(new FakeContext() as unknown as BaseAudioContext);
+    expect((apu.musicFade as unknown as Node).out).toEqual([apu.musicGain]);
+    expect((apu.musicGain as unknown as Node).out).toEqual([apu.startFade]);
+    expect((apu.startFade as unknown as Node).out).toEqual([apu.master]);
+    expect((apu.sfxGain as unknown as Node).out).toEqual([apu.master]);
+  });
+
+  it('a page-slide fade during the start fade-in still ends at full volume on the new song', () => {
+    const { audio, apu, fade, ctx } = setup(); // the first press at t=2: the fade-in starts
+    const start = apu.startFade.gain as unknown as Param;
+    const fadeIn = ['cancel@2', 'set 0@2', `ramp 1@${2 + MUSIC_FADE_IN_S}`];
+    expect(start.calls).toEqual(fadeIn);
+    audio.playMusic('tune');
+    ctx.currentTime = 2.4; // halfway up, the map slides to the next page
+    audio.fadeOutMusic(0.5);
+    ctx.currentTime = 2.9;
+    audio.playMusic('other'); // the next page's song
+    // The page fade is back at full for the new song...
+    expect(fade.value).toBe(1);
+    expect(fade.calls.at(-1)).toBe('set 1@2.9');
+    // ...and the fade-in was never cut short: it still rises to full, where it stays.
+    expect(start.calls).toEqual(fadeIn);
+    expect(start.calls.at(-1)).toMatch(/^ramp 1@/);
+    // Neither fade touched the volume or mute.
+    expect(apu.musicGain.gain.value).toBe(1);
+    expect(apu.master.gain.value).toBeCloseTo(0.2);
+  });
+
+  it('sound coming back from the background mid page fade: the fade-in leaves the page fade alone', () => {
+    const { audio, apu, fade, ctx } = setup();
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    const page = [...fade.calls];
+    ctx.state = 'interrupted';
+    ctx.currentTime = 10;
+    audio.wake();
+    expect(fade.calls).toEqual(page);
+    expect((apu.startFade.gain as unknown as Param).calls.slice(-2)).toEqual([
+      'set 0@10',
+      `ramp 1@${10 + MUSIC_FADE_IN_S}`,
+    ]);
   });
 });

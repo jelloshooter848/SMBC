@@ -199,6 +199,17 @@ How it is built: `tools/pwa/plugin.ts` draws the icons from the pixel art in
 and writes the service worker (`tools/pwa/sw.js`) with every file of the build to cache. `pnpm
 dev` and the tests never register it.
 
+### Play offline from a download
+
+Each [release](https://github.com/jelloshooter848/SMBC/releases) has a
+**`smbc-vX.Y.Z-offline.zip`**: unzip it and double-click **`index.html`**. The whole game is in
+that one file, so it plays offline on Windows, macOS and Linux with nothing to install (tested
+in Chrome; it should work in Edge, Firefox and Safari). The downloaded copy keeps **its own
+saves, separate from the website's** (it says so on its first launch); to move a save either
+way, use **Options → Save files → COPY CODE** in one and **PASTE CODE** in the other. Links it shares (resume links, the
+level editor's SHARE) open the website, never a file on your disk. To build it yourself, run
+`pnpm build:offline` (it writes `dist-offline/`; see [docs/RELEASING.md](docs/RELEASING.md)).
+
 ### Developer mode
 
 Enter up, up, down, down, left, right, left, right, attack, jump on the title screen (or open the game

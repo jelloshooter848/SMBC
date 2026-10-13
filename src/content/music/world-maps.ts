@@ -65,7 +65,7 @@ const GALLOP_FILL = 'v9 k8 v5 h8 v8 s8 v9 k8 v7 s16 s16 v8 s16 s16 v9 s8 s8';
 /** Half a bar of pumping octaves. */
 const pump = (n: string): string => `[o2 ${n}8 o3 ${n}8]2`;
 
-// ---- World 6: DRAGON VALLEY ----
+// ---- World 6: GALESBURG ----
 const BLADE_BAR = 'v9 k8 v5 h16 h16 v8 s8 v9 k8 v5 h8 v9 k8 v8 s8 v5 h16 h16';
 const BLADE_FILL = 'v9 k8 v5 h16 h16 v8 s8 v9 k8 v7 s16 s16 v8 s16 s16 v9 s16 s16 s16 s16';
 /** A bar of stabs grouped 3 + 3 + 2: root, fifth, rest; root, fifth, rest; root, fifth. */
@@ -329,7 +329,7 @@ export const worldMapSongs: Song[] = [
     id: 'map-ninja',
     bpm: 160,
     loop: true,
-    // D minor, 16 bars: Dragon Valley at a run. A tense, flicking lead on the 25% pulse full of
+    // D minor, 16 bars: Galesburg at a run. A tense, flicking lead on the 25% pulse full of
     // sixteenth-note pickups, over stabs and a bass both grouped 3 + 3 + 2; the B section climbs
     // and ends on A with the flat ninth (B-flat) and a sixteenth-note dash back home.
     pulse1: `

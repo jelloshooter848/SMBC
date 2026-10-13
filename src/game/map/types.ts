@@ -20,7 +20,7 @@ export type MapTheme =
   | 'megaman' // World 3 since 0.4.26: Mega Man's MEGA CITY
   | 'zebes' // World 4 since 0.4.27: Samus's PLANET ZEBES
   | 'transylvania' // World 5 since 0.4.28: Simon's TRANSYLVANIA
-  | 'ninja' // World 6 since 0.4.29: Ryu's DRAGON VALLEY
+  | 'ninja' // World 6 since 0.4.29: Ryu's GALESBURG
   | 'contra' // World 7 since 0.4.30: Bill's GALUGA ISLAND
   | 'blaster' // World 8 since 0.4.31: Sophia's BOWSER'S UNDERWORLD
   | 'kingdom'; // World 1 in campaign play since 0.4.48: the Mushroom Kingdom drawn from above

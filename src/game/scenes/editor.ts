@@ -2,7 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_W } from '@engine/viewport';
-import { encodeShare } from '@engine/share';
+import { encodeShare, levelLink } from '@engine/share';
 import type { LevelData, Theme, Zone } from '../level/schema';
 import { THEMES } from '../level/schema';
 import { parseTextMap, serializeTextMap } from '../level/textmap';
@@ -291,7 +291,7 @@ export class EditorScene implements Scene {
 
   private async share(): Promise<void> {
     const code = await encodeShare(this.toText());
-    const url = `${location.origin}${location.pathname}#level=${code}`;
+    const url = levelLink(code, location.href);
     try {
       await navigator.clipboard.writeText(url);
       this.status = `Link copied (${url.length} chars)`;
