@@ -13,6 +13,8 @@ import { ARENA_PAGE } from './arena';
 import { WORLD_1_KINGDOM } from './world1-kingdom';
 import { WORLD_2_HYRULE } from './world2-hyrule';
 import { WORLD_3_MEGACITY } from './world3-megacity';
+import { WORLD_4_ZEBES } from './world4-zebes';
+import { WORLD_5_TRANSYLVANIA } from './world5-transylvania';
 
 /*
  * The page registry (docs/WORLD_MAP.md). The eight themed SMB pages ('smb-1'..'smb-8'): every
@@ -60,12 +62,17 @@ export function levelPage(levelId: string): WorldMapPage | undefined {
 
 /**
  * Pages drawn differently in campaign play, by id: drawn from above, World 1 since 0.4.48
- * (world1-kingdom.ts), Worlds 2 and 3 since 0.4.50 (world2-hyrule.ts, world3-megacity.ts). Each
- * keeps its registered page's id, node ids, kinds and order, road ids and exits, so the rules, saves
- * and save codes read it exactly as the registered one.
+ * (world1-kingdom.ts), Worlds 2 and 3 since 0.4.50 (world2-hyrule.ts, world3-megacity.ts), Worlds
+ * 4 and 5 since 0.4.52 (world4-zebes.ts, world5-transylvania.ts). Each keeps its registered page's
+ * id, node ids, kinds and order, and exits, so saves and save codes read it exactly as the
+ * registered one; its roads keep their ids too, but for a world the campaign plays in another
+ * order (map/campaign-order.ts: World 4), whose roads follow that order.
  */
 const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = Object.fromEntries(
-  [WORLD_1_KINGDOM, WORLD_2_HYRULE, WORLD_3_MEGACITY].map((p) => [p.id, p]),
+  [WORLD_1_KINGDOM, WORLD_2_HYRULE, WORLD_3_MEGACITY, WORLD_4_ZEBES, WORLD_5_TRANSYLVANIA].map((p) => [
+    p.id,
+    p,
+  ]),
 );
 
 /** The campaign looks (each also registered under its id in MAP_PAGES, as classic play shows it). */
@@ -75,4 +82,15 @@ export const CAMPAIGN_PAGES: readonly WorldMapPage[] = Object.values(CAMPAIGN_LO
 export function pageLook<P extends WorldMapPage | undefined>(page: P, campaign: boolean): P {
   if (!campaign || !page) return page;
   return (CAMPAIGN_LOOKS[page.id] ?? page) as P;
+}
+
+/** Every registered page as campaign play has it (pageLook), in MAP_PAGES' order. */
+export const CAMPAIGN_MAP_PAGES: readonly WorldMapPage[] = MAP_PAGES.map((p) => CAMPAIGN_LOOKS[p.id] ?? p);
+
+/**
+ * The pages the map rules read (rules.clearLevel, openMetExits, warpTo, secretExit, nextStep):
+ * campaign play's (CAMPAIGN_MAP_PAGES, whose roads follow the campaign order) or classic play's.
+ */
+export function rulePages(campaign: boolean): readonly WorldMapPage[] {
+  return campaign ? CAMPAIGN_MAP_PAGES : MAP_PAGES;
 }

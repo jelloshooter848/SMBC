@@ -6,10 +6,17 @@ import { LAZY_SHEETS, prepaintSheet, type AboveGround } from '@content/sprites/a
 import { kingdomGround, ROAD_FRAMES } from '@content/sprites/kingdom';
 import { HYRULE_ROAD_FRAMES, hyruleGround, hyruleNodeFrame } from '@content/sprites/hyrule-above';
 import { MEGACITY_ROAD_FRAMES, megacityGround, megacityNodeFrame } from '@content/sprites/megacity-above';
+import { ZEBES_ROAD_FRAMES, zebesGround, zebesNodeFrame } from '@content/sprites/zebes-above';
+import {
+  TRANSYLVANIA_ROAD_FRAMES,
+  transylvaniaGround,
+  transylvaniaNodeFrame,
+} from '@content/sprites/transylvania-above';
 
 /*
  * The map kit for pages drawn from above (campaign play): World 1 from the `kingdom` sheet since
- * 0.4.48, Worlds 2 and 3 from `hyrule-above` and `megacity-above` since 0.4.50. A page's look
+ * 0.4.48, Worlds 2 and 3 from `hyrule-above` and `megacity-above` since 0.4.50, Worlds 4 and 5
+ * from `zebes-above` and `transylvania-above` since 0.4.52. A page's look
  * (AboveLook) names its sheet, its ground (tiles → ground frames, water, standing scenery), its 16
  * road joins and its node markers; everything else is shared: the ground and flat landmarks, the
  * roads drawn in as they open, the standing scenery and landmarks by their feet. Everything a page
@@ -84,6 +91,24 @@ const LOOKS: Readonly<Record<AboveLookId, AboveLook>> = {
     ground: (page) => megacityGround(page.tiles, page.zones ?? []),
     roads: MEGACITY_ROAD_FRAMES,
     node: megacityNodeFrame,
+  },
+  // World 4, Planet Zebes (sprites/zebes-above.ts): its regions painted whole (region-kit.ts),
+  // pale metal walkways; board spaces in a light ring, a Chozo item sphere (spent once used),
+  // Mother Brain's tank (shattered once cleared).
+  zebes: {
+    sheet: 'zebes-above',
+    ground: (page) => zebesGround(page.tiles, page.zones ?? []),
+    roads: ZEBES_ROAD_FRAMES,
+    node: zebesNodeFrame,
+  },
+  // World 5, Transylvania (sprites/transylvania-above.ts): the castle's parts painted whole,
+  // cobbled paths; board spaces in a light ring, a treasure chest (open once used), the keep's
+  // gatehouse (its portcullis up once cleared).
+  transylvania: {
+    sheet: 'transylvania-above',
+    ground: (page) => transylvaniaGround(page.tiles, page.zones ?? []),
+    roads: TRANSYLVANIA_ROAD_FRAMES,
+    node: transylvaniaNodeFrame,
   },
 };
 
@@ -213,25 +238,37 @@ export function drawAboveRoads(
   }
 }
 
-/** A page's standing things, back to front: its scenery and standing props by their feet. */
-const standing = new WeakMap<WorldMapPage, readonly { frame: string; x: number; y: number }[]>();
+/** A standing thing: its frame's top-left, and the node it stands with (MapProp.node), if any. */
+interface Standing {
+  frame: string;
+  x: number;
+  y: number;
+  node?: string;
+}
 
-function standingOf(
-  page: WorldMapPage,
-  look: AboveLook,
-  assets: AssetRegistry,
-): readonly { frame: string; x: number; y: number }[] {
+/** A page's standing things, back to front: its scenery and standing props by their feet. */
+const standing = new WeakMap<WorldMapPage, readonly Standing[]>();
+
+function standingOf(page: WorldMapPage, look: AboveLook, assets: AssetRegistry): readonly Standing[] {
   let list = standing.get(page);
   if (list) return list;
   const sheet = assets.sheet(look.sheet);
   const props = (page.props ?? []).filter((p) => !p.flat);
   const feet = (p: MapProp): number => p.y + (sheet.frames.get(p.frame)?.h ?? 16);
   list = [
-    ...look.ground(page).scenery.map((s) => ({ frame: s.frame, x: s.x, y: s.y, feet: s.feet })),
-    ...props.map((p) => ({ frame: p.frame, x: p.x, y: p.y, feet: feet(p) })),
+    ...look
+      .ground(page)
+      .scenery.map((s) => ({
+        frame: s.frame,
+        x: s.x,
+        y: s.y,
+        feet: s.feet,
+        node: undefined as string | undefined,
+      })),
+    ...props.map((p) => ({ frame: p.frame, x: p.x, y: p.y, feet: feet(p), node: p.node })),
   ]
     .sort((a, b) => a.feet - b.feet)
-    .map(({ frame, x, y }) => ({ frame, x, y }));
+    .map(({ frame, x, y, node }): Standing => (node ? { frame, x, y, node } : { frame, x, y }));
   standing.set(page, list);
   return list;
 }
@@ -257,18 +294,23 @@ export function drawAboveGround(
   }
 }
 
-/** The standing scenery and landmarks of `page` in `look`, back to front, at page offset `ox`. */
+/**
+ * The standing scenery and landmarks of `page` in `look`, back to front, at page offset `ox`. A
+ * landmark standing with a node (MapProp.node) shows only while `shown` says that node is.
+ */
 export function drawAboveScenery(
   r: Renderer,
   assets: AssetRegistry,
   look: AboveLook,
   page: WorldMapPage,
   ox: number,
+  shown?: (node: string) => boolean,
 ): void {
   const sheet = assets.sheet(look.sheet);
   const list = standingOf(page, look, assets);
   for (let i = 0; i < list.length; i++) {
-    const s = list[i] as { frame: string; x: number; y: number };
+    const s = list[i] as Standing;
+    if (s.node && !shown?.(s.node)) continue;
     r.sprite(sheet, s.frame, ox + s.x, s.y);
   }
 }

@@ -108,8 +108,8 @@ describe('after the bonus is used', () => {
     h.step();
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('bonus-4');
-    // Back along the road to 4-2, freely.
-    h.walk('right');
+    // Back along the road to 4-2, freely (campaign World 4, 0.4.52: west, then up the road).
+    h.walk('left');
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('4-2');
     expect(h.map().guard).toBeNull();
@@ -139,7 +139,7 @@ describe('after entering a level from the map', () => {
   function playALevel() {
     const h = setup(fileAt('bonus-4'));
     useBonus(h);
-    h.walk('right');
+    h.walk('left');
     expect(h.map().node).toBe('4-2');
     h.game.enterLevelFromMap('4-2');
     // The hero pick: keep Mario.
@@ -181,7 +181,7 @@ describe('the Hammer Bro never forces a fight', () => {
     const h = setup(fileAt('bonus-4', { bonusOpen: false, bonusGuard: true }));
     expect(h.map().guard).toBeNull();
     h.idle(GUARD_GRACE_FRAMES + GUARD_STEP_FRAMES * 4);
-    h.walk('right');
+    h.walk('left');
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('4-2');
     // Off his road: now he comes out.
@@ -204,7 +204,7 @@ describe('the Hammer Bro never forces a fight', () => {
     h.idle(8);
     expect(h.map().node).toBe('bonus-4');
     expect(h.map().guard).toBeNull();
-    h.walk('right');
+    h.walk('left');
     expect(h.map()).toBeInstanceOf(WorldMapScene);
     expect(h.map().node).toBe('4-2');
     expect(h.map().guard).not.toBeNull();

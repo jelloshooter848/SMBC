@@ -68,6 +68,12 @@ export interface GameState {
    * automatic 1-up. Never in classic play.
    */
   wallet: boolean;
+  /**
+   * The level being played shows its campaign label (map/campaign-order.ts: internal 4-2 as
+   * WORLD 4-1) on the HUD, its intro card and in the announcer: a campaign file playing an SMB
+   * level (Game.goToLevel). Never in classic play or the Lost Levels.
+   */
+  campaignOrder?: boolean;
 }
 
 export function playerCount(s: GameState): number {

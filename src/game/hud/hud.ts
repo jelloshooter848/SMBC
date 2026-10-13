@@ -3,6 +3,7 @@ import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { isFound } from '../items/flags';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { worldLabel } from './world-label';
+import { shownStage } from '../map/campaign-order';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { GameState } from '../context';
 import type { Player } from '../entities/player';
@@ -93,7 +94,11 @@ export function drawHud(
       if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
     } else {
       text('WORLD', 144, 8);
-      text(`${worldLabel(state.world)}-${state.stage}`, 152, 16);
+      text(
+        `${worldLabel(state.world)}-${shownStage(state.world, state.stage, state.campaignOrder)}`,
+        152,
+        16,
+      );
       text('TIME', 200, 8);
       if (time !== null) text(pad(time, 3), 208, 16);
     }

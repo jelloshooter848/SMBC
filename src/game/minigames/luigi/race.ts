@@ -15,6 +15,7 @@ import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../../touch-labels';
 import type { MiniGameResult } from '../types';
 import { drawHud } from '../../hud/hud';
 import { worldLabel } from '../../hud/world-label';
+import { shownStage } from '../../map/campaign-order';
 import { TIMER_FRAMES } from '../../constants';
 import { LUIGI_ROUTE, poleOf, raceCourse } from './course';
 import { RivalLuigi } from './rival';
@@ -97,7 +98,9 @@ export class MirrorRaceScene implements Scene {
   enter(): void {
     this.game.ctx.audio.stopMusic();
     const s = this.world.state;
-    const world = this.retry ? '' : `World ${worldLabel(s.world)}-${s.stage}. `;
+    const world = this.retry
+      ? ''
+      : `World ${worldLabel(s.world)}-${shownStage(s.world, s.stage, s.campaignOrder)}. `;
     this.game.deps.announcer?.say(`${world}Race Luigi to the flag!`);
   }
 
@@ -232,7 +235,7 @@ export class MirrorRaceScene implements Scene {
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     const s = this.world.state;
-    r.text(font, `WORLD ${worldLabel(s.world)}-${s.stage}`, 88, 80);
+    r.text(font, `WORLD ${worldLabel(s.world)}-${shownStage(s.world, s.stage, s.campaignOrder)}`, 88, 80);
     const c = s.character;
     const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
     const f = sheet.frames.get(c.portrait.frame);

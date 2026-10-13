@@ -25,7 +25,7 @@ import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
 import { STORY_NOT_OVER } from '../story/script';
 import { WorldMapScene, showChapterGate, spoken, type WorldMapOptions } from './world-map';
-import type { MapProgress, PageId } from '../map/types';
+import type { MapProgress, PageId, WorldMapPage } from '../map/types';
 import {
   clearLevel,
   entryLevel,
@@ -39,7 +39,7 @@ import {
   warpTo,
   chapterGated,
 } from '../map/rules';
-import { mapPage } from '@content/worldmap';
+import { mapPage, rulePages } from '@content/worldmap';
 import { CRYSTAL_BALL } from '../map/captives';
 import { storyOn, upgradeStory } from '../story/beats';
 import { playOpening } from '../story/opening';
@@ -49,6 +49,7 @@ import { campaignLevel } from '../level/campaign';
 import { heroVariant } from '../level/variants';
 import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
 import { isLostLevel } from '../level/lost-campaign';
+import { shownStage } from '../map/campaign-order';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import {
@@ -155,6 +156,14 @@ export class Game {
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
   campaign: { slot: SaveSlot } | null = null;
+
+  /**
+   * The map pages the rules read for this run (content/worldmap rulePages): the campaign's, whose
+   * roads follow the campaign order (map/campaign-order.ts), on a campaign file; else classic's.
+   */
+  get rulePages(): readonly WorldMapPage[] {
+    return rulePages(this.campaign !== null);
+  }
   /**
    * A round played for fun is on (dev-minigames.ts playRound: the arena and Dev → Mini games):
    * nothing it wins is kept and no hero is freed, so its words stay neutral (no campaign lines).
@@ -425,7 +434,7 @@ export class Game {
     this.quickRespawn = false;
     this.endTutorial();
     this.town = null; // any visit to the village is over
-    if (this.campaign) this.addReveal(openMetExits(this.mapProgress));
+    if (this.campaign) this.addReveal(openMetExits(this.mapProgress, this.rulePages));
     this.scenes.clear();
     this.scenes.push(new WorldMapScene(this, page ?? this.mapProgress.position.page, opts));
   }
@@ -686,7 +695,7 @@ export class Game {
   private recordClear(levelId: string): string[] {
     const main = mainLevel(levelId, this.deps.getLevel);
     if (this.campaign && isCastle(main) && !this.mapProgress.cleared.includes(main)) this.backupDue = main;
-    return clearLevel(this.mapProgress, levelId, this.deps.getLevel);
+    return clearLevel(this.mapProgress, levelId, this.deps.getLevel, this.rulePages);
   }
 
   /**
@@ -737,7 +746,7 @@ export class Game {
     if (!this.campaign) return;
     const pos = this.mapProgress.position;
     this.mapLastNode[pos.page] = pos.node; // map travel back returns here
-    this.addReveal(warpTo(this.mapProgress, page));
+    this.addReveal(warpTo(this.mapProgress, page, this.rulePages));
     const start = mapPage(page)?.nodes.find((n) => n.kind === 'start');
     if (start) this.mapProgress.position = { page, node: start.id };
     this.autosave();
@@ -768,7 +777,7 @@ export class Game {
    */
   campaignSecret(secret: string, levelId: string): void {
     if (!this.campaign) return;
-    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel));
+    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel, this.rulePages));
   }
 
   /**
@@ -780,7 +789,7 @@ export class Game {
    */
   campaignTopSecret(secret: string, levelId: string): void {
     if (!this.campaign) return;
-    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel));
+    this.returnToMap(secretExit(this.mapProgress, levelId, secret, this.deps.getLevel, this.rulePages));
   }
 
   /**
@@ -794,7 +803,7 @@ export class Game {
     this.inventoryUnlocked = true;
     // The first time only: World 4's map plays the airship's crash before the road draws in.
     if (!this.mapProgress.secrets.includes(CRYSTAL_BALL)) this.mapCutscene = 'airship-crash';
-    this.returnToMap(secretExit(this.mapProgress, levelId, CRYSTAL_BALL, this.deps.getLevel));
+    this.returnToMap(secretExit(this.mapProgress, levelId, CRYSTAL_BALL, this.deps.getLevel, this.rulePages));
   }
 
   /**
@@ -840,6 +849,8 @@ export class Game {
   startHammerBattle(): void {
     this.deps.ctx.audio.stopMusic();
     this.autosave();
+    // Its HUD names the bonus road's level (internal 4-2) by its campaign label on a campaign file.
+    this.state.campaignOrder = this.campaign !== null;
     this.scenes.clear();
     this.scenes.push(new HammerBattleScene(this));
   }
@@ -1268,6 +1279,8 @@ export class Game {
       start = { ...start, mode: level.startMode };
     this.state.world = level.world;
     this.state.stage = level.stage;
+    // A campaign file shows an SMB level by its campaign label (map/campaign-order.ts).
+    this.state.campaignOrder = this.campaign !== null && !isLostLevel(level.id);
     this.deps.ctx.audio.stopMusic();
     this.deps.ctx.audio.setTempoScale(1);
     this.clearToRoundBase();
@@ -1278,7 +1291,9 @@ export class Game {
       this.startLevel(level, start);
       return;
     }
-    this.deps.announcer?.say(`World ${level.world}-${level.stage}. ${this.state.lives} lives.`);
+    this.deps.announcer?.say(
+      `World ${level.world}-${shownStage(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} lives.`,
+    );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
     const tutorial = levelTutorial(level);
