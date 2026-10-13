@@ -78,6 +78,7 @@ const ENEMY_FRAMES: Record<string, [number, number]> = {
   'bowser-die-6': [32, 32],
   'bowser-die-7': [32, 32],
   'bowser-die-8': [32, 32],
+  'bowser-die-king': [32, 32],
   // The true forms' outlines (the campaign fakes' steady tell with reduce flashing on).
   'bowser-ghost-1': [32, 32],
   'bowser-ghost-2': [32, 32],
@@ -86,6 +87,7 @@ const ENEMY_FRAMES: Record<string, [number, number]> = {
   'bowser-ghost-5': [32, 32],
   'bowser-ghost-6': [32, 32],
   'bowser-ghost-7': [32, 32],
+  'bowser-ghost-8': [32, 32],
 };
 
 const HERO_PALETTES = [
@@ -204,7 +206,7 @@ describe('enemy sprites', () => {
   // SMB1 (which Crossover's die_N frames follow) swaps the beaten fake for BowserIdentities[world]
   // at its own size, where his front half was; worlds 1-3 get state $23, an overturned shell.
   it("draws the fake king's true forms at enemy size, at his head end", () => {
-    for (let n = 1; n <= 7; n++) {
+    for (let n = 1; n <= 8; n++) {
       const rows = enemiesDef.frames[`bowser-die-${n}`] as readonly string[];
       const ys = rows.flatMap((r, y) => (/[^.]/.test(r) ? [y] : []));
       const xs = rows.flatMap((r) => [...r].flatMap((c, x) => (c === '.' ? [] : [x])));

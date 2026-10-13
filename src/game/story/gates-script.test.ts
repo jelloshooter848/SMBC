@@ -1,3 +1,4 @@
+import { FINALE } from './finale';
 import { describe, expect, it } from 'vitest';
 import { fontText } from '@game/hud/text';
 import { CARD_COLS } from '@game/scenes/free-hero';
@@ -8,6 +9,8 @@ import {
   gateScript,
   HINT_COLS,
   REMARK_CASTLES,
+  castlePages,
+  FINALE_PAGES,
   RIFT_SEALED_PAGES,
   sealedHint,
   WELCOMES,
@@ -43,17 +46,20 @@ describe("S3's story lines", () => {
     expect(page.filter((l) => fontText(l) !== l)).toEqual([]);
   });
 
-  it('castles 1-4 to 7-4 each have a remark and two pages that fit', () => {
-    expect(REMARK_CASTLES).toEqual(['1-4', '2-4', '3-4', '4-4', '5-4', '6-4', '7-4']);
+  it('castles 1-4 to 8-4 each have a remark and their pages that fit (8-4 a fake since 0.4.54)', () => {
+    expect(REMARK_CASTLES).toEqual(['1-4', '2-4', '3-4', '4-4', '5-4', '6-4', '7-4', '8-4']);
     for (const id of REMARK_CASTLES) {
-      const c = CASTLE_PAGES[id];
+      const c = castlePages(id);
       expect(c, id).toBeDefined();
-      for (const page of [c?.reveal ?? [], c?.news ?? []]) {
+      if (id !== FINALE.castle) expect(c).toBe(CASTLE_PAGES[id]);
+      for (const page of [c?.reveal ?? [], c?.news ?? [], FINALE_PAGES.reveal, FINALE_PAGES.news]) {
         expect(page.length).toBeLessThanOrEqual(4);
         expect(page.filter((l) => l.length > CASTLE_COLS)).toEqual([]);
       }
     }
-    expect(castleRemark('8-4', 'MARIO')).toBeNull();
+    // The Lost Levels' castles keep the NES text; their kings say nothing at the axe.
+    expect(castleRemark('ll-8-4', 'MARIO')).toBeNull();
+    expect(castlePages('ll-8-4')).toBeUndefined();
   });
 
   it('every gate from World 1 to 7 has a reminder, a cutaway and Toad; none past 7', () => {

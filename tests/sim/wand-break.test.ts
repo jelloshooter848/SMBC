@@ -25,7 +25,7 @@ import {
   WAND_SCENE_FRAMES,
 } from '@game/entities/effects/wand-break';
 import { campaignLevel } from '@game/level/campaign';
-import { CASTLE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
+import { castlePages, FINALE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
 import { CreditsScene, creditsLines, CREDITS } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import type { LevelData } from '@game/level/schema';
@@ -149,7 +149,19 @@ function clearCastle(
   return { world, texts, said, sfx, exitAt, placed, wand, wandAt, frames, xs, ts };
 }
 
-const PAGES = CASTLE_PAGES['8-4'] as { reveal: readonly string[]; news: readonly string[] };
+/**
+ * 8-4's pages under Toad's thanks (story/finale.ts: still the last castle in 0.4.54, but its king
+ * is a fake, so only the wand's page: Toad never calls it the real king).
+ */
+const PAGES = castlePages('8-4') as { reveal: readonly string[]; news?: readonly string[] };
+/** The castle's text, page by page, as shown under the thanks `t`. */
+const shown = (t: string) => [
+  [t],
+  ...[PAGES.reveal, ...(PAGES.news ? [PAGES.news] : [])].map((p) => [t, '', ...p]),
+];
+/** The same, as read out. */
+const read = (t: string) =>
+  [PAGES.reveal, ...(PAGES.news ? [PAGES.news] : [])].map((p) => [t, ...p, 'OK to continue.'].join(' '));
 const fullScreen = (r: Drawn['rects'][number]) => r.w >= SCREEN_W;
 
 describe('8-4: the wand breaks (campaign)', () => {
@@ -164,16 +176,9 @@ describe('8-4: the wand breaks (campaign)', () => {
     expect(wand.piecesOut).toBe(false);
     expect(r.sfx.filter((s) => s === 'wand-crack')).toHaveLength(1);
     // Announced once, before the castle pages.
-    expect(r.said).toEqual([
-      WAND_BREAK_SAID,
-      ['THANK YOU MARIO!', ...PAGES.reveal, 'OK to continue.'].join(' '),
-      ['THANK YOU MARIO!', ...PAGES.news, 'OK to continue.'].join(' '),
-    ]);
-    expect(r.texts).toEqual([
-      ['THANK YOU MARIO!'],
-      ['THANK YOU MARIO!', '', ...PAGES.reveal],
-      ['THANK YOU MARIO!', '', ...PAGES.news],
-    ]);
+    expect(PAGES).toEqual({ reveal: FINALE_PAGES.news });
+    expect(r.said).toEqual([WAND_BREAK_SAID, ...read('THANK YOU MARIO!')]);
+    expect(r.texts).toEqual(shown('THANK YOU MARIO!'));
     // Toad stands at the end, not the princess.
     expect(r.world.entities.some((e) => e instanceof Toad && e.alive)).toBe(true);
     expect(r.world.entities.some((e) => e instanceof Princess && e.alive)).toBe(false);
@@ -273,11 +278,8 @@ describe('8-4: the wand breaks (campaign)', () => {
     // The hero's full name, never the HUD's short one (0.4.35).
     const thanks = `THANK YOU ${MEGAMAN.name.toUpperCase()}!`;
     expect(thanks).toBe('THANK YOU MEGA MAN!');
-    expect(r.texts).toEqual([[thanks], [thanks, '', ...PAGES.reveal], [thanks, '', ...PAGES.news]]);
-    expect(r.said.slice(1)).toEqual([
-      [thanks, ...PAGES.reveal, 'OK to continue.'].join(' '),
-      [thanks, ...PAGES.news, 'OK to continue.'].join(' '),
-    ]);
+    expect(r.texts).toEqual(shown(thanks));
+    expect(r.said.slice(1)).toEqual(read(thanks));
   });
 });
 
@@ -300,8 +302,9 @@ function axeToCredits(h: H): string[][] {
   p.vy = 0;
   const texts: string[][] = [];
   for (let i = 0; i < 2000 && !(h.top() instanceof CreditsScene); i++) {
-    // OK while the castle's text waits (it never moves on by itself).
-    h.step(h.top() instanceof LevelScene && worldOf(h).castleWaiting && i % 2 === 0 ? ['jump'] : []);
+    // OK while the castle's text (or, 0.4.54, the fake's remark card) waits: never by itself.
+    const waits = h.top() instanceof LevelScene ? worldOf(h).castleWaiting : true;
+    h.step(waits && i % 2 === 0 ? ['jump'] : []);
     const t = h.top() instanceof LevelScene ? worldOf(h).castleText : null;
     if (t && t.length && t.join('|') !== (texts.at(-1) ?? []).join('|')) texts.push([...t]);
   }
@@ -334,21 +337,18 @@ describe('8-4 in the game: the wand, the castle pages, then the credits', () => 
     const from = h.said.length;
     const texts = axeToCredits(h);
     expect(w.entities.some((e) => e instanceof WandBreak)).toBe(true);
-    expect(texts).toEqual([
-      ['THANK YOU MARIO!'],
-      ['THANK YOU MARIO!', '', ...PAGES.reveal],
-      ['THANK YOU MARIO!', '', ...PAGES.news],
-    ]);
-    const said = h.said.slice(from).filter((s) => !/^Bowser\b/.test(s)); // the Bowser bar's lines: bowser-bar.test.ts
-    const news = ['THANK YOU MARIO!', ...PAGES.news, 'OK to continue.'].join(' ');
+    expect(texts).toEqual(shown('THANK YOU MARIO!'));
+    // The Bowser bar's lines: bowser-bar.test.ts; the fake's costume and remark (0.4.54): costumes.
+    const said = h.said
+      .slice(from)
+      .filter((s) => !/^Bowser\b|costume|^MARIO: ANOTHER FAKE|^A brainwashed|poof/i.test(s));
     expect(said).toEqual([
       WAND_BREAK_SAID,
-      ['THANK YOU MARIO!', ...PAGES.reveal, 'OK to continue.'].join(' '),
-      news,
+      ...read('THANK YOU MARIO!'),
       `Credits. ${STORY_NOT_OVER.filter(Boolean).join(' ')}`,
     ]);
-    // The news is read once, not again with the credits.
-    expect(said.filter((s) => s.includes(PAGES.news[0] as string))).toHaveLength(1);
+    // The wand's page is read once, not again with the credits.
+    expect(said.filter((s) => s.includes(FINALE_PAGES.news[0] as string))).toHaveLength(1);
     const credits = h.top() as CreditsScene;
     expect(credits.lines).toEqual(creditsLines(true));
   });

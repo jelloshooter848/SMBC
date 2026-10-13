@@ -32,10 +32,10 @@ const placed = levelIds().flatMap((id) => {
 });
 
 /**
- * The two who speak for no one: 1-2's pipe keeper says where the warp zone's pipe goes (owner
- * ask, 0.4.23), and Fred the frog (8-4) goes home with Jason once Sophia III is freed.
+ * The one who speaks for no one: 1-2's pipe keeper says where the warp zone's pipe goes (owner
+ * ask, 0.4.23). (Fred the frog by 8-4's trap pipe was the other, until 0.4.54.)
  */
-const ONE_STATE = ['pipe-keeper', 'fred'];
+const ONE_STATE = ['pipe-keeper'];
 
 const text = (pages: readonly Page[]) => pages.flat().join(' ');
 

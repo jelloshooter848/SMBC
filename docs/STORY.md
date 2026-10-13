@@ -85,16 +85,16 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 
 ### Who is where
 
-| World | The hero's homeland (look)      | Hero       | Hidden in                                       | Welcome on the start node | Hint NPCs, inside the hero's level                                   |
-| ----- | ------------------------------- | ---------- | ----------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
-| 1     | The Mushroom Kingdom (SMB)      | Luigi      | 1-1's bonus room, top-right ledge               | (Toad's scene, 2.4)       | A villager, 1-1 column 55, by the bonus pipe (57)                    |
-| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky palace, past the coin heaven's end      | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
-| 3     | The year 20XX (Mega Man)        | Mega Man   | 3-1 space station, via a hidden teleporter      | A lab robot               | Dr. Light, by 3-1's vine block (131)                                 |
-| 4     | Planet Zebes (Metroid)          | Samus      | 4-2 cavern, down the vine area's warp pipe      | A scientist               | The Chozo statue, by 4-2's vine block (64)                           |
-| 5     | Transylvania (Castlevania)      | Simon      | 5-1 crypt, the key's locked door in 5-1-bonus   | A merchant                | The townsperson, in 5-1's coin room (0.4.52)                         |
-| 6     | A ninja village (Ninja Gaiden)  | Ryu        | 6-2 dojo, through a trick wall in a pipe room   | The village elder         | Irene Lew, at 6-2's start                                            |
-| 7     | The front (Contra)              | Bill       | 7-3 camp, falling through the exploding bridge  | A sergeant                | Lance, at 7-3's start                                                |
-| 8     | The Underworld (Blaster Master) | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | A miner                   | Fred the frog, by 8-4-end's trap pipe (10); Jason, behind it         |
+| World | The hero's homeland (look)      | Hero       | Hidden in                                      | Welcome on the start node | Hint NPCs, inside the hero's level                                   |
+| ----- | ------------------------------- | ---------- | ---------------------------------------------- | ------------------------- | -------------------------------------------------------------------- |
+| 1     | The Mushroom Kingdom (SMB)      | Luigi      | 1-1's bonus room, top-right ledge              | (Toad's scene, 2.4)       | A villager, 1-1 column 55, by the bonus pipe (57)                    |
+| 2     | Hyrule (Zelda II)               | Link       | 2-1 sky palace, past the coin heaven's end     | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
+| 3     | The year 20XX (Mega Man)        | Mega Man   | 3-1 space station, via a hidden teleporter     | A lab robot               | Dr. Light, by 3-1's vine block (131)                                 |
+| 4     | Planet Zebes (Metroid)          | Samus      | 4-2 cavern, down the vine area's warp pipe     | A scientist               | The Chozo statue, by 4-2's vine block (64)                           |
+| 5     | Transylvania (Castlevania)      | Simon      | 5-1 crypt, the key's locked door in 5-1-bonus  | A merchant                | The townsperson, in 5-1's coin room (0.4.52)                         |
+| 6     | A ninja village (Ninja Gaiden)  | Ryu        | 6-2 dojo, through a trick wall in a pipe room  | The village elder         | Irene Lew, at 6-2's start                                            |
+| 7     | The front (Contra)              | Bill       | 7-3 camp, falling through the exploding bridge | A sergeant                | Lance, at 7-3's start                                                |
+| 8     | The Underworld (Blaster Master) | Sophia III | 8-1 garage, the key's blast door in 8-1-bonus  | A miner                   | Jason, in 8-1's coin room (0.4.54)                                   |
 
 Plus one NPC that is not a hint for a hero: the **pipe keeper** in 1-2's warp zone (2.4), who says where its pipe
 goes. Hint NPCs are partners: you walk up and talk with the **TALK button** (`TALK`, the statue `READ`; not up since 0.4.43), campaign only, and they
@@ -456,8 +456,15 @@ In co-op the player nearer the axe is the one who jumps or looks; the other stan
 plays on every clear; the remark card plays the first time per castle per file (after that the hero just looks for
 a moment and pulls the axe), so replays stay quick.
 
-**8-4 is the real thing** (KEEP). No flicker and no puff. On first entering the bridge room (campaign), Bowser
-speaks in the prompt box before the fight:
+**8-4 is a fake too** (NEW, 0.4.54, owner: World 8 is pure Blaster Master; the real king waits in **Bowser's
+Castle**, its own place after World 8, from 0.4.55). 8-4's fake, the eighth and last, wears the Plutonium Boss
+costume over a **Piranha Plant**, with the tell, the puff, the jump-over and the remark like every other fake (its
+lines are in 2.11). Classic play keeps 8-4's real king, and the game's end, exactly as before.
+
+**The real king** (KEEP: no flicker and no puff) speaks on first entering **the last castle's** bridge room
+(campaign), in the prompt box before the fight. Since 0.4.54 this follows the finale switch (`story/finale.ts`):
+it plays only where the real king waits, so while the last castle is still 8-4 (a fake) it plays nowhere, and a
+file keeps the beat for Bowser's Castle:
 
 ```text
 BOWSER: NO MORE STAND-INS,
@@ -465,7 +472,7 @@ BOWSER: NO MORE STAND-INS,
 REALLY ME! BWA HA HA!
 ```
 
-The 8-4 castle's first page then confirms it was real (2.12).
+The last castle's first page then confirms it was real (2.12).
 
 **The Lost Kingdom** (Chapter 2, unchanged) has its own fake Bowsers (Lost 1-4 to 7-4). The same tell and the same
 always-reveal apply there, and their castles get a reveal page too: page 1 names the creature, page 2 is the story
@@ -3955,10 +3962,10 @@ PLEASE HELP!
 ```text
 MINER:
 
-THE BOY WENT INTO THE KING'S
-OWN CASTLE AFTER HIS FROG.
-THAT FROG TAKES THE PIPES
-NOBODY ELSE DOES.
+THE TANK DROVE DOWN A HATCH
+IN THE FOREST, AND THE
+BOY'S FROG DOVE AFTER HER.
+HE'S LOOKING FOR A WAY DOWN.
 ```
 
 ```text
@@ -3994,7 +4001,48 @@ THE BOY AND HIS FROG.
 (Peach clue 3. Nobody can explain it; it points at her SMB2 kit and the Lost Kingdom's turnips.)
 
 **Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Sophia III (and her lost pilot): missing,
-they plead and say where to look (by place, never by level number); freed, their found lines.
+they plead and say where to look (by place, never by level number); freed, their found lines. (0.4.54: their
+hints now point at the hatch in the forest and the pipe down to Jason, not the king's castle: see "Sophia III's
+way in" below.)
+
+**8-1: the sighting.** NEW (0.4.54, `story/sightings.ts`). **Trigger:** the first time 8-1 starts on the file
+while Sophia III is neither freed nor met and 8-1 is not cleared, once every player stands on the start screen
+(campaign only, never while a player is Sophia III). Once per file (`sighting:sophia`). **Staging:** play holds.
+Brainwashed Sophia III is parked by the start castle, cannon up; she turns to face the hero (a beep), then turns
+back and drives off along the forest floor, the camera following her a little. She hover-hops over Fred, who sits
+in her way; with wand sparkles the steel hatch in the ground slides open for her, and she drops in nose first. Fred
+looks down the shaft and dives in after her, head first. The hatch slams shut: CLANG (a little dust, no shake).
+The camera comes back. A beat later player 1's hero speaks; JUMP, ATTACK or MENU skips to the card. Said:
+_A brainwashed Sophia the Third drives into a hatch in the ground. A frog dives after her, and the hatch slams
+shut._
+
+```text
+<HERO>:
+
+SOPHIA III AND THE FROG
+WENT DOWN THAT HOLE, AND
+IT SHUT. I CAN'T FOLLOW...
+THERE MUST BE ANOTHER WAY.
+```
+
+**The hatch.** NEW (0.4.54, owner; `locked-hatch`, entities/objects/keys.ts). A riveted steel blast hatch with
+hazard stripes, flush with the ground by 8-1's start (columns 13-14). It is **always shut and solid** in play (only
+the sighting opens it): the ground under it is the map's own. Standing on it, the TALK button reads OPEN (said:
+_A locked hatch. Press OPEN to try it._); pressing it plays the locked card once a visit, the player's hero
+speaking (the same card as 5-1's crypt gate, 2.8); after that the strip just reads LOCKED (said once on coming near:
+_Locked._). Once Sophia III is freed it is plain ground: no prompt. Classic play has no hatch.
+
+**Sophia III's way in: the key and the blast door** (NEW, 0.4.54, owner; the 0.4.52 key and locked door, 2.8,
+reused). The real way down is 8-1's coin room (`8-1-bonus`, down the pipe at column 104). Its 10-coin brick
+(column 12, row 9, three tiles over the floor) is a **key box**: bumped from below (any hero, small or big) the key
+drops out of its underside to the floor (_A key pops out._) and the box is spent; PICK UP takes it (_Got the
+key._). The **locked blast door** in the back wall (column 4, the Underworld dungeon's own door) reads LOCKED
+without it; touched by the hero carrying the key it opens by itself (_The key turns. The door opens._), and UP goes
+down into Sophia III's garage (`8-4-garage`, its id kept, now an area of 8-1), dropping in through a shaft in its
+roof; the garage's pipe leads back up out of 8-1's pipe at column 115. The key lasts one visit, and once Sophia III
+is freed the door stands open for good and the brick keeps its coins, all as in 5-1-bonus. The old way in (8-4-end's
+trap pipe, Jason's pool and Fred's flooded tunnel) is gone: the trap pipe is the original's again, and 8-4-jason
+and 8-4-fred are retired (no level leads to them).
 
 **8-1: a mutant.** NEW partner (`mutant`, new art: a lavender blob with one big eye and a fanged grin). A nice
 mutant, mostly, at **8-1's start** (column 10), among the forest ruins. Once a boss in Sophia III's own caves.
@@ -4009,10 +4057,10 @@ NICE MUTANT. MOSTLY.
 ```text
 MUTANT:
 
-THE BOY WITH THE FROG WENT
-INTO THE KING'S OWN CASTLE.
-HE LOST HIS TANK. PLEASE,
-HELP HIM. GRBL.
+THE TANK WENT DOWN THAT
+HATCH, AND THE BOY WENT
+DOWN A PIPE TO FIND ANOTHER
+WAY. HELP HIM. GRBL.
 ```
 
 After Sophia III is freed:
@@ -4057,9 +4105,9 @@ BITES.
 ENGINEER:
 
 THE KING'S SPELL TOOK THE
-TANK, SOPHIA. HER PILOT
-WENT INTO THE KING'S CASTLE
-AFTER HIS FROG. HELP THEM!
+TANK, SOPHIA. HER PILOT IS
+BACK IN THE FOREST, DOWN A
+PIPE. HELP THEM!
 ```
 
 After Sophia III is freed:
@@ -4106,10 +4154,10 @@ MUTANTS.
 ```text
 ICE MINER:
 
-SAW A BOY CHASE A FROG INTO
-THE KING'S CASTLE. THE FROG
-KNOWS A PIPE THE GUARDS
-DON'T. PLEASE, FOLLOW IT!
+SAW A FROG DIVE DOWN A
+HATCH IN THE FOREST. THE
+BOY WENT DOWN A PIPE TO
+FOLLOW. PLEASE, HELP HIM!
 ```
 
 After Sophia III is freed:
@@ -4150,17 +4198,16 @@ one stays when Fred has gone home.
 GUARD MUTANT:
 
 GRBL. I GUARD THIS HALL.
-I'M BAD AT IT. A BOY AND HIS
-FROG GOT RIGHT PAST ME.
+I'M BAD AT IT. NOBODY GETS
+PAST ME. ...EXCEPT YOU.
 ```
 
 ```text
 GUARD MUTANT:
 
-THE FROG TOOK A PIPE NOBODY
-USES, BY THE KING'S BRIDGE.
-FOLLOW THE FROG. PLEASE.
-THE BOY IS LOST.
+THE BOY AND HIS TANK? NOT
+IN HERE. THEY WENT DOWN A
+HATCH IN THE FOREST. GRBL.
 ```
 
 After Sophia III is freed:
@@ -4190,9 +4237,10 @@ MEAN, GO AHEAD. I GUARD
 BADLY. THE KING KNOWS.
 ```
 
-**Hint NPC: Fred, by the trap pipe.** NEW partner (`fred`). Fred the frog sits beside **8-4-end's trap pipe
-(column 10)**, the one that leads down to Jason's secret area in the campaign. He can't talk, so his second page is
-a caption. (Fred appears in Jason's area too, by the pool: the frog gets around.)
+**Hint NPC: Fred, by the trap pipe.** REMOVED (0.4.54): Fred no longer sits by 8-4-end's trap pipe. He dives down
+8-1's hatch after Sophia III in her sighting, and rests beside her in the garage. His old pages:
+
+Old:
 
 ```text
 FRED:
@@ -4200,16 +4248,30 @@ FRED:
 RIBBIT.
 ```
 
+Old:
+
 ```text
 THE FROG LOOKS AT YOU,
 THEN DOWN THE PIPE. THEN
 AT YOU AGAIN.
 ```
 
-After Sophia III is freed, Fred is gone from the pipe (he is home).
+**Hint NPC: Jason.** MOVES (0.4.54, owner: option A): from his secret area behind 8-4-end's trap pipe to **8-1's
+coin room** (`8-1-bonus`, column 8), between the key box and the locked blast door. The hatch shut on his tank and
+his frog, and he lost the key.
 
-**Hint NPC: Jason.** KEEP, in the hidden Underworld area behind the trap pipe. Talking to him starts the follow-Fred
-swim.
+```text
+JASON:
+
+FRED! SOPHIA! THE HATCH
+SHUT ON THEM! THIS DOOR
+GOES DOWN THERE TOO, BUT I
+LOST THE KEY IN HERE.
+```
+
+His old pages (the follow-Fred swim, gone with that route):
+
+Old:
 
 ```text
 JASON:
@@ -4219,6 +4281,8 @@ FRED! FRED, COME BACK!
 A FROG? GREEN, THIS BIG?
 ```
 
+Old:
+
 ```text
 JASON:
 
@@ -4227,6 +4291,8 @@ SWAM DOWN A CRACK. LAST
 TIME HE DID THAT, I FOUND
 A TANK.
 ```
+
+Old:
 
 ```text
 JASON:
@@ -4255,6 +4321,39 @@ YOURSELF NOW? WITHOUT ME?
 ...I'M SO PROUD. AND A
 LITTLE JEALOUS.
 ```
+
+**Castle 8-4** (the eighth fake, NEW, 0.4.54, owner; campaign only, art by CD53 in `content/sprites/costumes.ts`), in
+a villain costume: the Plutonium Boss: a bunch of purple party balloons taped over his shell and the back of his
+head (his spikes poking up over them), glow sticks taped across them, green ping-pong balls stuck on, a grey
+cardboard visor over his brow with a big gold eye painted on (his own eye looks out of a hole: two eyes, and only
+one blinks) and painted teeth, and a green rubber ball with a slit eye on a string round his neck. Breathing fire,
+his jaw drops open under the painted teeth. Shed: the deflated balloons in a heap (one still full, bobbing on its
+string), the visor flat on its back staring up, the glow sticks, the green ball rolled to the front. His true form
+is a **Piranha Plant** knocked silly, out of its pipe and standing on its roots, jaws hanging open (the one SMB
+enemy no other fake used). The screen reader says: _The Plutonium Boss costume falls off in a heap: purple party
+balloons, glow sticks, a cardboard visor and a green ball._ The hero's remark (owner's pick, option 1):
+
+```text
+<HERO>:
+
+ANOTHER FAKE?! A PIRANHA
+PLANT IN PARTY BALLOONS.
+THE REAL KING IS NEXT.
+```
+
+With Sophia III, the world's own hero, playing (freed in 8-1, so she can meet him; her terse machine voice):
+
+```text
+SOPHIA III:
+
+SCAN: ZERO PLUTONIUM.
+MUTANT: ONE PIRANHA PLANT.
+REAL TARGET: DEAD AHEAD.
+```
+
+Toad's pages at 8-4 follow the finale switch (2.12): while 8-4 is still the last castle (0.4.54) Toad shows only
+the wand's page under the thanks (he never calls this fake the real king); from 0.4.55 the real king's pages move to
+Bowser's Castle.
 
 **Sophia III, captive:** KEEP (the shared first card, then the brainwashing speaking through her computer):
 
@@ -4310,6 +4409,21 @@ ANY TIME!
 
 ### 2.12 World 8-4: Bowser falls, the wand breaks, the rift
 
+**The finale switch** (NEW, 0.4.54). Everything below belongs to the campaign's **last castle**
+(`story/finale.ts` `FINALE`): 8-4 until Bowser's Castle comes in 0.4.55, which flips it there in one place. While
+it is 8-4, whose king is a fake since 0.4.54 (2.11), the wand still breaks and the credits and the rift still
+follow from 8-4, so the campaign never dead-ends, but Toad's first page (the real king) and Bowser's boast (2.3a)
+wait for the real king: Toad shows only the wand's page under the thanks:
+
+```text
+THANK YOU <HERO>!
+
+BOWSER FELL... AND THE
+WAND BROKE! ITS PIECES
+FELL THROUGH A CRACK IN
+THE WORLD!
+```
+
 **The scene** (KEEP, as built): the axe, the bridge falls, Bowser falls. As he drops, the wand spins up out of his
 hand, cracks with a white flash (no flash with reduce flashing), and breaks into glowing pieces. A jagged,
 shimmering crack opens in the air over the lava; the pieces swirl into it and it stays open, humming. The hero
@@ -4317,7 +4431,7 @@ walks on. Said: _The wand spins out of Bowser's hand and breaks! Its glowing pie
 
 **Who stands at the end:** KEEP. In the campaign, our Toad stands at `8-4-end` column 57 in place of the princess.
 
-**Castle 8-4** (KEEP):
+**The last castle** (KEEP; 8-4's before 0.4.54, Bowser's Castle's from 0.4.55):
 
 ```text
 THANK YOU <HERO>!
@@ -4364,8 +4478,8 @@ HOLDING IT SHUT...
 TOAD:
 
 THE LAST SPELL! THE TANK IS
-STILL UNDER IT. HER PILOT IS
-LOST IN THE KING'S CASTLE.
+STILL UNDER IT, DOWN THAT
+HATCH IN THE FOREST.
 ```
 
 - **Toad works out the note** (a major scene: Toad walks in). **Trigger:** the first time the World 8 map shows
