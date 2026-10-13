@@ -49,3 +49,28 @@ export function shownStage(world: number, stage: number, campaignOrder: boolean 
   const label = CAMPAIGN_LABELS[`${world}-${stage}`];
   return label ? Number(label.split('-')[1]) : stage;
 }
+
+/** A level shown by a place's name: on the HUD and the intro card (`shown`), to the announcer (`said`). */
+export interface PlaceName {
+  readonly shown: string;
+  readonly said: string;
+}
+
+/**
+ * Levels the player sees by a place's name, never by a number (0.4.55: BOWSER'S CASTLE, internal
+ * 8-5, the VALLEY OF BOWSER's node; owner, Oct 13). Keyed by world and stage, so a level's areas
+ * share it. Every play shows it (the level is the campaign's own; classic never reaches it).
+ */
+export const PLACE_NAMES: Readonly<Record<string, PlaceName>> = {
+  '8-5': { shown: "BOWSER'S CASTLE", said: "Bowser's Castle" },
+};
+
+/** The place name world `world`, stage `stage` is shown by, or null for a numbered level. */
+export function shownPlace(world: number, stage: number): PlaceName | null {
+  return PLACE_NAMES[`${world}-${stage}`] ?? null;
+}
+
+/** What the announcer calls a level: its place's name, else 'World 4-1' (the campaign's label). */
+export function spokenLevel(world: number, stage: number, campaignOrder: boolean | undefined): string {
+  return shownPlace(world, stage)?.said ?? `World ${world}-${shownStage(world, stage, campaignOrder)}`;
+}

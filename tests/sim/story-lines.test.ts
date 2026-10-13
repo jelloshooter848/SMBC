@@ -15,7 +15,8 @@ import { loadSave } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
 import { pageSaid } from '@game/story/cards';
 import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
-import { finaleKingIsReal } from '@game/story/finale';
+import { FINALE, finaleKingIsReal } from '@game/story/finale';
+import { px } from '@engine/math/units';
 import {
   ANCHOR_LARRY_PAGES,
   ANCHOR_LARRY_SAID,
@@ -267,58 +268,63 @@ describe('restyled levels: no remark any more (0.4.23, docs/STORY.md 2.14)', () 
   });
 });
 
-describe('8-4’s bridge room: the real king (2.3a item 5)', () => {
-  // 0.4.54: the boast belongs to the real king's bridge room (story/finale.ts FINALE). While the
-  // last castle is still 8-4, whose king is a fake, it plays nowhere, and the file keeps its beat
-  // for Bowser's Castle (0.4.55 flips the switch, and the test below runs again there).
-  it.runIf(!finaleKingIsReal())('campaign 8-4 (a fake now): he says nothing, and the beat waits', () => {
+describe("BOWSER'S CASTLE's bridge: the real king (2.3a item 5)", () => {
+  // The boast belongs to the real king's bridge (story/finale.ts FINALE): since 0.4.55 BOWSER'S
+  // CASTLE, one room, from its bridge section (FINALE.bridgeAt, column 480) on.
+  /** Into Bowser's Castle at its last checkpoint (474), then right until the box or the bridge. */
+  function toBridge(h: H): LevelScene {
+    h.game.startLevel(getLevel(BRIDGE_ROOM), { x: 474, y: 9, mode: 'stand' });
+    const room = h.game.scenes.top as LevelScene;
+    expect(room).toBeInstanceOf(LevelScene);
+    h.step();
+    // Not yet: the checkpoint is before the bridge section.
+    expect(h.top()).toBe(room);
+    for (let i = 0; i < 400 && h.top() === room && room.world.player.body.x < px(488 * 16); i++)
+      h.step(['right']);
+    return room;
+  }
+
+  it('campaign: Bowser speaks in the prompt box as the bridge section starts, once per file; BACK closes', () => {
+    expect(finaleKingIsReal()).toBe(true);
+    expect([BRIDGE_ROOM, FINALE.bridgeAt]).toEqual(['8-5', 480]);
     const h = campaign([], { character: LINK.id, freed: ['mario', 'link'] });
-    expect(BRIDGE_ROOM).toBe('8-4-end');
-    start(h, BRIDGE_ROOM);
+    const room = toBridge(h);
+    const box = h.top() as BowserSaysScene;
+    expect(box).toBeInstanceOf(BowserSaysScene);
+    expect(room.world.player.body.x).toBeGreaterThanOrEqual(px(480 * 16));
+    expect(box.lines).toEqual(noMoreStandIns('LINK'));
+    expect(texts(h)).toEqual(expect.arrayContaining([...noMoreStandIns('LINK')]));
+    expect(h.said.at(-1)).toBe(
+      "BOWSER: NO MORE STAND-INS, LINK. THIS TIME IT'S REALLY ME! BWA HA HA! OK to continue.",
+    );
+    const frame = room.world.frame;
+    h.idle(CARD_GUARD_FRAMES);
+    expect(room.world.frame).toBe(frame);
+    h.tap('attack');
+    expect(h.top()).toBe(room);
+    expect(loadSave(1)?.story).toContain(beat.bowser84);
+    toBridge(h);
     expect(h.top()).toBeInstanceOf(LevelScene);
-    expect(h.said.join(' ')).not.toContain('NO MORE STAND-INS');
-    expect(loadSave(1)?.story ?? []).not.toContain(beat.bowser84);
-    expect(noMoreStandIns('LINK')).toEqual([
-      'BOWSER: NO MORE STAND-INS,',
-      "LINK. THIS TIME IT'S",
-      'REALLY ME! BWA HA HA!',
-    ]);
   });
 
-  it.runIf(finaleKingIsReal())(
-    'campaign: Bowser speaks in the prompt box before the fight, once per file; BACK closes',
-    () => {
-      const h = campaign([], { character: LINK.id, freed: ['mario', 'link'] });
-      const room = start(h, BRIDGE_ROOM);
-      const box = h.top() as BowserSaysScene;
-      expect(box).toBeInstanceOf(BowserSaysScene);
-      expect(box.lines).toEqual(noMoreStandIns('LINK'));
-      expect(texts(h)).toEqual(expect.arrayContaining([...noMoreStandIns('LINK')]));
-      expect(h.said.at(-1)).toBe(
-        "BOWSER: NO MORE STAND-INS, LINK. THIS TIME IT'S REALLY ME! BWA HA HA! OK to continue.",
-      );
-      const frame = room.world.frame;
-      h.idle(CARD_GUARD_FRAMES);
-      expect(room.world.frame).toBe(frame);
-      h.tap('attack');
-      expect(h.top()).toBe(room);
-      expect(loadSave(1)?.story).toContain(beat.bowser84);
-      start(h, BRIDGE_ROOM);
-      expect(h.top()).toBeInstanceOf(LevelScene);
-    },
-  );
+  it('campaign 8-4 (a fake since 0.4.54): he says nothing there, and the beat waits', () => {
+    const h = campaign([], { character: LINK.id, freed: ['mario', 'link'] });
+    start(h, '8-4-end');
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    expect(loadSave(1)?.story ?? []).not.toContain(beat.bowser84);
+  });
 
-  it('outside the campaign, and on a file that beat 8-4, he says nothing', () => {
+  it('outside the campaign, and on a file that beat the game, he says nothing', () => {
     const h = makeGame();
-    h.game.newGame(MARIO, '8-4');
+    h.game.newGame(MARIO, '8-5');
     h.until(() => h.top() instanceof LevelScene, 400);
-    start(h, BRIDGE_ROOM);
+    toBridge(h);
     expect(h.top()).toBeInstanceOf(LevelScene);
     const old = makeGame();
-    file({ cleared: ['8-4'] });
+    file({ cleared: ['8-4'], gameCleared: true });
     old.game.openFile(1);
     old.idle(4);
-    start(old, BRIDGE_ROOM);
+    toBridge(old);
     expect(old.top()).toBeInstanceOf(LevelScene);
   });
 });

@@ -686,8 +686,8 @@ describe('save codes: format', () => {
     expect(canonical(roundTrip(s))).toEqual(canonical(s));
   });
 
-  it('version 3 reserves the Valley of Bowser; until its page exists a file loads without it', () => {
-    // save-code-valley.test.ts round-trips it with the page registered, as its release will.
+  it('version 3 reserves the Valley of Bowser; with its page live (0.4.55) a file keeps it', () => {
+    // save-code-valley.test.ts checks what each id costs.
     const s = {
       ...midSave(),
       pages: [...midSave().pages, 'valley-of-bowser'],
@@ -697,9 +697,9 @@ describe('save codes: format', () => {
     const r = decodeSaveCode(encodeSaveCode(s), 2);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // This build has no such page: dropped as any unknown page is, the hero back on a real one.
-    expect(r.save.pages).not.toContain('valley-of-bowser');
-    expect(r.save.position.page).not.toBe('valley-of-bowser');
+    // BOWSER'S CASTLE's level exists, so its page is live: kept, the hero still standing there.
+    expect(r.save.pages).toContain('valley-of-bowser');
+    expect(r.save.position).toEqual({ page: 'valley-of-bowser', node: 'bowsers-castle' });
     expect(r.save.cleared).toContain('8-5');
   });
 

@@ -6,7 +6,7 @@ import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import { beat } from '../story/beats';
 import { pageSaid } from '../story/cards';
 import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '../story/script';
-import { riftOpen } from './world-gate';
+import { RIFT_PAGE, riftOpen } from './world-gate';
 import type { MapProgress } from './types';
 
 /*
@@ -54,15 +54,16 @@ export function dueScenes(g: GuideInput): ToadScene[] {
   const p = g.progress;
   const page = g.page;
   const smb = /^smb-\d+$/.test(page);
-  if (!smb && page !== 'hub' && page !== 'arena') return out;
+  if (!smb && page !== 'hub' && page !== 'arena' && page !== RIFT_PAGE) return out;
   const add = (ids: string[], pages: Page[], walk = false) => {
     const fresh = ids.filter((id) => !g.seen(id));
     if (fresh.length) out.push({ ids: fresh, pages, walk });
   };
   // The major scenes.
   if (g.crash && !g.seen(beat.crash)) add([beat.crash], [...CRASH_PAGES], true);
-  // The rift waits for Sophia III too (0.4.23, S3: map/world-gate.ts riftOpen).
-  if (page === 'smb-8' && riftOpen(p, g.freed)) add([beat.rift], riftPages(g.hero), true);
+  // The rift waits for Sophia III too (0.4.23, S3: map/world-gate.ts riftOpen). Since 0.4.55 it
+  // opens on the VALLEY OF BOWSER, after Bowser's Castle (RIFT_PAGE).
+  if (page === RIFT_PAGE && riftOpen(p, g.freed)) add([beat.rift], riftPages(g.hero), true);
   // Toad's World 1 scene (2.4): back on the map after 1-0 (cleared or skipped), once per file.
   if (page === 'smb-1' && p.cleared.includes('1-0')) add([beat.enter('smb-1')], [...WORLD1_PAGES], true);
   if (page === 'hub') add([beat.hub], [HUB_PAGE]);

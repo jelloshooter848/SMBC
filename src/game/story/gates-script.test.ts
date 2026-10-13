@@ -48,6 +48,16 @@ describe("S3's story lines", () => {
 
   it('castles 1-4 to 8-4 each have a remark and their pages that fit (8-4 a fake since 0.4.54)', () => {
     expect(REMARK_CASTLES).toEqual(['1-4', '2-4', '3-4', '4-4', '5-4', '6-4', '7-4', '8-4']);
+    // 0.4.55: the finale is BOWSER'S CASTLE, the real king: Toad's two finale pages there. 8-4 is
+    // an ordinary fake castle now: one page of its own (the Piranha Plant, the castle ahead).
+    expect(FINALE.castle).toBe('8-5');
+    expect(castlePages('8-5')).toBe(FINALE_PAGES);
+    expect(castlePages('8-4')?.reveal).toEqual([
+      'A PIRANHA PLANT! THE KING',
+      'IS OUT OF STAND-INS NOW.',
+      'HIS CASTLE IS JUST AHEAD!',
+    ]);
+    expect(castlePages('8-4')?.news).toBeUndefined();
     for (const id of REMARK_CASTLES) {
       const c = castlePages(id);
       expect(c, id).toBeDefined();

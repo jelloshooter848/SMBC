@@ -24,6 +24,7 @@ import { LuigiRunsScene } from './luigi-runs';
 import { sightingDue } from './sightings';
 import { HeroSightingScene } from './hero-sighting';
 import { FINALE, finaleKingIsReal } from './finale';
+import { tileToSub } from '@engine/math/units';
 
 /*
  * The story scenes that play inside a level, over its frozen world (campaign only, storyOn), each
@@ -85,7 +86,14 @@ export function playLevelBeat(game: Game, scene: LevelScene): boolean {
     playStoryCards(game, scene.world, game.seen(beat.anchor42) ? LARRY_AGAIN_PAGES : LARRY_PAGES, resume);
     return true;
   }
-  if (level.id === BRIDGE_ROOM && finaleKingIsReal() && !game.seen(beat.bowser84)) {
+  if (
+    level.id === BRIDGE_ROOM &&
+    finaleKingIsReal() &&
+    !game.seen(beat.bowser84) &&
+    // A castle that is one room: once a player reaches the bridge section (FINALE.bridgeAt).
+    (FINALE.bridgeAt === undefined ||
+      scene.world.players.some((p) => p.body.x >= tileToSub(FINALE.bridgeAt ?? 0)))
+  ) {
     game.markSeen(beat.bowser84);
     const hero = fontText(game.state.character.name);
     game.scenes.push(

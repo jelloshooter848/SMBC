@@ -443,6 +443,12 @@ describe('save files', () => {
     // when shown); loading changes nothing else.
     const beat = put({ gameCleared: true, cleared: ['8-4'], pages: ['smb-1', 'smb-8'] });
     expect(beat.pages).toEqual(['smb-1', 'smb-8']);
+    // A file older than the flag that cleared 8-4 beat the game there (its old ending): it keeps
+    // that now the ending is Bowser's Castle's (0.4.55). A file that writes the flag keeps its own.
+    const { gameCleared: _, ...noFlag } = newSave(1, 'mario');
+    store.set(saveKey(1), JSON.stringify({ ...noFlag, cleared: ['8-4'], pages: ['smb-1', 'smb-8'] }));
+    expect(loadSave(1)?.gameCleared).toBe(true);
+    expect(put({ gameCleared: false, cleared: ['8-4'], pages: ['smb-1', 'smb-8'] }).gameCleared).toBe(false);
   });
 
   it('never throws when storage is unavailable', () => {

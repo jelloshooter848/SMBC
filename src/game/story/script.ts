@@ -37,7 +37,7 @@ export const STORY_TOAD_PAGES: readonly Page[] = [
 
 /* ---------------------------------------------------------------- 2.3a: the fake Bowsers */
 
-/** Bowser on first entering 8-4's bridge room (campaign), in the prompt box. */
+/** Bowser as the hero reaches the last castle's bridge (campaign; Bowser's Castle since 0.4.55), in the prompt box. */
 export function noMoreStandIns(hero: string): Page {
   return ['BOWSER: NO MORE STAND-INS,', `${hero}. THIS TIME IT'S`, 'REALLY ME! BWA HA HA!'];
 }
@@ -128,7 +128,7 @@ export interface CastlePages {
  * first page carries what Toad's old map card said.) The last castle's are FINALE_PAGES
  * (castlePages).
  */
-export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>> = {
+export const CASTLE_PAGES: Readonly<Record<string, CastlePages>> = {
   '1-4': {
     reveal: ['THAT GOOMBA WAS UNDER A', 'SPELL! THE KING DRESSED', 'IT UP AS HIMSELF.'],
     news: ['THE REAL KING HIDES BEHIND', 'STAND-INS. HE FLED EAST,', 'WAND AND ALL.'],
@@ -163,6 +163,11 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
     reveal: ['A HAMMER BRO UNDER THE', 'SPELL. ANOTHER OF HIS', 'STAND-INS!'],
     news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
   },
+  // 0.4.55 (CD53's draft, costume-8.md; new text for the owner): 8-4's fake, the Piranha Plant;
+  // one page, then back to the map. The real king and the wand's pages are Bowser's Castle's.
+  '8-4': {
+    reveal: ['A PIRANHA PLANT! THE KING', 'IS OUT OF STAND-INS NOW.', 'HIS CASTLE IS JUST AHEAD!'],
+  },
 };
 
 /**
@@ -185,7 +190,7 @@ export function castlePages(id: string): CastlePages | undefined {
   return CASTLE_PAGES[id];
 }
 
-/** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
+/** Said once as the wand breaks over the last castle's lava (campaign; Bowser's Castle since 0.4.55; no on-screen text). */
 export const WAND_BREAK_SAID =
   "The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air.";
 
@@ -434,6 +439,16 @@ export const RIFT_SEALED_PAGES: readonly Page[] = [
   ),
   // 0.4.54: she is under 8-1 now (its hatch in the forest), no longer in the king's castle.
   toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT, DOWN THAT', 'HATCH IN THE FOREST.'),
+];
+
+/**
+ * (0.4.55) World 8's road on to the VALLEY OF BOWSER still sealed: Toad's reminder after 8-4 while
+ * Sophia III is captive (the rift is no longer here: it opens at Bowser's Castle). Page 2 is the
+ * rift reminder's own (where she is).
+ */
+export const VALLEY_SEALED_PAGES: readonly Page[] = [
+  toad('THE WAY ON TO THE KING IS', 'SEALED BY HIS MAGIC... AND', "WE STILL HAVEN'T FOUND", 'SOPHIA III!'),
+  RIFT_SEALED_PAGES[1] as Page,
 ];
 
 /** The map's hint line on a castle whose road is sealed (`name`: the hero's full name). */
@@ -2260,8 +2275,8 @@ export const FREED_TALKS: Readonly<Record<string, (you: string) => Page[]>> = {
       'SOPHIA III:',
       '',
       'ALERT. SCAN SHOWS A TEAR',
-      'IN SPACE UNDER THE LAST',
-      "CASTLE. THE KING'S WAND IS",
+      "IN SPACE UNDER THE KING'S",
+      'OWN CASTLE. HIS WAND IS',
       'HOLDING IT SHUT.',
     ],
     ['SOPHIA III:', '', 'BEYOND IT: A LAND NO MAP', 'SHOWS. NO KOOPA SIGNALS', 'THERE. NONE.'],

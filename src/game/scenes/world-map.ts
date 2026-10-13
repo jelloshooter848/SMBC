@@ -90,6 +90,7 @@ import { pageSaid } from '../story/cards';
 import {
   gateDue,
   gateScenes,
+  isRiftExit,
   localHint,
   localNode,
   localSpot,
@@ -1829,8 +1830,8 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * S3 (0.4.23, story only): the seal across a sealed road at the page's edge (World 8: the rift's
-   * crack, held shut), kept while a gate scene runs until it shatters; and a world's local beside
+   * S3 (0.4.23, story only): the seal across a sealed road at the page's edge (World 8's road on to
+   * the Lost Levels: the rift's crack, held shut; to the Valley, since 0.4.55, a seal), kept while a gate scene runs until it shatters; and a world's local beside
    * its start node, blinking now and then.
    */
   private drawGateAndLocal(r: Renderer, page: WorldMapPage, ox: number): void {
@@ -1840,7 +1841,8 @@ export class WorldMapScene implements Scene {
     const e = gate ? (gate.sealShown ? gate.gate.exit : null) : sealedExit(this.progress, page);
     const end = e?.points[e.points.length - 1];
     if (end) {
-      if (smbWorld(page.id) === 8) drawCrack(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
+      if (e && smbWorld(page.id) === 8 && isRiftExit(e))
+        drawCrack(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
       else drawSeal(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
     }
     const who = LOCAL_SPRITES[page.id];

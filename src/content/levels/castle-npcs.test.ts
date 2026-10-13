@@ -61,6 +61,14 @@ describe('castle ends: Toad and the princess', () => {
     expect(exitOf(l)).toMatchObject({ x: x - 1, next: 'end' });
   });
 
+  it("8-5 (BOWSER'S CASTLE, 0.4.55): Toad stands at the end and the game's (false) ending follows", () => {
+    // Owner: no Peach at Bowser's Castle (she is found at Lost 4-4); Toad, as at today's 8-4.
+    const l = load('8-5');
+    expect(at(l, 'toad')).toEqual([[558, 12]]);
+    expect(at(l, 'princess')).toEqual([]);
+    expect(exitOf(l)).toMatchObject({ x: 557, next: 'end' });
+  });
+
   it('no other map has Toad or the princess (but 1-0 and the training stages, where Toad greets the hero)', () => {
     const withNpc = [...maps.keys()].filter((id) => {
       const l = load(id);
@@ -69,7 +77,7 @@ describe('castle ends: Toad and the princess', () => {
     // The training stages (training/<hero>.map, 0.4.37 and 0.4.38): Toad guides in every hero's stage.
     const training = ['bill', 'link', 'luigi', 'megaman', 'ryu', 'samus', 'simon', 'sophia'];
     expect(withNpc.sort()).toEqual(
-      [...Object.keys(TOADS), ...Object.keys(PRINCESSES), '1-0', ...training].sort(),
+      [...Object.keys(TOADS), ...Object.keys(PRINCESSES), '1-0', '8-5', ...training].sort(),
     );
     for (const id of training) expect(maps.get(id)).toContain(join('levels', 'training'));
     expect(at(load('1-0'), 'toad')).toEqual([[6, 12]]);
