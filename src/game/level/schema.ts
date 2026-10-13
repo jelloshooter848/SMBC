@@ -114,7 +114,12 @@ export type Theme =
   | 'bm-forest'
   | 'bm-techno'
   | 'bm-ice'
-  | 'bm-vault';
+  | 'bm-vault'
+  // World 1 as the Mushroom Kingdom (0.4.48, campaign looks): 1-0, 1-1 and 1-3 under SMB's sky with
+  // far hills and Peach's Castle behind, their own hills, bushes and clouds rounder; 1-4 as Bowser's
+  // hold on a Mushroom Kingdom keep (a castle still). Decor and backdrop only.
+  | 'kingdom'
+  | 'kingdom-keep';
 
 /** Every theme, in the order the editor lists them. */
 export const THEMES: readonly Theme[] = [
@@ -183,6 +188,8 @@ export const THEMES: readonly Theme[] = [
   'bm-techno',
   'bm-ice',
   'bm-vault',
+  'kingdom',
+  'kingdom-keep',
 ];
 
 export const isTheme = (s: string): s is Theme => (THEMES as readonly string[]).includes(s);
@@ -206,7 +213,8 @@ export const isSwimLevel = (level: Pick<LevelData, 'theme' | 'swim'>): boolean =
  * The castle family: SMB's castle, the Lost Levels' castle under the daylight sky and its swim, and
  * the campaign looks of 5-4 (Simon's hall), 2-4 (Link's palace, 0.4.24), 3-4 (Wily's fortress,
  * 0.4.26), 4-4 (Tourian, Mother Brain's lair, 0.4.27), 6-4 (the demon temple,
- * Jaquio's lair, 0.4.29) and 7-4 (Red Falcon's alien lair, 0.4.30). Castle rules that key off the theme ask this, never the name.
+ * Jaquio's lair, 0.4.29), 7-4 (Red Falcon's alien lair, 0.4.30) and 1-4 (the Mushroom Kingdom's
+ * keep, 0.4.48). Castle rules that key off the theme ask this, never the name.
  */
 export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'castle' ||
@@ -217,7 +225,8 @@ export const isCastleTheme = (theme: Theme): boolean =>
   theme === 'megaman-fortress' ||
   theme === 'tourian-lair' ||
   theme === 'ng-temple' ||
-  theme === 'contra-lair';
+  theme === 'contra-lair' ||
+  theme === 'kingdom-keep';
 
 /**
  * The original's `cannotPassThroughGround`: underground and castle areas, where a Hammer Bro's
@@ -301,6 +310,8 @@ export function themeMusic(theme: Theme): string {
   if (theme === 'bm-techno') return 'bm-techno';
   if (theme === 'bm-ice') return 'bm-ice';
   if (theme === 'bm-vault') return 'bm-dungeon';
+  // World 1 as the Mushroom Kingdom (0.4.48): SMB's own tunes (the look is decor only).
+  if (theme === 'kingdom-keep') return 'castle';
   return 'overworld';
 }
 

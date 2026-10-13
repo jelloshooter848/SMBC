@@ -8,6 +8,10 @@ time: 300
 start: 1,6
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook, 0.4.48): 1-4, Bowser's hold on a Mushroom Kingdom keep in the Mushroom Kingdom's
+;; look (decor and backdrop only; the tiles, enemies and music are the level's own). Elsewhere it
+;; looks as it always did.
+campaignTheme: kingdom-keep
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144

@@ -2262,6 +2262,8 @@ export const tilesDef: SpriteDef = {
     'tree-top@mushroom-red': mushroomTop,
     'tree-trunk@mushroom-red': mushroomStem,
     'ground@castle-water': groundCastle,
+    // 1-4 as the Mushroom Kingdom's keep (0.4.48): the castle's own flagstones.
+    'ground@kingdom-keep': groundCastle,
     // The space station above 3-1 (Mega Man's stage).
     'ground@station': groundStation,
     'castle-brick@station': plateStation,

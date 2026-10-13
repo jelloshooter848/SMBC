@@ -51,6 +51,7 @@ export function enemyPalette(theme: Theme): string {
     case 'tourian-lair': // and 4-4 as Tourian, Mother Brain's lair (0.4.27)
     case 'ng-temple': // and 6-4 as the demon temple, Jaquio's lair (0.4.29)
     case 'contra-lair': // and 7-4 as Red Falcon's alien lair (0.4.30)
+    case 'kingdom-keep': // and 1-4 as the Mushroom Kingdom's keep (0.4.48)
       return 'enemies-castle';
     case 'water':
     case 'zelda2-water': // 2-2's lake keeps the water's fish and squids (0.4.24)
