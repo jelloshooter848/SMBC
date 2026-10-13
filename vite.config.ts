@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 import type { Plugin } from 'vite';
 import { pwaPlugin } from './tools/pwa/plugin.ts';
+import { offlinePlugin } from './tools/offline/plugin.ts';
 
 const base = process.env.VITE_BASE ?? '/';
 
@@ -58,23 +59,50 @@ function rawMapFiles(): Plugin {
   };
 }
 
-export default defineConfig({
-  base,
-  plugins: [rawMapFiles(), pwaPlugin({ version: appVersion })],
-  define: { __APP_VERSION__: JSON.stringify(appVersion) },
-  resolve: {
-    alias: {
-      '@engine': fileURLToPath(new URL('./src/engine', import.meta.url)),
-      '@game': fileURLToPath(new URL('./src/game', import.meta.url)),
-      '@content': fileURLToPath(new URL('./src/content', import.meta.url)),
+/**
+ * `pnpm build:offline` (vite build --mode offline, 0.4.49): the download, one index.html in
+ * dist-offline/ that plays from the disk (file://) with everything inside it (tools/offline/plugin.ts).
+ * Relative paths, one script, no public folder, no source map, and no PWA plugin: no service worker,
+ * manifest or Home Screen icon.
+ */
+const OFFLINE_BUILD = {
+  outDir: 'dist-offline',
+  sourcemap: false,
+  modulePreload: false,
+  assetsInlineLimit: () => true,
+  chunkSizeWarningLimit: 8192,
+  rolldownOptions: { output: { codeSplitting: false } },
+} as const;
+
+export default defineConfig(({ mode }) => {
+  const offline = mode === 'offline';
+  return {
+    base: offline ? './' : base,
+    publicDir: offline ? false : 'public',
+    plugins: [
+      rawMapFiles(),
+      offline
+        ? offlinePlugin({
+            version: appVersion,
+            favicon: fileURLToPath(new URL('./public/favicon.svg', import.meta.url)),
+          })
+        : pwaPlugin({ version: appVersion }),
+    ],
+    define: { __APP_VERSION__: JSON.stringify(appVersion) },
+    resolve: {
+      alias: {
+        '@engine': fileURLToPath(new URL('./src/engine', import.meta.url)),
+        '@game': fileURLToPath(new URL('./src/game', import.meta.url)),
+        '@content': fileURLToPath(new URL('./src/content', import.meta.url)),
+      },
     },
-  },
-  build: { target: 'es2022', sourcemap: true },
-  server: { port: 5173 },
-  test: {
-    environment: 'node',
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
-    // The level and map sims take a second or two each alone, far longer on a busy machine.
-    testTimeout: 30_000,
-  },
+    build: offline ? { target: 'es2022', ...OFFLINE_BUILD } : { target: 'es2022', sourcemap: true },
+    server: { port: 5173 },
+    test: {
+      environment: 'node',
+      include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+      // The level and map sims take a second or two each alone, far longer on a busy machine.
+      testTimeout: 30_000,
+    },
+  };
 });

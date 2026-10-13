@@ -16,7 +16,7 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 /*
  * iPhone Home Screen support in the game (0.4.44): Options → ADD TO HOME SCREEN and its guide,
  * the one-time phone tip after a first level, the Home Screen app's one-time note on its own
- * saves, and the title's UPDATE READY notice. Each card is read out and waits for a press. The
+ * saves (and the downloaded copy's, 0.4.49), and the title's UPDATE READY notice. Each card is read out and waits for a press. The
  * browser side (platform detection, the install prompt, the service worker) comes in through
  * GameDeps.homeScreen (main.ts); without it (the sims) none of this shows.
  */

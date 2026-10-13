@@ -81,11 +81,17 @@ function boot(): void {
 
   // Home Screen support (0.4.44): the browser's install prompt is saved for Options → ADD TO
   // HOME SCREEN, and production builds register the offline service worker (never `pnpm dev`).
+  // The download (0.4.49, `pnpm build:offline`) opened from the disk is a file:// page: no
+  // worker (that build has none, and file:// can't register one), no Home Screen row, and a
+  // one-time note that it keeps its own saves (game/pwa/home-screen.ts).
   const platform = currentEnv();
+  const fileCopy = location.protocol === 'file:';
+  const worker =
+    import.meta.env.PROD && import.meta.env.MODE !== 'offline' && !fileCopy && 'serviceWorker' in navigator;
   const install = captureInstallPrompt(window);
   const updates = watchServiceWorker(
     import.meta.env.BASE_URL,
-    import.meta.env.PROD && 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+    worker ? navigator.serviceWorker : undefined,
     () => location.reload(),
   );
   stopPageZoom(document);
@@ -121,6 +127,7 @@ function boot(): void {
       ios: isIOS(platform),
       phone: isPhone(platform),
       standalone: isStandalone(platform),
+      fileCopy,
       variant: () => installVariant(platform, install.available),
       prompt: () => install.prompt(),
       updateReady: () => updates.ready,

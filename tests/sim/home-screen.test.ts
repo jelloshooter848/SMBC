@@ -190,7 +190,7 @@ describe('UPDATE READY on the title', () => {
 // own saves, apart from the website's. A one-time note says so and points to the save codes.
 const FILE_COPY = { fileCopy: true };
 
-describe('the downloaded copy\'s note on its own saves', () => {
+describe("the downloaded copy's note on its own saves", () => {
   it('first launch from the disk: over the title, read out, waits for a press, naming COPY CODE and PASTE CODE', () => {
     const h = game(FILE_COPY);
     title(h);

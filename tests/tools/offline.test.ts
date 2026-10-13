@@ -9,9 +9,18 @@ import { inlineHtml, offlineReadme } from '../../tools/offline/plugin';
 // The download build (0.4.49, `pnpm build:offline`): one index.html that plays from the disk
 // (file://), with every script, style and picture inside it.
 
-/** Every src= and href= in `html` that points at another file (not a data: URL or a #fragment). */
+/** The page without the text of its scripts and styles. */
+function markup(html: string): string {
+  return html.replace(/(<(script|style)\b[^>]*>)[\s\S]*?<\/\2>/gi, '$1</$2>');
+}
+
+/**
+ * Every src= and href= in the tags of `html` (not inside a script or a style) that points at
+ * another file: not a data: URL or a #fragment.
+ */
 function externalRefs(html: string): string[] {
-  return [...html.matchAll(/\b(?:src|href)\s*=\s*["']?([^"'\s>]+)/gi)]
+  return [...markup(html).matchAll(/<[^>]*>/g)]
+    .flatMap((tag) => [...tag[0].matchAll(/\b(?:src|href)\s*=\s*["']?([^"'\s>]+)/gi)])
     .map((m) => m[1] as string)
     .filter((u) => !/^data:/i.test(u) && !u.startsWith('#'));
 }
@@ -81,7 +90,7 @@ describe('pnpm build:offline', () => {
       expect(externalRefs(html)).toEqual([]);
       expect(html).not.toMatch(/<script[^>]*\bsrc=/i);
       expect(html).not.toMatch(/<link[^>]*rel=["']?(stylesheet|modulepreload|manifest|apple-touch-icon)/i);
-      expect(html).not.toMatch(/sw\.js|webmanifest/);
+      expect(markup(html)).not.toMatch(/sw\.js|webmanifest|apple-touch-icon/);
       // The game is in there: the boot reporter, then the whole bundle as one inline module.
       const modules = [...html.matchAll(/<script type="module">/g)];
       expect(modules).toHaveLength(1);
