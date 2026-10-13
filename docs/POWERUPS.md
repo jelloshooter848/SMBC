@@ -173,6 +173,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing throws a fireball)       | refill             |
 | Magical Sword | `magical-sword` | Today's red tunic: the sword fires a beam while hearts are full         | refill             |
 
+- **The boomerang goes up** (0.4.46, roadmap #26, both modes): as the original Crossover's `LinkBoomerang.setDir`
+  reads the d-pad, UP alone throws it straight up from over his head, and UP with RIGHT or LEFT throws it diagonally
+  up that way (0.75 of its speed on each axis); otherwise it flies the way he faces. It fetches what it touches up
+  there too (0.4.43). The original also reads DOWN, DOWN+RIGHT and DOWN+LEFT; ours keeps DOWN for the down-thrust
+  (an owner decision). His training teaches it with a coin up high, and a picture of both throws.
 - **The belt** (0.4.43): the Bomb Bag or a spell just taken is the tool picked, so USE TOOL uses it at
   once (the Fire spell taken with the Jump spell picked cast the Jump spell instead).
 - **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as

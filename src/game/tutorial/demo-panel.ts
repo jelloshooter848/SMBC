@@ -43,6 +43,11 @@ export interface DemoState {
    * rim (1); past the dashed ring (DPAD_RUN_R) the ring lights, as on the real pad.
    */
   push: number;
+  /**
+   * The directions held while `dir` is (0.4.46: UP, or UP and RIGHT for a throw up and ahead).
+   * Absent: the demo's own direction alone.
+   */
+  dirs?: readonly Action[];
 }
 
 export interface LessonDemo {
@@ -54,14 +59,56 @@ export interface LessonDemo {
   button: { ability: string; action: Action };
   /** The direction the clip shows. */
   dir: { ability: string; action: Action };
+  /**
+   * Every direction the clip ever shows (the touch pad's arms drawn, a key each): absent, `dir`'s
+   * alone. Their names on keys are the bound keys', as `dir`'s.
+   */
+  dirs?: readonly { ability: string; action: Action }[];
+  /** The button's caption on the touch picture, when not its ability (a tool's, kept short). */
+  touchCaption?: string;
+  /** The panel's height (px), for a taller hero or a throw up high; default DEMO_H. */
+  height?: number;
+  /** The strip's ground (px tall; default 10): a thin one leaves the sky room for a throw up. */
+  groundH?: number;
   /** The hero's sheet and frames (standing, the walk cycle). */
   hero: { sheet: string; idle: string; walk: readonly string[] };
   /** What is read out with the tip when the panel first shows (the picture in words). */
   said(game: Game, variant: DemoVariant): string;
+  /** The words under the strip at this frame (default: RUN! or WALK by the hero's speed). */
+  caption?(st: DemoState, t: number): string;
+  /**
+   * More of the picture over the strip at frame `t` (a thrown boomerang's flight): the strip's
+   * box, its ground's top and where the hero's middle and head are.
+   */
+  draw?(
+    r: Renderer,
+    game: Game,
+    at: { x: number; y: number; w: number; h: number; groundY: number; heroX: number; heroTop: number },
+    t: number,
+    st: DemoState,
+  ): void;
 }
 
-/** The panel's height (px). */
+/** The directions held at a clip's frame (none while `dir` is off). */
+const heldDirs = (demo: LessonDemo, st: DemoState): readonly Action[] =>
+  st.dir ? (st.dirs ?? [demo.dir.action]) : [];
+
+/** Every direction a demo shows (its d-pad arms, its keys). */
+const allDirs = (demo: LessonDemo): readonly { ability: string; action: Action }[] => demo.dirs ?? [demo.dir];
+
+/** A direction's unit vector on screen (y down). */
+const DIR_VEC: Readonly<Partial<Record<Action, [number, number]>>> = {
+  right: [1, 0],
+  left: [-1, 0],
+  up: [0, -1],
+  down: [0, 1],
+};
+
+/** The panel's height (px), unless a demo asks for more (LessonDemo.height). */
 export const DEMO_H = 60;
+
+/** The height of `demo`'s panel. */
+export const demoHeight = (demo: LessonDemo): number => demo.height ?? DEMO_H;
 
 /** Colours: the panel and the stage strip, and our touch pad's (touch.ts, as pixels on black). */
 const C = {
@@ -132,7 +179,8 @@ function drawStrip(
   t: number,
 ): void {
   r.rect(x, y, w, h, C.sky);
-  const groundY = y + h - 10;
+  const gh = demo.groundH ?? 10;
+  const groundY = y + h - gh;
   // A bush going by (its left edge wraps around the strip).
   const bx = x + (((((w - Math.floor(scroll * 0.75)) % (w + 24)) + (w + 24)) % (w + 24)) - 24);
   for (const [dx, dy, ww] of [
@@ -145,12 +193,14 @@ function drawStrip(
     const right = Math.min(x + w, bx + dx + ww);
     if (right > left) r.rect(left, groundY - 4 + dy, right - left, 1, C.bush);
   }
-  r.rect(x, groundY, w, 10, C.ground);
+  r.rect(x, groundY, w, gh, C.ground);
   r.rect(x, groundY, w, 1, C.groundTop);
-  const off = Math.floor(scroll) % 16;
-  for (let sx = x - off; sx < x + w; sx += 16) if (sx >= x) r.rect(sx, groundY + 1, 1, 9, C.seam);
-  r.rect(x, groundY + 5, w, 1, C.seam);
-  // The hero, a third of the way in, standing on the ground.
+  if (gh >= 10) {
+    const off = Math.floor(scroll) % 16;
+    for (let sx = x - off; sx < x + w; sx += 16) if (sx >= x) r.rect(sx, groundY + 1, 1, 9, C.seam);
+    r.rect(x, groundY + 5, w, 1, C.seam);
+  }
+  // The hero, a third of the way in, standing on the ground (feet on it, however tall).
   const sheet = game.ctx.assets.sheet(demo.hero.sheet);
   const walk = demo.hero.walk;
   const every = st.speed === 'run' ? 3 : 6;
@@ -158,18 +208,32 @@ function drawStrip(
     st.speed === 'idle' || !walk.length
       ? demo.hero.idle
       : (walk[Math.floor(t / every) % walk.length] as string);
-  r.sprite(sheet, frame, x + Math.floor(w / 3) - 8, groundY - 16);
+  const f = sheet.frames.get(frame);
+  const fw = f?.w ?? 16;
+  const fh = f?.h ?? 16;
+  const heroX = x + Math.floor(w / 3);
+  r.sprite(sheet, frame, heroX - (fw >> 1), groundY - fh);
+  demo.draw?.(r, game, { x, y, w, h, groundY, heroX, heroTop: groundY - fh }, t, st);
 }
 
-/** Our touch pad: its base, the four wedges (the direction's lit), the dashed run ring, the thumb. */
-function drawPad(r: Renderer, cx: number, cy: number, st: DemoState): void {
+/**
+ * Our touch pad: its base, the wedges of the demo's directions (those held lit), the dashed run
+ * ring, the thumb (out along the directions held).
+ */
+function drawPad(r: Renderer, cx: number, cy: number, st: DemoState, demo: LessonDemo): void {
   const R = 20;
   disc(r, cx, cy, R, C.padBase);
   circle(r, cx, cy, R, C.padEdge);
-  // The right wedge: lit while the direction is held.
-  for (let dx = 5; dx <= 14; dx++) {
-    const half = Math.round(dx * 0.85);
-    r.rect(cx + dx, cy - half, 1, half * 2 + 1, st.dir ? C.wedgeLit : C.wedge);
+  // Each direction's wedge: lit while it is held.
+  const held = heldDirs(demo, st);
+  for (const d of allDirs(demo)) {
+    const [vx, vy] = DIR_VEC[d.action] ?? [1, 0];
+    const lit = held.includes(d.action);
+    for (let k = 5; k <= 14; k++) {
+      const half = Math.round(k * 0.85);
+      if (vx !== 0) r.rect(cx + vx * k, cy - half, 1, half * 2 + 1, lit ? C.wedgeLit : C.wedge);
+      else r.rect(cx - half, cy + vy * k, half * 2 + 1, 1, lit ? C.wedgeLit : C.wedge);
+    }
   }
   const running = st.push >= DPAD_RUN_R;
   const ringR = Math.round(R * DPAD_RUN_R);
@@ -177,11 +241,20 @@ function drawPad(r: Renderer, cx: number, cy: number, st: DemoState): void {
     circle(r, cx, cy, ringR, C.ringLit);
     circle(r, cx, cy, ringR + 1, C.ringLit);
   } else circle(r, cx, cy, ringR, C.ring, 15);
-  // The thumb, along the direction.
+  // The thumb, along the directions held.
   if (st.dir || st.push > 0) {
-    const tx = cx + Math.round(st.push * R);
-    disc(r, tx, cy, 7, C.thumb);
-    circle(r, tx, cy, 7, C.thumbEdge);
+    let ux = 0;
+    let uy = 0;
+    for (const a of held.length ? held : [demo.dir.action]) {
+      const [vx, vy] = DIR_VEC[a] ?? [1, 0];
+      ux += vx;
+      uy += vy;
+    }
+    const len = Math.hypot(ux, uy) || 1;
+    const tx = cx + Math.round((st.push * R * ux) / len);
+    const ty = cy + Math.round((st.push * R * uy) / len);
+    disc(r, tx, ty, 7, C.thumb);
+    circle(r, tx, ty, 7, C.thumbEdge);
   }
 }
 
@@ -220,10 +293,17 @@ function keyCap(r: Renderer, font: SpriteSheet, x: number, y: number, name: stri
 const capW = (name: string): number => Math.max(24, name.length * 8 + 10);
 
 /**
- * A gamepad: its body, a d-pad (the right arm lit while held) and four face buttons in a diamond
- * (the one the action is bound to lit while held).
+ * A gamepad: its body, a d-pad (each arm held lit) and four face buttons in a diamond (the one the
+ * action is bound to lit while held).
  */
-function drawGamepad(r: Renderer, x: number, y: number, st: DemoState, bound: string | null): void {
+function drawGamepad(
+  r: Renderer,
+  x: number,
+  y: number,
+  st: DemoState,
+  bound: string | null,
+  held: readonly Action[],
+): void {
   const w = 96;
   const h = 34;
   r.rect(x + 4, y, w - 8, h, C.padEdge);
@@ -235,7 +315,10 @@ function drawGamepad(r: Renderer, x: number, y: number, st: DemoState, bound: st
   const dy = y + 17;
   r.rect(dx - 10, dy - 3, 21, 7, C.wedge);
   r.rect(dx - 3, dy - 10, 7, 21, C.wedge);
-  if (st.dir) r.rect(dx + 4, dy - 3, 7, 7, C.ringLit);
+  for (const a of held) {
+    const [vx, vy] = DIR_VEC[a] ?? [1, 0];
+    r.rect(dx - 3 + vx * 7, dy - 3 + vy * 7, 7, 7, C.ringLit);
+  }
   // The face buttons: Y top, X left, B right, A bottom (the standard mapping).
   const fx = x + w - 24;
   const fy = y + 17;
@@ -265,8 +348,9 @@ export function drawDemoPanel(
   const k = ((t % len) + len) % len;
   const st = demo.state(variant, k);
   const font = game.ctx.assets.sheet('font');
-  r.rect(x, y, w, DEMO_H, C.frame);
-  r.rect(x + 2, y + 2, w - 4, DEMO_H - 4, C.inside);
+  const H = demoHeight(demo);
+  r.rect(x, y, w, H, C.frame);
+  r.rect(x + 2, y + 2, w - 4, H - 4, C.inside);
   // The hero's distance so far this loop, at each frame's speed (the ground scrolls by).
   let scroll = 0;
   for (let i = 0; i < k; i++) {
@@ -276,46 +360,55 @@ export function drawDemoPanel(
   const stripW = Math.min(104, Math.floor((w - 12) / 2));
   const sx = x + 6;
   const sy = y + 6;
-  drawStrip(r, game, demo, sx, sy, stripW, DEMO_H - 22, scroll, st, k);
+  drawStrip(r, game, demo, sx, sy, stripW, H - 22, scroll, st, k);
   // Under the strip: what the hero does.
   centred(
     r,
     font,
-    st.speed === 'run' ? 'RUN!' : st.speed === 'walk' ? 'WALK' : '',
+    demo.caption?.(st, k) ?? (st.speed === 'run' ? 'RUN!' : st.speed === 'walk' ? 'WALK' : ''),
     sx + (stripW >> 1),
-    y + DEMO_H - 13,
+    y + H - 13,
   );
   // The controls, right of the strip, the clip's name over them.
   const cx0 = sx + stripW + 4;
   const cw = x + w - 4 - cx0;
   const mid = cx0 + (cw >> 1);
   centred(r, font, fontText(st.label), mid, y + 5);
+  // A taller panel keeps its controls under the clip's name, centred in the room left.
+  y += (H - DEMO_H) >> 1;
   const button = fontText(abilityHint(game, demo.button.ability, demo.button.action));
   if (variant === 'touch') {
-    drawPad(r, mid - 26, y + 34, st);
-    drawButton(r, font, mid + 28, y + 36, fontText(demo.button.ability), st.button);
+    drawPad(r, mid - 26, y + 34, st, demo);
+    drawButton(r, font, mid + 28, y + 36, fontText(demo.touchCaption ?? demo.button.ability), st.button);
     return;
   }
   if (variant === 'pad') {
     const bound = boundKey(game, demo.button.action);
-    drawGamepad(r, mid - 48, y + 14, st, bound);
+    drawGamepad(r, mid - 48, y + 14, st, bound, heldDirs(demo, st));
     centred(r, font, button, mid, y + DEMO_H - 12);
     return;
   }
-  // Keys: the direction's key, then the button's, their names on them and the abilities under.
-  const dirName = fontText(boundKey(game, demo.dir.action) ?? demo.dir.ability);
+  // Keys: the direction's key (each held direction's, as many as fit), then the button's, their
+  // names on them and the abilities under.
+  const held = heldDirs(demo, st);
+  const shown = demo.dirs ? demo.dirs.filter((d) => held.includes(d.action)) : [demo.dir];
+  const dirs = (shown.length ? shown : [demo.dir]).map((d) => ({
+    ...d,
+    name: fontText(boundKey(game, d.action) ?? d.ability),
+  }));
   const btnName = fontText(boundKey(game, demo.button.action) ?? demo.button.ability);
   const gap = 14;
-  const both = capW(dirName) + gap + capW(btnName);
-  // Long key names (RIGHT SHIFT and RIGHT) that don't fit side by side: the button's key alone.
-  const withDir = both <= cw;
-  let kx = mid - ((withDir ? both : capW(btnName)) >> 1);
+  const width = (n: number) => dirs.slice(0, n).reduce((a, d) => a + capW(d.name) + gap, 0) + capW(btnName);
+  // Long key names (RIGHT SHIFT and RIGHT) that don't fit side by side: fewer direction keys, the
+  // button's key alone at the least.
+  let n = dirs.length;
+  while (n > 0 && width(n) > cw) n--;
+  let kx = mid - (width(n) >> 1);
   const ky = y + 18;
-  if (withDir) {
-    const dw = keyCap(r, font, kx, ky, dirName, st.dir);
+  for (const d of dirs.slice(0, n)) {
+    const dw = keyCap(r, font, kx, ky, d.name, held.includes(d.action));
     centred(r, font, '+', kx + dw + (gap >> 1), ky + 6);
-    if (dirName !== fontText(demo.dir.ability))
-      centred(r, font, fontText(demo.dir.ability), kx + (dw >> 1), ky + 24);
+    if (d.name !== fontText(d.ability)) centred(r, font, fontText(d.ability), kx + (dw >> 1), ky + 24);
     kx += dw + gap;
   }
   const bw = keyCap(r, font, kx, ky, btnName, st.button);

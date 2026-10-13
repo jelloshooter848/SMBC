@@ -30,7 +30,7 @@ import {
 } from './stage-prompts';
 import { MARIO_TUTORIAL } from './mario-1-0';
 import { giveQuietly, itemName, ownsItem, refillHealth } from './kit';
-import { DEMO_H, demoVariant, drawDemoPanel, type LessonDemo } from './demo-panel';
+import { demoHeight, demoVariant, drawDemoPanel, type LessonDemo } from './demo-panel';
 
 /*
  * Stage tutorials (0.5.0): a level whose play is a list of lessons (stage-prompts.ts), shown one at
@@ -873,7 +873,7 @@ export class TutorialDirector {
     const demo = this.demo;
     if (demo) {
       const top = box.y === PROMPT_BOX_Y;
-      const py = top ? box.y + box.h + 4 : box.y - DEMO_H - 4;
+      const py = top ? box.y + box.h + 4 : box.y - demoHeight(demo) - 4;
       drawDemoPanel(r, this.game, demo, this.game.tips.heldFrames, box.x, py, box.w);
     }
   }
