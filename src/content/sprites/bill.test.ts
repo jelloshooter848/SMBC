@@ -27,6 +27,8 @@ const billFrames: Record<string, Size> = {
   'swim-shoot': [16, 32],
   'swim-aim-up': [16, 32],
   'swim-aim-diag-up': [16, 32],
+  'hang-0': [16, 32],
+  'hang-1': [16, 32],
 };
 
 const grounded = [

@@ -31,4 +31,7 @@ export const contraSfx: Sfx[] = [
     pulse2: '@1 v8 q7 x0 l16 o4 g o5 c e g o6 c e q8 g4',
     triangle: 'q7 l16 o3 c c e e g g q8 o4 c4',
   },
+  // Bill letting go off screen in his sighting (0.4.53): a thin falling whistle, high and sliding
+  // down, fading as it goes (about 0.9 s); the thud after it is `bump`.
+  { id: 'fall-whistle', pulse: '@2 v7 q8 x0 p-5 o7 e4 p-5 o6 b4 x1 p-7 o6 f+8' },
 ];

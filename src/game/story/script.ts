@@ -149,7 +149,8 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
     news: ['THE KING SLEEPS WITH THE', 'WAND UNDER HIS PILLOW NOW.', "HE KNOWS YOU'RE COMING."],
   },
   '7-4': {
-    reveal: ['A HAMMER BRO UNDER THE', 'SPELL. THAT WAS HIS LAST', 'STAND-IN!'],
+    // 0.4.53 (owner): not his last stand-in any more (fake #8 waits at 8-4).
+    reveal: ['A HAMMER BRO UNDER THE', 'SPELL. ANOTHER OF HIS', 'STAND-INS!'],
     news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
   },
   '8-4': {
@@ -176,7 +177,8 @@ const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
   '4-4': ['A BRAIN IN A JAR... IT WAS', 'A SPINY IN A FISHBOWL!'],
   '5-4': ['A VAMPIRE?! NO... JUST A', 'LAKITU WITH HAIR GEL.'],
   '6-4': ['A BLOOPER IN A MOP AND A', 'PAPER MASK?! HOW IS IT', 'EVEN BREATHING?'],
-  '7-4': ['THE LAST FAKE... IN A', 'SOUVENIR T-SHIRT?! THE', 'REAL KING MUST BE CLOSE.'],
+  // 0.4.53 (owner, reworded): not "the last fake" any more (fake #8 waits at 8-4); the hint softened.
+  '7-4': ['ANOTHER FAKE... IN A', 'SOUVENIR T-SHIRT?! THE', "REAL KING CAN'T BE FAR."],
 };
 
 /**
@@ -190,13 +192,13 @@ const CASTLE_HOME_REMARKS: Readonly<Record<string, Readonly<Record<string, Page>
   '3-4': { megaman: ['DR. WILY?! ...NO. HIS', 'SKULLS NEVER HAVE HORNS.'] },
   '4-4': { samus: ['MOTHER BRAIN. ...NEGATIVE.', 'SPINY IN A FISHBOWL.', 'MISSION CONTINUES.'] },
   '6-4': { ryu: ['A FAKE MASK, A FAKE BLADE.', 'AN INSULT TO MY RIVAL.'] },
-  // Bill's keeps the shared line's hint: the last fake, so the real king is near.
+  // Bill's keeps the shared line's hint that the real king is near (0.4.53: no "last fake" now).
   '7-4': {
     bill: [
       "I'VE SEEN THE REAL ALIEN.",
       "IT DIDN'T WEAR A T-SHIRT.",
-      'LAST FAKE. THE REAL KING',
-      'MUST BE CLOSE.',
+      'ANOTHER FAKE. THE REAL',
+      "KING CAN'T BE FAR.",
     ],
   },
 };
@@ -771,8 +773,8 @@ export const LUIGI_RUNS_PAGE: Page = [
 /**
  * The hero sightings (story/sightings.ts): a brainwashed hero glimpsed at the start of their
  * world's first level. Each line is said by player 1's hero (sightingPage), at most CASTLE_COLS
- * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52); the rest
- * come with their worlds.
+ * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52; Ryu, Bill
+ * since 0.4.53); the rest come with their worlds.
  */
 const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   link: ['WAS THAT LINK? A VINE', 'GREW RIGHT OUT OF THE', 'GROUND, AND HE CLIMBED IT', 'INTO THE SKY!'],
@@ -780,6 +782,9 @@ const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   // 0.4.52 (owner-approved; Simon's option A).
   samus: ['SAMUS! SHE CURLED INTO A', 'BALL AND BOMBED HER WAY', 'DEEPER INTO THE CAVES.'],
   simon: ['SIMON! HE WALKED RIGHT', 'THROUGH THAT GATE, AND IT', 'SLAMMED SHUT BEHIND HIM.'],
+  // 0.4.53 (line A, owner).
+  ryu: ['RYU? HE WENT RIGHT', 'THROUGH THAT WALL! IT', 'SPUN, AND HE WAS GONE.'],
+  bill: ['BILL! HE WENT HAND OVER', 'HAND UNDER THE BRIDGE...', 'THEN LET GO. THEN, BOOM!'],
 };
 
 /** What the announcer says as each sighting starts (it has no text on screen until the card). */
@@ -789,6 +794,8 @@ export const SIGHTING_SAID: Readonly<Record<string, string>> = {
   samus: 'A brainwashed Samus curls into a ball and bombs her way off into the caves.',
   simon:
     'A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him.',
+  ryu: 'A brainwashed Ryu drops in front of you, dashes to the castle wall, and a panel spins him through it.',
+  bill: 'A brainwashed Bill swings hand over hand under the bridge and out of sight. He lets go; far ahead, something explodes.',
 };
 
 /** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */

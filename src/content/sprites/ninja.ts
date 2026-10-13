@@ -2,6 +2,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 import { NES } from '@engine/gfx/palette';
 import { tilesDef } from './tiles';
 import { ngSewerTilePalette } from './ninja-world';
+import { ninjaCityDecorPalette } from './ninja-city-look';
 
 /**
  * Ryu's hideout under 6-2 and his mini game's Ninja Gaiden-style night: the karakuri trick wall,
@@ -73,6 +74,16 @@ export const ninjaPalettes: Record<string, string[]> = {
   // 6-2's coin rooms as the city's sewers (0.4.29): the trick panel in the sewer brick's colours
   // (slots 1-3 are tiles-ng-sewer's), so it still cannot be told from the wall round it.
   'ninja-ng-sewer': ninjaBase().map((c, i) => (i >= 1 && i <= 3 ? (ngSewerTilePalette[i] as string) : c)),
+  // Ryu's sighting (0.4.53, story/sightings.ts): the panel that spins him through 6-2's start castle
+  // wall, in that castle's brick (decor-ninja-city's mortar 6 and brick 7). The castle's wall has no
+  // lit top row, so the brick's light (3) is its body too: `trick-wall-0` is then that wall exactly.
+  'ninja-castle-city': ninjaBase().map((c, i) =>
+    i === 1
+      ? (ninjaCityDecorPalette[6] as string)
+      : i === 2 || i === 3
+        ? (ninjaCityDecorPalette[7] as string)
+        : c,
+  ),
 };
 
 /* ---------- composition helpers ---------- */

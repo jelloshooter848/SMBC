@@ -46,6 +46,7 @@ describe("Bill's jungle music", () => {
       'spread',
       'laser',
       'konami',
+      'fall-whistle',
     ]);
     expect(themeMusic('contra-jungle')).toBe('contra-jungle');
     expect(themeMusic('alien-lair')).toBe('contra-lair');
