@@ -19,6 +19,9 @@ import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
+import { CardScene } from '@game/scenes/message';
+import { HeroSightingScene } from '@game/story/hero-sighting';
+import { beat } from '@game/story/beats';
 import {
   MAP_HEADER_H,
   MAP_SLIDE_FRAMES,
@@ -290,6 +293,32 @@ describe.each(ORDER)('%s in the campaign order', (_, page, first, label, hero, b
     h.step();
     expect(h.r.texts).toContain(label);
     expect(h.r.texts).not.toContain(first);
+  });
+
+  it(`the hero’s sighting (0.4.53, K53) plays from the first node, everything shown as ${label}`, () => {
+    const h = makeGame();
+    const story = ALL_STORY.filter((id) => id !== beat.sighting(hero));
+    open(h, { ...before, story, position: { page: page.id, node: first } });
+    h.tap('jump');
+    const texts: string[] = [];
+    const seen = () => texts.push(...h.r.texts);
+    for (let i = 0; i < 600 && !(h.game.scenes.top instanceof HeroSightingScene); i++) {
+      h.step(i % 2 || h.game.scenes.top instanceof LevelScene ? [] : ['jump']);
+      seen();
+    }
+    expect(h.game.scenes.top).toBeInstanceOf(HeroSightingScene);
+    expect(h.game.state.campaignOrder).toBe(true);
+    h.until(() => h.game.scenes.top instanceof CardScene, 900);
+    h.step();
+    seen();
+    expect(h.r.texts.join(' ')).toContain(hero === 'ryu' ? 'RYU?' : 'BILL!');
+    // The intro before it, the HUD under the scene and its card say the label, never the id.
+    const id = new RegExp(`\\b${first}\\b`);
+    expect(texts).toContain(`WORLD ${label}`);
+    expect(texts).toContain(label);
+    expect(texts.some((t) => id.test(t))).toBe(false);
+    expect(h.said.some((s) => id.test(s))).toBe(false);
+    expect(h.said.some((s) => s.startsWith(`A brainwashed ${hero === 'ryu' ? 'Ryu' : 'Bill'}`))).toBe(true);
   });
 
   it('draws in the road on to the next level once the hero’s level is cleared', () => {

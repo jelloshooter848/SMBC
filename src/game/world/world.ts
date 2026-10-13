@@ -837,6 +837,17 @@ export class World {
     return this.players.length > 1;
   }
 
+  /**
+   * (0.4.53) Someone can act now: a player is still in the level, and play is not held for a
+   * pipe, a beam, a trick wall's spin, a clear, a boss's end, an anchor scene or the way out.
+   * The TALK prompts show only then (View.prompts; INT52 QA: OPEN stayed up over a dying hero).
+   */
+  get inControl(): boolean {
+    if (this.clear || this.unmask || this.bossClear || this.anchorScene || this.leaving) return false;
+    if (this.pipeAnim || this.pipeExit || this.beam || this.trickSpin) return false;
+    return this.activePlayers().length > 0;
+  }
+
   /** Players still in the level (not dead, not eliminated). */
   activePlayers(): Player[] {
     return this.players.filter((p) => !p.dead && !p.out);
@@ -3332,6 +3343,7 @@ export class World {
       reduceFlashing: this.ctx.reduceFlashing,
       ...(this.talkHint ? { talkHint: this.talkHint } : {}),
       ...(this.upHint ? { upHint: this.upHint } : {}),
+      prompts: this.inControl,
     };
     // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
     drawThemeBackdrop(screen, view);

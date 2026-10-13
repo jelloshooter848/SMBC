@@ -21,6 +21,11 @@ export interface View {
   talkHint?: (verb: string) => string;
   /** The same for up's key (0.4.52: "UP" over an open door): World.upHint. */
   upHint?: (verb: string) => string;
+  /**
+   * (0.4.53) False while no one is in control (every hero dying, a pipe or beam, a castle clear):
+   * the TALK prompts (drawTalkPrompt) are hidden then. Unset: shown.
+   */
+  prompts?: boolean;
 }
 
 export type Layer = 'back' | 'main' | 'front';

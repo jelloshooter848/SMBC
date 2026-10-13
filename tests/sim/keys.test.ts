@@ -454,6 +454,35 @@ describe('5-1’s crypt gate', () => {
     expect(again.events.filter((e) => e.type === 'gate')).toHaveLength(1);
   });
 
+  it('the OPEN prompt hides while the hero dies or is not in control (0.4.53, INT52 QA), never for a living partner', () => {
+    const drawn = (r: Room): string[] => {
+      const texts: string[] = [];
+      const out: Renderer = new NullRenderer();
+      out.text = (_f, s) => void texts.push(s);
+      r.world.render(out);
+      return texts;
+    };
+    const r = room(MARIO, { levelId: '5-1' });
+    r.world.talkHint = (verb) => `${verb} (C)`;
+    for (let f = 0; f < 10; f++) r.step();
+    place(r, 12 * 16 + 8);
+    expect(drawn(r)).toContain('OPEN (C)');
+    r.world.kill(r.world.player);
+    for (let f = 0; f < 3; f++) {
+      r.step();
+      expect(drawn(r)).not.toContain('OPEN (C)');
+    }
+    // Co-op: player 1 dies by the gate, player 2 stands there too: the prompt stays for them.
+    const co = room(MARIO, { levelId: '5-1', c2: MARIO });
+    co.world.talkHint = (verb) => `${verb} (C)`;
+    for (let f = 0; f < 10; f++) co.step();
+    place(co, 12 * 16 + 8, FLOOR, 0);
+    place(co, 12 * 16 + 8, FLOOR, 1);
+    co.world.kill(co.world.players[0]!);
+    co.step();
+    expect(drawn(co)).toContain('OPEN (C)');
+  });
+
   it('once Simon is freed it is plain scenery (no prompt); classic play has no gate', () => {
     const freed = room(MARIO, { levelId: '5-1', freed: true });
     for (let f = 0; f < 10; f++) freed.step();
