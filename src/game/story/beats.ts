@@ -1,5 +1,6 @@
 import type { MapProgress } from '@game/map/types';
 import { CRYSTAL_BALL } from '@game/map/captives';
+import { FINALE } from './finale';
 
 /*
  * The Chapter 1 story's beats (docs/STORY.md 1 "Story beat tiers", 2.3, 2.14): which story
@@ -99,7 +100,10 @@ export const FIRST_HERO = 'mario';
  * - the 0.4.23 beats as seedNew gives them;
  * - `enter:<page>` for every open SMB page ('smb-N'), World 1's only once 1-0 is cleared;
  * - `fakes` once 1-4 is cleared; `crash` with the crystal ball's secret;
- * - `rift` and `bowser-8-4` once 8-4 is beaten (gameCleared, or 8-4 cleared);
+ * - `rift` and `bowser-8-4` once the game is beaten: gameCleared, or the finale castle cleared
+ *   (story/finale.ts FINALE.castle: Bowser's Castle since 0.4.55). A file that beat 8-4 before
+ *   0.4.55 has gameCleared (8-4's credits set it; migrateSave gives it to files older than the
+ *   flag), so it counts the same; 8-4 cleared alone is an ordinary castle now;
  * - `hub` / `arena` when those pages are open.
  */
 export function seedSeen(progress: MapProgress, freed: readonly string[]): string[] {
@@ -109,7 +113,7 @@ export function seedSeen(progress: MapProgress, freed: readonly string[]): strin
     if (/^smb-\d+$/.test(page) && (page !== 'smb-1' || cleared.includes('1-0'))) out.push(beat.enter(page));
   if (cleared.includes('1-4')) out.push(beat.fakes);
   if (progress.secrets.includes(CRYSTAL_BALL)) out.push(beat.crash);
-  if (progress.gameCleared === true || cleared.includes('8-4')) out.push(beat.rift, beat.bowser84);
+  if (progress.gameCleared === true || cleared.includes(FINALE.castle)) out.push(beat.rift, beat.bowser84);
   if (progress.pages.includes('hub')) out.push(beat.hub);
   if (progress.pages.includes('arena')) out.push(beat.arena);
   return [...new Set(out)];
@@ -169,8 +173,9 @@ export function seedSeenS3(progress: MapProgress): string[] {
   const open = progress.pages;
   for (let n = 1; n <= 8; n++) {
     const page = `smb-${n}`;
-    const next = n < 8 ? `smb-${n + 1}` : 'll-1';
-    if (open.includes(next)) out.push(beat.gate(page), beat.sealed(page));
+    // World 8's road on leads to the VALLEY OF BOWSER since 0.4.55 (before, on to Lost World 1).
+    const next = n < 8 ? [`smb-${n + 1}`] : ['valley-of-bowser', 'll-1'];
+    if (next.some((id) => open.includes(id))) out.push(beat.gate(page), beat.sealed(page));
     if (n >= 2 && open.includes(page)) out.push(beat.welcome(page));
     if (n <= 7 && progress.cleared.includes(`${n}-4`)) out.push(beat.remark(`${n}-4`));
   }

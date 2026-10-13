@@ -682,7 +682,7 @@ describe('campaign: clears return to the map', () => {
   // Owner decision (2026-10-05): after 8-4, "Your quest is over." and the credits, then the
   // file is saved with 8-4 complete. 0.4.7 (the Lost Levels are the story's extension): then the
   // World 8 map, where the road on to Lost World 1 draws in (before, the title).
-  it("8-4's ending rolls the credits, saves the file cleared, then World 8's road to Lost 1 draws in", () => {
+  it("8-4 (an ordinary castle since 0.4.55): its exit goes back to World 8's map, no credits; the road on to the Valley draws in", () => {
     const h = makeGame();
     const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     h.game.openFile(
@@ -690,18 +690,44 @@ describe('campaign: clears return to the map', () => {
       file({
         cleared: cleared.filter((id) => id !== '8-4'),
         pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
-        // Sophia III freed: the rift opens with the credits (0.4.23).
         freed: ['mario', 'sophia'],
         position: { page: 'smb-8', node: '8-4' },
       }),
     );
-    const road = page(8).exits.find((e) => e.to === 'll-1');
-    expect(road).toBeDefined();
-    expect(isExitOpen(h.game.mapProgress, page(8), road!)).toBe(false);
     enter(h, '8-4');
     play(h, '8-4-end');
-    // The real king's line plays once per file (story/level-beats.ts): this file has seen every
-    // story beat already, so he says nothing here.
+    h.fire({ type: 'exit', next: 'end' });
+    expect(h.top()).not.toBeInstanceOf(CreditsScene);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.map().page.id).toBe('smb-8');
+    const saved = loadSave(1) as SaveFile;
+    expect(saved.gameCleared).toBe(false);
+    expect(saved.cleared).toContain('8-4');
+    expect(saved.pages).toContain('valley-of-bowser');
+    expect(saved.pages).not.toContain('ll-1');
+    expect(h.game.pendingReveal).toContain('smb-8:8-4>valley-of-bowser');
+  });
+
+  it("BOWSER'S CASTLE's ending rolls the credits, saves the file cleared, then the Valley's road to Lost 1 draws in", () => {
+    const h = makeGame();
+    const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
+    const valley = mapPage('valley-of-bowser') as WorldMapPage;
+    h.game.openFile(
+      1,
+      file({
+        cleared,
+        pages: [...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), 'valley-of-bowser'],
+        freed: ['mario', 'sophia'],
+        position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
+      }),
+    );
+    const road = valley.exits.find((e) => e.to === 'll-1');
+    expect(road).toBeDefined();
+    expect(isExitOpen(h.game.mapProgress, valley, road!)).toBe(false);
+    enter(h, '8-5');
+    play(h, '8-5');
+    // The real king's line plays once per file (story/level-beats.ts, at his bridge): this file
+    // has seen every story beat already, so he says nothing here.
     expect(h.top()).not.toBeInstanceOf(BowserSaysScene);
     h.fire({ type: 'exit', next: 'end' });
     expect(h.top()).toBeInstanceOf(CreditsScene);
@@ -713,18 +739,20 @@ describe('campaign: clears return to the map', () => {
     h.until(() => h.top() instanceof WorldMapScene, 3000);
     const saved = loadSave(1) as SaveFile;
     expect(saved.gameCleared).toBe(true);
-    expect(saved.cleared).toContain('8-4');
+    expect(saved.cleared).toContain('8-5');
     expect(saved.pages).toContain('ll-1');
     expect(h.game.campaign).toEqual({ slot: 1 });
-    expect(h.map().page.id).toBe('smb-8');
-    expect(h.map().node).toBe('8-4');
-    expect(h.game.pendingReveal).toContain('smb-8:8-4>ll-1');
+    expect(h.map().page.id).toBe('valley-of-bowser');
+    expect(h.map().node).toBe('bowsers-castle');
+    // The road on draws in on the Valley (the clear opens it); Lost World 1's share waits for its page.
+    expect(h.game.pendingReveal).toContain('valley-of-bowser:bowsers-castle>ll-1');
+    expect(h.game.pendingReveal).toContain('ll-1:start');
     h.until(() => h.map().mode === 'idle', 2000);
-    expect(isExitOpen(h.game.mapProgress, page(8), road!)).toBe(true);
-    // Reopening the file shows 8-4 completed, the road open.
+    expect(isExitOpen(h.game.mapProgress, valley, road!)).toBe(true);
+    // Reopening the file shows the castle completed, the road open.
     h.game.openFile(1);
-    expect(h.map().page.id).toBe('smb-8');
-    expect(isCleared(h.game.mapProgress, page(8), '8-4')).toBe(true);
+    expect(h.map().page.id).toBe('valley-of-bowser');
+    expect(isCleared(h.game.mapProgress, valley, 'bowsers-castle')).toBe(true);
     expect(loadSave(1)?.gameCleared).toBe(true);
   });
 });

@@ -71,7 +71,7 @@ const castles: [string, Page][] = [
   ...STORY_CRYSTAL_BALL_PAGES.map((p, i): [string, Page] => [`crystal ball ${i}`, p]),
   ...Object.entries(CASTLE_PAGES).flatMap(([k, c]): [string, Page][] => [
     [`${k} reveal`, c.reveal],
-    [`${k} news`, c.news],
+    ...(c.news ? [[`${k} news`, c.news] as [string, Page]] : []),
   ]),
 ];
 

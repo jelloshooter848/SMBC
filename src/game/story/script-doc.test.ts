@@ -20,6 +20,7 @@ import {
   HOME_REMARKS,
   REMARK_CASTLES,
   RIFT_SEALED_PAGES,
+  VALLEY_SEALED_PAGES,
   sealedHint,
   SIGHTING_LINE_HEROES,
   sightingPage,
@@ -128,7 +129,7 @@ function scriptPages(): Map<string, Page> {
   // The castle's page 1 shows under the thanks, as the doc writes it.
   for (const [id, c] of Object.entries(CASTLE_PAGES)) {
     add(`CASTLE_PAGES.${id}.reveal`, [`THANK YOU ${HERO}!`, '', ...c.reveal]);
-    add(`CASTLE_PAGES.${id}.news`, c.news);
+    if (c.news) add(`CASTLE_PAGES.${id}.news`, c.news);
   }
   // The last castle's (story/finale.ts; 8-4's until 0.4.55, its wand page only while its king is a fake).
   add('FINALE_PAGES.reveal', [`THANK YOU ${HERO}!`, '', ...FINALE_PAGES.reveal]);
@@ -166,6 +167,7 @@ function scriptPages(): Map<string, Page> {
     list(`gateScript.${w}.toad`, g.toad);
   }
   list('RIFT_SEALED_PAGES', RIFT_SEALED_PAGES);
+  list('VALLEY_SEALED_PAGES', VALLEY_SEALED_PAGES);
   for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}`, w.pages);
   // Each local's after-freed page (0.4.23 review: talking again once the world's hero is freed).
   for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}.after`, w.after ?? []);

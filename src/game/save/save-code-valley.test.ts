@@ -1,42 +1,15 @@
-import { describe, expect, it, vi } from 'vitest';
-import type * as Worldmap from '@content/worldmap';
-import type { WorldMapPage } from '@game/map/types';
+import { describe, expect, it } from 'vitest';
+import { mapPage } from '@content/worldmap';
+import { VALLEY_LIVE } from '@content/worldmap/valley-of-bowser';
 import { decodeSaveCode, encodeSaveCode } from './save-code';
 import { newSave, type SaveFile } from './save-files';
 
-// Code version 3 (0.4.51) reserves the Valley of Bowser ahead of its release: the page
-// `valley-of-bowser`, its nodes `bowsers-castle` and `start`, and its castle level `8-5`. This
-// build has no such page (a loaded file drops it, save-code.test.ts), so here a stand-in page is
-// registered, as the release that adds it will (with campaign World 8's road on leading there): a
-// code made then round-trips exactly.
+// Code version 3 (0.4.51) reserved the Valley of Bowser ahead of its release: the page
+// `valley-of-bowser`, its nodes `bowsers-castle` and `start`, and its castle level `8-5`. Since
+// 0.4.55 the page is live (BOWSER'S CASTLE's level exists), so a code made with it round-trips
+// exactly, with no version bump: the ids were in the dictionary all along.
 
 const VALLEY = 'valley-of-bowser';
-
-vi.mock('@content/worldmap', async (importOriginal) => {
-  const orig = await importOriginal<typeof Worldmap>();
-  const valley = {
-    id: 'valley-of-bowser',
-    group: 'valley',
-    nodes: [{ id: 'start' }, { id: 'bowsers-castle', level: '8-5' }],
-    paths: [],
-    exits: [],
-  } as unknown as WorldMapPage;
-  const pages = [...orig.MAP_PAGES, valley];
-  // As the release that adds it (VALLEY_LIVE, 0.4.55): campaign World 8's road on leads there.
-  const pageLook = ((page: WorldMapPage | undefined, campaign: boolean) => {
-    const p = orig.pageLook(page, campaign);
-    return p && campaign && p.id === 'smb-8'
-      ? { ...p, exits: p.exits.map((e) => ({ ...e, to: 'valley-of-bowser' })) }
-      : p;
-  }) as typeof orig.pageLook;
-  return {
-    ...orig,
-    MAP_PAGES: pages,
-    pageLook,
-    mapPage: (id: string) => pages.find((p) => p.id === id),
-    isPageId: (id: unknown) => typeof id === 'string' && pages.some((p) => p.id === id),
-  };
-});
 
 /** A file that has beaten 8-4 and stands at Bowser's Castle in the Valley of Bowser. */
 function atValley(over: Partial<SaveFile> = {}): SaveFile {
@@ -61,6 +34,11 @@ const roundTrip = (s: SaveFile): SaveFile => {
 const len = (s: SaveFile) => encodeSaveCode(s).replace(/-/g, '').length;
 
 describe('save codes: the Valley of Bowser, reserved in version 3', () => {
+  it('the page is live in this build (no stand-in)', () => {
+    expect(VALLEY_LIVE).toBe(true);
+    expect(mapPage(VALLEY)?.nodes.map((n) => n.id)).toEqual(['start', 'bowsers-castle']);
+  });
+
   it('its page, nodes and castle level round-trip', () => {
     const s = atValley({
       cleared: [...atValley().cleared, '8-5'],

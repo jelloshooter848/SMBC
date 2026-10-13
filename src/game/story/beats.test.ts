@@ -62,6 +62,27 @@ describe('seedSeen', () => {
     expect(seen.some((id) => id.includes('ll-1'))).toBe(false);
   });
 
+  it('the rift and the real king once the game is beaten: gameCleared or the finale castle (0.4.55)', () => {
+    const past = (o: Partial<MapProgress>) => {
+      const s = seedSeen(progress(o), ['mario']);
+      return [s.includes(beat.rift), s.includes(beat.bowser84)];
+    };
+    expect(past({ cleared: ['8-5'] })).toEqual([true, true]);
+    expect(past({ cleared: ['8-4'], gameCleared: true })).toEqual([true, true]);
+    // 8-4 alone is an ordinary castle since 0.4.55: the rift is still ahead.
+    expect(past({ cleared: ['8-4'] })).toEqual([false, false]);
+  });
+
+  it("World 8's gate is past once its road on has led to the Valley (or, before it, Lost 1)", () => {
+    for (const next of ['valley-of-bowser', 'll-1']) {
+      const s = seedSeen(progress({ cleared: ['1-0', '8-4'], pages: ['smb-1', 'smb-8', next] }), ['mario']);
+      expect(s).toContain(beat.gate('smb-8'));
+    }
+    expect(
+      seedSeen(progress({ cleared: ['1-0', '8-4'], pages: ['smb-1', 'smb-8'] }), ['mario']),
+    ).not.toContain(beat.gate('smb-8'));
+  });
+
   it('fakes after 1-4; crash with the crystal ball', () => {
     expect(seedSeen(progress({ cleared: ['1-0', '1-4'] }), ['mario'])).toContain('fakes');
     expect(seedSeen(progress({ cleared: ['1-0'] }), ['mario'])).not.toContain('fakes');
@@ -89,8 +110,8 @@ describe('seedSeen', () => {
     expect(seedSeen(progress({ cleared: ['1-0'] }), ['mario', 'luigi'])).toContain('luigi-runs');
   });
 
-  it('rift and bowser-8-4 once 8-4 is beaten', () => {
-    for (const p of [progress({ gameCleared: true }), progress({ cleared: ['8-4'] })]) {
+  it('rift and bowser-8-4 once the game is beaten (gameCleared, or the finale castle cleared)', () => {
+    for (const p of [progress({ gameCleared: true }), progress({ cleared: ['8-5'] })]) {
       expect(seedSeen(p, ['mario'])).toEqual(expect.arrayContaining(['rift', 'bowser-8-4']));
     }
     expect(seedSeen(progress({ cleared: ['8-3'] }), ['mario'])).not.toContain('rift');

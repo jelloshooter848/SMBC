@@ -149,31 +149,37 @@ describe("Toad's map scenes", () => {
     expect(h.game.pendingReveal).toEqual([]);
   });
 
-  it('after the 8-4 credits: the rift on World 8 (P1 named), before the road on to Lost World 1', () => {
+  it("after BOWSER'S CASTLE's credits: the rift on the Valley (P1 named), before the road on to Lost World 1", () => {
     const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     const h = open({
-      cleared: ['1-0', ...cleared.filter((id) => id !== '8-4')],
-      pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
-      // Sophia III freed first: the rift opens with the credits (0.4.23: it waits for her).
+      cleared: ['1-0', ...cleared],
+      pages: [...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), 'valley-of-bowser'],
       freed: CHARACTERS.map((c) => c.id),
-      position: { page: 'smb-8', node: '8-4' },
+      position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
       story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.bowser84),
     });
     expect(map(h).story).toBe(false);
-    h.game.showEnding('8-4');
+    h.game.showEnding('8-5');
     expect(h.top()).toBeInstanceOf(CreditsScene);
     h.idle(60);
     h.tap('start');
     h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
     h.tap('jump'); // the closing lines wait for OK
     h.until(() => h.top() instanceof WorldMapScene, 3000);
-    expect(map(h).page.id).toBe('smb-8');
-    expect(h.game.pendingReveal).toContain('smb-8:8-4>ll-1');
+    expect(map(h).page.id).toBe('valley-of-bowser');
+    expect(h.game.pendingReveal).toContain('valley-of-bowser:bowsers-castle>ll-1');
     expect(map(h).story).toBe(true);
     expect(toadSprite(h)).toBeDefined();
+    // INT55: the castle (and the hero and Toad at its gate) are at the top of the Valley's page,
+    // so the box shows below them, not over them.
+    h.until(() => map(h).toad?.lines != null, 600);
+    const shown = draw(map(h));
+    const boxTop = shown.texts.find((t) => t.str === 'TOAD:')!.y;
+    expect(boxTop).toBeGreaterThan(map(h).hy + 16);
+    expect(boxTop).toBeGreaterThan(toadSprite(h)!.y + 16);
     expect(readAll(h)).toEqual(riftPages('MARIO'));
     h.until(() => map(h).mode === 'idle', 600);
-    expect(h.game.pendingReveal).not.toContain('smb-8:8-4>ll-1');
+    expect(h.game.pendingReveal).not.toContain('valley-of-bowser:bowsers-castle>ll-1');
     expect(h.game.seen(beat.rift)).toBe(true);
   });
 
@@ -227,14 +233,18 @@ describe("Toad's map scenes", () => {
 });
 
 describe("Toad's map scenes: after the last page", () => {
-  /** World 8 after the credits with only the rift due (a major scene: Toad walks in), no reveal. */
+  /** The Valley after the credits with only the rift due (a major scene: Toad walks in), no reveal. */
   const riftOnly = (over: Partial<SaveFile> = {}) =>
     open({
-      cleared: [...W1, '8-4'],
-      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8', 'll-1'],
+      cleared: [...W1, '8-4', '8-5'],
+      pages: [
+        ...['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8'],
+        'valley-of-bowser',
+        'll-1',
+      ],
       freed: CHARACTERS.map((c) => c.id),
       gameCleared: true,
-      position: { page: 'smb-8', node: '8-4' },
+      position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
       story: ALL_STORY.filter((id) => id !== beat.rift),
       ...over,
     });

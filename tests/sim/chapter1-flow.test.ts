@@ -88,7 +88,7 @@ function flow() {
     if (top instanceof LevelScene && top.world.castleText.length > 1) {
       const p = CASTLE_PAGES['1-4'];
       const text = top.world.castleText;
-      if (p && (text.includes(p.reveal[0] as string) || text.includes(p.news[0] as string)))
+      if (p && (text.includes(p.reveal[0] as string) || text.includes(p.news?.[0] as string)))
         return 'castle-pages';
     }
     return null;

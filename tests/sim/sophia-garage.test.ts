@@ -22,8 +22,7 @@ import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
 import { MINIGAMES, type MiniGameDef } from '@game/minigames';
 import { arenaGames, metHero } from '@game/arena';
 import { beat } from '@game/story/beats';
-import { RIFT_SEALED_PAGES, sealedHint } from '@game/story/script';
-import { CreditsScene } from '@game/scenes/credits';
+import { VALLEY_SEALED_PAGES, sealedHint } from '@game/story/script';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
 import { captives, closeCards, draw, file, makeGame, useStorage, type H } from './heroes-harness';
@@ -663,18 +662,14 @@ describe('captive Sophia III', () => {
 });
 
 describe("Sophia III's story lines play now that she hides under 8-1", () => {
-  it("after the 8-4 credits: the rift still shut without her (0.4.23); Toad's reminder, the sealed hint", () => {
+  it("after 8-4 (an ordinary castle since 0.4.55): the road on to the Valley sealed without her; Toad's reminder, the sealed hint", () => {
     const h = makeGame();
     world8({ story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.sealed('smb-8')) });
     h.game.openFile(1);
     h.step();
-    h.game.showEnding('8-4');
-    expect(h.top()).toBeInstanceOf(CreditsScene);
-    h.idle(60);
-    h.tap('start');
-    h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
-    h.tap('jump'); // the closing lines wait for OK
-    h.until(() => h.top() instanceof WorldMapScene, 3000);
+    // 8-4's exit, as LevelScene takes it in the story: back to the map, no credits.
+    h.game.levelCleared('8-4-end');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
     const map = h.top() as WorldMapScene;
     const read: string[][] = [];
     for (let i = 0; i < 20 && map.mode === 'story'; i++) {
@@ -685,8 +680,9 @@ describe("Sophia III's story lines play now that she hides under 8-1", () => {
       h.idle(31);
       h.tap('jump');
     }
-    expect(read).toEqual(RIFT_SEALED_PAGES.map((p) => [...p]));
+    expect(read).toEqual(VALLEY_SEALED_PAGES.map((p) => [...p]));
     expect(h.game.seen(beat.rift)).toBe(false);
+    expect(h.game.mapProgress.pages).not.toContain('valley-of-bowser');
     h.until(() => map.mode === 'idle', 600);
     expect(map.hintLine).toBe(sealedHint('SOPHIA III'));
   });

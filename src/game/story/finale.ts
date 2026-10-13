@@ -7,8 +7,10 @@
  * the campaign never dead-ends: 8-4's fake is unmasked like the others, then the wand breaks and
  * the credits and the rift follow as before.
  *
- * TEMPORARY SWITCH (0.4.55, B55: flip it here, in this one place):
- *   FINALE = { castle: '8-5', bridgeRoom: <Bowser's Castle's bridge room id> }
+ * 0.4.55 (B55): the switch is flipped. BOWSER'S CASTLE (internal 8-5, one area) is the last
+ * castle; its king's bridge starts at column 480 (`bridgeAt`), where his boast plays. 8-4 is an
+ * ordinary castle in the campaign now (`endMoved`): its `next=end` exit goes back to the map like
+ * any castle's, with Toad's "another castle" line, and no credits.
  * Everything that belongs to the ending follows `castle`: the wand break (World.wandScene), the
  * false-ending credits (Game.showEnding), the ending's two Toad pages (castlePages). Everything
  * that belongs to the REAL king follows it too, but only once it is not a fake castle
@@ -18,11 +20,24 @@
  * Classic play never reads any of this: 8-4 is the real king and the end there, as always.
  */
 
-/** The campaign's last castle (its main level id) and the room its king is fought in. */
-export const FINALE: { readonly castle: string; readonly bridgeRoom: string } = {
-  castle: '8-4',
-  bridgeRoom: '8-4-end',
+/**
+ * The campaign's last castle (its main level id), the room its king is fought in, and (a room
+ * that is the whole castle) the column where his bridge section starts.
+ */
+export const FINALE: { readonly castle: string; readonly bridgeRoom: string; readonly bridgeAt?: number } = {
+  castle: '8-5',
+  bridgeRoom: '8-5',
+  bridgeAt: 480,
 };
+
+/**
+ * Whether castle `main`'s `next=end` exit is no longer the end in the story (0.4.55: SMB 8-4,
+ * since the ending moved to Bowser's Castle): it is cleared like any castle, back to the map. The
+ * Lost Levels' ends and the finale itself are untouched; classic play never asks.
+ */
+export function endMoved(main: string): boolean {
+  return main !== FINALE.castle && !main.startsWith('ll-');
+}
 
 /**
  * The campaign's castles whose king is a fake in World 8 (0.4.54): SMB 8-4 (form 8, the Piranha

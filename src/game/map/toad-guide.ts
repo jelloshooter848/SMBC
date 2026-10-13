@@ -6,7 +6,7 @@ import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import { beat } from '../story/beats';
 import { pageSaid } from '../story/cards';
 import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES, type Page } from '../story/script';
-import { riftOpen } from './world-gate';
+import { RIFT_PAGE, riftOpen } from './world-gate';
 import type { MapProgress } from './types';
 
 /*
@@ -54,15 +54,16 @@ export function dueScenes(g: GuideInput): ToadScene[] {
   const p = g.progress;
   const page = g.page;
   const smb = /^smb-\d+$/.test(page);
-  if (!smb && page !== 'hub' && page !== 'arena') return out;
+  if (!smb && page !== 'hub' && page !== 'arena' && page !== RIFT_PAGE) return out;
   const add = (ids: string[], pages: Page[], walk = false) => {
     const fresh = ids.filter((id) => !g.seen(id));
     if (fresh.length) out.push({ ids: fresh, pages, walk });
   };
   // The major scenes.
   if (g.crash && !g.seen(beat.crash)) add([beat.crash], [...CRASH_PAGES], true);
-  // The rift waits for Sophia III too (0.4.23, S3: map/world-gate.ts riftOpen).
-  if (page === 'smb-8' && riftOpen(p, g.freed)) add([beat.rift], riftPages(g.hero), true);
+  // The rift waits for Sophia III too (0.4.23, S3: map/world-gate.ts riftOpen). Since 0.4.55 it
+  // opens on the VALLEY OF BOWSER, after Bowser's Castle (RIFT_PAGE).
+  if (page === RIFT_PAGE && riftOpen(p, g.freed)) add([beat.rift], riftPages(g.hero), true);
   // Toad's World 1 scene (2.4): back on the map after 1-0 (cleared or skipped), once per file.
   if (page === 'smb-1' && p.cleared.includes('1-0')) add([beat.enter('smb-1')], [...WORLD1_PAGES], true);
   if (page === 'hub') add([beat.hub], [HUB_PAGE]);
@@ -72,6 +73,8 @@ export function dueScenes(g: GuideInput): ToadScene[] {
 
 /** Top of Toad's box: just under the map's header bar. */
 export const TOAD_BOX_Y = 28;
+/** The tallest box (seven lines): a hero standing above its bottom would be covered by it. */
+const TOAD_BOX_MAX_H = 92;
 /**
  * Toad's walking speed (px per frame), where he starts, off the left edge, and where he leaves
  * to: forward, off the right edge (0.4.35, owner: never back the way he came).
@@ -103,6 +106,12 @@ export class ToadGuide {
   private scene = -1;
   private page = 0;
   private t = 0;
+  /**
+   * The hero's y on the map (the map scene sets it). A hero standing where the top box would cover
+   * him (the VALLEY OF BOWSER's castle, at the top of its page: INT55, 0.4.55) gets the box at the
+   * bottom instead, so the hero and Toad beside him stay in view. Null: always at the top.
+   */
+  avoidY: number | null = null;
   /** Toad's x while on stage; null while off it. */
   private tx: number | null = null;
   /** Toad's y (his top): the stand's but on a walk from `from`. */
@@ -236,7 +245,7 @@ export class ToadGuide {
     }
   }
 
-  /** Toad (when on stage) and the box at the top (while a page shows). */
+  /** Toad (when on stage) and the box at the top, or the bottom (`avoidY`), while a page shows. */
   draw(r: Renderer, assets: AssetRegistry): void {
     const toad = this.toad();
     if (toad) r.sprite(assets.sheet('smb3'), toad.frame, toad.x, toad.y, toad.flip);
@@ -245,7 +254,8 @@ export class ToadGuide {
     const font = assets.sheet('font');
     const prompt = this.hooks.prompt();
     const h = (lines.length + 1) * 10 + 12;
-    const y = TOAD_BOX_Y;
+    const covered = this.avoidY !== null && this.avoidY - 16 < TOAD_BOX_Y + TOAD_BOX_MAX_H;
+    const y = covered ? 240 - 8 - h : TOAD_BOX_Y;
     r.rect(12, y, 256 - 24, h, '#fcfcfc');
     r.rect(14, y + 2, 256 - 28, h - 4, '#000');
     lines.forEach((l, i) => r.text(font, l, (256 - l.length * 8) >> 1, y + 7 + i * 10));

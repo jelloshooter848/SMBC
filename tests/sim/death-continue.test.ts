@@ -83,6 +83,19 @@ function playAndDie(h: ReturnType<typeof makeGame>, ids: number[] = [0]) {
 }
 
 describe('death with lives left goes through character select', () => {
+  it('the intro card says "1 life", not "1 lives" (INT55)', () => {
+    const h = makeGame();
+    h.game.newGame(MARIO, '1-1');
+    for (let n = 0; n < 2; n++) {
+      playAndDie(h);
+      h.idle(12);
+      h.tap('jump');
+    }
+    expect(h.game.state.lives).toBe(1);
+    expect(h.said.some((t) => /\. 1 life\.$/.test(t))).toBe(true);
+    expect(h.said.some((t) => /\b1 lives\b/.test(t))).toBe(false);
+  });
+
   it('keeps checkpoint, score, coins and level; preselects the hero; the picked hero starts small', () => {
     const h = makeGame();
     h.game.newGame(MARIO, '1-1');

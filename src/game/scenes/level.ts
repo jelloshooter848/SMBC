@@ -34,6 +34,7 @@ import { CardScene } from './message';
 import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { playLevelBeat } from '../story/level-beats';
+import { endMoved } from '../story/finale';
 import { playCastleRemark } from '../story/castle-remark';
 import {
   ANCHOR_LARRY_PAGES,
@@ -221,9 +222,9 @@ export class LevelScene implements Scene {
     if (held.some((o) => o.given)) this.airship?.itemsGiven(this.game.state);
   }
 
-  /** The level's music (levelMusic), at the clock's tempo. */
+  /** The level's music (levelMusic), or its section's (World.sectionMusic), at the clock's tempo. */
   playMusic(): void {
-    const music = levelMusic(this.level, this.game.state.character);
+    const music = this.world.sectionMusic ?? levelMusic(this.level, this.game.state.character);
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
     this.game.ctx.audio.playMusic(music);
   }
@@ -439,7 +440,10 @@ export class LevelScene implements Scene {
         if (game.playtestDone) game.playtestDone();
         // A stage played as an arena round (arena/stage-round.ts): its exit passes the round.
         else if (endStageRound(game, 'pass')) this.roundOver = true;
-        else if (ev.next === 'end') game.showEnding(this.level.parent ?? this.level.id);
+        // In the story 8-4's `next=end` is a castle like any other since 0.4.55 (the ending is
+        // Bowser's Castle's: story/finale.ts endMoved): back to the map below.
+        else if (ev.next === 'end' && !(storyOn(game) && endMoved(this.level.parent ?? this.level.id)))
+          game.showEnding(this.level.parent ?? this.level.id);
         // Campaign: the clear is recorded and the map shows what it opened (flagpole or castle).
         // Otherwise on to the next level; a castle's "another castle" news is shown in the
         // level, next to Toad (World.castleText).

@@ -50,7 +50,7 @@ import { campaignLevel } from '../level/campaign';
 import { heroVariant } from '../level/variants';
 import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
 import { isLostLevel } from '../level/lost-campaign';
-import { shownStage } from '../map/campaign-order';
+import { spokenLevel } from '../map/campaign-order';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import {
@@ -313,8 +313,10 @@ export class Game {
       const s = this.state;
       s.checkpoint = null;
       s.time = null;
-      if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
+      // The clear first, then the flag: the Valley's road on opens on either (castle-or-gameCleared),
+      // so the clear is what opens it, and it draws in (0.4.55).
       this.addReveal(this.recordClear(from));
+      if (!isLostLevel(from)) this.mapProgress.gameCleared = true;
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
@@ -1294,7 +1296,7 @@ export class Game {
       return;
     }
     this.deps.announcer?.say(
-      `World ${level.world}-${shownStage(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} lives.`,
+      `${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} ${this.state.lives === 1 ? 'life' : 'lives'}.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).

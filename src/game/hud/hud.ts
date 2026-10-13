@@ -3,7 +3,7 @@ import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
 import { isFound } from '../items/flags';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { worldLabel } from './world-label';
-import { shownStage } from '../map/campaign-order';
+import { shownPlace, shownStage } from '../map/campaign-order';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { GameState } from '../context';
 import type { Player } from '../entities/player';
@@ -47,6 +47,9 @@ export interface HudOptions {
 export const KEY_ICON_P1 = { x: 132, y: 24 } as const;
 export const KEY_ICON_P2 = { x: 196, y: 24 } as const;
 
+/** TIME's x when the WORLD column holds a place's name on two rows (BOWSER'S CASTLE). */
+export const TIME_X_PLACE = 216;
+
 /** Columns the WORLD column has for an area's name (HudOptions.area), from x 144 to the edge. */
 export const HUD_AREA_COLS = 11;
 
@@ -87,6 +90,7 @@ export function drawHud(
     r.text(font, str, x, y);
   };
   const name = state.character.hudName.slice(0, 6).padEnd(6);
+  const place = shownPlace(state.world, state.stage)?.shown;
   text(name, 24, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
   // as in the original's TopScreenText (SCORE_TXT_PNT, COIN_SYMBOL_PNT).
@@ -101,6 +105,14 @@ export function drawHud(
       const [a, b] = hudAreaLines(opts.area);
       text(a, 144, 8);
       if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
+    } else if (place) {
+      // A level shown by its name (BOWSER'S CASTLE, never "8-5"): the name in the WORLD column on
+      // two rows, its second centred under the first, and TIME 16 px right to make room.
+      const [a, b] = hudAreaLines(place);
+      text(a, 144, 8);
+      if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
+      text('TIME', TIME_X_PLACE, 8);
+      if (time !== null) text(pad(time, 3), TIME_X_PLACE + 8, 16);
     } else {
       text('WORLD', 144, 8);
       text(
@@ -119,7 +131,7 @@ export function drawHud(
   }
   // Blink the timer label when low.
   if (opts.place === undefined && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
-    text('TIME', 200, 8);
+    text('TIME', place && opts.area === undefined ? TIME_X_PLACE : 200, 8);
 }
 
 /**

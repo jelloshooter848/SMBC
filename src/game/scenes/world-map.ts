@@ -6,6 +6,7 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage, pageLook } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
+import { VALLEY_PAGE_ID } from '@content/worldmap/valley-of-bowser';
 import {
   aboveLook,
   aboveRoadCells,
@@ -90,6 +91,7 @@ import { pageSaid } from '../story/cards';
 import {
   gateDue,
   gateScenes,
+  isRiftExit,
   localHint,
   localNode,
   localSpot,
@@ -582,6 +584,9 @@ export class WorldMapScene implements Scene {
       from,
     );
     if (guide.done) return false;
+    // The Valley's castle stands at the top of its page: the box goes below the hero and Toad there
+    // (INT55). Elsewhere it stays at the top, as approved.
+    if (this.page.id === VALLEY_PAGE_ID) guide.avoidY = this.hy;
     this.toad = guide;
     this.mode = 'story';
     return true;
@@ -913,7 +918,10 @@ export class WorldMapScene implements Scene {
   private hereLine(): string {
     const n = this.nodeById(this.node);
     const label = spoken(this.page.label);
-    const page = label.toUpperCase() === this.page.title ? label : `${label}, ${this.page.title}`;
+    // A title that already starts with the label ('VALLEY' / 'VALLEY OF BOWSER') is said alone.
+    const title = this.page.title;
+    const up = label.toUpperCase();
+    const page = up === title ? label : title.startsWith(`${up} `) ? title : `${label}, ${title}`;
     return n ? `${page}. ${this.nodeLabel(n)}` : page;
   }
 
@@ -1829,8 +1837,8 @@ export class WorldMapScene implements Scene {
   }
 
   /**
-   * S3 (0.4.23, story only): the seal across a sealed road at the page's edge (World 8: the rift's
-   * crack, held shut), kept while a gate scene runs until it shatters; and a world's local beside
+   * S3 (0.4.23, story only): the seal across a sealed road at the page's edge (World 8's road on to
+   * the Lost Levels: the rift's crack, held shut; to the Valley, since 0.4.55, a seal), kept while a gate scene runs until it shatters; and a world's local beside
    * its start node, blinking now and then.
    */
   private drawGateAndLocal(r: Renderer, page: WorldMapPage, ox: number): void {
@@ -1840,7 +1848,8 @@ export class WorldMapScene implements Scene {
     const e = gate ? (gate.sealShown ? gate.gate.exit : null) : sealedExit(this.progress, page);
     const end = e?.points[e.points.length - 1];
     if (end) {
-      if (smbWorld(page.id) === 8) drawCrack(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
+      if (e && smbWorld(page.id) === 8 && isRiftExit(e))
+        drawCrack(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
       else drawSeal(r, ox + end[0] * 16, end[1] * 16, this.t, reduce);
     }
     const who = LOCAL_SPRITES[page.id];

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { beat } from '../story/beats';
 import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES } from '../story/script';
 import * as script from '../story/script';
-import { dueScenes, type GuideInput } from './toad-guide';
+import { dueScenes, ToadGuide, TOAD_BOX_Y, type GuideInput } from './toad-guide';
+import { RIFT_PAGE } from './world-gate';
 import type { MapProgress } from './types';
 
 // Toad's map scenes (docs/STORY.md 2.3, 2.14): which are due, in which order, once per file.
@@ -76,10 +77,12 @@ describe('dueScenes', () => {
   it('the crash, the rift, the extras', () => {
     const crash = dueScenes(input({ page: 'smb-4', crash: true, story: ['enter:smb-4'] }));
     expect(crash).toEqual([{ ids: [beat.crash], pages: [...CRASH_PAGES], walk: true }]);
-    const rift = (freed: string[]) =>
+    // Since 0.4.55 the rift opens on the VALLEY OF BOWSER, after Bowser's Castle (RIFT_PAGE).
+    expect(RIFT_PAGE).toBe('valley-of-bowser');
+    const rift = (freed: string[], page = RIFT_PAGE) =>
       dueScenes(
         input({
-          page: 'smb-8',
+          page,
           hero: 'MEGA MAN',
           freed,
           story: ['enter:smb-8'],
@@ -93,6 +96,8 @@ describe('dueScenes', () => {
       walk: true,
     });
     expect(rift(['mario']).map((s) => s.ids)).not.toContainEqual([beat.rift]);
+    // Never on World 8 any more.
+    expect(rift(['mario', 'sophia'], 'smb-8').map((s) => s.ids)).not.toContainEqual([beat.rift]);
     expect(dueScenes(input({ page: 'hub' }))).toEqual([{ ids: [beat.hub], pages: [HUB_PAGE], walk: false }]);
     expect(dueScenes(input({ page: 'arena' }))).toEqual([
       { ids: [beat.arena], pages: [ARENA_PAGE], walk: false },
@@ -103,5 +108,33 @@ describe('dueScenes', () => {
     const g = input({ page: 'smb-1', prog: { cleared: ['1-0', '1-1', '1-4'] }, freed: HEROES });
     expect(ids(g)).toEqual([beat.enter('smb-1')]);
     expect(dueScenes({ ...g, page: 'll-1' })).toEqual([]);
+  });
+});
+
+describe('the box keeps clear of the hero (INT55)', () => {
+  const boxTop = (avoidY: number | null): number => {
+    const g = new ToadGuide(
+      [{ ids: [], pages: [['TOAD:', '', 'ONE', 'TWO', 'THREE']], walk: false }],
+      { x: 100, y: 90 },
+      { markSeen: () => undefined, say: () => undefined, prompt: () => 'OK' },
+    );
+    g.avoidY = avoidY;
+    const ys: number[] = [];
+    const r = {
+      rect: (_x: number, y: number) => void ys.push(y),
+      text: () => undefined,
+      sprite: () => undefined,
+    };
+    g.draw(r as never, { sheet: () => ({}) } as never);
+    return Math.min(...ys);
+  };
+  it('stays at the top while the hero is lower down the map', () => {
+    expect(boxTop(null)).toBe(TOAD_BOX_Y);
+    expect(boxTop(160)).toBe(TOAD_BOX_Y);
+  });
+  it('drops to the bottom when the hero stands under the top box (the Valley castle, 0.4.55)', () => {
+    const y = boxTop(96);
+    expect(y).toBeGreaterThan(96 + 16);
+    expect(y + 72).toBeLessThanOrEqual(240);
   });
 });

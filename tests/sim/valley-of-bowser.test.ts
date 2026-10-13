@@ -199,6 +199,19 @@ describe('the VALLEY OF BOWSER in play (switch on)', () => {
     expect(h.game.mapProgress.pages).not.toContain('ll-1');
   });
 
+  it('says its name once on arrival: "VALLEY OF BOWSER", not "Valley, VALLEY OF BOWSER" (INT55)', () => {
+    const h = makeGame();
+    h.said.length = 0;
+    open(h, {
+      ...AFTER_8_4,
+      pages: [...P8, 'valley-of-bowser'],
+      position: { page: 'valley-of-bowser', node: 'start' },
+    });
+    for (let i = 0; i < 5; i++) h.step();
+    expect(h.said.some((s) => s.startsWith('VALLEY OF BOWSER. '))).toBe(true);
+    expect(h.said.some((s) => /Valley, VALLEY/i.test(s))).toBe(false);
+  });
+
   it('a file that beat the game before the Valley: loads clean, the Valley opens, its road on is open', () => {
     // Its old reveal of World 8's road to Lost World 1 names a road campaign World 8 no longer has.
     const h = makeGame();

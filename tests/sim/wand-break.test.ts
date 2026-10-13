@@ -25,7 +25,9 @@ import {
   WAND_SCENE_FRAMES,
 } from '@game/entities/effects/wand-break';
 import { campaignLevel } from '@game/level/campaign';
-import { castlePages, FINALE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
+import { castlePages, CASTLE_PAGES, FINALE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
+import { FINALE } from '@game/story/finale';
+import { WorldMapScene } from '@game/scenes/world-map';
 import { CreditsScene, creditsLines, CREDITS } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import type { LevelData } from '@game/level/schema';
@@ -33,9 +35,11 @@ import type { Action } from '@engine/input/actions';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 import { seeAllStory } from './story-seen';
 
-// docs/STORY.md 2.12: in the campaign's 8-4 the king's wand breaks as he falls, a rift opens over
-// the lava and stays; then the castle pages, then the credits (which do not read the news twice).
-// Classic 8-4 and the Lost Levels' 8-4 are unchanged.
+// docs/STORY.md 2.12: in the campaign's last castle (story/finale.ts FINALE: BOWSER'S CASTLE, internal
+// 8-5, since 0.4.55; 8-4 before) the king's wand breaks as he falls, a rift opens over the lava and
+// stays; then the castle pages, then the credits (which do not read the news twice). The campaign's
+// 8-4 is an ordinary fake castle since: no wand, Toad's own page, back to the map. Classic 8-4 and
+// the Lost Levels' 8-4 are unchanged.
 
 const levels = join(import.meta.dirname, '../../src/content/levels');
 const load = (path: string, id: string): LevelData =>
@@ -43,6 +47,8 @@ const load = (path: string, id: string): LevelData =>
 const end84 = () => load('world8/8-4-end.map', '8-4-end');
 /** The campaign's 8-4-end: Toad in the princess's place (level/campaign.ts toadAt84). */
 const campaign84 = () => campaignLevel(end84(), () => false);
+/** BOWSER'S CASTLE (internal 8-5) as the campaign plays it: Toad at its end. */
+const castle85 = () => campaignLevel(load('world8/8-5.map', '8-5'), () => false);
 
 const assets = new AssetRegistry(PALETTES);
 assets.defineAll(SPRITES);
@@ -149,11 +155,8 @@ function clearCastle(
   return { world, texts, said, sfx, exitAt, placed, wand, wandAt, frames, xs, ts };
 }
 
-/**
- * 8-4's pages under Toad's thanks (story/finale.ts: still the last castle in 0.4.54, but its king
- * is a fake, so only the wand's page: Toad never calls it the real king).
- */
-const PAGES = castlePages('8-4') as { reveal: readonly string[]; news?: readonly string[] };
+/** The last castle's pages under Toad's thanks (story/finale.ts): the real king, then the wand. */
+const PAGES = castlePages(FINALE.castle) as { reveal: readonly string[]; news?: readonly string[] };
 /** The castle's text, page by page, as shown under the thanks `t`. */
 const shown = (t: string) => [
   [t],
@@ -164,9 +167,10 @@ const read = (t: string) =>
   [PAGES.reveal, ...(PAGES.news ? [PAGES.news] : [])].map((p) => [t, ...p, 'OK to continue.'].join(' '));
 const fullScreen = (r: Drawn['rects'][number]) => r.w >= SCREEN_W;
 
-describe('8-4: the wand breaks (campaign)', () => {
-  it('on the campaign 8-4 (Toad variant): the wand breaks, the rift opens and stays, said once', () => {
-    const r = clearCastle(campaign84(), true);
+describe("BOWSER'S CASTLE: the wand breaks (campaign)", () => {
+  it("on BOWSER'S CASTLE (Toad at the end): the wand breaks, the rift opens and stays, said once", () => {
+    expect(FINALE.castle).toBe('8-5');
+    const r = clearCastle(castle85(), true);
     expect(r.placed).toBe(true);
     expect(r.wand).toBeDefined();
     const wand = r.wand as WandBreak;
@@ -176,7 +180,8 @@ describe('8-4: the wand breaks (campaign)', () => {
     expect(wand.piecesOut).toBe(false);
     expect(r.sfx.filter((s) => s === 'wand-crack')).toHaveLength(1);
     // Announced once, before the castle pages.
-    expect(PAGES).toEqual({ reveal: FINALE_PAGES.news });
+    // The real king: both of Toad's finale pages.
+    expect(PAGES).toBe(FINALE_PAGES);
     expect(r.said).toEqual([WAND_BREAK_SAID, ...read('THANK YOU MARIO!')]);
     expect(r.texts).toEqual(shown('THANK YOU MARIO!'));
     // Toad stands at the end, not the princess.
@@ -189,7 +194,7 @@ describe('8-4: the wand breaks (campaign)', () => {
   });
 
   it('the hero walks on only once the pieces are in the rift', () => {
-    const r = clearCastle(campaign84(), true);
+    const r = clearCastle(castle85(), true);
     const p = r.world.player;
     expect(r.wand).toBeDefined();
     // Still from the axe until the wand scene is over (wandAt + WAND_SCENE_FRAMES, plus a
@@ -202,6 +207,17 @@ describe('8-4: the wand breaks (campaign)', () => {
     const toad = r.world.entities.find((e) => e instanceof Toad) as Toad;
     expect(p.body.x).toBeLessThan(toad.body.x);
     expect(p.body.x).toBeGreaterThan(toad.body.x - px(48));
+  });
+
+  it("campaign 8-4 (a fake, an ordinary castle since 0.4.55): no wand, Toad's own page, then the exit", () => {
+    const r = clearCastle(campaign84(), true);
+    expect(r.wand).toBeUndefined();
+    expect(r.sfx).not.toContain('wand-crack');
+    const page = CASTLE_PAGES['8-4'];
+    expect(page?.news).toBeUndefined();
+    expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', '', ...(page?.reveal ?? [])]]);
+    expect(r.texts.flat()).not.toContain('YOUR QUEST IS OVER.');
+    expect(r.exitAt).toBeGreaterThan(0);
   });
 
   it('classic 8-4: no wand, no rift, only the NES text said, the princess', () => {
@@ -225,7 +241,7 @@ describe('8-4: the wand breaks (campaign)', () => {
   });
 
   it('reduce flashing: no flash at all, the cracked wand held steady, the rift still', () => {
-    const r = clearCastle(campaign84(), true, { reduceFlashing: true });
+    const r = clearCastle(castle85(), true, { reduceFlashing: true });
     for (const f of r.frames) {
       expect(f.rects.some(fullScreen)).toBe(false);
       // Only small sparkles: nothing wider than a sparkle's 1 px.
@@ -243,7 +259,7 @@ describe('8-4: the wand breaks (campaign)', () => {
   });
 
   it('flashing allowed: one white flash as it cracks, fading, never repeated; a slow shimmer', () => {
-    const r = clearCastle(campaign84(), true, { reduceFlashing: false });
+    const r = clearCastle(castle85(), true, { reduceFlashing: false });
     const flashes = r.frames.map((f) => f.rects.some(fullScreen));
     const first = flashes.indexOf(true);
     expect(first).toBe(r.wandAt + WAND_CRACK_AT);
@@ -272,7 +288,7 @@ describe('8-4: the wand breaks (campaign)', () => {
 
   it('co-op: the castle thanks whoever took the axe (player 2)', () => {
     const state = newGameState(MARIO, MEGAMAN);
-    const r = clearCastle(campaign84(), true, { state, who: 1 });
+    const r = clearCastle(castle85(), true, { state, who: 1 });
     expect(r.placed).toBe(true);
     expect(r.wand).toBeDefined();
     // The hero's full name, never the HUD's short one (0.4.35).
@@ -286,8 +302,11 @@ describe('8-4: the wand breaks (campaign)', () => {
 /** The current level scene's world. */
 const worldOf = (h: H) => (h.top() as LevelScene).world;
 
-/** Take 8-4-end's axe in the game, then run until the credits roll; returns the castle pages shown. */
-function axeToCredits(h: H): string[][] {
+/**
+ * Take the axe of the level in play, then run until `done` (default: the credits roll); returns
+ * the castle pages shown.
+ */
+function axeToCredits(h: H, done: () => boolean = () => h.top() instanceof CreditsScene): string[][] {
   const w = worldOf(h);
   w.assist.invulnerable = true;
   const axe = (w.level.entities.find((e) => e.type === 'axe') as { x: number }).x;
@@ -301,33 +320,33 @@ function axeToCredits(h: H): string[][] {
   p.vx = 0;
   p.vy = 0;
   const texts: string[][] = [];
-  for (let i = 0; i < 2000 && !(h.top() instanceof CreditsScene); i++) {
+  for (let i = 0; i < 2000 && !done(); i++) {
     // OK while the castle's text (or, 0.4.54, the fake's remark card) waits: never by itself.
     const waits = h.top() instanceof LevelScene ? worldOf(h).castleWaiting : true;
     h.step(waits && i % 2 === 0 ? ['jump'] : []);
     const t = h.top() instanceof LevelScene ? worldOf(h).castleText : null;
     if (t && t.length && t.join('|') !== (texts.at(-1) ?? []).join('|')) texts.push([...t]);
   }
-  expect(h.top()).toBeInstanceOf(CreditsScene);
+  expect(done()).toBe(true);
   return texts;
 }
 
-describe('8-4 in the game: the wand, the castle pages, then the credits', () => {
+describe("BOWSER'S CASTLE in the game: the wand, the castle pages, then the credits", () => {
   useStorage();
 
-  it('campaign: the Toad variant, the wand, both pages in order, then the credits (said once each)', () => {
+  it('campaign: Toad at the end, the wand, both pages in order, then the credits (said once each)', () => {
     const h = makeGame();
     const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
     h.game.openFile(
       1,
       file({
-        cleared: cleared.filter((id) => id !== '8-4'),
-        pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
-        position: { page: 'smb-8', node: '8-4' },
+        cleared,
+        pages: [...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`), 'valley-of-bowser'],
+        position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
       }),
     );
     seeAllStory(h.game);
-    h.game.startLevel(getLevel('8-4-end'), { mode: 'stand' });
+    h.game.startLevel(getLevel('8-5'), { mode: 'stand' });
     h.step();
     expect(h.top()).toBeInstanceOf(LevelScene);
     const w = worldOf(h);
@@ -351,6 +370,33 @@ describe('8-4 in the game: the wand, the castle pages, then the credits', () => 
     expect(said.filter((s) => s.includes(FINALE_PAGES.news[0] as string))).toHaveLength(1);
     const credits = h.top() as CreditsScene;
     expect(credits.lines).toEqual(creditsLines(true));
+  });
+
+  it("campaign 8-4: no wand, Toad's own page, then World 8's map (no credits); the road on draws in to the Valley", () => {
+    const h = makeGame();
+    const cleared = [1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`));
+    h.game.openFile(
+      1,
+      file({
+        cleared: cleared.filter((id) => id !== '8-4'),
+        pages: [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`),
+        position: { page: 'smb-8', node: '8-4' },
+        freed: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill', 'sophia'],
+      }),
+    );
+    seeAllStory(h.game);
+    h.game.startLevel(getLevel('8-4-end'), { mode: 'stand' });
+    h.step();
+    const w = worldOf(h);
+    const texts = axeToCredits(h, () => h.top() instanceof WorldMapScene || h.top() instanceof CreditsScene);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(w.entities.some((e) => e instanceof WandBreak)).toBe(false);
+    expect(texts.at(-1)).toEqual(['THANK YOU MARIO!', '', ...(CASTLE_PAGES['8-4']?.reveal ?? [])]);
+    const g = h.game.mapProgress;
+    expect(g.cleared).toContain('8-4');
+    expect(g.gameCleared).toBe(false);
+    expect(g.pages).toContain('valley-of-bowser');
+    expect(g.pages).not.toContain('ll-1');
   });
 
   it('classic: no wand, the NES text read out once, then the credits', () => {

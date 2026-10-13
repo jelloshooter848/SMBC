@@ -49,6 +49,12 @@ export class Lift extends Entity {
   /** Exact y in subpixels for the elevator and drop lifts, whose speeds are fractional. */
   private fy: number;
   readonly len: number;
+  /**
+   * A rising lift's half swing (subpixels): the original's 75 px, or the map's `swing=` (px) where a
+   * lift must stay clear of something (BOWSER'S CASTLE's lava lake, INT55: above the lava, below
+   * the vault).
+   */
+  private readonly swing: number;
   /** Set by carry() while a player stands on it this frame (balance lifts read it). */
   ridden = false;
   /** The body carry() last stood on it (balance lifts pop their score there). */
@@ -82,6 +88,7 @@ export class Lift extends Entity {
     this.speed = Number(props.speed ?? 0x01000);
     this.despawnMargin = kind === 'lift-v' || kind === 'lift-up' || kind === 'lift-down' ? null : 64;
     this.t = Number(props.phase ?? 0);
+    this.swing = props.swing !== undefined ? px(Number(props.swing)) : V_WAVE_RANGE;
   }
 
   /** Move the platform by a controller (balance lifts); the rider follows through dx/dy. */
@@ -112,7 +119,7 @@ export class Lift extends Entity {
         break;
       case 'lift-v':
         // PT_WAVE_VERTICAL: y = centerY + sin(waveAngle) * waveRange (down first).
-        b.y = this.originY + Math.round(Math.sin(this.t * V_WAVE_STEP) * V_WAVE_RANGE);
+        b.y = this.originY + Math.round(Math.sin(this.t * V_WAVE_STEP) * this.swing);
         break;
       case 'lift-up':
         // PT_CONSTANT_RISE: back to the bottom (GLOB_STG_BOT) once above resetPos, which is the

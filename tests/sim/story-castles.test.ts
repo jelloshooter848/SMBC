@@ -19,7 +19,7 @@ import { WandPoof } from '@game/entities/effects/wand-poof';
 import { Toad } from '@game/entities/objects/toad';
 import { Princess } from '@game/entities/objects/princess';
 import { campaignLevel } from '@game/level/campaign';
-import { CASTLE_PAGES, castlePages, FINALE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
+import { CASTLE_PAGES, castlePages, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
 import { FINALE } from '@game/story/finale';
 import { CREDITS, CREDITS_NAME, CreditsScene, creditsLines } from '@game/scenes/credits';
 import { Game } from '@game/scenes/game';
@@ -120,7 +120,7 @@ describe('castle pages (campaign)', () => {
     expect(r.placed).toBe(true);
     const page = CASTLE_PAGES[id];
     expect(page).toBeDefined();
-    if (!page) return;
+    if (!page?.news) return;
     expect(r.texts).toEqual([
       ['THANK YOU MARIO!'],
       ['THANK YOU MARIO!', '', ...page.reveal],
@@ -138,18 +138,17 @@ describe('castle pages (campaign)', () => {
     expect(r.sfx).toContain('poof');
   });
 
-  it('8-4 (0.4.54, still the last castle): its fake poofs into the Piranha Plant; Toad never calls it the real king, the wand page only', () => {
+  it("8-4 (a fake since 0.4.54, an ordinary castle since 0.4.55): its fake poofs into the Piranha Plant; Toad's own page, no wand", () => {
     const level = load('world8/8-4-end.map', '8-4-end');
     const r = clearCastle(level, true);
-    expect(FINALE.castle).toBe('8-4');
-    expect(castlePages('8-4')).toEqual({ reveal: FINALE_PAGES.news });
-    expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', '', ...FINALE_PAGES.news]]);
+    expect(FINALE.castle).toBe('8-5');
+    const page = castlePages('8-4');
+    expect(page).toBe(CASTLE_PAGES['8-4']);
+    expect(r.texts).toEqual([['THANK YOU MARIO!'], ['THANK YOU MARIO!', '', ...(page?.reveal ?? [])]]);
     expect(r.texts.flat().join(' ')).not.toContain('REAL KING');
     expect(r.texts.flat()).not.toContain('YOUR QUEST IS OVER.');
-    expect(r.said).toEqual([
-      WAND_BREAK_SAID,
-      ['THANK YOU MARIO!', ...FINALE_PAGES.news, 'OK to continue.'].join(' '),
-    ]);
+    expect(r.said).not.toContain(WAND_BREAK_SAID);
+    expect(r.said).toEqual([['THANK YOU MARIO!', ...(page?.reveal ?? []), 'OK to continue.'].join(' ')]);
     expect(r.unmasked).toBe('bowser-die-8');
     expect(r.poofs).toBeGreaterThan(0);
     expect(r.sfx).toContain('poof');
@@ -179,7 +178,7 @@ describe('castle pages (campaign)', () => {
       const n = world.castleText.length;
       if (n === 1 && at.thanks === undefined) at.thanks = f;
       if (world.castleText[2] === CASTLE_PAGES['1-4']?.reveal[0] && at.p1 === undefined) at.p1 = f;
-      if (world.castleText[2] === CASTLE_PAGES['1-4']?.news[0] && at.p2 === undefined) at.p2 = f;
+      if (world.castleText[2] === CASTLE_PAGES['1-4']?.news?.[0] && at.p2 === undefined) at.p2 = f;
     }
     expect((at.p1 as number) - (at.thanks as number)).toBe(90);
     expect((at.p2 as number) - (at.p1 as number)).toBe(1000);
@@ -189,7 +188,7 @@ describe('castle pages (campaign)', () => {
   it('every page fits the castle box', () => {
     for (const { reveal, news } of Object.values(CASTLE_PAGES)) {
       expect(reveal.length).toBeLessThanOrEqual(4);
-      expect(news.length).toBeLessThanOrEqual(4);
+      expect((news ?? []).length).toBeLessThanOrEqual(4);
     }
   });
 });
@@ -428,7 +427,7 @@ beforeEach(() => {
   };
 });
 
-describe('8-4 credits', () => {
+describe("the last castle's credits", () => {
   it('the story adds "END OF CHAPTER 1 / ...BUT THE STORY ISN\'T OVER." right after THANKS FOR PLAYING', () => {
     const lines = creditsLines(true);
     const i = lines.indexOf('THANKS FOR PLAYING');
@@ -453,18 +452,18 @@ describe('8-4 credits', () => {
       characters: CHARACTERS,
       announcer: { say: (t: string) => said.push(t) } as unknown as Announcer,
     });
-    game.newGame(MARIO, '8-4-end');
+    game.newGame(MARIO, campaign ? '8-5' : '8-4-end');
     const input = new ScriptedInput({ steps: [] });
     for (let i = 0; i < 400 && !(game.scenes.top instanceof LevelScene); i++) {
       input.next();
       game.scenes.update([input]);
     }
     if (campaign) (game as unknown as { campaign: unknown }).campaign = { slot: 1 };
-    game.showEnding('8-4');
+    game.showEnding(campaign ? FINALE.castle : '8-4');
     return { credits: game.scenes.top as CreditsScene, said };
   }
 
-  it('campaign 8-4: the credits carry the line; classic: unchanged', () => {
+  it("campaign (BOWSER'S CASTLE since 0.4.55): the credits carry the line; classic 8-4: unchanged", () => {
     const story = ending(true);
     expect(story.credits).toBeInstanceOf(CreditsScene);
     expect(story.credits.lines).toEqual(creditsLines(true));

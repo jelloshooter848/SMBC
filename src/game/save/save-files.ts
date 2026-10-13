@@ -518,7 +518,10 @@ export function migrateSave(
     pages,
     secrets,
     position,
-    gameCleared: stored.gameCleared === true,
+    // A file from before the flag (0.4.7) that cleared SMB 8-4 beat the game there (its old
+    // ending): it keeps that once the ending is Bowser's Castle's (0.4.55), where 8-4 alone is an
+    // ordinary castle. Every file since writes the flag.
+    gameCleared: stored.gameCleared === true || (stored.gameCleared === undefined && cleared.includes('8-4')),
     lastNode: lastNodes(stored.lastNode, pages),
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,

@@ -5,7 +5,9 @@ import { CreditsScene } from '@game/scenes/credits';
 import { CHARACTERS } from '@game/characters/registry';
 import { loadSave, type SaveFile } from '@game/save/save-files';
 import { beat } from '@game/story/beats';
-import { gateScript, RIFT_SEALED_PAGES, riftPages, WELCOMES, type Page } from '@game/story/script';
+import { gateScript, riftPages, VALLEY_SEALED_PAGES, WELCOMES, type Page } from '@game/story/script';
+import { SHATTER_SAID } from '@game/map/gate-scene';
+import { creditsLines } from '@game/scenes/credits';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { aboveLook } from '@content/worldmap/above-render';
 import { overheadSheet } from '@game/town/hero';
@@ -293,38 +295,62 @@ describe('the welcomes (0.4.23)', () => {
   });
 });
 
-describe('the rift waits for Sophia III (0.4.23)', () => {
+describe("World 8's gate, BOWSER'S CASTLE and the rift on the Valley (0.4.55)", () => {
   const cleared = ['1-0', ...[1, 2, 3, 4, 5, 6, 7, 8].flatMap((w) => [1, 2, 3, 4].map((s) => `${w}-${s}`))];
   const pages = [1, 2, 3, 4, 5, 6, 7, 8].map((w) => `smb-${w}`);
 
-  it('after the credits with her captive: the reminder, the hint line, no road; freed: the crack tears, Toad, the road', () => {
+  it("8-4 cleared, Sophia III captive: the seal and its reminder; freed: it shatters, the road to the Valley; Bowser's Castle: the credits, then the rift on the Valley and the road on to Lost World 1", () => {
     const h = open({
-      cleared: cleared.filter((id) => id !== '8-4'),
+      cleared,
       pages,
       freed: ALL.filter((id) => id !== 'sophia'),
       position: { page: 'smb-8', node: '8-4' },
-      story: seenBut(beat.rift, beat.bowser84, beat.sealed('smb-8'), beat.gate('smb-8')),
+      story: seenBut(beat.rift, beat.sealed('smb-8'), beat.gate('smb-8')),
     });
-    h.game.showEnding('8-4');
+    // The seal (not the crack), Toad's reminder, the hint line; no road on.
+    expect(map(h).page.exits[0]?.to).toBe('valley-of-bowser');
+    expect(readAll(h)).toEqual(VALLEY_SEALED_PAGES);
+    expect(map(h).hintLine).toBe('SEALED - FREE SOPHIA III FIRST');
+    expect(h.game.mapProgress.pages).not.toContain('valley-of-bowser');
+    expect(h.game.mapProgress.pages).not.toContain('ll-1');
+    expect(h.game.seen(beat.rift)).toBe(false);
+    // Freed (her garage, under 8-1), back on the map: the seal shatters, no cutaway, no words.
+    h.game.freeHero('sophia');
+    h.game.returnToMap();
+    h.step();
+    expect(map(h).mode).toBe('gate');
+    expect(h.said).toContain(SHATTER_SAID);
+    expect(h.said.some((t) => t.startsWith('The crack over 8-4'))).toBe(false);
+    expect(readAll(h)).toEqual([]);
+    expect(h.game.mapProgress.pages).toContain('valley-of-bowser');
+    expect(h.game.mapProgress.pages).not.toContain('ll-1');
+    // On to the Valley: BOWSER'S CASTLE is open, its road on shut.
+    h.game.mapProgress.position = { page: 'valley-of-bowser', node: 'bowsers-castle' };
+    h.game.showMap();
+    h.step();
+    expect(map(h).page.id).toBe('valley-of-bowser');
+    h.until(() => map(h).mode === 'idle', 900);
+    expect(h.game.mapProgress.pages).not.toContain('ll-1');
+    // Bowser's Castle beaten: the false-ending credits, then the Valley, Toad's rift scene, the road.
+    h.game.showEnding('8-5');
     expect(h.top()).toBeInstanceOf(CreditsScene);
+    expect((h.top() as CreditsScene).lines).toEqual(creditsLines(true));
     h.idle(60);
     h.tap('start');
     h.until(() => h.top() instanceof CreditsScene && (h.top() as CreditsScene).waiting, 8000);
     h.tap('jump');
     h.until(() => h.top() instanceof WorldMapScene, 3000);
-    expect(h.game.mapProgress.pages).not.toContain('ll-1');
-    expect(readAll(h)).toEqual(RIFT_SEALED_PAGES);
-    expect(h.game.seen(beat.rift)).toBe(false);
-    expect(map(h).hintLine).toBe('SEALED - FREE SOPHIA III FIRST');
-    // Freed (her mini game won in 8-4's garage), back on the map.
-    h.game.freeHero('sophia');
-    h.game.returnToMap();
-    h.step();
-    expect(map(h).mode).toBe('gate');
-    expect(h.said.some((t) => t.startsWith('The crack over 8-4 tears'))).toBe(true);
+    expect(map(h).page.id).toBe('valley-of-bowser');
+    expect(h.game.mapProgress.gameCleared).toBe(true);
+    expect(h.game.mapProgress.cleared).toContain('8-5');
     expect(readAll(h)).toEqual(riftPages('MARIO'));
+    expect(h.game.seen(beat.rift)).toBe(true);
     expect(h.game.mapProgress.pages).toContain('ll-1');
-    expect(h.game.pendingReveal).not.toContain('smb-8:8-4>ll-1');
+    expect(h.game.pendingReveal.filter((r) => r.startsWith('valley-of-bowser:'))).toEqual([]);
+    // Right from the castle: on to Lost World 1.
+    h.tap('right');
+    h.until(() => map(h).page.id === 'll-1' && map(h).mode === 'idle', 3000);
+    expect(map(h).page.id).toBe('ll-1');
   });
 });
 
