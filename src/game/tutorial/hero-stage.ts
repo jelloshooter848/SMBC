@@ -139,6 +139,8 @@ export function stageEntity(
   if (p.facing === 'left') opts.facing = -1;
   else if (p.facing === 'right') opts.facing = 1;
   // A hanging target's top is the top of its tile (under the ceiling); a standing one's feet the bottom.
+  // A hovering one stands on its cloud in the sky (feet on the bottom of its tile).
+  if (p.hover) opts.hover = true;
   if (p.hang) {
     opts.hang = true;
     return new TrainingTarget(tileToSub(s.x) + px(2), tileToSub(s.y) + px(24), opts);

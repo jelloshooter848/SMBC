@@ -64,6 +64,14 @@ export function megamanBot(): (s: HeroStageScene) => Action[] {
           sawAt = w.frame;
         }
         break;
+      case 'saw-up':
+        // Straight up from under the cloud.
+        if (!c.pick('saw') || !c.standAt(S.cloud.x)) break;
+        if (sawAt < 0 || w.frame - sawAt > 60) {
+          out.push('up', 'special');
+          sawAt = w.frame;
+        }
+        break;
       case 'leaf': {
         if (!has('leaf-guard')) {
           c.takeFrom(S.leafBlock);

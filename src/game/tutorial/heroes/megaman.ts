@@ -30,6 +30,8 @@ export const MEGAMAN_STAGE = {
   bricks: { from: 42, to: 45 },
   sawBlock: { x: 52, y: 8 },
   sawBrick: { x: 60, y: 5 },
+  /** The target hovering on its cloud (0.4.46, #22): its column, and the row its feet are on. */
+  cloud: { x: 57, y: 4 },
   sawGate: 62,
   leafBlock: { x: 65, y: 8 },
   shooter: 70,
@@ -123,6 +125,20 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     done: (w) => w.map.get(S.sawBrick.x, S.sawBrick.y) === T.AIR,
   },
   {
+    // 0.4.46 (owner #22): the Saw straight up at a target hovering on a cloud, as Lakitu does.
+    id: 'saw-up',
+    at: 54,
+    row: 11,
+    text: 'HOLD UP, [USE WEAPON:special:SAW] AT THE CLOUD. LAKITU FALLS TO THE SAW TOO!',
+    touchText: 'HOLD UP AND TAP [SAW:special:SAW] AT THE CLOUD. LAKITU FALLS TO IT TOO!',
+    retry: 'STAND UNDER THE CLOUD AND HOLD UP, NOT AHEAD, AS YOU FIRE THE SAW.',
+    done: (w) =>
+      hitsSince(
+        w,
+        (h) => h.shotKind === 'saw' && h.target instanceof TrainingTarget && h.target.lesson === 'saw-up',
+      ).length > 0,
+  },
+  {
     id: 'leaf',
     at: 63,
     row: 11,
@@ -196,7 +212,7 @@ const gate = (col: number, after: string): TutorialGate => ({ col, top: 0, botto
 export const MEGAMAN_GATES: readonly TutorialGate[] = [
   gate(S.shootGate, 'shoot'),
   gate(S.chargeGate, 'charge'),
-  gate(S.sawGate, 'saw'),
+  gate(S.sawGate, 'saw-up'),
   gate(S.leafGate, 'leaf'),
   gate(S.flameGate, 'flame'),
   gate(S.knuckleGate, 'knuckle'),

@@ -4,6 +4,7 @@ import { toPx } from '@engine/math/units';
 import { CardScene } from '@game/scenes/message';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Projectile } from '@game/entities/projectiles/projectile';
+import { TrainingTarget } from '@game/tutorial/targets';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { MEGAMAN_LESSONS, MEGAMAN_STAGE } from '@game/tutorial/heroes/megaman';
 import { useStorage } from './heroes-harness';
@@ -132,6 +133,25 @@ describe("Mega Man's stage", () => {
       120,
     );
     expect([...first].some(([g, x]) => g.body.x !== x)).toBe(true);
+  });
+
+  it('the Saw lesson (0.4.46, #22): straight up at the target on its cloud; the tip names Lakitu, no level', () => {
+    const { h, stage } = startStage('megaman', { replay: true });
+    choose(h, 'Saw Disc');
+    const s = stage();
+    const lesson = MEGAMAN_LESSONS.find((l) => l.id === 'saw-up');
+    expect(lesson?.text).toMatch(/LAKITU/);
+    expect(`${lesson?.text} ${lesson?.touchText} ${lesson?.retry}`).not.toMatch(/\d-\d|WORLD/);
+    const target = () =>
+      s.world.entities.find((e): e is TrainingTarget => e instanceof TrainingTarget && e.lesson === 'saw-up');
+    // The target hovers up high, out of a jump's reach (a buster at the top of a jump passes under).
+    expect(target()?.opts.hover).toBe(true);
+    expect(toPx(target()?.body.y ?? 0) + 24).toBeLessThanOrEqual(5 * 16 + 4);
+    const log = playStage(h, s, megamanBot(), () => lessonId(s) !== 'saw' && lessonId(s) !== 'saw-up', 2400);
+    expect(s.director.done).toContain('saw-up');
+    expect(lessonId(s)).toBe('leaf');
+    expect(log.cards).toEqual([]);
+    expect(s.director.closedGates).not.toContain(S.sawGate);
   });
 
   it('only the slide gets under the low wall, and only Rush gets up the tall one', () => {

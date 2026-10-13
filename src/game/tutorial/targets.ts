@@ -58,6 +58,11 @@ export interface TargetOptions {
   /** It hangs from the ceiling (no fall), on a short chain. */
   hang?: boolean;
   /**
+   * It hovers in the sky on a little cloud, as Lakitu rides one (0.4.46, Mega Man's Saw lesson):
+   * no fall, a slow bob.
+   */
+  hover?: boolean;
+  /**
    * A shooter fires only while this holds (a stage: its lesson is being played, its item taken),
    * so it never knocks a power off the hero on the way to the lesson's block (Mega Man's Helmet,
    * whose loss would turn the block into a Helmet).
@@ -84,7 +89,7 @@ export class TrainingTarget extends TargetDummy {
   }
 
   override update(world: World): void {
-    if (this.opts.hang) {
+    if (this.opts.hang || this.opts.hover) {
       if (this.wobble > 0) this.wobble--;
       this.body.vx = 0;
       this.body.vy = 0;
@@ -131,8 +136,22 @@ export class TrainingTarget extends TargetDummy {
     this.destroy();
   }
 
+  /** A hovering target's cloud under its feet (`y`), bobbing a pixel: white puffs, a grey rim. */
+  private drawCloud(r: Renderer, x: number, y: number, frame: number): void {
+    const bob = (frame >> 4) & 1;
+    const cy = y - 3 + bob;
+    r.rect(x - 6, cy + 2, 24, 5, '#bcbcbc');
+    r.rect(x - 5, cy + 1, 22, 5, '#fcfcfc');
+    r.rect(x - 2, cy - 2, 7, 4, '#fcfcfc');
+    r.rect(x + 6, cy - 3, 8, 5, '#fcfcfc');
+    // Two dark eyes, as a cloud rider's cloud has.
+    r.rect(x + 2, cy + 2, 1, 2, '#000');
+    r.rect(x + 8, cy + 2, 1, 2, '#000');
+  }
+
   override render(r: Renderer, view: View): void {
     super.render(r, view);
+    if (this.opts.hover) this.drawCloud(r, toPx(this.body.x) - view.camX, toPx(this.body.y) + 24, view.frame);
     if (this.opts.hang) {
       // Its chain to the ceiling: a few dark links over the head.
       const hx = toPx(this.body.x) - view.camX;

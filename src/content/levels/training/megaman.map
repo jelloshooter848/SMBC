@@ -40,6 +40,8 @@ toad 5 11
 goomba 14 11
 target 36 11 lesson=charge
 target 70 11 lesson=leaf shoots=90 facing=left
+;; The Saw's target, hovering on a cloud as Lakitu does (0.4.46).
+target 57 4 lesson=saw-up hover=1
 buzzy 94 13
 target 110 6 lesson=knuckle
 goomba 124 11 lesson=bolt
