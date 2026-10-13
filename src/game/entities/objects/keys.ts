@@ -49,7 +49,7 @@ export const KEY_SAID = {
 /** Frames the key rises out of its box (a tile, a pixel a frame), then its hop's speeds. */
 export const KEY_RISE_FRAMES = 16;
 const KEY_HOP_VY = -0x02000;
-const KEY_HOP_VX = -0x00800;
+const KEY_HOP_VX = -0x01400;
 /** Frames the padlock takes to drop off a door as it opens. */
 export const PADLOCK_DROP_FRAMES = 24;
 
