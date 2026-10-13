@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Rng } from '@engine/rng';
+import { SITE_URL } from '@engine/site';
 import { CHARACTERS } from '@game/characters/registry';
 import { HERO_ITEMS } from '@game/items/catalog';
 import { hasKey } from '@game/items/flags';
@@ -812,6 +813,17 @@ describe('save codes: summaries and links', () => {
       'https://example.com/SMBC/#save=ABCDE',
     );
     expect(shareText(s, link)).toBe(`My SMBC REMIX save (World 4, 4 heroes): ${link}`);
+  });
+
+  it('a resume link made in the download (file://) is on the public site, never file:// or null/', () => {
+    for (const href of [
+      'file:///home/me/smbc-v0.4.49-offline/index.html',
+      'file:///C:/Users/me/Downloads/smbc/index.html?dev=1',
+    ]) {
+      const link = saveLink('ABCDE-FGHJK', href);
+      expect(link).toBe(`${SITE_URL}#save=ABCDE-FGHJK`);
+      expect(link).not.toMatch(/^(file:|null)/);
+    }
   });
 
   it('Base32 round-trips bits', () => {

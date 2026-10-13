@@ -70,7 +70,7 @@ describe('the README.txt beside it', () => {
     expect(text).toMatch(/double-click index\.html/i);
     expect(text).toMatch(/Options > Save files > COPY CODE/);
     expect(text).toMatch(/PASTE CODE/);
-    expect(text).toMatch(/Tested in/i);
+    expect(text).toContain('Tested in Chrome. Should work in Edge, Firefox and Safari.');
     expect(text).not.toMatch(/\r/); // the template's line ends are made \r\n by the plugin
   });
 });

@@ -81,8 +81,9 @@ then open `/SMBC/`).
 ### The download: `smbc-vX.Y.Z-offline.zip`
 
 For players who want the game on their disk (PC, Mac or Linux): unzip, double-click
-`index.html`, and play offline in Chrome, Edge, Firefox or Safari, with nothing to install and
-no server. The zip holds two files:
+`index.html`, and play offline with nothing to install and no server. Tested in Chrome; it
+should work in Edge, Firefox and Safari (try them by hand before saying so in `README.txt`). The
+zip holds two files:
 
 - `index.html`: the whole game in one file, from `pnpm build:offline` (Vite's `offline` mode,
   written to `dist-offline/`). `tools/offline/plugin.ts` puts the script inside the page as one
@@ -97,6 +98,9 @@ apart from the website's). On its first launch it says so once, waiting for a pr
 to Options → Save files → COPY CODE / PASTE CODE. Chrome and Edge share one storage for all
 local files; Firefox keeps it per folder, so a copy moved to another folder starts empty (the
 README says to carry saves with a code, or update in the same folder).
+
+Links the download shares (save codes' resume links, the level editor's SHARE) are made on the
+public site, `SITE_URL` in `src/engine/site.ts`, never on its file:// address.
 
 `tests/tools/offline.test.ts` builds it and checks it is one file with no outside script, style
 or link. Play-test it from disk before a release by opening `dist-offline/index.html` in a

@@ -33,8 +33,7 @@ YOUR SAVES
 
 BROWSERS
 
-  Made for current Chrome, Edge, Firefox and Safari on Windows, macOS and Linux.
-  Tested in: Chromium (the engine of Chrome and Edge).
+  Tested in Chrome. Should work in Edge, Firefox and Safari.
 
 
 The website: https://jelloshooter848.github.io/SMBC/
