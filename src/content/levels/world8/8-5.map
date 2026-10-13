@@ -63,11 +63,13 @@ firebar-ccw 154 5
 podoboo 164 12 dx=16
 firebar 176 10
 lift-h 198 8 len=4
-lift-v 207 9 len=3 dx=4 dy=11
+;; The rising lifts swing 66 px either way (the original's lifts swing 75): their top goes from 80, where a big
+;; hero still clears the vault, down to 212, so the plank stays 4 px above the lava (INT55).
+lift-v 207 9 len=3 dx=4 dy=2 swing=66
 podoboo 215 12 dx=8
 lift-h 225 8 len=4
-lift-v 233 9 len=3 dx=4 dy=11
-lift-v 237 9 len=3 dx=4 dy=11
+lift-v 233 9 len=3 dx=4 dy=2 swing=66
+lift-v 237 9 len=3 dx=4 dy=2 swing=66
 lift-fall 245 7 len=4
 lift-h 254 7 len=4
 podoboo 269 12 dx=8
