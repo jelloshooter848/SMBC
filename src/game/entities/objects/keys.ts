@@ -165,7 +165,8 @@ export class KeyItem extends Entity implements KeyThing {
     const x = toPx(this.body.x) - view.camX;
     const y = toPx(this.body.y);
     r.sprite(view.assets.sheet('keys'), 'key', x, y);
-    if (this.prompt) drawTalkPrompt(r, view, 'PICK UP', toPx(this.centerX) - view.camX, y);
+    // Its strip as high as over a standing hero's head, so a tall hero beside it never hides it.
+    if (this.prompt) drawTalkPrompt(r, view, 'PICK UP', toPx(this.centerX) - view.camX, y - 16);
   }
 }
 

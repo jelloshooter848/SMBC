@@ -21,6 +21,7 @@ import {
   sealedHint,
   SIGHTING_LINE_HEROES,
   sightingPage,
+  lockedGatePage,
   WELCOMES,
   welcomeHint,
   CRASH_PAGES,
@@ -111,6 +112,8 @@ function scriptPages(): Map<string, Page> {
   add('LUIGI_RUNS_PAGE', LUIGI_RUNS_PAGE);
   // 0.4.51: each built hero sighting's card, said by player 1's hero.
   for (const id of SIGHTING_LINE_HEROES) add(`sightingPage.${id}`, sightingPage(id, HERO));
+  // 0.4.52: 5-1's locked crypt gate, tried (the player's hero speaks).
+  add('lockedGatePage', lockedGatePage(HERO));
   add('noMoreStandIns', noMoreStandIns(HERO));
   list('ANCHOR_LARRY_PAGES', ANCHOR_LARRY_PAGES);
   // 0.4.39: each hero's line at the end of 4-2's anchor scene, in their own name.

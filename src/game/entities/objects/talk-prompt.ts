@@ -1,4 +1,5 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import { SCREEN_W } from '@engine/viewport';
 import type { View } from '../entity';
 
 /**
@@ -23,7 +24,8 @@ export function drawTalkPrompt(
   const text = hint?.(verb) ?? verb;
   const font = view.assets.sheet('font');
   const w = text.length * 8;
-  const x = Math.round(cx - w / 2);
+  // Kept on the screen (a key by the room's right wall: its strip would run off it).
+  const x = Math.max(2, Math.min(SCREEN_W - 2 - w, Math.round(cx - w / 2)));
   const y = Math.max(1, top - 12);
   r.rect(x - 2, y - 1, w + 4, 10, '#000');
   r.text(font, text, x, y);
