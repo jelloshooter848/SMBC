@@ -51,6 +51,12 @@ export const HAND_AXE: ProjectileSpec = {
   frames: ['hand-axe-0', 'hand-axe-1', 'hand-axe-2', 'hand-axe-3'],
 };
 
+/**
+ * The campaign's axe (0.4.46, owner Oct 10): it flies through terrain as ever, and bumps the ? blocks
+ * it crosses, each once, as Mega Man's charge shot does. Classic play keeps HAND_AXE.
+ */
+export const BUMPING_HAND_AXE: ProjectileSpec = { ...HAND_AXE, bumpsBlocks: 'question' };
+
 /** Flame left where the flask shatters. */
 export const HOLY_FIRE: ProjectileSpec = {
   ...base,

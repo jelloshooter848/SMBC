@@ -27,6 +27,8 @@ describe("Samus's stage", () => {
     const log = playStage(h, s, samusBot(), () => s.cleared, 7200);
     expect(s.director.done).toEqual(SAMUS_LESSONS.map((l) => l.id));
     expect(log.cards).toEqual([]);
+    // Her pickups on the way, each explained once (0.4.46).
+    expect(log.explained).toEqual(['samus:energy-small', 'samus:missile-pack', 'samus:energy-large']);
     expect(log.frames).toBeLessThan(7200);
     expect(h.top()).toBeInstanceOf(CardScene);
   });

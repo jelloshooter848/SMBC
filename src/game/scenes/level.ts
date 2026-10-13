@@ -27,6 +27,7 @@ import { SCREEN_W } from '@engine/viewport';
 import { talkToCaptive } from './free-hero';
 import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
+import { ExplainerBox } from '../tutorial/explainers';
 import { applyHeldItems } from '../bonus/use';
 import { CardScene } from './message';
 import { beat, storyOn } from '../story/beats';
@@ -92,6 +93,8 @@ export class LevelScene implements Scene {
   private swallowJump = false;
   /** The stage tutorial played here (1-0 and its pipe room), else null. */
   readonly tutorial: TutorialDirector | null;
+  /** The one-time pickup and item explainers (0.4.46, campaign only). */
+  readonly explainers: ExplainerBox;
 
   constructor(
     private readonly game: Game,
@@ -151,6 +154,7 @@ export class LevelScene implements Scene {
     // A stage tutorial has no clock (and keeps every life: TutorialDirector).
     this.tutorial = TutorialDirector.attach(game, this);
     if (this.tutorial) this.world.time = null;
+    this.explainers = new ExplainerBox(game, this);
     // Larry's airship challenge (scenes/airship.ts): no clock aboard, and co-op respawns are free.
     if (this.airship) {
       this.world.time = null;
@@ -224,6 +228,8 @@ export class LevelScene implements Scene {
     }
     // A new tip holds the game until OK (0.4.45, tutorial/stage-tutorial.ts): the world stays frozen.
     if (this.tutorial?.hold(inputs)) return;
+    // So does a pickup's first explainer (0.4.46, tutorial/explainers.ts).
+    if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     this.world.update(inputs);
     this.syncState();
@@ -234,6 +240,7 @@ export class LevelScene implements Scene {
       // may act (a later event would play on over the arena's map).
       if (this.roundOver && !this.game.scenes.find((s) => s === this)) break;
     }
+    if (!this.roundOver) this.explainers.update();
   }
 
   /** Player 1's hero decides the buttons: touch input only ever drives player 1. */
@@ -243,7 +250,7 @@ export class LevelScene implements Scene {
     // 4-2's anchor scene: JUMP skips it (as in the opening scene).
     if (this.world.anchorScene) return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
     // A new tip holding the game: OK goes on, MENU pauses.
-    const held = this.tutorial?.heldTouchLabels();
+    const held = this.tutorial?.heldTouchLabels() ?? this.explainers.heldTouchLabels();
     if (held) return held;
     return levelTouchLabels(this.world.players[0], this.world);
   }
@@ -266,6 +273,7 @@ export class LevelScene implements Scene {
 
   private handle(ev: ReturnType<World['events']['splice']>[number]): void {
     const game = this.game;
+    this.explainers.event(ev);
     switch (ev.type) {
       case 'checkpoint':
         game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
@@ -537,6 +545,7 @@ export class LevelScene implements Scene {
       const larry = this.world.entities.find((e): e is Larry => e instanceof Larry && e.hpMode);
       if (larry && larry.state !== 'fly') drawBossBar(r, larry.maxHp, larry.hp);
       this.drawItemCaption(r);
+      this.explainers.render(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
         shiftY: SMB3_WORLD_SHIFT,
         bottom: STATUS_BAR_Y,
@@ -553,6 +562,7 @@ export class LevelScene implements Scene {
     this.drawItemCaption(r);
     this.drawSkipHint(r);
     this.tutorial?.render(r);
+    this.explainers.render(r);
     if (this.world.castleWaiting) this.drawCastlePrompt(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
   }

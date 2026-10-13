@@ -4,6 +4,8 @@ import { toPx } from '@engine/math/units';
 import { CardScene } from '@game/scenes/message';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Projectile } from '@game/entities/projectiles/projectile';
+import { TrainingTarget } from '@game/tutorial/targets';
+import { T } from '@game/level/tiles';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { MEGAMAN_LESSONS, MEGAMAN_STAGE } from '@game/tutorial/heroes/megaman';
 import { useStorage } from './heroes-harness';
@@ -28,6 +30,8 @@ describe("Mega Man's stage", () => {
     const log = playStage(h, s, megamanBot(), () => s.cleared, 7200);
     expect(s.director.done).toEqual(MEGAMAN_LESSONS.map((l) => l.id));
     expect(log.cards).toEqual([]);
+    // His pickups on the way, each explained once (0.4.46).
+    expect(log.explained).toEqual(['megaman:health-small', 'megaman:weapon-small', 'megaman:e-tank']);
     expect(log.frames).toBeLessThan(7200);
     expect(h.top()).toBeInstanceOf(CardScene);
   });
@@ -130,6 +134,56 @@ describe("Mega Man's stage", () => {
       120,
     );
     expect([...first].some(([g, x]) => g.body.x !== x)).toBe(true);
+  });
+
+  it('the Saw lesson (0.4.46, #22): straight up at the target on its cloud; the tip names Lakitu, no level', () => {
+    const { h, stage } = startStage('megaman', { replay: true });
+    choose(h, 'Saw Disc');
+    const s = stage();
+    const lesson = MEGAMAN_LESSONS.find((l) => l.id === 'saw-up');
+    expect(lesson?.text).toMatch(/LAKITU/);
+    expect(`${lesson?.text} ${lesson?.touchText} ${lesson?.retry}`).not.toMatch(/\d-\d|WORLD/);
+    const target = () =>
+      s.world.entities.find((e): e is TrainingTarget => e instanceof TrainingTarget && e.lesson === 'saw-up');
+    // The target hovers up high, out of a jump's reach (a buster at the top of a jump passes under).
+    expect(target()?.opts.hover).toBe(true);
+    expect(toPx(target()?.body.y ?? 0) + 24).toBeLessThanOrEqual(5 * 16 + 4);
+    const log = playStage(h, s, megamanBot(), () => lessonId(s) !== 'saw' && lessonId(s) !== 'saw-up', 2400);
+    expect(s.director.done).toContain('saw-up');
+    expect(lessonId(s)).toBe('leaf');
+    expect(log.cards).toEqual([]);
+    expect(s.director.closedGates).not.toContain(S.sawGate);
+  });
+
+  it('the full charge pierces (0.4.46, #23): through the pipe and the row, each block bumped once', () => {
+    const { h, stage } = startStage('megaman', { replay: true });
+    choose(h, 'Bolt');
+    const s = stage();
+    s.director.skipLesson();
+    expect(lessonId(s)).toBe('pierce');
+    const w = () => s.world;
+    expect(w().map.get(S.row.from, S.row.y)).toBe(T.Q_COIN);
+    expect(s.director.closedGates).toContain(S.pierceGate);
+    const log = playStage(h, s, megamanBot(), () => lessonId(s) !== 'pierce', 1200);
+    expect(log.cards).toEqual([]);
+    expect(lessonId(s)).toBe('hit');
+    // (The last block's bump played out, the hit's tip let go.)
+    playStage(
+      h,
+      s,
+      () => [],
+      () => false,
+      40,
+    );
+    // Its ? blocks used, its bricks broken (the Helmet), the pipe still there.
+    expect(w().map.get(S.row.from, S.row.y)).toBe(T.USED);
+    expect(w().map.get(S.row.from + 1, S.row.y)).toBe(T.AIR);
+    expect(w().map.get(S.row.from + 2, S.row.y)).toBe(T.USED);
+    expect(w().map.get(S.row.from + 3, S.row.y)).toBe(T.AIR);
+    expect(w().map.get(S.row.to, S.row.y)).toBe(T.USED);
+    expect(w().map.get(S.pipe, S.row.y)).toBe(T.PIPE_BL);
+    expect(w().feats.pierced).toBe(5);
+    expect(s.director.closedGates).not.toContain(S.pierceGate);
   });
 
   it('only the slide gets under the low wall, and only Rush gets up the tall one', () => {

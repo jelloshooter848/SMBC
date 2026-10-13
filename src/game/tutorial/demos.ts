@@ -60,3 +60,78 @@ export const RUN_DEMO: LessonDemo = {
     return `The picture shows ${abilityHint(game, 'RUN', 'attack')} held with ${abilityHint(game, 'RIGHT', 'right')}.`;
   },
 };
+
+/** Frames of each of the up-throw demo's clips (UP, then UP + AHEAD). */
+export const THROW_CLIP_FRAMES = 96;
+/** Frames into a clip: the direction held, the button pressed, the boomerang's flight out and back. */
+const THROW = { dirFrom: 10, dirTo: 64, pressFrom: 22, pressTo: 30, out: 22, back: 24 };
+
+/**
+ * Link's boomerang up (0.4.46, owner #26): UP held with the tool button throws it straight up,
+ * then UP with RIGHT throws it up and ahead; a coin up there rides back on it. On touch the
+ * thumb sits on the d-pad's up arm (up and right for the second clip) and the tool button.
+ */
+export const BOOMERANG_UP_DEMO: LessonDemo = {
+  length: () => 2 * THROW_CLIP_FRAMES,
+  state(_v: DemoVariant, t: number): DemoState {
+    const ahead = t >= THROW_CLIP_FRAMES;
+    const k = t % THROW_CLIP_FRAMES;
+    const dir = k >= THROW.dirFrom && k < THROW.dirTo;
+    return {
+      label: ahead ? 'UP + AHEAD' : 'UP',
+      speed: 'idle',
+      dir,
+      button: k >= THROW.pressFrom && k < THROW.pressTo,
+      push: dir ? 0.6 : 0,
+      dirs: ahead ? ['up', 'right'] : ['up'],
+    };
+  },
+  button: { ability: 'USE TOOL', action: 'special' },
+  dir: { ability: 'UP', action: 'up' },
+  dirs: [
+    { ability: 'UP', action: 'up' },
+    { ability: 'RIGHT', action: 'right' },
+  ],
+  // The disc is too small for its name: the name is written under the controls instead.
+  touchCaption: '',
+  touchName: 'BOOMERANG',
+  height: 80,
+  groundH: 3,
+  hero: { sheet: 'link', idle: 'idle', walk: [] },
+  caption(_st, t) {
+    const k = (t % THROW_CLIP_FRAMES) - THROW.out;
+    return k >= 0 && k < 2 * THROW.back ? 'THROW!' : '';
+  },
+  draw(r, game, at, t) {
+    const ahead = t >= THROW_CLIP_FRAMES;
+    const k = (t % THROW_CLIP_FRAMES) - THROW.out;
+    const items = game.ctx.assets.sheet('items');
+    // From over his head up to the strip's top (the boomerang 8 px), out for `back` frames, back.
+    const ox = at.heroX - 4;
+    const oy = at.heroTop - 6;
+    const reach = Math.max(8, oy - (at.y + 2));
+    const step = reach / THROW.back;
+    const d = k < 0 ? 0 : k < THROW.back ? k * step : Math.max(0, (2 * THROW.back - k) * step);
+    const dx = ahead ? d : 0;
+    const dy = d;
+    // A coin up there (a small gold one: the strip is short): waiting until it is reached, then
+    // riding back on the boomerang.
+    const coin = (x: number, y: number) => {
+      r.rect(x + 2, y + 1, 4, 6, '#f8b800');
+      r.rect(x + 3, y + 2, 1, 4, '#fce4a0');
+    };
+    const flying = k >= 0 && k < 2 * THROW.back;
+    if (k < THROW.back) coin(Math.round(ox + (ahead ? reach : 0)), Math.round(oy - reach));
+    if (!flying) return;
+    const bx = Math.round(ox + dx);
+    const by = Math.round(oy - dy);
+    if (k >= THROW.back) coin(bx, by);
+    r.sprite(items, `boomerang-${(k >> 1) & 3}`, bx, by);
+  },
+  said(game, v) {
+    if (v === 'touch')
+      return 'The picture shows up held on the d-pad with the BOOMERANG button: the boomerang flies straight up. With up and right held, it flies up and ahead.';
+    const up = abilityHint(game, 'UP', 'up');
+    return `The picture shows ${up} held with ${abilityHint(game, 'USE TOOL', 'special')}: the boomerang flies straight up. With ${up} and ${abilityHint(game, 'RIGHT', 'right')}, it flies up and ahead.`;
+  },
+};

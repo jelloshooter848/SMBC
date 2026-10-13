@@ -3,7 +3,7 @@ import { toPx } from '@engine/math/units';
 import { Goomba } from '@game/entities/enemies/goomba';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { SAMUS_STAGE } from '@game/tutorial/heroes/samus';
-import { controls } from '../stage-bot';
+import { controls } from '../stage-controls';
 
 /* Samus's stage bot: its sim (tests/sim/training-samus.test.ts) and the early-block sim use it. */
 

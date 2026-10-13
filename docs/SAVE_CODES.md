@@ -30,10 +30,13 @@ Real lengths (characters without dashes, from the test `code lengths`):
 
 | File                                                                           | Characters | With dashes |
 | ------------------------------------------------------------------------------ | ---------- | ----------- |
-| New file                                                                       | 22         | 26          |
-| Right after 1-4 (World 2, 2 heroes, one item)                                  | 35         | 41          |
-| Mid-game (World 4, 4 heroes, 2 kits, items)                                    | 60         | 71          |
-| 100% (every level, all 9 heroes with every item, inventories, all story beats) | 95         | 113         |
+| New file                                                                       | 23         | 27          |
+| Right after 1-4 (World 2, 2 heroes, one item)                                  | 36         | 43          |
+| Mid-game (World 4, 4 heroes, 2 kits, items)                                    | 61         | 73          |
+| 100% (every level, all 9 heroes with every item, inventories, all story beats) | 96         | 115         |
+
+Version 2 (0.4.46) added one field, the explainers a file has shown: a file that has seen them all
+needs about five more characters.
 
 ## Layout
 
@@ -41,7 +44,9 @@ Real lengths (characters without dashes, from the test `code lengths`):
 [version: Exp-Golomb 0 of (version - 1)] [CRC-16: 16 bits] [fields of that version …] [0-4 zero bits]
 ```
 
-- **Version** (`CODE_VERSION`, 1 today). Version 1 is the single bit `1`, and version 2 is `010`.
+- **Version** (`CODE_VERSION`, 2 since 0.4.46). Version 1 is the single bit `1`, and version 2 is
+  `010`. Codes of version 1 (0.4.44 and 0.4.45) still load: they have no `explained` field, so
+  the file loads with none shown.
 - **CRC-16/CCITT** (polynomial 0x1021, start 0xFFFF), over the version bits and **every bit after
   the CRC**, padding included.
   - Any build can check any code's CRC, even a code from a newer version it can't read. So a typo
@@ -58,7 +63,7 @@ Decoding (`decodeSaveCode`) goes in this order:
 2. check the CRC (a mismatch is a typo);
 3. check the version: one above `CODE_VERSION` is _newer_;
 4. read the fields the code's version has (`since <= version`), which gives a save file of that
-   version's save format (`CODE_SAVE_FORMAT`, version 1 → `SaveFile.v` 4);
+   version's save format (`CODE_SAVE_FORMAT`, versions 1 and 2 → `SaveFile.v` 4);
 5. run `migrateSave` with the save migrations, like any stored file.
 
 So an old code loads into a newer game through the same migrations as an old file, and new fields
@@ -109,6 +114,12 @@ get their defaults. A parse error, leftover bits, or a file `migrateSave` reject
 | 12  | `heroInventory`, `heroItemsNext`                                        | string set of heroes; for each, EG(0) count, a bit "all known", then 2-bit item indices (or symbols); then a string set of heroes, each with a string set over NEXT |
 | 13  | `bonusNext`, `spadeBoard`, `spadeTaken`                                 | EG(0), EG(0), EG(0) count + EG(0) gaps between sorted indices                                                                                                       |
 
+## Version 2 fields (after version 1's, 0.4.46)
+
+| #   | Fields      | Encoding                                                                                    |
+| --- | ----------- | ------------------------------------------------------------------------------------------- |
+| 14  | `explained` | string set over EXPLAINED (the one-time pickup and item explainers, tutorial/explainers.ts) |
+
 **Power** (a hero's power state, kit and hit points):
 
 - **Power state:** a pick from the hero's list. Hit-point heroes use `full, small, big, fire`. The
@@ -152,6 +163,7 @@ The dictionaries are snapshots of the game's registries, frozen per code version
 | LEVELS              | `1-0`, `1-1`…`8-4`, `2-top-secret`, `ll-1-1`…`ll-13-4`                              |
 | SECRETS             | the bonus keys, `kakariko`, `larry`                                                 |
 | STORY               | Chapter 1's beats in the order a file meets them, then the beats older builds wrote |
+| EXPLAINED           | the one-time explainers, `<hero>:<pickup or item>` (version 2 on; version 1: none)  |
 | ITEMS, NEXT         | the inventory items and held items                                                  |
 | KIT_FLAGS, KIT_NUMS | per hero (see above)                                                                |
 

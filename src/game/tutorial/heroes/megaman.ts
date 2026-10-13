@@ -6,7 +6,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget } from '../targets';
-import { blocksSince, hitsSince, landedPast, onTop } from './common';
+import { blocksSince, hitLessons, hitsSince, landedPast, onTop } from './common';
 import source from '../../../content/levels/training/megaman.map?raw';
 
 /*
@@ -30,6 +30,8 @@ export const MEGAMAN_STAGE = {
   bricks: { from: 42, to: 45 },
   sawBlock: { x: 52, y: 8 },
   sawBrick: { x: 60, y: 5 },
+  /** The target hovering on its cloud (0.4.46, #22): its column, and the row its feet are on. */
+  cloud: { x: 57, y: 4 },
   sawGate: 62,
   leafBlock: { x: 65, y: 8 },
   shooter: 70,
@@ -44,7 +46,17 @@ export const MEGAMAN_STAGE = {
   knuckleGate: 113,
   boltBlock: { x: 117, y: 8 },
   boltGate: 131,
-  flag: 138,
+  /**
+   * The full charge through walls (0.4.46, owner #23): a pipe (columns 136-137), then a row of ?
+   * blocks and bricks on the ground (row 11), and the gate after it.
+   */
+  pipe: 136,
+  row: { from: 139, to: 143, y: 11 },
+  pierceGate: 146,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 150,
+  hitGate: 152,
+  flag: 158,
 } as const;
 const S = MEGAMAN_STAGE;
 
@@ -86,7 +98,9 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     item: 'helmet',
     block: S.helmetBlock,
     get: 'JUMP UP INTO THE ? BLOCK AND TAKE THE HELMET.',
-    text: 'YOUR CHARGE SHOT, AND YOUR HEAD BREAKS BRICKS.',
+    // The weapons rule (0.4.46, owner #20): ? blocks give a bare-headed Mega Man the Helmet first.
+    text: 'CHARGE SHOT, BRICK BREAKING, AND ? BLOCKS GIVE WEAPONS ONLY WITH IT ON.',
+    explains: 'megaman:helmet',
     done: (w) => !!w.player.scratch.helmet,
   },
   {
@@ -116,6 +130,22 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     touchText: 'HOLD UP AND AHEAD AND TAP [SAW:special:SAW]: CUT THE BRICK UP THERE.',
     retry: 'AIM THE SAW UP AND AHEAD AT THE BRICK: HOLD UP AND TOWARD IT AS YOU FIRE.',
     done: (w) => w.map.get(S.sawBrick.x, S.sawBrick.y) === T.AIR,
+  },
+  {
+    // 0.4.46 (owner #22): the Saw straight up at a target hovering on a cloud, as Lakitu does.
+    id: 'saw-up',
+    at: 54,
+    row: 11,
+    // The box out of the way of the cloud, at the bottom.
+    boxLow: true,
+    text: 'HOLD UP, [USE WEAPON:special:SAW] AT THE CLOUD. LAKITU FALLS TO THE SAW TOO!',
+    touchText: 'HOLD UP AND TAP [SAW:special:SAW] AT THE CLOUD. LAKITU FALLS TO IT TOO!',
+    retry: 'STAND UNDER THE CLOUD AND HOLD UP, NOT AHEAD, AS YOU FIRE THE SAW.',
+    done: (w) =>
+      hitsSince(
+        w,
+        (h) => h.shotKind === 'saw' && h.target instanceof TrainingTarget && h.target.lesson === 'saw-up',
+      ).length > 0,
   },
   {
     id: 'leaf',
@@ -175,8 +205,29 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     done: boltHitMany,
   },
   {
-    id: 'flag',
+    // 0.4.46 (owner #23): the campaign's full charge flies through walls, bumping each block once.
+    id: 'pierce',
     at: 132,
+    row: 11,
+    text: 'A FULL CHARGE GOES THROUGH WALLS AND BUMPS EVERY BLOCK ON ITS WAY. SHOOT THE ROW!',
+    retry: 'HOLD [SHOOT:attack] TILL THE BAR FILLS, THEN LET GO AT THE PIPE: IT GOES RIGHT THROUGH.',
+    done: (w) =>
+      w.feats.pierced >= 3 &&
+      [S.row.from, S.row.from + 2, S.row.to].every((x) => w.map.get(x, S.row.y) !== T.Q_COIN),
+    meter: (w) => Math.min(1, (w.player.scratch.chargeT ?? 0) / CHARGE_FULL),
+    // Its ? blocks bumped another way before the blast (a Saw, a bomb of a jump): laid again.
+    spent: "THOSE BLOCKS WERE BUMPED BEFORE THE BLAST. LET'S LAY THEM AGAIN!",
+    spentWhen: (w) =>
+      w.feats.pierced === 0 &&
+      [S.row.from, S.row.from + 2, S.row.to].some((x) => {
+        const t = w.map.get(x, S.row.y);
+        return t !== T.Q_COIN && t !== T.BUMPING;
+      }),
+  },
+  ...hitLessons('megaman', { at: S.pierceGate + 1, row: 11, thorns: S.thorns }),
+  {
+    id: 'flag',
+    at: S.pierceGate + 1,
     row: 11,
     note: true,
     text: 'ALL DONE! GRAB THE FLAGPOLE.',
@@ -190,11 +241,13 @@ const gate = (col: number, after: string): TutorialGate => ({ col, top: 0, botto
 export const MEGAMAN_GATES: readonly TutorialGate[] = [
   gate(S.shootGate, 'shoot'),
   gate(S.chargeGate, 'charge'),
-  gate(S.sawGate, 'saw'),
+  gate(S.sawGate, 'saw-up'),
   gate(S.leafGate, 'leaf'),
   gate(S.flameGate, 'flame'),
   gate(S.knuckleGate, 'knuckle'),
   gate(S.boltGate, 'bolt'),
+  gate(S.pierceGate, 'pierce'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const MEGAMAN_STAGE_DEF: HeroStage = {

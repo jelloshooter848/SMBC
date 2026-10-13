@@ -173,6 +173,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 | Fire Spell    | `fire-spell`    | The belt's Fire spell (4 magic: the next swing throws a fireball)       | refill             |
 | Magical Sword | `magical-sword` | Today's red tunic: the sword fires a beam while hearts are full         | refill             |
 
+- **The boomerang goes up** (0.4.46, roadmap #26, both modes): as the original Crossover's `LinkBoomerang.setDir`
+  reads the d-pad, UP alone throws it straight up from over his head, and UP with RIGHT or LEFT throws it diagonally
+  up that way (0.75 of its speed on each axis); otherwise it flies the way he faces. It fetches what it touches up
+  there too (0.4.43). The original also reads DOWN, DOWN+RIGHT and DOWN+LEFT; ours keeps DOWN for the down-thrust
+  (an owner decision). His training teaches it with a coin up high, and a picture of both throws.
 - **The belt** (0.4.43): the Bomb Bag or a spell just taken is the tool picked, so USE TOOL uses it at
   once (the Fire spell taken with the Jump spell picked cast the Jump spell instead).
 - **Default**: Bomb Bag (the Boomerang is in his starting kit). **Drops** (bombs, magic jars, half hearts) as
@@ -196,6 +201,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   keeps the original's belt, the Buster first, in the blue suit). The full charge shot is
   a big blast like the original Crossover's (its own 24x16 art, three times the buster's damage, on through what
   it defeats).
+- **The charge shot pierces** (0.4.46, owner #23, campaign only): the full charge flies through solid tiles (blocks,
+  pipes, walls) and bumps every ? block and brick its middle crosses, once each, as his head would (the Helmet
+  breaks bricks; a coin brick gives one coin). A training gate still stops it, and on his airship a cannon it
+  crosses takes the hit. Classic play keeps the original's (a wall stops it). His training shows it on a pipe and
+  a row of ? blocks and bricks before the flagpole.
 
 | Item           | Id               | What it does (our code)                                     | Owned again |
 | -------------- | ---------------- | ----------------------------------------------------------- | ----------- |
@@ -216,6 +226,10 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   plain grey suit until the helmet instead.
 - **Drops** (0.4.35): weapon energy fills the weapon in hand, else the emptiest one he has; a weapon he hasn't found
   keeps a full tank for when he does; nothing to fill gives points (section 7's "drops").
+- **Weapons only with the Helmet** (0.4.46, owner #20): every power block gives a bare-headed Mega Man the Helmet
+  (section 2.1), and a weapon already out of its block when a hit knocks the Helmet off is the Helmet when he
+  touches it (`World.takeHeroItem`, SMB's flower touched by small Mario). The Helmet's one-time explainer says so
+  the first time he takes it in the campaign; his training's Helmet tip says it there.
 - **Flags**: today weapons unlock in a fixed order (`scratch.weapons` is a count); NEW: each is its own flag.
 - **Crossover** never lost any weapon (`NEVER_LOSE_UPGRADES` held all nine and Rush).
 
@@ -275,6 +289,15 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Hit**: 2 of his health. Nothing is lost. Unchanged.
 - **Flags**: today the whip and shots are tiers (`whip` 0-2, `multi` 1-3) and sub-weapons a count (`subs`); NEW:
   one flag each. The HUD shows no double / triple badge today (Castlevania's II / III; section 11 lists it).
+- **The double jump** (0.4.46, roadmap #27, both modes): the original Crossover's Simon has it in his base kit,
+  no upgrade (`Simon.as` `canDoubleJump`): a second jump in the air, as strong as the first, once until he lands.
+  It comes back on landing, by a stomp's bounce and on leaving a spring; a level begun in the air has none until
+  he lands (`firstCollisionCheck`); none while a hit knocks him back (the original turns his input off until he
+  lands). With Castlevania's fixed arc (the original's classic controls, as ours) the second jump takes the
+  direction held then, or stops him. `MovementProfile.airJumps`. His Castlevania mini game keeps CV1's single
+  jump. His training teaches it on a wall six blocks high.
+- **The axe** (0.4.46, owner Oct 10, campaign only): it flies through terrain as Castlevania's does, and bumps each
+  ? block its middle crosses, once (bricks are left alone). Classic play keeps the plain axe.
 - **Crossover** started with the dagger and never lost a sub-weapon or the double / triple shot.
 
 ### 5.6 Ryu
@@ -526,6 +549,16 @@ found items, back to their basic kit.
 | Ryu          | 2 health                                                                                    | everything    |
 | Bill         | 1 hit                                                                                       | everything    |
 
+Checked against the code in 0.4.46 (roadmap #21): each row is the hero's `onHurt`, and a death is
+`Game.resetAfterDeath` (campaign: back to `heroStart`). `tests/sim/hit-rules.test.ts` holds the code, this table and
+the training tips to each other.
+
+**WHAT A HIT TAKES** (0.4.46): every training stage, 1-0 included, ends with this lesson before the flagpole: a thorn
+bush that can't beat the hero (`TrainingThorns`; a small power-up hero is made big first), the hero walks into it,
+and a tip says what the hit took (`tutorial/hit-rules.ts`), with the hero left as the hit left them while it is read
+(Mega Man bare-headed, his health down); the flagpole's lesson gives it all back. A gate holds the way until the hit
+is taken.
+
 **Notes:**
 
 1. **A death wipes the played hero's kit** (`LevelScene`'s `died`: `s.kit = {}`; the Hammer Bro battle the
@@ -541,6 +574,13 @@ found items, back to their basic kit.
 5. **Unobtainable today**: Sophia III's Homing Missile in the campaign.
 6. **Mixed bundles today**: Link's heart container brings the white tunic; Mega Man's helmet brings Rush; Sophia's
    first Crusher brings the triple missile and both climbs. This design splits each.
+
+**One-time explainers** (0.4.46, roadmap #20 and #24; `tutorial/explainers.ts`): the first time a hero touches each
+kind of drop (Mega Man's health pellets, weapon energy and E-tank; Samus's energy and missile packs; Link's bombs,
+magic jars and hearts; Simon's hearts; Ryu's ninpo and health; Bill's falcon and health; Sophia III's missile ammo),
+a line or two in a box under the HUD says what it does and holds the game until OK, in the campaign and in training,
+once per save file (`SaveFile.explained`, in save codes since code version 2). Mega Man's and Samus's training stages
+lay their drops on the way, so each is met there.
 
 **Drops are always collectible** (owner decision, 0.4.35; `World.collectPickup`): every hero picks up every enemy
 drop, even one they cannot use yet. Ammo or energy for a power not owned yet goes into a hidden reserve that is there

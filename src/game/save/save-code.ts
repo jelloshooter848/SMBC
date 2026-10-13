@@ -34,10 +34,10 @@ import {
  */
 
 /** The code layout this build writes. */
-export const CODE_VERSION = 1;
+export const CODE_VERSION = 2;
 
 /** The save format (SaveFile.v) each code version's fields make, before the save migrations. */
-const CODE_SAVE_FORMAT: Readonly<Record<number, number>> = { 1: 4 };
+const CODE_SAVE_FORMAT: Readonly<Record<number, number>> = { 1: 4, 2: 4 };
 
 export const CODE_TYPO = "THAT CODE DOESN'T LOOK RIGHT";
 export const CODE_NEWER = 'THIS CODE IS FROM A NEWER VERSION. UPDATE THE GAME TO LOAD IT';
@@ -93,6 +93,7 @@ export const SAVE_CODE_FIELDS: { readonly [K in keyof Required<SaveFile>]: 'code
     heroKits: 'code',
     wallet: 'code',
     story: 'code',
+    explained: 'code',
   };
 
 // ---------------------------------------------------------------- frozen dictionaries
@@ -158,6 +159,37 @@ const STORY: Chunks = [
 /** The inventory's items and the held items (bonus/items.ts ITEM_IDS, NEXT_ORDER). */
 const ITEMS: Chunks = [['mushroom', 'flower', 'star', '1up']];
 const NEXT: Chunks = [['mushroom', 'flower', 'star']];
+/**
+ * The one-time explainers (0.4.46, tutorial/explainers.ts EXPLAINER_IDS), new in code version 2:
+ * version 1 had none (an empty chunk).
+ */
+const EXPLAINED: Chunks = [
+  [],
+  [
+    'megaman:health-small',
+    'megaman:health-large',
+    'megaman:weapon-small',
+    'megaman:weapon-large',
+    'megaman:e-tank',
+    'samus:energy-small',
+    'samus:energy-large',
+    'samus:missile-pack',
+    'link:bomb',
+    'link:magic-small',
+    'link:magic-large',
+    'link:heart-small',
+    'simon:heart-small',
+    'simon:heart-large',
+    'ryu:ninpo-small',
+    'ryu:ninpo-large',
+    'ryu:health-small',
+    'bill:capsule',
+    'bill:health-small',
+    'sophia:triple-ammo',
+    'sophia:homing-ammo',
+    'megaman:helmet',
+  ],
+];
 
 /** Kit flags (value 1): the campaign's `found` and each item's `has-<id>` (items/catalog.ts). */
 const flagsOf = (items: string[]): Chunks => [['found', ...items.map((i) => `has-${i}`)]];
@@ -322,6 +354,7 @@ export const CODE_DICTS = {
   levels: at(LEVELS, CODE_VERSION),
   secrets: at(SECRETS, CODE_VERSION),
   story: at(STORY, CODE_VERSION),
+  explained: at(EXPLAINED, CODE_VERSION),
   kitFlags: Object.fromEntries(Object.entries(KIT_FLAGS).map(([h, d]) => [h, at(d, CODE_VERSION)])) as Record<
     string,
     readonly string[]
@@ -355,6 +388,7 @@ export function dictFingerprints(): Record<string, string> {
     levels: print(LEVELS),
     secrets: print(SECRETS),
     story: print(STORY),
+    explained: print(EXPLAINED),
     kitFlags: per(KIT_FLAGS),
     kitNums: per(KIT_NUMS),
   };
@@ -888,6 +922,16 @@ const FIELDS: readonly FieldCodec[] = [
       let prev = -1;
       for (let i = readCount(r, 64); i > 0; i--) taken.push((prev = prev + 1 + r.eg(0)));
       raw.spadeTaken = taken;
+    },
+  },
+  {
+    name: 'explained',
+    since: 2,
+    write(w, s, v) {
+      writeStrSet(w, at(EXPLAINED, v), s.explained ?? []);
+    },
+    read(r, raw, v) {
+      raw.explained = readStrSet(r, at(EXPLAINED, v));
     },
   },
 ];

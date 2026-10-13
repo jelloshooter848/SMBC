@@ -390,7 +390,8 @@ describe('a Star hidden in a brick, then a crowd (0.4.45, #17)', () => {
     expect(w().player.star).toBeGreaterThan(0);
     expect(director(h)?.lines().join(' ')).toMatch(/STAR/);
     const lives = h.game.state.lives;
-    playTutorial(h, () => lessonId(h) === 'flag');
+    // Through the crowd big; WHAT A HIT TAKES comes next (0.4.46), before the flagpole.
+    playTutorial(h, () => lessonId(h) === 'hit');
     expect(h.game.state.lives).toBe(lives);
     expect(w().player.powerState).toBe('big');
   });

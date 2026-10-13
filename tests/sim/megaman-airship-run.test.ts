@@ -12,6 +12,7 @@ import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { CRASH_PAGES, LARRY_AGAIN_PAGES, STORY_CRYSTAL_BALL_PAGES } from '@game/story/script';
 import { closeCards, dropInAndClimb, file, makeGame, useStorage } from './heroes-harness';
 import { megamanShipBot } from './megaman-airship-bot';
+import { EXPLAINER_IDS } from '@game/tutorial/explainers';
 
 // The whole campaign run to Larry's airship and back as Mega Man (0.4.39): the anchor scene (skipped
 // here; tests/sim/anchor-scene.test.ts plays it), his deck (the Wily fortress music, his rules, the
@@ -56,6 +57,8 @@ describe('the whole campaign run as Mega Man', () => {
         pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
         position: { page: 'smb-4', node: '4-2' },
         lives: 4,
+        // A file that has seen every pickup's explainer (0.4.46): none holds the bot's run.
+        explained: [...EXPLAINER_IDS],
       },
       MEGAMAN.id,
     );
