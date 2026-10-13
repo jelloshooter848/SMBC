@@ -720,6 +720,7 @@ export class WorldMapScene implements Scene {
       heroes: s.character2 ? `${s.character.name} and ${s.character2.name}` : s.character.name,
       bonus: spoken(bonusGame().label(this.game)),
       skip: abilityHint(this.game, 'JUMP', 'jump'),
+      level: shownLevel(here) ?? here.id,
     };
     this.crash = {
       scene: new AirshipCrash(here, bonus),

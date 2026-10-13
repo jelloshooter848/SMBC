@@ -11,11 +11,15 @@ import { newSave, writeSave, type SaveFile } from '@game/save/save-files';
 import { file, makeGame, useStorage, type H } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
 import { beat } from '@game/story/beats';
+import { overheadSheet } from '@game/town/hero';
+import { WORLD_4_ZEBES } from '@content/worldmap/world4-zebes';
 
 // The World 4 map's airship crash (owner decision 8:25 PM PDT, docs/WORLD_MAP.md): after Larry is
 // beaten and the crystal ball's card is dismissed, the airship flies in smoking and tips, the
 // hero jumps out onto 4-2, the ship crashes on the bonus spot, Toad hammers the wreck into the
 // bonus node and leaves; then the usual reveal draws the road from 4-2 to the bonus spot.
+// Since 0.4.52 campaign play draws World 4 from above (world4-zebes.ts): the hero lands on internal
+// 4-2's node there (shown 4-1), drawn from above, and the bonus node is the Chozo item sphere.
 
 useStorage();
 
@@ -92,8 +96,15 @@ function plainReveal(): ReturnType<typeof endState> {
   return endState(map);
 }
 
+const at = (id: string) => WORLD_4_ZEBES.nodes.find((n) => n.id === id) as { x: number; y: number };
+/** The bonus node Toad builds (Zebes's item sphere, on bonus-4's tile). */
 const TOAD_HOUSE = (s: { key: string; frame: string; x: number; y: number }) =>
-  s.key === 'smb3' && s.frame === 'node-toad-house' && s.x === 32 && s.y === 208;
+  s.key === 'zebes-above' &&
+  s.frame === 'bonus' &&
+  s.x === at('bonus-4').x * 16 &&
+  s.y === at('bonus-4').y * 16;
+/** The overhead hero's feet stand 11 px down the node's tile (WorldMapScene.drawOverhead). */
+const FEET = at('4-2').y * 16 + 11;
 
 describe('the airship crash on the World 4 map', () => {
   it('plays its beats, then the reveal, ending as the plain reveal does', () => {
@@ -110,9 +121,10 @@ describe('the airship crash on the World 4 map', () => {
       const { sprites } = frame(map);
       for (const s of sprites) if (s.key === 'smb3') seen.add(s.frame);
       const t = f; // the cutscene's clock starts with the first update
-      const hero = sprites.find((s) => s.key.startsWith('mario'));
+      const hero = sprites.find((s) => s.key.startsWith('td-mario'));
       if (t < CRASH_FRAMES.JUMP - 1 && hero) heroBeforeJump = true;
-      if (t > CRASH_FRAMES.LAND && hero && hero.y === 11 * 16 + 10 - 16) heroLanded = true;
+      const hh = hero ? (h.game.ctx.assets.sheet(hero.key).frames.get(hero.frame)?.h ?? 16) : 0;
+      if (t > CRASH_FRAMES.LAND && hero && hero.y + hh === FEET) heroLanded = true;
       if (t < CRASH_FRAMES.BUILD - 1 && sprites.some(TOAD_HOUSE)) houseBeforeBuild = true;
       h.step();
     }
@@ -132,7 +144,8 @@ describe('the airship crash on the World 4 map', () => {
     ])
       expect(seen, f).toContain(f);
     // The announcer narrates the beats.
-    for (const line of [/airship limps over World 4/, /jumps out onto 4-2/, /airship crashes/, /Toad/])
+    // Internal 4-2 is shown 4-1 in the campaign order (map/campaign-order.ts).
+    for (const line of [/airship limps over World 4/, /jumps out onto 4-1!/, /airship crashes/, /Toad/])
       expect(
         h.said.some((t) => line.test(t)),
         String(line),
@@ -141,7 +154,7 @@ describe('the airship crash on the World 4 map', () => {
     // apart, the next frame's line would talk over them).
     const first = h.said.find((t) => /limps over World 4/.test(t)) as string;
     expect(first).toMatch(
-      /^World 4, PLANET ZEBES\. World 4-2, .*\. Larry's airship limps over World 4, smoking\. Skip: JUMP/,
+      /^World 4, PLANET ZEBES\. World 4-1, .*\. Larry's airship limps over World 4, smoking\. Skip: JUMP/,
     );
     expect(first).not.toMatch(/\.\./); // the node line's own full stop isn't doubled
     expect(h.said.some((t) => /^Skip:/.test(t))).toBe(false);
@@ -165,16 +178,14 @@ describe('the airship crash on the World 4 map', () => {
     expect(s.character2).not.toBeNull();
     const map = takeBall(h);
     expect(map.cutscene).toBe(true);
-    // Each hero's map sprite (its portrait sheet and palette), and where it stands.
+    // Each hero's map sprite (drawn from above: its overhead sheet), and where it stands; player two
+    // is drawn first, behind (WorldMapScene.drawHeroes).
     const heroes = () => {
       const { sprites } = frame(map);
-      return [s.character, s.character2!].map((c) =>
-        sprites.find(
-          (sp) =>
-            sp.key === h.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette).id &&
-            sp.frame === c.portrait.frame,
-        ),
+      const td = sprites.filter((sp) =>
+        [s.character, s.character2!].some((c) => sp.key.startsWith(overheadSheet(c))),
       );
+      return [td[1], td[0]];
     };
     for (let f = 0; f < CRASH_FRAMES.JUMP - 1; f++) {
       expect(heroes().filter(Boolean), `frame ${f}`).toEqual([]);
@@ -188,13 +199,12 @@ describe('the airship crash on the World 4 map', () => {
       h.step();
     const [a, b] = heroes();
     expect(a && b).toBeTruthy();
-    // On the 4-2 node (64, 176): player one on it, player two a little behind (x - 7, y - 2).
-    const feet = (sp: { y: number }, c: typeof s.character) =>
-      sp.y +
-      (h.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette).frames.get(c.portrait.frame)?.h ?? 16);
-    expect(feet(a!, s.character)).toBe(11 * 16 + 10);
-    expect(feet(b!, s.character2!)).toBe(11 * 16 + 8);
-    expect(h.said.some((t) => /Mario and Luigi jump out onto 4-2!/.test(t))).toBe(true);
+    // On internal 4-2's node: player one on it, player two a little behind (x - 7, y - 2).
+    const feet = (sp: { key: string; frame: string; y: number }) =>
+      sp.y + (h.game.ctx.assets.sheet(sp.key).frames.get(sp.frame)?.h ?? 16);
+    expect(feet(a!)).toBe(FEET);
+    expect(feet(b!)).toBe(FEET - 2);
+    expect(h.said.some((t) => /Mario and Luigi jump out onto 4-1!/.test(t))).toBe(true);
   });
 
   it('JUMP skips straight to the end: road drawn, hero on 4-2, the bonus node shown', () => {

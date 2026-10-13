@@ -517,14 +517,8 @@ describe('migration v1 → v2 (map pages by id, 0.4.0)', () => {
       pages: ['smb-1', 'smb-4', 'smb-2'],
       position: { page: 'smb-4', node: '4-1' },
       lastNode: { 'smb-1': '1-4', 'smb-4': '4-1', 'smb-2': 'start' },
-      pendingReveal: [
-        'smb-2:start',
-        'smb-2:start>2-1',
-        'smb-2:2-1',
-        'smb-1:1-4>smb-2',
-        'smb-4:4-1>4-2',
-        'smb-4:4-2',
-      ],
+      // 0.4.52: World 4's campaign order has no road 4-1>4-2 any more (map/campaign-order.ts).
+      pendingReveal: ['smb-2:start', 'smb-2:start>2-1', 'smb-2:2-1', 'smb-1:1-4>smb-2', 'smb-4:4-2'],
     });
     expect(clearedMainLevels(s)).toBe(5);
     expect(highestWorld(s)).toBe(4);

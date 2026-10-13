@@ -336,7 +336,7 @@ const RENAMED_REVEALS: Readonly<Record<string, string>> = { 'smb-1:1-1>bonus-1':
 
 /**
  * Pending reveal ids ('<page>:<id>') of open pages, renamed ones updated, each once, at most 64.
- * An id its page (as campaign play has it, content/worldmap pageLook) no longer has is dropped:
+ * A road id its page (as campaign play has it, content/worldmap pageLook) no longer has is dropped:
  * 0.4.52 reordered World 4's roads (map/campaign-order.ts), so an old file's '4-1>4-2' waiting to
  * draw in would never be drawn; what is open still comes from the cleared levels.
  */
@@ -355,15 +355,16 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
   return [...new Set(ids)].slice(0, 64);
 }
 
-/** Whether campaign play's page `page` has a node, road or world exit `id` (rules.revealId's part). */
+/**
+ * Whether a pending reveal id's part `id` may stay for page `page`: a node id always (the map drops
+ * a stale one as it draws in); a road or world exit ('<from>><to>') only if campaign play's page
+ * still has it (rules.revealId's part).
+ */
 function onPage(page: PageId, id: string): boolean {
+  if (!id.includes('>')) return true;
   const p = pageLook(mapPage(page), true);
   if (!p) return false;
-  return (
-    p.nodes.some((n) => n.id === id) ||
-    p.paths.some((q) => `${q.from}>${q.to}` === id) ||
-    p.exits.some((e) => `${e.from}>${e.to}` === id)
-  );
+  return p.paths.some((q) => `${q.from}>${q.to}` === id) || p.exits.some((e) => `${e.from}>${e.to}` === id);
 }
 
 /**
