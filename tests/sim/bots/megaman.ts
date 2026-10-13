@@ -5,7 +5,7 @@ import { RushCoil } from '@game/entities/objects/rush-coil';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import type { HeroStageScene } from '@game/tutorial/hero-stage';
 import { MEGAMAN_STAGE } from '@game/tutorial/heroes/megaman';
-import { controls } from '../stage-bot';
+import { controls } from '../stage-controls';
 
 /* Megaman's stage bot: its sim (tests/sim/training-megaman.test.ts) and the early-block sim use it. */
 

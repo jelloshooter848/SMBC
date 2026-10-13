@@ -104,24 +104,26 @@ export const BOOMERANG_UP_DEMO: LessonDemo = {
     const ahead = t >= THROW_CLIP_FRAMES;
     const k = (t % THROW_CLIP_FRAMES) - THROW.out;
     const items = game.ctx.assets.sheet('items');
-    // How far out it goes: out for `back` frames, then back to him.
-    const reach = Math.max(8, at.heroTop - at.y - 4);
-    const step = reach / THROW.back;
-    const d = k < 0 ? 0 : k < THROW.back ? k * step : Math.max(0, (2 * THROW.back - k) * step);
-    const dx = ahead ? d * 0.75 : 0;
-    const dy = ahead ? d * 0.75 : d;
+    // From over his head up to the strip's top (the boomerang 8 px), out for `back` frames, back.
     const ox = at.heroX - 4;
     const oy = at.heroTop - 6;
-    // The coin up there: waiting until it is reached, then riding back on the boomerang.
-    const far = { x: ox + (ahead ? reach * 0.75 : 0), y: oy - (ahead ? reach * 0.75 : reach) };
+    const reach = Math.max(8, oy - (at.y + 2));
+    const step = reach / THROW.back;
+    const d = k < 0 ? 0 : k < THROW.back ? k * step : Math.max(0, (2 * THROW.back - k) * step);
+    const dx = ahead ? d : 0;
+    const dy = d;
+    // A coin up there (a small gold one: the strip is short): waiting until it is reached, then
+    // riding back on the boomerang.
+    const coin = (x: number, y: number) => {
+      r.rect(x + 2, y + 1, 4, 6, '#f8b800');
+      r.rect(x + 3, y + 2, 1, 4, '#fce4a0');
+    };
     const flying = k >= 0 && k < 2 * THROW.back;
-    const caught = k >= THROW.back && flying;
-    const coin = `coin-${(t >> 3) & 3}`;
-    if (k < THROW.back) r.sprite(items, coin, Math.round(far.x) - 4, Math.round(far.y) - 8);
+    if (k < THROW.back) coin(Math.round(ox + (ahead ? reach : 0)), Math.round(oy - reach));
     if (!flying) return;
     const bx = Math.round(ox + dx);
     const by = Math.round(oy - dy);
-    if (caught) r.sprite(items, coin, bx - 4, by - 8);
+    if (k >= THROW.back) coin(bx, by);
     r.sprite(items, `boomerang-${(k >> 1) & 3}`, bx, by);
   },
   said(game, v) {

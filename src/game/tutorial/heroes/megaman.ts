@@ -136,6 +136,8 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     id: 'saw-up',
     at: 54,
     row: 11,
+    // The box out of the way of the cloud, at the bottom.
+    boxLow: true,
     text: 'HOLD UP, [USE WEAPON:special:SAW] AT THE CLOUD. LAKITU FALLS TO THE SAW TOO!',
     touchText: 'HOLD UP AND TAP [SAW:special:SAW] AT THE CLOUD. LAKITU FALLS TO IT TOO!',
     retry: 'STAND UNDER THE CLOUD AND HOLD UP, NOT AHEAD, AS YOU FIRE THE SAW.',

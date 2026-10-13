@@ -455,21 +455,32 @@ export class TrainingThorns extends Entity {
     const dark = '#005800';
     const leaf = '#00a800';
     const thorn = '#fcfcfc';
-    // A low mound of dark leaves, a lighter top, thorns sticking out of it.
-    r.rect(x, y + 4, 14, 6, dark);
-    r.rect(x + 2, y + 2, 10, 3, leaf);
-    r.rect(x + 1, y + 5, 2, 2, leaf);
-    r.rect(x + 9, y + 6, 3, 2, leaf);
-    for (const [tx, ty] of [
-      [1, 1],
-      [6, 0],
-      [11, 1],
-      [-1, 5],
-      [14, 5],
-      [4, 3],
-      [9, 3],
-    ] as const)
-      r.rect(x + tx, y + ty, 1, 2, thorn);
+    const tip = '#d82800';
+    // A bramble a tile wide, rising a little over its body: dark leaves, lighter ones on top, and
+    // white thorns with red tips sticking out all round (original art, drawn in rectangles).
+    r.rect(x - 1, y + 2, 16, 8, dark);
+    r.rect(x + 1, y - 1, 12, 4, dark);
+    r.rect(x + 2, y, 4, 2, leaf);
+    r.rect(x + 8, y + 1, 4, 2, leaf);
+    r.rect(x + 1, y + 4, 3, 2, leaf);
+    r.rect(x + 6, y + 4, 3, 2, leaf);
+    r.rect(x + 10, y + 5, 3, 2, leaf);
+    for (const [tx, ty, w, h] of [
+      [2, -4, 1, 3],
+      [7, -5, 1, 4],
+      [11, -4, 1, 3],
+      [-4, 3, 3, 1],
+      [15, 3, 3, 1],
+      [-3, 7, 2, 1],
+      [15, 7, 2, 1],
+      [4, 2, 1, 2],
+      [9, 3, 1, 2],
+    ] as const) {
+      r.rect(x + tx, y + ty, w, h, thorn);
+      // The thorn's point, red, at its outer end.
+      if (h > w) r.rect(x + tx, y + ty, 1, 1, tip);
+      else r.rect(tx < 0 ? x + tx : x + tx + w - 1, y + ty, 1, 1, tip);
+    }
   }
 }
 

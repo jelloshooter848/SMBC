@@ -178,9 +178,12 @@ export const LINK_LESSONS: readonly Lesson[] = [
     id: 'boomerang-up',
     at: 50,
     row: 11,
+    // The box at the bottom, the coin up high in view.
+    boxLow: true,
     text: 'HOLD UP AS YOU [USE TOOL:special:BOOMERANG]: IT FLIES UP. FETCH THE COIN UP HIGH!',
     touchText: 'HOLD UP AND TAP [BOOMERANG:special:BOOMERANG]: IT FLIES UP. FETCH THE COIN UP HIGH!',
-    retry: 'STAND UNDER THE COIN, HOLD UP AND THROW: THE BOOMERANG FLIES UP AND BRINGS IT BACK.',
+    retry:
+      'STAND UNDER THE COIN AND HOLD UP AS YOU [USE TOOL:special:BOOMERANG]: IT FLIES UP AND BRINGS IT BACK.',
     demo: BOOMERANG_UP_DEMO,
     done: (w) => fetched(w, S.highCoin),
   },

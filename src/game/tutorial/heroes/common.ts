@@ -80,6 +80,8 @@ export function hitLessons(hero: string, place: HitPlace): Lesson[] {
       id: 'hit',
       at,
       row,
+      // Taking a hit is no feat: no NICE! for it.
+      note: true,
       text: HIT_TASK,
       retry: "WALK INTO THE THORNS: THEY CAN'T BEAT YOU. SEE WHAT A HIT TAKES!",
       ...(place.big ? { big: true } : {}),
@@ -98,6 +100,8 @@ export function hitLessons(hero: string, place: HitPlace): Lesson[] {
       text: HIT_RULES[hero]?.tip ?? '',
       enter: (w) => {
         for (const t of lessonThorns(w)) t.pop(w);
+        // The thorns are gone: no blinking after the hit, so the hero shows while the tip holds.
+        for (const p of w.players) p.invuln = 0;
       },
       done: (w) => past(w, thorns + 1),
     },

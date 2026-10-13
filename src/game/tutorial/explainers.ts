@@ -164,7 +164,11 @@ export class ExplainerBox {
     if (!next || this.frozen || tips.holder) return;
     const p = this.host.world.players[0];
     const steady =
-      !p || p.dead || p.out || p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging;
+      !p ||
+      p.dead ||
+      p.out ||
+      // A grow or shrink under way plays out first (0.4.46: the hit's shrink shows, not a frozen flicker).
+      ((p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging) && !p.transition);
     if (!steady && ++this.wait <= LAND_WAIT) return;
     this.wait = 0;
     this.queue.shift();

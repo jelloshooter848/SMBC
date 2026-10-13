@@ -127,6 +127,11 @@ export interface Lesson {
    */
   demo?: LessonDemo;
   /**
+   * The box shows at the bottom of the screen while this lesson is played (0.4.46: Mega Man's Saw
+   * lesson, whose target hovers up where the box would be).
+   */
+  boxLow?: boolean;
+  /**
    * The hero keeps what they have when it comes up (0.4.46, WHAT A HIT TAKES): no kit floor and no
    * health topped up, so what a hit just took still shows while its tip is read.
    */

@@ -707,7 +707,11 @@ export class TutorialDirector {
     if (!this.tracker.lessons[i] || !this.game.tips.wouldHold(this.tipKey(i))) return true;
     const p = world.players[0];
     const steady =
-      !p || p.dead || p.out || p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging;
+      !p ||
+      p.dead ||
+      p.out ||
+      // A grow or shrink under way plays out first (0.4.46: the hit's shrink shows, not a frozen flicker).
+      ((p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging) && !p.transition);
     if (steady || ++this.airWait > TIP_LAND_WAIT) {
       this.airWait = 0;
       return true;
@@ -874,7 +878,10 @@ export class TutorialDirector {
     const demo = this.demo;
     if (demo) {
       const top = box.y === PROMPT_BOX_Y;
-      const py = top ? box.y + box.h + 4 : box.y - demoHeight(demo) - 4;
+      // A lesson whose box is at the bottom to leave its mark in view (boxLow) has its picture up
+      // under the HUD instead, clear of the hero on the ground.
+      const low = !top && !!this.tracker.lessons[this.shown]?.boxLow;
+      const py = top ? box.y + box.h + 4 : low ? PROMPT_BOX_Y : box.y - demoHeight(demo) - 4;
       drawDemoPanel(r, this.game, demo, this.game.tips.heldFrames, box.x, py, box.w);
     }
   }
@@ -917,7 +924,8 @@ export class TutorialDirector {
     const high = world.players.some(
       (p) => !p.dead && !p.out && Math.round(p.body.y / px(1)) - camY < PROMPT_BOX_Y + h + 8,
     );
-    const y = high ? SCREEN_H - h - 6 : PROMPT_BOX_Y;
+    // A lesson whose mark is up there (Mega Man's cloud) has its box at the bottom too.
+    const y = high || l?.boxLow ? SCREEN_H - h - 6 : PROMPT_BOX_Y;
     return { rows, x, y, w: boxW, h, meter, lights, extra: blank * 10 };
   }
 
