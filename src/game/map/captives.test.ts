@@ -14,6 +14,7 @@ import { WORLD_1 } from '@content/worldmap/world1';
 import { WORLD_2 } from '@content/worldmap/world2';
 import { WORLD_3 } from '@content/worldmap/world3';
 import { SKETCH_4, WORLD_4 } from '@content/worldmap/world4';
+import { SKETCH_8_UNDERWORLD, WORLD_8_UNDERWORLD } from '@content/worldmap/world8-underworld';
 
 /** A made-up level: only the id, the parent and the entities matter to the index. */
 const lvl = (id: string, entities: EntitySpawn[] = [], parent: string | null = null): LevelData =>
@@ -136,6 +137,15 @@ describe('hiddenHeroes (the bundled levels and map pages)', () => {
     for (const n of ['start', '7-1', '7-2', '7-4']) expect(hiddenHeroesAt('smb-7', n)).toEqual([]);
   });
 
+  it('Sophia III is hidden in World 8, node 8-1 (since 0.4.54 her garage is an area of 8-1, behind its blast door)', () => {
+    const sophia = hiddenHeroes().filter((h) => h.hero === 'sophia');
+    expect(sophia).toHaveLength(1);
+    expect(sophia[0]).toMatchObject({ main: '8-1', page: 'smb-8', node: '8-1' });
+    expect(hiddenHeroesAt('smb-8', '8-1').map((h) => h.hero)).toEqual(['sophia']);
+    // No one waits under the fortress any more (the old 8-4 route is gone).
+    for (const n of ['start', '8-2', '8-3', '8-4', 'bonus-8']) expect(hiddenHeroesAt('smb-8', n)).toEqual([]);
+  });
+
   it('other nodes hide no one', () => {
     expect(hiddenHeroesAt('smb-1', '1-2')).toEqual([]);
     expect(hiddenHeroesAt('smb-1', 'start')).toEqual([]);
@@ -200,6 +210,22 @@ describe('heroSide: beside the node, clear of its roads', () => {
     expect(SKETCH_4[n.y]![n.x - 1]).toBe('#');
     expect(SKETCH_4[n.y - 1]![n.x - 1]).toBe('#');
     expect(WORLD_4.paths.some((p) => p.points.some(([x, y]) => x === n.x - 1 && y === n.y))).toBe(false);
+  });
+
+  it('THE UNDERWORLD 8-1: left, on the clear moss ledge west of the node (the roads leave east and south)', () => {
+    const n = WORLD_8_UNDERWORLD.nodes.find((n) => n.id === '8-1')!;
+    expect([n.x, n.y]).toEqual([2, 6]);
+    expect(heroSide(WORLD_8_UNDERWORLD, n)).toBe(-1);
+    // The tile Sophia's silhouette or trophy stands on, and the one above it, are plain moss ledge
+    // with no road or exit on them.
+    expect(SKETCH_8_UNDERWORLD[n.y]![n.x - 1]).toBe(',');
+    expect(SKETCH_8_UNDERWORLD[n.y - 1]![n.x - 1]).toBe(',');
+    const onRoad = (x: number, y: number) =>
+      [...WORLD_8_UNDERWORLD.paths, ...WORLD_8_UNDERWORLD.exits].some((p) =>
+        p.points.some(([px, py]) => px === x && py === y),
+      );
+    expect(onRoad(n.x - 1, n.y)).toBe(false);
+    expect(onRoad(n.x - 1, n.y - 1)).toBe(false);
   });
 
   it('a node may pick its side (heroSpot)', () => {
