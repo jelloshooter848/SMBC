@@ -14,6 +14,7 @@ import {
   BOWSER_SPELL_PAGES,
   CASTLE_PAGES,
   FINALE_PAGES,
+  castlePages,
   castleRemark,
   gateScript,
   HOME_REMARKS,
@@ -44,6 +45,7 @@ import {
   WORLD1_PAGES,
   type Page,
 } from './script';
+import { FINALE } from './finale';
 import { KAKARIKO_PAGES, oldManPages, shopGrowFirst, shopShort, wellPage } from './kakariko';
 
 // docs/STORY.md is the script the owner reviews; script.ts is what the game shows. For the shipped
@@ -131,6 +133,8 @@ function scriptPages(): Map<string, Page> {
   // The last castle's (story/finale.ts; 8-4's until 0.4.55, its wand page only while its king is a fake).
   add('FINALE_PAGES.reveal', [`THANK YOU ${HERO}!`, '', ...FINALE_PAGES.reveal]);
   add('FINALE_PAGES.news', FINALE_PAGES.news);
+  const last = castlePages(FINALE.castle);
+  if (last) add('castlePages(FINALE.castle).reveal', [`THANK YOU ${HERO}!`, '', ...last.reveal]);
   // The credits' block, without the blank line that parts it from THANKS FOR PLAYING.
   add('STORY_NOT_OVER', STORY_NOT_OVER.slice(1));
   list('riftPages', riftPages(HERO));
@@ -200,8 +204,10 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     // pages of hers, two of Jason's) are among the pages the doc and script share, and (0.4.39)
     // her line in 4-2's anchor scene; (0.4.47) Jason's own-hero page, Sophia III talking to him.
     const firsts = blocks.filter((b) => !b.old).map((b) => b.lines[0]);
-    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(7);
-    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(5);
+    // (0.4.54: Jason's three follow-Fred pages became one, option A: the key he lost.)
+    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(5);
+    // (0.4.54: and her own line at 8-4's fake.)
+    expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(6);
   });
 
   it('every page of script.ts is in the doc', () => {

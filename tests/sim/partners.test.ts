@@ -48,15 +48,9 @@ const SPOTS = [
   { who: 'townsperson', level: '5-1-bonus', start: { ...fromStart, time: 300 }, col: 8 },
   { who: 'irene', level: '6-2', start: { mode: 'stand' }, col: 7 },
   { who: 'lance', level: '7-3', start: { mode: 'stand' }, col: 5 },
-  // Fred by 8-4-end's trap pipe (10), up out of the pipe at 3.
-  {
-    who: 'fred',
-    level: '8-4-end',
-    start: { mode: 'pipe-exit', x: 3, y: 10, time: 300, clearEnemies: 'all' },
-    col: 8,
-  },
-  // Jason's secret area behind 8-4-end's trap pipe (0.4.18): up out of its pipe.
-  { who: 'jason', level: '8-4-jason', start: { mode: 'pipe-exit', x: 1, y: 10, time: 300 }, col: 5 },
+  // 0.4.54: Jason, who lost the key, in 8-1's coin room (falling in from its pipe). (Fred no longer
+  // waits by 8-4-end's trap pipe: he dived down 8-1's hatch after Sophia III.)
+  { who: 'jason', level: '8-1-bonus', start: { ...fromStart, time: 300 }, col: 8 },
   // 0.4.40: an NPC in every level, each walked up to from the level's own start.
   // World 1: a cave Toad where 1-2's heroes drop in, the lookout at 1-3's start, and a retainer
   // at the foot of 1-4's entrance steps.
@@ -91,8 +85,7 @@ const SPOTS = [
   { who: 'corporal', level: '7-1', start: fromStart, col: 5 },
   { who: 'river-scout', level: '7-2-exit', start: near(18), col: 15 },
   { who: 'medic', level: '7-4', start: fromStart, col: 8 },
-  // World 8: at the starts of 8-1, 8-2 and 8-3; in 8-4 on the floor past the first lava (Fred
-  // and Jason are behind the trap pipe at its end, and Fred goes home once Sophia III is free).
+  // World 8: at the starts of 8-1, 8-2 and 8-3; in 8-4 on the floor past the first lava.
   { who: 'mutant', level: '8-1', start: fromStart, col: 10 },
   { who: 'engineer', level: '8-2', start: fromStart, col: 6 },
   { who: 'ice-miner', level: '8-3', start: fromStart, col: 4 },
@@ -128,7 +121,7 @@ function campaignIn(
   h.game.openFile(1);
   // 1-1's opening beat (Luigi running off, story/luigi-runs.ts) is another story; seen already here.
   h.game.markSeen(beat.luigiRuns);
-  // Bowser in 8-4-end's bridge room (Fred's trap pipe is in it) is another story too.
+  // Bowser in the last castle's bridge room is another story too.
   h.game.markSeen(beat.bowser84);
   // So are the hero sightings at a world's first level (0.4.51-0.4.52: 5-1's old woman).
   for (const id of SIGHTING_HEROES) h.game.markSeen(beat.sighting(id));
@@ -175,7 +168,7 @@ describe('partners: where they stand (campaign only)', () => {
     const h = makeGame();
     const l = campaignIn(h, spot);
     // (Up out of a pipe, the room's entities come once the hero is out.)
-    h.idle('mode' in spot.start && spot.start.mode === 'pipe-exit' ? 120 : 2);
+    h.idle((spot.start as WorldStart).mode === 'pipe-exit' ? 120 : 2);
     const [it, ...more] = partners(l);
     expect(it?.who).toBe(spot.who);
     expect(more).toEqual([]);
@@ -229,7 +222,10 @@ describe('partners: every one placed has its spot here (0.4.40)', () => {
         .entities.filter((e) => e.type === 'partner')
         .map((e) => `${String(e.props?.who)} in ${id}`),
     );
-    expect(placed.sort()).toEqual(SPOTS.map((s) => `${s.who} in ${s.level}`).sort());
+    // 0.4.54: Jason also still stands in his retired area behind 8-4-end's trap pipe (8-4-jason,
+    // reached only from the developer level select), for Fred's dive.
+    const retired = ['jason in 8-4-jason'];
+    expect(placed.sort()).toEqual([...SPOTS.map((s) => `${s.who} in ${s.level}`), ...retired].sort());
   });
 });
 
@@ -460,11 +456,7 @@ describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () =>
     expect(h.said.at(-1)?.startsWith(said(PARTNERS.villager!.pages[0]!))).toBe(true);
   });
 
-  it('Fred has gone home from the trap pipe once Sophia III is free; Jason stays', () => {
-    const h = makeGame();
-    const l = campaignIn(h, spotOf('fred'), MARIO, 'small', { freed: ['mario', 'sophia'] });
-    h.idle(120);
-    expect(partners(l)).toEqual([]);
+  it('Jason stays in the coin room once Sophia III is free', () => {
     const h2 = makeGame();
     const l2 = campaignIn(h2, spotOf('jason'), MARIO, 'small', { freed: ['mario', 'sophia'] });
     h2.idle(120);
@@ -588,11 +580,11 @@ describe('partners: who moved, and how they look (0.4.23)', () => {
     expect(s2?.y).toBe(v.body.y / px(1));
   });
 
-  it("Fred sits by the trap pipe, drawn from Sophia III's sheet", () => {
+  it("Jason in the coin room is drawn from Sophia III's sheet", () => {
     const h = makeGame();
-    const l = campaignIn(h, spotOf('fred'));
+    const l = campaignIn(h, spotOf('jason'));
     h.idle(120);
-    const s = draw(l).sprites.find((d) => d.frame === 'fred-0');
+    const s = draw(l).sprites.find((d) => d.frame === 'jason-stand');
     expect(s?.key).toBe('sophia');
   });
 });

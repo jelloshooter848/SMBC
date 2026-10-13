@@ -23,7 +23,7 @@ const SIZES: Record<string, Size> = {
   fairy: [16, 16],
 };
 /** Partners drawn from another sheet (entities/objects/partner.ts BORROWED): Sophia III's, Mega Man's station's. */
-const BORROWED = ['jason', 'fred', 'sniper-joe'];
+const BORROWED = ['jason', 'sniper-joe'];
 const FRAMES: Record<string, Size> = {
   ...Object.fromEntries(
     Object.entries(SIZES).flatMap(([who, s]) => [

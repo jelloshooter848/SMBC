@@ -40,9 +40,6 @@ const BORROWED: Readonly<
   Record<string, { sheet: string; frame: string; rows: readonly string[]; look: boolean }>
 > = {
   jason: { sheet: 'sophia', frame: 'jason-stand', rows: sophiaDef.frames['jason-stand'] ?? [], look: true },
-  // Fred, by 8-4-end's trap pipe (0.4.23): her sheet's sitting frog, looking at the heroes coming
-  // from the left and now and then down the pipe to his right.
-  fred: { sheet: 'sophia', frame: 'fred-0', rows: sophiaDef.frames['fred-0'] ?? [], look: true },
   // 0.4.40: a Sniper Joe on his break at the door of 3-4's fortress, Mega Man's airship guard
   // (`station` sheet), behind his shield and facing the heroes. His frame's bottom row is empty.
   'sniper-joe': {

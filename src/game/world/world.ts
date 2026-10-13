@@ -79,7 +79,15 @@ import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
-import { KEY_SAID, KeyBox, KeyItem, LockedDoor, LockedGate, type KeyThing } from '../entities/objects/keys';
+import {
+  KEY_SAID,
+  KeyBox,
+  KeyItem,
+  LockedDoor,
+  LockedGate,
+  LockedHatch,
+  type KeyThing,
+} from '../entities/objects/keys';
 import {
   TRICK_HOLD_FRAMES,
   TRICK_PUSH_FRAMES,
@@ -178,10 +186,10 @@ export type WorldEvent =
   | { type: 'item'; item: string; player: number }
   /**
    * (0.4.52, objects/keys.ts) A player came within reach of the key (`key`), a locked door (`door`),
-   * an open one (`open-door`), or a locked gate untried (`gate`) or tried this visit (`locked`):
-   * announced.
+   * an open one (`open-door`), or a locked gate (or, 0.4.54, 8-1's hatch) untried (`gate`,
+   * `hatch`) or tried this visit (`locked`): announced.
    */
-  | { type: 'key-near'; what: 'key' | 'door' | 'open-door' | 'gate' | 'locked'; player: number }
+  | { type: 'key-near'; what: 'key' | 'door' | 'open-door' | 'gate' | 'hatch' | 'locked'; player: number }
   /** (0.4.52) Player `player` tried hero `hero`'s locked gate (once a visit): its locked card. */
   | { type: 'gate'; hero: string; player: number };
 
@@ -960,7 +968,9 @@ export class World {
           : null;
       // Keys and locked doors (0.4.52, objects/keys.ts): the story's only (classic keeps the brick).
       case 'key-box':
-        return this.storyMode ? new KeyBox(s.x, s.y, String(s.props?.hero ?? '')) : null;
+        return this.storyMode
+          ? new KeyBox(s.x, s.y, String(s.props?.hero ?? ''), s.props?.out === 'down' ? 'down' : 'up')
+          : null;
       case 'locked-door': {
         if (!this.storyMode) return null;
         const hero = String(s.props?.hero ?? '');
@@ -969,12 +979,19 @@ export class World {
           typeof to === 'string' && to
             ? { level: to, x: Number(s.props?.tx ?? 0), y: Number(s.props?.ty ?? 0) }
             : null;
-        return new LockedDoor(s.x, s.y, hero, target, Boolean(this.captives?.isFreed(hero)));
+        const look = s.props?.look === 'vault' ? 'vault' : 'crypt';
+        return new LockedDoor(s.x, s.y, hero, target, Boolean(this.captives?.isFreed(hero)), look);
       }
       case 'locked-gate': {
         if (!this.storyMode) return null;
         const hero = String(s.props?.hero ?? '');
         return new LockedGate(s.x, s.y, hero, Boolean(this.captives?.isFreed(hero)));
+      }
+      // 0.4.54: 8-1's steel hatch by the start (Sophia III's hole), a locked gate laid flat.
+      case 'locked-hatch': {
+        if (!this.storyMode) return null;
+        const hero = String(s.props?.hero ?? '');
+        return new LockedHatch(s.x, s.y, hero, Boolean(this.captives?.isFreed(hero)));
       }
       case 'spring':
       case 'spring-green':
@@ -1692,6 +1709,11 @@ export class World {
 
   /* ---------- Keys and locked doors (0.4.52, objects/keys.ts) ---------- */
 
+  /** The key box laid at tile (tx, ty), if any. */
+  private keyBoxAt(tx: number, ty: number): KeyBox | undefined {
+    return this.entities.find((e): e is KeyBox => e instanceof KeyBox && e.tx === tx && e.ty === ty);
+  }
+
   /** Player `i` picks up the key: carried (the HUD's key icon) until a door uses it. */
   takeKey(key: KeyItem, i: number): void {
     key.destroy();
@@ -2175,8 +2197,9 @@ export class World {
         this.layPath(tx, ty);
         break;
       case 'key':
-        // A key box (0.4.52, objects/keys.ts): the key rises out; the box is spent.
-        this.spawn(new KeyItem(tx, ty));
+        // A key box (0.4.52, objects/keys.ts): the key rises out (or drops out below); the box
+        // is spent.
+        this.spawn(new KeyItem(tx, ty, this.keyBoxAt(tx, ty)?.out ?? 'up'));
         this.audio.sfx('powerup-appear');
         this.events.push({ type: 'say', text: KEY_SAID.popped });
         break;

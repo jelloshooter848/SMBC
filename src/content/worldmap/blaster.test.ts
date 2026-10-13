@@ -123,9 +123,11 @@ describe("World 8: BOWSER'S UNDERWORLD", () => {
 
   it("leaves Sophia's silhouette, the local (the turnip clue) and the seal where they were", () => {
     const n = WORLD_8.nodes.find((x) => hiddenHeroesAt('smb-8', x.id).some((h) => h.hero === 'sophia'))!;
-    expect(n.id).toBe('8-4');
-    const side = heroSide(WORLD_8, n);
-    expect([at(n.x + side, n.y), at(n.x + side, n.y - 1)]).toEqual(['W', 'W']);
+    // 0.4.54: her garage is an area of 8-1 now (her way in moved there), so her silhouette is too.
+    // (Where it stands beside 8-1 is the World 8 map's business: THE UNDERWORLD map, 0.4.54's maps
+    // track, draws her spot there; this old sketch has a road on that side.)
+    expect(n.id).toBe('8-1');
+    expect(heroSide(WORLD_8, n)).not.toBe(0);
     const spot = localSpot(WORLD_8)!;
     expect(at(Math.floor(spot.x / 16), Math.floor((spot.y + 19) / 16))).toBe('#');
     expect(welcomeOf('smb-8')?.local).toBe('MINER');

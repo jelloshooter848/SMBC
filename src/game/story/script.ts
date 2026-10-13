@@ -428,7 +428,8 @@ export const RIFT_SEALED_PAGES: readonly Page[] = [
     "GO THROUGH. SOMETHING'S",
     'HOLDING IT SHUT...',
   ),
-  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', "LOST IN THE KING'S CASTLE."),
+  // 0.4.54: she is under 8-1 now (its hatch in the forest), no longer in the king's castle.
+  toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT, DOWN THAT', 'HATCH IN THE FOREST.'),
 ];
 
 /** The map's hint line on a castle whose road is sealed (`name`: the hero's full name). */
@@ -642,11 +643,12 @@ export const WELCOMES: Readonly<Record<string, WelcomeScript>> = {
           'HER, AND HER PILOT IS LOST.',
           'PLEASE HELP!',
         ],
+        // 0.4.54: Sophia III's way in moved to 8-1 (its hatch, its coin room).
         [
-          "THE BOY WENT INTO THE KING'S",
-          'OWN CASTLE AFTER HIS FROG.',
-          'THAT FROG TAKES THE PIPES',
-          'NOBODY ELSE DOES.',
+          'THE TANK DROVE DOWN A HATCH',
+          'IN THE FOREST, AND THE',
+          "BOY'S FROG DOVE AFTER HER.",
+          "HE'S LOOKING FOR A WAY DOWN.",
         ],
         ['ODD THING... SOMEONE PULLED', 'UP A TURNIP RIGHT HERE. WHO', 'GROWS TURNIPS NEXT TO LAVA?'],
       ),
@@ -804,8 +806,8 @@ export const LUIGI_RUNS_PAGE: Page = [
 /**
  * The hero sightings (story/sightings.ts): a brainwashed hero glimpsed at the start of their
  * world's first level. Each line is said by player 1's hero (sightingPage), at most CASTLE_COLS
- * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52); the rest
- * come with their worlds.
+ * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52; Sophia
+ * III since 0.4.54); the rest come with their worlds.
  */
 const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   link: ['WAS THAT LINK? A VINE', 'GREW RIGHT OUT OF THE', 'GROUND, AND HE CLIMBED IT', 'INTO THE SKY!'],
@@ -813,6 +815,13 @@ const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   // 0.4.52 (owner-approved; Simon's option A).
   samus: ['SAMUS! SHE CURLED INTO A', 'BALL AND BOMBED HER WAY', 'DEEPER INTO THE CAVES.'],
   simon: ['SIMON! HE WALKED RIGHT', 'THROUGH THAT GATE, AND IT', 'SLAMMED SHUT BEHIND HIM.'],
+  // 0.4.54 (owner-approved, option A: the player's hero can't follow).
+  sophia: [
+    'SOPHIA III AND THE FROG',
+    'WENT DOWN THAT HOLE, AND',
+    "IT SHUT. I CAN'T FOLLOW...",
+    'THERE MUST BE ANOTHER WAY.',
+  ],
 };
 
 /** What the announcer says as each sighting starts (it has no text on screen until the card). */
@@ -822,14 +831,17 @@ export const SIGHTING_SAID: Readonly<Record<string, string>> = {
   samus: 'A brainwashed Samus curls into a ball and bombs her way off into the caves.',
   simon:
     'A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him.',
+  sophia:
+    'A brainwashed Sophia the Third drives into a hatch in the ground. A frog dives after her, and the hatch slams shut.',
 };
 
 /** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */
 export const SIGHTING_LINE_HEROES: readonly string[] = Object.keys(SIGHTING_LINES);
 
 /**
- * (0.4.52) A locked gate tried (5-1's crypt gate while Simon is captive: objects/keys.ts), once a
- * visit: the player's hero, `speaker`, says it is locked (option A, the owner's).
+ * (0.4.52) A locked gate tried (5-1's crypt gate while Simon is captive, and since 0.4.54 8-1's
+ * hatch while Sophia III is: objects/keys.ts), once a visit: the player's hero, `speaker`, says it
+ * is locked (option A, the owner's).
  */
 export function lockedGatePage(speaker: string): Page {
   return [`${speaker}:`, '', "IT'S LOCKED... THERE", 'MUST BE ANOTHER WAY IN!'];
@@ -1183,34 +1195,25 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       ],
     ],
   },
-  // Fred the frog by 8-4-end's trap pipe (10): he can't talk, so his second page is a caption.
-  // Once Sophia III is freed he is gone (home with Jason).
-  fred: {
-    verb: 'TALK',
-    name: 'Fred the frog',
-    hero: 'sophia',
-    pages: [
-      ['FRED:', '', 'RIBBIT.'],
-      ['THE FROG LOOKS AT YOU,', 'THEN DOWN THE PIPE. THEN', 'AT YOU AGAIN.'],
-    ],
-  },
-  // Sophia III's pilot, in his secret area behind 8-4-end's trap pipe (8-4-jason): talking to him
-  // sends Fred into the pool (objects/fred.ts).
+  // (0.4.23 to 0.4.53: Fred the frog sat by 8-4-end's trap pipe as a partner. Since 0.4.54 he
+  // dives down 8-1's hatch after Sophia III in her sighting, and rests in her garage.)
+  // Sophia III's pilot (0.4.54, owner: option A), in 8-1's coin room (8-1-bonus) between the key
+  // box and the locked blast door: the hatch shut on his tank and his frog, and he lost the key.
+  // (He used to wait behind 8-4-end's trap pipe, 8-4-jason, retired; talking to him there still
+  // sends Fred into the pool, objects/fred.ts.)
   jason: {
     verb: 'TALK',
     name: 'Jason',
     hero: 'sophia',
     pages: [
-      ['JASON:', '', 'FRED! FRED, COME BACK!', '...OH, HI. HAVE YOU SEEN', 'A FROG? GREEN, THIS BIG?'],
       [
         'JASON:',
         '',
-        'HE JUMPED IN THE WATER AND',
-        'SWAM DOWN A CRACK. LAST',
-        'TIME HE DID THAT, I FOUND',
-        'A TANK.',
+        'FRED! SOPHIA! THE HATCH',
+        'SHUT ON THEM! THIS DOOR',
+        'GOES DOWN THERE TOO, BUT I',
+        'LOST THE KEY IN HERE.',
       ],
-      ['JASON:', '', "MY TANK, SOPHIA! SHE'S DOWN", 'THERE TOO. FOLLOW FRED,', "PLEASE. I CAN'T SWIM."],
     ],
     after: [['JASON:', '', "SOPHIA'S BACK, FRED'S BACK.", 'BEST DAY EVER! THANK YOU!']],
     own: [
@@ -2007,10 +2010,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'MUTANT:',
         '',
-        'THE BOY WITH THE FROG WENT',
-        "INTO THE KING'S OWN CASTLE.",
-        'HE LOST HIS TANK. PLEASE,',
-        'HELP HIM. GRBL.',
+        'THE TANK WENT DOWN THAT',
+        'HATCH, AND THE BOY WENT',
+        'DOWN A PIPE TO FIND ANOTHER',
+        'WAY. HELP HIM. GRBL.',
       ],
     ],
     after: [
@@ -2030,9 +2033,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'ENGINEER:',
         '',
         "THE KING'S SPELL TOOK THE",
-        'TANK, SOPHIA. HER PILOT',
-        "WENT INTO THE KING'S CASTLE",
-        'AFTER HIS FROG. HELP THEM!',
+        'TANK, SOPHIA. HER PILOT IS',
+        'BACK IN THE FOREST, DOWN A',
+        'PIPE. HELP THEM!',
       ],
     ],
     after: [
@@ -2067,10 +2070,10 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
       [
         'ICE MINER:',
         '',
-        'SAW A BOY CHASE A FROG INTO',
-        "THE KING'S CASTLE. THE FROG",
-        'KNOWS A PIPE THE GUARDS',
-        "DON'T. PLEASE, FOLLOW IT!",
+        'SAW A FROG DIVE DOWN A',
+        'HATCH IN THE FOREST. THE',
+        'BOY WENT DOWN A PIPE TO',
+        'FOLLOW. PLEASE, HELP HIM!',
       ],
     ],
     after: [
@@ -2105,16 +2108,15 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'GUARD MUTANT:',
         '',
         'GRBL. I GUARD THIS HALL.',
-        "I'M BAD AT IT. A BOY AND HIS",
-        'FROG GOT RIGHT PAST ME.',
+        "I'M BAD AT IT. NOBODY GETS",
+        'PAST ME. ...EXCEPT YOU.',
       ],
       [
         'GUARD MUTANT:',
         '',
-        'THE FROG TOOK A PIPE NOBODY',
-        "USES, BY THE KING'S BRIDGE.",
-        'FOLLOW THE FROG. PLEASE.',
-        'THE BOY IS LOST.',
+        'THE BOY AND HIS TANK? NOT',
+        'IN HERE. THEY WENT DOWN A',
+        'HATCH IN THE FOREST. GRBL.',
       ],
     ],
     after: [
