@@ -308,7 +308,7 @@ describe('crystal-ball hints on the map', () => {
       position: { page: 'smb-1', node: '1-1' },
     });
     const { sprites, texts } = draw(map());
-    expect(sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(true);
+    expect(sprites.some((s) => s.key === 'mario@luigi~shade-kingdom')).toBe(true);
     // No hint line (0.4.35, owner: too on the nose); the announcer describes the shadow only.
     expect(map().hintLine).toBe('');
     expect(texts.map((t) => t.str).join(' ')).not.toMatch(/HIDING/);
@@ -328,7 +328,7 @@ describe('crystal-ball hints on the map', () => {
     h.game.openFile(1);
     h.idle(8);
     // 1-1 is open on the file itself: Luigi's silhouette.
-    expect(draw(h.top() as WorldMapScene).sprites.some((s) => s.key === 'mario@luigi~shade-grass')).toBe(
+    expect(draw(h.top() as WorldMapScene).sprites.some((s) => s.key === 'mario@luigi~shade-kingdom')).toBe(
       true,
     );
     // World 2 is open only through Unlock all: no Link by 2-1.
