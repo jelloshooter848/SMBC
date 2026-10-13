@@ -100,6 +100,7 @@ import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
 import { CastleUnmask, walkStep } from './unmask';
+import { BossBar } from './boss-bar';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
@@ -467,6 +468,8 @@ export class World {
    * it runs; then the axe drops the bridge as usual.
    */
   unmask: CastleUnmask | null = null;
+  /** The Bowser bar (0.4.47, campaign only): his hit points while his fight is on (boss-bar.ts). */
+  readonly bossBar = new BossBar();
   /**
    * Set by LevelScene in the campaign: shows the hero's remark at castle `level`'s axe if it is
    * due (story/castle-remark.ts) and returns true, calling `done` when the card closes; false when
@@ -1284,6 +1287,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
+    this.bossBar.tick();
     if (this.itemCaption && --this.itemCaption.t <= 0) this.itemCaption = null;
     if (this.shakeFrames > 0) this.shakeFrames--;
 
@@ -2199,6 +2203,8 @@ export class World {
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
       else if (e instanceof Axe && overlaps(pb, e.body)) {
+        // The axe ends the fight: the Bowser bar goes with it (0.4.47).
+        this.bossBar.axe();
         if (!this.unmaskAtAxe(e, p)) this.startBossClear(e, p);
       }
       if (p.dead || this.clear || this.bossClear || this.unmask) return;
