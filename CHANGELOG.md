@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.49] - 2026-10-13
+
 ### Added
 
 - Play from a download: each release now also has `smbc-vX.Y.Z-offline.zip`. Unzip it and double-click
@@ -1097,7 +1099,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...HEAD
+[0.4.49]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...v0.4.48
 [0.4.47]: https://github.com/jelloshooter848/SMBC/compare/v0.4.46...v0.4.47
 [0.4.46]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...v0.4.46
