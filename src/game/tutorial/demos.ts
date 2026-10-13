@@ -92,7 +92,9 @@ export const BOOMERANG_UP_DEMO: LessonDemo = {
     { ability: 'UP', action: 'up' },
     { ability: 'RIGHT', action: 'right' },
   ],
-  touchCaption: 'TOOL',
+  // The disc is too small for its name: the name is written under the controls instead.
+  touchCaption: '',
+  touchName: 'BOOMERANG',
   height: 80,
   groundH: 3,
   hero: { sheet: 'link', idle: 'idle', walk: [] },
@@ -128,7 +130,7 @@ export const BOOMERANG_UP_DEMO: LessonDemo = {
   },
   said(game, v) {
     if (v === 'touch')
-      return 'The picture shows up held on the d-pad with the tool button: the boomerang flies straight up. With up and right held, it flies up and ahead.';
+      return 'The picture shows up held on the d-pad with the BOOMERANG button: the boomerang flies straight up. With up and right held, it flies up and ahead.';
     const up = abilityHint(game, 'UP', 'up');
     return `The picture shows ${up} held with ${abilityHint(game, 'USE TOOL', 'special')}: the boomerang flies straight up. With ${up} and ${abilityHint(game, 'RIGHT', 'right')}, it flies up and ahead.`;
   },

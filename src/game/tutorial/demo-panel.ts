@@ -66,6 +66,12 @@ export interface LessonDemo {
   dirs?: readonly { ability: string; action: Action }[];
   /** The button's caption on the touch picture, when not its ability (a tool's, kept short). */
   touchCaption?: string;
+  /**
+   * The touch button's name as it reads in play, written under the touch picture's controls when it
+   * is too long for the disc (Link's BOOMERANG: never TOOL, the look-alike of his TOOLS button).
+   * Needs a panel at least 20 px taller than DEMO_H.
+   */
+  touchName?: string;
   /** The panel's height (px), for a taller hero or a throw up high; default DEMO_H. */
   height?: number;
   /** The strip's ground (px tall; default 10): a thin one leaves the sky room for a throw up. */
@@ -376,11 +382,13 @@ export function drawDemoPanel(
   const mid = cx0 + (cw >> 1);
   centred(r, font, fontText(st.label), mid, y + 5);
   // A taller panel keeps its controls under the clip's name, centred in the room left.
+  const bottom = y + H - 13;
   y += (H - DEMO_H) >> 1;
   const button = fontText(abilityHint(game, demo.button.ability, demo.button.action));
   if (variant === 'touch') {
     drawPad(r, mid - 26, y + 34, st, demo);
     drawButton(r, font, mid + 28, y + 36, fontText(demo.touchCaption ?? demo.button.ability), st.button);
+    if (demo.touchName) centred(r, font, fontText(demo.touchName), mid, bottom);
     return;
   }
   if (variant === 'pad') {
