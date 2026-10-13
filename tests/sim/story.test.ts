@@ -239,8 +239,16 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
     () => {
       const h = devFile();
       expect(h.game.mapUnlockAll).toBe(true);
+      // BOWSER'S CASTLE is one room (0.4.55): in at its last checkpoint, on to the bridge section.
+      const toBridge = () => {
+        h.game.startLevel(getLevel(BRIDGE_ROOM), { x: 474, y: 9, mode: 'stand' });
+        h.step();
+        const room = h.top() as LevelScene;
+        for (let i = 0; i < 400 && h.top() === room && room.world.player.body.x < (488 * 16) << 8; i++)
+          h.step(['right']);
+      };
       const bowser = () => {
-        into(h, BRIDGE_ROOM);
+        toBridge();
         expect(h.top()).toBeInstanceOf(BowserSaysScene);
         h.idle(CARD_GUARD_FRAMES + 1);
         h.tap('jump');
@@ -252,7 +260,7 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
       h.game.autosave();
       expect(loadSave(1)?.story).toEqual([STORY_REV]);
       // ...and not again while Unlock all stays on (no loop over the level).
-      into(h, BRIDGE_ROOM);
+      toBridge();
       expect(h.top()).toBeInstanceOf(LevelScene);
       // Unlock all off: the beat plays for real, and is saved.
       h.game.devUnlockAll = false;
@@ -261,14 +269,18 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
     },
   );
 
-  it("a map beat (Toad's rift scene on World 8): plays, nothing marked; then for real", () => {
+  it("a map beat (Toad's rift scene, on the Valley since 0.4.55): plays, nothing marked; then for real", () => {
     const story = ALL_STORY.filter((id) => id !== beat.rift);
     const h = devFile({
-      cleared: ['1-0', '1-1', '1-2', '1-3', '1-4', '8-4'],
-      pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8', 'll-1'],
+      cleared: ['1-0', '1-1', '1-2', '1-3', '1-4', '8-4', '8-5'],
+      pages: [
+        ...['smb-1', 'smb-2', 'smb-3', 'smb-4', 'smb-5', 'smb-6', 'smb-7', 'smb-8'],
+        'valley-of-bowser',
+        'll-1',
+      ],
       freed: CHARACTERS.map((c) => c.id),
       gameCleared: true,
-      position: { page: 'smb-8', node: '8-4' },
+      position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
       story,
     });
     const map = () => h.top() as WorldMapScene;
