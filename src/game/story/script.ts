@@ -398,6 +398,16 @@ export const RIFT_SEALED_PAGES: readonly Page[] = [
   toad('THE LAST SPELL! THE TANK IS', 'STILL UNDER IT. HER PILOT IS', "LOST IN THE KING'S CASTLE."),
 ];
 
+/**
+ * (0.4.55) World 8's road on to the VALLEY OF BOWSER still sealed: Toad's reminder after 8-4 while
+ * Sophia III is captive (the rift is no longer here: it opens at Bowser's Castle). Page 2 is the
+ * rift reminder's own (where she is).
+ */
+export const VALLEY_SEALED_PAGES: readonly Page[] = [
+  toad('THE WAY ON TO THE KING IS', 'SEALED BY HIS MAGIC... AND', "WE STILL HAVEN'T FOUND", 'SOPHIA III!'),
+  RIFT_SEALED_PAGES[1] as Page,
+];
+
 /** The map's hint line on a castle whose road is sealed (`name`: the hero's full name). */
 export function sealedHint(name: string): string {
   return `SEALED - FREE ${name} FIRST`;

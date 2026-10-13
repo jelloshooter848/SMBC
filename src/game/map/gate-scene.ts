@@ -96,10 +96,14 @@ export class GateScene {
     private readonly hooks: GateHooks,
   ) {
     if (gate.world === 8 || !gate.bowser.length) {
-      this.phase = gate.tear ? 'tear' : 'done';
+      this.phase = gate.tear ? 'tear' : gate.shatter ? 'shatter' : 'done';
       if (gate.tear) {
         hooks.sfx('wand-crack');
         hooks.say(TEAR_SAID);
+      } else if (gate.shatter) {
+        // (0.4.55) World 8's road on to the Valley: no cutaway, the seal just shatters.
+        hooks.sfx('seal-shatter');
+        hooks.say(SHATTER_SAID);
       }
     } else {
       this.phase = 'open';

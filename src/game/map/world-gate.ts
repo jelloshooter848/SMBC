@@ -1,6 +1,14 @@
 import { mapPage } from '@content/worldmap';
+import { VALLEY_LIVE, VALLEY_PAGE_ID } from '@content/worldmap/valley-of-bowser';
 import { beat } from '../story/beats';
-import { gateScript, RIFT_SEALED_PAGES, WELCOMES, welcomeHint, type Page } from '../story/script';
+import {
+  gateScript,
+  RIFT_SEALED_PAGES,
+  VALLEY_SEALED_PAGES,
+  WELCOMES,
+  welcomeHint,
+  type Page,
+} from '../story/script';
 import { exitId, isOpen, revealId, sealStands } from './rules';
 import type { ToadScene } from './toad-guide';
 import type { AboveLookId, MapNode, MapProgress, WorldExit, WorldMapPage } from './types';
@@ -18,6 +26,10 @@ import type { AboveLookId, MapNode, MapProgress, WorldExit, WorldMapPage } from 
  *   shattering, the road drawing in, then Toad walking in. World 8's road on is the rift: its
  *   reminder is RIFT_SEALED_PAGES, and opening it is Toad's rift scene (toad-guide.ts), after the
  *   crack tears wide open when it had been seen shut.
+ * - (0.4.55) Once the VALLEY OF BOWSER is live, campaign World 8's road on leads there and is an
+ *   ordinary world gate: its seal (not the crack) shatters when Sophia III is freed, with no
+ *   cutaway; its reminder is VALLEY_SEALED_PAGES. The rift moves to the Valley (RIFT_PAGE), whose
+ *   road on to the Lost Levels opens after Bowser's Castle (no hero gate).
  * - The welcome: the first arrival on a world's start node (worlds 2-8), the local speaking in
  *   the box at the top (no Toad); standing on the node, TALK (or JUMP) plays it again.
  */
@@ -38,6 +50,21 @@ export function sealedExit(progress: MapProgress, page: WorldMapPage): WorldExit
   const e = gateExit(page);
   return e && sealStands(progress, page, e) ? e : null;
 }
+
+/**
+ * Whether gate exit `e` is the rift (2.12): World 8's road straight on to the Lost Levels, as it
+ * was until the VALLEY OF BOWSER (classic, and campaign before 0.4.55). Drawn as the crack.
+ */
+export function isRiftExit(e: WorldExit): boolean {
+  return e.to.startsWith('ll-');
+}
+
+/**
+ * The page Toad's rift scene plays on (2.12): the VALLEY OF BOWSER once it is live (0.4.55: the
+ * wand breaks at Bowser's Castle, and the road on to the Lost Levels leaves the Valley), else
+ * World 8.
+ */
+export const RIFT_PAGE: string = VALLEY_LIVE ? VALLEY_PAGE_ID : 'smb-8';
 
 /**
  * World 8's rift is open on this file (2.12): 8-4 is beaten and its gate's hero (Sophia III) is
@@ -70,6 +97,8 @@ export interface GateBreak {
   toad: readonly Page[];
   /** World 8: the crack had been seen shut, so it is seen tearing wide open. */
   tear: boolean;
+  /** (0.4.55) No cutaway, but the seal shatters (World 8's road on to the Valley). */
+  shatter?: boolean;
 }
 
 /**
@@ -81,7 +110,10 @@ export function gateDue(g: GateInput, pending: readonly string[]): GateBreak | n
   const e = gateExit(g.page);
   if (!world || !e || g.seen(beat.gate(g.page.id))) return null;
   if (!pending.includes(revealId(g.page.id, exitId(e)))) return null;
-  if (world === 8) return { world, exit: e, bowser: [], toad: [], tear: g.seen(beat.sealed(g.page.id)) };
+  if (world === 8 && isRiftExit(e))
+    return { world, exit: e, bowser: [], toad: [], tear: g.seen(beat.sealed(g.page.id)) };
+  // World 8's road on to the Valley: its seal shatters, no cutaway and no words (0.4.55).
+  if (world === 8) return { world, exit: e, bowser: [], toad: [], tear: false, shatter: true };
   const s = gateScript(world, g.hero);
   if (!s) return null;
   return { world, exit: e, bowser: s.bowser, toad: s.toad, tear: false };
@@ -118,8 +150,14 @@ export function gateScenes(g: GateInput): ToadScene[] {
   const out: ToadScene[] = [];
   const id = g.page.id;
   if (!smbWorld(id)) return out;
-  if (sealedExit(g.progress, g.page) && !g.seen(beat.sealed(id))) {
-    const pages = smbWorld(id) === 8 ? RIFT_SEALED_PAGES : (gateScript(smbWorld(id), g.hero)?.reminder ?? []);
+  const sealed = sealedExit(g.progress, g.page);
+  if (sealed && !g.seen(beat.sealed(id))) {
+    const pages =
+      smbWorld(id) === 8
+        ? isRiftExit(sealed)
+          ? RIFT_SEALED_PAGES
+          : VALLEY_SEALED_PAGES
+        : (gateScript(smbWorld(id), g.hero)?.reminder ?? []);
     out.push({ ids: [beat.sealed(id)], pages: [...pages], walk: false });
   }
   const w = welcomeOf(id);
