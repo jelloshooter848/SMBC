@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.51] - 2026-10-13
+
+### Added
+
+- Story: hero sightings. The first time World 2's and World 3's first level starts on a campaign file, its brainwashed
+  hero is glimpsed on the start screen: Link grows a magic vine and climbs into the sky, and Mega Man flickers and beams
+  up. Then your hero says what they saw. Once per file, skippable, announced, with reduce flashing respected. It never
+  plays once that hero is met or freed, that level is cleared, or a player is that hero.
+
+### Changed
+
+- Save codes are now version 3. They reserve the hero sightings and the coming Valley of Bowser (its page, its castle and
+  its level), so the next releases need no new code version. Older codes still load.
+
 ## [0.4.50] - 2026-10-13
 
 ### Changed
@@ -1117,7 +1131,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...HEAD
+[0.4.51]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...v0.4.51
 [0.4.50]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...v0.4.48

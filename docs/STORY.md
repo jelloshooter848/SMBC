@@ -977,6 +977,24 @@ HAVE A FAIRY IN A BOTTLE.
 THAT'S CHEATING, DEAR.
 ```
 
+**2-1: the sighting.** NEW (0.4.51, `story/sightings.ts`). **Trigger:** the first time 2-1 starts on the file
+while Link is neither freed nor met and 2-1 is not cleared, once every player stands on the start screen (campaign
+only, never while a player is Link). Once per file (`sighting:link`). **Staging:** play holds. Brainwashed Link (the
+captive palette, wand sparkles drifting off him) stands on the field ahead of the hero, his back turned, and looks
+back once. Wand sparkles burst from the grass beside him and a **vine grows right out of the ground**, no brick and
+no block. He climbs it out of sight, then the vine crawls up after him and is gone, so the real vine is still to be
+found. A beat later player 1's hero speaks (`<HERO>` is their full name); JUMP, ATTACK or MENU skips to the card.
+Said: _A brainwashed Link makes a vine grow out of the ground and climbs it into the sky. The vine follows him up._
+
+```text
+<HERO>:
+
+WAS THAT LINK? A VINE
+GREW RIGHT OUT OF THE
+GROUND, AND HE CLIMBED IT
+INTO THE SKY!
+```
+
 **Hint NPC: the old man, moved to the vine.** MOVES (owner): from 2-1's start (column 8) to **beside the vine block
 (column 83)**: he stands on the ground a column or two before it, in front of his cave doorway (the
 `partners:cave` decor moves with him; where the ground there allows). His third page (the sky's second vine) moves
@@ -1802,6 +1820,22 @@ BEEP! MEGA MAN! SCANNING...
 ARM CANNON: ONLINE. HELMET:
 SHINY. DR. LIGHT SAYS EAT
 YOUR E-TANKS. BEEP BOOP!
+```
+
+**3-1: the sighting.** NEW (0.4.51, `story/sightings.ts`). **Trigger:** the first time 3-1 starts on the file
+while Mega Man is neither freed nor met and 3-1 is not cleared, once every player stands on the start screen
+(campaign only, never while a player is Mega Man). Once per file (`sighting:megaman`). **Staging:** play holds.
+Brainwashed Mega Man stands by the radio masts, his back turned, and blinks. The rogue program shows: his helmet
+flickers off and on (with reduce flashing: off once, held). He faces the hero, gathers, and **beams straight up** as
+a teleport streak (the station pad's own beam, steady with reduce flashing). A beat later player 1's hero speaks;
+JUMP, ATTACK or MENU skips to the card. Said: _A brainwashed Mega Man glitches, then beams up into the sky._
+
+```text
+<HERO>:
+
+MEGA MAN? HE FLICKERED,
+THEN BEAMED STRAIGHT UP
+INTO THE NIGHT SKY!
 ```
 
 **Hint NPC: Dr. Light, moved to the vine.** MOVES (suggested): from 3-1's pipe room (`3-1-bonus`, which many players

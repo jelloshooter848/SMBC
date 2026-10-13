@@ -764,6 +764,32 @@ export const LUIGI_RUNS_PAGE: Page = [
   'FIND HIM!',
 ];
 
+/* ---------------------------------------------------------------- hero sightings (0.4.51) */
+
+/**
+ * The hero sightings (story/sightings.ts): a brainwashed hero glimpsed at the start of their
+ * world's first level. Each line is said by player 1's hero (sightingPage), at most CASTLE_COLS
+ * (26) columns. Only the built ones are here (Link, Mega Man); the rest come with their worlds.
+ */
+const SIGHTING_LINES: Readonly<Record<string, Page>> = {
+  link: ['WAS THAT LINK? A VINE', 'GREW RIGHT OUT OF THE', 'GROUND, AND HE CLIMBED IT', 'INTO THE SKY!'],
+  megaman: ['MEGA MAN? HE FLICKERED,', 'THEN BEAMED STRAIGHT UP', 'INTO THE NIGHT SKY!'],
+};
+
+/** What the announcer says as each sighting starts (it has no text on screen until the card). */
+export const SIGHTING_SAID: Readonly<Record<string, string>> = {
+  link: 'A brainwashed Link makes a vine grow out of the ground and climbs it into the sky. The vine follows him up.',
+  megaman: 'A brainwashed Mega Man glitches, then beams up into the sky.',
+};
+
+/** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */
+export const SIGHTING_LINE_HEROES: readonly string[] = Object.keys(SIGHTING_LINES);
+
+/** The card after hero `id`'s sighting, said by `speaker` (player 1's hero's full name, upper case). */
+export function sightingPage(id: string, speaker: string): Page {
+  return [`${speaker}:`, '', ...(SIGHTING_LINES[id] ?? [])];
+}
+
 /* ================================================================ end of S1 */
 
 /* ================================================================ S2 (0.4.23): the NPCs and the freeing talks */
