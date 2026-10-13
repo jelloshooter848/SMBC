@@ -58,7 +58,8 @@ export interface Settings {
   /**
    * Home Screen notes shown once (0.4.44), kept with the settings, not a save file: the phone
    * tip after a first level (`tipDone`), and the Home Screen app's note on its own saves
-   * (`noticeDone`). Optional, so files saved before it existed need no migration.
+   * (`noticeDone`), and the downloaded copy's note on its own saves (`offlineDone`, 0.4.49).
+   * Optional, so files saved before it existed need no migration.
    */
   homeScreen?: HomeScreenFlags;
 }
@@ -66,6 +67,7 @@ export interface Settings {
 export interface HomeScreenFlags {
   tipDone: boolean;
   noticeDone: boolean;
+  offlineDone: boolean;
 }
 
 export const SETTINGS_KEY = 'smbc.settings';
@@ -96,7 +98,7 @@ export function defaultSettings(): Settings {
     announce: true,
     dev: false,
     backupReminders: true,
-    homeScreen: { tipDone: false, noticeDone: false },
+    homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
   };
 }
 

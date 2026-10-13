@@ -9,6 +9,7 @@ import type { InstallVariant } from '@engine/platform';
 import {
   ADD_TO_HOME_SCREEN,
   InstallGuideScene,
+  OFFLINE_NOTICE_LINES,
   PHONE_TIP_LINES,
   STANDALONE_NOTICE_LINES,
   UPDATE_LINES,
@@ -114,7 +115,7 @@ describe('the phone tip after a first level', () => {
     const old = defaultSettings() as Partial<Settings>;
     delete old.homeScreen;
     saveSettings(old as Settings);
-    expect(loadSettings().homeScreen).toEqual({ tipDone: false, noticeDone: false });
+    expect(loadSettings().homeScreen).toEqual({ tipDone: false, noticeDone: false, offlineDone: false });
   });
 });
 
@@ -182,6 +183,66 @@ describe('UPDATE READY on the title', () => {
     h.until(() => isCard(h, STANDALONE_NOTICE_LINES), 60);
     answer(h, 'jump');
     h.until(() => isCard(h, UPDATE_LINES), 60);
+  });
+});
+
+// The download (0.4.49, docs/RELEASING.md): index.html opened from the disk (file://) keeps its
+// own saves, apart from the website's. A one-time note says so and points to the save codes.
+const FILE_COPY = { fileCopy: true };
+
+describe('the downloaded copy\'s note on its own saves', () => {
+  it('first launch from the disk: over the title, read out, waits for a press, naming COPY CODE and PASTE CODE', () => {
+    const h = game(FILE_COPY);
+    title(h);
+    h.until(() => isCard(h, OFFLINE_NOTICE_LINES), 60);
+    const text = OFFLINE_NOTICE_LINES.join(' ');
+    expect(text).toMatch(/OWN SAVES/);
+    expect(text).toMatch(/OPTIONS > SAVE FILES/);
+    expect(text).toMatch(/COPY CODE/);
+    expect(text).toMatch(/PASTE CODE/);
+    for (const l of OFFLINE_NOTICE_LINES) expect(l.length, l).toBeLessThanOrEqual(28);
+    expect(h.said.at(-1)).toMatch(/own saves/i);
+    expect(h.said.at(-1)).toMatch(/Options, Save files/i);
+    expect(h.said.at(-1)).toMatch(/Copy code.*Paste code/i);
+    // It waits: no timeout.
+    h.idle(1200);
+    expect(isCard(h, OFFLINE_NOTICE_LINES)).toBe(true);
+    answer(h, 'jump');
+    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(loadSettings().homeScreen?.offlineDone).toBe(true);
+    // Once only.
+    title(h);
+    h.idle(60);
+    expect(h.top()).toBeInstanceOf(TitleScene);
+  });
+
+  it('BACK dismisses it too', () => {
+    const h = game(FILE_COPY);
+    title(h);
+    h.until(() => isCard(h, OFFLINE_NOTICE_LINES), 60);
+    answer(h, 'attack');
+    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(loadSettings().homeScreen?.offlineDone).toBe(true);
+  });
+
+  it('only from the disk: not on the website, not in the Home Screen app', () => {
+    for (const hk of [{}, IPHONE_SAFARI, IPHONE_APP]) {
+      const h = game(hk);
+      title(h);
+      h.idle(60);
+      expect(isCard(h, OFFLINE_NOTICE_LINES)).toBe(false);
+    }
+  });
+
+  it('no ADD TO HOME SCREEN row and no phone tip in the downloaded copy', () => {
+    expect(optionsRow(game({ ...IPHONE_SAFARI, ...FILE_COPY }))).toBeUndefined();
+    expect(optionsRow(game({ ...FILE_COPY, variant: () => 'prompt' }))).toBeUndefined();
+    const h = game({ ...IPHONE_SAFARI, ...FILE_COPY });
+    h.settings.homeScreen = { tipDone: false, noticeDone: false, offlineDone: true };
+    onMap(h);
+    h.game.levelCleared('1-0');
+    h.idle(600);
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
   });
 });
 

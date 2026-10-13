@@ -29,6 +29,11 @@ export interface HomeScreenHooks {
   readonly phone: boolean;
   /** Running from the Home Screen (an installed app). */
   readonly standalone: boolean;
+  /**
+   * The downloaded copy, opened from the disk (file://, `pnpm build:offline`, 0.4.49): its saves
+   * are its own, and there is nothing to add to a Home Screen.
+   */
+  readonly fileCopy?: boolean;
   /** What Options → ADD TO HOME SCREEN does now. */
   variant(): InstallVariant;
   /** The browser's saved install prompt (variant `prompt`). */
@@ -65,6 +70,20 @@ export const STANDALONE_NOTICE_LINES: readonly string[] = [
 const STANDALONE_NOTICE_SAID =
   "Welcome to the Home Screen app! It keeps its own saves, apart from Safari's. To bring a save over from Safari, use Options, Save files, Paste code. OK to continue.";
 
+export const OFFLINE_NOTICE_LINES: readonly string[] = [
+  'PLAYING FROM A DOWNLOAD!',
+  'THIS COPY KEEPS ITS OWN',
+  'SAVES, APART FROM THE',
+  "WEBSITE'S.",
+  '',
+  'TO MOVE A SAVE, USE',
+  'OPTIONS > SAVE FILES:',
+  'COPY CODE ON ONE, THEN',
+  'PASTE CODE ON THE OTHER.',
+];
+const OFFLINE_NOTICE_SAID =
+  "You are playing from a download. This copy keeps its own saves, apart from the website's. To move a save, use Options, Save files: Copy code on one, then Paste code on the other. OK to continue.";
+
 export const UPDATE_LINES: readonly string[] = [
   'UPDATE READY!',
   'A NEW VERSION OF THE GAME',
@@ -80,7 +99,7 @@ const UPDATE_SAID =
 function flags(game: Game): HomeScreenFlags | null {
   const s = game.deps.settings;
   if (!s) return null;
-  s.homeScreen ??= { tipDone: false, noticeDone: false };
+  s.homeScreen ??= { tipDone: false, noticeDone: false, offlineDone: false };
   return s.homeScreen;
 }
 
@@ -121,7 +140,7 @@ function card(
 export function phoneTipDue(game: Game): boolean {
   const hs = game.deps.homeScreen;
   const f = flags(game);
-  if (!hs || !f || f.tipDone || !hs.phone || hs.standalone || !game.campaign) return false;
+  if (!hs || !f || f.tipDone || !hs.phone || hs.standalone || hs.fileCopy || !game.campaign) return false;
   return game.mapProgress.cleared.length === 1;
 }
 
@@ -148,6 +167,13 @@ export function standaloneNoticeDue(game: Game): boolean {
   return !!hs && !!f && !f.noticeDone && hs.ios && hs.standalone;
 }
 
+/** The downloaded copy's note is due: its first launch from the disk. */
+export function offlineNoticeDue(game: Game): boolean {
+  const hs = game.deps.homeScreen;
+  const f = flags(game);
+  return !!hs && !!f && !f.offlineDone && hs.fileCopy === true;
+}
+
 export function updateNoticeDue(game: Game): boolean {
   const hs = game.deps.homeScreen;
   return !!hs && !updateLater.has(game) && hs.updateReady();
@@ -155,6 +181,14 @@ export function updateNoticeDue(game: Game): boolean {
 
 /** The title is ready: its notices, one at a time (true: a card is up). */
 export function titleNotice(game: Game): boolean {
+  if (offlineNoticeDue(game)) {
+    const close = () => {
+      setFlag(game, 'offlineDone');
+      game.scenes.pop();
+    };
+    card(game, OFFLINE_NOTICE_LINES, OFFLINE_NOTICE_SAID, close, { top: true });
+    return true;
+  }
   if (standaloneNoticeDue(game)) {
     const close = () => {
       setFlag(game, 'noticeDone');
@@ -184,12 +218,12 @@ export function titleNotice(game: Game): boolean {
 // ------------------------------------------------------------------ Options
 
 /**
- * Options → ADD TO HOME SCREEN, or nothing when it is hidden (in the Home Screen app, and on a
- * desktop browser with no install API). `status` shows a line under the menu.
+ * Options → ADD TO HOME SCREEN, or nothing when it is hidden (in the Home Screen app, in the
+ * downloaded copy, and on a desktop browser with no install API). `status` shows a line under the menu.
  */
 export function homeScreenItems(game: Game, status: (s: string) => void): MenuItem[] {
   const hs = game.deps.homeScreen;
-  const variant = hs?.variant() ?? 'hidden';
+  const variant = hs && !hs.fileCopy ? hs.variant() : 'hidden';
   if (!hs || variant === 'hidden') return [];
   if (variant === 'prompt')
     return [
