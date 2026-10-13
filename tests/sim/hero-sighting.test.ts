@@ -20,6 +20,8 @@ import {
   SAMUS_SIGHTING,
   SAMUS_SIGHTING_TIMING,
   SIMON_SIGHTING,
+  SOPHIA_SIGHTING,
+  SOPHIA_SIGHTING_TIMING,
   SIMON_SIGHTING_TIMING,
   SIGHTINGS,
   type SightingDraw,
@@ -129,11 +131,14 @@ describe.each([
   // 0.4.52: 4-2 (shown as 4-1 once World 4 is reordered) starts with a fall into the cave.
   ['samus', '4-2', SAMUS_SIGHTING, 'megaman', 'MEGA MAN'],
   ['simon', '5-1', SIMON_SIGHTING, 'samus', 'SAMUS'],
+  // 0.4.54: 8-1, by the hatch at the start.
+  ['sophia', '8-1', SOPHIA_SIGHTING, 'bill', 'BILL'],
 ] as const)('%s’s sighting in %s', (id, levelId, script, p1, speaker) => {
   const before: Record<string, string[]> = {
     megaman: ['mario', 'luigi', 'link'],
     samus: ['mario', 'luigi', 'link', 'megaman'],
     simon: ['mario', 'luigi', 'link', 'megaman', 'samus'],
+    sophia: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill'],
   };
   const over = before[id] ? { freed: before[id], met: before[id] } : {};
   const land = levelId === '4-2';
@@ -438,6 +443,79 @@ describe('what each sighting shows', () => {
     expect(sprites(all[SIMON_SIGHTING.frames - 1]!)).toEqual([]);
   });
 
+  it('Sophia III: faces you (a beep), drives off, hover-hops over Fred, drops into the hatch; Fred dives after her; it slams', () => {
+    const T = SOPHIA_SIGHTING_TIMING;
+    const all = Array.from({ length: SOPHIA_SIGHTING.frames + 1 }, (_, t) => SOPHIA_SIGHTING.draw(t, true));
+    const tank = (t: number) => sprites(all[t]!).find((d) => d.sheet === 'sophia' && d.fx);
+    const fred = (t: number) => sprites(all[t]!).find((d) => d.sheet === 'sophia' && !d.fx);
+    const hatch = (t: number) => all[t]!.find((d) => d.kind === 'hatch');
+    // Parked facing away, on the ground (her frames stand 8 rows above their bottom).
+    expect(tank(1)).toMatchObject({ frame: 'idle', flip: false, x: T.x, feet: 208 + 8, sparkles: true });
+    // She faces you, cannon up, with a beep; then turns back.
+    expect(tank(T.beepAt)).toMatchObject({ frame: 'aim-up', flip: true });
+    expect(SOPHIA_SIGHTING.sfx?.[T.beepAt]).toBe('select');
+    expect(tank(T.backAt + 2)!.frame).toBe('turn-2');
+    // She drives right, then hovers up over Fred (sitting in her way) and the mutant.
+    expect(tank(T.driveAt + 10)!.x).toBeGreaterThan(T.x);
+    expect(tank(T.driveAt + 10)!.frame).toMatch(/^drive-/);
+    const overFred = all.findIndex((_ds, t) => t > T.hopAt && (tank(t)?.x ?? 0) + 16 >= T.fredX + 8);
+    expect(tank(overFred)!.frame).toMatch(/^hover-/);
+    expect(tank(overFred)!.feet).toBeLessThan(208 + 8 - 24);
+    expect(fred(overFred)).toMatchObject({ frame: 'fred-0', x: T.fredX, feet: 208 });
+    // The hatch: shut (the level's own) until the sparkles, open while she drops in; nothing of
+    // it after the slam (the level's own shows, shut).
+    expect(hatch(T.openAt - 1)).toBeUndefined();
+    expect(hatch(T.openAt)).toMatchObject({ x: T.hatchX, top: 208, open: true });
+    expect(all[T.openAt + 1]!.some((d) => d.kind === 'burst')).toBe(true);
+    expect(SOPHIA_SIGHTING.sfx?.[T.openAt]).toBe('magic');
+    // Nose first down the shaft, cut off at the hatch's bottom (the ground under it stays drawn).
+    expect(tank(T.dropAt + 4)).toMatchObject({ frame: 'tilt-down', x: T.hatchX, clipBelow: 208 + 16 });
+    const gone = all.findIndex((_ds, t) => t > T.dropAt && !tank(t));
+    expect(gone).toBeLessThan(T.diveAt);
+    // Fred looks down the shaft, then dives after her, head first, into it.
+    expect(fred(T.diveAt - 4)!.frame).toBe('fred-1');
+    expect(fred(T.diveAt + 4)).toMatchObject({ frame: 'cut-fred-jump', clipBelow: 208 + 16 });
+    const fredGone = all.findIndex((_ds, t) => t > T.diveAt && !fred(t));
+    expect(fredGone).toBeLessThan(T.slamAt);
+    expect(fredGone).toBeGreaterThan(T.diveEnd);
+    // The slam: CLANG, a little dust, and the hatch is the level's again.
+    expect(hatch(T.slamAt)).toBeUndefined();
+    expect(SOPHIA_SIGHTING.sfx?.[T.slamAt]).toBe('bump');
+    expect(all[T.slamAt]!.some((d) => d.kind === 'dust')).toBe(true);
+    // The camera follows her a little and comes back before the card.
+    expect(SOPHIA_SIGHTING.pan).toMatchObject({ dx: 48, at: T.driveAt, back: T.panBack });
+    expect(SOPHIA_SIGHTING.frames).toBeGreaterThan(T.panBack + 48 / 4);
+    // The hatch is the level's own: 8-1's `locked-hatch` at columns 13-14 on the ground's top row.
+    expect(getLevel('8-1').entities).toContainEqual({
+      type: 'locked-hatch',
+      x: 13,
+      y: 13,
+      props: { hero: 'sophia', campaign: true },
+    });
+    expect(T.hatchX).toBe(13 * 16);
+    // Every frame named is on her sheet (or the keys sheet's hatch).
+    for (const name of ['hatch-open', 'hatch-shut']) expect(SPRITES.keys?.frames[name]).toBeDefined();
+  });
+
+  it('Sophia III: the sinking tank and Fred are clipped at the shaft (the renderer clips when it can)', () => {
+    const h = into('8-1', {
+      p1: 'bill',
+      over: { freed: ['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill'] },
+    });
+    const s = h.top() as HeroSightingScene;
+    expect(s).toBeInstanceOf(HeroSightingScene);
+    h.idle(SOPHIA_SIGHTING_TIMING.dropAt + 6 - s.frame);
+    const clips: number[][] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      clip(x: number, y: number, w: number, hh: number, draw: () => void) {
+        clips.push([x, y, w, hh]);
+        draw();
+      },
+    });
+    s.drawFrame(r);
+    expect(clips).toEqual([[0, 0, 256, 208 + 16]]);
+  });
+
   it('reduce flashing: the sparkles keep one colour each, never twinkle', () => {
     const h = into('2-1');
     const s = h.top() as HeroSightingScene;
@@ -461,7 +539,7 @@ describe('what each sighting shows', () => {
       expect(SIGHTING_HEROES).toContain(s.hero);
       expect(BURST_LIFE).toBeGreaterThan(0);
     }
-    expect(Object.keys(SIGHTINGS).sort()).toEqual(['2-1', '3-1', '4-2', '5-1']);
+    expect(Object.keys(SIGHTINGS).sort()).toEqual(['2-1', '3-1', '4-2', '5-1', '8-1']);
   });
 });
 

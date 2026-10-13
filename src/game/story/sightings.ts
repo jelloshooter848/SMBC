@@ -9,9 +9,10 @@ import { beat, storyOn, type StoryGame } from './beats';
  * each driven by a script here: what is drawn at each frame, its sounds and an optional camera pan.
  *
  * Built so far: Link (2-1, a vine grows by magic and he climbs it into the sky), Mega Man (3-1,
- * he flickers, then beams up), and since 0.4.52 Samus (4-2, shown as 4-1: she bombs her way on
- * into the caves) and Simon (5-1: he walks through the crypt gate, and it slams shut). Ryu, Bill
- * and Sophia III come with their worlds; their beat ids are reserved already (beats.ts
+ * he flickers, then beams up), since 0.4.52 Samus (4-2, shown as 4-1: she bombs her way on
+ * into the caves) and Simon (5-1: he walks through the crypt gate, and it slams shut), and since
+ * 0.4.54 Sophia III (8-1: she drives into the hatch by the start, Fred dives after her, and it
+ * slams shut). Ryu and Bill come with their worlds; their beat ids are reserved already (beats.ts
  * SIGHTING_HEROES, the save code's version 3).
  */
 
@@ -31,6 +32,11 @@ export type SightingDraw =
       fx?: boolean;
       /** Three wand sparkles drift off it (the hero; not a beam streak). */
       sparkles?: boolean;
+      /**
+       * (0.4.54) Nothing of it below this screen y is drawn (sinking into 8-1's hatch shaft: the
+       * ground under the shaft stays drawn over it).
+       */
+      clipBelow?: number;
     }
   /** A beanstalk as the vine entity draws it: `x` its left edge, from `base` (its foot) up to `top`. */
   | { kind: 'vine'; x: number; base: number; top: number }
@@ -43,7 +49,12 @@ export type SightingDraw =
    */
   | { kind: 'gate'; x: number; top: number; lift: number; swing: number }
   /** (0.4.52) A little dust puff either side of (x, y), `age` frames old (gone at DUST_LIFE). */
-  | { kind: 'dust'; x: number; y: number; age: number };
+  | { kind: 'dust'; x: number; y: number; age: number }
+  /**
+   * (0.4.54) 8-1's steel hatch (objects/keys.ts drawHatch) over the level's own: `x` its left edge
+   * (level px), `top` the ground's top (screen px), open or shut.
+   */
+  | { kind: 'hatch'; x: number; top: number; open: boolean };
 
 export interface SightingScript {
   /** The hero's CharacterDef id (the beat is `sighting:<hero>`). */
@@ -387,6 +398,150 @@ export const SIMON_SIGHTING: SightingScript = {
   },
 };
 
+/* ---------------------------------------------------------------- Sophia III, 8-1 */
+
+/**
+ * Sophia III (8-1, the Underworld's forest; she hides in her garage, whose real way in is the key
+ * in 8-1-bonus). Parked by the start castle, she turns to face you (a beep), turns back and drives
+ * off, the camera following her a little; she hover-hops over Fred, who sits in her way, and the
+ * steel hatch in the ground slides open for her by wand magic: she drops in nose first. Fred looks
+ * down the shaft and dives in after her, head first; the hatch slams shut (CLANG, a little dust, no
+ * shake), and the camera comes back. The hatch is the level's own (`locked-hatch 13 13`): the scene
+ * draws it open and shut over it, and nothing of it stays.
+ */
+export const SOPHIA_SIGHTING_TIMING = {
+  /** Where she is parked (level px, her frame's left edge), facing right, away from you. */
+  x: 108,
+  /**
+   * Her 32x32 frames stand on their row 23 (the wheels), 8 rows above the frame's bottom: she
+   * is drawn with her frame's bottom this far below the ground.
+   */
+  sink: 8,
+  /** She turns to face you (turn-0, turn-1, turn-2, then facing left, cannon up), `turn` frames each. */
+  turnAt: 16,
+  turn: 6,
+  /** The beep, as she faces you. */
+  beepAt: 36,
+  /** She turns back (turn-2, turn-1, turn-0), then drives right, `drive` px a frame. */
+  backAt: 52,
+  driveAt: 70,
+  drive: 1,
+  /** Then the hover hop: from where she is to over the hatch, peaking `hop` px up. */
+  hopAt: 100,
+  hopEnd: 134,
+  hop: 40,
+  /** The hatch: its left edge (level px, column 13), the ground's top (screen px, row 13). */
+  hatchX: 208,
+  /** Wand sparkles, and the hatch slides open; she tips nose down and sinks, `sink` px a frame. */
+  openAt: 138,
+  dropAt: 146,
+  drop: 3,
+  /** Fred sits in her way (his frame's left edge), looks down the shaft, and dives after her. */
+  fredX: 180,
+  diveAt: 172,
+  diveEnd: 190,
+  /** The hatch slams shut (CLANG). */
+  slamAt: 198,
+  /** The camera follows her `pan` px right, and comes back from `panBack`. */
+  pan: 48,
+  panAt: 70,
+  panBack: 214,
+  /** Frames after the camera is back before the card. */
+  beat: 24,
+} as const;
+const SO = SOPHIA_SIGHTING_TIMING;
+
+/** Where Sophia III is at frame `t` (her frame's left edge and feet; the frame and its flip). */
+function sophiaAt(t: number): { x: number; feet: number; frame: string; flip: boolean } | null {
+  const feet = GROUND + SO.sink;
+  if (t < SO.turnAt) return { x: SO.x, feet, frame: 'idle', flip: false };
+  const faced = SO.turnAt + 3 * SO.turn;
+  if (t < faced) {
+    const k = Math.floor((t - SO.turnAt) / SO.turn);
+    return { x: SO.x, feet, frame: `turn-${k}`, flip: false };
+  }
+  if (t < SO.backAt) return { x: SO.x, feet, frame: 'aim-up', flip: true };
+  if (t < SO.backAt + 3 * SO.turn) {
+    const k = 2 - Math.floor((t - SO.backAt) / SO.turn);
+    return { x: SO.x, feet, frame: `turn-${k}`, flip: false };
+  }
+  if (t < SO.driveAt) return { x: SO.x, feet, frame: 'idle', flip: false };
+  const driven = SO.x + SO.drive * (Math.min(t, SO.hopAt) - SO.driveAt);
+  if (t < SO.hopAt) return { x: driven, feet, frame: `drive-${((t - SO.driveAt) >> 2) % 4}`, flip: false };
+  if (t < SO.hopEnd) {
+    // A hover hop, a parabola from the road to over the hatch.
+    const k = (t - SO.hopAt) / (SO.hopEnd - SO.hopAt);
+    const x = driven + (SO.hatchX - driven) * k;
+    return { x, feet: feet - 4 * SO.hop * k * (1 - k), frame: `hover-${(t >> 2) & 1}`, flip: false };
+  }
+  if (t < SO.dropAt) return { x: SO.hatchX, feet, frame: 'idle', flip: false };
+  // Nose first down the shaft, until she is wholly below the hatch's bottom.
+  const sunk = SO.drop * (t - SO.dropAt);
+  if (sunk > 32 + 16) return null;
+  return { x: SO.hatchX, feet: feet + sunk, frame: 'tilt-down', flip: false };
+}
+
+/** The frame Fred's dive is over (he is gone down the shaft). */
+const SOPHIA_FRED_GONE = SO.diveEnd + 1;
+
+export const SOPHIA_SIGHTING: SightingScript = {
+  hero: 'sophia',
+  level: '8-1',
+  frames: SO.panBack + Math.ceil(SO.pan / 4) + SO.beat,
+  sfx: {
+    [SO.beepAt]: 'select',
+    [SO.hopAt]: 'jump-big',
+    [SO.openAt]: 'magic',
+    [SO.diveAt]: 'jump-small',
+    [SO.slamAt]: 'bump',
+  },
+  pan: { dx: SO.pan, at: SO.panAt, back: SO.panBack, speed: 2, backSpeed: 4 },
+  draw(t) {
+    const out: SightingDraw[] = [];
+    // The hatch open over the level's own (shut, the same picture) from the sparkles to the slam.
+    if (t >= SO.openAt && t < SO.slamAt) out.push({ kind: 'hatch', x: SO.hatchX, top: GROUND, open: true });
+    if (t >= SO.openAt && t < SO.openAt + BURST_LIFE)
+      out.push({ kind: 'burst', x: SO.hatchX + 16, y: GROUND - 2, age: t - SO.openAt });
+    // Fred (his own colours): sitting in her way, then the dive down the shaft, head first.
+    if (t < SO.diveAt) {
+      const look = t >= SO.diveAt - 16;
+      out.push({
+        kind: 'sprite',
+        sheet: 'sophia',
+        palette: 'sophia',
+        frame: look ? 'fred-1' : 'fred-0',
+        x: SO.fredX,
+        feet: GROUND,
+      });
+    } else if (t < SOPHIA_FRED_GONE) {
+      const k = Math.min(1, (t - SO.diveAt) / (SO.diveEnd - SO.diveAt));
+      const x = SO.fredX + (SO.hatchX + 8 - SO.fredX) * k;
+      // Up a little, then down into the shaft (24 px below the ground at the end: gone).
+      const feet = GROUND - 20 * Math.sin(Math.PI * Math.min(1, k * 1.6)) + Math.max(0, k - 0.6) * 80;
+      out.push({
+        kind: 'sprite',
+        sheet: 'sophia',
+        palette: 'sophia',
+        frame: 'cut-fred-jump',
+        x: Math.round(x),
+        feet: Math.round(feet),
+        clipBelow: GROUND + 16,
+      });
+    }
+    // Sophia III, brainwashed.
+    const at = sophiaAt(t);
+    if (at) {
+      const d = hero('sophia', at.frame, at.x, at.feet, at.flip);
+      out.push(
+        t >= SO.dropAt ? { ...d, clipBelow: GROUND + 16, sparkles: at.feet <= GROUND + SO.sink + 8 } : d,
+      );
+    }
+    if (t >= SO.slamAt && t < SO.slamAt + DUST_LIFE)
+      out.push({ kind: 'dust', x: SO.hatchX + 16, y: GROUND - 1, age: t - SO.slamAt });
+    return out;
+  },
+};
+
 /* ---------------------------------------------------------------- when one plays */
 
 /** The built sightings, by the level they play in. */
@@ -395,6 +550,7 @@ export const SIGHTINGS: Readonly<Record<string, SightingScript>> = {
   [MEGAMAN_SIGHTING.level]: MEGAMAN_SIGHTING,
   [SAMUS_SIGHTING.level]: SAMUS_SIGHTING,
   [SIMON_SIGHTING.level]: SIMON_SIGHTING,
+  [SOPHIA_SIGHTING.level]: SOPHIA_SIGHTING,
 };
 
 /** Camera px a start screen may be scrolled and still count as the start (a warp lands further). */
