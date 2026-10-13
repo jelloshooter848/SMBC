@@ -503,7 +503,8 @@ export class World {
   private readonly respawnTimers = new Map<Player, number>();
   /** Players still in a fall arrival's straight drop (FALL_IN_STEER_Y): no steering yet. */
   private readonly fallingIn = new Set<Player>();
-  private checkpointSent = false;
+  /** The column of the last checkpoint sent (World.checkZones); a map may hold several. */
+  private lastCheckpointX = -Infinity;
   /**
    * The campaign's fake Bowser unmasking before the axe (0.4.23, world/unmask.ts): play holds while
    * it runs; then the axe drops the bridge as usual.
@@ -2890,16 +2891,27 @@ export class World {
     }
   }
 
+  /**
+   * Checkpoints: the furthest one a player has passed, if it lies beyond the last one sent. A map
+   * may hold several (0.4.55, BOWSER'S CASTLE has five): each is sent once as it is passed, and a
+   * respawn at one sends it again and still reaches the later ones. With one checkpoint this is
+   * the original's single midpoint.
+   */
   private checkZones(): void {
+    let best: { x: number; y: number } | null = null;
     for (const z of this.level.zones) {
       if (
         z.kind === 'checkpoint' &&
-        !this.checkpointSent &&
+        z.x > this.lastCheckpointX &&
+        (!best || z.x > best.x) &&
         this.players.some((p) => p.body.x >= tileToSub(z.x))
       ) {
-        this.checkpointSent = true;
-        this.events.push({ type: 'checkpoint', x: z.x, y: z.y ?? 12 });
+        best = { x: z.x, y: z.y ?? 12 };
       }
+    }
+    if (best) {
+      this.lastCheckpointX = best.x;
+      this.events.push({ type: 'checkpoint', x: best.x, y: best.y });
     }
   }
 
