@@ -357,14 +357,19 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
 
 /**
  * Whether a pending reveal id's part `id` may stay for page `page`: a node id always (the map drops
- * a stale one as it draws in); a road or world exit ('<from>><to>') only if campaign play's page
- * still has it (rules.revealId's part).
+ * a stale one as it draws in); a road between two of the page's nodes ('<from>><to>') only if
+ * campaign play's page still has it (rules.revealId's part: World 4's old order). A world exit
+ * (its far end a page, not a node of this page) stays: code version 3 reserves exits a later
+ * build adds (World 8's road on to the Valley of Bowser, save-code-valley.test.ts).
  */
 function onPage(page: PageId, id: string): boolean {
   if (!id.includes('>')) return true;
   const p = pageLook(mapPage(page), true);
   if (!p) return false;
-  return p.paths.some((q) => `${q.from}>${q.to}` === id) || p.exits.some((e) => `${e.from}>${e.to}` === id);
+  if (p.paths.some((q) => `${q.from}>${q.to}` === id) || p.exits.some((e) => `${e.from}>${e.to}` === id))
+    return true;
+  const to = id.slice(id.indexOf('>') + 1);
+  return !p.nodes.some((n) => n.id === to);
 }
 
 /**

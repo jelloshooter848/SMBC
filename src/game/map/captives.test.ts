@@ -112,6 +112,14 @@ describe('hiddenHeroes (the bundled levels and map pages)', () => {
     expect(hiddenHeroesAt('smb-4', '4-2').map((h) => h.hero)).toEqual(['samus']);
   });
 
+  it('Simon is hidden in World 5, node 5-1 (since 0.4.52 his crypt is an area of 5-1, behind its key door)', () => {
+    const simon = hiddenHeroes().filter((h) => h.hero === 'simon');
+    expect(simon).toHaveLength(1);
+    expect(simon[0]).toMatchObject({ main: '5-1', page: 'smb-5', node: '5-1' });
+    expect(hiddenHeroesAt('smb-5', '5-1').map((h) => h.hero)).toEqual(['simon']);
+    expect(hiddenHeroesAt('smb-5', '5-4')).toEqual([]);
+  });
+
   it('other nodes hide no one', () => {
     expect(hiddenHeroesAt('smb-1', '1-2')).toEqual([]);
     expect(hiddenHeroesAt('smb-1', 'start')).toEqual([]);

@@ -252,7 +252,9 @@ describe('the welcomes (0.4.23)', () => {
           s.key === look.sheet &&
           s.x % 16 === 0 &&
           s.y % 16 === 0 &&
-          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma|z4-|tv5-)/.test(s.frame) &&
+          /^(grass|pavement|flowers|rock|sand|woods|cliff|ledge|band|accent|water|sea|magma|z4-|tv5-)/.test(
+            s.frame,
+          ) &&
           ground0?.[(s.y / 16) * 16 + s.x / 16] !== undefined);
       const boxHits = (b: (typeof boxes)[0]) =>
         local.x < b.x + b.w && b.x < local.x + local.w && local.y < b.y + b.h && b.y < local.y + local.h;

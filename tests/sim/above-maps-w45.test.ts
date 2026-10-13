@@ -18,6 +18,9 @@ import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
+import { CardScene } from '@game/scenes/message';
+import { HeroSightingScene } from '@game/story/hero-sighting';
+import { beat } from '@game/story/beats';
 import {
   MAP_HEADER_H,
   MAP_SLIDE_FRAMES,
@@ -281,6 +284,31 @@ describe('World 4 in the campaign order', () => {
     h.step();
     expect(h.r.texts).toContain('4-1');
     expect(h.r.texts).not.toContain('4-2');
+  });
+
+  it('Samus’s sighting (0.4.52, K52) plays in her level from the first node, everything shown as 4-1', () => {
+    const h = makeGame();
+    const story = ALL_STORY.filter((id) => id !== beat.sighting('samus'));
+    open(h, { ...before, story, position: { page: 'smb-4', node: '4-2' } });
+    h.tap('jump');
+    const texts: string[] = [];
+    const seen = () => texts.push(...h.r.texts);
+    for (let i = 0; i < 600 && !(h.game.scenes.top instanceof HeroSightingScene); i++) {
+      h.step(i % 2 || h.game.scenes.top instanceof LevelScene ? [] : ['jump']);
+      seen();
+    }
+    expect(h.game.scenes.top).toBeInstanceOf(HeroSightingScene);
+    expect(h.game.state.campaignOrder).toBe(true);
+    h.until(() => h.game.scenes.top instanceof CardScene, 600);
+    h.step();
+    seen();
+    expect(h.r.texts.join(' ')).toContain('SAMUS!');
+    // The HUD under the sighting and its card, and the intro before it, say 4-1, never 4-2.
+    expect(texts).toContain('WORLD 4-1');
+    expect(texts).toContain('4-1');
+    expect(texts.some((t) => /\b4-2\b/.test(t))).toBe(false);
+    expect(h.said.some((s) => /\b4-2\b/.test(s))).toBe(false);
+    expect(h.said.some((s) => s.includes('Samus curls into a ball'))).toBe(true);
   });
 
   it('draws in the road on to internal 4-1 (shown 4-2) once Samus’s cavern is cleared', () => {
