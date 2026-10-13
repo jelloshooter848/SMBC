@@ -858,7 +858,7 @@ export class WorldMapScene implements Scene {
       if (!shows) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy's pedestal
       // stands clear of it (and of the player's marker on the node), on the ground beside it.
-      // On Hyrule and Mega City from above (0.4.50) the silhouette stands a little further out, its
+      // On a page with an `above` look (0.4.50, 0.4.52) the silhouette stands a little further out, its
       // head clear of the road leaving the node north (World 1's stays as it was).
       const out0 = hint === 'silhouette' ? 9 + (page.above ? ABOVE_SILHOUETTE_OUT : 0) : 18;
       const step = hint === 'silhouette' ? 12 : PEDESTAL_W + 3;

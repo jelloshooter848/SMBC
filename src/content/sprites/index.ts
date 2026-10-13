@@ -259,6 +259,11 @@ export const PALETTES: PaletteBook = {
       ...mapPalettes,
       'map-above-hyrule': HYRULE_ABOVE_PALETTE,
       'map-above-megacity': MEGACITY_ABOVE_PALETTE,
+      // 0.4.52: Zebes and Transylvania shade theirs in the ground where the world's hero hides
+      // (roles 1-2: its shade and main colour): Kraid's moss beside Samus's cavern, the forest's
+      // grass beside 5-1 (Simon's crypt), so the silhouette is a faint shadow there too.
+      'map-above-zebes': ['#000000', '#1a4422', '#368236'],
+      'map-above-transylvania': ['#000000', '#12261c', '#1f402a'],
     }),
   },
 };

@@ -122,7 +122,7 @@ export const isAbovePage = drawnFromAbove;
 
 /**
  * The map shade a hidden hero takes on `page` (palette-fx mapShadePalette's theme): a page with an
- * `above` look takes its sheet's ground ('above-hyrule', 'above-megacity': sprites/index.ts), so
+ * `above` look takes its sheet's ground ('above-hyrule', 'above-megacity', 'above-zebes', 'above-transylvania': sprites/index.ts), so
  * the silhouette is a faint shadow on that ground; every other page its theme's.
  */
 export function shadeTheme(page: WorldMapPage): string {
@@ -265,15 +265,13 @@ function standingOf(page: WorldMapPage, look: AboveLook, assets: AssetRegistry):
   const props = (page.props ?? []).filter((p) => !p.flat);
   const feet = (p: MapProp): number => p.y + (sheet.frames.get(p.frame)?.h ?? 16);
   list = [
-    ...look
-      .ground(page)
-      .scenery.map((s) => ({
-        frame: s.frame,
-        x: s.x,
-        y: s.y,
-        feet: s.feet,
-        node: undefined as string | undefined,
-      })),
+    ...look.ground(page).scenery.map((s) => ({
+      frame: s.frame,
+      x: s.x,
+      y: s.y,
+      feet: s.feet,
+      node: undefined as string | undefined,
+    })),
     ...props.map((p) => ({ frame: p.frame, x: p.x, y: p.y, feet: feet(p), node: p.node })),
   ]
     .sort((a, b) => a.feet - b.feet)
