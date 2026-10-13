@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.52] - 2026-10-13
+
+### Added
+
+- Keys and locked doors. Near a key, the TALK button becomes PICK UP, the HUD shows the key while you carry it, and a
+  locked door opens by itself when the key touches it; then UP goes in. Gates and doors without their key read LOCKED.
+- Hero sightings: Samus curls into a ball and bombs her way deeper into the caves, and Simon walks through the crypt
+  gate, which slams shut behind him.
+
+### Changed
+
+- Campaign: World 4 (Planet Zebes) and World 5 (Transylvania) maps are drawn from above, with Metroid's regions and
+  Dracula's castle. Classic play keeps the old pages.
+- Campaign World 4 starts with Samus's level: the level that was 4-2 is played first and shown as 4-1 on the map, intro
+  card, HUD and announcer. Saves and save codes are unchanged, and older World 4 saves can't be stranded by the new order.
+- Simon's crypt has a new way in. The crypt gate by the start of 5-1 is locked; find the key in 5-1's coin room (bump the
+  brick over the pipe), carry it to the locked door and go down. The old 5-4 lift route is gone, and the townsperson
+  moved to the coin room with new lines.
+- On maps drawn from above, a direction key can follow a world exit (RIGHT from Tourian heads for World 5).
+
 ## [0.4.51] - 2026-10-13
 
 ### Added
@@ -1131,7 +1151,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...HEAD
+[0.4.52]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...v0.4.52
 [0.4.51]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...v0.4.51
 [0.4.50]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...v0.4.49
