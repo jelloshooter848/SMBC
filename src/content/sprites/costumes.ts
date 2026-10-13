@@ -38,6 +38,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   n crimson (the ninja's mask, the falcon, Dracula's lining, the alien head)  o dark red (their
  *   shading)  p lavender (wig shine)  q tan dark (bone)  r peach (brain-cap shine)
  *   s pale yellow (glowing eyes)
+ *   t dark purple-blue (0.4.54: the Plutonium Boss's balloons' shading)
  */
 export const costumePalettes: Record<string, string[]> = {
   costumes: [
@@ -70,6 +71,7 @@ export const costumePalettes: Record<string, string[]> = {
     NES.tanDark,
     NES.peach,
     NES.yellowLight,
+    NES.blueUnderground,
   ],
 };
 
@@ -517,6 +519,90 @@ const RED_FALCON_DROP = [
   '................................',
 ];
 
+/* ---------------------------------------------------------------- World 8: the Plutonium Boss */
+
+/*
+ * (0.4.54; designed by CD53, approved by the owner) The campaign's 8-4 is a Blaster Master
+ * fortress, and its fake (the eighth and last; the real king waits in Bowser's Castle) wears a
+ * cheap costume of the Plutonium Boss Sophia III fights (minigames/sophia/plutonium.ts), a
+ * knock-off of the idea only: purple party balloons taped over his shell (the mass), glow sticks
+ * (the veins), green ping-pong balls (the boils), a grey cardboard visor with a gold eye painted on
+ * (the steel head, his own eye looking out of a hole) and a green rubber ball on a string (the
+ * core). Its true form is a Piranha Plant (enemies.ts TF_PIRANHA).
+ */
+
+/** World 8, worn: the Plutonium Boss. Overlay on bowser-0..3. */
+const PLUTONIUM_BOSS = [
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '......11111111111...............',
+  '....11bbbbbbbbbbb1..111111111...',
+  '...1bb4bbbbbbbbbbb11pgg156pgg1..',
+  '..1bb11111111bbbbc1p6ggg1pgg6g1.',
+  '..1s99191....bbbc11gg6gg1ggg6g1.',
+  '..1999191....bbbc11ggg6t1gg6gt1.',
+  '..1b11111....bbbc1.1ggt111ggt11.',
+  '.1bbbbbbbbbbbbbbbc1qq11p6g111561',
+  '.14141414141414141...1pg6gg11111',
+  '.....................1ggg6g1pgg1',
+  '....................111ggg61ggg1',
+  '...................1pgg56t11ggg1',
+  '...................1ggg11111ggg1',
+  '........b.....b....1ggg11pg61gt1',
+  '..........111......1g6g1pggg611.',
+  '.........14661.....1gg61gggg611.',
+  '.........16165.....qq111g56gt11.',
+  '.........15651..........1ggt11..',
+  '..........111............1111...',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+];
+
+/** World 8, shed on the floor: the deflated balloons, one still full, the visor, the green ball. */
+const PLUTONIUM_BOSS_DROP = [
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '................................',
+  '........................111.....',
+  '.......................1pgg1....',
+  '......................1pgggg1...',
+  '......................1ggggg1...',
+  '......................1ggggg1...',
+  '......................1ggggt1...',
+  '......................1ggggt1...',
+  '.......................1ggt1....',
+  '........................111.....',
+  '.........................g......',
+  '.........................1......',
+  '.........................b......',
+  '..........................b.....',
+  '.........................b......',
+  '.....11111111111..........b.....',
+  '....1bbbbbbbbbbc1........b......',
+  '....1b11111b11bc1..1111111b.....',
+  '.11.1b1s91b1.11c1111gpgggt1111g1',
+  '14611b19911b11bc1pgg156611gggg11',
+  '16511bbbbbbbbbbc1tgggg11tggpgtg1',
+  '.11.1414141414141ggptggggggtggg1',
+  '1666611111111111111111111111111.',
+  '................................',
+];
+
 /** The costume each castle's fake wears, by world (none in World 1: the plain king suit). */
 export const COSTUME_OF_WORLD: Readonly<Record<number, string>> = {
   2: 'ganon',
@@ -525,6 +611,7 @@ export const COSTUME_OF_WORLD: Readonly<Record<number, string>> = {
   5: 'dracula',
   6: 'masked-ninja',
   7: 'red-falcon',
+  8: 'plutonium-boss',
 };
 
 export const costumesDef: SpriteDef = {
@@ -542,5 +629,7 @@ export const costumesDef: SpriteDef = {
     'costume-drop-6': MASKED_NINJA_DROP,
     'costume-7': RED_FALCON,
     'costume-drop-7': RED_FALCON_DROP,
+    'costume-8': PLUTONIUM_BOSS,
+    'costume-drop-8': PLUTONIUM_BOSS_DROP,
   },
 };

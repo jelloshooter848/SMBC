@@ -24,6 +24,7 @@ import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
 import { STORY_NOT_OVER } from '../story/script';
+import { FINALE } from '../story/finale';
 import { WorldMapScene, showChapterGate, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId } from '../map/types';
 import {
@@ -283,8 +284,9 @@ export class Game {
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
     const head = world ? world.castleText.splice(0) : [];
-    // The campaign's 8-4 is a false ending (docs/STORY.md 2.12): the credits say so at the end.
-    const story = storyOn(this) && from === '8-4';
+    // The campaign's last castle is a false ending (docs/STORY.md 2.12): the credits say so at
+    // the end. 8-4 until Bowser's Castle comes (story/finale.ts FINALE).
+    const story = storyOn(this) && from === FINALE.castle;
     // The castle's lines were read out as they showed (World.updateBossClear), so the credits
     // do not read them a second time.
     const said = story ? ` ${STORY_NOT_OVER.filter(Boolean).join(' ')}` : '';

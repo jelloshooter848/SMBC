@@ -11,6 +11,8 @@
  * longest name a hero can have (SOPHIA III).
  */
 
+import { FINALE, finaleKingIsReal } from './finale';
+
 /** A page of a card: its lines, top to bottom. */
 export type Page = readonly string[];
 
@@ -113,10 +115,18 @@ export const CRASH_PAGES: readonly Page[] = [
 
 /* ---------------------------------------------------------------- castles (2.4-2.12) */
 
+/** A castle's pages under Toad's thanks: the reveal, then (on OK, in the same box) the news. */
+export interface CastlePages {
+  reveal: Page;
+  /** None: OK on the reveal leaves. */
+  news?: Page;
+}
+
 /**
- * Each castle's two pages (2.3a), by its main level id: page 1 the reveal (under the thanks),
- * page 2 the story beat, on OK in the same box. 8-4's page 1 confirms the king was real.
- * (0.4.23, S3: 1-4 to 7-4 rewritten; 1-4's first page carries what Toad's old map card said.)
+ * Each fake castle's two pages (2.3a), by its main level id: page 1 the reveal (under the
+ * thanks), page 2 the story beat, on OK in the same box. (0.4.23, S3: 1-4 to 7-4 rewritten; 1-4's
+ * first page carries what Toad's old map card said.) The last castle's are FINALE_PAGES
+ * (castlePages).
  */
 export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>> = {
   '1-4': {
@@ -152,11 +162,27 @@ export const CASTLE_PAGES: Readonly<Record<string, { reveal: Page; news: Page }>
     reveal: ['A HAMMER BRO UNDER THE', 'SPELL. THAT WAS HIS LAST', 'STAND-IN!'],
     news: ['THE KOOPAS ARE ALL RUNNING', 'HOME. THE KING CALLED THEM', 'BACK TO GUARD HIS CASTLE.'],
   },
-  '8-4': {
-    reveal: ['NO TRICK THIS TIME. THAT', 'WAS THE REAL KING!'],
-    news: ['BOWSER FELL... AND THE', 'WAND BROKE! ITS PIECES', 'FELL THROUGH A CRACK IN', 'THE WORLD!'],
-  },
 };
+
+/**
+ * The last castle's pages (2.12; story/finale.ts FINALE.castle): page 1 confirms the king was
+ * real, page 2 the wand broke. 8-4's until 0.4.54; Bowser's Castle's from 0.4.55.
+ */
+export const FINALE_PAGES: { readonly reveal: Page; readonly news: Page } = {
+  reveal: ['NO TRICK THIS TIME. THAT', 'WAS THE REAL KING!'],
+  news: ['BOWSER FELL... AND THE', 'WAND BROKE! ITS PIECES', 'FELL THROUGH A CRACK IN', 'THE WORLD!'],
+};
+
+/**
+ * Castle `id`'s pages under Toad's thanks in the campaign (by its main level id), or undefined
+ * (the NES text). The last castle (FINALE.castle) has FINALE_PAGES; while that is still 8-4, whose
+ * king is a fake since 0.4.54 (its reveal is the hero's remark at the axe), only the wand's page,
+ * so Toad never calls the fake the real king.
+ */
+export function castlePages(id: string): CastlePages | undefined {
+  if (id === FINALE.castle) return finaleKingIsReal() ? FINALE_PAGES : { reveal: FINALE_PAGES.news };
+  return CASTLE_PAGES[id];
+}
 
 /** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
 export const WAND_BREAK_SAID =
@@ -167,7 +193,7 @@ export const WAND_BREAK_SAID =
  * 2.12 (the rift waits for Sophia III). The castles' own pages are CASTLE_PAGES above.
  */
 
-/** The hero's remark at castles 1-4 to 7-4 (2.3a: reaching the axe), by main level id, without the speaker. */
+/** The hero's remark at castles 1-4 to 8-4 (2.3a: reaching the axe), by main level id, without the speaker. */
 const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
   '1-4': ["WAIT... THAT'S NOT BOWSER!", "IT'S A GOOMBA IN A BOWSER", 'SUIT!'],
   // 0.4.47 (#31): castles 2-4 to 7-4's fakes wear a villain costume; the line is its reveal.
@@ -177,6 +203,9 @@ const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
   '5-4': ['A VAMPIRE?! NO... JUST A', 'LAKITU WITH HAIR GEL.'],
   '6-4': ['A BLOOPER IN A MOP AND A', 'PAPER MASK?! HOW IS IT', 'EVEN BREATHING?'],
   '7-4': ['THE LAST FAKE... IN A', 'SOUVENIR T-SHIRT?! THE', 'REAL KING MUST BE CLOSE.'],
+  // 0.4.54 (CD53, owner-approved line 1): 8-4's fake in the Plutonium Boss costume; the real king
+  // waits in Bowser's Castle (never named by its level).
+  '8-4': ['ANOTHER FAKE?! A PIRANHA', 'PLANT IN PARTY BALLOONS.', 'THE REAL KING IS NEXT.'],
 };
 
 /**
@@ -199,9 +228,12 @@ const CASTLE_HOME_REMARKS: Readonly<Record<string, Readonly<Record<string, Page>
       'MUST BE CLOSE.',
     ],
   },
+  // 0.4.54 (CD53, owner-approved as drafted): Sophia III, freed in 8-1, meets 8-4's fake, in her
+  // terse machine voice.
+  '8-4': { sophia: ['SCAN: ZERO PLUTONIUM.', 'MUTANT: ONE PIRANHA PLANT.', 'REAL TARGET: DEAD AHEAD.'] },
 };
 
-/** The castles with a remark (1-4 to 7-4), in order. */
+/** The castles with a remark (1-4 to 8-4), in order. */
 export const REMARK_CASTLES: readonly string[] = Object.keys(CASTLE_REMARKS);
 
 /** The castles with a home-hero remark, and whose (`[level, hero id]`), in order. */
@@ -218,7 +250,7 @@ export function castleRemark(level: string, hero: string, id?: string): Page | n
   return body ? [`${hero}:`, '', ...body] : null;
 }
 
-/** What each castle's villain costume is made of, by world (2-7), as said when it falls off. */
+/** What each castle's villain costume is made of, by world (2-8), as said when it falls off. */
 const COSTUME_PARTS: Readonly<Record<number, readonly [string, string]>> = {
   2: ['Ganon', 'a pig mask, a bedsheet and a garden fork'],
   3: ['Dr. Wily', 'a cardboard box skull, a foil hula hoop and a coat hanger'],
@@ -226,6 +258,7 @@ const COSTUME_PARTS: Readonly<Record<number, readonly [string, string]>> = {
   5: ['Dracula', 'a wig, a satin cape and plastic fangs'],
   6: ['Masked Ninja', 'a paper mask, a mop head, a bathrobe and a toy sword'],
   7: ['Red Falcon', 'a rubber alien head and a souvenir T-shirt'],
+  8: ['Plutonium Boss', 'purple party balloons, glow sticks, a cardboard visor and a green ball'],
 };
 
 /**

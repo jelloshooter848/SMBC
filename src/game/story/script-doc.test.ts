@@ -13,6 +13,7 @@ import {
   BOWSER_SPELL_LAST,
   BOWSER_SPELL_PAGES,
   CASTLE_PAGES,
+  FINALE_PAGES,
   castleRemark,
   gateScript,
   HOME_REMARKS,
@@ -127,6 +128,9 @@ function scriptPages(): Map<string, Page> {
     add(`CASTLE_PAGES.${id}.reveal`, [`THANK YOU ${HERO}!`, '', ...c.reveal]);
     add(`CASTLE_PAGES.${id}.news`, c.news);
   }
+  // The last castle's (story/finale.ts; 8-4's until 0.4.55, its wand page only while its king is a fake).
+  add('FINALE_PAGES.reveal', [`THANK YOU ${HERO}!`, '', ...FINALE_PAGES.reveal]);
+  add('FINALE_PAGES.news', FINALE_PAGES.news);
   // The credits' block, without the blank line that parts it from THANKS FOR PLAYING.
   add('STORY_NOT_OVER', STORY_NOT_OVER.slice(1));
   list('riftPages', riftPages(HERO));

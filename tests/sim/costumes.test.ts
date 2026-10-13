@@ -18,23 +18,28 @@ import { CostumePile } from '@game/entities/effects/costume-pile';
 import { CHARACTERS } from '@game/characters/registry';
 import { campaignLevel } from '@game/level/campaign';
 import { T } from '@game/level/tiles';
-import { castleRemark, CASTLE_PAGES, HOME_REMARKS, REMARK_CASTLES } from '@game/story/script';
+import { castleRemark, CASTLE_PAGES, costumeSaid, HOME_REMARKS, REMARK_CASTLES } from '@game/story/script';
 import type { CharacterDef } from '@game/characters/character';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
 import type { View } from '@game/entities/entity';
 
 // The fake Bowsers' villain costumes (0.4.47, roadmap #31; content/sprites/costumes.ts): in the
-// campaign's castles 2-4 to 7-4 the fake wears a cheap costume of the world's villain; however he
-// dies it falls off (a pile on the floor, said for the screen reader; with a fall it goes down
-// with him), his true form shows, and the hero's reveal line plays: the castle's own hero says a
-// home line. World 1's fake wears the plain king suit; classic play, 8-4 and the Lost Kingdom none.
+// campaign's castles 2-4 to 8-4 the fake wears a cheap costume of the world's villain (8-4's since
+// 0.4.54: the Plutonium Boss, over a Piranha Plant); however he dies it falls off (a pile on the
+// floor, said for the screen reader; with a fall it goes down with him), his true form shows, and
+// the hero's reveal line plays: the castle's own hero says a home line. World 1's fake wears the
+// plain king suit; classic play (8-4's real king included) and the Lost Kingdom none.
 
 const hero = (id: string) => CHARACTERS.find((c) => c.id === id) as CharacterDef;
 
+/** The castle's bridge room, where a castle's main level is not it (8-4's is 8-4-end). */
+const BRIDGE: Readonly<Record<string, string>> = { '8-4': '8-4-end' };
+
 function castle(id: string, opts: { story?: boolean; hero?: string; reduce?: boolean } = {}) {
   const story = opts.story ?? true;
-  const level: LevelData = story ? campaignLevel(getLevel(id)) : getLevel(id);
+  const room = BRIDGE[id] ?? id;
+  const level: LevelData = story ? campaignLevel(getLevel(room)) : getLevel(room);
   const axe = level.entities.find((e) => e.type === 'axe') as { x: number; y: number };
   const state = newGameState(hero(opts.hero ?? 'mario'));
   state.world = level.world;
@@ -79,14 +84,14 @@ function castle(id: string, opts: { story?: boolean; hero?: string; reduce?: boo
 
 const piles = (w: World) => w.entities.filter((e): e is CostumePile => e instanceof CostumePile && e.alive);
 
-const COSTUMED = ['2-4', '3-4', '4-4', '5-4', '6-4', '7-4'];
+const COSTUMED = ['2-4', '3-4', '4-4', '5-4', '6-4', '7-4', '8-4'];
 
 describe('the costumes: the art', () => {
-  it('six costumes and six piles, 32x32, every index in the costumes palette', () => {
-    expect(Object.keys(COSTUME_OF_WORLD).map(Number)).toEqual([2, 3, 4, 5, 6, 7]);
+  it('seven costumes and seven piles, 32x32, every index in the costumes palette', () => {
+    expect(Object.keys(COSTUME_OF_WORLD).map(Number)).toEqual([2, 3, 4, 5, 6, 7, 8]);
     const pal = costumePalettes.costumes!;
     const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
-    for (const w of [2, 3, 4, 5, 6, 7])
+    for (const w of [2, 3, 4, 5, 6, 7, 8])
       for (const name of [`costume-${w}`, `costume-drop-${w}`]) {
         const rows = costumesDef.frames[name];
         expect(rows, name).toHaveLength(32);
@@ -96,6 +101,24 @@ describe('the costumes: the art', () => {
             if (ch !== '.') expect(digits.indexOf(ch), `${name} ${ch}`).toBeLessThan(pal.length);
         }
       }
+  });
+
+  it("World 8's Plutonium Boss (0.4.54) keeps off the king's moving pixels but the painted teeth and the balloons' edge", () => {
+    const king = [0, 1, 2, 3].map((i) => enemiesDef.frames[`bowser-${i}`] as readonly string[]);
+    const moving = (x: number, y: number) => new Set(king.map((f) => f[y]?.[x])).size > 1;
+    const over = costumesDef.frames['costume-8'] as readonly string[];
+    const rows = new Set<number>();
+    over.forEach((row, y) => [...row].forEach((c, x) => c !== '.' && moving(x, y) && rows.add(y)));
+    // Row 13: the visor's painted teeth (as Dr. Wily's box) and the balloons over the shell's edge.
+    expect(
+      [...rows].every((y) => y === 13 || y === 17),
+      [...rows].join(),
+    ).toBe(true);
+    // Nothing on the walking legs.
+    for (let y = 24; y < 32; y++) expect(over[y], `row ${y}`).toBe('.'.repeat(32));
+    // Its one new colour (index t): the balloons' dark shading.
+    expect(costumePalettes.costumes![29]).toBe(NES.blueUnderground);
+    expect(COSTUME_OF_WORLD[8]).toBe('plutonium-boss');
   });
 
   it("indices 0-b are the castle king's own colours; high contrast lifts the dark grey", () => {
@@ -116,7 +139,7 @@ describe('the costumes: who wears one', () => {
 
   it.each([
     ['1-4', true],
-    ['8-4-end', true],
+    ['8-4', false],
     ['ll-2-4', true],
     ['2-4', false],
     ['7-4', false],
@@ -151,6 +174,15 @@ describe('the costumes: drawn over him, and the tell', () => {
     expect(frames.some((f) => f.endsWith('bowser-die-2'))).toBe(true);
   });
 
+  it('8-4 (0.4.54): the Plutonium Boss over him; the tell shows the Piranha Plant', () => {
+    const { world, step, b } = castle('8-4', { reduce: false });
+    expect(drawn(b, false, world.frame)).toContain('costumes:costume-8');
+    for (let i = 0; i < 400 && !b.tellShowing; i++) step();
+    const frames = drawn(b, false, world.frame);
+    expect(frames).not.toContain('costumes:costume-8');
+    expect(frames.some((f) => f.endsWith('bowser-die-8'))).toBe(true);
+  });
+
   it('reduce flashing: no flicker; the costume stays, the steady true-form outline over it', () => {
     const { world, step, b } = castle('2-4', { reduce: true });
     for (let i = 0; i < 400 && !b.tellWindow; i++) step();
@@ -179,7 +211,7 @@ describe('the costumes: they drop, however he dies', () => {
     const y0 = pile!.body.y;
     step(20);
     expect(pile!.body.y).toBe(y0);
-    for (let i = 0; i < 900 && !world.castleText.length; i++) step();
+    for (let i = 0; i < 1500 && !world.castleText.length; i++) step();
     expect(remarks).toEqual([{ level: id, hero: 'mario' }]);
     expect(world.castleText.length).toBeGreaterThan(0);
     // Where the bridge went from under it, it fell into the lava; on the stone, it still lies there.
@@ -205,7 +237,7 @@ describe('the costumes: they drop, however he dies', () => {
     expect(b.costume).toBe(0);
     expect(piles(world)).toHaveLength(1);
     expect(said.some((s) => /costume falls off in a heap/.test(s))).toBe(true);
-    for (let i = 0; i < 900 && !world.castleText.length; i++) step();
+    for (let i = 0; i < 1500 && !world.castleText.length; i++) step();
     expect(remarks).toEqual([{ level: id, hero: 'mario' }]);
     expect(world.castleText.length).toBeGreaterThan(0);
   });
@@ -273,15 +305,34 @@ describe('the costumes: the reveal lines', () => {
     // Bill's own line at Red Falcon's costume keeps the story's hint that the real king is near.
     expect(castleRemark('7-4', 'BILL', 'bill')?.join(' ')).toContain('REAL KING MUST BE CLOSE.');
     expect(CASTLE_PAGES['2-4']?.reveal.join(' ')).toContain('KOOPA');
+    // 0.4.54: 8-4's fake, the owner's line 1, and Sophia III's own (she is freed in 8-1).
+    expect(castleRemark('8-4', 'MARIO', 'mario')).toEqual([
+      'MARIO:',
+      '',
+      'ANOTHER FAKE?! A PIRANHA',
+      'PLANT IN PARTY BALLOONS.',
+      'THE REAL KING IS NEXT.',
+    ]);
+    expect(castleRemark('8-4', 'SOPHIA III', 'sophia')).toEqual([
+      'SOPHIA III:',
+      '',
+      'SCAN: ZERO PLUTONIUM.',
+      'MUTANT: ONE PIRANHA PLANT.',
+      'REAL TARGET: DEAD AHEAD.',
+    ]);
+    expect(costumeSaid(8, false)).toBe(
+      'The Plutonium Boss costume falls off in a heap: purple party balloons, glow sticks, a cardboard visor and a green ball.',
+    );
   });
 
-  it("the castle's own hero says a home line instead (Link, Mega Man, Samus, Ryu, Bill; not Simon)", () => {
+  it("the castle's own hero says a home line instead (Link, Mega Man, Samus, Ryu, Bill, Sophia III; not Simon)", () => {
     expect(HOME_REMARKS).toEqual([
       ['2-4', 'link'],
       ['3-4', 'megaman'],
       ['4-4', 'samus'],
       ['6-4', 'ryu'],
       ['7-4', 'bill'],
+      ['8-4', 'sophia'],
     ]);
     for (const [level, id] of HOME_REMARKS) {
       const home = castleRemark(level, 'X', id);
