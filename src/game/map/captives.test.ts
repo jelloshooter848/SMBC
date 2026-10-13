@@ -120,6 +120,22 @@ describe('hiddenHeroes (the bundled levels and map pages)', () => {
     expect(hiddenHeroesAt('smb-5', '5-4')).toEqual([]);
   });
 
+  it('Ryu is hidden in World 6, node 6-2 (his dojo through 6-2’s trick wall; the campaign’s first node, shown 6-1)', () => {
+    const ryu = hiddenHeroes().filter((h) => h.hero === 'ryu');
+    expect(ryu).toHaveLength(1);
+    expect(ryu[0]).toMatchObject({ main: '6-2', page: 'smb-6', node: '6-2' });
+    expect(hiddenHeroesAt('smb-6', '6-2').map((h) => h.hero)).toEqual(['ryu']);
+    for (const n of ['start', '6-1', '6-3', '6-4']) expect(hiddenHeroesAt('smb-6', n)).toEqual([]);
+  });
+
+  it('Bill is hidden in World 7, node 7-3 (his camp under 7-3’s exploding bridge; the first node, shown 7-1)', () => {
+    const bill = hiddenHeroes().filter((h) => h.hero === 'bill');
+    expect(bill).toHaveLength(1);
+    expect(bill[0]).toMatchObject({ main: '7-3', page: 'smb-7', node: '7-3' });
+    expect(hiddenHeroesAt('smb-7', '7-3').map((h) => h.hero)).toEqual(['bill']);
+    for (const n of ['start', '7-1', '7-2', '7-4']) expect(hiddenHeroesAt('smb-7', n)).toEqual([]);
+  });
+
   it('other nodes hide no one', () => {
     expect(hiddenHeroesAt('smb-1', '1-2')).toEqual([]);
     expect(hiddenHeroesAt('smb-1', 'start')).toEqual([]);

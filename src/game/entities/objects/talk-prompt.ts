@@ -20,6 +20,8 @@ export function drawTalkPrompt(
    */
   key: 'special' | 'up' | 'none' = 'special',
 ): void {
+  // Nothing to act on while no one is in control (a hero dying, a pipe, a clear): World.inControl.
+  if (view.prompts === false) return;
   const hint = key === 'special' ? view.talkHint : key === 'up' ? view.upHint : undefined;
   const text = hint?.(verb) ?? verb;
   const font = view.assets.sheet('font');

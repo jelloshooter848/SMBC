@@ -12,11 +12,14 @@ import {
   transylvaniaGround,
   transylvaniaNodeFrame,
 } from '@content/sprites/transylvania-above';
+import { GALESBURG_ROAD_FRAMES, galesburgGround, galesburgNodeFrame } from '@content/sprites/galesburg-above';
+import { GALUGA_ROAD_FRAMES, galugaGround, galugaNodeFrame } from '@content/sprites/galuga-above';
 
 /*
  * The map kit for pages drawn from above (campaign play): World 1 from the `kingdom` sheet since
  * 0.4.48, Worlds 2 and 3 from `hyrule-above` and `megacity-above` since 0.4.50, Worlds 4 and 5
- * from `zebes-above` and `transylvania-above` since 0.4.52. A page's look
+ * from `zebes-above` and `transylvania-above` since 0.4.52, Worlds 6 and 7 from `galesburg-above`
+ * and `galuga-above` since 0.4.53. A page's look
  * (AboveLook) names its sheet, its ground (tiles → ground frames, water, standing scenery), its 16
  * road joins and its node markers; everything else is shared: the ground and flat landmarks, the
  * roads drawn in as they open, the standing scenery and landmarks by their feet. Everything a page
@@ -110,6 +113,24 @@ const LOOKS: Readonly<Record<AboveLookId, AboveLook>> = {
     roads: TRANSYLVANIA_ROAD_FRAMES,
     node: transylvaniaNodeFrame,
   },
+  // World 6, Galesburg (sprites/galesburg-above.ts): the town at night, lamp-lit roads with a light
+  // halo; board spaces in a stone collar, a manhole with a gold shuriken (dull once used), the
+  // demon temple's pagoda (its door shut and a white lantern lit once cleared).
+  galesburg: {
+    sheet: 'galesburg-above',
+    ground: (page) => galesburgGround(page.tiles),
+    roads: GALESBURG_ROAD_FRAMES,
+    node: galesburgNodeFrame,
+  },
+  // World 7, Galuga Island (sprites/galuga-above.ts): a pale dirt track with a light halo; board
+  // spaces in a steel collar, a weapon-capsule pad (grey once used), the alien lair (grey and shut
+  // once cleared).
+  galuga: {
+    sheet: 'galuga-above',
+    ground: (page) => galugaGround(page.tiles),
+    roads: GALUGA_ROAD_FRAMES,
+    node: galugaNodeFrame,
+  },
 };
 
 export { prepaintSheet };
@@ -122,8 +143,9 @@ export const isAbovePage = drawnFromAbove;
 
 /**
  * The map shade a hidden hero takes on `page` (palette-fx mapShadePalette's theme): a page with an
- * `above` look takes its sheet's ground ('above-hyrule', 'above-megacity', 'above-zebes', 'above-transylvania': sprites/index.ts), so
- * the silhouette is a faint shadow on that ground; every other page its theme's.
+ * `above` look takes its sheet's ground ('above-hyrule', 'above-megacity', 'above-zebes',
+ * 'above-transylvania', 'above-galesburg', 'above-galuga': sprites/index.ts), so the silhouette is
+ * a faint shadow on that ground; every other page its theme's.
  */
 export function shadeTheme(page: WorldMapPage): string {
   return page.above ? `above-${page.above}` : page.theme;

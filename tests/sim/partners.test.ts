@@ -130,7 +130,8 @@ function campaignIn(
   h.game.markSeen(beat.luigiRuns);
   // Bowser in 8-4-end's bridge room (Fred's trap pipe is in it) is another story too.
   h.game.markSeen(beat.bowser84);
-  // So are the hero sightings at a world's first level (0.4.51-0.4.52: 5-1's old woman).
+  // So are the hero sightings at a world's first level's start (0.4.51-0.4.53: 5-1's old woman;
+  // Irene in 6-2 and Lance in 7-3 stand on the start screens of Ryu's and Bill's).
   for (const id of SIGHTING_HEROES) h.game.markSeen(beat.sighting(id));
   const st = h.game.state;
   st.character = c;

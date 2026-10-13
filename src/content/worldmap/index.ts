@@ -15,6 +15,8 @@ import { WORLD_2_HYRULE } from './world2-hyrule';
 import { WORLD_3_MEGACITY } from './world3-megacity';
 import { WORLD_4_ZEBES } from './world4-zebes';
 import { WORLD_5_TRANSYLVANIA } from './world5-transylvania';
+import { WORLD_6_GALESBURG } from './world6-galesburg';
+import { WORLD_7_GALUGA } from './world7-galuga';
 
 /*
  * The page registry (docs/WORLD_MAP.md). The eight themed SMB pages ('smb-1'..'smb-8'): every
@@ -63,16 +65,22 @@ export function levelPage(levelId: string): WorldMapPage | undefined {
 /**
  * Pages drawn differently in campaign play, by id: drawn from above, World 1 since 0.4.48
  * (world1-kingdom.ts), Worlds 2 and 3 since 0.4.50 (world2-hyrule.ts, world3-megacity.ts), Worlds
- * 4 and 5 since 0.4.52 (world4-zebes.ts, world5-transylvania.ts). Each keeps its registered page's
- * id, node ids, kinds and order, and exits, so saves and save codes read it exactly as the
- * registered one; its roads keep their ids too, but for a world the campaign plays in another
- * order (map/campaign-order.ts: World 4), whose roads follow that order.
+ * 4 and 5 since 0.4.52 (world4-zebes.ts, world5-transylvania.ts), Worlds 6 and 7 since 0.4.53
+ * (world6-galesburg.ts, world7-galuga.ts). Each keeps its registered page's id, node ids, kinds and
+ * order, and exits, so saves and save codes read it exactly as the registered one; its roads keep
+ * their ids too, but for a world the campaign plays in another order (map/campaign-order.ts:
+ * Worlds 4, 6 and 7), whose roads follow that order.
  */
 const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = Object.fromEntries(
-  [WORLD_1_KINGDOM, WORLD_2_HYRULE, WORLD_3_MEGACITY, WORLD_4_ZEBES, WORLD_5_TRANSYLVANIA].map((p) => [
-    p.id,
-    p,
-  ]),
+  [
+    WORLD_1_KINGDOM,
+    WORLD_2_HYRULE,
+    WORLD_3_MEGACITY,
+    WORLD_4_ZEBES,
+    WORLD_5_TRANSYLVANIA,
+    WORLD_6_GALESBURG,
+    WORLD_7_GALUGA,
+  ].map((p) => [p.id, p]),
 );
 
 /** The campaign looks (each also registered under its id in MAP_PAGES, as classic play shows it). */

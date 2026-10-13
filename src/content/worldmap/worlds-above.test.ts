@@ -24,13 +24,18 @@ import { WORLD_4 } from './world4';
 import { WORLD_4_ZEBES } from './world4-zebes';
 import { WORLD_5 } from './world5';
 import { WORLD_5_TRANSYLVANIA } from './world5-transylvania';
+import { WORLD_6 } from './world6';
+import { WORLD_6_GALESBURG } from './world6-galesburg';
+import { WORLD_7 } from './world7';
+import { WORLD_7_GALUGA } from './world7-galuga';
 
 /*
  * Worlds 2 and 3 from above (0.4.50, campaign play): HYRULE and MEGA CITY are looks of the
  * registered World 2 and 3, so saves, save codes, reveals, the bonus spots and the gates read them
  * exactly as WORLD_2 and WORLD_3. Worlds 4 and 5 (0.4.52): PLANET ZEBES and TRANSYLVANIA the same
- * way, World 4's roads in the campaign order (map/campaign-order.ts). pages.test.ts runs every page
- * rule on them too; tests/sim/above-maps.test.ts and above-maps-w45.test.ts play them.
+ * way, World 4's roads in the campaign order (map/campaign-order.ts). Worlds 6 and 7 (0.4.53):
+ * GALESBURG and GALUGA ISLAND, both in the campaign order. pages.test.ts runs every page rule on
+ * them too; tests/sim/above-maps.test.ts, above-maps-w45.test.ts and above-maps-w67.test.ts play them.
  */
 
 const assets = new AssetRegistry(PALETTES);
@@ -143,16 +148,58 @@ const CASES: [string, Case][] = [
       },
     },
   ],
+  [
+    'World 6, Galesburg',
+    {
+      page: WORLD_6_GALESBURG,
+      classic: WORLD_6,
+      sheet: 'galesburg-above',
+      captive: ['6-2', 1], // Ryu east of internal 6-2 (shown 6-1), at 5,10, by the dojo
+      bridges: [],
+      aim: {
+        start: [null, '6-2', null, 'smb-5'],
+        '6-1': ['6-3', null, '6-2', '6-2'],
+        '6-2': ['6-1', '6-1', null, 'start'],
+        '6-3': ['bonus-6', '6-4', '6-1', '6-1'],
+        '6-4': ['6-3', 'smb-7', null, '6-3'],
+        'bonus-6': [null, null, null, '6-3'],
+      },
+      // The campaign order: internal 6-2 first (shown 6-1), then 6-1 (shown 6-2), 6-3, 6-4.
+      roads: ['start>6-2', '6-2>6-1', '6-1>6-3', '6-3>6-4', '6-3>bonus-6'],
+    },
+  ],
+  [
+    'World 7, Galuga Island',
+    {
+      page: WORLD_7_GALUGA,
+      classic: WORLD_7,
+      sheet: 'galuga-above',
+      captive: ['7-3', -1], // Bill west of internal 7-3 (shown 7-1), at 2,9, over his camp
+      bridges: ['steel-bridge'],
+      aim: {
+        start: [null, '7-3', '7-3', 'smb-6'],
+        '7-1': [null, '7-2', '7-3', null],
+        '7-2': ['7-1', 'bonus-7', '7-4', '7-1'],
+        '7-3': ['start', '7-1', null, 'start'],
+        '7-4': [null, 'smb-8', null, '7-2'],
+        'bonus-7': [null, null, '7-2', '7-2'],
+      },
+      // The campaign order: internal 7-3 first (shown 7-1), then 7-1, 7-2 (shown 7-2, 7-3), 7-4.
+      roads: ['start>7-3', '7-3>7-1', '7-1>7-2', '7-2>7-4', '7-2>bonus-7'],
+    },
+  ],
 ];
 
 describe('campaign looks from above', () => {
-  it('are Worlds 1 to 5’s, only in campaign play: the registry keeps the classic pages', () => {
+  it('are Worlds 1 to 7’s, only in campaign play: the registry keeps the classic pages', () => {
     expect(CAMPAIGN_PAGES).toEqual([
       WORLD_1_KINGDOM,
       WORLD_2_HYRULE,
       WORLD_3_MEGACITY,
       WORLD_4_ZEBES,
       WORLD_5_TRANSYLVANIA,
+      WORLD_6_GALESBURG,
+      WORLD_7_GALUGA,
     ]);
     for (const p of CAMPAIGN_PAGES) {
       expect(MAP_PAGES).not.toContain(p);
@@ -224,7 +271,7 @@ describe.each(CASES)('%s from above (campaign look)', (_, c) => {
     const moving = g.frames[0].filter((f, i) => f !== g.frames[1][i]);
     expect(moving.length).toBeGreaterThan(0);
     expect(
-      moving.every((f) => /^(water|sea|magma|z4-w|tv5-w)/.test(f)),
+      moving.every((f) => /^(water|sea|magma|z4-w|tv5-w|canal|river|falls)/.test(f)),
       moving.join(),
     ).toBe(true);
   });
@@ -450,5 +497,84 @@ describe('World 5, Transylvania: its landmarks', () => {
     // 5-1 has three roads (north, east, south) so its west side is free for Simon's mark.
     const n = WORLD_5_TRANSYLVANIA.nodes.find((x) => x.id === '5-1') as MapNode;
     expect(heroSide(WORLD_5_TRANSYLVANIA, n)).toBe(-1);
+  });
+});
+
+describe.each([
+  [
+    'World 6, Galesburg',
+    WORLD_6_GALESBURG,
+    WORLD_6,
+    { '6-2': '6-1', '6-1': '6-2', '6-3': undefined, '6-4': undefined },
+    ['6-2', 1],
+    { castle: ['pagoda', 'pagoda-cleared'], bonus: ['bonus', 'bonus-used'] },
+    'galesburg-above',
+  ],
+  [
+    'World 7, Galuga Island',
+    WORLD_7_GALUGA,
+    WORLD_7,
+    { '7-3': '7-1', '7-1': '7-2', '7-2': '7-3', '7-4': undefined },
+    ['7-3', -1],
+    { castle: ['lair', 'lair-cleared'], bonus: ['bonus', 'bonus-used'] },
+    'galuga-above',
+  ],
+] as const)('%s: the campaign order and its markers', (_, page, classic, shown, hint, markers, sheet) => {
+  const look = aboveLook(page);
+  if (!look) throw new Error('not drawn from above');
+  const node = (id: string) => page.nodes.find((n) => n.id === id) as MapNode;
+  const s = (cleared: boolean): AboveNodeState => ({ cleared, secret: false, warpOpen: false });
+
+  it('plays the hero’s level first: ids, kinds and order kept, each level shown by the table', () => {
+    expect(page.nodes.map((n) => n.id)).toEqual(classic.nodes.map((n) => n.id));
+    for (const [id, label] of Object.entries(shown)) expect(node(id).shown, id).toBe(label);
+    expect(page.paths[0]).toMatchObject({ from: 'start', to: hint[0] });
+    // The hero's mark stands beside the first level, on no road.
+    const [id, side] = hint;
+    expect(heroSide(page, node(id))).toBe(side);
+    const spot = key(node(id).x + side, node(id).y);
+    expect([...page.paths, ...page.exits].some((p) => p.points.some(([x, y]) => key(x, y) === spot))).toBe(
+      false,
+    );
+    // The bonus road keeps its id and its ends.
+    const bonus = (p: WorldMapPage) => p.paths.find((q) => q.to.startsWith('bonus-'));
+    expect({ ...bonus(page), points: [] }).toEqual({ ...bonus(classic), points: [] });
+  });
+
+  it('shows the castle and the bonus spot with their own markers, changed once cleared or used', () => {
+    expect([look.node('castle', s(false)), look.node('castle', s(true))]).toEqual(markers.castle);
+    expect([look.node('bonus', s(false)), look.node('bonus', s(true))]).toEqual(markers.bonus);
+    expect(look.node('start', s(false))).toBe('node-start');
+    const frames = SPRITES[sheet]?.frames ?? {};
+    expect(frames[markers.castle[0]]).not.toEqual(frames[markers.castle[1]]);
+    expect(frames.bonus).not.toEqual(frames['bonus-used']);
+  });
+});
+
+describe('Galesburg and Galuga Island in the colour-blind modes', () => {
+  const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
+  const roles = (sheet: string, mode: 'default' | 'deuteranopia' | 'protanopia', rs: string) =>
+    [...rs].map((r) => PALETTES[mode]?.[sheet]?.[ROLES.indexOf(r)]);
+
+  it('keeps their earth tones (brick, wood, roads’ rims, golden rock, trunks) put: no red shift turns them pink', () => {
+    for (const mode of ['deuteranopia', 'protanopia'] as const) {
+      expect(roles('galesburg-above', mode, '4dhij'), mode).toEqual(
+        roles('galesburg-above', 'default', '4dhij'),
+      );
+      expect(roles('galuga-above', mode, '04dhi'), mode).toEqual(roles('galuga-above', 'default', '04dhi'));
+    }
+  });
+
+  it('still shifts their true reds (an open level’s space, the lacquer, the lair, the warning lights)', () => {
+    for (const mode of ['deuteranopia', 'protanopia'] as const)
+      for (const [sheet, rs] of [
+        ['galesburg-above', 'pqrn'],
+        ['galuga-above', 'pqrt'],
+      ] as const) {
+        const shifted = roles(sheet, mode, rs);
+        roles(sheet, 'default', rs).forEach((c, i) =>
+          expect(shifted[i], `${mode} ${sheet} ${rs[i]}`).not.toBe(c),
+        );
+      }
   });
 });

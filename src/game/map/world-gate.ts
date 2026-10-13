@@ -144,10 +144,11 @@ const LOCAL_COLUMN: Readonly<Record<string, number>> = { 'smb-3': 2 };
 
 /**
  * Pixels a local stands lower than the default on a page drawn from above with this look (0.4.50,
- * campaign play): on Mega City, Roll's head clears the walkway's rim over her. Classic pages keep
- * the default.
+ * campaign play): on Mega City, Roll's head clears the walkway's rim over her; on Galesburg and
+ * Galuga Island (0.4.53) the elder's and the sergeant's heads clear the road's rim and its light
+ * halo. Classic pages keep the default.
  */
-const LOCAL_DROP: Readonly<Partial<Record<AboveLookId, number>>> = { megacity: 1 };
+const LOCAL_DROP: Readonly<Partial<Record<AboveLookId, number>>> = { megacity: 1, galesburg: 2, galuga: 2 };
 
 /**
  * Where page `page`'s local is drawn (its 16x20 sprite's top-left, px), or null without one:

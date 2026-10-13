@@ -12,6 +12,8 @@ import { SKETCH_2_HYRULE, WORLD_2_HYRULE } from './world2-hyrule';
 import { SKETCH_3_MEGACITY, WORLD_3_MEGACITY } from './world3-megacity';
 import { SKETCH_4_ZEBES, WORLD_4_ZEBES } from './world4-zebes';
 import { SKETCH_5_TRANSYLVANIA, WORLD_5_TRANSYLVANIA } from './world5-transylvania';
+import { SKETCH_6_GALESBURG, WORLD_6_GALESBURG } from './world6-galesburg';
+import { SKETCH_7_GALUGA, WORLD_7_GALUGA } from './world7-galuga';
 import { campaignLevel } from '@game/map/campaign-order';
 import { SKETCH_2 } from './world2';
 import { SKETCH_3 } from './world3';
@@ -77,8 +79,8 @@ describe('world map pages', () => {
     expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
-  // Each SMB world, and Worlds 1-5 as campaign play draws them from above (0.4.48, 0.4.50 and
-  // 0.4.52: the same nodes and exit; the roads in the campaign order, map/campaign-order.ts).
+  // Each SMB world, and Worlds 1-7 as campaign play draws them from above (0.4.48, 0.4.50, 0.4.52
+  // and 0.4.53: the same nodes and exit; the roads in the campaign order, map/campaign-order.ts).
   describe.each([
     ...SMB_PAGES.map((p, i) => [`${i + 1}`, i + 1, p, SKETCHES[i] as readonly string[]] as const),
     ['1 (campaign, from above)', 1, WORLD_1_KINGDOM, SKETCH_1_KINGDOM] as const,
@@ -86,6 +88,8 @@ describe('world map pages', () => {
     ['3 (campaign, from above)', 3, WORLD_3_MEGACITY, SKETCH_3_MEGACITY] as const,
     ['4 (campaign, from above)', 4, WORLD_4_ZEBES, SKETCH_4_ZEBES] as const,
     ['5 (campaign, from above)', 5, WORLD_5_TRANSYLVANIA, SKETCH_5_TRANSYLVANIA] as const,
+    ['6 (campaign, from above)', 6, WORLD_6_GALESBURG, SKETCH_6_GALESBURG] as const,
+    ['7 (campaign, from above)', 7, WORLD_7_GALUGA, SKETCH_7_GALUGA] as const,
   ])('world %s', (_, w, page, sketch) => {
     it('is 15 rows of 16 legend chars, sketched without hard shores', () => {
       expect(page.tiles).toHaveLength(15);
@@ -144,8 +148,8 @@ describe('world map pages', () => {
     });
 
     it('joins consecutive nodes and the bonus slot with contiguous walkable paths', () => {
-      // In play order: a campaign page plays its world in the campaign order (World 4: internal
-      // 4-2, shown 4-1, first; level-order.md), the classic page in SMB's.
+      // In play order: a campaign page plays its world in the campaign order (Worlds 4, 6 and 7:
+      // the hero's level first; level-order.md), the classic page in SMB's.
       const campaign = CAMPAIGN_PAGES.includes(page);
       const chain = [
         'start',

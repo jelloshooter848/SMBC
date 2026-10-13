@@ -461,7 +461,7 @@ describe('what each sighting shows', () => {
       expect(SIGHTING_HEROES).toContain(s.hero);
       expect(BURST_LIFE).toBeGreaterThan(0);
     }
-    expect(Object.keys(SIGHTINGS).sort()).toEqual(['2-1', '3-1', '4-2', '5-1']);
+    expect(Object.keys(SIGHTINGS).sort()).toEqual(['2-1', '3-1', '4-2', '5-1', '6-2', '7-3']);
   });
 });
 
