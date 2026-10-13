@@ -165,9 +165,9 @@ describe('the room in campaign play', () => {
     expect([toPx(door.body.x) >> 4, toPx(door.body.y) >> 4]).toEqual([DOOR.x, DOOR.y]);
     expect(door.open).toBe(false);
     expect(door.target).toEqual({ level: '5-4-crypt', x: 1, y: 0 });
-    expect(r.world.entities.some((e) => e.kind === 'partner' && (e as { who?: string }).who === 'townsperson')).toBe(
-      true,
-    );
+    expect(
+      r.world.entities.some((e) => e.kind === 'partner' && (e as { who?: string }).who === 'townsperson'),
+    ).toBe(true);
   });
 
   it('classic play keeps the coin brick, with no door, no key and no townsperson', () => {
@@ -197,20 +197,23 @@ describe('every hero, small and big, gets the key to the door and goes in', () =
   const cases = CHARACTERS.flatMap((c) =>
     (c.damage.kind === 'powerup' ? ['small', 'big'] : ['full']).map((power) => [c.name, power, c] as const),
   );
-  it.each(cases)('%s (%s): onto the pipe, bump the box, PICK UP, the door opens by itself, UP', (_n, power, c) => {
-    const r = room(c, { power });
-    const at = playRoute(r);
-    expect(at.onPipe, 'stood on the pipe top').toBeGreaterThanOrEqual(0);
-    expect(at.bumped, 'bumped the box').toBeGreaterThan(at.onPipe);
-    expect(at.got, 'picked up the key').toBeGreaterThan(at.bumped);
-    expect(at.opened, 'opened the door').toBeGreaterThan(at.got);
-    expect(at.entered, 'went through').toBeGreaterThan(at.opened);
-    expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: INTO_CRYPT });
-    expect(r.world.keyHolder).toBeNull();
-    expect(r.world.map.get(BOX.x, BOX.y)).toBe(T.USED);
-    expect(says(r)).toEqual(expect.arrayContaining([KEY_SAID.popped, KEY_SAID.got, KEY_SAID.opened]));
-    expect(r.events.some((e) => e.type === 'died')).toBe(false);
-  });
+  it.each(cases)(
+    '%s (%s): onto the pipe, bump the box, PICK UP, the door opens by itself, UP',
+    (_n, power, c) => {
+      const r = room(c, { power });
+      const at = playRoute(r);
+      expect(at.onPipe, 'stood on the pipe top').toBeGreaterThanOrEqual(0);
+      expect(at.bumped, 'bumped the box').toBeGreaterThan(at.onPipe);
+      expect(at.got, 'picked up the key').toBeGreaterThan(at.bumped);
+      expect(at.opened, 'opened the door').toBeGreaterThan(at.got);
+      expect(at.entered, 'went through').toBeGreaterThan(at.opened);
+      expect(r.events.find((e) => e.type === 'pipe')).toMatchObject({ target: INTO_CRYPT });
+      expect(r.world.keyHolder).toBeNull();
+      expect(r.world.map.get(BOX.x, BOX.y)).toBe(T.USED);
+      expect(says(r)).toEqual(expect.arrayContaining([KEY_SAID.popped, KEY_SAID.got, KEY_SAID.opened]));
+      expect(r.events.some((e) => e.type === 'died')).toBe(false);
+    },
+  );
 });
 
 describe('the key', () => {
@@ -288,7 +291,13 @@ describe('the key', () => {
       },
     });
     for (let f = 0; f < 40; f++) {
-      key.render(rr, { camX: 0, frame: f, assets: r.world.ctx.assets, theme: 'underground', reduceFlashing: f % 2 === 0 });
+      key.render(rr, {
+        camX: 0,
+        frame: f,
+        assets: r.world.ctx.assets,
+        theme: 'underground',
+        reduceFlashing: f % 2 === 0,
+      });
     }
     expect(drawn).toBe(40);
   });
@@ -388,7 +397,10 @@ describe('5-1’s crypt gate', () => {
       }
       // Right through its doorway's column and out the other side (the enemies beyond may push back).
       expect(furthest, c.name).toBeGreaterThan(13 * 16);
-      expect(r.events.some((e) => e.type === 'pipe'), c.name).toBe(false);
+      expect(
+        r.events.some((e) => e.type === 'pipe'),
+        c.name,
+      ).toBe(false);
     }
   });
 

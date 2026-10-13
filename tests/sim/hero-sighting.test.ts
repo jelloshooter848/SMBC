@@ -357,7 +357,14 @@ describe('what each sighting shows', () => {
     const T = SAMUS_SIGHTING_TIMING;
     const at = (t: number, reduce: boolean) => sprites(SAMUS_SIGHTING.draw(t, reduce));
     const samus = (t: number) => at(t, false).find((d) => /^(idle|ball-)/.test(d.frame))!;
-    expect(samus(1)).toMatchObject({ sheet: 'samus', frame: 'idle', flip: false, fx: true, x: T.x, feet: 208 });
+    expect(samus(1)).toMatchObject({
+      sheet: 'samus',
+      frame: 'idle',
+      flip: false,
+      fx: true,
+      x: T.x,
+      feet: 208,
+    });
     expect(samus(T.lookAt).flip).toBe(true);
     expect(samus(T.lookEnd).flip).toBe(false);
     expect(samus(T.curlAt).frame).toMatch(/^ball-/);
@@ -391,13 +398,14 @@ describe('what each sighting shows', () => {
     const T = SIMON_SIGHTING_TIMING;
     const all = Array.from({ length: SIMON_SIGHTING.frames + 1 }, (_, t) => SIMON_SIGHTING.draw(t, true));
     const simon = (t: number) => sprites(all[t]!).find((d) => d.sheet === 'simon');
-    const gate = (t: number) => all[t]!.find((d) => d.kind === 'gate') as
-      | { lift: number; swing: number; x: number; top: number }
-      | undefined;
+    const gate = (t: number) =>
+      all[t]!.find((d) => d.kind === 'gate') as
+        { lift: number; swing: number; x: number; top: number } | undefined;
     expect(simon(1)).toMatchObject({ frame: 'idle', flip: false, x: T.x });
     expect(simon(T.lookAt)!.flip).toBe(true);
     // He walks at 0.75 px a frame, never faster.
-    for (let t = T.walkAt + 1; t < T.walkAt + 40; t++) expect(simon(t)!.x - simon(t - 1)!.x).toBeLessThanOrEqual(1);
+    for (let t = T.walkAt + 1; t < T.walkAt + 40; t++)
+      expect(simon(t)!.x - simon(t - 1)!.x).toBeLessThanOrEqual(1);
     expect(simon(T.walkAt + 8)!.frame).toMatch(/^walk-/);
     // The gate is the level's own, at column 12 (its doorway rows 11-12): drawn raised over it.
     expect(gate(T.raiseAt + 40)).toMatchObject({ x: 192, top: 176, lift: 32 });

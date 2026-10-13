@@ -79,7 +79,8 @@ describe('the areas', () => {
     // No level leads into the retired dungeon.
     for (const id of levelIds())
       for (const z of getLevel(id).zones)
-        if ('target' in z && z.target) expect((z.target as { level: string }).level, id).not.toBe('5-4-dungeon');
+        if ('target' in z && z.target)
+          expect((z.target as { level: string }).level, id).not.toBe('5-4-dungeon');
   });
 
   it('the descent zone parses and writes back the same', () => {
@@ -568,7 +569,12 @@ const levelId = (h: H) => (h.top() as LevelScene).level?.id;
 describe('the whole way in campaign play (0.4.52)', () => {
   it('5-1 pipe → coin room: bump the key, PICK UP, the door opens, UP → crypt → out of 5-1’s pipe at 163', () => {
     const h = makeGame();
-    file({ story: [], cleared: ['1-0'], pages: ['smb-1', 'smb-5'], position: { page: 'smb-5', node: '5-1' } });
+    file({
+      story: [],
+      cleared: ['1-0'],
+      pages: ['smb-1', 'smb-5'],
+      position: { page: 'smb-5', node: '5-1' },
+    });
     h.game.openFile(1);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     // Down 5-1's pipe at 156 into the coin room (as the pipe zone sends a player).

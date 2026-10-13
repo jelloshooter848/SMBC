@@ -79,14 +79,7 @@ import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
-import {
-  KEY_SAID,
-  KeyBox,
-  KeyItem,
-  LockedDoor,
-  LockedGate,
-  type KeyThing,
-} from '../entities/objects/keys';
+import { KEY_SAID, KeyBox, KeyItem, LockedDoor, LockedGate, type KeyThing } from '../entities/objects/keys';
 import {
   TRICK_HOLD_FRAMES,
   TRICK_PUSH_FRAMES,

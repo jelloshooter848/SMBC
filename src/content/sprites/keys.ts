@@ -59,8 +59,7 @@ const padlock = [
 ];
 
 /** The drafted gate's iron roles (1 light, 2 dark) moved to this sheet's 4 and 5. */
-const iron = (rows: readonly string[]): string[] =>
-  rows.map((r) => r.replace(/1/g, '4').replace(/2/g, '5'));
+const iron = (rows: readonly string[]): string[] => rows.map((r) => r.replace(/1/g, '4').replace(/2/g, '5'));
 
 const portcullis = iron([
   '0120012001200120',
@@ -105,7 +104,8 @@ export const PORTCULLIS_STEP = 4;
  * top (the rest is up in the wall), for n = 4, 8, ... 28.
  */
 const raised: Record<string, string[]> = {};
-for (let n = PORTCULLIS_STEP; n < 32; n += PORTCULLIS_STEP) raised[`portcullis-${n}`] = portcullis.slice(32 - n);
+for (let n = PORTCULLIS_STEP; n < 32; n += PORTCULLIS_STEP)
+  raised[`portcullis-${n}`] = portcullis.slice(32 - n);
 
 export const keysDef: SpriteDef = {
   palette: 'keys',

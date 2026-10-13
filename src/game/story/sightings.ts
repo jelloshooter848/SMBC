@@ -337,14 +337,18 @@ export const SIMON_SIGHTING: SightingScript = {
     const out: SightingDraw[] = [];
     // The gate: raised for him, then dropping shut behind him (the level's own shows once still).
     const lift =
-      t < SM.raiseAt ? 0 : t < SM.dropAt ? Math.min(32, t - SM.raiseAt) : Math.max(0, 32 - SM.drop * (t - SM.dropAt));
+      t < SM.raiseAt
+        ? 0
+        : t < SM.dropAt
+          ? Math.min(32, t - SM.raiseAt)
+          : Math.max(0, 32 - SM.drop * (t - SM.dropAt));
     const swinging = t >= SIMON_CLANG && t < SIMON_CLANG + SM.swingFrames;
     const gate: SightingDraw = {
       kind: 'gate',
       x: SM.gateX,
       top: SM.gateTop,
       lift,
-      swing: swinging ? ((t - SIMON_CLANG) >> 2) % 2 === 0 ? 1 : -1 : 0,
+      swing: swinging ? (((t - SIMON_CLANG) >> 2) % 2 === 0 ? 1 : -1) : 0,
     };
     const moving = t >= SM.raiseAt && t < SIMON_CLANG + SM.swingFrames;
     // Simon walks into the dark doorway; the falling bars cover him, and he is gone.
@@ -366,9 +370,14 @@ export const SIMON_SIGHTING: SightingScript = {
     if (t < SIMON_BAT_GONE) {
       const flap = `bat-${1 + ((t >> 3) & 1)}`;
       const y =
-        t < SM.batInEnd ? tween(t, 0, SM.batInEnd, -16, SM.batY) : t < SM.batOffAt ? SM.batY : SM.batY - 4 * (t - SM.batOffAt);
+        t < SM.batInEnd
+          ? tween(t, 0, SM.batInEnd, -16, SM.batY)
+          : t < SM.batOffAt
+            ? SM.batY
+            : SM.batY - 4 * (t - SM.batOffAt);
       const x = t < SM.batOffAt ? SM.batX + ((t >> 4) % 2) : SM.batX + 2 * (t - SM.batOffAt);
-      if (y > -16) out.push({ kind: 'sprite', sheet: 'crypt', palette: 'crypt', frame: flap, x, feet: y + 16 });
+      if (y > -16)
+        out.push({ kind: 'sprite', sheet: 'crypt', palette: 'crypt', frame: flap, x, feet: y + 16 });
     }
     return out;
   },

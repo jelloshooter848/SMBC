@@ -35,7 +35,12 @@ import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { playLevelBeat } from '../story/level-beats';
 import { playCastleRemark } from '../story/castle-remark';
-import { ANCHOR_LARRY_PAGES, anchorHeroPage, lockedGatePage, STORY_CRYSTAL_BALL_PAGES } from '../story/script';
+import {
+  ANCHOR_LARRY_PAGES,
+  anchorHeroPage,
+  lockedGatePage,
+  STORY_CRYSTAL_BALL_PAGES,
+} from '../story/script';
 import { KEY_SAID } from '../entities/objects/keys';
 import { partnerNearSaid, talkToPartner } from '../story/partners';
 import { abilityHint } from './hints';

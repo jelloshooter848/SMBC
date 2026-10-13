@@ -787,7 +787,8 @@ export const SIGHTING_SAID: Readonly<Record<string, string>> = {
   link: 'A brainwashed Link makes a vine grow out of the ground and climbs it into the sky. The vine follows him up.',
   megaman: 'A brainwashed Mega Man glitches, then beams up into the sky.',
   samus: 'A brainwashed Samus curls into a ball and bombs her way off into the caves.',
-  simon: 'A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him.',
+  simon:
+    'A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him.',
 };
 
 /** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */
@@ -1064,7 +1065,9 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'SOMEWHERE IN THIS ROOM.',
       ],
     ],
-    after: [['TOWNSPERSON:', '', 'THE DOOR IS OPEN FOR GOOD.', 'WHAT A WONDERFUL NIGHT TO', 'HAVE NO CURSE.']],
+    after: [
+      ['TOWNSPERSON:', '', 'THE DOOR IS OPEN FOR GOOD.', 'WHAT A WONDERFUL NIGHT TO', 'HAVE NO CURSE.'],
+    ],
     own: [
       [
         'TOWNSPERSON:',
