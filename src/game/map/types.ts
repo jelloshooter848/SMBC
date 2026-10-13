@@ -77,7 +77,8 @@ export interface MapNode {
    * The level's label where play shows it (the map's header and announcer), when it is not the
    * level id: the campaign plays some worlds in another order (a world's first level is the one
    * where its hero is met), so the node of internal level '4-2' may read '4-1'. Ids never change
-   * (saves and save codes keep them); only the label does. Default: `level`.
+   * (saves and save codes keep them); only the label does. Default: `level`. Campaign pages set it
+   * from map/campaign-order.ts CAMPAIGN_LABELS, the one table every shown level number reads.
    */
   shown?: string;
   /** Tile on the page's 16×15 grid (16 px tiles). */
