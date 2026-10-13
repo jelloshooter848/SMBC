@@ -8,6 +8,24 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.50] - 2026-10-13
+
+### Changed
+
+- Campaign: World 2 (Hyrule) and World 3 (Mega City) maps are now drawn from above in World 1's three-quarter style.
+  Hyrule is laid out like A Link to the Past's light world, with Hyrule Castle at its heart (scenery for now). Mega City
+  is split into robot-master districts and its bonus spot is a hatch. Classic play keeps the old pages.
+- The map kit for pages drawn from above is shared by every page: ground, roads that draw in, the hero from above, keys
+  that aim at the next node, and the shadow at a page's edge on slides. On Mega City, LEFT at the last level now reaches
+  the one before it.
+- Hidden heroes' map shadows match each page's ground, and Hyrule's paths, rock and wood keep their colours in the
+  colour-blind modes.
+
+### Fixed
+
+- The new map art is drawn the first time its page shows, never at load, and the next world's map is drawn in small
+  slices while the map sits idle, so sliding to it no longer hitches on slow phones.
+
 ## [0.4.49] - 2026-10-13
 
 ### Added
@@ -1099,7 +1117,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...HEAD
+[0.4.50]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...v0.4.49
 [0.4.48]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...v0.4.48
 [0.4.47]: https://github.com/jelloshooter848/SMBC/compare/v0.4.46...v0.4.47

@@ -7,14 +7,18 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage, pageLook } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
 import {
-  drawKingdomGround,
-  drawKingdomRoads,
-  drawKingdomScenery,
-  isKingdomPage,
-  kingdomNodeFrame,
-  kingdomRoadCells,
+  aboveLook,
+  aboveRoadCells,
+  drawAboveGround,
+  drawAboveRoads,
+  drawAboveScenery,
+  isAbovePage,
+  shadeTheme,
+  lazySheetReady,
+  prepaintSheet,
+  type AboveLook,
   type RoadCell,
-} from '@content/worldmap/kingdom-render';
+} from '@content/worldmap/above-render';
 import { overheadLook } from '../town/hero';
 import type { MapActor, MapNode, MapProgress, PageGroup, PageId, WorldMapPage } from '../map/types';
 import {
@@ -31,6 +35,7 @@ import {
   parseRevealId,
   pathId,
   revealId,
+  shownLevel,
   warpText,
   exitHint,
   warpTo,
@@ -101,6 +106,28 @@ import { HINT_COLS, sealedHint, welcomeHint, type Page } from '../story/script';
 export const MAP_WALK_SPEED = 2;
 /** Length of the slide between two pages. */
 export const MAP_SLIDE_FRAMES = 30;
+
+/**
+ * Frames the hero stands idle on a map page before the next page's sheet is painted ahead (0.4.50:
+ * a page drawn from above paints its sheet the first time it shows, a hitch on the slide to it on
+ * a slow phone; painted ahead in slices while the map idles, the slide finds it ready).
+ */
+export const PREPAINT_AFTER_FRAMES = 60;
+
+/** The most one frame (or one idle callback) spends painting a sheet ahead, in ms. */
+export const PREPAINT_BUDGET_MS = 4;
+
+/** An idle callback runs by this many ms even on a page with no idle time (a slow phone). */
+const PREPAINT_IDLE_TIMEOUT_MS = 50;
+
+/** Pixels a hidden hero's silhouette stands further out on a page with an `above` look (heroMarks). */
+const ABOVE_SILHOUETTE_OUT = 4;
+
+/** The browser's requestIdleCallback, where it has one. */
+type RequestIdle = (
+  cb: (d: { didTimeout: boolean; timeRemaining(): number }) => void,
+  opts?: { timeout: number },
+) => number;
 /** Frames between two dots of a path being revealed, and before a revealed node pops in. */
 export const REVEAL_DOT_FRAMES = 6;
 export const REVEAL_NODE_FRAMES = 16;
@@ -211,8 +238,8 @@ export function spoken(text: string): string {
  * the hero stands on a level or castle node ('WORLD 1-2', 'LOST A-2'); at most 10 chars.
  */
 export function mapHeaderLabel(page: WorldMapPage, node: MapNode | null): string {
-  // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
-  const stage = node && levelNode(node) ? node.level?.split('-').pop() : undefined;
+  // The stage is the shown level's last part ('1-2' → 2, 'll-10-3' → 3; rules.shownLevel).
+  const stage = node && levelNode(node) ? shownLevel(node)?.split('-').pop() : undefined;
   return (stage ? `${page.label}-${stage}` : page.label).slice(0, 10);
 }
 
@@ -249,7 +276,9 @@ interface PageView {
   /** `sheet`: the frame's sheet when it is not the items sheet (the bonus spot's SMB3 icon). */
   nodes: { node: MapNode; frame: string; sheet?: string }[];
   heroes: HeroMark[];
-  /** A top-down page's road tiles (isKingdomPage), drawn in place of the dots; else null. */
+  /** A page drawn from above: its look (above-render.ts), else null (drawn side-on). */
+  look: AboveLook | null;
+  /** A page drawn from above: its road tiles, drawn in place of the dots; else null. */
   roads: RoadCell[] | null;
 }
 
@@ -316,8 +345,9 @@ const SEAM_SHADES: readonly (readonly [number, number, string])[] = [
 ];
 
 /**
- * The seam where a top-down page (World 1 in the campaign) meets a side-on one in a slide, at
- * screen x `x`: a soft shadow, so the change of view reads as turning to the next page of the map.
+ * The seam where a page drawn from above (Worlds 1-3 in the campaign) meets a side-on one in a
+ * slide, at screen x `x`: a soft shadow, so the change of view reads as turning to the next page of
+ * the map.
  */
 function drawPageSeam(r: Renderer, x: number): void {
   for (const [dx, w, c] of SEAM_SHADES) r.rect(x + dx, MAP_HEADER_H, w, 240 - MAP_HEADER_H, c);
@@ -367,6 +397,10 @@ export class WorldMapScene implements Scene {
   hx = 0;
   hy = 0;
   private facingLeft = false;
+  /** Frames stood idle in a row (PREPAINT_AFTER_FRAMES). */
+  private stillFrames = 0;
+  /** An idle callback is waiting to paint ahead (requestIdleCallback). */
+  private prepaintPending = false;
   /** The way the hero last walked (a top-down page draws him from above, facing it). */
   private facing: Dir = 'down';
   private t = 0;
@@ -779,10 +813,11 @@ export class WorldMapScene implements Scene {
       // Every node may have a hero beside it: a shown node's silhouette or trophy, and with the
       // crystal ball a silhouette by a node not reached yet (heroMarks).
       heroes: page.nodes.flatMap((node) => this.heroMarks(page, node)),
+      look: aboveLook(page),
       roads: null,
     };
-    if (isKingdomPage(page))
-      v.roads = kingdomRoadCells(page, [
+    if (v.look)
+      v.roads = aboveRoadCells(page, [
         ...paths.map((p) => ({
           id: pathId(p),
           points: p.points,
@@ -823,7 +858,9 @@ export class WorldMapScene implements Scene {
       if (!shows) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy's pedestal
       // stands clear of it (and of the player's marker on the node), on the ground beside it.
-      const out0 = hint === 'silhouette' ? 9 : 18;
+      // On Hyrule and Mega City from above (0.4.50) the silhouette stands a little further out, its
+      // head clear of the road leaving the node north (World 1's stays as it was).
+      const out0 = hint === 'silhouette' ? 9 + (page.above ? ABOVE_SILHOUETTE_OUT : 0) : 18;
       const step = hint === 'silhouette' ? 12 : PEDESTAL_W + 3;
       out.push({
         node,
@@ -903,8 +940,8 @@ export class WorldMapScene implements Scene {
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
     if (n.kind === 'start' && !n.level) return `${label} start`;
-    // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
-    const stage = n.level?.split('-').pop();
+    // The stage is the shown level's last part ('1-2' → 2, 'll-10-3' → 3; rules.shownLevel).
+    const stage = shownLevel(n)?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
     return n.kind === 'castle' ? `${lvl} castle, ${state}` : `${lvl}, ${state}`;
   }
@@ -1007,6 +1044,7 @@ export class WorldMapScene implements Scene {
     this.t++;
     this.startTrophyBursts();
     this.updateToadLeaving();
+    if (this.mode !== 'idle') this.stillFrames = 0;
     if (this.updateGuard()) return;
     switch (this.mode) {
       case 'reveal':
@@ -1036,7 +1074,49 @@ export class WorldMapScene implements Scene {
         // The one-time phone tip (0.4.44) waits over the map once the first clear is drawn in.
         if (mapNotice(this.game)) return;
         this.updateIdle(input);
+        if (this.mode === 'idle') this.prepaintAhead();
     }
+  }
+
+  /**
+   * Standing idle (PREPAINT_AFTER_FRAMES and on): paints the next page's sheet ahead, a slice at a
+   * time (PREPAINT_BUDGET_MS), in the browser's idle time where it has requestIdleCallback (or, on
+   * a device too busy to have any, when the callback times out), else in this frame's; once
+   * painted, the sheet is rasterized in a slice of its own, so the slide to that page draws from a
+   * ready sheet. Only pages drawn from above have sheets painted on demand.
+   */
+  private prepaintAhead(): void {
+    if (++this.stillFrames < PREPAINT_AFTER_FRAMES || this.prepaintPending) return;
+    const sheet = this.aheadSheet();
+    if (!sheet) return;
+    const slice = (budget: number): void => {
+      this.prepaintPending = false;
+      if (this.mode !== 'idle' || this.game.scenes.top !== this) return;
+      if (!lazySheetReady(sheet)) prepaintSheet(sheet, budget);
+      else this.game.ctx.assets.sheet(sheet);
+    };
+    const idle = (globalThis as { requestIdleCallback?: RequestIdle }).requestIdleCallback;
+    if (!idle) return slice(PREPAINT_BUDGET_MS);
+    this.prepaintPending = true;
+    idle(
+      (d) =>
+        slice(
+          d.didTimeout ? PREPAINT_BUDGET_MS : Math.max(1, Math.min(PREPAINT_BUDGET_MS, d.timeRemaining())),
+        ),
+      { timeout: PREPAINT_IDLE_TIMEOUT_MS },
+    );
+  }
+
+  /** The sheet of the next page (by this page's exits) still to paint or rasterize, or null. */
+  private aheadSheet(): string | null {
+    for (const e of this.page.exits) {
+      const next = this.pageById(e.to);
+      const look = next ? aboveLook(next) : null;
+      if (!look) continue;
+      if (!lazySheetReady(look.sheet) || !this.game.ctx.assets.sheetKeys().includes(look.sheet))
+        return look.sheet;
+    }
+    return null;
   }
 
   /**
@@ -1619,8 +1699,8 @@ export class WorldMapScene implements Scene {
       r.clear(mapSky(s.from));
       this.drawPage(r, s.from, -off, false);
       this.drawPage(r, this.page, s.dir * 256 - off, false);
-      // From above to side-on (World 1 in the campaign and World 2): the seam is a page's edge.
-      if (isKingdomPage(s.from) !== isKingdomPage(this.page)) drawPageSeam(r, s.dir > 0 ? 256 - off : -off);
+      // From above to side-on (World 3 in the campaign and World 4): the seam is a page's edge.
+      if (isAbovePage(s.from) !== isAbovePage(this.page)) drawPageSeam(r, s.dir > 0 ? 256 - off : -off);
     } else if (this.fade) {
       // First half: the page left darkens to black; second half: the new page comes up.
       const half = MAP_FADE_FRAMES / 2;
@@ -1657,11 +1737,11 @@ export class WorldMapScene implements Scene {
     if (ox !== 0) r.rect(ox, 0, 256, 240, mapSky(page));
     const v = this.view(page);
     const revealing = page === this.page && this.revealShown.size > 0;
-    if (v.roads) {
-      // From above (World 1 in campaign play): the ground, the roads as they open, the scenery.
-      drawKingdomGround(r, assets, page, ox, this.t);
-      drawKingdomRoads(r, assets, v.roads, ox, revealing ? this.revealShown : null);
-      drawKingdomScenery(r, assets, page, ox);
+    if (v.look && v.roads) {
+      // From above (Worlds 1-3 in campaign play): the ground, the roads as they open, the scenery.
+      drawAboveGround(r, assets, v.look, page, ox, this.t);
+      drawAboveRoads(r, assets, v.look, v.roads, ox, revealing ? this.revealShown : null);
+      drawAboveScenery(r, assets, v.look, page, ox);
     } else {
       const tiles = page.tiles;
       for (let y = 0; y < tiles.length; y++) {
@@ -1751,10 +1831,15 @@ export class WorldMapScene implements Scene {
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
     const cleared = isCleared(this.progress, page, n.id);
-    if (isKingdomPage(page)) {
+    const look = aboveLook(page);
+    if (look) {
       const warpOpen = isWarpNode(n) && isWarpOpen(this.progress, n, this.unlockAll);
-      const f = kingdomNodeFrame(n.kind, { cleared, warpOpen, secret: hasSecretExit(n.level) });
-      if (f) return `kingdom:${f}`;
+      const f = look.node(n.kind, {
+        cleared: n.kind === 'bonus' ? this.bonusUsed(n) : cleared,
+        warpOpen,
+        secret: hasSecretExit(n.level),
+      });
+      if (f) return `${look.sheet}:${f}`;
     }
     if (isWarpNode(n)) return isWarpOpen(this.progress, n, this.unlockAll) ? 'map-warp' : 'map-warp-locked';
     switch (n.kind) {
@@ -1778,6 +1863,15 @@ export class WorldMapScene implements Scene {
   }
 
   /**
+   * A bonus spot's marker from above shows it spent: a bonus area (the Top Secret Area) once its
+   * town is found (its sparkle goes), a bonus game's spot once used (Game.bonusOpen false).
+   */
+  private bonusUsed(n: MapNode): boolean {
+    if (isBonusArea(n)) return !!n.town && this.progress.secrets.includes(n.town);
+    return !this.game.bonusOpen;
+  }
+
+  /**
    * A hidden hero beside its node, facing it: the silhouette in the page's ground shade (with a
    * slow, faint shimmer unless reduce flashing is on), or the freed hero in colour (drawTrophy).
    */
@@ -1785,7 +1879,7 @@ export class WorldMapScene implements Scene {
     if (m.hint === 'trophy') return this.drawTrophy(r, m, ox);
     const p = m.def.portrait;
     const glow = !this.game.ctx.reduceFlashing && this.t % HIDING_SHIMMER_FRAMES < HIDING_GLOW_FRAMES;
-    const sheet = this.game.ctx.assets.sheet(p.sheet, mapShadePalette(p.palette, page.theme, glow));
+    const sheet = this.game.ctx.assets.sheet(p.sheet, mapShadePalette(p.palette, shadeTheme(page), glow));
     const f = sheet.frames.get(p.frame);
     const w = f?.w ?? 16;
     const h = f?.h ?? 16;
@@ -1907,7 +2001,7 @@ export class WorldMapScene implements Scene {
   }
 
   private drawHero(r: Renderer, c: CharacterDef, x: number, y: number, second = false): void {
-    if (isKingdomPage(this.page) && this.drawOverhead(r, c, x, y, second)) return;
+    if (isAbovePage(this.page) && this.drawOverhead(r, c, x, y, second)) return;
     const sheet = this.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette);
     const frames = this.framesFor(c);
     let frame = frames.idle;

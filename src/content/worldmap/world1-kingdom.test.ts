@@ -64,10 +64,12 @@ describe('World 1 from above (campaign look)', () => {
   it('shows only in campaign play: the registry keeps the classic page', () => {
     expect(mapPage('smb-1')).toBe(WORLD_1);
     expect(MAP_PAGES).not.toContain(page);
-    expect(CAMPAIGN_PAGES).toEqual([page]);
+    // 0.4.50: Worlds 2 and 3 have campaign looks too (worlds-above.test.ts); the rest have none.
+    expect(CAMPAIGN_PAGES[0]).toBe(page);
     expect(pageLook(WORLD_1, true)).toBe(page);
     expect(pageLook(WORLD_1, false)).toBe(WORLD_1);
-    for (const p of MAP_PAGES.filter((q) => q.id !== 'smb-1')) expect(pageLook(p, true)).toBe(p);
+    for (const p of MAP_PAGES.filter((q) => !CAMPAIGN_PAGES.some((c) => c.id === q.id)))
+      expect(pageLook(p, true)).toBe(p);
     expect(pageLook(undefined, true)).toBeUndefined();
   });
 
