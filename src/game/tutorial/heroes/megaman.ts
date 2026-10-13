@@ -86,7 +86,9 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     item: 'helmet',
     block: S.helmetBlock,
     get: 'JUMP UP INTO THE ? BLOCK AND TAKE THE HELMET.',
-    text: 'YOUR CHARGE SHOT, AND YOUR HEAD BREAKS BRICKS.',
+    // The weapons rule (0.4.46, owner #20): ? blocks give a bare-headed Mega Man the Helmet first.
+    text: 'CHARGE SHOT, BRICK BREAKING, AND ? BLOCKS GIVE WEAPONS ONLY WITH IT ON.',
+    explains: 'megaman:helmet',
     done: (w) => !!w.player.scratch.helmet,
   },
   {

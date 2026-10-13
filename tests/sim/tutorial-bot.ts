@@ -241,8 +241,9 @@ export function tutorialBot(h: H): Action[] {
  */
 export const tipHeld = (h: H): boolean => {
   const t = h.top();
-  if (t instanceof LevelScene) return !!t.tutorial?.frozen;
-  return t instanceof HeroStageScene && t.director.frozen;
+  // A pickup's one-time explainer holds it the same way (0.4.46).
+  if (t instanceof LevelScene) return !!t.tutorial?.frozen || t.explainers.frozen;
+  return t instanceof HeroStageScene && (t.director.frozen || t.explainers.frozen);
 };
 
 /** OK on a tip holding the game, once its lock is over: play goes on. */

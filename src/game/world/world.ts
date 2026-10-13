@@ -52,9 +52,10 @@ import {
   type TeleportZone,
 } from '../entities/objects/teleporter';
 import { PowerUp } from '../entities/objects/powerup';
-import { isPickupKind, Pickup } from '../entities/objects/pickup';
+import { isPickupKind, Pickup, type PickupKind } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
+import { heroItems } from '../items/catalog';
 import { isFound } from '../items/flags';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
@@ -110,6 +111,18 @@ export const ITEM_CAPTION_FRAMES = 120;
 /** A HeroItem's entries from the Top Secret Area's fixed grow block (`R`): the grow item for anyone. */
 const GROW_BLOCK: Readonly<Record<string, string>> = Object.freeze({});
 
+/**
+ * SMB's rule for an item already out of its block (0.4.46, owner #20): a hero who became small
+ * since the block was struck (Mega Man's Helmet knocked off by a hit) takes their grow item from
+ * it, never a power item. In a found kit (the campaign and training) only; a grow item stays one.
+ */
+function growFirst(p: Player, id: string): string {
+  const rules = itemRules(p.def.id);
+  const grow = heroItems(p.def.id)?.grow;
+  if (!rules || !grow || id === grow || !isFound(p) || !rules.small(p)) return id;
+  return grow;
+}
+
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
   | {
@@ -152,7 +165,11 @@ export type WorldEvent =
   /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
   | { type: 'path' }
   /** A line for the screen reader (the campaign's castle pages): the level announces it. */
-  | { type: 'say'; text: string };
+  | { type: 'say'; text: string }
+  /** Player `player` touched a dropped pickup (0.4.46: its one-time explainer, tutorial/explainers.ts). */
+  | { type: 'pickup'; item: PickupKind; player: number }
+  /** Player `player` took their item `item` for the first time (its one-time explainer, if any). */
+  | { type: 'item'; item: string; player: number };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -1217,6 +1234,7 @@ export class World {
    */
   collectPickup(p: Player, e: Pickup): void {
     e.destroy();
+    this.events.push({ type: 'pickup', item: e.item, player: Math.max(0, this.players.indexOf(p)) });
     if (p.def.behaviour.onPickup?.(p, e.item, this)) return;
     this.addScore(PICKUP_FULL_SCORE, e.body.x, e.body.y - px(8));
     this.audio.sfx('coin');
@@ -2082,6 +2100,7 @@ export class World {
     let id: string | null = e.item;
     if (p.def.id !== e.hero)
       id = e.entries === GROW_BLOCK ? blockItem(p, null, 'mushroom') : blockItem(p, e.entries);
+    else id = growFirst(p, id);
     // A hero without items of their own (Mario or Luigi in an older co-op file): SMB's item, whose
     // onPowerUp scores its own 1000.
     if (id === null) {
@@ -2099,6 +2118,7 @@ export class World {
     this.audio.sfx(itemSfx(id));
     this.itemCaption = { text: got.name.toUpperCase(), t: ITEM_CAPTION_FRAMES };
     this.events.push({ type: 'say', text: `${got.name}: ${got.does}.` });
+    this.events.push({ type: 'item', item: id, player: Math.max(0, this.players.indexOf(p)) });
   }
 
   /**

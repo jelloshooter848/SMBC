@@ -45,6 +45,10 @@ target 110 6 lesson=knuckle
 goomba 124 11 lesson=bolt
 goomba 126 11 lesson=bolt
 goomba 128 11 lesson=bolt
+;; His pickups, each explained the first time he touches one (0.4.46, tutorial/explainers.ts).
+pickup 27 11 item=health-small
+pickup 64 11 item=weapon-small
+pickup 134 11 item=e-tank
 
 [zones]
 exit 138 next=1-1

@@ -121,6 +121,11 @@ export interface Lesson {
    * (0.4.45: 1-0's RUN, demo-panel.ts).
    */
   demo?: LessonDemo;
+  /**
+   * The one-time explainer (tutorial/explainers.ts, 0.4.46) this lesson teaches: once it is done in
+   * a training stage the file counts it as shown (Mega Man's Helmet and its weapons rule).
+   */
+  explains?: string;
   /** Lights in the box under the words (Link's FREE / HURT), read every frame. */
   lights?(world: World): readonly { label: string; on: boolean }[];
   /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */

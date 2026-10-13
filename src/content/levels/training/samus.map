@@ -45,6 +45,10 @@ target 58 10 lesson=long-beam
 door 79 8 lesson=ice-beam
 door 90 8 lesson=varia-suit
 target 104 10 lesson=wave-beam
+;; Her pickups, each explained the first time she touches one (0.4.46, tutorial/explainers.ts).
+pickup 40 10 item=energy-small
+pickup 65 10 item=missile-pack
+pickup 100 10 item=energy-large
 
 [zones]
 exit 116 next=1-1

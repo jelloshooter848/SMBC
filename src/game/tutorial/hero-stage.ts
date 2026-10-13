@@ -30,6 +30,7 @@ import {
 } from './stage-tutorial';
 import { lessonItems } from './stage-prompts';
 import { lastTipsItem } from './last-tips';
+import { ExplainerBox } from './explainers';
 import { MergedInput } from './merged-input';
 import { itemName, ownsItem, TRANSIENT_KIT } from './kit';
 import {
@@ -163,6 +164,11 @@ export class HeroStageScene implements Scene, TutorialHost {
   private swallowJump = true;
   /** Lessons done when their targets were last popped. */
   private popped = 0;
+  /**
+   * The one-time pickup explainers (0.4.46, tutorial/explainers.ts): in training too, once per
+   * file. The lessons teach the items themselves (a lesson's `explains` counts as shown).
+   */
+  readonly explainers: ExplainerBox;
 
   constructor(
     private readonly game: Game,
@@ -174,6 +180,7 @@ export class HeroStageScene implements Scene, TutorialHost {
     this.level = stageLevel(stage);
     this.state = this.freshState();
     this.world = this.build(this.level.start.x, this.level.start.y);
+    this.explainers = new ExplainerBox(game, this, false);
     const def: StageTutorial = { ...stage.tutorial, greet: (ctx, done) => this.greet(ctx, done) };
     this.run = newTutorialRun(def, this.state.lives);
     this.director = new TutorialDirector(game, this, def, this.run);
@@ -349,7 +356,11 @@ export class HeroStageScene implements Scene, TutorialHost {
 
   touchLabels(): TouchLabels {
     if (this.over) return { ...NO_TOUCH_BUTTONS };
-    return this.director.heldTouchLabels() ?? levelTouchLabels(this.world.players[0], this.world);
+    return (
+      this.director.heldTouchLabels() ??
+      this.explainers.heldTouchLabels() ??
+      levelTouchLabels(this.world.players[0], this.world)
+    );
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
@@ -374,6 +385,8 @@ export class HeroStageScene implements Scene, TutorialHost {
     }
     // A new tip holds the game until OK (0.4.45): the stage stays frozen.
     if (this.director.hold([frame])) return;
+    // So does a pickup's first explainer (0.4.46).
+    if (this.explainers.hold([frame])) return;
     const world = this.world;
     world.update([frame]);
     // The top of the screen is a ceiling here: no hero gets over a gate from above it (Ryu kicking
@@ -394,8 +407,10 @@ export class HeroStageScene implements Scene, TutorialHost {
         this.director.respawn();
         return;
       }
+      this.explainers.event(ev);
     }
     this.popTargets();
+    this.explainers.update();
     // Down the flagpole: the TRAINING CLEAR card, waiting for a press.
     const phase = world.clearPhase;
     if (!this.cleared && phase && phase !== 'slide') this.clear();
@@ -407,6 +422,9 @@ export class HeroStageScene implements Scene, TutorialHost {
     if (done.length === this.popped) return;
     const ids = new Set(done.slice(this.popped));
     this.popped = done.length;
+    // A lesson that teaches an explainer's rule: the file counts it as shown (0.4.46).
+    for (const l of this.director.def.lessons)
+      if (l.explains && ids.has(l.id) && this.explainers.on) this.game.markExplained(l.explains);
     for (const e of [...this.world.entities])
       if (e instanceof TrainingTarget && e.lesson && ids.has(e.lesson)) e.pop(this.world);
   }
@@ -458,6 +476,7 @@ export class HeroStageScene implements Scene, TutorialHost {
       outline: LIGHT_SKIES.has(this.level.theme),
     });
     this.director.render(r, { gates: false });
+    this.explainers.render(r);
   }
 }
 

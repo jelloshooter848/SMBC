@@ -891,6 +891,9 @@ export class TutorialDirector {
     extra: number;
   } | null {
     if (this.busy || !this.run.greeted) return null;
+    // Another box holds the game (a pickup's explainer, 0.4.46): this one waits out of its way.
+    const holder = this.game.tips.holder;
+    if (holder && holder !== this) return null;
     const lines = this.lines();
     if (!lines.length) return null;
     const world = this.scene.world;

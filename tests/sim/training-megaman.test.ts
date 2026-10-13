@@ -28,6 +28,8 @@ describe("Mega Man's stage", () => {
     const log = playStage(h, s, megamanBot(), () => s.cleared, 7200);
     expect(s.director.done).toEqual(MEGAMAN_LESSONS.map((l) => l.id));
     expect(log.cards).toEqual([]);
+    // His pickups on the way, each explained once (0.4.46).
+    expect(log.explained).toEqual(['megaman:health-small', 'megaman:weapon-small', 'megaman:e-tank']);
     expect(log.frames).toBeLessThan(7200);
     expect(h.top()).toBeInstanceOf(CardScene);
   });

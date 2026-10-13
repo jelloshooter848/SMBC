@@ -216,6 +216,10 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   plain grey suit until the helmet instead.
 - **Drops** (0.4.35): weapon energy fills the weapon in hand, else the emptiest one he has; a weapon he hasn't found
   keeps a full tank for when he does; nothing to fill gives points (section 7's "drops").
+- **Weapons only with the Helmet** (0.4.46, owner #20): every power block gives a bare-headed Mega Man the Helmet
+  (section 2.1), and a weapon already out of its block when a hit knocks the Helmet off is the Helmet when he
+  touches it (`World.takeHeroItem`, SMB's flower touched by small Mario). The Helmet's one-time explainer says so
+  the first time he takes it in the campaign; his training's Helmet tip says it there.
 - **Flags**: today weapons unlock in a fixed order (`scratch.weapons` is a count); NEW: each is its own flag.
 - **Crossover** never lost any weapon (`NEVER_LOSE_UPGRADES` held all nine and Rush).
 
@@ -541,6 +545,13 @@ found items, back to their basic kit.
 5. **Unobtainable today**: Sophia III's Homing Missile in the campaign.
 6. **Mixed bundles today**: Link's heart container brings the white tunic; Mega Man's helmet brings Rush; Sophia's
    first Crusher brings the triple missile and both climbs. This design splits each.
+
+**One-time explainers** (0.4.46, roadmap #20 and #24; `tutorial/explainers.ts`): the first time a hero touches each
+kind of drop (Mega Man's health pellets, weapon energy and E-tank; Samus's energy and missile packs; Link's bombs,
+magic jars and hearts; Simon's hearts; Ryu's ninpo and health; Bill's falcon and health; Sophia III's missile ammo),
+a line or two in a box under the HUD says what it does and holds the game until OK, in the campaign and in training,
+once per save file (`SaveFile.explained`, in save codes since code version 2). Mega Man's and Samus's training stages
+lay their drops on the way, so each is met there.
 
 **Drops are always collectible** (owner decision, 0.4.35; `World.collectPickup`): every hero picks up every enemy
 drop, even one they cannot use yet. Ammo or energy for a power not owned yet goes into a hidden reserve that is there
