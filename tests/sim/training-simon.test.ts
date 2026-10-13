@@ -95,7 +95,8 @@ describe("Simon's stage", () => {
     h.idle(30);
     expect(bar().angle).toBe(angle);
     playStage(h, s, simonBot(), () => lessonId(s) !== 'stopwatch', 600);
-    expect(lessonId(s)).toBe('flag');
+    // WHAT A HIT TAKES is next (0.4.46), then the flagpole.
+    expect(lessonId(s)).toBe('hit');
     expect(s.world.player.hp).toBe(16);
   });
 

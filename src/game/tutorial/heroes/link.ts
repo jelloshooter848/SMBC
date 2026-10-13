@@ -8,7 +8,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { ownsItem } from '../kit';
-import { hitsSince, hurtsSince, blocksSince, onTop } from './common';
+import { blocksSince, hitLessons, hitsSince, hurtsSince, onTop } from './common';
 import source from '../../../content/levels/training/link.map?raw';
 
 /*
@@ -55,7 +55,10 @@ export const LINK_STAGE = {
   swordBlock: { x: 131, y: 8 },
   swordTarget: 138,
   swordGate: 141,
-  flag: 148,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 146,
+  hitGate: 148,
+  flag: 156,
 } as const;
 const S = LINK_STAGE;
 
@@ -269,6 +272,7 @@ export const LINK_LESSONS: readonly Lesson[] = [
     text: 'WITH FULL HEARTS, [SWORD:attack] FIRES BEAMS. HIT THE TARGET TWICE.',
     done: (w) => hitsSince(w, (h) => h.shotKind === 'sword-beam').length >= 2,
   },
+  ...hitLessons('link', { at: 142, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
     at: 142,
@@ -291,6 +295,7 @@ export const LINK_GATES: readonly TutorialGate[] = [
   gate(S.ringGate, 'blue-ring'),
   gate(S.fireGate, 'fire-spell'),
   gate(S.swordGate, 'magical-sword'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const LINK_STAGE_DEF: HeroStage = {

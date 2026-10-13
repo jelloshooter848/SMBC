@@ -330,8 +330,10 @@ export class TutorialDirector {
     if (!l) return;
     const world = this.scene.world;
     markLessonUp(world);
-    if (this.scene.restartAt) this.giveFloor();
-    for (const p of world.players) refillHealth(p);
+    if (!l.keepKit) {
+      if (this.scene.restartAt) this.giveFloor();
+      for (const p of world.players) refillHealth(p);
+    }
     l.enter?.(world);
   }
 

@@ -6,7 +6,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget } from '../targets';
-import { blocksSince, hitsSince, landedPast, onTop } from './common';
+import { blocksSince, hitLessons, hitsSince, landedPast, onTop } from './common';
 import source from '../../../content/levels/training/megaman.map?raw';
 
 /*
@@ -44,7 +44,10 @@ export const MEGAMAN_STAGE = {
   knuckleGate: 113,
   boltBlock: { x: 117, y: 8 },
   boltGate: 131,
-  flag: 138,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 150,
+  hitGate: 152,
+  flag: 158,
 } as const;
 const S = MEGAMAN_STAGE;
 
@@ -176,6 +179,7 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     retry: 'ONE BOLT HITS EVERY ENEMY IN ITS LINE: FIRE IT AT THE GROUP.',
     done: boltHitMany,
   },
+  ...hitLessons('megaman', { at: 147, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
     at: 132,
@@ -197,6 +201,7 @@ export const MEGAMAN_GATES: readonly TutorialGate[] = [
   gate(S.flameGate, 'flame'),
   gate(S.knuckleGate, 'knuckle'),
   gate(S.boltGate, 'bolt'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const MEGAMAN_STAGE_DEF: HeroStage = {

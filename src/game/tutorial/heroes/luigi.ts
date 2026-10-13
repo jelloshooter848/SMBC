@@ -4,7 +4,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { SPRINT_FRAMES, sprintFrames, sprintMeter } from '../mario-1-0';
-import { landedPast, onTop } from './common';
+import { hitLessons, landedPast, onTop, past } from './common';
 import source from '../../../content/levels/training/luigi.map?raw';
 
 /*
@@ -40,7 +40,11 @@ export const LUIGI_STAGE = {
   wide: { from: 56, to: 63 },
   farBank: { from: 64, to: 75, top: 8 },
   block: { x: 70, y: 5 },
-  flag: 84,
+  /** WHAT A HIT TAKES (0.4.46): past the far bank, the thorn bush and the gate until the hit is taken. */
+  hitFrom: 77,
+  thorns: 80,
+  hitGate: 82,
+  flag: 92,
 } as const;
 const S = LUIGI_STAGE;
 
@@ -118,8 +122,18 @@ export const LUIGI_LESSONS: readonly Lesson[] = [
     note: true,
     item: 'mushroom',
     block: S.block,
-    get: 'MUSHROOMS AND FIRE FLOWERS WORK FOR LUIGI JUST AS FOR MARIO. ON TO THE FLAGPOLE!',
-    text: 'BIG LUIGI TAKES A HIT AND BREAKS BRICKS. ON TO THE FLAGPOLE!',
+    get: 'MUSHROOMS AND FIRE FLOWERS WORK FOR LUIGI AS FOR MARIO. BUMP THE ? BLOCK!',
+    text: 'BIG LUIGI TAKES A HIT AND BREAKS BRICKS. ON TO THE RIGHT!',
+    // Read and gone by: on past the far bank (0.4.46: what a hit takes is next).
+    done: (w) => past(w, S.hitFrom),
+  },
+  ...hitLessons('luigi', { at: S.hitFrom, row: 8, thorns: S.thorns, big: true }),
+  {
+    id: 'flag',
+    at: S.hitFrom,
+    row: 8,
+    note: true,
+    text: 'ALL DONE! GRAB THE FLAGPOLE.',
     done: (w) => w.flagGrabbedBy !== null,
   },
 ];
@@ -128,6 +142,7 @@ export const LUIGI_LESSONS: readonly Lesson[] = [
 export const LUIGI_GATES: readonly TutorialGate[] = [
   { col: S.runGate, top: 3, bottom: 9, after: 'run' },
   { col: S.slideGate, top: 3, bottom: 9, after: 'slide' },
+  { col: S.hitGate, top: 2, bottom: 8, after: 'hit' },
 ];
 
 export const LUIGI_STAGE_DEF: HeroStage = {

@@ -8,7 +8,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget } from '../targets';
-import { alive, hitsSince, landedPast, onTop } from './common';
+import { alive, hitLessons, hitsSince, landedPast, onTop } from './common';
 import source from '../../../content/levels/training/sophia.map?raw';
 
 /*
@@ -48,7 +48,10 @@ export const SOPHIA_STAGE = {
   homingBlock: { x: 140, y: 9 },
   ledge: { from: 145, to: 147, top: 7 },
   homingGate: 151,
-  flag: 158,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 157,
+  hitGate: 160,
+  flag: 166,
 } as const;
 const S = SOPHIA_STAGE;
 
@@ -208,6 +211,7 @@ export const SOPHIA_LESSONS: readonly Lesson[] = [
     done: (w) =>
       hitsSince(w, (h) => h.shotKind === 'sophia-homing' && h.target instanceof TrainingTarget).length > 0,
   },
+  ...hitLessons('sophia', { at: 152, row: 11, thorns: S.thorns, big: true }),
   {
     id: 'flag',
     at: 152,
@@ -230,6 +234,7 @@ export const SOPHIA_GATES: readonly TutorialGate[] = [
   // A hover crosses the ditch under the roof: the gate holds until she drove along the roof.
   gate(S.ceilingGate, 'ceiling-climb'),
   gate(S.homingGate, 'homing-missile'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const SOPHIA_STAGE_DEF: HeroStage = {

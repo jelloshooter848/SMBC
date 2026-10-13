@@ -162,7 +162,8 @@ describe("Luigi's stage", () => {
     expect(lessonId(s)).toBe('power-ups');
     expect(s.world.player.powerState).toBe('small');
     // The lessons before are done (their gates open); the mushroom is this lesson's own (its block).
-    expect(s.director.closedGates).toEqual([]);
+    // Only WHAT A HIT TAKES's gate, further on, is closed (0.4.46).
+    expect(s.director.closedGates).toEqual([S.hitGate]);
     expect(heroCol(s)).toBe(S.farBank.from + 1);
   });
 

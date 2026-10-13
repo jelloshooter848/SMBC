@@ -530,6 +530,16 @@ found items, back to their basic kit.
 | Ryu          | 2 health                                                                                    | everything    |
 | Bill         | 1 hit                                                                                       | everything    |
 
+Checked against the code in 0.4.46 (roadmap #21): each row is the hero's `onHurt`, and a death is
+`Game.resetAfterDeath` (campaign: back to `heroStart`). `tests/sim/hit-rules.test.ts` holds the code, this table and
+the training tips to each other.
+
+**WHAT A HIT TAKES** (0.4.46): every training stage, 1-0 included, ends with this lesson before the flagpole: a thorn
+bush that can't beat the hero (`TrainingThorns`; a small power-up hero is made big first), the hero walks into it,
+and a tip says what the hit took (`tutorial/hit-rules.ts`), with the hero left as the hit left them while it is read
+(Mega Man bare-headed, his health down); the flagpole's lesson gives it all back. A gate holds the way until the hit
+is taken.
+
 **Notes:**
 
 1. **A death wipes the played hero's kit** (`LevelScene`'s `died`: `s.kit = {}`; the Hammer Bro battle the

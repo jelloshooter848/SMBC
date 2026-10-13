@@ -10,7 +10,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { LessonCandle, TrainingTarget } from '../targets';
-import { alive, hitsSince, landedPast, onTop } from './common';
+import { alive, hitLessons, hitsSince, landedPast, onTop } from './common';
 import source from '../../../content/levels/training/simon.map?raw';
 
 /*
@@ -61,7 +61,10 @@ export const SIMON_STAGE = {
   /** Past the fire bar's reach: his middle at this column. */
   pastBar: 149,
   watchGate: 150,
-  flag: 156,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 155,
+  hitGate: 157,
+  flag: 164,
 } as const;
 const S = SIMON_STAGE;
 
@@ -287,6 +290,7 @@ export const SIMON_LESSONS: readonly Lesson[] = [
     retry: 'USE THE STOPWATCH CLOSE TO THE FIRE BAR, THEN WALK PAST IT WHILE IT STANDS STILL.',
     done: pastFrozenBar,
   },
+  ...hitLessons('simon', { at: 151, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
     at: 151,
@@ -311,6 +315,7 @@ export const SIMON_GATES: readonly TutorialGate[] = [
   gate(S.shotsGate, 'shots'),
   // The fire bar's blink after a hit would let him walk through it: the gate holds until it is frozen.
   gate(S.watchGate, 'stopwatch'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const SIMON_STAGE_DEF: HeroStage = {

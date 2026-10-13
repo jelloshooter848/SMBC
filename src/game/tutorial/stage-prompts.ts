@@ -122,6 +122,11 @@ export interface Lesson {
    */
   demo?: LessonDemo;
   /**
+   * The hero keeps what they have when it comes up (0.4.46, WHAT A HIT TAKES): no kit floor and no
+   * health topped up, so what a hit just took still shows while its tip is read.
+   */
+  keepKit?: boolean;
+  /**
    * The one-time explainer (tutorial/explainers.ts, 0.4.46) this lesson teaches: once it is done in
    * a training stage the file counts it as shown (Mega Man's Helmet and its weapons rule).
    */

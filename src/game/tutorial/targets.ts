@@ -1,5 +1,6 @@
 import type { Renderer } from '@engine/gfx/renderer';
-import { px, toPx } from '@engine/math/units';
+import { px, tileToSub, toPx } from '@engine/math/units';
+import { overlaps } from '@engine/math/aabb';
 import type { View } from '../entities/entity';
 import { Enemy } from '../entities/enemies/enemy';
 import { Projectile, type ProjectileSpec } from '../entities/projectiles/projectile';
@@ -387,5 +388,76 @@ export function stageWatch(world: World): StageWatch {
 export function lessonTargets(world: World, id: string): TrainingTarget[] {
   return world.entities.filter(
     (e): e is TrainingTarget => e instanceof TrainingTarget && e.alive && e.lesson === id,
+  );
+}
+
+/**
+ * A training stage's thorn bush (0.4.46, WHAT A HIT TAKES, roadmap #21): a low bush of thorns on
+ * the ground that hurts whoever walks into it, as any hit does, and never kills (a hero a hit would
+ * end, small, is left alone: the lesson makes them big first). It is only there while its lesson
+ * is played, and pops once that is done. Drawn with rectangles, so it needs no sprite sheet.
+ */
+export class TrainingThorns extends Entity {
+  readonly kind = 'thorns';
+  /** It has hurt a hero (the hit counted: the hero's invulnerability came up). */
+  struck = false;
+
+  constructor(
+    col: number,
+    /** The row the hero stands in: the bush sits on the ground under it. */
+    row: number,
+    readonly lesson: string,
+  ) {
+    super(tileToSub(col) + px(1), tileToSub(row + 1) - px(10), 14, 10);
+    this.despawnMargin = null;
+  }
+
+  update(world: World): void {
+    for (const p of world.players) {
+      if (p.dead || p.out || p.invulnerable || !overlaps(p.body, this.body)) continue;
+      // A hit that would end a power-up hero (small) is no lesson: left alone.
+      if (p.def.damage.kind === 'powerup' && p.powerState === 'small') continue;
+      world.hurtPlayer(p, p.centerX < this.body.x + (this.body.w >> 1) ? -1 : 1);
+      if (p.invulnerable || p.dead) this.struck = true;
+    }
+  }
+
+  /** Its lesson is done: it pops in a puff. */
+  pop(world: World): void {
+    if (!this.alive) return;
+    const b = this.body;
+    world.spawn(new Explosion(b.x + (b.w >> 1), b.y + (b.h >> 1), true));
+    this.destroy();
+  }
+
+  render(r: Renderer, view: View): void {
+    const x = toPx(this.body.x) - view.camX;
+    const y = toPx(this.body.y);
+    const dark = '#005800';
+    const leaf = '#00a800';
+    const thorn = '#fcfcfc';
+    // A low mound of dark leaves, a lighter top, thorns sticking out of it.
+    r.rect(x, y + 4, 14, 6, dark);
+    r.rect(x + 2, y + 2, 10, 3, leaf);
+    r.rect(x + 1, y + 5, 2, 2, leaf);
+    r.rect(x + 9, y + 6, 3, 2, leaf);
+    for (const [tx, ty] of [
+      [1, 1],
+      [6, 0],
+      [11, 1],
+      [-1, 5],
+      [14, 5],
+      [4, 3],
+      [9, 3],
+    ] as const)
+      r.rect(x + tx, y + ty, 1, 2, thorn);
+  }
+}
+
+/** The thorn bushes of lesson `id` in the world. */
+export function lessonThorns(world: World, id?: string): TrainingThorns[] {
+  return world.entities.filter(
+    (e): e is TrainingThorns =>
+      e instanceof TrainingThorns && e.alive && (id === undefined || e.lesson === id),
   );
 }
