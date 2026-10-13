@@ -120,7 +120,7 @@ export class ExplainerBox {
 
   /** Explainers show here: campaign play from a save file (training too), not an editor play-test. */
   get on(): boolean {
-    return this.game.campaign !== null && !this.game.playtestDone;
+    return !!this.game.tips && this.game.campaign !== null && !this.game.playtestDone;
   }
 
   /** A world event of the frame: a pickup touched, an item taken for the first time. */
@@ -161,7 +161,7 @@ export class ExplainerBox {
   update(): void {
     const next = this.queue[0];
     const tips = this.game.tips;
-    if (!next || this.frozen || tips.holder) return;
+    if (!next || !tips || this.frozen || tips.holder) return;
     const p = this.host.world.players[0];
     const steady =
       !p ||
@@ -186,7 +186,7 @@ export class ExplainerBox {
 
   /** An explainer holds the game now (the host's world stays frozen until a press). */
   get frozen(): boolean {
-    return this.game.tips.heldBy(this) !== null;
+    return !!this.game.tips && this.game.tips.heldBy(this) !== null;
   }
 
   /**
@@ -195,7 +195,7 @@ export class ExplainerBox {
    */
   hold(inputs: readonly InputFrame[]): boolean {
     const tips = this.game.tips;
-    if (!tips.heldBy(this)) return false;
+    if (!tips?.heldBy(this)) return false;
     if (!tips.update(this, inputs)) {
       this.current = null;
       this.host.resumePlay();

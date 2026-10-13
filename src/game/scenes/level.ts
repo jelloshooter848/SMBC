@@ -240,7 +240,7 @@ export class LevelScene implements Scene {
       // may act (a later event would play on over the arena's map).
       if (this.roundOver && !this.game.scenes.find((s) => s === this)) break;
     }
-    if (this.game.scenes.find((s) => s === this)) this.explainers.update();
+    if (!this.roundOver) this.explainers.update();
   }
 
   /** Player 1's hero decides the buttons: touch input only ever drives player 1. */

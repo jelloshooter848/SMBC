@@ -267,7 +267,8 @@ function drawButton(
   label: string,
   lit: boolean,
 ): void {
-  const R = 15;
+  // Wide enough for its caption (TOOL as well as RUN).
+  const R = Math.max(15, label.length * 4 + 3);
   disc(r, cx, cy, R, lit ? C.btnLit : C.btn);
   circle(r, cx, cy, R, C.btnRun);
   if (lit) {
