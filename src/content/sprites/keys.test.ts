@@ -19,6 +19,7 @@ describe('keys sprite sheet (0.4.52)', () => {
     expect(size('key-icon')).toEqual([8, 8]);
     expect(size('padlock')).toEqual([8, 8]);
     expect(size('portcullis')).toEqual([16, 32]);
+    for (let n = 4; n < 32; n += 4) expect(size(`portcullis-${n}`)).toEqual([16, n]);
     for (const rows of Object.values(keysDef.frames))
       for (const r of rows) expect(r.length).toBe((rows[0] as string).length);
   });

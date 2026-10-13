@@ -28,6 +28,8 @@ export type BlockContent =
   | 'egg'
   /** Lays the hidden path of the `path` zone whose `block=x,y` is this block (World.layPath). */
   | 'path'
+  /** A key box (0.4.52, objects/keys.ts): the key rises out of it, and it is spent. */
+  | 'key'
   | 'none';
 
 export interface TileDef {
@@ -143,6 +145,12 @@ export const T = {
    * hero with a fixed jump arc), so a springboard's launch rises through it untouched.
    */
   CLOUD_LEDGE: def('cloud-ledge', 'top'),
+  /**
+   * A key box (0.4.52, objects/keys.ts): drawn as the theme's brick and never broken; bumped from
+   * below (any hero, small or big) or blasted, the key rises out and it is a used block. Laid only
+   * in campaign play by a `key-box` entity over a map brick (no map character).
+   */
+  BRICK_KEY: def('brick-key', 'solid', { block: { kind: 'brick', content: 'key' } }),
 } as const;
 
 export const TILES: readonly TileDef[] = defs;
@@ -233,12 +241,12 @@ export const DEFAULT_LEGEND: Readonly<Record<string, number | string>> = {
 
 /**
  * The tiles the level editor offers as brushes, in its order: every tile with a map character,
- * then any other a map can hold. Left out: air (the eraser), the bump placeholder and the one-way
- * cloud ledge (laid only by a campaign `ledge` zone or a `one-way` path: no map character, so a
- * painted one would save as air).
+ * then any other a map can hold. Left out: air (the eraser), the bump placeholder, the one-way
+ * cloud ledge (laid only by a campaign `ledge` zone or a `one-way` path) and the key box (laid only
+ * by a `key-box` entity): no map character, so a painted one would save as air.
  */
 export function editorTiles(): number[] {
-  const hidden = new Set<number>([T.AIR, T.BUMPING, T.CLOUD_LEDGE]);
+  const hidden = new Set<number>([T.AIR, T.BUMPING, T.CLOUD_LEDGE, T.BRICK_KEY]);
   const legend = Object.values(DEFAULT_LEGEND).filter((v): v is number => typeof v === 'number');
   const out = legend.filter((v) => !hidden.has(v));
   for (const def of TILES) if (!legend.includes(def.id) && !hidden.has(def.id)) out.push(def.id);

@@ -9,7 +9,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * - `key-icon` (8x8): the HUD's key while a player carries it (hud/hud.ts).
  * - `padlock` (8x8): hung on a locked door or gate; it drops when the key turns.
  * - `portcullis` (16x32): 5-1's crypt gate, iron bars on its bottom row; raised, it is hidden in
- *   the wall above the doorway.
+ *   the wall above the doorway (`portcullis-<n>`: its bottom n rows, as it rises or drops).
  *
  * `keys` index roles: 0 outline, 1 gold, 2 dark gold, 3 highlight, 4 iron light, 5 iron dark.
  */
@@ -97,6 +97,16 @@ const portcullis = iron([
   '020.020.020.020.',
 ]);
 
+/** The portcullis rises and drops in steps of this many px (`portcullis-<rows>`). */
+export const PORTCULLIS_STEP = 4;
+
+/**
+ * `portcullis-<n>`: the gate raised, only its bottom `n` rows still showing below the doorway's
+ * top (the rest is up in the wall), for n = 4, 8, ... 28.
+ */
+const raised: Record<string, string[]> = {};
+for (let n = PORTCULLIS_STEP; n < 32; n += PORTCULLIS_STEP) raised[`portcullis-${n}`] = portcullis.slice(32 - n);
+
 export const keysDef: SpriteDef = {
   palette: 'keys',
   frames: {
@@ -104,5 +114,6 @@ export const keysDef: SpriteDef = {
     'key-icon': keyIcon,
     padlock,
     portcullis,
+    ...raised,
   },
 };

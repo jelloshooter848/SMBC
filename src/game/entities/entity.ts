@@ -19,6 +19,8 @@ export interface View {
    * with its button): LevelScene's, through World.talkHint. Bare `verb` without it.
    */
   talkHint?: (verb: string) => string;
+  /** The same for up's key (0.4.52: "UP" over an open door): World.upHint. */
+  upHint?: (verb: string) => string;
 }
 
 export type Layer = 'back' | 'main' | 'front';

@@ -8,9 +8,11 @@ import { beat, storyOn, type StoryGame } from './beats';
  * Luigi's run in 1-1 (luigi-runs.ts) came first; the others share one scene (hero-sighting.ts),
  * each driven by a script here: what is drawn at each frame, its sounds and an optional camera pan.
  *
- * Built so far: Link (2-1, a vine grows by magic and he climbs it into the sky) and Mega Man
- * (3-1, he flickers, then beams up). Samus, Simon, Ryu, Bill and Sophia III come with their worlds;
- * their beat ids are reserved already (beats.ts SIGHTING_HEROES, the save code's version 3).
+ * Built so far: Link (2-1, a vine grows by magic and he climbs it into the sky), Mega Man (3-1,
+ * he flickers, then beams up), and since 0.4.52 Samus (4-2, shown as 4-1: she bombs her way on
+ * into the caves) and Simon (5-1: he walks through the crypt gate, and it slams shut). Ryu, Bill
+ * and Sophia III come with their worlds; their beat ids are reserved already (beats.ts
+ * SIGHTING_HEROES, the save code's version 3).
  */
 
 /** Something the scene draws at a frame. Positions are level px (x) and screen px (y). */
@@ -33,7 +35,15 @@ export type SightingDraw =
   /** A beanstalk as the vine entity draws it: `x` its left edge, from `base` (its foot) up to `top`. */
   | { kind: 'vine'; x: number; base: number; top: number }
   /** A puff of wand sparkles flung out from (x, y), `age` frames old (gone at BURST_LIFE). */
-  | { kind: 'burst'; x: number; y: number; age: number };
+  | { kind: 'burst'; x: number; y: number; age: number }
+  /**
+   * (0.4.52) A locked gate (objects/keys.ts drawGate) drawn over the level's own: `x` its left edge
+   * (level px), `top` its doorway's top (screen px), its portcullis raised `lift` px (0 shut), its
+   * padlock swung `swing` px aside.
+   */
+  | { kind: 'gate'; x: number; top: number; lift: number; swing: number }
+  /** (0.4.52) A little dust puff either side of (x, y), `age` frames old (gone at DUST_LIFE). */
+  | { kind: 'dust'; x: number; y: number; age: number };
 
 export interface SightingScript {
   /** The hero's CharacterDef id (the beat is `sighting:<hero>`). */
@@ -56,6 +66,9 @@ export interface SightingScript {
 
 /** Frames a sparkle burst lasts. */
 export const BURST_LIFE = 30;
+
+/** Frames a dust puff lasts. */
+export const DUST_LIFE = 12;
 
 /** The ground's top on a start screen (row 13), where the heroes' feet are. */
 export const GROUND = 208;
@@ -202,12 +215,173 @@ export const MEGAMAN_SIGHTING: SightingScript = {
   },
 };
 
+/* ---------------------------------------------------------------- Samus, 4-2 (shown as 4-1) */
+
+/**
+ * Samus (4-2, Brinstar; she hides in 4-2-cavern, up the vine and down the warp pipe). The level
+ * starts with a fall into the cave: the scene waits until every player has landed (sightingDue).
+ * On the little ledge between the first two pits she looks back once, curls into the morph ball,
+ * lays a bomb, and its burst bounces her over the next pit; she rolls on, deeper in.
+ */
+export const SAMUS_SIGHTING_TIMING = {
+  /** Where she stands (level px, her left edge): the ledge between the first two pits. */
+  x: 212,
+  /** She looks back at you once, then away again. */
+  lookAt: 40,
+  lookEnd: 52,
+  /** She curls into the ball (ball-0..3, one every `roll` frames) and lays the bomb. */
+  curlAt: 52,
+  roll: 3,
+  bombAt: 56,
+  /** The bomb blinks every 4 frames (held on bomb-0 with reduce flashing), then bursts. */
+  burstAt: 64,
+  burstFrames: 8,
+  /** The burst bounces the ball: up `hopVy`, falling `gravity`, on right `vx` px a frame. */
+  hopVy: -4,
+  gravity: 0.25,
+  vx: 2.5,
+  /** Frames after she is off the screen before the card. */
+  beat: 24,
+} as const;
+const ST = SAMUS_SIGHTING_TIMING;
+
+/** Where the ball is at frame `t` after the burst (its left edge, its feet). */
+function samusBall(t: number): { x: number; feet: number } {
+  const k = t - ST.burstAt;
+  const x = ST.x + ST.vx * k;
+  const rise = ST.hopVy * k + (ST.gravity * k * k) / 2;
+  return { x, feet: GROUND + Math.min(0, rise) };
+}
+
+/** The first frame the ball is wholly off the right of the screen. */
+const SAMUS_GONE = ST.burstAt + Math.ceil((256 - ST.x) / ST.vx);
+
+export const SAMUS_SIGHTING: SightingScript = {
+  hero: 'samus',
+  level: '4-2',
+  frames: SAMUS_GONE + ST.beat,
+  sfx: { [ST.bombAt]: 'dink', [ST.burstAt]: 'bump' },
+  draw(t, reduce) {
+    const out: SightingDraw[] = [];
+    if (t < ST.curlAt) {
+      out.push(hero('samus', 'idle', ST.x, GROUND, t >= ST.lookAt && t < ST.lookEnd));
+      return out;
+    }
+    const ball = `ball-${Math.floor((t - ST.curlAt) / ST.roll) % 4}`;
+    if (t < ST.burstAt) {
+      if (t >= ST.bombAt) {
+        const lit = reduce || ((t - ST.bombAt) >> 2) % 2 === 0;
+        out.push({ ...hero('samus', lit ? 'bomb-0' : 'bomb-1', ST.x + 4, GROUND), sparkles: false });
+      }
+      out.push(hero('samus', ball, ST.x, GROUND));
+      return out;
+    }
+    if (t < ST.burstAt + ST.burstFrames)
+      out.push({ ...hero('samus', 'bomb-burst', ST.x, GROUND + 4), sparkles: false });
+    const at = samusBall(t);
+    if (at.x < 256) out.push(hero('samus', ball, at.x, at.feet));
+    return out;
+  },
+};
+
+/* ---------------------------------------------------------------- Simon, 5-1 */
+
+/**
+ * Simon (5-1, the castle courtyard; he hides in the crypt behind the locked gate by the start,
+ * whose real way in is the key in 5-1-bonus). A bat flutters down; he looks back at you over his
+ * shoulder, walks to the gate (never runs), the portcullis rises for him (the curse) and he steps
+ * into the dark; it drops behind him with a CLANG, the padlock swinging, and the bat flies off.
+ * The gate is the level's own (`locked-gate 12 11`): the scene draws it raised and dropping over it.
+ */
+export const SIMON_SIGHTING_TIMING = {
+  /** Where he stands (level px, his left edge), facing the castle. */
+  x: 148,
+  /** The gate: its left edge (level px, column 12) and its doorway's top (screen px, row 11). */
+  gateX: 192,
+  gateTop: 176,
+  /** The bat flutters down from above the screen to hang over him, then flies off. */
+  batX: 168,
+  batY: 120,
+  batInEnd: 36,
+  /** He looks back at you over his shoulder. */
+  lookAt: 24,
+  lookEnd: 40,
+  /** He walks to the gate, `walk` px a frame, swapping walk-0..2 every 8 frames. */
+  walkAt: 50,
+  walk: 0.75,
+  /** The portcullis rises for him, a px a frame, with wand sparkles. */
+  raiseAt: 50,
+  /** It drops behind him, `drop` px a frame, from `dropAt`; CLANG as it lands. */
+  dropAt: 124,
+  drop: 4,
+  /** The padlock swings (1 px either way) for this many frames once it lands. */
+  swingFrames: 24,
+  /** The bat flies off up and away from here. */
+  batOffAt: 136,
+  /** Frames after the bat is gone before the card. */
+  beat: 24,
+} as const;
+const SM = SIMON_SIGHTING_TIMING;
+
+/** The frame the portcullis is shut again (CLANG). */
+const SIMON_CLANG = SM.dropAt + Math.ceil(32 / SM.drop);
+/** The frame the bat has flown off the screen. */
+const SIMON_BAT_GONE = SM.batOffAt + 40;
+
+export const SIMON_SIGHTING: SightingScript = {
+  hero: 'simon',
+  level: '5-1',
+  frames: Math.max(SIMON_BAT_GONE, SIMON_CLANG + SM.swingFrames) + SM.beat,
+  sfx: { [SM.raiseAt]: 'magic', [SIMON_CLANG]: 'bump' },
+  draw(t) {
+    const out: SightingDraw[] = [];
+    // The gate: raised for him, then dropping shut behind him (the level's own shows once still).
+    const lift =
+      t < SM.raiseAt ? 0 : t < SM.dropAt ? Math.min(32, t - SM.raiseAt) : Math.max(0, 32 - SM.drop * (t - SM.dropAt));
+    const swinging = t >= SIMON_CLANG && t < SIMON_CLANG + SM.swingFrames;
+    const gate: SightingDraw = {
+      kind: 'gate',
+      x: SM.gateX,
+      top: SM.gateTop,
+      lift,
+      swing: swinging ? ((t - SIMON_CLANG) >> 2) % 2 === 0 ? 1 : -1 : 0,
+    };
+    const moving = t >= SM.raiseAt && t < SIMON_CLANG + SM.swingFrames;
+    // Simon walks into the dark doorway; the falling bars cover him, and he is gone.
+    if (t < SIMON_CLANG) {
+      if (moving) out.push(gate);
+      if (t < SM.walkAt) out.push(hero('simon', 'idle', SM.x, GROUND, t >= SM.lookAt && t < SM.lookEnd));
+      else {
+        const x = Math.min(SM.gateX, SM.x + SM.walk * (t - SM.walkAt));
+        const walking = x < SM.gateX;
+        out.push(hero('simon', walking ? `walk-${((t - SM.walkAt) >> 3) % 3}` : 'idle', x, GROUND));
+      }
+      if (t >= SM.dropAt) out.push({ ...gate });
+    } else if (moving) out.push(gate);
+    if (t >= SM.raiseAt && t < SM.raiseAt + BURST_LIFE)
+      out.push({ kind: 'burst', x: SM.gateX + 8, y: SM.gateTop + 8, age: t - SM.raiseAt });
+    if (t >= SIMON_CLANG && t < SIMON_CLANG + DUST_LIFE)
+      out.push({ kind: 'dust', x: SM.gateX + 8, y: GROUND - 1, age: t - SIMON_CLANG });
+    // The bat (its own colours): down from above the screen, flapping, then up and away.
+    if (t < SIMON_BAT_GONE) {
+      const flap = `bat-${1 + ((t >> 3) & 1)}`;
+      const y =
+        t < SM.batInEnd ? tween(t, 0, SM.batInEnd, -16, SM.batY) : t < SM.batOffAt ? SM.batY : SM.batY - 4 * (t - SM.batOffAt);
+      const x = t < SM.batOffAt ? SM.batX + ((t >> 4) % 2) : SM.batX + 2 * (t - SM.batOffAt);
+      if (y > -16) out.push({ kind: 'sprite', sheet: 'crypt', palette: 'crypt', frame: flap, x, feet: y + 16 });
+    }
+    return out;
+  },
+};
+
 /* ---------------------------------------------------------------- when one plays */
 
 /** The built sightings, by the level they play in. */
 export const SIGHTINGS: Readonly<Record<string, SightingScript>> = {
   [LINK_SIGHTING.level]: LINK_SIGHTING,
   [MEGAMAN_SIGHTING.level]: MEGAMAN_SIGHTING,
+  [SAMUS_SIGHTING.level]: SAMUS_SIGHTING,
+  [SIMON_SIGHTING.level]: SIMON_SIGHTING,
 };
 
 /** Camera px a start screen may be scrolled and still count as the start (a warp lands further). */
