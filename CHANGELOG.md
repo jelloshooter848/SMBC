@@ -8,6 +8,29 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.53] - 2026-10-13
+
+### Added
+
+- Hero sightings: Ryu drops in at the start of Galesburg, dashes to the castle wall and a panel spins him through it;
+  Bill goes hand over hand under the first bridge on Galuga Island, lets go off screen, and something booms far ahead.
+
+### Changed
+
+- Campaign: World 6 (GALESBURG) and World 7 (GALUGA ISLAND) are drawn from above: Ryu's night town with its bamboo park,
+  snowy pass and pagoda; Bill's island with its snowfield, steel bridge, waterfall and alien lair. Classic play keeps the
+  old pages.
+- Campaign: World 6 opens on Ryu's level and World 7 on Bill's. Old 6-2 is shown as 6-1 and old 6-1 as 6-2; World 7 now
+  runs 7-3, 7-1, 7-2 (shown 7-1, 7-2, 7-3), then 7-4. The map, HUD, intro card, announcer and Ryu's duel all show the new
+  numbers. Old saves load where they were and never get stuck; save codes are unchanged.
+- World 7's castle no longer calls Red Falcon "the last fake": the real king just "can't be far".
+- Colour-blind modes keep brick, wood and earth tones brown on the new maps; true reds still shift.
+
+### Fixed
+
+- A TALK-button prompt (like OPEN at Simon's gate) no longer stays on screen while your hero is dying or play is paused
+  for a pipe, a castle clear or a scene.
+
 ## [0.4.52] - 2026-10-13
 
 ### Added
@@ -1151,7 +1174,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...HEAD
+[0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53
 [0.4.52]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...v0.4.52
 [0.4.51]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...v0.4.51
 [0.4.50]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...v0.4.50
