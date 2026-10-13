@@ -37,7 +37,7 @@ export const STORY_TOAD_PAGES: readonly Page[] = [
 
 /* ---------------------------------------------------------------- 2.3a: the fake Bowsers */
 
-/** Bowser on first entering 8-4's bridge room (campaign), in the prompt box. */
+/** Bowser as the hero reaches the last castle's bridge (campaign; Bowser's Castle since 0.4.55), in the prompt box. */
 export function noMoreStandIns(hero: string): Page {
   return ['BOWSER: NO MORE STAND-INS,', `${hero}. THIS TIME IT'S`, 'REALLY ME! BWA HA HA!'];
 }
@@ -189,7 +189,7 @@ export function castlePages(id: string): CastlePages | undefined {
   return CASTLE_PAGES[id];
 }
 
-/** Said once as the wand breaks over 8-4's lava (campaign; a scene without on-screen text). */
+/** Said once as the wand breaks over the last castle's lava (campaign; Bowser's Castle since 0.4.55; no on-screen text). */
 export const WAND_BREAK_SAID =
   "The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air.";
 
