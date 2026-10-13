@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { MapNode, WorldMapPage } from '@game/map/types';
 import { songs } from '@content/music/songs';
 import { WORLD_MAP_SONGS } from '@content/music/world-maps';
-import { CAMPAIGN_PAGES, isPageId, levelPage, MAP_PAGES, mapPage, pagesInGroup, SMB_PAGES } from './index';
+import {
+  CAMPAIGN_PAGES,
+  isPageId,
+  levelPage,
+  MAP_PAGES,
+  mapPage,
+  pagesInGroup,
+  SMB_PAGES,
+  VALLEY_PAGES,
+} from './index';
 import { MAP_ACTOR_TYPES, MAP_LEGEND, MAP_WALKABLE, mapActorBounds } from './render';
 import { autoShore, poly, sketchProblems } from './build';
 import { isWarpNode } from '@game/map/rules';
@@ -14,6 +23,8 @@ import { SKETCH_4_ZEBES, WORLD_4_ZEBES } from './world4-zebes';
 import { SKETCH_5_TRANSYLVANIA, WORLD_5_TRANSYLVANIA } from './world5-transylvania';
 import { SKETCH_6_GALESBURG, WORLD_6_GALESBURG } from './world6-galesburg';
 import { SKETCH_7_GALUGA, WORLD_7_GALUGA } from './world7-galuga';
+import { SKETCH_8_UNDERWORLD, underworldPage, WORLD_8_UNDERWORLD } from './world8-underworld';
+import { VALLEY_LIVE, VALLEY_OF_BOWSER } from './valley-of-bowser';
 import { campaignLevel } from '@game/map/campaign-order';
 import { SKETCH_2 } from './world2';
 import { SKETCH_3 } from './world3';
@@ -79,8 +90,9 @@ describe('world map pages', () => {
     expect(SMB_PAGES.map((p) => p.exits.length)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
-  // Each SMB world, and Worlds 1-7 as campaign play draws them from above (0.4.48, 0.4.50, 0.4.52
-  // and 0.4.53: the same nodes and exit; the roads in the campaign order, map/campaign-order.ts).
+  // Each SMB world, and Worlds 1-8 as campaign play draws them from above (0.4.48, 0.4.50, 0.4.52,
+  // 0.4.53 and 0.4.54: the same nodes and exit; the roads in the campaign order,
+  // map/campaign-order.ts; World 8's road on to the VALLEY OF BOWSER once it is live).
   describe.each([
     ...SMB_PAGES.map((p, i) => [`${i + 1}`, i + 1, p, SKETCHES[i] as readonly string[]] as const),
     ['1 (campaign, from above)', 1, WORLD_1_KINGDOM, SKETCH_1_KINGDOM] as const,
@@ -90,6 +102,8 @@ describe('world map pages', () => {
     ['5 (campaign, from above)', 5, WORLD_5_TRANSYLVANIA, SKETCH_5_TRANSYLVANIA] as const,
     ['6 (campaign, from above)', 6, WORLD_6_GALESBURG, SKETCH_6_GALESBURG] as const,
     ['7 (campaign, from above)', 7, WORLD_7_GALUGA, SKETCH_7_GALUGA] as const,
+    ['8 (campaign, from above)', 8, WORLD_8_UNDERWORLD, SKETCH_8_UNDERWORLD] as const,
+    ['8 (campaign, from above, the Valley live)', 8, underworldPage(true), SKETCH_8_UNDERWORLD] as const,
   ])('world %s', (_, w, page, sketch) => {
     it('is 15 rows of 16 legend chars, sketched without hard shores', () => {
       expect(page.tiles).toHaveLength(15);
@@ -180,13 +194,18 @@ describe('world map pages', () => {
       }
     });
 
-    // World 8's road leads on to Lost World 1 (0.4.7: the Lost Levels are the story's extension).
-    it(`leaves from the castle off the right edge to ${w < 8 ? 'the next world' : 'Lost World 1'}`, () => {
+    // World 8's road leads on to Lost World 1 (0.4.7: the Lost Levels are the story's extension);
+    // in campaign play, once the VALLEY OF BOWSER is live, to the Valley (0.4.54).
+    const after =
+      w < 8 ? `smb-${w + 1}` : page.exits[0]?.to === 'valley-of-bowser' ? 'valley-of-bowser' : 'll-1';
+    it(`leaves from the castle off the right edge to ${after}`, () => {
       expect(page.exits).toHaveLength(1);
       const e = page.exits[0];
       if (!e) return;
       expect(e.from).toBe(`${w}-4`);
-      expect(e.to).toBe(w < 8 ? `smb-${w + 1}` : 'll-1');
+      expect(e.to).toBe(after);
+      // Only campaign World 8 leads to the Valley, and only once it is live (or built so).
+      if (after === 'valley-of-bowser') expect(page).not.toBe(SMB_PAGES[7]);
       expect(e.requires).toBeUndefined();
       const c = nodeAt(page, e.from);
       expect(e.points[0]).toEqual([c.x, c.y]);
@@ -203,13 +222,16 @@ describe('page registry', () => {
   it('lists SMB worlds, the hub, the Lost Levels, then the Mini Game Arena, each id once', () => {
     const ids = MAP_PAGES.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.slice(0, 9)).toEqual([...SMB_PAGES.map((p) => p.id), 'hub']);
+    // The VALLEY OF BOWSER between the SMB worlds and the hub, once live (0.4.54: VALLEY_PAGES).
+    const story = [...SMB_PAGES, ...VALLEY_PAGES].map((p) => p.id);
+    expect(ids.slice(0, story.length + 1)).toEqual([...story, 'hub']);
     expect(ids.at(-1)).toBe('arena');
-    const lost = ids.slice(9, -1);
+    const lost = ids.slice(story.length + 1, -1);
     for (const id of lost) expect(id).toMatch(/^ll-(\d|1[0-3])$/);
     expect(ids).toContain('ll-1');
     expect(MAP_PAGES.map((p) => p.group)).toEqual([
       ...SMB_PAGES.map(() => 'smb'),
+      ...VALLEY_PAGES.map(() => 'valley'),
       'hub',
       ...lost.map(() => 'll'),
       'arena',
@@ -229,7 +251,7 @@ describe('page registry', () => {
   });
 
   it('labels fit the header (10 chars) and titles fit it too (20)', () => {
-    for (const p of MAP_PAGES) {
+    for (const p of [...MAP_PAGES, VALLEY_OF_BOWSER, WORLD_8_UNDERWORLD]) {
       expect(p.label.length, p.id).toBeLessThanOrEqual(10);
       expect(p.label).toMatch(/^[A-Z0-9 ]+$/);
       expect(p.title.length, p.id).toBeLessThanOrEqual(20);
@@ -254,10 +276,17 @@ describe('page registry', () => {
     expect(pairs).toBeGreaterThanOrEqual(4); // smb-1 spot / hub centre, hub pad / arena
   });
 
-  // Every page as classic play shows it, and the campaign looks (0.4.48: World 1 from above).
+  // Every page as classic play shows it, and the campaign looks (0.4.48: World 1 from above); the
+  // VALLEY OF BOWSER and World 8's road to it whether live yet or not (0.4.54).
   describe.each([
     ...MAP_PAGES.map((p) => [p.id, p] as const),
     ...CAMPAIGN_PAGES.map((p) => [`${p.id} (campaign)`, p] as const),
+    ...(VALLEY_LIVE
+      ? []
+      : ([
+          ['valley-of-bowser (not live yet)', VALLEY_OF_BOWSER],
+          ['smb-8 (campaign, the Valley live)', underworldPage(true)],
+        ] as const)),
   ])('%s', (_, page) => {
     it('is 15 rows of 16 legend chars with plain sky under the header', () => {
       expect(page.tiles).toHaveLength(15);
@@ -307,7 +336,7 @@ describe('page registry', () => {
       }
     });
 
-    it("warps to registered pages and nodes; exits stay within the group but World 8's road on", () => {
+    it("warps to registered pages and nodes; exits stay within the group but the story's roads on", () => {
       for (const n of page.nodes.filter(isWarpNode)) {
         const to = mapPage(n.to ?? '');
         expect(to, `${n.id} → ${n.to}`).toBeDefined();
@@ -321,8 +350,10 @@ describe('page registry', () => {
         expect(n.level).toBeUndefined();
       }
       for (const e of page.exits) {
-        // The story goes on from SMB World 8 to Lost World 1; every other road stays in its group.
-        if (page.id === 'smb-8') expect(e.to).toBe('ll-1');
+        // The story goes on from SMB World 8 to Lost World 1 (campaign, once live: to the VALLEY OF
+        // BOWSER, and from its castle to Lost World 1); every other road stays in its group.
+        if (page.id === 'smb-8') expect(['ll-1', 'valley-of-bowser']).toContain(e.to);
+        else if (page.group === 'valley') expect(e.to).toBe('ll-1');
         else expect(mapPage(e.to)?.group).toBe(page.group);
         const c = nodeAt(page, e.from);
         expect(e.points[0], `exit ${e.to} leaves from its node`).toEqual([c.x, c.y]);
