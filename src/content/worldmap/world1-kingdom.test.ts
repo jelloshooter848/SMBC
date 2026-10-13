@@ -64,7 +64,7 @@ describe('World 1 from above (campaign look)', () => {
   it('shows only in campaign play: the registry keeps the classic page', () => {
     expect(mapPage('smb-1')).toBe(WORLD_1);
     expect(MAP_PAGES).not.toContain(page);
-    // 0.4.50: Worlds 2 and 3 have campaign looks too (world2-hyrule.test.ts); the rest have none.
+    // 0.4.50: Worlds 2 and 3 have campaign looks too (worlds-above.test.ts); the rest have none.
     expect(CAMPAIGN_PAGES[0]).toBe(page);
     expect(pageLook(WORLD_1, true)).toBe(page);
     expect(pageLook(WORLD_1, false)).toBe(WORLD_1);

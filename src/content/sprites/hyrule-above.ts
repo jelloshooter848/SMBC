@@ -219,27 +219,39 @@ export function cliff(s: Sides, below: 'grass' | 'rock'): string {
     };
     // Boulders packed in the face: each pixel belongs to its nearest seed (the seeds repeat every
     // 16 px, so faces join their neighbours); a crack where two meet, lit on each rock's upper left.
-    const seeds: [number, number][] = [];
+    // Every seed with its copies a tile to each side, flat (the hot loop: 0.4.50 painted it ~4×
+    // faster by comparing squared distances and taking roots only of the two nearest).
+    const sxs: number[] = [];
+    const sys: number[] = [];
     for (let j = 0; j < 3; j++)
-      for (let i = 0; i < 3; i++)
-        seeds.push([i * 5.3 + 1 + hash(i, j, 232) * 3.5, j * 5.3 + 1 + hash(i, j, 233) * 3.5]);
-    c.each((x, y) => {
-      if (!inFace(x, y)) return null;
-      let d1 = 99;
-      let d2 = 99;
-      let sx = 0;
-      let sy = 0;
-      for (const [px, py] of seeds)
+      for (let i = 0; i < 3; i++) {
+        const px = i * 5.3 + 1 + hash(i, j, 232) * 3.5;
+        const py = j * 5.3 + 1 + hash(i, j, 233) * 3.5;
         for (const ox of [-16, 0, 16])
           for (const oy of [-16, 0, 16]) {
-            const d = Math.hypot((x + 0.5 - px - ox) * 0.8, y + 0.5 - py - oy);
-            if (d < d1) {
-              d2 = d1;
-              d1 = d;
-              sx = px + ox;
-              sy = py + oy;
-            } else if (d < d2) d2 = d;
+            sxs.push(px + ox);
+            sys.push(py + oy);
           }
+      }
+    c.each((x, y) => {
+      if (!inFace(x, y)) return null;
+      let q1 = 99 * 99;
+      let q2 = 99 * 99;
+      let sx = 0;
+      let sy = 0;
+      for (let k = 0; k < sxs.length; k++) {
+        const ax = (x + 0.5 - (sxs[k] as number)) * 0.8;
+        const ay = y + 0.5 - (sys[k] as number);
+        const q = ax * ax + ay * ay;
+        if (q < q1) {
+          q2 = q1;
+          q1 = q;
+          sx = sxs[k] as number;
+          sy = sys[k] as number;
+        } else if (q < q2) q2 = q;
+      }
+      const d1 = Math.sqrt(q1);
+      const d2 = Math.sqrt(q2);
       if (d2 - d1 < 1.1) return 'k';
       const lx = x + 0.5 - sx;
       const ly = y + 0.5 - sy;

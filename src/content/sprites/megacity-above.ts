@@ -663,16 +663,24 @@ export function quarry(): string {
       if (x < 1 || x > 46 || y < top(x) || y > 37) return null;
       if (y < brow) return x + y < 18 ? '6' : hash(x, y, 440) < 0.18 ? '5' : x > 36 ? '5' : '6';
       if (y === brow) return '4';
-      let d1 = 99;
-      let d2 = 99;
+      // Squared distances, rooted only for the two nearest (0.4.50: the sheet's hot loop).
+      let q1 = 99 * 99;
+      let q2 = 99 * 99;
       let sx = 0;
       let sy = 0;
-      for (const [px, py] of seeds) {
-        const d = Math.hypot((x + 0.5 - px) * 0.8, y + 0.5 - py);
-        if (d < d1) [d2, d1, sx, sy] = [d1, d, px, py];
-        else if (d < d2) d2 = d;
+      for (let k = 0; k < seeds.length; k++) {
+        const [px, py] = seeds[k] as [number, number];
+        const ax = (x + 0.5 - px) * 0.8;
+        const ay = y + 0.5 - py;
+        const q = ax * ax + ay * ay;
+        if (q < q1) {
+          q2 = q1;
+          q1 = q;
+          sx = px;
+          sy = py;
+        } else if (q < q2) q2 = q;
       }
-      if (d2 - d1 < 1.1) return '4';
+      if (Math.sqrt(q2) - Math.sqrt(q1) < 1.1) return '4';
       const l = x + 0.5 - sx + (y + 0.5 - sy);
       if (l < -2) return '6';
       if (l > 2.5 || x > 40) return '4';
