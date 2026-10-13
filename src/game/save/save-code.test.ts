@@ -776,8 +776,8 @@ describe('save codes: format', () => {
     expect(dictFingerprints()).toEqual({
       heroes: '1:d059',
       met: '1:91ad',
-      pages: '1:b4c0',
-      levels: '1:b313',
+      pages: '3:57c0',
+      levels: '3:ac43',
       secrets: '1:1a3a',
       story: '3:187d',
       explained: '2:5f9b',
