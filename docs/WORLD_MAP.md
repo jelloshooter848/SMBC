@@ -97,7 +97,7 @@ eye goes to the next node, not a road's first tile, so a direction no road leave
 the road whose far node lies nearest in angle to it, within 60° (1-3's RIGHT, the fort's road
 leaving north onto the bridge; `world1-kingdom.test.ts`). Every road counts, open or not, so a key
 never changes meaning as roads open. Other pages keep to the first step. Since 0.4.52 (Worlds 1-5
-drawn from above) a world exit counts too, aimed at where it leaves the page: World 4's escape leaves
+drawn from above; Worlds 6-7 too since 0.4.53) a world exit counts too, aimed at where it leaves the page: World 4's escape leaves
 Tourian west and runs east along the top, so RIGHT from 4-4 heads for World 5.
 
 ### Campaign order (0.4.52, `map/campaign-order.ts`)
@@ -109,14 +109,22 @@ table: every campaign page sets its level nodes' `MapNode.shown` from it (the ma
 announcer read `rules.shownLevel`), and `shownStage` gives the HUD's WORLD, the intro card, the
 announcer's "World 4-1" and a hero stage's own HUD the shown stage while `GameState.campaignOrder`
 is set (a campaign file playing an SMB level; never classic play or the Lost Levels). World 4 plays
-internal 4-2 (Samus's cavern, Larry's airship) first, shown 4-1; 0.4.53 adds World 6's and 7's rows.
+internal 4-2 (Samus's cavern, Larry's airship) first, shown 4-1. Since 0.4.53 World 6 plays internal
+6-2 (the city street; Ryu's dojo under it) first, shown 6-1, then 6-1 (shown 6-2), 6-3 and 6-4; World
+7 plays internal 7-3 (the jungle; Bill's camp under it) first, shown 7-1, then 7-1 (shown 7-2), 7-2
+(shown 7-3) and 7-4. Their campaign pages are GALESBURG and GALUGA ISLAND drawn from above
+(`world6-galesburg.ts`, `world7-galuga.ts`; sheets `galesburg-above.ts`, `galuga-above.ts`, painted
+lazily like the others); their road ids follow the new order (`start>6-2`, `6-2>6-1`, `6-1>6-3`;
+`start>7-3`, `7-3>7-1`, `7-1>7-2`, `7-2>7-4`), the castle and bonus roads keep theirs, and the gates
+are unchanged. Ryu's duel names its stage by the label too (STAGE-6-1 on a campaign file).
 
 - On a campaign file the rules read `rulePages(true)` (`CAMPAIGN_MAP_PAGES`, the campaign looks), so
   a clear's reveal ids name the campaign page's roads.
 - A file from before a reorder keeps its node; pending reveals of roads its page no longer has are
   dropped on load (`save-files.ts revealIds`); and a cleared level a road leads back to from an open
   node stays open with that road (`rules.isOpen`'s walked-back rule), so an old file that cleared
-  internal 4-1 before 4-2 is never stranded.
+  internal 4-1 before 4-2 (or 6-1 before 6-2, or 7-1 and 7-2 before 7-3) is never stranded.
+- Save codes need no new ids: a pending road reveal is coded by its two node ids, whatever the road.
 
 ## Nodes
 
