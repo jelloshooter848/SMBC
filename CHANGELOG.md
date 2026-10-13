@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.47] - 2026-10-13
+
+### Added
+
+- The fake Bowsers in castles 2-4 to 7-4 wear cheap costumes of their world's villain: Ganon, Dr. Wily, Mother
+  Brain, Dracula, the Masked Ninja and Red Falcon. The costume falls off when he's beaten and the hero's reveal line
+  changes to match, with a bonus line when the world's own hero is playing.
+- Every Bowser, fake or real, has a boss health bar during the fight (story mode).
+- Every level NPC and world local has new lines when you play as that world's own hero.
+
+### Changed
+
+- The fairy in the clouds now speaks in a riddle; talk to her again for a plainer hint.
+
+## [0.4.46] - 2026-10-13
+
 ### Added
 
 - The first time a hero touches each kind of pickup (energy, weapon energy, E-tanks, missile packs, magic jars and
@@ -1048,7 +1064,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...HEAD
+[0.4.47]: https://github.com/jelloshooter848/SMBC/compare/v0.4.46...v0.4.47
+[0.4.46]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...v0.4.46
 [0.4.45]: https://github.com/jelloshooter848/SMBC/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jelloshooter848/SMBC/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jelloshooter848/SMBC/compare/v0.4.42...v0.4.43

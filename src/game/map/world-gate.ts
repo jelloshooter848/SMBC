@@ -93,14 +93,20 @@ export function welcomeOf(page: string): (typeof WELCOMES)[string] | null {
 }
 
 /**
- * What page `page`'s local says (worlds 2-8): the welcome, or once the world's hero (its gate's)
- * is among `freed`, the after-freed page instead. Empty without a local.
+ * What page `page`'s local says (worlds 2-8): its own-hero page when one of the heroes `playing`
+ * is the world's hero (its gate's; 0.4.47, first of the three sets), else the welcome, or once
+ * that hero is among `freed`, the after-freed page instead. Empty without a local.
  */
-export function welcomePages(page: string, freed: readonly string[]): readonly Page[] {
+export function welcomePages(
+  page: string,
+  freed: readonly string[],
+  playing: readonly string[] = [],
+): readonly Page[] {
   const w = welcomeOf(page);
   if (!w) return [];
   const map = mapPage(page);
   const hero = map ? gateExit(map)?.gate : undefined;
+  if (hero && w.own?.length && playing.includes(hero)) return w.own;
   return hero && freed.includes(hero) && w.after?.length ? w.after : w.pages;
 }
 

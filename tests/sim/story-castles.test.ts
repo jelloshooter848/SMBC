@@ -100,7 +100,8 @@ function clearCastle(level: LevelData, story: boolean) {
     input.next();
     world.update([input]);
     for (const ev of world.events.splice(0)) {
-      if (ev.type === 'say') said.push(ev.text);
+      // The Bowser bar's and the costume's lines (0.4.47) are their own tests' (bowser-bar, costumes).
+      if (ev.type === 'say' && !/^Bowser\b|costume/.test(ev.text)) said.push(ev.text);
       if (ev.type === 'exit') exitAt = frames;
     }
     const falling = world.entities.find((e): e is Bowser => e instanceof Bowser && !e.fake);

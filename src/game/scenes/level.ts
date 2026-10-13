@@ -14,6 +14,7 @@ import {
 } from '../hud/smb3-status';
 import { drawHud } from '../hud/hud';
 import { drawBossBar, drawSmb3HeroStats } from '../hud/smb3-hero-panel';
+import { BOSS_BAR_Y_SMB3, drawBowserBar } from '../hud/boss-bar';
 import { Larry } from '../entities/enemies/larry';
 import { LIGHT_SKIES } from '../world/tile-render';
 import { carriedKit } from '../entities/player';
@@ -287,7 +288,7 @@ export class LevelScene implements Scene {
         break;
       case 'partner':
         // A story partner: its pages over the frozen level, then play on (story/partners.ts).
-        if (this.world.storyMode) talkToPartner(game, this, ev.who);
+        if (this.world.storyMode) talkToPartner(game, this, ev.who, ev.player);
         break;
       case 'partner-near':
         game.deps.announcer?.say(
@@ -546,6 +547,8 @@ export class LevelScene implements Scene {
       // Mega Man's airship: Larry's hit points as a Mega Man 2 style bar (0.4.39).
       const larry = this.world.entities.find((e): e is Larry => e instanceof Larry && e.hpMode);
       if (larry && larry.state !== 'fly') drawBossBar(r, larry.maxHp, larry.hp);
+      // A Bowser's bar over an SMB3 piece: at the top of the play (0.4.47).
+      drawBowserBar(r, ctx.assets, this.world.bossBar, this.world.frame, ctx.reduceFlashing, BOSS_BAR_Y_SMB3);
       this.drawItemCaption(r);
       this.explainers.render(r);
       this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0, {
@@ -561,6 +564,14 @@ export class LevelScene implements Scene {
       ...(this.level.bonus ? { area: this.level.name } : {}),
       outline: LIGHT_SKIES.has(this.world.level.theme),
     });
+    // The Bowser bar while his fight is on (0.4.47, campaign: world/boss-bar.ts).
+    drawBowserBar(
+      r,
+      this.game.ctx.assets,
+      this.world.bossBar,
+      this.world.frame,
+      this.game.ctx.reduceFlashing,
+    );
     this.drawItemCaption(r);
     this.drawSkipHint(r);
     this.tutorial?.render(r);

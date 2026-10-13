@@ -173,6 +173,43 @@ describe('the welcomes (0.4.23)', () => {
     expect(h.said.some((s) => s.startsWith('HEALER: LINK IS HIMSELF AGAIN!'))).toBe(true);
   });
 
+  it.each([
+    [2, 'link'],
+    [3, 'megaman'],
+    [4, 'samus'],
+    [5, 'simon'],
+    [6, 'ryu'],
+    [7, 'bill'],
+    [8, 'sophia'],
+  ])("World %i: TALK as the world's own hero (%s) plays the local's own page (0.4.47)", (n, hero) => {
+    const page = `smb-${n}`;
+    const w = WELCOMES[page]!;
+    const h = open({
+      character: hero,
+      cleared: ['1-0'],
+      freed: ALL,
+      pages: [1, 2, 3, 4, 5, 6, 7, 8].map((k) => `smb-${k}`),
+      position: { page, node: 'start' },
+      story: [...ALL_STORY],
+    });
+    h.idle(10);
+    h.tap('jump');
+    expect(map(h).story).toBe(true);
+    expect(readAll(h)).toEqual(w.own);
+    // Another hero hears the after-freed page.
+    const h2 = open({
+      character: 'mario',
+      cleared: ['1-0'],
+      freed: ALL,
+      pages: [1, 2, 3, 4, 5, 6, 7, 8].map((k) => `smb-${k}`),
+      position: { page, node: 'start' },
+      story: [...ALL_STORY],
+    });
+    h2.idle(10);
+    h2.tap('jump');
+    expect(readAll(h2)).toEqual(w.after);
+  });
+
   it('World 1 has no local', () => {
     const h = open({ cleared: ['1-0'], story: [...ALL_STORY] });
     expect(draw(map(h)).sprites.some((s) => s.key === 'locals')).toBe(false);

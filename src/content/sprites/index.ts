@@ -25,6 +25,7 @@ import { partnersPalettes, partnersDef } from './partners';
 import { npcsPalettes, npcsDef } from './npcs';
 import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
+import { costumePalettes, costumesDef } from './costumes';
 import { storyPalettes, storyDef } from './story';
 import { housePalettes, houseDef } from './house';
 import { zelda2SkyDef, zelda2SkyPalettes } from './zelda2-sky';
@@ -102,6 +103,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   npcs: npcsDef,
   locals: localsDef,
   wand: wandDef,
+  // 0.4.47: the fake Bowsers' villain costumes (castles 2-4 to 7-4, campaign) and their piles.
+  costumes: costumesDef,
   // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
   story: storyDef,
   // 0.4.36: Mario's house, where the opening plays (story/opening.ts).
@@ -154,6 +157,7 @@ const defaults: Record<string, readonly string[]> = {
   ...npcsPalettes,
   ...localsPalettes,
   ...wandPalettes,
+  ...costumePalettes,
   ...storyPalettes,
   ...housePalettes,
   ...zelda2SkyPalettes,
@@ -217,6 +221,10 @@ const modes = colorblindPalettes(defaults);
 const trueFormHc = modes.highContrast?.['bowser-true-form'];
 if (modes.highContrast && trueFormHc)
   modes.highContrast['bowser-true-form'] = trueFormHc.map((c, i) => (i === 1 ? NES.gray : c));
+// The same for the costumes' dark grey (index c: Dracula's wig, the ninja's robe, the card's shade).
+const costumesHc = modes.highContrast?.costumes;
+if (modes.highContrast && costumesHc)
+  modes.highContrast.costumes = costumesHc.map((c, i) => (i === 12 ? NES.gray : c));
 
 export const PALETTES: PaletteBook = {
   default: defaults,

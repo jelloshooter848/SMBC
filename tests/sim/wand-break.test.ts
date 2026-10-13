@@ -129,7 +129,8 @@ function clearCastle(
     for (const i of inputs) i.next();
     world.update(inputs);
     for (const ev of world.events.splice(0)) {
-      if (ev.type === 'say') said.push(ev.text);
+      // The Bowser bar's and the costume's lines (0.4.47) are their own tests' (bowser-bar, costumes).
+      if (ev.type === 'say' && !/^Bowser\b|costume/.test(ev.text)) said.push(ev.text);
       if (ev.type === 'exit') exitAt = f;
     }
     const w = world.entities.find((e): e is WandBreak => e instanceof WandBreak);
@@ -338,7 +339,7 @@ describe('8-4 in the game: the wand, the castle pages, then the credits', () => 
       ['THANK YOU MARIO!', '', ...PAGES.reveal],
       ['THANK YOU MARIO!', '', ...PAGES.news],
     ]);
-    const said = h.said.slice(from);
+    const said = h.said.slice(from).filter((s) => !/^Bowser\b/.test(s)); // the Bowser bar's lines: bowser-bar.test.ts
     const news = ['THANK YOU MARIO!', ...PAGES.news, 'OK to continue.'].join(' ');
     expect(said).toEqual([
       WAND_BREAK_SAID,
