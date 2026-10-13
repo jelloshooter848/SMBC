@@ -80,6 +80,8 @@ export class Partner extends Entity {
   coinGiven = false;
   /** Talked to on this visit (World.checkTalk): Jason's frog Fred hops off (objects/fred.ts). */
   talked = false;
+  /** Times talked to on this visit (World.checkTalk): the second on hears its `again` page. */
+  talks = 0;
   private t = 0;
   /** Players in reach last frame, so each new arrival is announced once. */
   private readonly near = new Set<Player>();

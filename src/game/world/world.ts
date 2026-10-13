@@ -101,6 +101,8 @@ import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
 import { CastleUnmask, walkStep } from './unmask';
+import { BossBar } from './boss-bar';
+import { CostumePile } from '../entities/effects/costume-pile';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
@@ -488,6 +490,8 @@ export class World {
    * it runs; then the axe drops the bridge as usual.
    */
   unmask: CastleUnmask | null = null;
+  /** The Bowser bar (0.4.47, campaign only): his hit points while his fight is on (boss-bar.ts). */
+  readonly bossBar = new BossBar();
   /**
    * Set by LevelScene in the campaign: shows the hero's remark at castle `level`'s axe if it is
    * due (story/castle-remark.ts) and returns true, calling `done` when the card closes; false when
@@ -1337,6 +1341,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
+    this.bossBar.tick((o) => (o as Entity).alive);
     if (this.itemCaption && --this.itemCaption.t <= 0) this.itemCaption = null;
     if (this.shakeFrames > 0) this.shakeFrames--;
 
@@ -1611,6 +1616,7 @@ export class World {
       if (partner) {
         partner.prompt = false; // hidden under its pages; back on the next update in reach
         partner.talked = true;
+        partner.talks++;
         this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
@@ -2253,6 +2259,8 @@ export class World {
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
       else if (e instanceof Axe && overlaps(pb, e.body)) {
+        // The axe ends the fight: the Bowser bar goes with it (0.4.47).
+        this.bossBar.axe();
         if (!this.unmaskAtAxe(e, p)) this.startBossClear(e, p);
       }
       if (p.dead || this.clear || this.bossClear || this.unmask) return;
@@ -2967,6 +2975,16 @@ export class World {
   }
 
   /**
+   * The villain costume fake Bowser `b` wears (0.4.47, roadmap #31): the castle's world (2-7) in
+   * the campaign's castles 2-4 to 7-4 (those with the unmask scenes; World 1's fake wears the
+   * plain king suit), else 0.
+   */
+  costumeOf(b: Bowser): number {
+    const w = this.unmaskCastle(b) ? trueFormOf(this.state.world) : 0;
+    return w >= 2 && w <= 7 ? w : 0;
+  }
+
+  /**
    * Bowser `b` took a killing hit (Bowser.flipOut): in a castle with the unmask scenes his
    * disguise bursts, the creature drops onto the bridge dazed, and the hero jumps over it to the
    * axe (world/unmask.ts). True when the scene started (he stays, harmless, until the axe).
@@ -3081,7 +3099,10 @@ export class World {
       if (cut) this.audio.sfx('break');
     }
     for (const e of this.entities)
-      if (e instanceof Bowser || ((e instanceof WandPoof || e instanceof WandBreak) && e.alive))
+      if (
+        e instanceof Bowser ||
+        ((e instanceof WandPoof || e instanceof WandBreak || e instanceof CostumePile) && e.alive)
+      )
         e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);

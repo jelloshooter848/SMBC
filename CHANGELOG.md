@@ -8,6 +8,18 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- The fake Bowsers in castles 2-4 to 7-4 wear cheap costumes of their world's villain: Ganon, Dr. Wily, Mother
+  Brain, Dracula, the Masked Ninja and Red Falcon. The costume falls off when he's beaten and the hero's reveal line
+  changes to match, with a bonus line when the world's own hero is playing.
+- Every Bowser, fake or real, has a boss health bar during the fight (story mode).
+- Every level NPC and world local has new lines when you play as that world's own hero.
+
+### Changed
+
+- The fairy in the clouds now speaks in a riddle; talk to her again for a plainer hint.
+
 ## [0.4.46] - 2026-10-13
 
 ### Added

@@ -71,6 +71,8 @@ describe('the freed talks and the after lines', () => {
     const text = (who: string) => (PARTNERS[who]?.pages ?? []).flat().join(' ');
     expect(PARTNERS['old-man']?.pages).toHaveLength(3);
     expect(text('old-man')).not.toContain('SECOND VINE');
-    expect(text('fairy')).toContain('A VINE WILL GROW.');
+    // 0.4.47 (#28): her riddle first; asked again, the plain way (own-hero.test.ts).
+    expect(text('fairy')).toContain('GREEN ROAD WILL ANSWER.');
+    expect((PARTNERS.fairy?.again ?? []).flat().join(' ')).toContain('BUMP THE AIR. A VINE!');
   });
 });

@@ -896,11 +896,13 @@ export class WorldMapScene implements Scene {
 
   /**
    * TALK (or JUMP) on a start node with a local: the welcome again, in the box at the top (the
-   * after-freed page once the world's hero is freed).
+   * after-freed page once the world's hero is freed; 0.4.47: that hero playing hears its own page).
    */
   private talkToLocal(): void {
     const game = this.game;
-    const pages = welcomePages(this.page.id, game.freed);
+    // 0.4.47: the world's own hero in the party hears the local's own-hero page.
+    const playing = [game.state.character.id, ...(game.state.character2 ? [game.state.character2.id] : [])];
+    const pages = welcomePages(this.page.id, game.freed, playing);
     if (!pages.length) return;
     const guide = new ToadGuide(
       [{ ids: [], pages: [...pages], walk: false }],
