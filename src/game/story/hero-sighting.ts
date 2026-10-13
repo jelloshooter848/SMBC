@@ -11,7 +11,9 @@ import { drawSparkle, WAND_SPARKLE } from '@game/entities/effects/wand-poof';
 import { cardContinues, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { NO_TOUCH_BUTTONS } from '@game/touch-labels';
 import { SIGHTING_SAID } from './script';
-import { BURST_LIFE, type SightingDraw, type SightingScript } from './sightings';
+import { drawGate } from '@game/entities/objects/keys';
+import type { View } from '@game/entities/entity';
+import { BURST_LIFE, DUST_LIFE, type SightingDraw, type SightingScript } from './sightings';
 
 /*
  * A hero sighting (story/sightings.ts) over the frozen level, as Luigi's run in 1-1: nothing in
@@ -97,6 +99,17 @@ export class HeroSightingScene implements Scene {
     for (const d of this.script.draw(this.t, reduce)) this.drawOne(r, d, camX, reduce);
   }
 
+  /** What a level object's own drawing needs (drawGate: the asset sheets). */
+  private view(): View {
+    return {
+      camX: this.world.camera.pxX,
+      frame: this.world.frame,
+      assets: this.game.ctx.assets,
+      theme: this.world.level.theme,
+      reduceFlashing: this.game.ctx.reduceFlashing,
+    };
+  }
+
   private drawOne(r: Renderer, d: SightingDraw, camX: number, reduce: boolean): void {
     const assets = this.game.ctx.assets;
     if (d.kind === 'vine') {
@@ -104,6 +117,21 @@ export class HeroSightingScene implements Scene {
       const sheet = assets.sheet('items');
       for (let y = d.base - 16; y >= d.top; y -= 16)
         r.sprite(sheet, y - 16 < d.top ? 'vine-top' : 'vine-mid', d.x - camX, y);
+      return;
+    }
+    if (d.kind === 'gate') {
+      drawGate(r, this.view(), d.x - camX, d.top, d.lift, true, d.swing);
+      return;
+    }
+    if (d.kind === 'dust') {
+      // Two little grey puffs either side of the gate's foot, drifting out (no flash, no shake).
+      if (d.age >= DUST_LIFE) return;
+      const spread = 4 + (d.age >> 1);
+      const lift = d.age >> 2;
+      for (const side of [-1, 1]) {
+        r.rect(d.x + side * spread - 1, d.y - lift - 1, 2, 2, '#a8a8a8');
+        r.rect(d.x + side * (spread + 3), d.y - lift, 1, 1, '#7c7c7c');
+      }
       return;
     }
     if (d.kind === 'burst') {

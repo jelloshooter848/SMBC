@@ -27,6 +27,7 @@ import {
   SIGHTING_LINE_HEROES,
   SIGHTING_SAID,
   sightingPage,
+  lockedGatePage,
   SIMON_CURSE,
   STORY_CRYSTAL_BALL_PAGES,
   STORY_NOT_OVER,
@@ -111,6 +112,21 @@ describe('the story script', () => {
       expect(SIGHTING_SAID[id]).toMatch(/^A brainwashed .+\.$/);
     },
   );
+
+  it("5-1's locked gate card (0.4.52): the player's hero speaks, at most 26 columns a line", () => {
+    const page = lockedGatePage(LONGEST);
+    expect(page).toEqual(['SOPHIA III:', '', "IT'S LOCKED... THERE", 'MUST BE ANOTHER WAY IN!']);
+    expect(tooWide(page, CASTLE_COLS)).toEqual([]);
+    expect(fontOnly(page)).toEqual([]);
+  });
+
+  it('the townsperson (0.4.52, 5-1-bonus): he lost the key in the room; freed, the door is open for good', () => {
+    const t = PARTNERS.townsperson!;
+    expect(t.pages).toHaveLength(1);
+    expect(t.pages[0]!.join(' ')).toContain('LOSE A KEY');
+    expect(t.after![0]!.join(' ')).toContain('THE DOOR IS OPEN FOR GOOD.');
+    for (const page of [...t.pages, ...t.after!]) expect(tooWide(page, CASTLE_COLS)).toEqual([]);
+  });
 
   it('every partner has a name and pages', () => {
     for (const s of Object.values(PARTNERS)) {

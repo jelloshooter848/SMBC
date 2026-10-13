@@ -39,6 +39,11 @@ campaignMusic: cv-hall
 [entities]
 ;; Campaign only (0.4.40, docs/STORY.md): an old woman at the start, by the courtyard gate.
 partner 7 12 who=old-woman campaign=true
+;; Campaign only (0.4.52, docs/STORY.md "Simon's way in"): the crypt gate, a portcullis in the
+;; courtyard wall by the start (doorway rows 11-12). Always shut while Simon is captive: trying it
+;; (OPEN on the TALK button) plays the locked card once a visit, then it just reads LOCKED. Simon's
+;; sighting walks through it and it slams shut. It is in the background: never in the way.
+locked-gate 12 11 hero=simon campaign=true
 decor-castle 0 12
 goomba 20 12 dx=8
 goomba 31 12 dx=8

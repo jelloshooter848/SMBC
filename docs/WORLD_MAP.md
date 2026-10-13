@@ -754,12 +754,12 @@ descent x w -> level x y [campaign]
 - `campaign`: the zone sleeps (no descent, no skull) outside campaign play; the campaign variant
   (`level/campaign.ts`) wakes it. Like a warp zone's `goto`, it leads into an area of the same
   level: no secret, no map road, no clear.
-- 5-4: `descent 84 8 -> 5-4-dungeon 13 0 campaign` (the open shaft, columns 84-91; its down
-  lifts run in column 89). While a descent zone is live, a fire bar whose tip would sweep one of
-  its down lifts loses balls until it clears the lift widened by a tile each side, the widest
-  hero's overhang (`World.descentBarLen`): 5-4's at (92, 10) is 3 long in the campaign, 6
-  elsewhere, so a rider whose body overlaps the lift at all, even hanging off either end, rides
-  down unhurt (tests: every hero at offsets across the lift, over 16 bar phases).
+- No level has one since 0.4.52 (5-4's, `descent 84 8 -> 5-4-dungeon 13 0 campaign`, went with
+  Simon's old way in: the crypt is reached from 5-1 now; 5-4's lift and its fire bar at (92, 10)
+  are classic in the campaign too). The engine keeps the zone: while one is live, a fire bar
+  whose tip would sweep one of its down lifts loses balls until it clears the lift widened by a
+  tile each side, the widest hero's overhang (`World.descentBarLen`), so a rider whose body
+  overlaps the lift at all, even hanging off either end, rides down unhurt.
 - Every rider counts: two co-op players on the lift both go down (the check is the geometry,
   feet on the lift's top, not `Lift.rider`, which holds only the last body carried).
 - **Co-op fall arrivals** (any `fall` arrival: a level's fall start, a pit, a descent, a pipe

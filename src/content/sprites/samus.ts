@@ -271,6 +271,51 @@ const ball1 = rotateCW(ball0);
 const ball2 = rotateCW(ball1);
 const ball3 = rotateCW(ball2);
 
+/*
+ * The morph ball's bomb (0.4.52, her sighting in 4-2: story/sightings.ts; owner-approved art):
+ * `bomb-0` / `bomb-1` (8x8), its core lit and dark, blinking every 4 frames (held on `bomb-0`
+ * with reduce flashing), and `bomb-burst` (16x16), its ring as it goes off. Index roles as above
+ * (0 outline, 4 white, 5 glow), so the brainwashed fx turns them purple with the rest of her.
+ */
+const bomb0 = [
+  '..0000..',
+  '.055550.',
+  '05544550',
+  '05444450',
+  '05444450',
+  '05544550',
+  '.055550.',
+  '..0000..',
+];
+const bomb1 = [
+  '..0000..',
+  '.044440.',
+  '04455440',
+  '04555540',
+  '04555540',
+  '04455440',
+  '.044440.',
+  '..0000..',
+];
+const bombBurst = [
+  '................',
+  '.....555555.....',
+  '...5555445555...',
+  '..555444444555..',
+  '..554......455..',
+  '.554........455.',
+  '.554........455.',
+  '.544........445.',
+  '.544........445.',
+  '.554........455.',
+  '.554........455.',
+  '..554......455..',
+  '..555444444555..',
+  '...5555445555...',
+  '.....555555.....',
+  '................',
+];
+
 export const samusDef: SpriteDef = {
   palette: 'samus',
   frames: {
@@ -294,5 +339,8 @@ export const samusDef: SpriteDef = {
     'ball-1': lowerHalf(ball1),
     'ball-2': lowerHalf(ball2),
     'ball-3': lowerHalf(ball3),
+    'bomb-0': bomb0,
+    'bomb-1': bomb1,
+    'bomb-burst': bombBurst,
   },
 };

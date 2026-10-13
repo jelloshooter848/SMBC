@@ -79,6 +79,7 @@ import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
 import { Lift } from '../entities/objects/lift';
 import { Candle, Respawner } from '../entities/objects/crypt';
+import { KEY_SAID, KeyBox, KeyItem, LockedDoor, LockedGate, type KeyThing } from '../entities/objects/keys';
 import {
   TRICK_HOLD_FRAMES,
   TRICK_PUSH_FRAMES,
@@ -173,7 +174,15 @@ export type WorldEvent =
   /** Player `player` touched a dropped pickup (0.4.46: its one-time explainer, tutorial/explainers.ts). */
   | { type: 'pickup'; item: PickupKind; player: number }
   /** Player `player` took their item `item` for the first time (its one-time explainer, if any). */
-  | { type: 'item'; item: string; player: number };
+  | { type: 'item'; item: string; player: number }
+  /**
+   * (0.4.52, objects/keys.ts) A player came within reach of the key (`key`), a locked door (`door`),
+   * an open one (`open-door`), or a locked gate untried (`gate`) or tried this visit (`locked`):
+   * announced.
+   */
+  | { type: 'key-near'; what: 'key' | 'door' | 'open-door' | 'gate' | 'locked'; player: number }
+  /** (0.4.52) Player `player` tried hero `hero`'s locked gate (once a visit): its locked card. */
+  | { type: 'gate'; hero: string; player: number };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -316,6 +325,9 @@ export function startTime(level: LevelData, state: GameState, start: WorldStart 
 }
 
 export type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done';
+/** Frames from UP at an open locked door to the next area (the hero has gone in). */
+export const DOOR_TRANSFER_FRAMES = 24;
+
 type PipeAnim = {
   player: Player;
   dir: PipeDir;
@@ -418,6 +430,13 @@ export class World {
   readonly scorePopups: boolean;
   /** The TALK prompt's words over someone in reach (View.talkHint), set by LevelScene. */
   talkHint: ((verb: string) => string) | null = null;
+  /** The same with up's key ("UP" over an open door: View.upHint), set by LevelScene. */
+  upHint: ((verb: string) => string) | null = null;
+  /**
+   * (0.4.52, objects/keys.ts) The player carrying this room's key (an index), or null. One key a
+   * room, either player; it lasts the visit (a new World is a fresh room).
+   */
+  keyHolder: number | null = null;
   readonly map: TileMap;
   readonly camera: Camera;
   readonly players: Player[] = [];
@@ -938,6 +957,24 @@ export class World {
               Boolean(this.captives?.isFreed(id)),
             )
           : null;
+      // Keys and locked doors (0.4.52, objects/keys.ts): the story's only (classic keeps the brick).
+      case 'key-box':
+        return this.storyMode ? new KeyBox(s.x, s.y, String(s.props?.hero ?? '')) : null;
+      case 'locked-door': {
+        if (!this.storyMode) return null;
+        const hero = String(s.props?.hero ?? '');
+        const to = s.props?.to;
+        const target =
+          typeof to === 'string' && to
+            ? { level: to, x: Number(s.props?.tx ?? 0), y: Number(s.props?.ty ?? 0) }
+            : null;
+        return new LockedDoor(s.x, s.y, hero, target, Boolean(this.captives?.isFreed(hero)));
+      }
+      case 'locked-gate': {
+        if (!this.storyMode) return null;
+        const hero = String(s.props?.hero ?? '');
+        return new LockedGate(s.x, s.y, hero, Boolean(this.captives?.isFreed(hero)));
+      }
       case 'spring':
       case 'spring-green':
         return new Spring(s.x, s.y, s.type === 'spring-green');
@@ -1464,6 +1501,12 @@ export class World {
       if (p.dead || p.out) continue;
       this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
       if (this.pipeAnim) break;
+      if (!this.autoWalk && this.checkDoors(p, inputs[i] ?? NO_INPUT)) break;
+    }
+    // The key's carrier died (co-op play goes on): it is back in its box.
+    if (this.keyHolder !== null) {
+      const carrier = this.players[this.keyHolder];
+      if (!carrier || carrier.dead || carrier.out) this.returnKey();
     }
     if (this.tricks.length && !this.pipeAnim && !this.leaving)
       for (let i = 0; i < this.players.length; i++) {
@@ -1579,25 +1622,45 @@ export class World {
   }
 
   /**
-   * Someone `p` can talk to now (a captive hero or a partner within reach), or null. In reach,
-   * SPECIAL is the TALK button (0.4.35: levelTouchLabels shows it, the hero's own special waits).
+   * Someone `p` can talk to now (a captive hero or a partner within reach), or null; else (0.4.52)
+   * a key thing the TALK button acts on for `p` (objects/keys.ts): the key (PICK UP), a gate (OPEN,
+   * then LOCKED) or a locked door (LOCKED). In reach, SPECIAL is the TALK button (0.4.35:
+   * levelTouchLabels shows it, the hero's own special waits).
    */
-  talkTarget(p: Player): Captive | Partner | null {
+  talkTarget(p: Player): Captive | Partner | KeyThing | null {
     if (p.vine) return null;
     for (const e of this.entities)
       if ((e instanceof Captive || e instanceof Partner) && e.alive && e.inReach(p)) return e;
-    return null;
+    return this.keyThing(p);
   }
 
-  /** The TALK button's word for `p` now (READ for the bird statue), or null out of reach. */
+  /**
+   * The key thing in `p`'s reach with a word on the TALK button, by priority: the key, then a
+   * gate or a door (one at a time: they are never side by side).
+   */
+  private keyThing(p: Player): KeyThing | null {
+    let best: KeyThing | null = null;
+    for (const e of this.entities) {
+      if (!e.alive || !(e instanceof KeyItem || e instanceof LockedGate || e instanceof LockedDoor)) continue;
+      if (!e.inReach(p) || e.verb() === null) continue;
+      if (e instanceof KeyItem) return e;
+      best ??= e;
+    }
+    return best;
+  }
+
+  /** The TALK button's word for `p` now (READ for the bird statue; PICK UP, OPEN, LOCKED), or null. */
   talkVerb(p: Player): string | null {
     const to = this.talkTarget(p);
-    return to instanceof Partner ? to.script.verb : to ? 'TALK' : null;
+    if (to instanceof Partner) return to.script.verb;
+    if (to instanceof Captive) return 'TALK';
+    return to ? to.verb() : null;
   }
 
   /**
    * SPECIAL, the TALK button, pressed by a player within a captive's reach: a `talk` event; a
-   * partner's: a `partner` event (one a frame). Up no longer talks (0.4.43, owner: it went off by
+   * partner's: a `partner` event (one a frame); the key's: it is taken; an untried gate's: a
+   * `gate` event (LOCKED does nothing). Up no longer talks (0.4.43, owner: it went off by
    * accident on touch); it keeps its own jobs (doors, pipes, vines).
    */
   private checkTalk(inputs: InputFrame[]): void {
@@ -1620,7 +1683,67 @@ export class World {
         this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
+      const thing = this.keyThing(p);
+      if (thing instanceof KeyItem) return this.takeKey(thing, i);
+      if (thing instanceof LockedGate && thing.verb() === 'OPEN') return thing.tryOpen(this, i);
     }
+  }
+
+  /* ---------- Keys and locked doors (0.4.52, objects/keys.ts) ---------- */
+
+  /** Player `i` picks up the key: carried (the HUD's key icon) until a door uses it. */
+  takeKey(key: KeyItem, i: number): void {
+    key.destroy();
+    this.keyHolder = i;
+    this.audio.sfx('pickup');
+    this.events.push({ type: 'say', text: KEY_SAID.got });
+  }
+
+  /** The carried key turned in a door (LockedDoor): used up. */
+  useKey(): void {
+    this.keyHolder = null;
+    this.audio.sfx('key-get');
+    this.events.push({ type: 'say', text: KEY_SAID.opened });
+  }
+
+  /**
+   * The key is lost on the visit (its co-op carrier died, or it fell out of the room): back in its
+   * box, full again (a single player's death reloads the room anyway).
+   */
+  returnKey(): void {
+    this.keyHolder = null;
+    for (const e of this.entities) {
+      if (e instanceof KeyItem && e.alive) e.destroy();
+      if (e instanceof KeyBox && e.alive) e.refill(this);
+    }
+    this.events.push({ type: 'say', text: KEY_SAID.back });
+  }
+
+  /** Up at an open locked door goes through it (objects/keys.ts), as a pipe does. */
+  private checkDoors(p: Player, input: InputFrame): boolean {
+    if (!input.pressed('up') || p.vine) return false;
+    const door = this.entities.find(
+      (e): e is LockedDoor => e instanceof LockedDoor && e.alive && e.canEnter(p),
+    );
+    if (!door?.target) return false;
+    for (const o of this.players) {
+      o.frozen = true;
+      o.stairs = null;
+      o.body.vx = 0;
+      o.body.vy = 0;
+      o.anim = 'idle';
+      o.hidden = true;
+    }
+    this.audio.sfx('door-open');
+    this.pipeAnim = {
+      player: p,
+      dir: 'down',
+      t: 0,
+      from: p.body.y,
+      hold: DOOR_TRANSFER_FRAMES,
+      target: { type: 'pipe', target: { ...door.target, exitDir: 'fall' } },
+    };
+    return true;
   }
 
   /** A captive hero was freed: it leaves the room in a puff. */
@@ -2049,6 +2172,12 @@ export class World {
         break;
       case 'path':
         this.layPath(tx, ty);
+        break;
+      case 'key':
+        // A key box (0.4.52, objects/keys.ts): the key rises out; the box is spent.
+        this.spawn(new KeyItem(tx, ty));
+        this.audio.sfx('powerup-appear');
+        this.events.push({ type: 'say', text: KEY_SAID.popped });
         break;
       case 'teleporter':
         // The pad hidden in this block rises out of the floor (its `teleport` zone's block=).
@@ -3200,6 +3329,7 @@ export class World {
       theme,
       reduceFlashing: this.ctx.reduceFlashing,
       ...(this.talkHint ? { talkHint: this.talkHint } : {}),
+      ...(this.upHint ? { upHint: this.upHint } : {}),
     };
     // A restyled theme's hall or skyline behind everything (theme-backdrop.ts).
     drawThemeBackdrop(screen, view);

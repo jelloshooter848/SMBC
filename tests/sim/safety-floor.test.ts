@@ -27,6 +27,7 @@ import { castleHarness } from '@game/minigames/simon/harness';
 import { escapeHarness } from '@game/minigames/samus/harness';
 import { stationHarness } from '@game/minigames/megaman/harness';
 import { drops } from './safety-floor-bot';
+import type { LevelData } from '@game/level/schema';
 
 // The Safety floor dev assist (Dev → Assists): an invisible one-way floor at the rim of every
 // deadly pit and on lava. Falls that lead somewhere (pit transfers, 5-4's descent, vines) still
@@ -357,7 +358,7 @@ describe('falls that lead somewhere still lead there', () => {
     });
   });
 
-  it("5-4's descent: riding the down lift on past the floor still carries him into Simon's dungeon", () => {
+  it("a descent (5-4's shaft as it was until 0.4.52): riding the down lift on past the floor still carries him down", () => {
     // The lift's left side, clear of the fire bar at (92, 10) (as tests/sim/simon-crypt.test.ts).
     const rideLeft = (w: World): Action[] => {
       const b = w.player.body;
@@ -367,8 +368,14 @@ describe('falls that lead somewhere still lead there', () => {
       if (!lift || !b.onGround) return [];
       return b.x + b.w > lift.body.x + px(10) ? ['left'] : [];
     };
+    // 5-4 no longer has its descent (Simon's way in moved to 5-1): the engine's zone, put back.
+    const base = campaignLevel(getLevel('5-4'));
+    const shaft: LevelData = {
+      ...base,
+      zones: [...base.zones, { kind: 'descent', x: 84, w: 8, target: { level: '5-4-dungeon', x: 13, y: 0 } }],
+    };
     const r = runSim({
-      level: campaignLevel(getLevel('5-4')),
+      level: shaft,
       character: MARIO,
       assist: SAFE,
       script: none,
@@ -384,7 +391,7 @@ describe('falls that lead somewhere still lead there', () => {
     expect(r.world.player.dead).toBe(false);
     // Falling into the same shaft without the lift is a deadly fall: caught at the rim.
     const fall = runSim({
-      level: campaignLevel(getLevel('5-4')),
+      level: shaft,
       character: MARIO,
       assist: SAFE,
       script: none,

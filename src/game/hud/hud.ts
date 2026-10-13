@@ -35,7 +35,16 @@ export interface HudOptions {
   area?: string;
   /** Every text gets the dark outline (a light sky behind the white letters: the Top Secret Area). */
   outline?: boolean;
+  /**
+   * (0.4.52) The player carrying a room's key (World.keyHolder): its key icon on that player's
+   * side, player 1's under the coins (KEY_ICON_P1), player 2's after their name (KEY_ICON_P2).
+   */
+  keyHolder?: number | null;
 }
+
+/** Where the carried key's icon goes (8x8, hud/hud.ts): player 1's, then player 2's. */
+export const KEY_ICON_P1 = { x: 132, y: 24 } as const;
+export const KEY_ICON_P2 = { x: 196, y: 24 } as const;
 
 /** Columns the WORLD column has for an area's name (HudOptions.area), from x 144 to the edge. */
 export const HUD_AREA_COLS = 11;
@@ -99,6 +108,10 @@ export function drawHud(
     }
   }
   drawHeroStats(r, assets, state, players, text);
+  if (opts.keyHolder === 0 || opts.keyHolder === 1) {
+    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : KEY_ICON_P2;
+    r.sprite(assets.sheet('keys'), 'key-icon', at.x, at.y);
+  }
   // Blink the timer label when low.
   if (opts.place === undefined && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
     text('TIME', 200, 8);

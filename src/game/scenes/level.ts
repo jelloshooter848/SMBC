@@ -35,7 +35,13 @@ import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { playLevelBeat } from '../story/level-beats';
 import { playCastleRemark } from '../story/castle-remark';
-import { ANCHOR_LARRY_PAGES, anchorHeroPage, STORY_CRYSTAL_BALL_PAGES } from '../story/script';
+import {
+  ANCHOR_LARRY_PAGES,
+  anchorHeroPage,
+  lockedGatePage,
+  STORY_CRYSTAL_BALL_PAGES,
+} from '../story/script';
+import { KEY_SAID } from '../entities/objects/keys';
 import { partnerNearSaid, talkToPartner } from '../story/partners';
 import { abilityHint } from './hints';
 import { ANCHOR_SAID } from '../entities/objects/anchor-drop';
@@ -85,6 +91,32 @@ export function levelMusic(level: LevelData, hero: Pick<CharacterDef, 'music'>):
   return hero.music && overworld ? hero.music : level.music;
 }
 
+/**
+ * What the screen reader says as player `player` comes within reach of a key thing (0.4.52,
+ * objects/keys.ts), with the TALK button's (or up's) key in the scheme in use.
+ */
+export function keyNearSaid(
+  game: Game,
+  what: 'key' | 'door' | 'open-door' | 'gate' | 'locked',
+  player: number,
+  coop: boolean,
+): string {
+  const who = coop ? `Player ${player + 1}: ` : '';
+  const press = (verb: string) => abilityHint(game, verb, 'special', player);
+  switch (what) {
+    case 'key':
+      return `${who}A key. Press ${press('PICK UP')} to take it.`;
+    case 'door':
+      return `${who}${KEY_SAID.lockedDoor}`;
+    case 'open-door':
+      return `${who}An open door. Press ${abilityHint(game, 'UP', 'up', player)} to go in.`;
+    case 'gate':
+      return `${who}A locked gate. Press ${press('OPEN')} to try it.`;
+    case 'locked':
+      return `${who}${KEY_SAID.locked}`;
+  }
+}
+
 export class LevelScene implements Scene {
   world: World;
   readonly debug = new DebugOverlay();
@@ -117,6 +149,8 @@ export class LevelScene implements Scene {
     // The TALK prompt over a captive or a partner names the TALK button's key ("TALK (C)"); on
     // touch "TALK", the button it is then (0.4.35). Up no longer talks (0.4.43).
     this.world.talkHint = (verb) => fontText(abilityHint(game, verb, 'special'));
+    // 0.4.52: "UP" over an open locked door, with up's key (objects/keys.ts).
+    this.world.upHint = (verb) => fontText(abilityHint(game, verb, 'up'));
     // Campaign play: brainwashed heroes wait in some rooms until freed on this file.
     if (game.campaign)
       this.world.captives = {
@@ -303,6 +337,15 @@ export class LevelScene implements Scene {
           ),
         );
         break;
+      case 'key-near':
+        game.deps.announcer?.say(keyNearSaid(game, ev.what, ev.player, this.world.coop));
+        break;
+      case 'gate': {
+        // A locked gate tried (once a visit): the player's hero says it is locked (0.4.52).
+        const hero = this.world.players[ev.player]?.def ?? game.state.character;
+        playStoryCards(game, this.world, [lockedGatePage(fontText(hero.name))], () => this.resumePlay());
+        break;
+      }
       case 'crystal-ball':
         this.takeCrystalBall(ev.next);
         break;
@@ -570,6 +613,7 @@ export class LevelScene implements Scene {
       // A fill-up spot (the Top Secret Area) shows its name instead of WORLD and TIME.
       ...(this.level.bonus ? { area: this.level.name } : {}),
       outline: LIGHT_SKIES.has(this.world.level.theme),
+      keyHolder: this.world.keyHolder,
     });
     // The Bowser bar while his fight is on (0.4.47, campaign: world/boss-bar.ts).
     drawBowserBar(

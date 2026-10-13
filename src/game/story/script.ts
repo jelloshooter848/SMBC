@@ -182,7 +182,8 @@ const CASTLE_REMARKS: Readonly<Record<string, Page>> = {
 /**
  * The castle's own hero sees through the costume of their own villain (0.4.47, #31; the
  * ANCHOR_HERO_LINES pattern): their line instead of the shared one, by main level id and hero id.
- * None for Simon: he is freed inside 5-4 and never meets its fake on a first clear.
+ * None for Simon: written when he was freed inside 5-4 (since 0.4.52 he is freed in 5-1, so he
+ * can meet its fake: his own line there is still to write).
  */
 const CASTLE_HOME_REMARKS: Readonly<Record<string, Readonly<Record<string, Page>>>> = {
   '2-4': { link: ['GANON?! ...NO. GANON IS', 'TALLER. AND NOT A KOOPA.'] },
@@ -331,10 +332,11 @@ export function gateScript(world: number, hero: string): GateScript | null {
       return {
         reminder: [
           toad(
+            // 0.4.52: Simon's way in moved from 5-4's lift to the key under 5-1's courtyard.
             'STILL SEALED. THE VAMPIRE',
-            'HUNTER! THE TOWNSPERSON AT',
-            "THE OLD CASTLE'S GATE SAID",
-            'SOMETHING ABOUT A LIFT...',
+            'HUNTER! A TOWNSPERSON IN',
+            'THE CATACOMBS LOST A KEY.',
+            'SOMETHING ABOUT A DOOR...',
           ),
         ],
         bowser: [
@@ -769,21 +771,36 @@ export const LUIGI_RUNS_PAGE: Page = [
 /**
  * The hero sightings (story/sightings.ts): a brainwashed hero glimpsed at the start of their
  * world's first level. Each line is said by player 1's hero (sightingPage), at most CASTLE_COLS
- * (26) columns. Only the built ones are here (Link, Mega Man); the rest come with their worlds.
+ * (26) columns. Only the built ones are here (Link, Mega Man; Samus, Simon since 0.4.52); the rest
+ * come with their worlds.
  */
 const SIGHTING_LINES: Readonly<Record<string, Page>> = {
   link: ['WAS THAT LINK? A VINE', 'GREW RIGHT OUT OF THE', 'GROUND, AND HE CLIMBED IT', 'INTO THE SKY!'],
   megaman: ['MEGA MAN? HE FLICKERED,', 'THEN BEAMED STRAIGHT UP', 'INTO THE NIGHT SKY!'],
+  // 0.4.52 (owner-approved; Simon's option A).
+  samus: ['SAMUS! SHE CURLED INTO A', 'BALL AND BOMBED HER WAY', 'DEEPER INTO THE CAVES.'],
+  simon: ['SIMON! HE WALKED RIGHT', 'THROUGH THAT GATE, AND IT', 'SLAMMED SHUT BEHIND HIM.'],
 };
 
 /** What the announcer says as each sighting starts (it has no text on screen until the card). */
 export const SIGHTING_SAID: Readonly<Record<string, string>> = {
   link: 'A brainwashed Link makes a vine grow out of the ground and climbs it into the sky. The vine follows him up.',
   megaman: 'A brainwashed Mega Man glitches, then beams up into the sky.',
+  samus: 'A brainwashed Samus curls into a ball and bombs her way off into the caves.',
+  simon:
+    'A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him.',
 };
 
 /** The heroes whose sighting line is written (the keys of SIGHTING_LINES). */
 export const SIGHTING_LINE_HEROES: readonly string[] = Object.keys(SIGHTING_LINES);
+
+/**
+ * (0.4.52) A locked gate tried (5-1's crypt gate while Simon is captive: objects/keys.ts), once a
+ * visit: the player's hero, `speaker`, says it is locked (option A, the owner's).
+ */
+export function lockedGatePage(speaker: string): Page {
+  return [`${speaker}:`, '', "IT'S LOCKED... THERE", 'MUST BE ANOTHER WAY IN!'];
+}
 
 /** The card after hero `id`'s sighting, said by `speaker` (player 1's hero's full name, upper case). */
 export function sightingPage(id: string, speaker: string): Page {
@@ -1037,18 +1054,38 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
     verb: 'TALK',
     name: 'A townsperson',
     hero: 'simon',
+    // 0.4.52: in 5-1-bonus, by the locked door to the crypt; he lost its key in the room (option A).
     pages: [
-      ['TOWNSPERSON:', '', 'WHAT A HORRIBLE NIGHT TO', 'HAVE A CURSE.'],
       [
         'TOWNSPERSON:',
         '',
-        'RIDE THE MOVING FLOOR DOWN,',
-        'PAST WHERE FLOORS SHOULD',
-        "END. OR DON'T. I'M JUST A",
-        'TOWNSPERSON.',
+        'WHAT A HORRIBLE NIGHT TO',
+        'LOSE A KEY. IT OPENS THAT',
+        'OLD DOOR. I DROPPED IT',
+        'SOMEWHERE IN THIS ROOM.',
       ],
-      ['TOWNSPERSON:', '', 'AND HIT THE CRACKED WALL', 'WITH YOUR HEAD TO MAKE A', 'HOLE. TRUST ME.'],
     ],
+    after: [
+      ['TOWNSPERSON:', '', 'THE DOOR IS OPEN FOR GOOD.', 'WHAT A WONDERFUL NIGHT TO', 'HAVE NO CURSE.'],
+    ],
+    // 0.4.52: his own line moved with the old joke to the hall (hall-townsperson); this one is new.
+    own: [
+      [
+        'TOWNSPERSON:',
+        '',
+        'SIMON! YOUR OWN CRYPT, AND',
+        'I LOST ITS KEY. WHAT A',
+        'HORRIBLE NIGHT TO BE ME.',
+      ],
+    ],
+  },
+  // 0.4.52: 5-4's townsperson stays in the hall (an NPC in every level, 0.4.40), the cursed night's
+  // joke and its thanks only: the lift and cracked-wall hints went with that old way in.
+  'hall-townsperson': {
+    verb: 'TALK',
+    name: 'A townsperson',
+    hero: 'simon',
+    pages: [['TOWNSPERSON:', '', 'WHAT A HORRIBLE NIGHT TO', 'HAVE A CURSE.']],
     after: [['TOWNSPERSON:', '', 'THE HUNTER IS FREE! WHAT A', 'WONDERFUL NIGHT TO HAVE NO', 'CURSE.']],
     own: [
       [
