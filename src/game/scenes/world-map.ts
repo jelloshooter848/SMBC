@@ -1212,6 +1212,7 @@ export class WorldMapScene implements Scene {
     }
     const side = step.kind === 'exit' ? step.exit.side : null;
     const dir: -1 | 1 = step.kind === 'back' ? (this.hx < 128 ? -1 : 1) : side === 'left' ? -1 : 1;
+    this.fadeMusicTo(next, MAP_SLIDE_FRAMES);
     this.slide = {
       from: this.page,
       dir,
@@ -1223,6 +1224,15 @@ export class WorldMapScene implements Scene {
     this.guard = null;
     this.mode = 'slide';
     this.takeReveal(); // hidden while sliding in, drawn in on arrival
+  }
+
+  /**
+   * Leaving for page `next` over `frames`: when its song differs (each world has its own since
+   * 0.4.48), this page's fades out meanwhile, and `next`'s starts on arrival (updateSlide,
+   * updateFade), so the switch never cuts a note off.
+   */
+  private fadeMusicTo(next: WorldMapPage, frames: number): void {
+    if (next.music !== this.page.music) this.game.ctx.audio.fadeOutMusic?.(frames / 60);
   }
 
   private updateSlide(): void {
@@ -1259,6 +1269,7 @@ export class WorldMapScene implements Scene {
     // the hero: the start instead.
     const target =
       n.toNode && isOpen(this.progress, next, n.toNode, this.unlockAll) ? n.toNode : startNode(next)?.id;
+    this.fadeMusicTo(next, MAP_FADE_FRAMES);
     this.fade = { from: this.page, t: 0, node: target ?? '' };
     this.page = next;
     this.views.clear();

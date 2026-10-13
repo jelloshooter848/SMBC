@@ -9,7 +9,8 @@ import { WORLD_MAP_SONGS, worldMapSongs } from './world-maps';
 
 const byId = (id: string) => songs.find((s) => s.id === id);
 const seconds = (ticks: number, bpm: number): number => (ticks / PPQ) * (60 / bpm);
-const maxVol = (t: Track | undefined): number => Math.max(0, ...(t?.events ?? []).map((e) => (e.note === null ? 0 : e.vol)));
+const maxVol = (t: Track | undefined): number =>
+  Math.max(0, ...(t?.events ?? []).map((e) => (e.note === null ? 0 : e.vol)));
 const BAR = PPQ * 4;
 
 describe('the world map songs', () => {
@@ -25,7 +26,8 @@ describe('the world map songs', () => {
   });
 
   it('leave the other pages their own music: the warp hub, the Lost Kingdom, the Arena', () => {
-    for (const p of MAP_PAGES.filter((p) => p.group !== 'smb')) expect(WORLD_MAP_SONGS, p.id).not.toContain(p.music);
+    for (const p of MAP_PAGES.filter((p) => p.group !== 'smb'))
+      expect(WORLD_MAP_SONGS, p.id).not.toContain(p.music);
     expect(mapPage('hub')?.music).toBe('map');
   });
 
@@ -40,12 +42,17 @@ describe('the world map songs', () => {
       const s = seconds(c.length, song.bpm);
       expect(s).toBeGreaterThanOrEqual(20);
       expect(s).toBeLessThanOrEqual(40);
-      for (const ch of ['pulse1', 'pulse2', 'triangle', 'noise']) expect(tracks[ch]?.events.length, ch).toBeGreaterThan(0);
+      for (const ch of ['pulse1', 'pulse2', 'triangle', 'noise'])
+        expect(tracks[ch]?.events.length, ch).toBeGreaterThan(0);
     });
 
     it('is no louder than the existing map song, voice for voice', () => {
-      const map = compileSong(byId('map') as (typeof songs)[number]).tracks as Record<string, Track | undefined>;
-      for (const ch of ['pulse1', 'pulse2', 'noise']) expect(maxVol(tracks[ch]), ch).toBeLessThanOrEqual(maxVol(map[ch]));
+      const map = compileSong(byId('map') as (typeof songs)[number]).tracks as Record<
+        string,
+        Track | undefined
+      >;
+      for (const ch of ['pulse1', 'pulse2', 'noise'])
+        expect(maxVol(tracks[ch]), ch).toBeLessThanOrEqual(maxVol(map[ch]));
     });
   });
 

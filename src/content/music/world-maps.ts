@@ -87,7 +87,8 @@ const ENGINE_FILL = 'v9 k8 v5 h8 v8 s8 v5 h16 h16 v7 s16 s16 v8 s16 s16 v9 s8 s8
 /** A bar of the tank's sixteenth-note bass: root, root, octave, root. */
 const tread = (n: string): string => `[o2 ${n}16 ${n}16 o3 ${n}16 o2 ${n}16]4`;
 /** A bar of four chord tones climbing in eighths and falling back. */
-const climb = (a: string, b: string, c: string, d: string): string => `${a}8 ${b}8 ${c}8 ${d}8 ${c}8 ${b}8 ${a}8 ${b}8`;
+const climb = (a: string, b: string, c: string, d: string): string =>
+  `${a}8 ${b}8 ${c}8 ${d}8 ${c}8 ${b}8 ${a}8 ${b}8`;
 
 export const worldMapSongs: Song[] = [
   {
