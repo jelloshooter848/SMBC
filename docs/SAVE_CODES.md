@@ -46,9 +46,10 @@ after it need no new version:
 - the Valley of Bowser: the page `valley-of-bowser` (a PAGES chunk), its castle level `8-5` (a
   LEVELS chunk), and its node list `bowsers-castle`, `start` (`pageNodes`, from version 3 on).
 
-Until a build has the Valley's page, a loaded file drops it as it drops any page the build lacks
-(`migrateSave` keeps registered pages only), exactly as the same id escaped as text would be.
-`save-code-valley.test.ts` registers a stand-in page and checks that it round-trips.
+Since 0.4.55 the Valley's page is live (BOWSER'S CASTLE's level `8-5` exists), so a code with
+it round-trips with no version bump (`save-code-valley.test.ts`). A build without the page (0.4.51
+to 0.4.54) dropped it on load as it drops any page the build lacks (`migrateSave` keeps registered
+pages only), exactly as the same id escaped as text would be.
 
 ## Layout
 

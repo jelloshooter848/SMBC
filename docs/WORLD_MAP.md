@@ -61,7 +61,13 @@ Every page has a string id (`PageId`), saved in files, never renamed:
   and the hub) and campaign World 8's road on leads to it (`8-4>valley-of-bowser`, east on row
   10, Sophia's gate) only once level `8-5` is in the level index. Until then World 8's road
   leads on to Lost World 1 as before, up the east steps and off the edge on row 5
-  (`underworldExit`). Adding the level turns it all on; no map edit is needed.
+  (`underworldExit`). Adding the level turns it all on; no map edit is needed. **On since 0.4.55**
+  (`src/content/levels/world8/8-5.map`, BOWSER'S CASTLE).
+- With the Valley live (story, `map/world-gate.ts`): World 8's road on is an ordinary world gate.
+  Its seal (not the rift's crack: `isRiftExit`) stands while Sophia III is captive, Toad's
+  reminder is `VALLEY_SEALED_PAGES`, and freeing her shatters it with no cutaway. The rift moves
+  to the Valley (`RIFT_PAGE`): after BOWSER'S CASTLE's credits Toad works out Peach's note there,
+  then the road on to Lost World 1 draws in.
 - The Valley's road on to Lost World 1 (`bowsers-castle>ll-1`, row 5) has
   `opens: 'castle-or-gameCleared'`: open once the castle is cleared, or on a file that has
   already beaten the game (`gameCleared`), whose castle stays open and uncleared. Once live, an
