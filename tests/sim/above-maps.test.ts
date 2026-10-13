@@ -463,11 +463,11 @@ describe('the hidden heroes from above (silhouettes beside their nodes)', () => 
 });
 
 describe('Hyrule in the colour-blind modes', () => {
-  it('keeps its dirt and rock tan: no red shift turns them pink', () => {
+  it('keeps its dirt, rock, wood and trunks brown: no red shift turns them pink', () => {
     const base = PALETTES.default['hyrule-above'] as readonly string[];
     const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
     for (const mode of ['deuteranopia', 'protanopia'] as const)
-      for (const role of ['4', '5', '6', 'k', 'l', 'm']) {
+      for (const role of ['4', '5', '6', 'k', 'l', 'm', 'd', 'p', 'q', 'r']) {
         const i = ROLES.indexOf(role);
         expect(PALETTES[mode]?.['hyrule-above']?.[i], `${mode} ${role}`).toBe(base[i]);
       }

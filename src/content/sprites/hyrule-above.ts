@@ -46,7 +46,7 @@ export const HYRULE_ABOVE_PALETTE: readonly string[] = [
   '#18442a', // a leaves dark
   '#2a7034', // b leaves
   '#4c9e40', // c leaves light
-  '#58361a', // d trunk
+  '#544220', // d trunk (0.4.50: green enough to stay brown in the colour-blind modes)
   '#24428e', // e water dark
   '#3a70cc', // f water
   '#8cc4f4', // g water light
@@ -58,9 +58,9 @@ export const HYRULE_ABOVE_PALETTE: readonly string[] = [
   '#b89060', // m rock light
   '#f2e6c6', // n plaster
   '#c8ae84', // o plaster shade
-  '#4a2a10', // p wood dark
-  '#8a5224', // q wood
-  '#c88a48', // r wood light
+  '#463a14', // p wood dark (green enough to stay brown in the colour-blind modes)
+  '#84682c', // q wood
+  '#c49c50', // r wood light
   '#f8c838', // s gold
   '#ecd496', // t sand
   '#c4a062', // u sand dark
