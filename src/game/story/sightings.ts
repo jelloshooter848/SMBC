@@ -315,10 +315,13 @@ export const BILL_SIGHTING_TIMING = {
   rollAt: 40,
   spinEvery: 3,
   hop: 10,
-  /** He catches the underside of the first bridge's girder (column 15, row 10): his hands under it. */
+  /**
+   * He catches the underside of the first bridge's girder (column 15, row 10): his hands (the hang
+   * frames' top rows) over its bottom chord, the tile's rows 13-14.
+   */
   catchAt: 56,
   hangX: 240,
-  hangTop: 176,
+  hangTop: 160 + 13,
   /** Hand over hand: `hang` px a frame, hang-0 and hang-1 swapped every `swapEvery` frames. */
   hang: 2,
   swapEvery: 10,

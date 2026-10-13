@@ -333,7 +333,8 @@ describe('Bill: hand over hand under the first bridge, lets go off screen, a far
     expect(tileAt(lvl, Math.floor(B.x / 16), B.stoneTop / 16)).not.toBe(Tl.AIR);
     expect(tileAt(lvl, 15, 10)).toBe(Tl.BRIDGE);
     expect(B.hangX).toBe(15 * 16);
-    expect(B.hangTop).toBe(11 * 16);
+    // His hands over the girder's bottom chord (the bridge tile's rows 13-14).
+    expect(B.hangTop).toBe(10 * 16 + 13);
   });
 
   it('rolls off the edge, catches the girder and goes hand over hand (hang-0/1 every 10 frames)', () => {
