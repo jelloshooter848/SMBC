@@ -195,7 +195,7 @@ const clockIn = { b: '3', c: '4', h: 'd', i: 'e', a: 'f' };
 const clockmaker0 = recolor(partner('townsperson-0'), clockIn);
 const clockmaker1 = recolor(partner('townsperson-1'), clockIn);
 
-/* ---------------------------------------------------------------- World 6: Dragon Valley */
+/* ---------------------------------------------------------------- World 6: Galesburg */
 
 /**
  * 6-1's ninja of Ryu's clan (new head, 16x32): a charcoal hood and mask with a band of skin and

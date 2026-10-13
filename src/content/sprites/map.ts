@@ -4,7 +4,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 /**
  * World map art (original): 16×16 terrain tiles and small decorative actor frames for the eight
  * themed world map pages (World 2's Hyrule since 0.4.24, World 3's Mega City since 0.4.26, World
- * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Dragon Valley since 0.4.29, World 7's Galuga Island since 0.4.30, World 8's Bowser's Underworld since 0.4.31), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
+ * 4's Planet Zebes since 0.4.27, World 5's Transylvania since 0.4.28, World 6's Galesburg since 0.4.29, World 7's Galuga Island since 0.4.30, World 8's Bowser's Underworld since 0.4.31), the Warp Zone hub and the Mini Game Arena. One frame set recolours into every theme through the `map-<theme>` palettes, which all
  * share these roles:
  *
  *   0 outline / darkest        1 ground dark       2 ground main       3 ground light
@@ -91,7 +91,7 @@ const MEGA_CITY_LIGHT = '#5070a8';
 export const ZEBES_NIGHT = '#100820';
 /** Transylvania's moonlit night over the page (World 5 since 0.4.28). */
 export const TRANSYLVANIA_NIGHT = '#0c0a24';
-/** DRAGON VALLEY's night under the full moon (World 6 since 0.4.29). */
+/** GALESBURG's night under the full moon (World 6 since 0.4.29). */
 export const NINJA_NIGHT = '#0c1030';
 /** GALUGA ISLAND's night over the jungle (World 7 since 0.4.30). */
 export const CONTRA_NIGHT = '#080c24';
@@ -311,7 +311,7 @@ export const mapPalettes: Record<string, string[]> = {
     white: ['#e8e8f0', '#a8a8c0'],
   }),
   /*
-   * DRAGON VALLEY (World 6 since 0.4.29, Ryu's world): a ninja game's night map of dark valley
+   * GALESBURG (World 6 since 0.4.29, Ryu's world): a ninja game's night map of dark valley
    * grass (ground), blue-grey mountains (rock), bamboo greens (leaf), a moonlit pond (water), timber
    * (wood), neon and temple crimson with the moon's and the windows' gold (accent), the city's and
    * the temple's dark stone (wall) and the passes' snow (white).
@@ -2066,7 +2066,7 @@ const raven = (up: boolean): Rows =>
 const RAVEN = [raven(true), raven(false)];
 
 /* ------------------------------------------------------------------------------------------ */
-/* DRAGON VALLEY (World 6, 0.4.29): bamboo, the village and its dojo, the night city, the      */
+/* GALESBURG (World 6, 0.4.29): bamboo, the village and its dojo, the night city, the          */
 /* demon temple, the full moon, leaping ninjas and the masked ninja's silhouette               */
 /* ------------------------------------------------------------------------------------------ */
 
@@ -2711,7 +2711,7 @@ const frames: Record<string, readonly string[]> = {
   'drac-right': cut(DRACULA, 2, 1),
   'raven-0': RAVEN[0] as Rows,
   'raven-1': RAVEN[1] as Rows,
-  // DRAGON VALLEY (World 6): bamboo (the tree tile's own frame on this page), the Hayabusa
+  // GALESBURG (World 6): bamboo (the tree tile's own frame on this page), the Hayabusa
   // village's houses (the house tile's) and dojo, the night city's rooftops (the city tile's) and
   // neon towers, the full moon (the moon tile's), the demon temple (its roofs over its walls and
   // gate), leaping ninjas and the masked ninja's silhouette (its hawks are the ninja sheet's).

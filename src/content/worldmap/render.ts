@@ -55,7 +55,7 @@ import { POND_CHARS } from './build';
  *   J Hyrule's, its sea a moonlit lake):
  *   Ħ  village house    Ω  the clock tower's clock over  ║  its base
  *   ╔ ╦ ╗  Dracula's castle's towers (left, middle, right) over  ╚ ╩ ╝  its walls and gate on the crag
- *   DRAGON VALLEY (theme 'ninja', World 6 since 0.4.29; its trees T are bamboo, its houses Ħ the
+ *   GALESBURG (theme 'ninja', World 6 since 0.4.29; its trees T are bamboo, its houses Ħ the
  *   Hayabusa village's, its city blocks 0 the night city's rooftops, its moon D full):
  *   ¤  a tower with a neon sign    ⌐ ¬  the Hayabusa dojo (left, right)
  *   ▛ ▀ ▜  the demon temple's roofs (left, middle, right) over  ▙ ▄ ▟  its walls and demon gate
@@ -102,11 +102,11 @@ import { POND_CHARS } from './build';
  *   medusa {speed, amp, phase}  Transylvania: a Medusa head drifting across the page in a wave
  *                        `amp` px high, wrapping round (Simon's crypt's)
  *   raven {range, speed, phase}  Transylvania: flies back and forth over `range` px, flapping
- *   hawk {range, period, phase}  DRAGON VALLEY: wheels round an oval `range` px wide, flapping (Ryu's
+ *   hawk {range, period, phase}  GALESBURG: wheels round an oval `range` px wide, flapping (Ryu's
  *                        mini game's hawk, the ninja sheet's)
- *   ninja {range, period, height, phase}  DRAGON VALLEY: crouches on a rooftop, leaps `range` px to
+ *   ninja {range, period, height, phase}  GALESBURG: crouches on a rooftop, leaps `range` px to
  *                        the next in an arc `height` px high, crouches, and leaps back
- *   masked-ninja {phase} DRAGON VALLEY: the masked ninja's silhouette standing watch, his scarf
+ *   masked-ninja {phase} GALESBURG: the masked ninja's silhouette standing watch, his scarf
  *                        streaming
  *   capsule {speed, amp, phase}  GALUGA ISLAND: a flying weapon capsule crossing the page in a wave
  *                        `amp` px high, wrapping round, its wings beating
@@ -246,7 +246,7 @@ export const MAP_LEGEND: Readonly<Record<string, TileDef>> = {
   '╚': { frame: 'drac-left' },
   '╩': { frame: 'drac-gate' },
   '╝': { frame: 'drac-right' },
-  // DRAGON VALLEY (World 6): neon towers, the Hayabusa dojo and the demon temple (its roofs over
+  // GALESBURG (World 6): neon towers, the Hayabusa dojo and the demon temple (its roofs over
   // its walls and gate).
   '¤': { frame: 'neon-tower' },
   '⌐': { frame: 'dojo-left' },
@@ -351,7 +351,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   megaman: '#0c1040', // Mega City's night over the skyline
   zebes: ZEBES_NIGHT, // Zebes's deep violet night
   transylvania: TRANSYLVANIA_NIGHT, // Transylvania's moonlit night
-  ninja: NINJA_NIGHT, // DRAGON VALLEY's night under the full moon
+  ninja: NINJA_NIGHT, // GALESBURG's night under the full moon
   contra: CONTRA_NIGHT, // GALUGA ISLAND's night over the jungle
   blaster: BLASTER_SKY, // BOWSER'S UNDERWORLD: Bowser's red sky gone dim
   kingdom: KINGDOM_CANOPY, // World 1 from above: the woods' dark leaves (no sky is seen)
@@ -378,7 +378,7 @@ export function drawMapTile(
 
 /**
  * A theme's own frames for shared legend tiles: Mega City's crystals are Flash Man's blue,
- * Transylvania's trees dead trees, DRAGON VALLEY's bamboo (its houses the Hayabusa village's, its
+ * Transylvania's trees dead trees, GALESBURG's bamboo (its houses the Hayabusa village's, its
  * city blocks the night city's rooftops, its moon full), GALUGA ISLAND's jungle (its cannons
  * pillboxes in the snow).
  */
@@ -568,7 +568,7 @@ export const MAP_ACTOR_TYPES = [
   'bat',
   'medusa',
   'raven',
-  // DRAGON VALLEY (World 6).
+  // GALESBURG (World 6).
   'hawk',
   'ninja',
   'masked-ninja',

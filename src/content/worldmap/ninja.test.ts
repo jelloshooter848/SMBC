@@ -13,7 +13,7 @@ import { MAP_ACTOR_TYPES, MAP_WALKABLE, drawMapActor, mapActorBounds, mapSky, pa
  * World 6's map page as Ryu's world (0.4.29, owner notes 5, 18 and 21: each world, its map page
  * and every level in it, is themed after the hero freed there). The page keeps SNOW NIGHT's
  * nodes, roads, the seal, the start and its local; its land is a ninja game's night under a full
- * moon: DRAGON VALLEY, the Hayabusa village and its dojo by the start, a bamboo forest round 6-1,
+ * moon: GALESBURG, the Hayabusa village and its dojo by the start, a bamboo forest round 6-1,
  * the night city's rooftops and neon by 6-2, snowy mountain passes round 6-3 and the demon temple,
  * Jaquio's fortress, over 6-4; hawks, ninjas leaping between the rooftops and a masked ninja's
  * silhouette for critters.
@@ -45,10 +45,10 @@ function drawn(
   return out;
 }
 
-describe('World 6: DRAGON VALLEY', () => {
-  it('is the ninja theme, titled DRAGON VALLEY, in its own palette and night sky', () => {
+describe('World 6: GALESBURG', () => {
+  it('is the ninja theme, titled GALESBURG, in its own palette and night sky', () => {
     expect(WORLD_6.theme).toBe('ninja');
-    expect(WORLD_6.title).toBe('DRAGON VALLEY');
+    expect(WORLD_6.title).toBe('GALESBURG');
     expect(mapPalettes['map-ninja']).toHaveLength(28);
     expect(mapSky(WORLD_6)).toMatch(/^#[0-9a-f]{6}$/);
   });

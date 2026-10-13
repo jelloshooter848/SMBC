@@ -78,7 +78,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | World 3, MEGA CITY           | `map-megaman`      | Mega Man-style robot rock, E minor, 160 bpm       |
 | World 4, PLANET ZEBES        | `map-zebes`        | moody Metroid-style, D phrygian, 90 bpm           |
 | World 5, TRANSYLVANIA        | `map-transylvania` | Castlevania-style, G harmonic minor, 150 bpm      |
-| World 6, DRAGON VALLEY       | `map-ninja`        | Ninja Gaiden-style, D minor, 160 bpm              |
+| World 6, GALESBURG           | `map-ninja`        | Ninja Gaiden-style, D minor, 160 bpm              |
 | World 7, GALUGA ISLAND       | `map-contra`       | Contra-style, C minor, 150 bpm                    |
 | World 8, BOWSER'S UNDERWORLD | `map-blaster`      | dark Blaster Master-style, A minor, 132 bpm       |
 
@@ -922,8 +922,8 @@ lightning never with reduce flashing), its water area the underground lake (`cv-
 stones, sewer grates, murky green water; it swims by its map's `swim: true`; new `cv-lake` tune)
 and 5-3 the clock tower (`cv-clock`: beams on timber scaffolds, a clock face and gears painted
 behind; Simon's `cv-stage` tune) (art `src/content/sprites/transylvania.ts`, music
-`src/content/music/transylvania.ts`). Since 0.4.29 World 6 is Ryu's world: its map page is DRAGON
-VALLEY (`MapTheme` `ninja`: a night valley under a full moon, the Hayabusa village and its dojo by
+`src/content/music/transylvania.ts`). Since 0.4.29 World 6 is Ryu's world: its map page is GALESBURG
+(DRAGON VALLEY until 0.4.49; `MapTheme` `ninja`: a night valley under a full moon, the Hayabusa village and its dojo by
 the start, a bamboo forest round 6-1, the night city's rooftops and neon signs by 6-2, SNOW NIGHT's
 snowy passes round 6-3 and the demon temple, Jaquio's fortress, over 6-4; hawks, a ninja leaping
 between the rooftops and the masked ninja's silhouette for critters; every node, road, the seal,
