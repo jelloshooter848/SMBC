@@ -32,6 +32,8 @@ import { heroItemPalettes, heroItemsDef } from './hero-items';
 import { townDef, townPalettes } from './town';
 import { townFolkDef, townFolkPalettes, townHeroDefs } from './town-folk';
 import { tsaHouseDef, tsaHousePalettes } from './tsa-house';
+import { kingdomPalettes, kingdomSheet } from './kingdom';
+import { WORLD_1_KINGDOM } from '@content/worldmap/world1-kingdom';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -114,6 +116,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   ...townHeroDefs,
   // The Top Secret Area's campaign look: the secret house's back wall (decor `tsa-house:wall`).
   'tsa-house': tsaHouseDef,
+  // 0.4.48: the Mushroom Kingdom from above (World 1's campaign map page).
+  kingdom: kingdomSheet([WORLD_1_KINGDOM.tiles]),
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -154,6 +158,7 @@ const defaults: Record<string, readonly string[]> = {
   ...townPalettes,
   ...townFolkPalettes,
   ...tsaHousePalettes,
+  ...kingdomPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.

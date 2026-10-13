@@ -26,6 +26,8 @@ const THEMES = [
   'ninja',
   'contra',
   'blaster',
+  // World 1 from above in campaign play (0.4.48): its ground is the kingdom sheet's.
+  'kingdom',
 ];
 
 const tileFrames = [

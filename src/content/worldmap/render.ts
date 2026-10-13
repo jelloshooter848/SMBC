@@ -12,6 +12,7 @@ import {
   WATER_FRAMES,
   ZEBES_NIGHT,
 } from '@content/sprites/map';
+import { KINGDOM_CANOPY } from '@content/sprites/kingdom';
 import { POND_CHARS } from './build';
 
 /*
@@ -332,6 +333,7 @@ export const MAP_PAL: Readonly<Record<MapTheme, string>> = {
   ninja: 'map-ninja',
   contra: 'map-contra',
   blaster: 'map-blaster',
+  kingdom: 'map-kingdom',
 };
 
 const SKY: Readonly<Record<MapTheme, string>> = {
@@ -352,6 +354,7 @@ const SKY: Readonly<Record<MapTheme, string>> = {
   ninja: NINJA_NIGHT, // DRAGON VALLEY's night under the full moon
   contra: CONTRA_NIGHT, // GALUGA ISLAND's night over the jungle
   blaster: BLASTER_SKY, // BOWSER'S UNDERWORLD: Bowser's red sky gone dim
+  kingdom: KINGDOM_CANOPY, // World 1 from above: the woods' dark leaves (no sky is seen)
 };
 
 /** Background colour behind the tiles. */
@@ -413,6 +416,7 @@ const ENEMY_PAL: Readonly<Record<MapTheme, string>> = {
   ninja: 'enemies-overworld',
   contra: 'enemies-overworld',
   blaster: 'enemies-castle',
+  kingdom: 'enemies-overworld',
 };
 const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'enemies-water',
@@ -432,6 +436,7 @@ const CHEEP_PAL: Readonly<Record<MapTheme, string>> = {
   ninja: 'enemies-water',
   contra: 'enemies-water',
   blaster: 'enemies-castle',
+  kingdom: 'enemies-water',
 };
 const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   grass: 'decor-overworld',
@@ -451,6 +456,7 @@ const DECOR_PAL: Readonly<Record<MapTheme, string>> = {
   ninja: 'decor-ng-field', // the bamboo field's dim night clouds
   contra: 'decor-contra-shore', // the jungle shore's dim night clouds
   blaster: 'decor-gray', // Bowser's ash clouds
+  kingdom: 'decor-overworld',
 };
 
 const CLOUD = ['cloud-1', 'cloud-2', 'cloud-3'] as const;
