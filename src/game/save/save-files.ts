@@ -1,5 +1,5 @@
 import type { MapProgress, PageId } from '@game/map/types';
-import { isPageId, MAP_PAGES, mapPage } from '@content/worldmap';
+import { isPageId, MAP_PAGES, mapPage, pageLook } from '@content/worldmap';
 import { startHp, type CharacterDef } from '@game/characters/character';
 import { CHARACTERS } from '@game/characters/registry';
 import { newGameState, type GameState } from '@game/context';
@@ -334,15 +334,42 @@ function lastNodes(x: unknown, pages: readonly PageId[]): Record<PageId, string>
  */
 const RENAMED_REVEALS: Readonly<Record<string, string>> = { 'smb-1:1-1>bonus-1': 'smb-1:1-2>bonus-1' };
 
-/** Pending reveal ids ('<page>:<id>') of open pages, renamed ones updated, each once, at most 64. */
+/**
+ * Pending reveal ids ('<page>:<id>') of open pages, renamed ones updated, each once, at most 64.
+ * A road id its page (as campaign play has it, content/worldmap pageLook) no longer has is dropped:
+ * 0.4.52 reordered World 4's roads (map/campaign-order.ts), so an old file's '4-1>4-2' waiting to
+ * draw in would never be drawn; what is open still comes from the cleared levels.
+ */
 function revealIds(x: unknown, pages: readonly PageId[]): string[] {
   const ids = strs(x, [])
     .map((id) => RENAMED_REVEALS[id] ?? id)
     .filter((id) => {
       const i = id.indexOf(':');
-      return i > 0 && i < id.length - 1 && pages.includes(id.slice(0, i));
+      return (
+        i > 0 &&
+        i < id.length - 1 &&
+        pages.includes(id.slice(0, i)) &&
+        onPage(id.slice(0, i), id.slice(i + 1))
+      );
     });
   return [...new Set(ids)].slice(0, 64);
+}
+
+/**
+ * Whether a pending reveal id's part `id` may stay for page `page`: a node id always (the map drops
+ * a stale one as it draws in); a road between two of the page's nodes ('<from>><to>') only if
+ * campaign play's page still has it (rules.revealId's part: World 4's old order). A world exit
+ * (its far end a page, not a node of this page) stays: code version 3 reserves exits a later
+ * build adds (World 8's road on to the Valley of Bowser, save-code-valley.test.ts).
+ */
+function onPage(page: PageId, id: string): boolean {
+  if (!id.includes('>')) return true;
+  const p = pageLook(mapPage(page), true);
+  if (!p) return false;
+  if (p.paths.some((q) => `${q.from}>${q.to}` === id) || p.exits.some((e) => `${e.from}>${e.to}` === id))
+    return true;
+  const to = id.slice(id.indexOf('>') + 1);
+  return !p.nodes.some((n) => n.id === to);
 }
 
 /**

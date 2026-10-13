@@ -782,7 +782,8 @@ describe('campaign: other worlds draw in on arrival', () => {
     h.fire({ type: 'pipe', target: { level: '4-1', x: 2, y: 12 } });
     // Saved right away (closing the tab now keeps it), while the map slides over to World 4.
     expect(h.map().mode).toBe('slide');
-    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['smb-4:start', 'smb-4:4-1']));
+    // World 4's start leads to Samus's cavern, internal 4-2, first (the campaign order, 0.4.52).
+    expect(loadSave(1)?.pendingReveal).toEqual(expect.arrayContaining(['smb-4:start', 'smb-4:4-2']));
     expect(loadSave(1)?.position).toEqual({ page: 'smb-4', node: 'start' });
     const h2 = makeGame();
     h2.game.openFile(1);

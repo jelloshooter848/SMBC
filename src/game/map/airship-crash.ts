@@ -54,6 +54,8 @@ export interface CrashNames {
   bonus: string;
   /** The skip hint's button, as abilityHint says it ('JUMP (Space)'). */
   skip: string;
+  /** The level the hero lands on, as the map shows it ('4-1': internal 4-2 in the campaign order). */
+  level?: string;
 }
 
 export interface CrashEvent {
@@ -124,7 +126,7 @@ export class AirshipCrash {
     if (t === F.FLY) out.push({ say: `Larry's airship limps over World 4, smoking. Skip: ${names.skip}.` });
     if (t === F.JUMP) {
       const verb = names.heroes.includes(' and ') ? 'jump' : 'jumps';
-      out.push({ sfx: 'kick', say: `${names.heroes} ${verb} out onto 4-2!` });
+      out.push({ sfx: 'kick', say: `${names.heroes} ${verb} out onto ${names.level ?? '4-2'}!` });
     }
     if (t === F.LAND) out.push({ sfx: 'bump' });
     if (t === F.CRASH) out.push({ sfx: 'cannon', say: 'The airship crashes!' });

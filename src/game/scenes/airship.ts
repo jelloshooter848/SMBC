@@ -9,6 +9,10 @@ import { snapshot } from './free-hero';
 import { MET_LARRY } from '../save/save-files';
 import type { CharacterDef } from '../characters/character';
 import type { DevRound } from './dev-minigames';
+import { campaignLabel } from '../map/campaign-order';
+
+/** 4-2's label as the player knows it (map/campaign-order.ts: 4-1 on a campaign file). */
+const back42 = (game: Game): string => campaignLabel('4-2', game.campaign !== null);
 
 /*
  * LARRY'S AIRSHIP CHALLENGE (docs/HEROES.md "Larry's airship"): the deck `4-2-airship` (an
@@ -163,7 +167,7 @@ export function airshipDied(game: Game): void {
           select: () => retryAirship(game),
           hint: game.airship?.reachedRoom ? "From Larry's room" : 'From the start of the deck',
         },
-        { label: 'No', select: () => leaveAirship(game), hint: 'Back to 4-2' },
+        { label: 'No', select: () => leaveAirship(game), hint: `Back to ${back42(game)}` },
       ],
       null,
     ),
@@ -177,7 +181,7 @@ export function airshipMenu(game: Game): Scene {
     game,
     AIRSHIP_TITLE,
     () => leaveAirship(game),
-    dev ? 'Ends the round' : 'Back to 4-2 as you left it',
+    dev ? 'Ends the round' : `Back to ${back42(game)} as you left it`,
   );
 }
 

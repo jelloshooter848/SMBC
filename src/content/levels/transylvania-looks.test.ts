@@ -114,10 +114,8 @@ describe("World 5 as Simon's world: Castlevania-style looks, campaign only", () 
       expect(getLevel(id).campaignLook, id).toBeUndefined();
       expect(campaignLevel(getLevel(id)).theme, id).toBe('crypt');
     }
-    // the lift's descent into the dungeon still wakes in the campaign
-    const descent = campaignLevel(getLevel('5-4')).zones.find((z) => z.kind === 'descent');
-    expect(descent).toMatchObject({ target: { level: '5-4-dungeon' } });
-    expect((descent as { campaign?: boolean }).campaign).toBeUndefined();
+    // 0.4.52: the lift's descent into the dungeon is gone (Simon's way in moved to 5-1).
+    expect(campaignLevel(getLevel('5-4')).zones.some((z) => z.kind === 'descent')).toBe(false);
   });
 
   it.each(IDS)('%s: every tile it draws has a frame in its look, every solid block redrawn', (id) => {

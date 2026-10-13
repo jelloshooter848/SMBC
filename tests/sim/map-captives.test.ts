@@ -85,7 +85,7 @@ const CASES: Case[] = [
   {
     hero: 'samus',
     colour: 'samus@samus',
-    shade: 'samus@samus~shade-zebes', // World 4 is Samus's since 0.4.27
+    shade: 'samus@samus~shade-above-zebes', // Zebes from above (0.4.52): Kraid's moss's shade
     page: 'smb-4',
     node: '4-2',
     before: {

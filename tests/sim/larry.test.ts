@@ -141,9 +141,10 @@ describe('the crystal ball (campaign)', () => {
     h.until(() => !map.revealing, 600);
     expect(h.game.pendingReveal).toEqual([]);
     // The SMB3 bonus games are registered (bonus/spot.ts): the rotation starts at the Toad House.
+    // Campaign play draws World 4 from above (0.4.52): the bonus spot is Zebes's item sphere.
     expect(
       draw(map).sprites.some(
-        (s) => s.x === 2 * 16 && s.y === 13 * 16 && s.key === 'smb3' && s.frame === 'node-toad-house',
+        (s) => s.x === 4 * 16 && s.y === 13 * 16 && s.key === 'zebes-above' && s.frame === 'bonus',
       ),
     ).toBe(true);
     expect(h.said.at(-1)).toMatch(/Toad House, open/);
@@ -428,7 +429,7 @@ describe("World 4's bonus spot and its Hammer Bro", () => {
   it('walking into him on the road starts the battle', () => {
     const { h, map } = onMap(found({ bonusOpen: false, bonusGuard: true }, '4-2'));
     // He starts on the bonus node, far from the hero; the hero sets off down the road.
-    expect(map().guard?.tile).toEqual([2, 13]);
+    expect(map().guard?.tile).toEqual([4, 13]); // bonus-4 on World 4 from above (0.4.52)
     h.idle(GUARD_GRACE_FRAMES);
     h.tap('down');
     h.until(() => h.top() instanceof HammerBattleScene, 400);

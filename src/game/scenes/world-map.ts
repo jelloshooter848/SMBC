@@ -720,6 +720,7 @@ export class WorldMapScene implements Scene {
       heroes: s.character2 ? `${s.character.name} and ${s.character2.name}` : s.character.name,
       bonus: spoken(bonusGame().label(this.game)),
       skip: abilityHint(this.game, 'JUMP', 'jump'),
+      level: shownLevel(here) ?? here.id,
     };
     this.crash = {
       scene: new AirshipCrash(here, bonus),
@@ -858,7 +859,7 @@ export class WorldMapScene implements Scene {
       if (!shows) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy's pedestal
       // stands clear of it (and of the player's marker on the node), on the ground beside it.
-      // On Hyrule and Mega City from above (0.4.50) the silhouette stands a little further out, its
+      // On a page with an `above` look (0.4.50, 0.4.52) the silhouette stands a little further out, its
       // head clear of the road leaving the node north (World 1's stays as it was).
       const out0 = hint === 'silhouette' ? 9 + (page.above ? ABOVE_SILHOUETTE_OUT : 0) : 18;
       const step = hint === 'silhouette' ? 12 : PEDESTAL_W + 3;
@@ -1113,8 +1114,10 @@ export class WorldMapScene implements Scene {
       const next = this.pageById(e.to);
       const look = next ? aboveLook(next) : null;
       if (!look) continue;
-      if (!lazySheetReady(look.sheet) || !this.game.ctx.assets.sheetKeys().includes(look.sheet))
-        return look.sheet;
+      if (!lazySheetReady(look.sheet)) return look.sheet;
+      // Rasterized ahead too, where the registry has it (a test's bare registry has none).
+      const assets = this.game.ctx.assets;
+      if (assets.has(look.sheet) && !assets.sheetKeys().includes(look.sheet)) return look.sheet;
     }
     return null;
   }
@@ -1302,7 +1305,9 @@ export class WorldMapScene implements Scene {
     let bumped = false;
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
-      const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
+      const step = here
+        ? nextStep(this.page, this.progress, this.node, d, this.game.rulePages, this.unlockAll)
+        : null;
       if (!step) {
         bumped = true;
         continue;
@@ -1404,7 +1409,8 @@ export class WorldMapScene implements Scene {
     if (!next) return;
     this.game.ctx.audio.sfx('coin');
     this.game.mapLastNode[this.page.id] = this.node;
-    if (warpRecords(this.progress, this.page, n)) this.game.addReveal(warpTo(this.progress, next.id));
+    if (warpRecords(this.progress, this.page, n))
+      this.game.addReveal(warpTo(this.progress, next.id, this.game.rulePages));
     // A hidden or unreachable arrival node (World 1's warp spot before its secret) would strand
     // the hero: the start instead.
     const target =
@@ -1738,10 +1744,13 @@ export class WorldMapScene implements Scene {
     const v = this.view(page);
     const revealing = page === this.page && this.revealShown.size > 0;
     if (v.look && v.roads) {
-      // From above (Worlds 1-3 in campaign play): the ground, the roads as they open, the scenery.
+      // From above (Worlds 1-5 in campaign play): the ground, the roads as they open, the scenery.
       drawAboveGround(r, assets, v.look, page, ox, this.t);
       drawAboveRoads(r, assets, v.look, v.roads, ox, revealing ? this.revealShown : null);
-      drawAboveScenery(r, assets, v.look, page, ox);
+      this.drawView = v;
+      this.drawRevealing = revealing;
+      drawAboveScenery(r, assets, v.look, page, ox, this.propShown);
+      this.drawView = null;
     } else {
       const tiles = page.tiles;
       for (let y = 0; y < tiles.length; y++) {
@@ -1828,6 +1837,22 @@ export class WorldMapScene implements Scene {
     const blink = this.t % 200 < 8 ? 1 : 0;
     r.sprite(this.game.ctx.assets.sheet('locals'), `${who}-${blink}`, ox + spot.x, spot.y);
   }
+
+  /** The page view drawPage is drawing its scenery from, and whether it is drawing a reveal in. */
+  private drawView: PageView | null = null;
+  private drawRevealing = false;
+
+  /**
+   * Whether node `id` of the page being drawn shows (open, and not waiting in its reveal): a
+   * landmark standing with it (MapProp.node: World 4's airship wreck by the bonus spot) shows then.
+   */
+  private readonly propShown = (id: string): boolean => {
+    const v = this.drawView;
+    if (!v || (this.drawRevealing && this.revealShown.has(id))) return false;
+    for (let i = 0; i < v.nodes.length; i++)
+      if ((v.nodes[i] as PageView['nodes'][number]).node.id === id) return true;
+    return false;
+  };
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
     const cleared = isCleared(this.progress, page, n.id);

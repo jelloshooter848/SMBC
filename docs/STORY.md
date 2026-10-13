@@ -91,7 +91,7 @@ wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2
 | 2     | Hyrule (Zelda II)               | Link       | 2-1 sky palace, past the coin heaven's end      | A healer                  | The old man, by 2-1's vine block (83); a fairy, at 2-1-sky's arrival |
 | 3     | The year 20XX (Mega Man)        | Mega Man   | 3-1 space station, via a hidden teleporter      | A lab robot               | Dr. Light, by 3-1's vine block (131)                                 |
 | 4     | Planet Zebes (Metroid)          | Samus      | 4-2 cavern, down the vine area's warp pipe      | A scientist               | The Chozo statue, by 4-2's vine block (64)                           |
-| 5     | Transylvania (Castlevania)      | Simon      | 5-4 crypt, riding the lift down past its end    | A merchant                | The townsperson, at 5-4's entrance                                   |
+| 5     | Transylvania (Castlevania)      | Simon      | 5-1 crypt, the key's locked door in 5-1-bonus   | A merchant                | The townsperson, in 5-1's coin room (0.4.52)                         |
 | 6     | A ninja village (Ninja Gaiden)  | Ryu        | 6-2 dojo, through a trick wall in a pipe room   | The village elder         | Irene Lew, at 6-2's start                                            |
 | 7     | The front (Contra)              | Bill       | 7-3 camp, falling through the exploding bridge  | A sergeant                | Lance, at 7-3's start                                                |
 | 8     | The Underworld (Blaster Master) | Sophia III | 8-4 garage, after Fred down 8-4-end's trap pipe | A miner                   | Fred the frog, by 8-4-end's trap pipe (10); Jason, behind it         |
@@ -2218,6 +2218,23 @@ HOURS. THE TEAM BETS YOU
 CAN DO IT IN ONE.
 ```
 
+**4-2: the sighting.** NEW (0.4.52, `story/sightings.ts`; 4-2 is shown as 4-1 once World 4 is reordered).
+**Trigger:** the first time 4-2 starts on the file while Samus is neither freed nor met and 4-2 is not cleared, once
+every player has landed from the fall in and stands on the start screen (campaign only, never while a player is
+Samus). Once per file (`sighting:samus`). **Staging:** play holds. Brainwashed Samus stands on the little ledge
+between the first two pits, her back turned, and looks back once. She curls into the morph ball and lays a bomb
+(it blinks; steady with reduce flashing); its burst (a ring, no flash) bounces her over the next pit, and she rolls
+on out of sight, deeper into the caves. A beat later player 1's hero speaks; JUMP, ATTACK or MENU skips to the card.
+Said: _A brainwashed Samus curls into a ball and bombs her way off into the caves._
+
+```text
+<HERO>:
+
+SAMUS! SHE CURLED INTO A
+BALL AND BOMBED HER WAY
+DEEPER INTO THE CAVES.
+```
+
 **Hint NPC: the Chozo statue, moved into 4-2.** MOVES: from 4-1's pipe room (`4-1-bonus`) into **4-2 itself**, on
 the floor of its Brinstar-look underground at about **column 61**, just before the vine block (64,5) that leads up
 to the vine area and its one working pipe. Its card has no speaker (prompt `READ`).
@@ -2740,6 +2757,52 @@ GARLIC? OF COURSE. ALWAYS.
 **Level NPCs** (0.4.40, owner: an NPC in every level). Each speaks for Simon: missing, they plead and say where
 to look (by place, never by level number); freed, their found lines, which quote the night town's famous advice.
 
+**5-1: the sighting.** NEW (0.4.52, `story/sightings.ts`). **Trigger:** the first time 5-1 starts on the file
+while Simon is neither freed nor met and 5-1 is not cleared, once every player stands on the start screen
+(campaign only, never while a player is Simon). Once per file (`sighting:simon`). **Staging:** play holds.
+Brainwashed Simon stands in the courtyard facing the castle; a bat flutters down and he looks back over his
+shoulder at the hero. He walks (never runs) to **the crypt gate**, a portcullis in the courtyard wall by the start,
+which rises for him by the curse; he steps into the dark, and it drops behind him: CLANG (a little dust, no shake),
+the padlock swinging. The bat flies off. A beat later player 1's hero speaks; JUMP, ATTACK or MENU skips to the card.
+Said: _A brainwashed Simon looks back, walks to the crypt gate and goes through. It slams shut behind him._
+
+```text
+<HERO>:
+
+SIMON! HE WALKED RIGHT
+THROUGH THAT GATE, AND IT
+SLAMMED SHUT BEHIND HIM.
+```
+
+**The crypt gate.** NEW (0.4.52, owner; `locked-gate`, entities/objects/keys.ts). The portcullis by 5-1's start
+(column 12) is always shut while Simon is captive, and never in the way (it is in the background). In reach, the
+TALK button reads OPEN (`OPEN (C)` with keys, `OPEN` on the touch button; said: _A locked gate. Press OPEN to try
+it._). Pressing it plays this card once a visit, the player's hero speaking; after that the strip just reads LOCKED
+and the button does nothing (said once on coming near: _Locked._). Once Simon is freed it is plain scenery: shut,
+no padlock, no prompt. Classic play has no gate.
+
+```text
+<HERO>:
+
+IT'S LOCKED... THERE
+MUST BE ANOTHER WAY IN!
+```
+
+**Simon's way in: the key and the locked door** (NEW, 0.4.52, owner; entities/objects/keys.ts). The real way into
+the crypt is 5-1's coin room (`5-1-bonus`, down the pipe at column 156). Its lone coin brick, right over the exit
+pipe (column 14, row 7), is a **key box**: bumped from below like a ? block (any hero, small or big; standing on the
+pipe top it is a plain jump) the key pops out (_A key pops out._) and lands on the pipe; the box is spent. In
+reach the TALK button reads PICK UP (_A key. Press PICK UP to take it._); taken (_Got the key._), a key shows in the
+HUD on the carrier's side. The **locked door** in the room's left wall (column 2) reads LOCKED without it
+(_A locked door._); touched by the hero carrying the key it opens by itself: the padlock drops (no flash), the key
+is used up (_The key turns. The door opens._). Then UP at the open door goes down into Simon's crypt
+(`5-4-crypt`, its id kept, now an area of 5-1), whose doorway leads back out of 5-1's pipe at column 163. The key
+lasts one visit: lost on death, on leaving the room or on a restart (the box is full and the door locked again);
+in co-op there is one key, either player can carry it, and it goes back in its box if its carrier dies. Once Simon
+is freed the door stands open for good and the brick keeps its coins. No save field: the freed list decides. The
+old way in, riding 5-4's down lift past the bottom of its shaft into a dungeon, is gone: 5-4's lift is a plain lift
+again (the dungeon, `5-4-dungeon`, is retired: no level leads to it).
+
 **5-1: an old woman.** NEW partner (`old-woman`). World 2's healer in a deep purple shawl, at **5-1's start**
 (column 7), by the courtyard gate.
 
@@ -2893,7 +2956,42 @@ SO FAST WHEN YOU ARE HERE.
 MY CLOCKS CANNOT KEEP UP.
 ```
 
-**Hint NPC: the townsperson.** KEEP, on the safe floor at the start of 5-4, before the lift at column 84.
+**Hint NPC: the townsperson.** MOVES (0.4.52, owner): from the start of 5-4 to **5-1's coin room** (`5-1-bonus`,
+column 8), between the key box and the locked door. He lost the key (option A; his old lift hints went with the
+lift route).
+
+```text
+TOWNSPERSON:
+
+WHAT A HORRIBLE NIGHT TO
+LOSE A KEY. IT OPENS THAT
+OLD DOOR. I DROPPED IT
+SOMEWHERE IN THIS ROOM.
+```
+
+After Simon is freed:
+
+```text
+TOWNSPERSON:
+
+THE DOOR IS OPEN FOR GOOD.
+WHAT A WONDERFUL NIGHT TO
+HAVE NO CURSE.
+```
+
+As Simon (NEW, 0.4.52: his own line, the old one went to the hall with the joke):
+
+```text
+TOWNSPERSON:
+
+SIMON! YOUR OWN CRYPT, AND
+I LOST ITS KEY. WHAT A
+HORRIBLE NIGHT TO BE ME.
+```
+
+**5-4: a townsperson in the hall.** NEW id (0.4.52, `hall-townsperson`, the same figure): someone still stands on
+5-4's safe floor at the start (an NPC in every level, 0.4.40), with only the night's joke and its thanks; the lift and
+cracked-wall hints went with that old way in.
 
 ```text
 TOWNSPERSON:
@@ -2902,25 +3000,7 @@ WHAT A HORRIBLE NIGHT TO
 HAVE A CURSE.
 ```
 
-```text
-TOWNSPERSON:
-
-RIDE THE MOVING FLOOR DOWN,
-PAST WHERE FLOORS SHOULD
-END. OR DON'T. I'M JUST A
-TOWNSPERSON.
-```
-
-```text
-TOWNSPERSON:
-
-AND HIT THE CRACKED WALL
-WITH YOUR HEAD TO MAKE A
-HOLE. TRUST ME.
-```
-
-(The last line is a Simon's Quest joke that happens to be true here: big Mario's head bump does break the cracked
-wall.) After Simon is freed:
+After Simon is freed:
 
 ```text
 TOWNSPERSON:
@@ -2930,7 +3010,7 @@ WONDERFUL NIGHT TO HAVE NO
 CURSE.
 ```
 
-As Simon (NEW, 0.4.47: talking as the world's own hero, first of the three sets):
+As Simon (the line the townsperson said at 5-4 since 0.4.47):
 
 ```text
 TOWNSPERSON:
@@ -2998,7 +3078,7 @@ A VAMPIRE?! NO... JUST A
 LAKITU WITH HAIR GEL.
 ```
 
-No home line for Simon: he is freed inside 5-4 itself and never meets its fake on a first clear (the remark plays once per file).
+No home line for Simon: he was freed inside 5-4 itself and never met its fake on a first clear (the remark plays once per file). Since 0.4.52 he is freed in 5-1, so he can meet it; his own line there is still to write (the shared one plays).
 
 Old:
 
@@ -3032,9 +3112,9 @@ JUST BEFORE THEY CAME.
 TOAD:
 
 STILL SEALED. THE VAMPIRE
-HUNTER! THE TOWNSPERSON AT
-THE OLD CASTLE'S GATE SAID
-SOMETHING ABOUT A LIFT...
+HUNTER! A TOWNSPERSON IN
+THE CATACOMBS LOST A KEY.
+SOMETHING ABOUT A DOOR...
 ```
 
 The gate scene. Bowser's cutaway: he turns the wand in his claws and finds **a crack** running up the rod, glowing.

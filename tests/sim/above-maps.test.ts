@@ -363,13 +363,13 @@ describe('the slides 1 → 2 → 3 → 4 and back', () => {
     const s23 = slide('right', '2-4', 'smb-3', ['2-1', '2-2', '2-3', '2-4']);
     expect(h.map().page).toBe(WORLD_3_MEGACITY);
     const s34 = slide('right', '3-4', 'smb-4', ['3-1', '3-2', '3-3', '3-4']);
-    // Above to above draws no seam; Mega City to World 4 (side-on) does.
-    expect([s12, s23]).toEqual([0, 0]);
-    expect(s34).toBeGreaterThan(0);
+    // Above to above draws no seam (World 4 is drawn from above too since 0.4.52; the seam between
+    // World 5 and 6 is above-maps-w45.test.ts's).
+    expect([s12, s23, s34]).toEqual([0, 0, 0]);
     const back = slide('left', 'start', 'smb-3', []);
     expect(h.map().page).toBe(WORLD_3_MEGACITY);
     expect(h.map().node).toBe('3-4');
-    expect(back).toBeGreaterThan(0);
+    expect(back).toBe(0);
     for (const id of ['3-3', '3-2', '3-1', 'start']) walkTo(h, id);
     slide('left', 'start', 'smb-2', []);
     expect(h.map().node).toBe('2-4');

@@ -981,7 +981,7 @@ const meat = [
 ];
 
 /* A heavy throne-room door: iron-banded planks under a pointed stone arch, on its sill (bottom row). */
-const door = [
+const door: string[] = [
   '.....033330.....',
   '....03222230....',
   '...0322112230...',
@@ -1015,6 +1015,14 @@ const door = [
   '3333333333333333',
   '1111111111111111',
 ];
+
+/**
+ * The same door standing open (0.4.52, 5-1-bonus's locked door once the key turns: objects/keys.ts):
+ * the planks gone into the dark, only the arch and its frame left.
+ */
+const doorOpen = door.map((row, y) =>
+  y < 5 || y > 29 ? row : row.slice(0, 3) + '0'.repeat(10) + row.slice(13),
+);
 
 /* Dracula's body after his head has flown off (between his forms): `dracula-cape-0` with the head and hair gone, the high collar left standing. */
 const draculaHeadless = draculaCape0.map((row, y) =>
@@ -1149,5 +1157,6 @@ export const cryptDef: SpriteDef = {
     'burst-1': burst1,
     meat: meat,
     door: door,
+    'door-open': doorOpen,
   },
 };
