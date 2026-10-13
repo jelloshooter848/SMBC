@@ -8,6 +8,73 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.54] - 2026-10-13
+
+### Added
+
+- Hero sighting: Sophia III drives off at the start of 8-1, hover-hops over Fred and drops into a hatch; Fred dives after
+  her and it slams shut.
+
+### Changed
+
+- Campaign World 8 is now THE UNDERWORLD, drawn from above in Blaster Master's style. No castle stands on its map; 8-4's
+  plutonium fortress is its last stop. Classic play keeps BOWSER'S UNDERWORLD.
+- Campaign 8-4 is the eighth fake Bowser: a Piranha Plant in a Plutonium Boss costume of party balloons and glow sticks.
+  Classic 8-4 is still the real king.
+- Sophia III's way in moves to 8-1: the hatch by the start won't open; Jason lost the key to the blast door in 8-1's coin
+  room, which leads down to her garage. World 8's hints and Sophia III's map hint now point to the forest.
+- The Valley of Bowser page and its own map song are built; they stay hidden until Bowser's Castle arrives, and until then
+  World 8's road leads on to the Lost Levels as before.
+- Colour-blind modes: the browns on Planet Zebes, Transylvania and THE UNDERWORLD no longer turn pink in the red/green modes.
+
+### Fixed
+
+- Old saves: a pending map reveal of a world road that has moved is dropped on load, while a road reserved for a later
+  release is kept.
+
+## [0.4.53] - 2026-10-13
+
+### Added
+
+- Hero sightings: Ryu drops in at the start of Galesburg, dashes to the castle wall and a panel spins him through it;
+  Bill goes hand over hand under the first bridge on Galuga Island, lets go off screen, and something booms far ahead.
+
+### Changed
+
+- Campaign: World 6 (GALESBURG) and World 7 (GALUGA ISLAND) are drawn from above: Ryu's night town with its bamboo park,
+  snowy pass and pagoda; Bill's island with its snowfield, steel bridge, waterfall and alien lair. Classic play keeps the
+  old pages.
+- Campaign: World 6 opens on Ryu's level and World 7 on Bill's. Old 6-2 is shown as 6-1 and old 6-1 as 6-2; World 7 now
+  runs 7-3, 7-1, 7-2 (shown 7-1, 7-2, 7-3), then 7-4. The map, HUD, intro card, announcer and Ryu's duel all show the new
+  numbers. Old saves load where they were and never get stuck; save codes are unchanged.
+- World 7's castle no longer calls Red Falcon "the last fake": the real king just "can't be far".
+- Colour-blind modes keep brick, wood and earth tones brown on the new maps; true reds still shift.
+
+### Fixed
+
+- A TALK-button prompt (like OPEN at Simon's gate) no longer stays on screen while your hero is dying or play is paused
+  for a pipe, a castle clear or a scene.
+
+## [0.4.52] - 2026-10-13
+
+### Added
+
+- Keys and locked doors. Near a key, the TALK button becomes PICK UP, the HUD shows the key while you carry it, and a
+  locked door opens by itself when the key touches it; then UP goes in. Gates and doors without their key read LOCKED.
+- Hero sightings: Samus curls into a ball and bombs her way deeper into the caves, and Simon walks through the crypt
+  gate, which slams shut behind him.
+
+### Changed
+
+- Campaign: World 4 (Planet Zebes) and World 5 (Transylvania) maps are drawn from above, with Metroid's regions and
+  Dracula's castle. Classic play keeps the old pages.
+- Campaign World 4 starts with Samus's level: the level that was 4-2 is played first and shown as 4-1 on the map, intro
+  card, HUD and announcer. Saves and save codes are unchanged, and older World 4 saves can't be stranded by the new order.
+- Simon's crypt has a new way in. The crypt gate by the start of 5-1 is locked; find the key in 5-1's coin room (bump the
+  brick over the pipe), carry it to the locked door and go down. The old 5-4 lift route is gone, and the townsperson
+  moved to the coin room with new lines.
+- On maps drawn from above, a direction key can follow a world exit (RIGHT from Tourian heads for World 5).
+
 ## [0.4.51] - 2026-10-13
 
 ### Added
@@ -1131,7 +1198,10 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...HEAD
+[0.4.54]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...v0.4.54
+[0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53
+[0.4.52]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...v0.4.52
 [0.4.51]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...v0.4.51
 [0.4.50]: https://github.com/jelloshooter848/SMBC/compare/v0.4.49...v0.4.50
 [0.4.49]: https://github.com/jelloshooter848/SMBC/compare/v0.4.48...v0.4.49
