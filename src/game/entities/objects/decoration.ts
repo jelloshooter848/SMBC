@@ -125,6 +125,9 @@ export function decorPalette(theme: string): string {
   // World 8 as Sophia's world (0.4.31): the forest, the techno castle, the ice and the dungeon.
   if (theme === 'bm-forest' || theme === 'bm-techno' || theme === 'bm-ice' || theme === 'bm-vault')
     return `decor-${theme}`;
+  // World 1 as the Mushroom Kingdom (0.4.48): its round hills, bushes and clouds; the keep's dark.
+  if (theme === 'kingdom') return 'decor-kingdom';
+  if (theme === 'kingdom-keep') return 'decor-night';
   if (theme === 'snow') return 'decor-snow';
   if (theme === 'cavern' || theme === 'tourian') return 'decor-cavern';
   if (theme === 'mushroom') return 'decor-mushroom';

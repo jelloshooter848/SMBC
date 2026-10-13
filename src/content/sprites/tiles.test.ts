@@ -707,6 +707,8 @@ describe('decor sprites', () => {
         'decor-bm-techno',
         'decor-bm-ice',
         'decor-bm-vault',
+        // World 1 as the Mushroom Kingdom (0.4.48)
+        'decor-kingdom',
       ].sort(),
     );
     expectRenders(decorDef, decorPalettes);

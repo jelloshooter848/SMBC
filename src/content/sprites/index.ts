@@ -33,6 +33,9 @@ import { heroItemPalettes, heroItemsDef } from './hero-items';
 import { townDef, townPalettes } from './town';
 import { townFolkDef, townFolkPalettes, townHeroDefs } from './town-folk';
 import { tsaHouseDef, tsaHousePalettes } from './tsa-house';
+import { kingdomPalettes, kingdomSheet } from './kingdom';
+import { kingdomLevelDef, kingdomLevelPalettes } from './kingdom-level';
+import { WORLD_1_KINGDOM } from '@content/worldmap/world1-kingdom';
 import {
   dungeonDef,
   dungeonEnemiesDef,
@@ -117,6 +120,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   ...townHeroDefs,
   // The Top Secret Area's campaign look: the secret house's back wall (decor `tsa-house:wall`).
   'tsa-house': tsaHouseDef,
+  // 0.4.48: the Mushroom Kingdom from above (World 1's campaign map page).
+  kingdom: kingdomSheet([WORLD_1_KINGDOM.tiles]),
+  // 0.4.48: World 1's levels in the Mushroom Kingdom's look: the far hills and the keep's wall.
+  'kingdom-level': kingdomLevelDef,
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -158,6 +165,8 @@ const defaults: Record<string, readonly string[]> = {
   ...townPalettes,
   ...townFolkPalettes,
   ...tsaHousePalettes,
+  ...kingdomPalettes,
+  ...kingdomLevelPalettes,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -178,6 +187,9 @@ for (const t of [
   fallback(`tiles-${t}`, 'tiles-overworld');
 // A swim through a castle: the castle's stone and its water colours.
 fallback('tiles-castle-water', 'tiles-castle');
+// World 1 as the Mushroom Kingdom (0.4.48): decor and backdrop only, so SMB's own tiles.
+fallback('tiles-kingdom', 'tiles-overworld');
+fallback('tiles-kingdom-keep', 'tiles-castle');
 for (const t of ['underground', 'castle', 'water']) fallback(`enemies-${t}`, 'enemies-overworld');
 fallback('koopa-green', 'enemies-overworld');
 fallback('koopa-red', 'enemies-overworld');

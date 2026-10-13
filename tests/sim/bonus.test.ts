@@ -552,7 +552,8 @@ describe('Toad House', () => {
     expect(ends).toEqual([
       { kind: 'toad-house', prizes: [{ kind: 'item', item: house.chests[0] }], gaveUp: false, played: true },
     ]);
-    expect(h.audio.playMusic).toHaveBeenLastCalledWith('map');
+    // Back to World 1's map song (its own since 0.4.48).
+    expect(h.audio.playMusic).toHaveBeenLastCalledWith('map-mushroom');
   });
 
   it('the same seed deals the same chests', () => {

@@ -10,6 +10,7 @@ import { WORLD_8 } from './world8';
 import { HUB_PAGE } from './hub';
 import { LOST_PAGES } from './lost';
 import { ARENA_PAGE } from './arena';
+import { WORLD_1_KINGDOM } from './world1-kingdom';
 
 /*
  * The page registry (docs/WORLD_MAP.md). The eight themed SMB pages ('smb-1'..'smb-8'): every
@@ -53,4 +54,20 @@ export function pagesInGroup(group: PageGroup): WorldMapPage[] {
 /** The page a main level's node is on ('1-2' → smb-1, 'll-3-2' → ll-3), by lookup. */
 export function levelPage(levelId: string): WorldMapPage | undefined {
   return MAP_PAGES.find((p) => p.nodes.some((n) => n.level === levelId));
+}
+
+/**
+ * Pages drawn differently in campaign play (0.4.48: World 1 top-down, world1-kingdom.ts), by id.
+ * Each keeps its registered page's id, node ids, kinds and order, road ids and exits, so the rules,
+ * saves and save codes read it exactly as the registered one.
+ */
+const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = { [WORLD_1_KINGDOM.id]: WORLD_1_KINGDOM };
+
+/** The campaign looks (each also registered under its id in MAP_PAGES, as classic play shows it). */
+export const CAMPAIGN_PAGES: readonly WorldMapPage[] = Object.values(CAMPAIGN_LOOKS);
+
+/** `page` as play shows it: its campaign look in campaign play, if it has one, else itself. */
+export function pageLook<P extends WorldMapPage | undefined>(page: P, campaign: boolean): P {
+  if (!campaign || !page) return page;
+  return (CAMPAIGN_LOOKS[page.id] ?? page) as P;
 }

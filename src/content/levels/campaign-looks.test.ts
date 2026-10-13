@@ -22,6 +22,9 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
 import { MARIO } from '@game/characters/mario';
 
+/** World 1's Mushroom Kingdom looks (0.4.48, kingdom-looks.test.ts). */
+const KINGDOM_LOOKS = ['1-0', '1-1', '1-3', '1-4'];
+
 /*
  * 0.4.12's hero tributes: five campaign levels restyled in a hero's look (owner decisions), each
  * through its map's `campaignTheme:` / `campaignMusic:` headers and `[campaign-decor]`, applied by
@@ -118,7 +121,11 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
   it('each restyled level and coin heaven names its look; nothing else in the campaign has one', () => {
     // (The Top Secret Area's look is no hero tribute: the inside of Kakariko Village's secret
     // house, 0.4.41, tests/sim/kakariko.test.ts.)
-    const looked = levelIds().filter((id) => getLevel(id).campaignLook && id !== '2-top-secret');
+    // (World 1's Mushroom Kingdom looks, 0.4.48, are decor only and keep SMB's music:
+    // kingdom-looks.test.ts.)
+    const looked = levelIds().filter(
+      (id) => getLevel(id).campaignLook && id !== '2-top-secret' && !KINGDOM_LOOKS.includes(id),
+    );
     expect(looked.sort()).toEqual([...IDS].sort());
     for (const id of IDS) {
       const { theme, music } = RESTYLES[id]!;
@@ -231,7 +238,8 @@ describe('the hero tributes: campaign looks of 2-1, 3-1, 4-2, 5-4 and 6-2', () =
       '8-4-jason',
       '8-4-fred',
       '8-4-garage',
-      '1-1',
+      // (1-1 takes the Mushroom Kingdom's look since 0.4.48; its bonus room keeps its own)
+      '1-1-bonus',
     ];
     for (const id of own) {
       const l = getLevel(id);

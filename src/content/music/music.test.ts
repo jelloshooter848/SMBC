@@ -100,6 +100,15 @@ const SONG_IDS = [
   'opening',
   // Bowser's foreboding theme for his spell after 1-0's flagpole (0.4.36).
   'bowser-spell',
+  // A song for each world map (0.4.48), worlds 1 to 8.
+  'map-mushroom',
+  'map-hyrule',
+  'map-megaman',
+  'map-zebes',
+  'map-transylvania',
+  'map-ninja',
+  'map-contra',
+  'map-blaster',
 ];
 
 const SFX_IDS = [

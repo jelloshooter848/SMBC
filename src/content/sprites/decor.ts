@@ -1,4 +1,5 @@
 import { NES } from '@engine/gfx/palette';
+import { kingdomDecorFrames, kingdomDecorPalette } from './kingdom-level';
 import { DEEP_TEAL, ROCK_BLUE } from './tiles';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { jungleDecorFrames, jungleDecorPalette } from './contra-decor';
@@ -218,6 +219,8 @@ export const decorPalettes: Record<string, string[]> = {
   'decor-bm-techno': bmTechnoDecorPalette,
   'decor-bm-ice': bmIceDecorPalette,
   'decor-bm-vault': bmVaultDecorPalette,
+  // World 1 as the Mushroom Kingdom (0.4.48) (kingdom-level.ts).
+  'decor-kingdom': kingdomDecorPalette,
 };
 
 /* Organic shapes: half-ellipse hills with dark spots, rounded bushes and clouds. */
@@ -802,5 +805,6 @@ export const decorDef: SpriteDef = {
     ...contraWorldDecorFrames,
     // World 8 as Sophia's world (0.4.31): the backdrops, gnarled and frozen trees.
     ...blasterWorldDecorFrames,
+    ...kingdomDecorFrames,
   },
 };

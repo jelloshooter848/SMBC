@@ -8,6 +8,23 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Every world map has its own original song in the style of its world's game: a Mushroom Kingdom stroll, a Hyrule
+  march, Mega City robot rock, moody Zebes, Transylvania, Dragon Valley, Galuga Island and a dark Underworld theme.
+  The warp hub, the Lost Levels and Kakariko keep their music. Moving between map pages fades the old song out.
+- World 1 is redrawn in the campaign as a detailed Mushroom Kingdom in A Link to the Past's style: Mario's house,
+  Peach's Castle and its plaza, the Toad houses, the river and bridge, and Bowser's fort, with sandy roads that draw
+  in as you clear levels. Every hero walks it drawn from above. Saves and save codes keep working.
+- 1-0, 1-1 and 1-3 have a Mushroom Kingdom look in the campaign (far hills with Peach's Castle, rounder hills,
+  bushes and clouds), and 1-4 is Bowser's keep. These are decor only; the levels play exactly as before.
+
+### Changed
+
+- On the new World 1 map, a direction that points toward the next level along its road takes you there, even if the
+  road leaves at an angle. On every map, a diagonal on the touch d-pad takes whichever of its two directions has a
+  road.
+
 ## [0.4.47] - 2026-10-13
 
 ### Added

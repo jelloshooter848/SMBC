@@ -364,6 +364,23 @@ export const mapPalettes: Record<string, string[]> = {
     wall: [NES.darkGray, NES.gray, NES.black],
     white: [NES.lightGray, NES.gray],
   }),
+  /*
+   * World 1 from above in campaign play (0.4.48): its ground is the `kingdom` sheet's
+   * (sprites/kingdom.ts); this is the grass page's set in the kingdom's greens, for its actors
+   * and a hidden hero's shade on its grass.
+   */
+  'map-kingdom': theme({
+    ground: ['#2a7a30', '#4caa3c', '#8ad458'],
+    sand: [NES.tan, NES.tanDark],
+    water: [NES.blueMid, NES.blueLight, NES.skyLight, NES.white],
+    rock: [NES.brownDark, NES.orangeBrown, NES.brownLight],
+    leaf: [NES.greenDark, NES.greenMid, NES.greenLight],
+    wood: [NES.brownLight, NES.orangeBrown],
+    accent: [NES.redBright, NES.yellow, NES.redDark],
+    lava,
+    wall: stone,
+    white: [NES.white, NES.skyLight],
+  }),
 };
 
 /* ------------------------------------------------------------------------------------------ */

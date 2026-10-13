@@ -33,7 +33,7 @@ export const WORLD_5: WorldMapPage = {
   label: 'WORLD 5',
   title: 'TRANSYLVANIA',
   theme: 'transylvania',
-  music: 'map',
+  music: 'map-transylvania',
   tiles: autoShore(SKETCH_5),
   nodes: worldNodes(
     5,

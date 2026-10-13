@@ -5,6 +5,7 @@ import { tileDef, T } from '../level/tiles';
 import type { View } from '../entities/entity';
 import type { TileMap } from './tilemap';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import { KINGDOM_SKY } from '@content/sprites/kingdom-level';
 
 /** Draw the visible tile columns of a map for the current theme (shared by the game and the editor). */
 export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = false): void {
@@ -128,6 +129,9 @@ export const FLOODED: Readonly<Record<string, string>> = {
 
 export const SKY: Record<string, string> = {
   overworld: '#5c94fc',
+  // World 1 as the Mushroom Kingdom (0.4.48): SMB's own blue; the keep's night is the castle's black.
+  kingdom: KINGDOM_SKY,
+  'kingdom-keep': '#000000',
   underground: '#000000',
   castle: '#000000',
   water: '#2038ec',

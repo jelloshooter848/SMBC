@@ -77,10 +77,12 @@ export function carryTime(from: LevelData, to: LevelData, time: number | null): 
 /**
  * The music a level plays for `hero`: the hero's own overworld theme (CharacterDef.music) in a
  * plain overworld area, else the level's own. A campaign look's theme is never `overworld`, so a
- * restyled level (and its coin heaven) plays the restyle's music for every hero.
+ * restyled level (and its coin heaven) plays the restyle's music for every hero; but World 1's
+ * Mushroom Kingdom look (`kingdom`, 0.4.48) is decor only and plays as the overworld it is.
  */
 export function levelMusic(level: LevelData, hero: Pick<CharacterDef, 'music'>): string {
-  return hero.music && level.theme === 'overworld' ? hero.music : level.music;
+  const overworld = level.theme === 'overworld' || level.theme === 'kingdom';
+  return hero.music && overworld ? hero.music : level.music;
 }
 
 export class LevelScene implements Scene {

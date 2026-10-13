@@ -148,6 +148,8 @@ export interface ApuVoices {
 export class Apu {
   readonly master: GainNode;
   readonly musicGain: GainNode;
+  /** The music voices' fade (AudioManager.fadeOutMusic), ahead of the music volume. */
+  readonly musicFade: GainNode;
   readonly sfxGain: GainNode;
   readonly voices: ApuVoices;
 
@@ -158,6 +160,9 @@ export class Apu {
     this.musicGain = ctx.createGain();
     this.sfxGain = ctx.createGain();
     this.musicGain.connect(this.master);
+    this.musicFade = ctx.createGain();
+    this.musicFade.gain.value = 1;
+    this.musicFade.connect(this.musicGain);
     this.sfxGain.connect(this.master);
     const waves: Record<Duty, PeriodicWave> = {
       0: makePulseWave(ctx, 0),
@@ -172,10 +177,10 @@ export class Apu {
       return v;
     };
     this.voices = {
-      pulse1: new OscVoice(ctx, waves, this.musicGain),
-      pulse2: new OscVoice(ctx, waves, this.musicGain),
-      triangle: tri(this.musicGain),
-      noise: new NoiseVoice(ctx, noise, this.musicGain),
+      pulse1: new OscVoice(ctx, waves, this.musicFade),
+      pulse2: new OscVoice(ctx, waves, this.musicFade),
+      triangle: tri(this.musicFade),
+      noise: new NoiseVoice(ctx, noise, this.musicFade),
       sfxPulse: new OscVoice(ctx, waves, this.sfxGain),
       sfxPulse2: new OscVoice(ctx, waves, this.sfxGain),
       sfxNoise: new NoiseVoice(ctx, noise, this.sfxGain),

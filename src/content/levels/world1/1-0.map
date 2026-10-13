@@ -9,6 +9,9 @@ time: 400
 start: 2,12
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook, 0.4.48): the Mushroom Kingdom's look, decor and backdrop only
+;; (the tiles, enemies and music are the level's own). Elsewhere it looks as it always did.
+campaignTheme: kingdom
 
 ;; Mario's tutorial stage (0.5.0; reworked in 0.4.36, src/game/tutorial/mario-1-0.ts): walk, jump the
 ;; steps; walk, sprint and walk again down the long stretch (a gate at 48 opens once you have);
