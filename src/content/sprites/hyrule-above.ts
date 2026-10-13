@@ -37,8 +37,8 @@ export const HYRULE_ABOVE_PALETTE: readonly string[] = [
   '#2a6a30', // 1 grass dark
   '#48a048', // 2 grass
   '#84cc68', // 3 grass light
-  '#7c5028', // 4 dirt dark
-  '#b88850', // 5 dirt
+  '#745a2c', // 4 dirt dark (0.4.50: green enough to stay tan in the colour-blind modes)
+  '#b48c50', // 5 dirt
   '#e4c48c', // 6 dirt light
   '#5c6474', // 7 stone dark
   '#9ca4b4', // 8 stone
@@ -53,8 +53,8 @@ export const HYRULE_ABOVE_PALETTE: readonly string[] = [
   '#7a1c20', // h red dark
   '#c43a34', // i red
   '#ec7a5c', // j red light
-  '#4e3420', // k rock dark
-  '#86603a', // l rock
+  '#4a3a24', // k rock dark (green enough to stay brown in the colour-blind modes)
+  '#826846', // l rock
   '#b89060', // m rock light
   '#f2e6c6', // n plaster
   '#c8ae84', // o plaster shade

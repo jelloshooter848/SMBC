@@ -240,5 +240,13 @@ if (modes.highContrast && costumesHc)
 export const PALETTES: PaletteBook = {
   default: defaults,
   ...modes,
-  fx: { ...HERO_FX, ...mapShadeFx(mapPalettes) },
+  // The pages drawn from above (0.4.50) shade a hidden hero in their sheet's ground (above-render shadeTheme).
+  fx: {
+    ...HERO_FX,
+    ...mapShadeFx({
+      ...mapPalettes,
+      'map-above-hyrule': HYRULE_ABOVE_PALETTE,
+      'map-above-megacity': MEGACITY_ABOVE_PALETTE,
+    }),
+  },
 };

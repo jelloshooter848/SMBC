@@ -13,6 +13,7 @@ import {
   drawAboveRoads,
   drawAboveScenery,
   isAbovePage,
+  shadeTheme,
   lazySheetReady,
   prepaintSheet,
   type AboveLook,
@@ -118,6 +119,9 @@ export const PREPAINT_BUDGET_MS = 4;
 
 /** An idle callback runs by this many ms even on a page with no idle time (a slow phone). */
 const PREPAINT_IDLE_TIMEOUT_MS = 50;
+
+/** Pixels a hidden hero's silhouette stands further out on a page with an `above` look (heroMarks). */
+const ABOVE_SILHOUETTE_OUT = 4;
 
 /** The browser's requestIdleCallback, where it has one. */
 type RequestIdle = (
@@ -854,7 +858,9 @@ export class WorldMapScene implements Scene {
       if (!shows) continue;
       // The silhouette peeks out from behind the dot (half of it hidden); the trophy's pedestal
       // stands clear of it (and of the player's marker on the node), on the ground beside it.
-      const out0 = hint === 'silhouette' ? 9 : 18;
+      // On Hyrule and Mega City from above (0.4.50) the silhouette stands a little further out, its
+      // head clear of the road leaving the node north (World 1's stays as it was).
+      const out0 = hint === 'silhouette' ? 9 + (page.above ? ABOVE_SILHOUETTE_OUT : 0) : 18;
       const step = hint === 'silhouette' ? 12 : PEDESTAL_W + 3;
       out.push({
         node,
@@ -1873,7 +1879,7 @@ export class WorldMapScene implements Scene {
     if (m.hint === 'trophy') return this.drawTrophy(r, m, ox);
     const p = m.def.portrait;
     const glow = !this.game.ctx.reduceFlashing && this.t % HIDING_SHIMMER_FRAMES < HIDING_GLOW_FRAMES;
-    const sheet = this.game.ctx.assets.sheet(p.sheet, mapShadePalette(p.palette, page.theme, glow));
+    const sheet = this.game.ctx.assets.sheet(p.sheet, mapShadePalette(p.palette, shadeTheme(page), glow));
     const f = sheet.frames.get(p.frame);
     const w = f?.w ?? 16;
     const h = f?.h ?? 16;
