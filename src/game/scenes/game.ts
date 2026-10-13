@@ -49,7 +49,7 @@ import { campaignLevel } from '../level/campaign';
 import { heroVariant } from '../level/variants';
 import { boardAirship, endDev, isAirshipArea, type AirshipRun } from './airship';
 import { isLostLevel } from '../level/lost-campaign';
-import { shownStage } from '../map/campaign-order';
+import { spokenLevel } from '../map/campaign-order';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import {
@@ -1292,7 +1292,7 @@ export class Game {
       return;
     }
     this.deps.announcer?.say(
-      `World ${level.world}-${shownStage(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} lives.`,
+      `${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} lives.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).

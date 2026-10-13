@@ -34,8 +34,7 @@ const walk = (startX: number) =>
     until: (w) => toPx(w.player.body.x) > 18 * 16,
   });
 
-const sent = (r: ReturnType<typeof walk>) =>
-  r.events.flatMap((e) => (e.type === 'checkpoint' ? [e.x] : []));
+const sent = (r: ReturnType<typeof walk>) => r.events.flatMap((e) => (e.type === 'checkpoint' ? [e.x] : []));
 
 describe('more than one checkpoint in a map', () => {
   it('walking the map sends each checkpoint once, in order', () => {
