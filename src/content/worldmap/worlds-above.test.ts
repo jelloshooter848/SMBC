@@ -207,9 +207,10 @@ const CASES: [string, Case][] = [
     },
   ],
   [
-    'World 8, The Underworld',
+    'World 8, The Underworld (the Valley not live)',
     {
-      page: WORLD_8_UNDERWORLD,
+      // As it ships until the Valley is live (the switch's other side is the next case).
+      page: underworldPage(false),
       classic: WORLD_8,
       title: 'THE UNDERWORLD',
       sheet: 'underworld-above',

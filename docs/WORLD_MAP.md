@@ -30,6 +30,7 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 | Ids                                          | Group (`PageGroup`) | Header `label`                                       |
 | -------------------------------------------- | ------------------- | ---------------------------------------------------- |
 | `smb-1` .. `smb-8`                           | `smb`               | `WORLD 1` .. `WORLD 8`                               |
+| `valley-of-bowser` (campaign, once live)     | `valley`            | `VALLEY`                                             |
 | `hub`                                        | `hub`               | `WARP ZONE`                                          |
 | `arena`                                      | `arena`             | `ARENA`                                              |
 | `ll-1` .. `ll-8`, `ll-9`, `ll-10` .. `ll-13` | `ll`                | `LOST 1` .. `LOST 8`, `LOST 9`, `LOST A` .. `LOST D` |
@@ -41,9 +42,31 @@ Every page has a string id (`PageId`), saved in files, never renamed:
   World 8's castle exit to Lost World 1 (0.4.7: the Lost Levels are the story's extension), a
   slide too; Lost World 1's start walks back along it. Other groups are joined only by warp nodes
   (a fade). A start node's "walk back" road leads to the page whose open exit arrives there.
-- The Worlds menu lists the open pages of the story (the SMB worlds, then the Lost Levels worlds,
-  one list since 0.4.7) plus the hub when open; on the hub it lists the hub first, then the open
-  pages of every group.
+- The Worlds menu lists the open pages of the story (the SMB worlds, the VALLEY OF BOWSER once
+  live, then the Lost Levels worlds, one list since 0.4.7) plus the hub when open; on the hub it
+  lists the hub first, then the open pages of every group.
+
+### THE UNDERWORLD and the VALLEY OF BOWSER (0.4.54)
+
+- Campaign World 8 is THE UNDERWORLD drawn from above (`world8-underworld.ts`, sheet
+  `underworld-above.ts`; classic keeps BOWSER'S UNDERWORLD). No castle is drawn on it: 8-4, the
+  plutonium fortress, is its last node. Its play order and road ids are World 8's own.
+- The VALLEY OF BOWSER (`valley-of-bowser.ts`, sheet `valley-above.ts`, song `map-valley`) is
+  its own page, group `valley` (no `smb-N` id, so no world gate or welcome takes it for a ninth
+  world): its start and BOWSER'S CASTLE (`bowsers-castle`, kind `castle`, level `8-5`). The
+  node is shown by its name (`MapNode.name`): the header's title reads BOWSER'S CASTLE while
+  the hero stands on it (label `VALLEY` alone at the right) and the announcer says "Bowser's
+  Castle"; `8-5` is never shown.
+- **The switch** (`VALLEY_LIVE`): the Valley is registered (`MAP_PAGES`, between the SMB worlds
+  and the hub) and campaign World 8's road on leads to it (`8-4>valley-of-bowser`, east on row
+  10, Sophia's gate) only once level `8-5` is in the level index. Until then World 8's road
+  leads on to Lost World 1 as before, up the east steps and off the edge on row 5
+  (`underworldExit`). Adding the level turns it all on; no map edit is needed.
+- The Valley's road on to Lost World 1 (`bowsers-castle>ll-1`, row 5) has
+  `opens: 'castle-or-gameCleared'`: open once the castle is cleared, or on a file that has
+  already beaten the game (`gameCleared`), whose castle stays open and uncleared. Once live, an
+  old beaten file gets the Valley opened and its road drawn in by `openMetExits`; its stale
+  reveal `smb-8:8-4>ll-1` is dropped on load. Lost World 1's start walks back to the Valley.
 
 ## `WorldMapPage`
 
@@ -97,7 +120,7 @@ eye goes to the next node, not a road's first tile, so a direction no road leave
 the road whose far node lies nearest in angle to it, within 60° (1-3's RIGHT, the fort's road
 leaving north onto the bridge; `world1-kingdom.test.ts`). Every road counts, open or not, so a key
 never changes meaning as roads open. Other pages keep to the first step. Since 0.4.52 (Worlds 1-5
-drawn from above; Worlds 6-7 too since 0.4.53) a world exit counts too, aimed at where it leaves the page: World 4's escape leaves
+drawn from above; Worlds 6-7 too since 0.4.53, World 8 and the Valley since 0.4.54) a world exit counts too, aimed at where it leaves the page: World 4's escape leaves
 Tourian west and runs east along the top, so RIGHT from 4-4 heads for World 5.
 
 ### Campaign order (0.4.52, `map/campaign-order.ts`)
@@ -295,7 +318,11 @@ exits: [{ from: '8-4', to: 'll-1', side: 'right', points, requires?: MapConditio
 - An exit opens when its `from` node (a castle) is cleared **and** its `requires` holds (no exit
   has one today). A castle clear (`rules.clearLevel`) opens the target page of every exit whose
   condition holds.
-- Exits lead to pages of the same group, except SMB World 8's road on to Lost World 1.
+- Exits lead to pages of the same group, except SMB World 8's road on to Lost World 1 (campaign,
+  once the Valley is live: World 8's road to the VALLEY OF BOWSER and the Valley's on to Lost
+  World 1).
+- `opens: 'castle-or-gameCleared'` (0.4.54, the Valley's road on): also open on a `gameCleared`
+  file while its node is open, the castle cleared or not.
 - `hint` (optional): the hint line while the hero stands on `from` and the exit is locked; the
   announcer adds it to the node's name (`rules.exitHint`). At most 32 chars. None has one today.
 
