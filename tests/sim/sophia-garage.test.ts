@@ -54,6 +54,8 @@ const TRAP = { level: '8-4', x: 19, y: 10, exitDir: 'up' };
 const INTO_TUNNEL = { level: '8-4-fred', x: 4, y: 0, exitDir: 'fall' };
 const INTO_GARAGE = { level: '8-4-garage', x: 2, y: 0, exitDir: 'fall' };
 const BACK_TO_81 = { level: '8-1', x: 115, y: 10, exitDir: 'up' };
+/** The retired tunnel's pipe: back up out of 8-4-end's trap pipe (it stays within 8-4). */
+const OUT_OF_TUNNEL = { level: '8-4-end', x: 10, y: 10, exitDir: 'up' };
 const SOPHIA_AT = { x: 8, y: 12 };
 
 /** Every hero, at small and big where it has power states (Sophia: Normal and Hyper). */
@@ -307,7 +309,7 @@ describe("Fred's flooded tunnel (8-4-fred; retired in 0.4.54, kept for Fred's sw
     expect(l.swim).toBe(true);
     expect(isSwimLevel(l)).toBe(true);
     expect(l.start).toEqual({ x: INTO_TUNNEL.x, y: INTO_TUNNEL.y });
-    expect(l.zones).toEqual([{ kind: 'pipe', x: 36, y: 12, dir: 'right', target: INTO_GARAGE }]);
+    expect(l.zones).toEqual([{ kind: 'pipe', x: 36, y: 12, dir: 'right', target: OUT_OF_TUNNEL }]);
     expect(l.entities).toEqual([{ type: 'fred', x: 8, y: 11, props: { mode: 'swim', to: 35 } }]);
     // The hole in the roof the hero drops in by, over the arrival column.
     for (const x of [3, 4, 5, 6]) expect(tile(l, x, 2)).toBe(T.WATER);
@@ -341,7 +343,7 @@ describe("Fred's flooded tunnel (8-4-fred; retired in 0.4.54, kept for Fred's sw
     expect(fall.world.player.inWater).toBe(false);
   });
 
-  it.each(runs)('%s: drops in and swims after Fred to the pipe up into the garage', (_n, c, power) => {
+  it.each(runs)('%s: drops in and swims after Fred to the pipe at the far end', (_n, c, power) => {
     const r = runSim({
       level: campaignLevel(tunnel()),
       character: c,
@@ -352,7 +354,7 @@ describe("Fred's flooded tunnel (8-4-fred; retired in 0.4.54, kept for Fred's sw
       controller: swimBot(),
     });
     expect(r.outcome, `${c.name} ${power} at ${toPx(r.world.player.body.x) >> 4}`).toBe('pipe');
-    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_GARAGE });
+    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: OUT_OF_TUNNEL });
   });
 
   it('Fred swims on ahead while a hero is near, waits by the pipe and slips in as the hero comes', () => {
