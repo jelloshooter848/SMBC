@@ -7,14 +7,15 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { MAP_PAGES, mapPage, pageLook } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
 import {
-  drawKingdomGround,
-  drawKingdomRoads,
-  drawKingdomScenery,
-  isKingdomPage,
-  kingdomNodeFrame,
-  kingdomRoadCells,
+  aboveLook,
+  aboveRoadCells,
+  drawAboveGround,
+  drawAboveRoads,
+  drawAboveScenery,
+  isAbovePage,
+  type AboveLook,
   type RoadCell,
-} from '@content/worldmap/kingdom-render';
+} from '@content/worldmap/above-render';
 import { overheadLook } from '../town/hero';
 import type { MapActor, MapNode, MapProgress, PageGroup, PageId, WorldMapPage } from '../map/types';
 import {
@@ -31,6 +32,7 @@ import {
   parseRevealId,
   pathId,
   revealId,
+  shownLevel,
   warpText,
   exitHint,
   warpTo,
@@ -211,8 +213,8 @@ export function spoken(text: string): string {
  * the hero stands on a level or castle node ('WORLD 1-2', 'LOST A-2'); at most 10 chars.
  */
 export function mapHeaderLabel(page: WorldMapPage, node: MapNode | null): string {
-  // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
-  const stage = node && levelNode(node) ? node.level?.split('-').pop() : undefined;
+  // The stage is the shown level's last part ('1-2' → 2, 'll-10-3' → 3; rules.shownLevel).
+  const stage = node && levelNode(node) ? shownLevel(node)?.split('-').pop() : undefined;
   return (stage ? `${page.label}-${stage}` : page.label).slice(0, 10);
 }
 
@@ -249,7 +251,9 @@ interface PageView {
   /** `sheet`: the frame's sheet when it is not the items sheet (the bonus spot's SMB3 icon). */
   nodes: { node: MapNode; frame: string; sheet?: string }[];
   heroes: HeroMark[];
-  /** A top-down page's road tiles (isKingdomPage), drawn in place of the dots; else null. */
+  /** A page drawn from above: its look (above-render.ts), else null (drawn side-on). */
+  look: AboveLook | null;
+  /** A page drawn from above: its road tiles, drawn in place of the dots; else null. */
   roads: RoadCell[] | null;
 }
 
@@ -316,8 +320,9 @@ const SEAM_SHADES: readonly (readonly [number, number, string])[] = [
 ];
 
 /**
- * The seam where a top-down page (World 1 in the campaign) meets a side-on one in a slide, at
- * screen x `x`: a soft shadow, so the change of view reads as turning to the next page of the map.
+ * The seam where a page drawn from above (Worlds 1-3 in the campaign) meets a side-on one in a
+ * slide, at screen x `x`: a soft shadow, so the change of view reads as turning to the next page of
+ * the map.
  */
 function drawPageSeam(r: Renderer, x: number): void {
   for (const [dx, w, c] of SEAM_SHADES) r.rect(x + dx, MAP_HEADER_H, w, 240 - MAP_HEADER_H, c);
@@ -779,10 +784,11 @@ export class WorldMapScene implements Scene {
       // Every node may have a hero beside it: a shown node's silhouette or trophy, and with the
       // crystal ball a silhouette by a node not reached yet (heroMarks).
       heroes: page.nodes.flatMap((node) => this.heroMarks(page, node)),
+      look: aboveLook(page),
       roads: null,
     };
-    if (isKingdomPage(page))
-      v.roads = kingdomRoadCells(page, [
+    if (v.look)
+      v.roads = aboveRoadCells(page, [
         ...paths.map((p) => ({
           id: pathId(p),
           points: p.points,
@@ -903,8 +909,8 @@ export class WorldMapScene implements Scene {
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
     if (n.kind === 'start' && !n.level) return `${label} start`;
-    // The stage is the level id's last part ('1-2' → 2, 'll-10-3' → 3).
-    const stage = n.level?.split('-').pop();
+    // The stage is the shown level's last part ('1-2' → 2, 'll-10-3' → 3; rules.shownLevel).
+    const stage = shownLevel(n)?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
     return n.kind === 'castle' ? `${lvl} castle, ${state}` : `${lvl}, ${state}`;
   }
@@ -1619,8 +1625,8 @@ export class WorldMapScene implements Scene {
       r.clear(mapSky(s.from));
       this.drawPage(r, s.from, -off, false);
       this.drawPage(r, this.page, s.dir * 256 - off, false);
-      // From above to side-on (World 1 in the campaign and World 2): the seam is a page's edge.
-      if (isKingdomPage(s.from) !== isKingdomPage(this.page)) drawPageSeam(r, s.dir > 0 ? 256 - off : -off);
+      // From above to side-on (World 3 in the campaign and World 4): the seam is a page's edge.
+      if (isAbovePage(s.from) !== isAbovePage(this.page)) drawPageSeam(r, s.dir > 0 ? 256 - off : -off);
     } else if (this.fade) {
       // First half: the page left darkens to black; second half: the new page comes up.
       const half = MAP_FADE_FRAMES / 2;
@@ -1657,11 +1663,11 @@ export class WorldMapScene implements Scene {
     if (ox !== 0) r.rect(ox, 0, 256, 240, mapSky(page));
     const v = this.view(page);
     const revealing = page === this.page && this.revealShown.size > 0;
-    if (v.roads) {
-      // From above (World 1 in campaign play): the ground, the roads as they open, the scenery.
-      drawKingdomGround(r, assets, page, ox, this.t);
-      drawKingdomRoads(r, assets, v.roads, ox, revealing ? this.revealShown : null);
-      drawKingdomScenery(r, assets, page, ox);
+    if (v.look && v.roads) {
+      // From above (Worlds 1-3 in campaign play): the ground, the roads as they open, the scenery.
+      drawAboveGround(r, assets, v.look, page, ox, this.t);
+      drawAboveRoads(r, assets, v.look, v.roads, ox, revealing ? this.revealShown : null);
+      drawAboveScenery(r, assets, v.look, page, ox);
     } else {
       const tiles = page.tiles;
       for (let y = 0; y < tiles.length; y++) {
@@ -1751,10 +1757,15 @@ export class WorldMapScene implements Scene {
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
     const cleared = isCleared(this.progress, page, n.id);
-    if (isKingdomPage(page)) {
+    const look = aboveLook(page);
+    if (look) {
       const warpOpen = isWarpNode(n) && isWarpOpen(this.progress, n, this.unlockAll);
-      const f = kingdomNodeFrame(n.kind, { cleared, warpOpen, secret: hasSecretExit(n.level) });
-      if (f) return `kingdom:${f}`;
+      const f = look.node(n.kind, {
+        cleared: n.kind === 'bonus' ? this.bonusUsed(n) : cleared,
+        warpOpen,
+        secret: hasSecretExit(n.level),
+      });
+      if (f) return `${look.sheet}:${f}`;
     }
     if (isWarpNode(n)) return isWarpOpen(this.progress, n, this.unlockAll) ? 'map-warp' : 'map-warp-locked';
     switch (n.kind) {
@@ -1775,6 +1786,15 @@ export class WorldMapScene implements Scene {
         if (hasSecretExit(n.level)) return cleared ? 'map-node-secret-cleared' : 'map-node-secret';
         return cleared ? 'map-node-cleared' : 'map-node-open';
     }
+  }
+
+  /**
+   * A bonus spot's marker from above shows it spent: a bonus area (the Top Secret Area) once its
+   * town is found (its sparkle goes), a bonus game's spot once used (Game.bonusOpen false).
+   */
+  private bonusUsed(n: MapNode): boolean {
+    if (isBonusArea(n)) return !!n.town && this.progress.secrets.includes(n.town);
+    return !this.game.bonusOpen;
   }
 
   /**
@@ -1907,7 +1927,7 @@ export class WorldMapScene implements Scene {
   }
 
   private drawHero(r: Renderer, c: CharacterDef, x: number, y: number, second = false): void {
-    if (isKingdomPage(this.page) && this.drawOverhead(r, c, x, y, second)) return;
+    if (isAbovePage(this.page) && this.drawOverhead(r, c, x, y, second)) return;
     const sheet = this.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette);
     const frames = this.framesFor(c);
     let frame = frames.idle;
