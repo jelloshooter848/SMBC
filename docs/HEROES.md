@@ -1300,16 +1300,16 @@ the flagpole at the end. Code: `hero-stage.ts` (`HeroStageScene`), `heroes/<hero
 lessons, gates and checks, as `mario-1-0.ts`), `kit.ts`, `targets.ts`; the director
 (`stage-tutorial.ts`) runs both 1-0 and the stages through `TutorialHost`.
 
-| Hero     | Map (theme, song)                 | Lessons, in order (in brackets: the power block's item)                                                                                                                            |
-| -------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Luigi    | `luigi.map` (overworld)           | high jump (out of a well only his jump clears), run (the sprint bar), slippery stop, floaty running jump (a wide ditch), [Mushroom]                                                |
-| Link     | `link.map` (zelda2, field)        | sword, shield, down-thrust, up-thrust, boomerang, [Heart Container], [Bomb Bag], [Shield spell], [Jump spell], [Blue Ring], [Fire spell], [Magical Sword]                          |
-| Mega Man | `megaman.map` (megaman-stage)     | buster, slide, [Helmet], charge shot, bricks, [Saw], [Leaf], [Rush Coil], [Flame], [Knuckle], [Bolt]                                                                               |
-| Samus    | `samus.map` (brinstar)            | beam, aim up, morph ball, bomb jump, [Energy Tank], [Long Beam], [Missiles], [Ice Beam], [Varia Suit], [Wave Beam]                                                                 |
-| Simon    | `simon.map` (cv-gate, cv-hall)    | whip, stairs, committed jump, [Pot Roast], [Chain Whip], [Dagger], [Holy Water], [Axe], [Morning Star], [Cross], [Double + Triple Shot], [Stopwatch]                               |
-| Ryu      | `ryu.map` (ninja-city, ng-city)   | slash, wall cling, wall jump (up a shaft), [Medicine], [Throwing Star], [Ninpo Scroll], [Windmill Star], [Fire Wheel], [Jump and Slash]                                            |
-| Bill     | `bill.map` (contra-jungle)        | rifle, 8-way aim, prone (under a turret's shots), shot down from a jump, [Medal], [Machine Gun], note: switching guns, [Laser], [Flame Gun], [Spread Gun]                          |
-| Sophia   | `sophia.map` (bm-forest, bm-area) | drive and jump, cannon, cannon up, nose-first drop, Jason (coins down a pit), [Power Capsule], hover, [Crusher], [Triple Missile], [Wall Climb], [Ceiling Climb], [Homing Missile] |
+| Hero     | Map (theme, song)                 | Lessons, in order (in brackets: the power block's item)                                                                                                                                              |
+| -------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Luigi    | `luigi.map` (overworld)           | high jump (out of a well only his jump clears), run (the sprint bar), slippery stop, floaty running jump (a wide ditch), [Mushroom], what a hit takes                                                |
+| Link     | `link.map` (zelda2, field)        | sword, shield, down-thrust, up-thrust, boomerang, boomerang up, [Heart Container], [Bomb Bag], [Shield spell], [Jump spell], [Blue Ring], [Fire spell], [Magical Sword], what a hit takes            |
+| Mega Man | `megaman.map` (megaman-stage)     | buster, slide, [Helmet], charge shot, bricks, [Saw], Saw up (a cloud), [Leaf], [Rush Coil], [Flame], [Knuckle], [Bolt], charge through walls, what a hit takes                                       |
+| Samus    | `samus.map` (brinstar)            | beam, aim up, morph ball, bomb jump, [Energy Tank], [Long Beam], [Missiles], [Ice Beam], [Varia Suit], [Wave Beam], what a hit takes                                                                 |
+| Simon    | `simon.map` (cv-gate, cv-hall)    | whip, stairs, committed jump, double jump, [Pot Roast], [Chain Whip], [Dagger], [Holy Water], [Axe], [Morning Star], [Cross], [Double + Triple Shot], [Stopwatch], what a hit takes                  |
+| Ryu      | `ryu.map` (ninja-city, ng-city)   | slash, wall cling, wall jump (up a shaft), [Medicine], [Throwing Star], [Ninpo Scroll], [Windmill Star], [Fire Wheel], [Jump and Slash], what a hit takes                                            |
+| Bill     | `bill.map` (contra-jungle)        | rifle, 8-way aim, prone (under a turret's shots), shot down from a jump, [Medal], [Machine Gun], note: switching guns, [Laser], [Flame Gun], [Spread Gun], what a hit takes                          |
+| Sophia   | `sophia.map` (bm-forest, bm-area) | drive and jump, cannon, cannon up, nose-first drop, Jason (coins down a pit), [Power Capsule], hover, [Crusher], [Triple Missile], [Wall Climb], [Ceiling Climb], [Homing Missile], what a hit takes |
 
 - **The scene.** Its own World and a fresh GameState for the hero (`heroStart`: the campaign's
   first kit, small, one life, no clock, no score popups); the run's GameState is never touched.

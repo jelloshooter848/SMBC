@@ -119,6 +119,14 @@ export function linkBot(): (s: HeroStageScene) => Action[] {
         if (w.entities.some((e) => e.alive && e.kind === 'boomerang')) break;
         if (standAt(S.ledge.from - 1)) press('jump', 30);
         break;
+      case 'boomerang-up':
+        // Straight up from under the coin.
+        if (w.entities.some((e) => e.alive && e.kind === 'boomerang')) break;
+        if (standAt(S.highCoin.x)) {
+          out.push('up');
+          press('special', 20);
+        }
+        break;
       case 'heart-container':
         takeFrom(S.heartBlock);
         break;

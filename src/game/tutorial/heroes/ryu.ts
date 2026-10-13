@@ -4,7 +4,7 @@ import type { Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget } from '../targets';
-import { alive, blocksSince, hitsSince, onTop } from './common';
+import { alive, blocksSince, hitLessons, hitsSince, onTop } from './common';
 import source from '../../../content/levels/training/ryu.map?raw';
 
 /*
@@ -37,7 +37,10 @@ export const RYU_STAGE = {
   spinBlock: { x: 81, y: 9 },
   pipe: 90,
   spinGate: 95,
-  flag: 100,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 100,
+  hitGate: 102,
+  flag: 108,
 } as const;
 const S = RYU_STAGE;
 
@@ -166,6 +169,7 @@ export const RYU_LESSONS: readonly Lesson[] = [
     retry: 'PICK JUMP AND SLASH WITH [NINPO:select]. JUMP AS THE ENEMY COMES, SPIN AS YOU DROP ONTO IT.',
     done: (w) => hitsSince(w, (h) => h.spin && !(h.target instanceof TrainingTarget)).length > 0,
   },
+  ...hitLessons('ryu', { at: 96, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
     at: 96,
@@ -185,6 +189,7 @@ export const RYU_GATES: readonly TutorialGate[] = [
   gate(S.windmillGate, 'windmill'),
   gate(S.wheelGate, 'fire-wheel'),
   gate(S.spinGate, 'jump-slash'),
+  gate(S.hitGate, 'hit'),
 ];
 
 export const RYU_STAGE_DEF: HeroStage = {

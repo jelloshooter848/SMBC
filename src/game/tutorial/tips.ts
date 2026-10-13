@@ -81,6 +81,11 @@ export class TipLog {
     return this.holding?.owner === owner ? this.holding.tip : null;
   }
 
+  /** Whose hold is on now (a tutorial's director, the explainers), or null. */
+  get holder(): object | null {
+    return this.holding?.owner ?? null;
+  }
+
   /** Frames the current hold has lasted (0 when none). */
   get heldFrames(): number {
     return this.holding?.t ?? 0;

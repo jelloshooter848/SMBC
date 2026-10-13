@@ -71,6 +71,12 @@ export class Player {
   crouching = false;
   skidding = false;
   jumping = false;
+  /**
+   * Jumps left in the air (MovementProfile.airJumps: Simon's double jump). Full on the ground, by a
+   * stomp's bounce and a spring's launch; none while a hit knocks him back, or when a level begins
+   * with him in the air (until he lands).
+   */
+  airJumpsLeft = 0;
   /** Sliding (Mega Man). */
   sliding = 0;
   /** Not drawn (walked into the castle). */
@@ -249,6 +255,9 @@ export class Player {
       this.sliding === 0 &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
+    // A hit's knock back takes the air jumps until he lands (the original turns his input off).
+    if (this.stun > 0 && !b.onGround) this.airJumpsLeft = 0;
+    if (b.onGround) this.airJumpsLeft = p.airJumps ?? 0;
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
       if (p.slide && input.held('down') && b.onGround) {
         input.consumeJumpBuffer();
@@ -273,6 +282,28 @@ export class Player {
         this.airCap = Math.abs(b.vx) > p.maxWalk ? p.maxRun : p.maxWalk;
         audio.sfx(this.def.jumpSfx(this));
       }
+    } else if (
+      this.airJumpsLeft > 0 &&
+      !b.onGround &&
+      !this.clinging &&
+      this.stun === 0 &&
+      this.sliding === 0 &&
+      (this.def.behaviour.canJump?.(this) ?? true) &&
+      input.pressed('jump')
+    ) {
+      // An air jump (Simon.pressJmpBtn's double jump): the first jump's strength again; a fixed
+      // arc takes the direction held now, or stops.
+      input.consumeJumpBuffer();
+      this.airJumpsLeft--;
+      this.tier = pickJumpTier(p, b.vx);
+      b.vy = -this.tier.initial;
+      this.jumping = true;
+      this.launched = false;
+      if (p.airControl === 'none') {
+        b.vx = dir * p.maxWalk;
+        this.airCap = p.maxWalk;
+      }
+      audio.sfx(this.def.jumpSfx(this));
     }
 
     // Like the NES: the jump's full initial speed moves the body on the takeoff frame and gravity
@@ -625,6 +656,8 @@ export class Player {
     this.jumping = this.profile.variableJump !== 'cut';
     this.launched = true;
     this.launchGravity = 0;
+    // Leaving a spring gives the air jumps back (Simon.checkState: lastOnSpring && !onSpring).
+    this.airJumpsLeft = this.profile.airJumps ?? 0;
     this.sliding = 0;
     this.crouching = false;
     this.refitHitbox();
@@ -648,6 +681,8 @@ export class Player {
     this.tier = pickJumpTier(this.profile, b.vx);
     this.jumping = true;
     b.onGround = false;
+    // A bounce gives the air jumps back (Simon.bounce).
+    this.airJumpsLeft = this.profile.airJumps ?? 0;
   }
 
   get feetY(): number {
