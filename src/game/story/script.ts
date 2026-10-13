@@ -189,7 +189,15 @@ const CASTLE_HOME_REMARKS: Readonly<Record<string, Readonly<Record<string, Page>
   '3-4': { megaman: ['DR. WILY?! ...NO. HIS', 'SKULLS NEVER HAVE HORNS.'] },
   '4-4': { samus: ['MOTHER BRAIN. ...NEGATIVE.', 'SPINY IN A FISHBOWL.', 'MISSION CONTINUES.'] },
   '6-4': { ryu: ['A FAKE MASK, A FAKE BLADE.', 'AN INSULT TO MY RIVAL.'] },
-  '7-4': { bill: ["I'VE SEEN THE REAL ALIEN.", "IT DIDN'T WEAR A T-SHIRT."] },
+  // Bill's keeps the shared line's hint: the last fake, so the real king is near.
+  '7-4': {
+    bill: [
+      "I'VE SEEN THE REAL ALIEN.",
+      "IT DIDN'T WEAR A T-SHIRT.",
+      'LAST FAKE. THE REAL KING',
+      'MUST BE CLOSE.',
+    ],
+  },
 };
 
 /** The castles with a remark (1-4 to 7-4), in order. */

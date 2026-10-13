@@ -270,6 +270,8 @@ describe('the costumes: the reveal lines', () => {
       'LAKITU WITH HAIR GEL.',
     ]);
     expect(castleRemark('7-4', 'MARIO', 'mario')?.join(' ')).toContain('REAL KING MUST BE CLOSE.');
+    // Bill's own line at Red Falcon's costume keeps the story's hint that the real king is near.
+    expect(castleRemark('7-4', 'BILL', 'bill')?.join(' ')).toContain('REAL KING MUST BE CLOSE.');
     expect(CASTLE_PAGES['2-4']?.reveal.join(' ')).toContain('KOOPA');
   });
 

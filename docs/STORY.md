@@ -3685,13 +3685,16 @@ SOUVENIR T-SHIRT?! THE
 REAL KING MUST BE CLOSE.
 ```
 
-With Bill, the castle's own hero, playing (NEW, 0.4.47: instead of the line above):
+With Bill, the castle's own hero, playing (NEW, 0.4.47: instead of the line above, keeping its hint that the real
+king is near):
 
 ```text
 BILL:
 
 I'VE SEEN THE REAL ALIEN.
 IT DIDN'T WEAR A T-SHIRT.
+LAST FAKE. THE REAL KING
+MUST BE CLOSE.
 ```
 
 Old:
