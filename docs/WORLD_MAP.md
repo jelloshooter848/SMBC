@@ -66,6 +66,28 @@ Every page has a string id (`PageId`), saved in files, never renamed:
   1..13 (`ll-10-1` is World A-1). The engine finds a level's page **by lookup**
   (`levelPage` / `rules.findLevelNode`), never by parsing the number.
 
+### Map music (0.4.48)
+
+`music` is the song the page loops. Each SMB world has its own original map song
+(`src/content/music/world-maps.ts`, `WORLD_MAP_SONGS`), playing from the start:
+
+| Page                         | Song               | Style                                             |
+| ---------------------------- | ------------------ | ------------------------------------------------- |
+| World 1, MUSHROOM KINGDOM    | `map-mushroom`     | cheerful stroll, D major, 144 bpm                 |
+| World 2, HYRULE              | `map-hyrule`       | Zelda II-style overworld march, A dorian, 150 bpm |
+| World 3, MEGA CITY           | `map-megaman`      | Mega Man-style robot rock, E minor, 160 bpm       |
+| World 4, PLANET ZEBES        | `map-zebes`        | moody Metroid-style, D phrygian, 90 bpm           |
+| World 5, TRANSYLVANIA        | `map-transylvania` | Castlevania-style, G harmonic minor, 150 bpm      |
+| World 6, DRAGON VALLEY       | `map-ninja`        | Ninja Gaiden-style, D minor, 160 bpm              |
+| World 7, GALUGA ISLAND       | `map-contra`       | Contra-style, C minor, 150 bpm                    |
+| World 8, BOWSER'S UNDERWORLD | `map-blaster`      | dark Blaster Master-style, A minor, 132 bpm       |
+
+The warp hub keeps `map` (World 1's song before 0.4.48), the Lost Levels pages theirs (`map`,
+`map-bowser`), the Arena `arena` and Kakariko its own (`village`). A page change to a page with
+another song fades the old one out over the slide or the warp's fade
+(`AudioManager.fadeOutMusic`, a gain ahead of the music volume, so volume and mute are untouched),
+and the new one starts on arrival (`tests/sim/map-music.test.ts`).
+
 ## Nodes
 
 | kind              | Meaning                                                                                                                          |
