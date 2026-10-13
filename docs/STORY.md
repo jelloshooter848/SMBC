@@ -49,26 +49,26 @@ worse in Bowser's hands. In castles 1-4 to 7-4 Bowser hides behind brainwashed c
 their disguise always comes off. Peach never sits still: she sends the Koopas the wrong way (3-4), gets villagers
 out ahead of them (5-4), and leaves a pulled-up turnip in World 8, but never lets on where she is.
 
-At 8-4 the real Bowser falls, the wand breaks, and its pieces fall through a rift into the Lost Kingdom. Toad works
+At Bowser's Castle (after World 8, since 0.4.55) the real Bowser falls, the wand breaks, and its pieces fall through a rift into the Lost Kingdom. Toad works
 out the note: the place no Koopa would ever look is the Lost Kingdom, so that is where Peach went, and now the
 wand's pieces, the Koopalings and Bowser are heading straight for her (Chapter 2).
 
 ### Beat outline
 
-| Part          | What happens                                                                                                                                                                                                                                                                                                                                                                            |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| New file      | Peach's castle: the princess is missing. Her handwritten note fills the screen. Toad and Mario set off.                                                                                                                                                                                                                                                                                 |
-| 1-0           | The warm-up. At its end Bowser appears in person, shows off his wand, quotes the note, and casts the spell: eight heroes are pulled into the eight worlds, brainwashed.                                                                                                                                                                                                                 |
-| World 1       | Toad: Bowser brought people from other universes to find Peach; where's Luigi? In 1-1 a brainwashed Luigi runs away; a villager saw him go down a pipe. Freed, Luigi explains the brainwashing.                                                                                                                                                                                         |
-| Worlds 2-7    | Each world is its hero's homeland (Hyrule, 20XX, Zebes, Transylvania, a ninja village, the front). A local welcomes you on the start node; NPCs in the hero's level give the hints; the freed hero talks. Each castle's fake is unmasked. With the castle cleared and the hero freed, Bowser's wand misfires and the seal to the next world breaks.                                     |
-| 4-2           | Larry Koopa, angry: the king took his wand and left him a spare. Beaten, he drops his crystal ball, which from then on shows on the map where each hero hides.                                                                                                                                                                                                                          |
-| World 8       | The Underworld (Blaster Master) and Bowser's own land. The last hero is a tank; her pilot Jason is lost in 8-4 after his frog. A miner found a pulled-up turnip by the lava.                                                                                                                                                                                                            |
-| 8-4           | Bowser falls. The wand flies from his hand and breaks; its pieces fall through a crack in the world. Toad stands at the end. Credits, as a false ending (`...BUT THE STORY ISN'T OVER.`). Back on the World 8 map, with Sophia III freed, Toad works out Peach's note: she is in the Lost Kingdom, and the road on to Lost World 1 draws in.                                            |
-| Lost Kingdom  | Everything looks like home, only meaner. Clues that someone is hiding (more pulled-up turnips, a very tall Toad). The wand broke into six pieces and the star tip: each Koopaling but Larry (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig) grabs a piece and flies off in an airship; the king keeps the star tip, the wand's heart.                                                         |
-| Finding Peach | **Later release.** Decided: at the end of Lost 4-4 (Toadstool Grove), the castle's "Toad" pulls off its cap: it's Peach, hiding among the Toads. She stops hiding and joins the team.                                                                                                                                                                                                   |
-| Lost 8-4      | **The main ending.** Bowser has taped the star tip to a stick and calls it a wand. Beaten at Lost 8-4, he escapes over the Farewell Sea with the star tip, but the princess is safe and the heroes stay. Credits roll (`THE END. / ...OR IS IT?`). World 9 opens by the NES rule (a Lost 8-4 clear without warps).                                                                      |
-| Airships      | **Optional side quest.** Six Koopaling airships, one behind each forward warp zone in Lost worlds 1-8 (Lost 1-2 three, 5-1 one, 5-2 two). Each returns one wand piece. Toad hints that the pieces matter: put the wand back together and we could follow the king.                                                                                                                      |
-| Lost A to D-4 | **The true ending, unlocked by all six pieces** (campaign). The rebuilt wand opens the way to the Far Lands (A-D); chase Bowser to the Last Glacier for the star tip. At D-4 the wand is made whole, the rift is sealed and Larry gets his wand back whole, with a lock on it. A shorter final credits roll (`...FOR REAL THIS TIME.`). Classic play keeps the NES unlock rule for A-D. |
+| Part            | What happens                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New file        | Peach's castle: the princess is missing. Her handwritten note fills the screen. Toad and Mario set off.                                                                                                                                                                                                                                                                                 |
+| 1-0             | The warm-up. At its end Bowser appears in person, shows off his wand, quotes the note, and casts the spell: eight heroes are pulled into the eight worlds, brainwashed.                                                                                                                                                                                                                 |
+| World 1         | Toad: Bowser brought people from other universes to find Peach; where's Luigi? In 1-1 a brainwashed Luigi runs away; a villager saw him go down a pipe. Freed, Luigi explains the brainwashing.                                                                                                                                                                                         |
+| Worlds 2-7      | Each world is its hero's homeland (Hyrule, 20XX, Zebes, Transylvania, a ninja village, the front). A local welcomes you on the start node; NPCs in the hero's level give the hints; the freed hero talks. Each castle's fake is unmasked. With the castle cleared and the hero freed, Bowser's wand misfires and the seal to the next world breaks.                                     |
+| 4-2             | Larry Koopa, angry: the king took his wand and left him a spare. Beaten, he drops his crystal ball, which from then on shows on the map where each hero hides.                                                                                                                                                                                                                          |
+| World 8         | The Underworld (Blaster Master) and Bowser's own land. The last hero is a tank; her pilot Jason is lost in 8-4 after his frog. A miner found a pulled-up turnip by the lava.                                                                                                                                                                                                            |
+| Bowser's Castle | (0.4.55; 8-4 before) Bowser falls. The wand flies from his hand and breaks; its pieces fall through a crack in the world. Toad stands at the end. Credits, as a false ending (`...BUT THE STORY ISN'T OVER.`). Back on the VALLEY OF BOWSER map, Toad works out Peach's note: she is in the Lost Kingdom, and the road on to Lost World 1 draws in.                                     |
+| Lost Kingdom    | Everything looks like home, only meaner. Clues that someone is hiding (more pulled-up turnips, a very tall Toad). The wand broke into six pieces and the star tip: each Koopaling but Larry (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig) grabs a piece and flies off in an airship; the king keeps the star tip, the wand's heart.                                                         |
+| Finding Peach   | **Later release.** Decided: at the end of Lost 4-4 (Toadstool Grove), the castle's "Toad" pulls off its cap: it's Peach, hiding among the Toads. She stops hiding and joins the team.                                                                                                                                                                                                   |
+| Lost 8-4        | **The main ending.** Bowser has taped the star tip to a stick and calls it a wand. Beaten at Lost 8-4, he escapes over the Farewell Sea with the star tip, but the princess is safe and the heroes stay. Credits roll (`THE END. / ...OR IS IT?`). World 9 opens by the NES rule (a Lost 8-4 clear without warps).                                                                      |
+| Airships        | **Optional side quest.** Six Koopaling airships, one behind each forward warp zone in Lost worlds 1-8 (Lost 1-2 three, 5-1 one, 5-2 two). Each returns one wand piece. Toad hints that the pieces matter: put the wand back together and we could follow the king.                                                                                                                      |
+| Lost A to D-4   | **The true ending, unlocked by all six pieces** (campaign). The rebuilt wand opens the way to the Far Lands (A-D); chase Bowser to the Last Glacier for the star tip. At D-4 the wand is made whole, the rift is sealed and Larry gets his wand back whole, with a lock on it. A shorter final credits roll (`...FOR REAL THIS TIME.`). Classic play keeps the NES unlock rule for A-D. |
 
 ### Story beat tiers
 
@@ -461,10 +461,10 @@ Castle**, its own place after World 8, from 0.4.55). 8-4's fake, the eighth and 
 costume over a **Piranha Plant**, with the tell, the puff, the jump-over and the remark like every other fake (its
 lines are in 2.11). Classic play keeps 8-4's real king, and the game's end, exactly as before.
 
-**The real king** (KEEP: no flicker and no puff) speaks on first entering **the last castle's** bridge room
-(campaign), in the prompt box before the fight. Since 0.4.54 this follows the finale switch (`story/finale.ts`):
-it plays only where the real king waits, so while the last castle is still 8-4 (a fake) it plays nowhere, and a
-file keeps the beat for Bowser's Castle:
+**The real king** (KEEP: no flicker and no puff) speaks as the hero first reaches **the last castle's** bridge
+(campaign), in the prompt box before the fight. It follows the finale switch (`story/finale.ts`): it plays only
+where the real king waits. Since 0.4.55 that is Bowser's Castle, as its bridge section begins (it is one room); in
+0.4.54, while the last castle was still 8-4 (a fake), it played nowhere and files kept the beat for it:
 
 ```text
 BOWSER: NO MORE STAND-INS,
@@ -516,7 +516,8 @@ are already rewired there). Classic play and Unlock all keep today's roads.
   section; Bowser's misfires escalate: a sputter (1), sparks that singe his eyebrows (2), a bolt that blasts his
   portrait (3), smoke he blames on Larry's spare (4), a crack in the wand (5), a blast that wrecks his throne (6),
   a wand he can barely hold, and his challenge (7).
-- **8-4** follows the same rule with the rift as its "gate" (2.12).
+- **8-4** follows the same rule: its road on to the VALLEY OF BOWSER waits for Sophia III (2.12; before 0.4.55
+  that road was the rift).
 
 **The welcomes** (NEW). Worlds 2-8 are each their hero's homeland, or a piece of it the spell dragged along, laid
 over the old map. **Trigger:** the first arrival on World N's start node (N = 2-8), right after the walk in from
@@ -3856,7 +3857,7 @@ JUNGLE, BY THE BRIDGES.
 ```
 
 The gate scene. Bowser's cutaway: the wand **shakes wildly**, throwing sparks everywhere; Bowser holds it with both
-claws and stands up, furious. His challenge leads to `NO MORE STAND-INS` in 8-4.
+claws and stands up, furious. His challenge leads to `NO MORE STAND-INS` at Bowser's Castle.
 
 ```text
 BOWSER:
@@ -4368,31 +4369,25 @@ WE'RE WITH YOU. CLIMB IN
 ANY TIME!
 ```
 
-### 2.12 World 8-4: Bowser falls, the wand breaks, the rift
+### 2.12 Bowser's Castle: the real king falls, the wand breaks, the rift
 
-**The finale switch** (NEW, 0.4.54). Everything below belongs to the campaign's **last castle**
-(`story/finale.ts` `FINALE`): 8-4 until Bowser's Castle comes in 0.4.55, which flips it there in one place. While
-it is 8-4, whose king is a fake since 0.4.54 (2.11), the wand still breaks and the credits and the rift still
-follow from 8-4, so the campaign never dead-ends, but Toad's first page (the real king) and Bowser's boast (2.3a)
-wait for the real king: Toad shows only the wand's page under the thanks:
-
-```text
-THANK YOU <HERO>!
-
-BOWSER FELL... AND THE
-WAND BROKE! ITS PIECES
-FELL THROUGH A CRACK IN
-THE WORLD!
-```
+**Where** (0.4.55). The campaign's **last castle** (`story/finale.ts` `FINALE`) is BOWSER'S CASTLE, the one node of
+the VALLEY OF BOWSER page after World 8 (internal level `8-5`, never shown: the HUD, the intro card, the map and the
+announcer all say BOWSER'S CASTLE). The real king waits on its bridge (fire and hammers, his Bowser bar), and his
+own tune, `bowser-king`, starts as the bridge section begins; his boast (2.3a) plays there too. Everything below
+happens at Bowser's Castle. Until 0.4.55 it all happened at 8-4; since then 8-4, the Plutonium Boss fake (2.11), is
+an ordinary castle in the campaign: the hero's remark at the axe, the fake unmasked, Toad's NES line (BUT OUR
+PRINCESS IS IN ANOTHER CASTLE!), back to the map, no credits. Classic play is unchanged: 8-4 is the end there.
 
 **The scene** (KEEP, as built): the axe, the bridge falls, Bowser falls. As he drops, the wand spins up out of his
 hand, cracks with a white flash (no flash with reduce flashing), and breaks into glowing pieces. A jagged,
 shimmering crack opens in the air over the lava; the pieces swirl into it and it stays open, humming. The hero
 walks on. Said: _The wand spins out of Bowser's hand and breaks! Its glowing pieces swirl into a crack in the air._
 
-**Who stands at the end:** KEEP. In the campaign, our Toad stands at `8-4-end` column 57 in place of the princess.
+**Who stands at the end:** Toad (owner, Oct 13: no Peach here; she is found at Lost 4-4), at Bowser's Castle's end,
+in the chamber past the axe. (8-4's Toad, at `8-4-end` column 57 in place of the princess, stays for its own end.)
 
-**The last castle** (KEEP; 8-4's before 0.4.54, Bowser's Castle's from 0.4.55):
+**Toad's pages** (KEEP; 8-4's before 0.4.54, Bowser's Castle's since 0.4.55):
 
 ```text
 THANK YOU <HERO>!
@@ -4420,19 +4415,18 @@ END OF CHAPTER 1
 ISN'T OVER.
 ```
 
-**The rift is World 8's gate.** The same rule as every world: the road on to Lost World 1 needs 8-4 cleared **and**
-Sophia III freed. The story reason is hers: the last spell still running holds the crack shut.
-
-- **Sophia III not freed yet** (a reminder, Toad's box). **Trigger:** the first time the World 8 map shows after
-  the credits with Sophia III still captive. Hint line on 8-4: `SEALED - FREE SOPHIA III FIRST`.
+**World 8's gate** (0.4.55). The road on from 8-4 to the VALLEY OF BOWSER is an ordinary world gate: it needs 8-4
+cleared **and** Sophia III freed. While she is captive a seal stands at the page's edge (not the crack: the rift is
+no longer here) and Toad's reminder plays the first time the World 8 map shows with it. Hint line on 8-4:
+`SEALED - FREE SOPHIA III FIRST`. Freeing her shatters the seal (no cutaway, no words) and the road draws in.
 
 ```text
 TOAD:
 
-THE KING IS BEATEN, BUT
-THAT CRACK IS TOO SMALL TO
-GO THROUGH. SOMETHING'S
-HOLDING IT SHUT...
+THE WAY ON TO THE KING IS
+SEALED BY HIS MAGIC... AND
+WE STILL HAVEN'T FOUND
+SOPHIA III!
 ```
 
 ```text
@@ -4443,10 +4437,25 @@ STILL UNDER IT, DOWN THAT
 HATCH IN THE FOREST.
 ```
 
-- **Toad works out the note** (a major scene: Toad walks in). **Trigger:** the first time the World 8 map shows
-  with 8-4 cleared and Sophia III freed: right after the credits if she was freed first, or the next time the map
-  shows after she is freed (then the crack is first seen tearing wide open on the 8-4 node, a shimmer and a hum,
-  as her spell snaps back). The road on to Lost World 1 draws in after it. REPLACES `riftPages` (pages 2-3 new;
+(Before 0.4.55 World 8's road went straight on to Lost World 1 and was the rift itself, held shut by her spell; a
+build without the Valley still plays this reminder after the 8-4 credits, then the crack tears open on her release:)
+
+```text
+TOAD:
+
+THE KING IS BEATEN, BUT
+THAT CRACK IS TOO SMALL TO
+GO THROUGH. SOMETHING'S
+HOLDING IT SHUT...
+```
+
+**The rift is the Valley's road on to the Lost Levels** (owner, Oct 13). It opens once Bowser's Castle is cleared,
+or on a file that already beat the game before 0.4.55 (`gameCleared`: its castle stays open and uncleared, playable
+any time). No hero gate: the Valley only opens once Sophia III is freed.
+
+- **Toad works out the note** (a major scene: Toad walks in). **Trigger:** the first time the VALLEY OF BOWSER map
+  shows after Bowser's Castle's credits (since 0.4.55; before, World 8's after 8-4's). The road on to Lost World 1
+  draws in after it. REPLACES `riftPages` (pages 2-3 new;
   "sniffed" went with the old 1-0 tease, and the note's "old friends" is new).
 
 ```text

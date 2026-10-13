@@ -3,6 +3,7 @@ import { beat } from '../story/beats';
 import { ARENA_PAGE, CRASH_PAGES, HUB_PAGE, riftPages, WORLD1_PAGES } from '../story/script';
 import * as script from '../story/script';
 import { dueScenes, type GuideInput } from './toad-guide';
+import { RIFT_PAGE } from './world-gate';
 import type { MapProgress } from './types';
 
 // Toad's map scenes (docs/STORY.md 2.3, 2.14): which are due, in which order, once per file.
@@ -76,10 +77,12 @@ describe('dueScenes', () => {
   it('the crash, the rift, the extras', () => {
     const crash = dueScenes(input({ page: 'smb-4', crash: true, story: ['enter:smb-4'] }));
     expect(crash).toEqual([{ ids: [beat.crash], pages: [...CRASH_PAGES], walk: true }]);
-    const rift = (freed: string[]) =>
+    // Since 0.4.55 the rift opens on the VALLEY OF BOWSER, after Bowser's Castle (RIFT_PAGE).
+    expect(RIFT_PAGE).toBe('valley-of-bowser');
+    const rift = (freed: string[], page = RIFT_PAGE) =>
       dueScenes(
         input({
-          page: 'smb-8',
+          page,
           hero: 'MEGA MAN',
           freed,
           story: ['enter:smb-8'],
@@ -93,6 +96,8 @@ describe('dueScenes', () => {
       walk: true,
     });
     expect(rift(['mario']).map((s) => s.ids)).not.toContainEqual([beat.rift]);
+    // Never on World 8 any more.
+    expect(rift(['mario', 'sophia'], 'smb-8').map((s) => s.ids)).not.toContainEqual([beat.rift]);
     expect(dueScenes(input({ page: 'hub' }))).toEqual([{ ids: [beat.hub], pages: [HUB_PAGE], walk: false }]);
     expect(dueScenes(input({ page: 'arena' }))).toEqual([
       { ids: [beat.arena], pages: [ARENA_PAGE], walk: false },
