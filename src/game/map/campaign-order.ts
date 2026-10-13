@@ -9,8 +9,8 @@
  * from it), the level's intro card, the HUD's WORLD, the announcer, a hero stage's own HUD.
  *
  * A world played in another order adds its rows here (internal → shown) and draws its campaign
- * page's roads in the new order; nothing else changes. 0.4.53 adds World 6 (6-2 ↔ 6-1) and World 7
- * (7-3 → 7-1, 7-1 → 7-2, 7-2 → 7-3).
+ * page's roads in the new order; nothing else changes. Since 0.4.53 World 6 (6-2 ↔ 6-1) and World 7
+ * (7-3 → 7-1, 7-1 → 7-2, 7-2 → 7-3) too.
  */
 
 /** Internal level id → the label the campaign shows for it, for levels shown as another stage. */
@@ -18,6 +18,14 @@ export const CAMPAIGN_LABELS: Readonly<Record<string, string>> = {
   // World 4 (Samus): her cavern, internal 4-2 (Larry's airship comes with it), is played first.
   '4-2': '4-1',
   '4-1': '4-2',
+  // World 6 (Ryu, 0.4.53): his dojo, under internal 6-2 (the city street), is played first.
+  '6-2': '6-1',
+  '6-1': '6-2',
+  // World 7 (Bill, 0.4.53): his jungle camp, under internal 7-3, is played first; then the
+  // snowfield (internal 7-1) and the jungle river (internal 7-2); 7-4 stays last.
+  '7-3': '7-1',
+  '7-1': '7-2',
+  '7-2': '7-3',
 };
 
 /** The label level `levelId` shows as in the campaign ('4-2' → '4-1'); classic: the id itself. */

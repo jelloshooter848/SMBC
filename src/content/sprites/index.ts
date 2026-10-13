@@ -42,6 +42,10 @@ import { zebesAboveSheet, ZEBES_ABOVE_PALETTE } from './zebes-above';
 import { transylvaniaAboveSheet, TRANSYLVANIA_ABOVE_PALETTE } from './transylvania-above';
 import { WORLD_4_ZEBES } from '@content/worldmap/world4-zebes';
 import { WORLD_5_TRANSYLVANIA } from '@content/worldmap/world5-transylvania';
+import { galesburgAboveSheet, GALESBURG_ABOVE_PALETTE } from './galesburg-above';
+import { galugaAboveSheet, GALUGA_ABOVE_PALETTE } from './galuga-above';
+import { WORLD_6_GALESBURG } from '@content/worldmap/world6-galesburg';
+import { WORLD_7_GALUGA } from '@content/worldmap/world7-galuga';
 import { WORLD_2_HYRULE } from '@content/worldmap/world2-hyrule';
 import { WORLD_3_MEGACITY } from '@content/worldmap/world3-megacity';
 import {
@@ -142,6 +146,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   'transylvania-above': transylvaniaAboveSheet([
     [WORLD_5_TRANSYLVANIA.tiles, WORLD_5_TRANSYLVANIA.zones ?? []],
   ]),
+  // 0.4.53: Galesburg and Galuga Island from above (Worlds 6 and 7's campaign map pages), painted
+  // the same way: the first time each page shows (or ahead, while the map idles).
+  'galesburg-above': galesburgAboveSheet([WORLD_6_GALESBURG.tiles]),
+  'galuga-above': galugaAboveSheet([WORLD_7_GALUGA.tiles]),
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -190,6 +198,8 @@ const defaults: Record<string, readonly string[]> = {
   'megacity-above': MEGACITY_ABOVE_PALETTE,
   'zebes-above': ZEBES_ABOVE_PALETTE,
   'transylvania-above': TRANSYLVANIA_ABOVE_PALETTE,
+  'galesburg-above': GALESBURG_ABOVE_PALETTE,
+  'galuga-above': GALUGA_ABOVE_PALETTE,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -249,6 +259,28 @@ const costumesHc = modes.highContrast?.costumes;
 if (modes.highContrast && costumesHc)
   modes.highContrast.costumes = costumesHc.map((c, i) => (i === 12 ? NES.gray : c));
 
+/**
+ * 0.4.53: Galesburg's and Galuga Island's earth tones stay put in the red/green modes, as Hyrule's
+ * do (0.4.50): their red shift would turn the town's brick, its wood and the roads' rims, the
+ * island's golden rock, its trunks, its track's rim and its brown outline pink or purple. (Hyrule
+ * nudged its browns green enough instead; the brick cannot be, and stay brick.) Their true reds,
+ * the lacquer, the neon, the alien lair and the warning lights, still shift, so an open level's
+ * red space stays apart from the start's green one. By palette role (index 0-9, then a-z).
+ */
+export const KEEP_EARTH_TONES: Readonly<Record<string, string>> = {
+  'galesburg-above': '4dhij', // road rim, wood, brick (dark, mid, light)
+  'galuga-above': '04dhi', // outline, track rim, trunk, rock (dark, mid)
+};
+const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
+for (const mode of ['deuteranopia', 'protanopia'] as const)
+  for (const [sheet, roles] of Object.entries(KEEP_EARTH_TONES)) {
+    const book = modes[mode];
+    const pal = book?.[sheet];
+    const base = defaults[sheet];
+    if (book && pal && base)
+      book[sheet] = pal.map((c, i) => (roles.includes(ROLES[i] ?? '') ? (base[i] ?? c) : c));
+  }
+
 export const PALETTES: PaletteBook = {
   default: defaults,
   ...modes,
@@ -264,6 +296,10 @@ export const PALETTES: PaletteBook = {
       // grass beside 5-1 (Simon's crypt), so the silhouette is a faint shadow there too.
       'map-above-zebes': ['#000000', '#1a4422', '#368236'],
       'map-above-transylvania': ['#000000', '#12261c', '#1f402a'],
+      // 0.4.53: Galesburg's paving beside 6-2 (Ryu's dojo), Galuga Island's jungle floor beside 7-3
+      // (Bill's camp).
+      'map-above-galesburg': ['#000000', '#262a40', '#363c5a'],
+      'map-above-galuga': ['#000000', '#1a4412', '#2a6418'],
     }),
   },
 };
