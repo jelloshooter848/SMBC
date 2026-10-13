@@ -1288,7 +1288,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
-    this.bossBar.tick();
+    this.bossBar.tick((o) => (o as Entity).alive);
     if (this.itemCaption && --this.itemCaption.t <= 0) this.itemCaption = null;
     if (this.shakeFrames > 0) this.shakeFrames--;
 

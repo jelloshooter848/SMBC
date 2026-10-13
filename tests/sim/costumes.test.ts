@@ -238,6 +238,18 @@ describe('the costumes: they drop, however he dies', () => {
     expect(pile.alive).toBe(false);
   });
 
+  it('dropped from a fake in mid-jump, the pile lands on the bridge', () => {
+    const { world, step, axe } = castle('2-4');
+    let bx = axe.x - 1;
+    while (world.map.get(bx, 10) !== T.BRIDGE && bx > 0) bx--;
+    const pile = new CostumePile((bx * 16 - 16) * 256, (160 - 32 - 20) * 256, 2, false);
+    world.spawn(pile);
+    step(40);
+    expect(pile.alive).toBe(true);
+    expect(pile.body.y).toBe((160 - 32) * 256);
+    expect(pile.body.vy).toBe(0);
+  });
+
   it('World 1: the plain king suit; no pile, nothing said of a costume', () => {
     const { world, step, b, said } = castle('1-4');
     for (let i = 0; i < 5; i++) b.hit({ kind: 'fireball', amount: 1, owner: world.player, dirX: 1 }, world);

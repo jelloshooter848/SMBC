@@ -206,7 +206,15 @@ export class Bowser extends Enemy {
 
   /** Campaign: on screen and fighting, his bar comes up (once; world/boss-bar.ts). */
   private showBar(world: World): void {
-    if (this.barStarted || !world.storyMode || !this.onScreen(world)) return;
+    if (!world.storyMode) return;
+    // Off screen again (the hero turned back, or a maze castle looped him round): the bar goes,
+    // and comes back when he does.
+    if (this.barStarted && !this.onScreen(world)) {
+      world.bossBar.end(this);
+      this.barStarted = false;
+      return;
+    }
+    if (this.barStarted || !this.onScreen(world)) return;
     if (!world.bossBar.start(this, BOWSER_HP, this.hp)) return;
     this.barStarted = true;
     world.events.push({ type: 'say', text: `Bowser's health: ${this.hp} of ${BOWSER_HP}.` });

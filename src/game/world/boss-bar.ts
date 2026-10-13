@@ -73,9 +73,11 @@ export class BossBar {
   }
 
   /** Each frame. */
-  tick(): void {
+  tick(alive: (owner: object) => boolean = () => true): void {
     if (this.hitAge < BOSS_BAR_LOST) this.hitAge++;
     if (this.hold > 0 && --this.hold === 0) this.owner = null;
+    // Gone some other way (despawned, the level left): no bar for a boss who is not there.
+    if (this.owner && this.hold === 0 && !alive(this.owner)) this.owner = null;
   }
 
   private take(owner: object, max: number, hp: number): void {

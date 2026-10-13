@@ -28,14 +28,23 @@ export class CostumePile extends Entity {
     this.despawnMargin = null;
   }
 
-  /** Rests on the floor under its middle; falls once that floor is gone (the bridge). */
+  /**
+   * Rests on the floor under its middle; falls once that floor is gone (the bridge), and lands on
+   * the floor it falls onto (dropped from a fake in mid-jump).
+   */
   update(world: World): void {
     const b = this.body;
     const col = Math.floor(toPx(b.x + (b.w >> 1)) / 16);
     const row = Math.floor((toPx(b.y + b.h) + 1) / 16);
-    if (b.vy === 0 && world.map.collisionAt(col, row) !== 'none') return;
+    if (b.vy === 0 && world.map.isSolid(col, row)) return;
     b.vy += ENTITY_GRAVITY;
     b.y += velToSub(b.vy);
+    const feet = toPx(b.y + b.h);
+    const under = Math.floor(feet / 16);
+    if (world.map.isSolid(col, under) && !world.map.isSolid(col, under - 1)) {
+      b.y = px(under * 16) - b.h;
+      b.vy = 0;
+    }
     if (this.isBelowLevel()) this.destroy();
   }
 

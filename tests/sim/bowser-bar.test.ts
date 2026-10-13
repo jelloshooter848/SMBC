@@ -123,6 +123,35 @@ describe('the Bowser bar: shown while the fight is on (campaign)', () => {
     expect(world.bossBar.shown).toBe(false);
   });
 
+  it('off screen again (a maze loop, the hero turned back): it goes, and comes back with him', () => {
+    const { world, step, b } = castle('1-4');
+    step(2);
+    fire(b, world);
+    step();
+    expect(world.bossBar.shown).toBe(true);
+    // The screen moves away from him (as 4-4's and 7-4's loops send the hero back).
+    const p = world.player.body;
+    const x0 = p.x;
+    p.x = Math.max(px(16), b.body.x - px(30 * 16));
+    world.camera.snapTo(p.x);
+    step();
+    expect(world.bossBar.shown).toBe(false);
+    p.x = x0;
+    world.camera.snapTo(p.x);
+    step(2);
+    expect(world.bossBar.shown).toBe(true);
+    expect(world.bossBar.hp).toBe(4);
+  });
+
+  it('a despawned boss leaves no bar behind', () => {
+    const { world, step, b } = castle('1-4');
+    step(2);
+    expect(world.bossBar.shown).toBe(true);
+    b.destroy();
+    step();
+    expect(world.bossBar.shown).toBe(false);
+  });
+
   it('classic play keeps the original: no bar', () => {
     const { world, step, b } = castle('1-4', false);
     step(5);
