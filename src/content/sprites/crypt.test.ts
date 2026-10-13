@@ -51,6 +51,7 @@ const CRYPT_FRAMES: Record<string, Size> = {
   'burst-1': T16,
   meat: T16,
   door: [16, 32],
+  'door-open': [16, 32],
 };
 
 const rows = (name: string): readonly string[] => cryptDef.frames[name] as readonly string[];
@@ -162,6 +163,7 @@ describe('crypt sheet', () => {
       'burst-1',
       'meat',
       'door',
+      'door-open',
     ])
       expect(rows(n).at(-1), n).toMatch(/[^.]/);
     expect(rows('bat-0')[0]).toMatch(/[^.]/);
