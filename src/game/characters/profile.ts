@@ -75,6 +75,12 @@ export interface MovementProfile {
    * Undefined: never.
    */
   crossGapMinVx?: number | undefined;
+  /**
+   * Jumps he may take in the air before landing again (0.4.46: Simon's double jump, the original's
+   * Simon.canDoubleJump): each as strong as a ground jump; with no air control (a fixed arc) it
+   * takes the direction held then, or stops him. Undefined: none.
+   */
+  airJumps?: number | undefined;
 }
 
 export function pickJumpTier(p: MovementProfile, vx: number): JumpTier {

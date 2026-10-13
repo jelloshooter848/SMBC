@@ -43,6 +43,38 @@ describe("Simon's stage", () => {
     expect(h.top()).toBeInstanceOf(CardScene);
   });
 
+  it('the double jump (0.4.46, #27): one jump falls short of the wall, a second in the air clears it', () => {
+    const { h, stage } = startStage('simon');
+    const s = stage();
+    skipGreeting(h);
+    s.director.startAt(SIMON_LESSONS.findIndex((l) => l.id === 'double-jump'));
+    expect(s.director.lesson?.id).toBe('double-jump');
+    expect(s.director.lines().join(' ')).toMatch(/SECOND JUMP/);
+    const wall = S.doubleWall.from * 16;
+    // A single jump at the wall from a run: he comes back down before it.
+    let jumped = false;
+    playStage(
+      h,
+      s,
+      (st) => {
+        const b = st.world.player.body;
+        const cx = st.world.player.centerX / 256;
+        if (!jumped && b.onGround && cx >= wall - 46) {
+          jumped = true;
+          return ['right', 'jump'];
+        }
+        return ['right'];
+      },
+      () => jumped && s.world.player.body.onGround,
+      300,
+    );
+    expect(s.director.lesson?.id).toBe('double-jump');
+    expect(s.world.player.body.x / 256 + s.world.player.body.w / 256).toBeLessThanOrEqual(wall);
+    // The bot's double jump gets him over.
+    playStage(h, s, simonBot(), () => s.director.lesson?.id !== 'double-jump', 900);
+    expect(s.director.done).toContain('double-jump');
+  });
+
   it('START AT lists his items in order, the Double and Triple Shot as one lesson', () => {
     const { h } = startStage('simon', { replay: true });
     expect(startAtLabels(h)).toEqual([

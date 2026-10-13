@@ -45,6 +45,7 @@ export const SIMON_GUIDE: CharacterGuide = {
   tips: [
     "In the story, power blocks hold Simon's own items: the Pot Roast (his health bar grows from 10 to 16), two whips, five sub-weapons and the Double and Triple Shot. A death loses what he found; replay levels to find it again.",
     'Getting hit knocks you back hard. Mind the pits.',
+    'Jump again in the air for a second jump, once until you land: it goes the way you hold.',
   ],
   demo: ['idle', 'walk', 'jump', 'attack', 'crouch', 'special'],
 };

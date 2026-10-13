@@ -289,6 +289,13 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Hit**: 2 of his health. Nothing is lost. Unchanged.
 - **Flags**: today the whip and shots are tiers (`whip` 0-2, `multi` 1-3) and sub-weapons a count (`subs`); NEW:
   one flag each. The HUD shows no double / triple badge today (Castlevania's II / III; section 11 lists it).
+- **The double jump** (0.4.46, roadmap #27, both modes): the original Crossover's Simon has it in his base kit,
+  no upgrade (`Simon.as` `canDoubleJump`): a second jump in the air, as strong as the first, once until he lands.
+  It comes back on landing, by a stomp's bounce and on leaving a spring; a level begun in the air has none until
+  he lands (`firstCollisionCheck`); none while a hit knocks him back (the original turns his input off until he
+  lands). With Castlevania's fixed arc (the original's classic controls, as ours) the second jump takes the
+  direction held then, or stops him. `MovementProfile.airJumps`. His Castlevania mini game keeps CV1's single
+  jump. His training teaches it on a wall six blocks high.
 - **The axe** (0.4.46, owner Oct 10, campaign only): it flies through terrain as Castlevania's does, and bumps each
   ? block its middle crosses, once (bricks are left alone). Classic play keeps the plain axe.
 - **Crossover** started with the dagger and never lost a sub-weapon or the double / triple shot.

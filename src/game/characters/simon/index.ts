@@ -28,6 +28,8 @@ export const SIMON_PROFILE: MovementProfile = {
   fallReset: 0x04000,
   runTimerFrames: 0,
   airControl: 'none', // the jump arc is committed at takeoff
+  // The double jump (0.4.46, owner #27): the original Crossover's Simon.canDoubleJump, his base kit.
+  airJumps: 1,
   canRun: false,
   variableJump: false,
   instantAccel: false,
