@@ -27,6 +27,10 @@ const samusFrames: Record<string, Size> = {
   'ball-1': [16, 32],
   'ball-2': [16, 32],
   'ball-3': [16, 32],
+  // 0.4.52: the morph ball bomb (her sighting in 4-2).
+  'bomb-0': [8, 8],
+  'bomb-1': [8, 8],
+  'bomb-burst': [16, 16],
 };
 
 const grounded = [

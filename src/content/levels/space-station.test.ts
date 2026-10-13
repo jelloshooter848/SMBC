@@ -46,9 +46,10 @@ describe('the hidden teleporter block tile', () => {
     expect(T.CRACKED).toBe(T.HIDDEN_TELEPORTER + 1);
     expect(T.TRICK).toBe(T.CRACKED + 1);
     expect([T.Q_FLOWER, T.Q_MUSHROOM, T.Q_EGG, T.HIDDEN_PATH]).toEqual([1, 2, 3, 4].map((k) => T.TRICK + k));
-    // Then 2-1's one-way cloud ledge (0.4.12, campaign only).
+    // Then 2-1's one-way cloud ledge (0.4.12, campaign only), then the key box (0.4.52).
     expect(T.CLOUD_LEDGE).toBe(T.HIDDEN_PATH + 1);
-    expect(T.CLOUD_LEDGE).toBe(TILES.length - 1);
+    expect(T.BRICK_KEY).toBe(T.CLOUD_LEDGE + 1);
+    expect(T.BRICK_KEY).toBe(TILES.length - 1);
   });
 });
 

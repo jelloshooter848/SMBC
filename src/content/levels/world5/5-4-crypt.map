@@ -1,20 +1,21 @@
 id: 5-4-crypt
-name: WORLD 5-4
+name: WORLD 5-1
 world: 5
-stage: 4
+stage: 1
 theme: crypt
 music: crypt
 time: inherit
 start: 1,0
 startMode: fall
 camera: locked
-parent: 5-4
+parent: 5-1
 
-;; Simon's crypt, below the dungeon (campaign only, docs/HEROES.md): a high gothic room. The
-;; player drops in from the dungeon's hole onto the landing at the top left, and a stair of
-;; castle stone leads down to the floor, where captive Simon kneels under the spell (11,11)
+;; Simon's crypt (campaign only, docs/HEROES.md): a high gothic room. Since 0.4.52 it is an area
+;; of 5-1 (its id kept, so saves and codes stay valid): the locked door in 5-1-bonus, opened with
+;; the key, leads down into it, and the player drops in onto the landing at the top left; a stair
+;; of castle stone leads down to the floor, where captive Simon kneels under the spell (11,11)
 ;; beneath the stained glass, candles either side. The dark doorway in the right wall (rows
-;; 10-11) leads back up into 5-4, dropping in at column 99, past the lift shaft, with the clock
+;; 10-11) leads back out to 5-1, up out of the coin room's pipe at column 163, with the clock
 ;; running on. Column 16 is the doorway's back wall, just off the locked screen.
 
 [tiles]
@@ -44,7 +45,7 @@ candle 14 8
 candle 3 5
 
 [zones]
-pipe 16 10 right -> 5-4 99 0 exit=fall
+pipe 16 10 right -> 5-1 163 10 exit=up
 
 [decor]
 crypt:stained-glass 10 7

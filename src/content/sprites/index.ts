@@ -25,6 +25,7 @@ import { partnersPalettes, partnersDef } from './partners';
 import { npcsPalettes, npcsDef } from './npcs';
 import { localsPalettes, localsDef } from './locals';
 import { wandPalettes, wandDef } from './wand';
+import { keysPalettes, keysDef } from './keys';
 import { costumePalettes, costumesDef } from './costumes';
 import { storyPalettes, storyDef } from './story';
 import { housePalettes, houseDef } from './house';
@@ -119,6 +120,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   npcs: npcsDef,
   locals: localsDef,
   wand: wandDef,
+  // 0.4.52: keys and locked doors (Simon's way in: entities/objects/keys.ts).
+  keys: keysDef,
   // 0.4.47: the fake Bowsers' villain costumes (castles 2-4 to 7-4, campaign) and their piles.
   costumes: costumesDef,
   // The 0.4.23 story's opening props: Bowser's star wand, the wax seal, Toad's note.
@@ -192,6 +195,7 @@ const defaults: Record<string, readonly string[]> = {
   ...npcsPalettes,
   ...localsPalettes,
   ...wandPalettes,
+  ...keysPalettes,
   ...costumePalettes,
   ...storyPalettes,
   ...housePalettes,

@@ -35,10 +35,10 @@ import {
  */
 
 /** The code layout this build writes. */
-export const CODE_VERSION = 2;
+export const CODE_VERSION = 3;
 
 /** The save format (SaveFile.v) each code version's fields make, before the save migrations. */
-const CODE_SAVE_FORMAT: Readonly<Record<number, number>> = { 1: 4, 2: 4 };
+const CODE_SAVE_FORMAT: Readonly<Record<number, number>> = { 1: 4, 2: 4, 3: 4 };
 
 export const CODE_TYPO = "THAT CODE DOESN'T LOOK RIGHT";
 export const CODE_NEWER = 'THIS CODE IS FROM A NEWER VERSION. UPDATE THE GAME TO LOAD IT';
@@ -111,8 +111,16 @@ const LL_WORLDS = range(13);
 
 const HEROES: Chunks = [['mario', 'luigi', 'link', 'megaman', 'samus', 'simon', 'ryu', 'bill', 'sophia']];
 const MET: Chunks = [[...(HEROES[0] as string[]), 'larry']];
+/**
+ * Version 3 (0.4.51) reserves the Valley of Bowser ahead of its release (docs/SAVE_CODES.md): its
+ * page `valley-of-bowser` here, its castle level `8-5` in LEVELS and its nodes in pageNodes, so
+ * the page needs no new code version. Until the page exists a build drops it on load
+ * (save-files.ts migrateSave keeps registered pages only), as it would the same id escaped.
+ */
 const PAGES: Chunks = [
   [...SMB_WORLDS.map((n) => `smb-${n}`), 'hub', ...LL_WORLDS.map((n) => `ll-${n}`), 'arena'],
+  [],
+  ['valley-of-bowser'],
 ];
 const LEVELS: Chunks = [
   [
@@ -121,13 +129,17 @@ const LEVELS: Chunks = [
     '2-top-secret',
     ...LL_WORLDS.flatMap((w) => range(4).map((s) => `ll-${w}-${s}`)),
   ],
+  [],
+  ['8-5'],
 ];
 const SECRETS: Chunks = [
   ['bonus-1', 'bonus-2', 'kakariko', 'bonus-3', 'larry', 'bonus-5', 'bonus-6', 'bonus-7', 'bonus-8'],
 ];
 /**
  * Story beats (story/beats.ts) in the order a file meets them, so a file's list is a few long
- * runs; then the beats older builds wrote (nothing reads them, but a code keeps them).
+ * runs; then the beats older builds wrote (nothing reads them, but a code keeps them). Version 2
+ * added none (an empty chunk); version 3 (0.4.51) the seven hero sightings (beats.ts
+ * SIGHTING_HEROES), all at once though they ship world by world, so later ones need no new version.
  */
 const STORY: Chunks = [
   [
@@ -155,6 +167,16 @@ const STORY: Chunks = [
     'all-freed',
     ...(HEROES[0] as string[]).flatMap((h) => [`joined:${h}`, `missed:${h}`]),
     ...SMB_WORLDS.flatMap((n) => (HEROES[0] as string[]).map((h) => `enter:smb-${n}:${h}`)),
+  ],
+  [],
+  [
+    'sighting:link',
+    'sighting:megaman',
+    'sighting:samus',
+    'sighting:simon',
+    'sighting:ryu',
+    'sighting:bill',
+    'sighting:sophia',
   ],
 ];
 /** The inventory's items and the held items (bonus/items.ts ITEM_IDS, NEXT_ORDER). */
@@ -642,9 +664,11 @@ function readPower(r: BitReader, hero: string | null, v: number): Power {
 
 /**
  * The nodes a page's hero is likely on, the usual first (the castle, where a page is left from):
- * a fixed list by page id, so it never moves with the map's art. Any other node is escaped.
+ * a fixed list by page id and code version `v`, so it never moves with the map's art. Any other
+ * node is escaped. Version 3 (0.4.51) adds the Valley of Bowser's (its castle, then its start).
  */
-function pageNodes(page: string): string[] {
+function pageNodes(page: string, v: number): string[] {
+  if (page === 'valley-of-bowser' && v >= 3) return ['bowsers-castle', 'start'];
   const smb = /^smb-(\d+)$/.exec(page)?.[1];
   if (smb) return [`${smb}-4`, 'start', `${smb}-1`, `${smb}-2`, `${smb}-3`, `bonus-${smb}`];
   const ll = /^ll-(\d+)$/.exec(page)?.[1];
@@ -655,8 +679,8 @@ function pageNodes(page: string): string[] {
 
 /** lastNode's slot for a page: its usual node, none (index 1), or any other. */
 const NO_NODE = '\u0000none';
-const lastNodeChoices = (page: string): string[] => {
-  const [first, ...rest] = pageNodes(page);
+const lastNodeChoices = (page: string, v: number): string[] => {
+  const [first, ...rest] = pageNodes(page, v);
   return [first as string, NO_NODE, ...rest];
 };
 
@@ -677,7 +701,7 @@ function writeReveal(w: BitWriter, id: string, v: number): void {
   }
   w.bit(1);
   writeSym(w, pages, page);
-  const nodes = pageNodes(page);
+  const nodes = pageNodes(page, v);
   const arrow = rest.indexOf('>');
   w.bit(arrow > 0);
   if (arrow <= 0) {
@@ -692,7 +716,7 @@ function readReveal(r: BitReader, v: number): string {
   if (!r.bit()) return readStr(r);
   const pages = at(PAGES, v);
   const page = readSym(r, pages);
-  const nodes = pageNodes(page);
+  const nodes = pageNodes(page, v);
   if (!r.bit()) return `${page}:${readPick(r, nodes)}`;
   const from = readPick(r, nodes);
   return `${page}:${from}>${readPick(r, [...nodes, ...pages])}`;
@@ -792,23 +816,23 @@ const FIELDS: readonly FieldCodec[] = [
     since: 1,
     write(w, s, v) {
       writeSym(w, at(PAGES, v), s.position.page);
-      writePick(w, pageNodes(s.position.page), s.position.node);
+      writePick(w, pageNodes(s.position.page, v), s.position.node);
     },
     read(r, raw, v) {
       const page = readSym(r, at(PAGES, v));
-      raw.position = { page, node: readPick(r, pageNodes(page)) };
+      raw.position = { page, node: readPick(r, pageNodes(page, v)) };
     },
   },
   {
     name: 'lastNode (one slot per open page)',
     since: 1,
     write(w, s, v) {
-      for (const page of pagesOf(s, v)) writePick(w, lastNodeChoices(page), s.lastNode[page] ?? NO_NODE);
+      for (const page of pagesOf(s, v)) writePick(w, lastNodeChoices(page, v), s.lastNode[page] ?? NO_NODE);
     },
     read(r, raw, v) {
       const lastNode: Record<string, string> = {};
       for (const page of canonicalList(at(PAGES, v), raw.pages as string[])) {
-        const node = readPick(r, lastNodeChoices(page));
+        const node = readPick(r, lastNodeChoices(page, v));
         if (node !== NO_NODE) lastNode[page] = node;
       }
       raw.lastNode = lastNode;

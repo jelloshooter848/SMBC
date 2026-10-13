@@ -1,4 +1,4 @@
-import { beat, STORY_REV } from '@game/story/beats';
+import { beat, SIGHTING_HEROES, STORY_REV } from '@game/story/beats';
 import { OpeningScene } from '@game/story/opening';
 import { CARD_GUARD_FRAMES } from '@game/scenes/message';
 
@@ -29,6 +29,8 @@ export const ALL_STORY: readonly string[] = [
     beat.welcome(`smb-${n}`),
   ]),
   ...[1, 2, 3, 4, 5, 6, 7].map((n) => beat.remark(`${n}-4`)),
+  // 0.4.51: the hero sightings at the start of each world's first level.
+  ...SIGHTING_HEROES.map(beat.sighting),
 ];
 
 /** Marks every story beat seen on the open file (saved the next time the game saves). */

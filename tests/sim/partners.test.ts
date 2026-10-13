@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getLevel, levelIds } from '@content/levels';
 import { CHARACTERS } from '@game/characters/registry';
-import { beat } from '@game/story/beats';
+import { beat, SIGHTING_HEROES } from '@game/story/beats';
 import { MARIO } from '@game/characters/mario';
 import { startHp, type CharacterDef } from '@game/characters/character';
 import { Partner } from '@game/entities/objects/partner';
@@ -43,7 +43,9 @@ const SPOTS = [
   { who: 'dr-light', level: '3-1', start: near(121), col: 124 },
   // Over the pit (57-62) on the lift, on the ground just past the vine block (64).
   { who: 'chozo', level: '4-2', start: near(68), col: 65 },
-  { who: 'townsperson', level: '5-4', start: { mode: 'stand' }, col: 10 },
+  { who: 'hall-townsperson', level: '5-4', start: { mode: 'stand' }, col: 10 },
+  // 0.4.52: the townsperson who lost the key, in 5-1's coin room (falling in from its pipe).
+  { who: 'townsperson', level: '5-1-bonus', start: { ...fromStart, time: 300 }, col: 8 },
   { who: 'irene', level: '6-2', start: { mode: 'stand' }, col: 7 },
   { who: 'lance', level: '7-3', start: { mode: 'stand' }, col: 5 },
   // Fred by 8-4-end's trap pipe (10), up out of the pipe at 3.
@@ -128,6 +130,8 @@ function campaignIn(
   h.game.markSeen(beat.luigiRuns);
   // Bowser in 8-4-end's bridge room (Fred's trap pipe is in it) is another story too.
   h.game.markSeen(beat.bowser84);
+  // So are the hero sightings at a world's first level (0.4.51-0.4.52: 5-1's old woman).
+  for (const id of SIGHTING_HEROES) h.game.markSeen(beat.sighting(id));
   const st = h.game.state;
   st.character = c;
   st.powerState = power as typeof st.powerState;

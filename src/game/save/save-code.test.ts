@@ -10,7 +10,7 @@ import { ITEM_IDS, NEXT_ORDER } from '@game/bonus/items';
 import { MAP_PAGES } from '@content/worldmap';
 import { CRYSTAL_BALL } from '@game/map/captives';
 import { KAKARIKO } from '@game/town/secret-house';
-import { beat, STORY_REV } from '@game/story/beats';
+import { beat, SIGHTING_HEROES, STORY_REV } from '@game/story/beats';
 import { EXPLAINER_IDS } from '@game/tutorial/explainers';
 import { BitWriter, cleanCode, crc16, fromBase32, toBase32 } from './code-bits';
 import {
@@ -623,9 +623,10 @@ describe('save codes: format', () => {
 
   it('starts with the version, then the CRC over everything else', () => {
     const bits = fromBase32(cleanCode(encodeSaveCode(newSave(1, 'mario'))) as string) as number[];
-    // Version 2 (0.4.46) is Exp-Golomb 0 of 1 → the three bits 010 (version 1 was a single 1 bit).
-    expect(CODE_VERSION).toBe(2);
-    expect(bits.slice(0, 3)).toEqual([0, 1, 0]);
+    // Version 3 (0.4.51) is Exp-Golomb 0 of 2 → the three bits 011 (version 1 was a single 1 bit,
+    // version 2 the bits 010).
+    expect(CODE_VERSION).toBe(3);
+    expect(bits.slice(0, 3)).toEqual([0, 1, 1]);
     const crc = bits.slice(3, 19).reduce((a, b) => a * 2 + b, 0);
     expect(crc16([...bits.slice(0, 3), ...bits.slice(19)])).toBe(crc);
   });
@@ -646,8 +647,69 @@ describe('save codes: format', () => {
     expect(s.position).toEqual({ page: 'smb-2', node: '2-1' });
     expect(s.freed).toEqual(['mario', 'luigi', 'megaman']);
     expect(s.explained).toEqual([]);
-    // Written again it is a version-2 code that loads the same file.
+    // Written again it is a version-3 code that loads the same file.
     expect(canonical(roundTrip(s))).toEqual(canonical(s));
+  });
+
+  it('a version-2 code (0.4.46 to 0.4.50) still loads exactly, with every beat it had', () => {
+    // Link in World 2 with World 1's beats and one explainer, written by 0.4.49's build (version 2).
+    const r = decodeSaveCode('9CDRA-BCQ4Q-88N99-DGPJJ-Q4YAY-A5VDY-89R', 2);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.version).toBe(2);
+    const s = r.save;
+    expect(s.character).toBe('link');
+    expect(s.lives).toBe(5);
+    expect(s.coins).toBe(42);
+    expect(s.cleared).toEqual(['1-0', '1-1', '1-2', '1-3', '1-4']);
+    expect(s.position).toEqual({ page: 'smb-2', node: '2-1' });
+    expect(s.freed).toEqual(['mario', 'luigi', 'link']);
+    expect(s.explained).toEqual(['link:bomb']);
+    expect([...(s.story ?? [])].sort()).toEqual(
+      [
+        STORY_REV,
+        beat.opening,
+        beat.spell,
+        beat.enter('smb-1'),
+        beat.luigiRuns,
+        beat.fakes,
+        beat.remark('1-4'),
+        beat.gate('smb-1'),
+        beat.sealed('smb-1'),
+        beat.enter('smb-2'),
+        beat.welcome('smb-2'),
+      ].sort(),
+    );
+    // No sighting yet: Link's in 2-1 still plays for it (story/sightings.ts sightingDue).
+    expect(s.story?.some((id) => id.startsWith('sighting:'))).toBe(false);
+    // Written again it is a version-3 code that loads the same file.
+    expect(canonical(roundTrip(s))).toEqual(canonical(s));
+  });
+
+  it('version 3 reserves the Valley of Bowser; until its page exists a file loads without it', () => {
+    // save-code-valley.test.ts round-trips it with the page registered, as its release will.
+    const s = {
+      ...midSave(),
+      pages: [...midSave().pages, 'valley-of-bowser'],
+      cleared: [...midSave().cleared, '8-5'],
+      position: { page: 'valley-of-bowser', node: 'bowsers-castle' },
+    };
+    const r = decodeSaveCode(encodeSaveCode(s), 2);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // This build has no such page: dropped as any unknown page is, the hero back on a real one.
+    expect(r.save.pages).not.toContain('valley-of-bowser');
+    expect(r.save.position.page).not.toBe('valley-of-bowser');
+    expect(r.save.cleared).toContain('8-5');
+  });
+
+  it('version 3 (0.4.51) reserves every hero sighting in one chunk: each id costs a symbol, not text', () => {
+    const len = (f: SaveFile) => encodeSaveCode(f).replace(/-/g, '').length;
+    const base = { ...midSave(), story: [STORY_REV, beat.opening] };
+    const all = { ...base, story: [...base.story, ...SIGHTING_HEROES.map(beat.sighting)] };
+    expectRoundTrip(all);
+    // Seven dictionary ids: a few characters, far less than seven escaped strings.
+    expect(len(all) - len(base)).toBeLessThanOrEqual(4);
   });
 
   it('forgives case, dashes, spaces and Crockford look-alikes (O → 0, I and L → 1)', () => {
@@ -731,10 +793,10 @@ describe('save codes: format', () => {
     expect(dictFingerprints()).toEqual({
       heroes: '1:d059',
       met: '1:91ad',
-      pages: '1:b4c0',
-      levels: '1:b313',
+      pages: '3:57c0',
+      levels: '3:ac43',
       secrets: '1:1a3a',
-      story: '1:c6c3',
+      story: '3:187d',
       explained: '2:5f9b',
       kitFlags: '1:32dc',
       kitNums: '1:b2e2',
@@ -783,8 +845,13 @@ describe('save codes: dictionaries know the game', () => {
       ...SMB_PAGES.flatMap((p) => [beat.enter(p), beat.gate(p), beat.sealed(p)]),
       ...SMB_PAGES.slice(1).map(beat.welcome),
       ...[1, 2, 3, 4, 5, 6, 7].map((n) => beat.remark(`${n}-4`)),
+      // 0.4.51: every hero sighting, reserved at once (story/sightings.ts).
+      ...SIGHTING_HEROES.map(beat.sighting),
     ];
     for (const id of ids) expect(CODE_DICTS.story).toContain(id);
+    // Reserved in version 3 for the coming Valley of Bowser (save-code-valley.test.ts).
+    expect(CODE_DICTS.pages).toContain('valley-of-bowser');
+    expect(CODE_DICTS.levels).toContain('8-5');
   });
 
   it('every one-time explainer is in the explained dictionary (0.4.46)', () => {

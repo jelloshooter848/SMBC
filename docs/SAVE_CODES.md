@@ -38,15 +38,28 @@ Real lengths (characters without dashes, from the test `code lengths`):
 Version 2 (0.4.46) added one field, the explainers a file has shown: a file that has seen them all
 needs about five more characters.
 
+Version 3 (0.4.51) added no field, only dictionary entries, reserved ahead so that the releases
+after it need no new version:
+
+- a STORY chunk: the seven hero sightings (`sighting:link` … `sighting:sophia`), although the
+  scenes ship world by world;
+- the Valley of Bowser: the page `valley-of-bowser` (a PAGES chunk), its castle level `8-5` (a
+  LEVELS chunk), and its node list `bowsers-castle`, `start` (`pageNodes`, from version 3 on).
+
+Until a build has the Valley's page, a loaded file drops it as it drops any page the build lacks
+(`migrateSave` keeps registered pages only), exactly as the same id escaped as text would be.
+`save-code-valley.test.ts` registers a stand-in page and checks that it round-trips.
+
 ## Layout
 
 ```
 [version: Exp-Golomb 0 of (version - 1)] [CRC-16: 16 bits] [fields of that version …] [0-4 zero bits]
 ```
 
-- **Version** (`CODE_VERSION`, 2 since 0.4.46). Version 1 is the single bit `1`, and version 2 is
-  `010`. Codes of version 1 (0.4.44 and 0.4.45) still load: they have no `explained` field, so
-  the file loads with none shown.
+- **Version** (`CODE_VERSION`, 3 since 0.4.51). Version 1 is the single bit `1`, version 2 is
+  `010` and version 3 is `011`. Codes of version 1 (0.4.44 and 0.4.45) still load: they have no
+  `explained` field, so the file loads with none shown. Codes of version 2 (0.4.46 to 0.4.50) still
+  load: they decode with the STORY dictionary's first two chunks, and simply hold no sighting.
 - **CRC-16/CCITT** (polynomial 0x1021, start 0xFFFF), over the version bits and **every bit after
   the CRC**, padding included.
   - Any build can check any code's CRC, even a code from a newer version it can't read. So a typo
@@ -63,7 +76,7 @@ Decoding (`decodeSaveCode`) goes in this order:
 2. check the CRC (a mismatch is a typo);
 3. check the version: one above `CODE_VERSION` is _newer_;
 4. read the fields the code's version has (`since <= version`), which gives a save file of that
-   version's save format (`CODE_SAVE_FORMAT`, versions 1 and 2 → `SaveFile.v` 4);
+   version's save format (`CODE_SAVE_FORMAT`, versions 1 to 3 → `SaveFile.v` 4);
 5. run `migrateSave` with the save migrations, like any stored file.
 
 So an old code loads into a newer game through the same migrations as an old file, and new fields
@@ -105,7 +118,7 @@ get their defaults. A parse error, leftover bits, or a file `migrateSave` reject
 | 3   | `lives`, `coins`                                                        | EG(2), EG(4)                                                                                                                                                        |
 | 4   | `wallet`, `gameCleared`, `inventoryUnlocked`, `bonusOpen`, `bonusGuard` | 5 bits                                                                                                                                                              |
 | 5   | `pages`, `cleared`, `secrets`                                           | string sets over PAGES, LEVELS, SECRETS                                                                                                                             |
-| 6   | `position`                                                              | page symbol; node pick from the page's node list                                                                                                                    |
+| 6   | `position`                                                              | page symbol; node pick from the page's node list (by code version)                                                                                                  |
 | 7   | `lastNode`                                                              | for each open page (in decoded order): pick from [castle, _none_, start, other levels, bonus]                                                                       |
 | 8   | `pendingReveal`                                                         | EG(0) count; each: bit "structured", page symbol, bit "road", node pick (a road: from-node pick, then to-node-or-page pick); else a string                          |
 | 9   | `freed`, `tutorials`, `met`                                             | string sets over HEROES, HEROES, MET                                                                                                                                |
@@ -155,17 +168,17 @@ and the mapped type makes `tsc` fail too.
 
 The dictionaries are snapshots of the game's registries, frozen per code version.
 
-| Dictionary          | Contents                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| HEROES              | the 9 heroes, in registry order                                                     |
-| MET                 | HEROES + `larry`                                                                    |
-| PAGES               | `smb-1`…`8`, `hub`, `ll-1`…`13`, `arena`                                            |
-| LEVELS              | `1-0`, `1-1`…`8-4`, `2-top-secret`, `ll-1-1`…`ll-13-4`                              |
-| SECRETS             | the bonus keys, `kakariko`, `larry`                                                 |
-| STORY               | Chapter 1's beats in the order a file meets them, then the beats older builds wrote |
-| EXPLAINED           | the one-time explainers, `<hero>:<pickup or item>` (version 2 on; version 1: none)  |
-| ITEMS, NEXT         | the inventory items and held items                                                  |
-| KIT_FLAGS, KIT_NUMS | per hero (see above)                                                                |
+| Dictionary          | Contents                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| HEROES              | the 9 heroes, in registry order                                                                                                       |
+| MET                 | HEROES + `larry`                                                                                                                      |
+| PAGES               | `smb-1`…`8`, `hub`, `ll-1`…`13`, `arena`; version 3 adds `valley-of-bowser`                                                           |
+| LEVELS              | `1-0`, `1-1`…`8-4`, `2-top-secret`, `ll-1-1`…`ll-13-4`; version 3 adds `8-5`                                                          |
+| SECRETS             | the bonus keys, `kakariko`, `larry`                                                                                                   |
+| STORY               | Chapter 1's beats in the order a file meets them, then the beats older builds wrote; version 3 adds the seven `sighting:<hero>` beats |
+| EXPLAINED           | the one-time explainers, `<hero>:<pickup or item>` (version 2 on; version 1: none)                                                    |
+| ITEMS, NEXT         | the inventory items and held items                                                                                                    |
+| KIT_FLAGS, KIT_NUMS | per hero (see above)                                                                                                                  |
 
 Each dictionary is a list of **chunks**, one per code version. Chunk 0 holds version 1's ids, and
 version _v_ decodes with the first _v_ chunks. A shipped chunk never changes: `dictFingerprints()`
