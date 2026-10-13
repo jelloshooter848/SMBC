@@ -196,6 +196,11 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
   keeps the original's belt, the Buster first, in the blue suit). The full charge shot is
   a big blast like the original Crossover's (its own 24x16 art, three times the buster's damage, on through what
   it defeats).
+- **The charge shot pierces** (0.4.46, owner #23, campaign only): the full charge flies through solid tiles (blocks,
+  pipes, walls) and bumps every ? block and brick its middle crosses, once each, as his head would (the Helmet
+  breaks bricks; a coin brick gives one coin). A training gate still stops it, and on his airship a cannon it
+  crosses takes the hit. Classic play keeps the original's (a wall stops it). His training shows it on a pipe and
+  a row of ? blocks and bricks before the flagpole.
 
 | Item           | Id               | What it does (our code)                                     | Owned again |
 | -------------- | ---------------- | ----------------------------------------------------------- | ----------- |
@@ -279,6 +284,8 @@ His kit is Zelda II's sidescroller (spells, thrusts) with Zelda's dungeon items.
 - **Hit**: 2 of his health. Nothing is lost. Unchanged.
 - **Flags**: today the whip and shots are tiers (`whip` 0-2, `multi` 1-3) and sub-weapons a count (`subs`); NEW:
   one flag each. The HUD shows no double / triple badge today (Castlevania's II / III; section 11 lists it).
+- **The axe** (0.4.46, owner Oct 10, campaign only): it flies through terrain as Castlevania's does, and bumps each
+  ? block its middle crosses, once (bricks are left alone). Classic play keeps the plain axe.
 - **Crossover** started with the dagger and never lost a sub-weapon or the double / triple shot.
 
 ### 5.6 Ryu

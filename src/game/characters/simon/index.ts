@@ -10,7 +10,7 @@ import { SIMON_GUIDE } from './guide';
 import { STUN_FRAMES } from '../../rules/damage';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
 import { beltButton, toolButton } from '../../touch-labels';
-import { SUB_WEAPONS, WHIP_FRAMES, WHIP_REACH, type SubWeapon } from './weapons';
+import { BUMPING_HAND_AXE, HAND_AXE, SUB_WEAPONS, WHIP_FRAMES, WHIP_REACH, type SubWeapon } from './weapons';
 
 /** Vampire hunter: slow walk, a committed fixed-arc jump, a whip with a wind-up. */
 export const SIMON_PROFILE: MovementProfile = {
@@ -122,7 +122,8 @@ function throwSub(p: Player, world: World): void {
   if (w.spec) {
     if (subShotsOut(p, world) >= multi(p)) return;
     const b = p.body;
-    const spec = w.spec;
+    // The campaign's axe bumps the ? blocks it flies through (0.4.46).
+    const spec = w.spec === HAND_AXE && isFound(p) ? BUMPING_HAND_AXE : w.spec;
     const x = p.facing > 0 ? b.x + b.w : b.x - px(spec.w);
     world.spawn(new Projectile(x, b.y + px(4), p.facing, spec, p));
     world.audio.sfx(w.id === 'dagger' ? 'buster' : 'boomerang');

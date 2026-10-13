@@ -250,7 +250,8 @@ describe('the WHAT A HIT TAKES lesson in training', () => {
     choose(h, 'Bolt');
     const s = stage();
     const right = () => ['right' as const];
-    // Past the Bolt (Pause → Skip this lesson): the hit lesson comes up.
+    // Past the Bolt and the pierce (Pause → Skip this lesson): the hit lesson comes up.
+    s.director.skipLesson();
     s.director.skipLesson();
     expect(s.director.lesson?.id).toBe('hit');
     expect(s.world.entities.some((e) => e instanceof TrainingThorns && e.alive)).toBe(true);

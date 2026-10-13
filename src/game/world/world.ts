@@ -190,6 +190,8 @@ export interface WorldFeats {
   powerBlocks: number;
   /** Bricks broken. */
   bricks: number;
+  /** Blocks a shot flying through walls bumped (0.4.46: Mega Man's charge shot, Simon's axe). */
+  pierced: number;
 }
 
 export interface WorldStart {
@@ -527,7 +529,7 @@ export class World {
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
-  readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
+  readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0, pierced: 0 };
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
@@ -1222,6 +1224,37 @@ export class World {
     if (!def.block || def.block.kind === 'hidden') return;
     const p = owner instanceof Player ? owner : this.nearestPlayer(x);
     this.strikeBlock(tx, ty, p, true); // only brick-breaking shots call this
+  }
+
+  /**
+   * A block-bumping shot flying through tiles (ProjectileSpec.bumpsBlocks, 0.4.46): the block its
+   * centre is crossing is struck once on its owner's behalf, as their head bump would (a ? block
+   * gives its item or coin, a brick breaks by their rules); a shot that only bumps ? blocks leaves
+   * bricks be. On Mega Man's airship a cannon it crosses takes the hit, and the shot ends there
+   * (returns true).
+   */
+  pierceBlocks(pr: Projectile): boolean {
+    const b = pr.body;
+    const tx = tileAt(b.x + (b.w >> 1));
+    const ty = tileAt(b.y + (b.h >> 1));
+    const key = `${tx},${ty}`;
+    if (pr.bumped.has(key)) return false;
+    const id = this.map.get(tx, ty);
+    // A training stage's closed gate (blank solid tiles, not a block mid-bump) stops it.
+    if (id === T.BUMPING)
+      return !this.entities.some((e) => e instanceof BlockBump && e.alive && e.tx === tx && e.ty === ty);
+    const block = tileDef(id).block;
+    if (!block || block.kind === 'hidden') {
+      if (!this.map.isSolid(tx, ty)) return false;
+      pr.bumped.add(key);
+      return this.shotWall(pr, b.x + (b.w >> 1), b.y + (b.h >> 1));
+    }
+    if (pr.spec.bumpsBlocks === 'question' && block.kind !== 'question') return false;
+    pr.bumped.add(key);
+    const p = pr.owner instanceof Player ? pr.owner : this.nearestPlayer(b.x);
+    this.feats.pierced++;
+    this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
+    return false;
   }
 
   /* ---------- Scoring ---------- */

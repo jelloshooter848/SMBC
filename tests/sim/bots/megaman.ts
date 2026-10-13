@@ -72,6 +72,12 @@ export function megamanBot(): (s: HeroStageScene) => Action[] {
           sawAt = w.frame;
         }
         break;
+      case 'pierce':
+        // A full charge from in front of the pipe, through it and the row.
+        if (!c.standAt(S.pipe - 3)) break;
+        charge++;
+        if (charge % 70 < 55) out.push('attack');
+        break;
       case 'leaf': {
         if (!has('leaf-guard')) {
           c.takeFrom(S.leafBlock);
@@ -139,9 +145,14 @@ export function megamanBot(): (s: HeroStageScene) => Action[] {
         break;
       }
       default:
+        // On right, hopping the used blocks of the row (0.4.46), then a jump at the flagpole.
+        if (cx < (S.flag - 3) * 16) {
+          c.goTo(S.flag);
+          break;
+        }
         out.push('right');
-        if (b.onGround && cx >= (S.flag - 3) * 16) out.push('jump');
-        else if (!b.onGround && b.vy < 0) out.push('jump');
+        if (b.onGround) out.push('jump');
+        else if (b.vy < 0) out.push('jump');
     }
     return out;
   };

@@ -46,6 +46,13 @@ export const MEGAMAN_STAGE = {
   knuckleGate: 113,
   boltBlock: { x: 117, y: 8 },
   boltGate: 131,
+  /**
+   * The full charge through walls (0.4.46, owner #23): a pipe (columns 136-137), then a row of ?
+   * blocks and bricks on the ground (row 11), and the gate after it.
+   */
+  pipe: 136,
+  row: { from: 139, to: 143, y: 11 },
+  pierceGate: 146,
   /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
   thorns: 150,
   hitGate: 152,
@@ -195,10 +202,22 @@ export const MEGAMAN_LESSONS: readonly Lesson[] = [
     retry: 'ONE BOLT HITS EVERY ENEMY IN ITS LINE: FIRE IT AT THE GROUP.',
     done: boltHitMany,
   },
-  ...hitLessons('megaman', { at: 147, row: 11, thorns: S.thorns }),
+  {
+    // 0.4.46 (owner #23): the campaign's full charge flies through walls, bumping each block once.
+    id: 'pierce',
+    at: 132,
+    row: 11,
+    text: 'A FULL CHARGE GOES THROUGH WALLS AND BUMPS EVERY BLOCK ON ITS WAY. SHOOT THE ROW!',
+    retry: 'HOLD [SHOOT:attack] TILL THE BAR FILLS, THEN LET GO AT THE PIPE: IT GOES RIGHT THROUGH.',
+    done: (w) =>
+      w.feats.pierced >= 3 &&
+      [S.row.from, S.row.from + 2, S.row.to].every((x) => w.map.get(x, S.row.y) !== T.Q_COIN),
+    meter: (w) => Math.min(1, (w.player.scratch.chargeT ?? 0) / CHARGE_FULL),
+  },
+  ...hitLessons('megaman', { at: S.pierceGate + 1, row: 11, thorns: S.thorns }),
   {
     id: 'flag',
-    at: 132,
+    at: S.pierceGate + 1,
     row: 11,
     note: true,
     text: 'ALL DONE! GRAB THE FLAGPOLE.',
@@ -217,6 +236,7 @@ export const MEGAMAN_GATES: readonly TutorialGate[] = [
   gate(S.flameGate, 'flame'),
   gate(S.knuckleGate, 'knuckle'),
   gate(S.boltGate, 'bolt'),
+  gate(S.pierceGate, 'pierce'),
   gate(S.hitGate, 'hit'),
 ];
 
