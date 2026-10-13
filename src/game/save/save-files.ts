@@ -359,8 +359,10 @@ function revealIds(x: unknown, pages: readonly PageId[]): string[] {
  * Whether a pending reveal id's part `id` may stay for page `page`: a node id always (the map drops
  * a stale one as it draws in); a road between two of the page's nodes ('<from>><to>') only if
  * campaign play's page still has it (rules.revealId's part: World 4's old order). A world exit
- * (its far end a page, not a node of this page) stays: code version 3 reserves exits a later
- * build adds (World 8's road on to the Valley of Bowser, save-code-valley.test.ts).
+ * stays while the page has it, or while its far end is a page not registered yet: code version 3
+ * reserves exits a later build adds (World 8's road on to the Valley of Bowser,
+ * save-code-valley.test.ts). An exit to a registered page the page no longer has is stale (0.4.55:
+ * campaign World 8's old road on to Lost World 1, valley-of-bowser.test.ts).
  */
 function onPage(page: PageId, id: string): boolean {
   if (!id.includes('>')) return true;
@@ -368,8 +370,11 @@ function onPage(page: PageId, id: string): boolean {
   if (!p) return false;
   if (p.paths.some((q) => `${q.from}>${q.to}` === id) || p.exits.some((e) => `${e.from}>${e.to}` === id))
     return true;
+  // Not on the page now: a road between its nodes is stale; so is an exit to a page that is
+  // registered (the road on moved: campaign World 8's to Lost World 1 once the Valley is live). An
+  // exit to a page not registered yet is reserved for a later build, and stays.
   const to = id.slice(id.indexOf('>') + 1);
-  return !p.nodes.some((n) => n.id === to);
+  return !p.nodes.some((n) => n.id === to) && !mapPage(to);
 }
 
 /**

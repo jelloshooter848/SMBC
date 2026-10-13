@@ -50,7 +50,9 @@ Every page has a string id (`PageId`), saved in files, never renamed:
 
 - Campaign World 8 is THE UNDERWORLD drawn from above (`world8-underworld.ts`, sheet
   `underworld-above.ts`; classic keeps BOWSER'S UNDERWORLD). No castle is drawn on it: 8-4, the
-  plutonium fortress, is its last node. Its play order and road ids are World 8's own.
+  plutonium fortress, is its last node. Its play order and road ids are World 8's own. Sophia
+  III's hint (silhouette, then trophy) stands west of 8-1 on the moss ledge, since her garage is
+  an area of 8-1 (map/captives.ts finds it from the level data; `captives.test.ts`).
 - The VALLEY OF BOWSER (`valley-of-bowser.ts`, sheet `valley-above.ts`, song `map-valley`) is
   its own page, group `valley` (no `smb-N` id, so no world gate or welcome takes it for a ninth
   world): its start and BOWSER'S CASTLE (`bowsers-castle`, kind `castle`, level `8-5`). The
@@ -1019,7 +1021,7 @@ podoboos stay at 8-4, and the rest is the Underworld's surface, its gnarled fore
 (Ш), cavern mouths (∩), the radioactive pit Jason fell through by 8-1 (╭╮ over ╰╯, its ooze
 glowing steadily) and Sophia's garage below the castle (⌂); the `sophia` sheet's mutants hop and
 flit about, nothing on the page blinking; every node, road, the seal, the start's local and its
-turnip clue, Sophia's silhouette by 8-4 and the road on to Lost World 1 as before). 8-1 is the
+turnip clue, Sophia's silhouette by 8-4 (by 8-1 since 0.4.54) and the road on to Lost World 1 as before). 8-1 is the
 Underworld's first area (`bm-forest`: mossy stone ruins over forest earth, a far forest and broken
 columns and arches painted behind under a starry night, gnarled trees; Sophia's `bm-area` march),
 8-2 the techno castle (`bm-techno`: machine panels with circuit traces, deck plates, its blasters

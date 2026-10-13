@@ -7,7 +7,8 @@ import { newSave, type SaveFile } from './save-files';
 // Code version 3 (0.4.51) reserves the Valley of Bowser ahead of its release: the page
 // `valley-of-bowser`, its nodes `bowsers-castle` and `start`, and its castle level `8-5`. This
 // build has no such page (a loaded file drops it, save-code.test.ts), so here a stand-in page is
-// registered, as the release that adds it will: a code made then round-trips exactly.
+// registered, as the release that adds it will (with campaign World 8's road on leading there): a
+// code made then round-trips exactly.
 
 const VALLEY = 'valley-of-bowser';
 
@@ -21,9 +22,17 @@ vi.mock('@content/worldmap', async (importOriginal) => {
     exits: [],
   } as unknown as WorldMapPage;
   const pages = [...orig.MAP_PAGES, valley];
+  // As the release that adds it (VALLEY_LIVE, 0.4.55): campaign World 8's road on leads there.
+  const pageLook = ((page: WorldMapPage | undefined, campaign: boolean) => {
+    const p = orig.pageLook(page, campaign);
+    return p && campaign && p.id === 'smb-8'
+      ? { ...p, exits: p.exits.map((e) => ({ ...e, to: 'valley-of-bowser' })) }
+      : p;
+  }) as typeof orig.pageLook;
   return {
     ...orig,
     MAP_PAGES: pages,
+    pageLook,
     mapPage: (id: string) => pages.find((p) => p.id === id),
     isPageId: (id: unknown) => typeof id === 'string' && pages.some((p) => p.id === id),
   };
