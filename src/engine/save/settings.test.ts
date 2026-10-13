@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  DEFAULT_MASTER,
   defaultSettings,
+  OLD_DEFAULT_MASTER,
+  SETTINGS_VERSION,
   loadSettings,
   saveSettings,
   SETTINGS_KEY,
@@ -57,7 +60,7 @@ describe('settings', () => {
     store.set(SETTINGS_KEY, JSON.stringify({ v: 1, audio: { music: 0.25 }, bogus: 1 }));
     const loaded = loadSettings();
     expect(loaded.audio.music).toBe(0.25);
-    expect(loaded.audio.master).toBe(0.8);
+    expect(loaded.audio.master).toBe(DEFAULT_MASTER);
     expect(loaded.assist.invulnerable).toBe(false);
     expect((loaded as unknown as { bogus?: number }).bogus).toBeUndefined();
   });
@@ -65,6 +68,48 @@ describe('settings', () => {
   it('ignores values of the wrong type', () => {
     store.set(SETTINGS_KEY, JSON.stringify({ v: 1, video: { integerScale: 'yes' } }));
     expect(loadSettings().video.integerScale).toBe(true);
+  });
+});
+
+// The owner (0.4.49): the game started far louder than whatever was playing before. The default
+// master volume is 6 dB lower (0.8 -> 0.4; scratchpad loudness numbers in the 0.4.49 report).
+describe('settings: the quieter default master volume (v2)', () => {
+  it('a new player starts at the new default, 6 dB below the old one', () => {
+    expect(defaultSettings().audio.master).toBe(DEFAULT_MASTER);
+    expect(DEFAULT_MASTER).toBe(0.4);
+    expect(OLD_DEFAULT_MASTER).toBe(0.8);
+    expect(20 * Math.log10(DEFAULT_MASTER / OLD_DEFAULT_MASTER)).toBeCloseTo(-6.02, 1);
+    expect(defaultSettings().v).toBe(SETTINGS_VERSION);
+    expect(SETTINGS_VERSION).toBe(2);
+  });
+
+  it('settings still at the old default (0.8, never changed) move to the new default', () => {
+    const old = { ...defaultSettings(), v: 1, audio: { master: 0.8, music: 0.6, sfx: 1, muted: false } };
+    store.set(SETTINGS_KEY, JSON.stringify(old));
+    const s = loadSettings();
+    expect(s.audio.master).toBe(DEFAULT_MASTER);
+    expect(s.audio.music).toBe(0.6); // the rest is kept
+    expect(s.v).toBe(SETTINGS_VERSION);
+    // Saved again, it is v2 and stays put.
+    saveSettings(s);
+    expect(JSON.parse(store.get(SETTINGS_KEY) as string).v).toBe(SETTINGS_VERSION);
+    expect(loadSettings().audio.master).toBe(DEFAULT_MASTER);
+  });
+
+  it("any other master the player chose is kept, and v2's 0.8 is the player's own", () => {
+    for (const master of [0, 0.1, 0.5, 0.7, 0.9, 1]) {
+      store.set(SETTINGS_KEY, JSON.stringify({ v: 1, audio: { master, music: 1, sfx: 1, muted: false } }));
+      expect(loadSettings().audio.master, String(master)).toBe(master);
+    }
+    // Muted at the old default: the volume moves, mute stays.
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 1, audio: { master: 0.8, muted: true } }));
+    expect(loadSettings().audio).toMatchObject({ master: DEFAULT_MASTER, muted: true });
+    // A v2 file set to 80% by the player after the change is not moved.
+    store.set(SETTINGS_KEY, JSON.stringify({ v: 2, audio: { master: 0.8 } }));
+    expect(loadSettings().audio.master).toBe(0.8);
+    // Files with no version (the earliest) count as v1.
+    store.set(SETTINGS_KEY, JSON.stringify({ audio: { master: 0.8 } }));
+    expect(loadSettings().audio.master).toBe(DEFAULT_MASTER);
   });
 });
 

@@ -1,6 +1,13 @@
 import { Apu } from './apu';
 import { compileSong, parseMml, type CompiledSong, type Sfx, type Song, type Track } from './mml';
 import { Sequencer, scheduleOnce } from './sequencer';
+import { DEFAULT_MASTER } from '../save/settings';
+
+/**
+ * How long the music takes to fade in when sound starts (the first press) or comes back after the
+ * browser stopped it (0.4.49): no blast at full volume. Sound effects are not faded.
+ */
+export const MUSIC_FADE_IN_S = 1.2;
 
 /** The game talks to audio through this so the headless sim can pass a no-op. */
 export interface AudioSink {
@@ -57,7 +64,7 @@ export class AudioManager implements AudioSink {
   private readonly sfxCompiled = new Map<string, CompiledSfx>();
   private pendingMusic: string | null = null;
   private currentMusic: string | null = null;
-  private volumes: Volumes = { master: 0.8, music: 1, sfx: 1, muted: false };
+  private volumes: Volumes = { master: DEFAULT_MASTER, music: 1, sfx: 1, muted: false };
   private tempoScale = 1;
   /** Audio files from asset packs that replace synthesized songs/sfx by id. */
   private readonly overrides = new Map<string, Blob>();
@@ -185,7 +192,10 @@ export class AudioManager implements AudioSink {
       const stale = this.stale;
       this.stale = false;
       if (this.ctx.state !== 'running' || stale) {
-        if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
+        if (this.ctx.state !== 'running') {
+          void this.ctx.resume().catch(() => undefined);
+          if (!this.paused) this.fadeInMusic();
+        }
         this.playSilentBuffer();
         if (stale) this.replayMediaSession();
       }
@@ -200,6 +210,7 @@ export class AudioManager implements AudioSink {
     this.apu = new Apu(this.ctx);
     this.seq = new Sequencer(this.ctx, this.apu.voices);
     this.applyVolumes();
+    this.fadeInMusic();
     this.playSilentBuffer();
     if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
     if (typeof document !== 'undefined') {
@@ -211,6 +222,7 @@ export class AudioManager implements AudioSink {
           !this.paused
         ) {
           void this.ctx.resume().catch(() => undefined);
+          this.fadeInMusic();
         }
       });
     }
@@ -233,7 +245,20 @@ export class AudioManager implements AudioSink {
   wake(): void {
     if (!this.ctx || this.paused) return;
     this.stale = true;
-    if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
+    if (this.ctx.state !== 'running') {
+      void this.ctx.resume().catch(() => undefined);
+      this.fadeInMusic();
+    }
+  }
+
+  /** The music rises from silence over MUSIC_FADE_IN_S (Apu.musicFade); sound effects don't. */
+  private fadeInMusic(): void {
+    if (!this.ctx || !this.apu) return;
+    const g = this.apu.musicFade.gain;
+    const t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(0, t);
+    g.linearRampToValueAtTime(1, t + MUSIC_FADE_IN_S);
   }
 
   /** Plays the silent element again: iOS's audio session back to "playback" (kickMediaSession). */

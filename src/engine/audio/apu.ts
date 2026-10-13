@@ -149,6 +149,11 @@ export class Apu {
   readonly master: GainNode;
   readonly musicGain: GainNode;
   readonly sfxGain: GainNode;
+  /**
+   * The music's fade-in stage (0.4.49, AudioManager.fadeInMusic), between the music volume and
+   * the master: the sliders and mute set their own gains, so a fade never fights them.
+   */
+  readonly musicFade: GainNode;
   readonly voices: ApuVoices;
 
   constructor(readonly ctx: BaseAudioContext) {
@@ -157,7 +162,9 @@ export class Apu {
     this.master.connect(ctx.destination);
     this.musicGain = ctx.createGain();
     this.sfxGain = ctx.createGain();
-    this.musicGain.connect(this.master);
+    this.musicFade = ctx.createGain();
+    this.musicGain.connect(this.musicFade);
+    this.musicFade.connect(this.master);
     this.sfxGain.connect(this.master);
     const waves: Record<Duty, PeriodicWave> = {
       0: makePulseWave(ctx, 0),
