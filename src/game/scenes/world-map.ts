@@ -914,7 +914,10 @@ export class WorldMapScene implements Scene {
   private hereLine(): string {
     const n = this.nodeById(this.node);
     const label = spoken(this.page.label);
-    const page = label.toUpperCase() === this.page.title ? label : `${label}, ${this.page.title}`;
+    // A title that already starts with the label ('VALLEY' / 'VALLEY OF BOWSER') is said alone.
+    const title = this.page.title;
+    const up = label.toUpperCase();
+    const page = up === title ? label : title.startsWith(`${up} `) ? title : `${label}, ${title}`;
     return n ? `${page}. ${this.nodeLabel(n)}` : page;
   }
 

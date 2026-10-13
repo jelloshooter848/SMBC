@@ -1296,7 +1296,7 @@ export class Game {
       return;
     }
     this.deps.announcer?.say(
-      `${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} lives.`,
+      `${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.state.lives} ${this.state.lives === 1 ? 'life' : 'lives'}.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
