@@ -3934,7 +3934,7 @@ As Sophia III (NEW, 0.4.47: talking as the world's own hero, first of the three 
 ENGINEER:
 
 SOPHIA! MAY I LOOK UNDER
-YOUR HOOD? FOR SCIENCE.
+YOUR HOOD? JUST A PEEK.
 ...THE CANNON SAYS NO.
 UNDERSTOOD.
 ```

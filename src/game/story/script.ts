@@ -1955,7 +1955,7 @@ export const PARTNERS: Readonly<Record<string, PartnerScript>> = {
         'ENGINEER:',
         '',
         'SOPHIA! MAY I LOOK UNDER',
-        'YOUR HOOD? FOR SCIENCE.',
+        'YOUR HOOD? JUST A PEEK.',
         '...THE CANNON SAYS NO.',
         'UNDERSTOOD.',
       ],
