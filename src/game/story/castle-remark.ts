@@ -27,7 +27,8 @@ export function playCastleRemark(
   done: () => void,
 ): boolean {
   if (!storyOn(game) || game.seen(beat.remark(level))) return false;
-  const page = castleRemark(level, fontText(hero.name).toUpperCase());
+  // 0.4.47: the castle's own hero (Link at 2-4's Ganon costume) says their home line.
+  const page = castleRemark(level, fontText(hero.name).toUpperCase(), hero.id);
   if (!page) return false;
   game.markSeen(beat.remark(level));
   playStoryCards(game, world, [page], done);

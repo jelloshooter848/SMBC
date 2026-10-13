@@ -11,7 +11,7 @@ import { CoinPop } from '@game/entities/effects/effects';
 import { LevelScene } from '@game/scenes/level';
 import type { Player } from '@game/entities/player';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
-import { PARTNERS, type Page } from '@game/story/script';
+import { PARTNERS, partnerPages, type Page } from '@game/story/script';
 import type { WorldStart } from '@game/world/world';
 import { px } from '@engine/math/units';
 import { defaultSettings } from '@engine/save/settings';
@@ -240,7 +240,10 @@ describe('partners: every hero can walk up and talk', () => {
     );
     h.tap('special');
     expect(h.top()).toBeInstanceOf(CardScene);
-    expect(h.said.some((s) => s.startsWith(said(script.pages[0]!)))).toBe(true);
+    // 0.4.47: the NPC's own hero hears its own pages; every other hero, its plea.
+    const pages = partnerPages(script, h.game.freed, { playing: c.id });
+    expect(pages).toBe(c.id === script.hero && script.own ? script.own : script.pages);
+    expect(h.said.some((s) => s.startsWith(said(pages[0]!)))).toBe(true);
     press(h, 'attack');
     expect(h.top()).toBe(l);
     expect(it.alive).toBe(true);
@@ -266,11 +269,12 @@ describe('partners: the pages', () => {
     expect(h.said.slice(from).filter((s) => pages.some((p) => s.startsWith(said(p))))).toHaveLength(
       pages.length,
     );
-    // They never leave: up talks again, from the first page.
+    // They never leave: up talks again, from the first page (the fairy: her clearer page, 0.4.47).
     h.idle(2);
     h.tap('special');
     expect(h.top()).toBeInstanceOf(CardScene);
-    expect(h.said.at(-1)?.startsWith(said(pages[0]!))).toBe(true);
+    const again = PARTNERS[spot.who]!.again ?? pages;
+    expect(h.said.at(-1)?.startsWith(said(again[0]!))).toBe(true);
   });
 
   it('BACK on the first page skips the rest', () => {
@@ -461,6 +465,82 @@ describe('partners: once their hero is freed (0.4.23, docs/STORY.md 2.3)', () =>
     const l2 = campaignIn(h2, spotOf('jason'), MARIO, 'small', { freed: ['mario', 'sophia'] });
     h2.idle(120);
     expect(partners(l2).map((p) => p.who)).toEqual(['jason']);
+  });
+});
+
+describe("partners: a world's own hero (0.4.47, #29)", () => {
+  // A sample NPC in each world, talked to by its own hero (freed on the file) and by Mario.
+  const SAMPLE = [
+    ['villager', 'luigi'],
+    ['wise-man', 'link'],
+    ['weather-bot', 'megaman'],
+    ['trooper', 'samus'],
+    ['garlic-seller', 'simon'],
+    ['hermit', 'ryu'],
+    ['corporal', 'bill'],
+    ['jason', 'sophia'],
+  ] as const;
+  const def = (id: string) => CHARACTERS.find((c) => c.id === id)!;
+
+  it.each(SAMPLE)('%s: its own hero (%s) hears its own pages; Mario hears the after pages', (who, hero) => {
+    const script = PARTNERS[who]!;
+    const h = makeGame();
+    const l = campaignIn(h, spotOf(who), def(hero), 'big', { freed: ['mario', hero] });
+    walkUp(h, l);
+    h.tap('special');
+    const own = script.own!;
+    own.forEach((page) => {
+      expect(h.top()).toBeInstanceOf(CardScene);
+      expect(h.said.at(-1)?.startsWith(said(page))).toBe(true);
+      press(h, 'jump');
+    });
+    expect(h.top()).toBe(l);
+    const h2 = makeGame();
+    const l2 = campaignIn(h2, spotOf(who), MARIO, 'small', { freed: ['mario', hero] });
+    walkUp(h2, l2);
+    h2.tap('special');
+    expect(h2.said.at(-1)?.startsWith(said(script.after![0]!))).toBe(true);
+  });
+
+  it("co-op: the player who presses TALK decides; player 2's own hero hears the own page", () => {
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('irene'), MARIO, 'small', { character2: 'ryu', freed: ['mario', 'ryu'] });
+    walkUp(h, l);
+    const [p1, p2] = l.world.players as [Player, Player];
+    p2.body.x = p1.body.x;
+    p2.body.y = p1.body.y;
+    h.until(() => p2.body.onGround && partners(l)[0]!.inReach(p2), 60);
+    h.tap('special', 1);
+    expect(h.said.at(-1)?.startsWith(said(PARTNERS.irene!.own![0]!))).toBe(true);
+    h.idle(CARD_GUARD_FRAMES + 2);
+    h.tap('jump', 1);
+    expect(h.top()).toBe(l);
+    h.idle(2);
+    h.tap('special', 0);
+    expect(h.said.at(-1)?.startsWith(said(PARTNERS.irene!.after![0]!))).toBe(true);
+  });
+});
+
+describe("partners: the fairy's riddle, then her fallback (0.4.47, #28)", () => {
+  it('first talk: the riddle; every talk after it on the visit: one clearer page', () => {
+    const fairy = PARTNERS.fairy!;
+    const h = makeGame();
+    const l = campaignIn(h, spotOf('fairy'));
+    walkUp(h, l);
+    h.tap('special');
+    fairy.pages.forEach((page) => {
+      expect(h.said.at(-1)?.startsWith(said(page))).toBe(true);
+      press(h, 'jump');
+    });
+    expect(h.top()).toBe(l);
+    for (let n = 0; n < 2; n++) {
+      h.idle(2);
+      h.tap('special');
+      expect(h.top()).toBeInstanceOf(CardScene);
+      expect(h.said.at(-1)).toBe(`${said(fairy.again![0]!)} OK to continue.`);
+      press(h, 'jump');
+      expect(h.top()).toBe(l);
+    }
   });
 });
 

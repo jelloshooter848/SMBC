@@ -11,6 +11,7 @@ import { MAP_PAGES } from '@content/worldmap';
 import { CRYSTAL_BALL } from '@game/map/captives';
 import { KAKARIKO } from '@game/town/secret-house';
 import { beat, STORY_REV } from '@game/story/beats';
+import { EXPLAINER_IDS } from '@game/tutorial/explainers';
 import { BitWriter, cleanCode, crc16, fromBase32, toBase32 } from './code-bits';
 import {
   CODE_DICTS,
@@ -334,6 +335,8 @@ function randomSave(seed: number): SaveFile {
     heroKits: Object.fromEntries(pick(rng, heroes, 0.6).map((h) => [h, power(h)])),
   };
   if (rng.chance(0.8)) raw.story = story;
+  if (rng.chance(0.7))
+    raw.explained = [...pick(rng, CODE_DICTS.explained, 0.4), ...(rng.chance(0.2) ? [odd()] : [])];
   const s = migrateSave(raw, slot);
   if (!s) throw new Error(`random save ${seed} did not validate`);
   return s;
@@ -472,6 +475,7 @@ describe('save codes: round trips', () => {
       { wallet: true },
       { story: [STORY_REV, beat.opening, 'joined:link', 'restyle:2-2', 'never-heard-of-it'] },
       { story: [] },
+      { explained: ['megaman:e-tank', 'samus:missile-pack', 'later:thing'] },
     ];
     for (const c of changes) {
       const s = migrateSave({ ...base, ...c }, 1) as SaveFile;
@@ -619,10 +623,31 @@ describe('save codes: format', () => {
 
   it('starts with the version, then the CRC over everything else', () => {
     const bits = fromBase32(cleanCode(encodeSaveCode(newSave(1, 'mario'))) as string) as number[];
-    // Version 1 is Exp-Golomb 0 → a single 1 bit.
-    expect(bits[0]).toBe(1);
-    const crc = bits.slice(1, 17).reduce((a, b) => a * 2 + b, 0);
-    expect(crc16([bits[0] as number, ...bits.slice(17)])).toBe(crc);
+    // Version 2 (0.4.46) is Exp-Golomb 0 of 1 → the three bits 010 (version 1 was a single 1 bit).
+    expect(CODE_VERSION).toBe(2);
+    expect(bits.slice(0, 3)).toEqual([0, 1, 0]);
+    const crc = bits.slice(3, 19).reduce((a, b) => a * 2 + b, 0);
+    expect(crc16([...bits.slice(0, 3), ...bits.slice(19)])).toBe(crc);
+  });
+
+  it('a version-1 code (0.4.44 and 0.4.45) still loads exactly, its later fields at their defaults', () => {
+    // Mega Man in World 2, written by 0.4.45's build (code version 1).
+    const r = decodeSaveCode('JJC1Y-G3SXD-HGQ5J-F25AA-DC5MQ-M2FFX-09PZ', 2);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.version).toBe(1);
+    const s = r.save;
+    expect(s.character).toBe('megaman');
+    expect(s.lives).toBe(7);
+    expect(s.coins).toBe(63);
+    expect(s.hp).toBe(20);
+    expect(s.kit).toMatchObject({ found: 1, helmet: 1, 'has-saw-disc': 1, etanks: 2 });
+    expect(s.cleared).toEqual(['1-0', '1-1', '1-2', '1-3', '1-4', '2-1']);
+    expect(s.position).toEqual({ page: 'smb-2', node: '2-1' });
+    expect(s.freed).toEqual(['mario', 'luigi', 'megaman']);
+    expect(s.explained).toEqual([]);
+    // Written again it is a version-2 code that loads the same file.
+    expect(canonical(roundTrip(s))).toEqual(canonical(s));
   });
 
   it('forgives case, dashes, spaces and Crockford look-alikes (O → 0, I and L → 1)', () => {
@@ -710,6 +735,7 @@ describe('save codes: format', () => {
       levels: '1:b313',
       secrets: '1:1a3a',
       story: '1:c6c3',
+      explained: '2:5f9b',
       kitFlags: '1:32dc',
       kitNums: '1:b2e2',
     });
@@ -759,6 +785,10 @@ describe('save codes: dictionaries know the game', () => {
       ...[1, 2, 3, 4, 5, 6, 7].map((n) => beat.remark(`${n}-4`)),
     ];
     for (const id of ids) expect(CODE_DICTS.story).toContain(id);
+  });
+
+  it('every one-time explainer is in the explained dictionary (0.4.46)', () => {
+    for (const id of EXPLAINER_IDS) expect(CODE_DICTS.explained).toContain(id);
   });
 });
 

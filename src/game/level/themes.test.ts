@@ -110,6 +110,9 @@ describe('themes', () => {
       'bm-techno',
       'bm-ice',
       'bm-vault',
+      // World 1 as the Mushroom Kingdom (0.4.48): 1-0, 1-1, 1-3 and 1-4's keep
+      'kingdom',
+      'kingdom-keep',
     ]);
     expect(new Set(THEMES).size).toBe(THEMES.length);
   });
@@ -197,6 +200,8 @@ describe('themes', () => {
       'bm-techno': 'bm-techno',
       'bm-ice': 'bm-ice',
       'bm-vault': 'bm-dungeon',
+      kingdom: 'overworld',
+      'kingdom-keep': 'castle',
     });
     for (const t of THEMES) expect(themeMusic(t)).toBe(music[t]);
     // An explicit music line wins.

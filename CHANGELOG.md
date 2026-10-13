@@ -8,6 +8,59 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Every world map has its own original song in the style of its world's game: a Mushroom Kingdom stroll, a Hyrule
+  march, Mega City robot rock, moody Zebes, Transylvania, Dragon Valley, Galuga Island and a dark Underworld theme.
+  The warp hub, the Lost Levels and Kakariko keep their music. Moving between map pages fades the old song out.
+- World 1 is redrawn in the campaign as a detailed Mushroom Kingdom in A Link to the Past's style: Mario's house,
+  Peach's Castle and its plaza, the Toad houses, the river and bridge, and Bowser's fort, with sandy roads that draw
+  in as you clear levels. Every hero walks it drawn from above. Saves and save codes keep working.
+- 1-0, 1-1 and 1-3 have a Mushroom Kingdom look in the campaign (far hills with Peach's Castle, rounder hills,
+  bushes and clouds), and 1-4 is Bowser's keep. These are decor only; the levels play exactly as before.
+
+### Changed
+
+- On the new World 1 map, a direction that points toward the next level along its road takes you there, even if the
+  road leaves at an angle. On every map, a diagonal on the touch d-pad takes whichever of its two directions has a
+  road.
+
+## [0.4.47] - 2026-10-13
+
+### Added
+
+- The fake Bowsers in castles 2-4 to 7-4 wear cheap costumes of their world's villain: Ganon, Dr. Wily, Mother
+  Brain, Dracula, the Masked Ninja and Red Falcon. The costume falls off when he's beaten and the hero's reveal line
+  changes to match, with a bonus line when the world's own hero is playing.
+- Every Bowser, fake or real, has a boss health bar during the fight (story mode).
+- Every level NPC and world local has new lines when you play as that world's own hero.
+
+### Changed
+
+- The fairy in the clouds now speaks in a riddle; talk to her again for a plainer hint.
+
+## [0.4.46] - 2026-10-13
+
+### Added
+
+- The first time a hero touches each kind of pickup (energy, weapon energy, E-tanks, missile packs, magic jars and
+  the like), a short explainer says what it does, once per save file. It's kept in save codes too; old codes still
+  load.
+- Every training stage, 1-0 included, ends with WHAT A HIT TAKES: walk into thorns, then read what the hit took.
+- Mega Man's training: saw a target on a cloud straight up (Lakitu falls to it too).
+- Link throws the boomerang straight up and diagonally up, as in the original Crossover.
+- Simon has the original Crossover's double jump.
+
+### Changed
+
+- Campaign: Mega Man's full charge shot flies through walls and pipes and bumps each ? block and brick it crosses;
+  Simon's axe bumps the ? blocks it crosses. Both are shown in training.
+
+### Fixed
+
+- Mega Man's weapons come only with the Helmet: a weapon already out of its block, touched after a hit knocked the
+  Helmet off, now gives the Helmet.
+
 ## [0.4.45] - 2026-10-12
 
 ### Added
@@ -1028,7 +1081,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.47...HEAD
+[0.4.47]: https://github.com/jelloshooter848/SMBC/compare/v0.4.46...v0.4.47
+[0.4.46]: https://github.com/jelloshooter848/SMBC/compare/v0.4.45...v0.4.46
 [0.4.45]: https://github.com/jelloshooter848/SMBC/compare/v0.4.44...v0.4.45
 [0.4.44]: https://github.com/jelloshooter848/SMBC/compare/v0.4.43...v0.4.44
 [0.4.43]: https://github.com/jelloshooter848/SMBC/compare/v0.4.42...v0.4.43

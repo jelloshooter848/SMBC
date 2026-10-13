@@ -182,6 +182,42 @@ describe("Link's stage", () => {
     expect(s.director.done).toContain('boomerang');
   });
 
+  it('the boomerang up (0.4.46, #26): a coin up high only an upward throw reaches; it comes back with it', () => {
+    const { h, stage } = startStage('link', { replay: true });
+    choose(h, 'Beginning');
+    const s = stage();
+    skipGreeting(h);
+    s.director.startAt(LINK_LESSONS.findIndex((l) => l.id === 'boomerang-up'));
+    expect(lessonId(s)).toBe('boomerang-up');
+    expect(s.world.map.get(S.highCoin.x, S.highCoin.y)).toBe(T.COIN);
+    expect(s.director.closedGates).toContain(S.boomerangGate);
+    // Its tip holds with the picture of the throw (UP, then UP + AHEAD).
+    h.until(() => s.director.frozen, 120);
+    expect(s.director.demo?.state('keys', 0).label).toBe('UP');
+    expect(h.said.at(-1)).toMatch(/flies straight up/);
+    // A level throw at the top of a jump under it never reaches it.
+    playStage(
+      h,
+      s,
+      (st) => {
+        const b = st.world.player.body;
+        if (heroCol(st) < S.highCoin.x) return ['right'];
+        if (b.onGround) return st.world.frame % 40 === 0 ? ['jump'] : [];
+        return b.vy >= 0 && b.vy < 0x400 ? ['jump', 'special'] : ['jump'];
+      },
+      () => false,
+      400,
+    );
+    expect(s.world.map.get(S.highCoin.x, S.highCoin.y)).toBe(T.COIN);
+    // Thrown up, it brings the coin back; the gate opens.
+    const coins = s.state.coins;
+    playStage(h, s, linkBot(), () => lessonId(s) !== 'boomerang-up', 600);
+    expect(s.director.done).toContain('boomerang-up');
+    expect(s.world.map.get(S.highCoin.x, S.highCoin.y)).toBe(T.AIR);
+    expect(s.state.coins).toBe(coins + 1);
+    expect(s.director.closedGates).not.toContain(S.boomerangGate);
+  });
+
   it('the up-thrust is taught on a brick: a head bump leaves it, a brick broken the wrong way is rebuilt', () => {
     const { h, stage } = startStage('link', { replay: true });
     choose(h, 'Beginning');

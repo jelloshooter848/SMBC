@@ -1,5 +1,6 @@
 import type { Renderer } from '@engine/gfx/renderer';
-import { px, toPx } from '@engine/math/units';
+import { px, tileToSub, toPx } from '@engine/math/units';
+import { overlaps } from '@engine/math/aabb';
 import type { View } from '../entities/entity';
 import { Enemy } from '../entities/enemies/enemy';
 import { Projectile, type ProjectileSpec } from '../entities/projectiles/projectile';
@@ -57,6 +58,11 @@ export interface TargetOptions {
   /** It hangs from the ceiling (no fall), on a short chain. */
   hang?: boolean;
   /**
+   * It hovers in the sky on a little cloud, as Lakitu rides one (0.4.46, Mega Man's Saw lesson):
+   * no fall, a slow bob.
+   */
+  hover?: boolean;
+  /**
    * A shooter fires only while this holds (a stage: its lesson is being played, its item taken),
    * so it never knocks a power off the hero on the way to the lesson's block (Mega Man's Helmet,
    * whose loss would turn the block into a Helmet).
@@ -83,7 +89,7 @@ export class TrainingTarget extends TargetDummy {
   }
 
   override update(world: World): void {
-    if (this.opts.hang) {
+    if (this.opts.hang || this.opts.hover) {
       if (this.wobble > 0) this.wobble--;
       this.body.vx = 0;
       this.body.vy = 0;
@@ -130,8 +136,22 @@ export class TrainingTarget extends TargetDummy {
     this.destroy();
   }
 
+  /** A hovering target's cloud under its feet (`y`), bobbing a pixel: white puffs, a grey rim. */
+  private drawCloud(r: Renderer, x: number, y: number, frame: number): void {
+    const bob = (frame >> 4) & 1;
+    const cy = y - 3 + bob;
+    r.rect(x - 6, cy + 2, 24, 5, '#bcbcbc');
+    r.rect(x - 5, cy + 1, 22, 5, '#fcfcfc');
+    r.rect(x - 2, cy - 2, 7, 4, '#fcfcfc');
+    r.rect(x + 6, cy - 3, 8, 5, '#fcfcfc');
+    // Two dark eyes, as a cloud rider's cloud has.
+    r.rect(x + 2, cy + 2, 1, 2, '#000');
+    r.rect(x + 8, cy + 2, 1, 2, '#000');
+  }
+
   override render(r: Renderer, view: View): void {
     super.render(r, view);
+    if (this.opts.hover) this.drawCloud(r, toPx(this.body.x) - view.camX, toPx(this.body.y) + 24, view.frame);
     if (this.opts.hang) {
       // Its chain to the ceiling: a few dark links over the head.
       const hx = toPx(this.body.x) - view.camX;
@@ -387,5 +407,87 @@ export function stageWatch(world: World): StageWatch {
 export function lessonTargets(world: World, id: string): TrainingTarget[] {
   return world.entities.filter(
     (e): e is TrainingTarget => e instanceof TrainingTarget && e.alive && e.lesson === id,
+  );
+}
+
+/**
+ * A training stage's thorn bush (0.4.46, WHAT A HIT TAKES, roadmap #21): a low bush of thorns on
+ * the ground that hurts whoever walks into it, as any hit does, and never kills (a hero a hit would
+ * end, small, is left alone: the lesson makes them big first). It is only there while its lesson
+ * is played, and pops once that is done. Drawn with rectangles, so it needs no sprite sheet.
+ */
+export class TrainingThorns extends Entity {
+  readonly kind = 'thorns';
+  /** It has hurt a hero (the hit counted: the hero's invulnerability came up). */
+  struck = false;
+
+  constructor(
+    col: number,
+    /** The row the hero stands in: the bush sits on the ground under it. */
+    row: number,
+    readonly lesson: string,
+  ) {
+    super(tileToSub(col) + px(1), tileToSub(row + 1) - px(10), 14, 10);
+    this.despawnMargin = null;
+  }
+
+  update(world: World): void {
+    for (const p of world.players) {
+      if (p.dead || p.out || p.invulnerable || !overlaps(p.body, this.body)) continue;
+      // A hit that would end a power-up hero (small) is no lesson: left alone.
+      if (p.def.damage.kind === 'powerup' && p.powerState === 'small') continue;
+      world.hurtPlayer(p, p.centerX < this.body.x + (this.body.w >> 1) ? -1 : 1);
+      if (p.invulnerable || p.dead) this.struck = true;
+    }
+  }
+
+  /** Its lesson is done: it pops in a puff. */
+  pop(world: World): void {
+    if (!this.alive) return;
+    const b = this.body;
+    world.spawn(new Explosion(b.x + (b.w >> 1), b.y + (b.h >> 1), true));
+    this.destroy();
+  }
+
+  render(r: Renderer, view: View): void {
+    const x = toPx(this.body.x) - view.camX;
+    const y = toPx(this.body.y);
+    const dark = '#005800';
+    const leaf = '#00a800';
+    const thorn = '#fcfcfc';
+    const tip = '#d82800';
+    // A bramble a tile wide, rising a little over its body: dark leaves, lighter ones on top, and
+    // white thorns with red tips sticking out all round (original art, drawn in rectangles).
+    r.rect(x - 1, y + 2, 16, 8, dark);
+    r.rect(x + 1, y - 1, 12, 4, dark);
+    r.rect(x + 2, y, 4, 2, leaf);
+    r.rect(x + 8, y + 1, 4, 2, leaf);
+    r.rect(x + 1, y + 4, 3, 2, leaf);
+    r.rect(x + 6, y + 4, 3, 2, leaf);
+    r.rect(x + 10, y + 5, 3, 2, leaf);
+    for (const [tx, ty, w, h] of [
+      [2, -4, 1, 3],
+      [7, -5, 1, 4],
+      [11, -4, 1, 3],
+      [-4, 3, 3, 1],
+      [15, 3, 3, 1],
+      [-3, 7, 2, 1],
+      [15, 7, 2, 1],
+      [4, 2, 1, 2],
+      [9, 3, 1, 2],
+    ] as const) {
+      r.rect(x + tx, y + ty, w, h, thorn);
+      // The thorn's point, red, at its outer end.
+      if (h > w) r.rect(x + tx, y + ty, 1, 1, tip);
+      else r.rect(tx < 0 ? x + tx : x + tx + w - 1, y + ty, 1, 1, tip);
+    }
+  }
+}
+
+/** The thorn bushes of lesson `id` in the world. */
+export function lessonThorns(world: World, id?: string): TrainingThorns[] {
+  return world.entities.filter(
+    (e): e is TrainingThorns =>
+      e instanceof TrainingThorns && e.alive && (id === undefined || e.lesson === id),
   );
 }

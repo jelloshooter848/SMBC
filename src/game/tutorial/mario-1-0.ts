@@ -11,6 +11,7 @@ import type { Lesson } from './stage-prompts';
 import type { StageTutorial, TutorialContext, TutorialGate } from './stage-tutorial';
 import { ShadowTeaseScene } from './tease';
 import { RUN_DEMO } from './demos';
+import { hitLessons } from './heroes/common';
 import { beat, storyOn } from '../story/beats';
 import { playStoryCards } from '../story/cards';
 import { STORY_TOAD_PAGES } from '../story/script';
@@ -120,7 +121,10 @@ export const MARIO_10 = {
    */
   crowd: { from: 206, to: 217 },
   crowdGate: 220,
-  flag: 226,
+  /** WHAT A HIT TAKES (0.4.46, owner #21): the thorn bush, and its gate until the hit is taken. */
+  thorns: 224,
+  hitGate: 226,
+  flag: 232,
 } as const;
 const M = MARIO_10;
 
@@ -348,6 +352,8 @@ export const MARIO_LESSONS: readonly Lesson[] = [
     retry: 'RUN THROUGH THE CROWD TO OPEN THE WAY.',
     done: (w) => landedPast(w, M.crowd.to + 1),
   },
+  // What a hit takes (0.4.46): the Star is put out, the thorns make big Mario small.
+  ...hitLessons('mario', { at: M.crowdGate + 1, row: 12, thorns: M.thorns, big: true }),
   {
     id: 'flag',
     at: M.crowdGate + 1,
@@ -366,6 +372,7 @@ export const MARIO_GATES: readonly TutorialGate[] = [
   { col: M.stompGate, top: 6, after: 'stomp' },
   { col: M.growGate, top: 6, after: 'grow' },
   { col: M.crowdGate, top: 6, after: 'crowd' },
+  { col: M.hitGate, top: 6, after: 'hit' },
 ];
 
 /** Columns a line may take in the dialogue box (as the captive heroes' dialogue). */

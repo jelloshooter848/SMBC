@@ -501,7 +501,10 @@ describe('developer mode: unlock all on the map', () => {
     h.idle(8);
     expect(worldsListed(h)).toEqual(['World 1']);
     walkTo(h, '1-1');
-    h.tap('up');
+    // Toward the locked 1-2: a bump (the way its road leaves 1-1 on the page shown; World 1 is
+    // drawn from above in campaign play since 0.4.48).
+    const to12 = h.map().page.paths.find((p) => p.from === '1-1' && p.to === '1-2');
+    h.tap(dirOf(to12?.points ?? []));
     h.idle(40);
     expect(h.map().node).toBe('1-1');
     // The file keeps the flag: dev mode on again unlocks again.

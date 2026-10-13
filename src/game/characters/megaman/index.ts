@@ -4,7 +4,12 @@ import type { CharacterDef, MeterInfo, SpriteSpec } from '../character';
 import type { MovementProfile } from '../profile';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
-import { Projectile, BUSTER, CHARGED_BUSTER } from '../../entities/projectiles/projectile';
+import {
+  Projectile,
+  BUSTER,
+  CHARGED_BUSTER,
+  PIERCING_CHARGED_BUSTER,
+} from '../../entities/projectiles/projectile';
 import { RushCoil } from '../../entities/objects/rush-coil';
 import { STAR_FRAMES } from '../../constants';
 import { MEGAMAN_GUIDE } from './guide';
@@ -140,7 +145,8 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
 
 function fireBuster(p: Player, world: World, charged: boolean): void {
   const b = p.body;
-  const spec = charged ? CHARGED_BUSTER : BUSTER;
+  // The campaign's full charge flies through walls, bumping the blocks it crosses (0.4.46, #23).
+  const spec = charged ? (isFound(p) ? PIERCING_CHARGED_BUSTER : CHARGED_BUSTER) : BUSTER;
   const x = p.facing > 0 ? b.x + b.w : b.x - px(spec.w);
   // The big charge shot is centred on his arm cannon (a 14 px blast around the buster's row).
   world.spawn(new Projectile(x, b.y + px(charged ? 4 : 8), p.facing, spec, p));

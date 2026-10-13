@@ -33,7 +33,7 @@ export const WORLD_2: WorldMapPage = {
   label: 'WORLD 2',
   title: 'HYRULE',
   theme: 'hyrule',
-  music: 'map',
+  music: 'map-hyrule',
   tiles: autoShore(SKETCH_2),
   nodes: worldNodes(
     2,

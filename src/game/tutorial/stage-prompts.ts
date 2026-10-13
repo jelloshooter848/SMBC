@@ -89,6 +89,11 @@ export interface Lesson {
    * SPENT_BLOCK. Ability tokens as in `text`.
    */
   spent?: string;
+  /**
+   * What the lesson needs was spent another way (0.4.46: Mega Man's pierce row bumped before the
+   * blast): its stretch is rebuilt after Toad's card (`spent`), as a spent block's is.
+   */
+  spentWhen?(world: World): boolean;
   /** The words for `get` on touch, as `touchText`. */
   touchGet?: string;
   /** Its entry in START AT, when its item's name alone does not say it (a folded lesson's). */
@@ -121,6 +126,21 @@ export interface Lesson {
    * (0.4.45: 1-0's RUN, demo-panel.ts).
    */
   demo?: LessonDemo;
+  /**
+   * The box shows at the bottom of the screen while this lesson is played (0.4.46: Mega Man's Saw
+   * lesson, whose target hovers up where the box would be).
+   */
+  boxLow?: boolean;
+  /**
+   * The hero keeps what they have when it comes up (0.4.46, WHAT A HIT TAKES): no kit floor and no
+   * health topped up, so what a hit just took still shows while its tip is read.
+   */
+  keepKit?: boolean;
+  /**
+   * The one-time explainer (tutorial/explainers.ts, 0.4.46) this lesson teaches: once it is done in
+   * a training stage the file counts it as shown (Mega Man's Helmet and its weapons rule).
+   */
+  explains?: string;
   /** Lights in the box under the words (Link's FREE / HURT), read every frame. */
   lights?(world: World): readonly { label: string; on: boolean }[];
   /** A line in the box under the words, read every frame (Samus's "-4 EN (WAS -8)"); null: none. */

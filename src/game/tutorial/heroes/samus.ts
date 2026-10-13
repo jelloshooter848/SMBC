@@ -4,7 +4,7 @@ import { lessonUpFrame, type Lesson } from '../stage-prompts';
 import type { TutorialGate } from '../stage-tutorial';
 import type { HeroStage } from '../hero-stage';
 import { TrainingTarget } from '../targets';
-import { alive, hitsSince, hurtsSince, landedPast } from './common';
+import { alive, hitLessons, hitsSince, hurtsSince, landedPast } from './common';
 import source from '../../../content/levels/training/samus.map?raw';
 
 /*
@@ -39,7 +39,10 @@ export const SAMUS_STAGE = {
   waveBlock: { x: 97, y: 7 },
   box: { from: 103, to: 106 },
   waveGate: 109,
-  flag: 116,
+  /** WHAT A HIT TAKES (0.4.46): the thorn bush, and the gate until the hit is taken. */
+  thorns: 114,
+  hitGate: 116,
+  flag: 124,
 } as const;
 const S = SAMUS_STAGE;
 
@@ -176,6 +179,7 @@ export const SAMUS_LESSONS: readonly Lesson[] = [
     retry: 'PICK THE WAVE BEAM WITH [WEAPON:select]: IT SHOOTS THROUGH THE WALL TO THE TARGET.',
     done: (w) => hitsSince(w, (h) => h.wave && h.target instanceof TrainingTarget).length > 0,
   },
+  ...hitLessons('samus', { at: 110, row: 10, thorns: S.thorns }),
   {
     id: 'flag',
     at: 110,
@@ -196,6 +200,7 @@ export const SAMUS_GATES: readonly TutorialGate[] = [
   gate(S.iceGate, 'ice-beam', 10),
   gate(S.variaGate, 'varia-suit', 10),
   gate(S.waveGate, 'wave-beam', 10),
+  gate(S.hitGate, 'hit', 10),
 ];
 
 export const SAMUS_STAGE_DEF: HeroStage = {

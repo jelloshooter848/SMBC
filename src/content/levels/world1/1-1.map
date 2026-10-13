@@ -8,6 +8,9 @@ time: 400
 start: 2,12
 startMode: stand
 camera: scroll
+;; Campaign play only (level/campaign.ts applyLook, 0.4.48): the Mushroom Kingdom's look, decor and backdrop only
+;; (the tiles, enemies and music are the level's own). Elsewhere it looks as it always did.
+campaignTheme: kingdom
 
 [tiles]
 ;; 0                16               32               48               64               80               96               112              128              144              160              176              192              208

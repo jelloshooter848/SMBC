@@ -239,6 +239,11 @@ export class Game {
    */
   story: string[] = [];
   /**
+   * The one-time explainers shown on the campaign's file (SaveFile.explained, 0.4.46: a pickup's
+   * or an item's first touch, tutorial/explainers.ts), each once. See `markExplained`.
+   */
+  explained: string[] = [];
+  /**
    * Beats played while developer "Unlock all" is on (`mapUnlockAll`): they count as seen only
    * while it stays on and are never saved, so with it off the scene plays for real (markSeen).
    */
@@ -569,6 +574,19 @@ export class Game {
   }
 
   /**
+   * Records explainer `id` (tutorial/explainers.ts) as shown, once, and writes it to the file
+   * (campaign only): only the file's `explained` list changes, as a story beat's (markSeen).
+   */
+  markExplained(id: string): void {
+    if (this.explained.includes(id)) return;
+    this.explained.push(id);
+    const base = this.campaign ? this.campaignSave : null;
+    if (!base) return;
+    this.campaignSave = { ...base, explained: this.explained.slice() };
+    writeSave(this.campaignSave);
+  }
+
+  /**
    * Writes the campaign's save file: the run (lives, score, coins, heroes, power) and the map
    * progress. Does nothing outside campaign mode (dev, ?level=, custom, shared, playtests).
    */
@@ -601,6 +619,7 @@ export class Game {
       ...bonusSaveFields(this.bonus),
       heroKits: this.savedHeroKits(state),
       story: this.story.slice(),
+      explained: this.explained.slice(),
     };
     this.campaignSave = save;
     writeSave(save);
@@ -1167,6 +1186,7 @@ export class Game {
     // a list from before 0.4.23 gets the new scenes whose trigger is already past (upgradeStory).
     this.story = upgradeStory(save.story, this.mapProgress, this.freed);
     this.storyUnsaved.clear();
+    this.explained = (save.explained ?? []).slice();
     // A new file's opening plays first (docs/STORY.md 2.1, story/opening.ts), then the map.
     if (opening && playOpening(this, () => this.showMap())) return;
     this.showMap(); // the map saves the file as it opens

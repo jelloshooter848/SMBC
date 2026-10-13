@@ -33,7 +33,7 @@ export const WORLD_3: WorldMapPage = {
   label: 'WORLD 3',
   title: 'MEGA CITY',
   theme: 'megaman',
-  music: 'map',
+  music: 'map-megaman',
   tiles: autoShore(SKETCH_3),
   nodes: worldNodes(
     3,

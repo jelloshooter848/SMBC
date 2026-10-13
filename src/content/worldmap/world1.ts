@@ -26,7 +26,7 @@ export const WORLD_1: WorldMapPage = {
   label: 'WORLD 1',
   title: 'MUSHROOM KINGDOM',
   theme: 'grass',
-  music: 'map',
+  music: 'map-mushroom',
   tiles: autoShore(SKETCH_1),
   // The bonus slot is the warp spot (0.4.0): found by taking the 1-2 warp zone's pipe in a
   // campaign (secret 'bonus-1'), it leads to the Warp Zone hub. Its road grows from 1-2 (0.4.1).

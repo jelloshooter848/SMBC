@@ -15,6 +15,11 @@ export interface AudioSink {
   readonly state?: string;
   playMusic(id: string): void;
   stopMusic(): void;
+  /**
+   * Fade the music out to silence over `seconds` (the world map's page changes). The next
+   * playMusic, playJingle or stopMusic puts the level back; volume and mute are untouched.
+   */
+  fadeOutMusic?(seconds: number): void;
   /** Play a non-looping jingle; the previous music is not resumed automatically. */
   playJingle(id: string, onEnd?: () => void): void;
   sfx(id: string): void;
@@ -173,7 +178,7 @@ export class AudioManager implements AudioSink {
       src.buffer = buf;
       src.loop = loop;
       src.playbackRate.value = this.tempoScale;
-      src.connect(apu.musicGain);
+      src.connect(apu.musicFade);
       src.onended = () => {
         if (this.fileMusic === src) this.fileMusic = null;
         if (!loop) onEnd?.();
@@ -251,10 +256,10 @@ export class AudioManager implements AudioSink {
     }
   }
 
-  /** The music rises from silence over MUSIC_FADE_IN_S (Apu.musicFade); sound effects don't. */
+  /** The music rises from silence over MUSIC_FADE_IN_S (Apu.startFade); sound effects don't. */
   private fadeInMusic(): void {
     if (!this.ctx || !this.apu) return;
-    const g = this.apu.musicFade.gain;
+    const g = this.apu.startFade.gain;
     const t = this.ctx.currentTime;
     g.cancelScheduledValues(t);
     g.setValueAtTime(0, t);
@@ -302,9 +307,13 @@ export class AudioManager implements AudioSink {
       this.pendingMusic = id;
       return;
     }
-    if (this.currentMusic === id && (this.seq.playing || this.fileMusic)) return;
+    if (this.currentMusic === id && (this.seq.playing || this.fileMusic)) {
+      this.unfade(0.05); // mid-fade: the same song comes back up
+      return;
+    }
     this.seq.stop();
     this.stopFileMusic();
+    this.unfade();
     this.currentMusic = id;
     if (this.playFile(id, true)) return;
     const s = this.song(id);
@@ -320,6 +329,28 @@ export class AudioManager implements AudioSink {
     this.fileToken++;
     this.seq?.stop();
     this.stopFileMusic();
+    this.unfade();
+  }
+
+  fadeOutMusic(seconds: number): void {
+    if (!this.ctx || !this.apu) return;
+    const g = this.apu.musicFade.gain;
+    const now = this.ctx.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(g.value, now);
+    g.linearRampToValueAtTime(0, now + Math.max(0.01, seconds));
+  }
+
+  /** The music fade back to full: at once (the voices are silent), or over `ramp` seconds. */
+  private unfade(ramp = 0): void {
+    if (!this.ctx || !this.apu) return;
+    const g = this.apu.musicFade.gain;
+    const now = this.ctx.currentTime;
+    g.cancelScheduledValues(now);
+    if (ramp > 0) {
+      g.setValueAtTime(g.value, now);
+      g.linearRampToValueAtTime(1, now + ramp);
+    } else g.setValueAtTime(1, now);
   }
 
   playJingle(id: string, onEnd?: () => void): void {
@@ -330,6 +361,7 @@ export class AudioManager implements AudioSink {
     this.currentMusic = null;
     this.seq.stop();
     this.stopFileMusic();
+    this.unfade();
     if (this.playFile(id, false, onEnd)) return;
     const s = this.song(id);
     if (!s) {

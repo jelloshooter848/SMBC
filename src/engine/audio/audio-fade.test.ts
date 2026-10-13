@@ -1,160 +1,211 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AudioManager, MUSIC_FADE_IN_S } from './audio-manager';
+import { Apu } from './apu';
+import { AudioManager, MUSIC_FADE_IN_S, NULL_AUDIO } from './audio-manager';
 
-// The music fades in (0.4.49): when sound starts (the first press) or comes back after the
-// browser stopped it (the background, an interruption), the music rises from silence over about
-// a second instead of starting at full volume. Sound effects, mute and the sliders are untouched.
+// The music fade (0.4.48, for the world map's page changes): the music voices run through their
+// own fade gain before the music volume, so fading a song out never touches the player's
+// volume or mute (applyVolumes), and the next song (or jingle, or a stop) puts it back.
 
-/** Absorbs any Web Audio call: every property is itself, every call and `new` returns it. */
-const anything: unknown = new Proxy(function () {}, {
-  get: (_t, k) => (k === 'then' ? undefined : k === Symbol.toPrimitive ? () => 0 : anything),
-  set: () => true,
-  apply: () => anything,
-  construct: () => anything as object,
-});
-
-type Ev = [string, number, number?];
-class FakeParam {
+/** An AudioParam that remembers its automation calls. */
+class Param {
   value = 1;
-  events: Ev[] = [];
+  calls: string[] = [];
   cancelScheduledValues(t: number) {
-    this.events.push(['cancel', t]);
+    this.calls.push(`cancel@${t}`);
   }
   setValueAtTime(v: number, t: number) {
-    this.events.push(['set', v, t]);
+    this.value = v;
+    this.calls.push(`set ${v}@${t}`);
   }
   linearRampToValueAtTime(v: number, t: number) {
-    this.events.push(['ramp', v, t]);
-  }
-  exponentialRampToValueAtTime(v: number, t: number) {
-    this.events.push(['exp', v, t]);
-  }
-  setTargetAtTime(v: number, t: number) {
-    this.events.push(['target', v, t]);
+    this.calls.push(`ramp ${v}@${t}`);
   }
 }
-class FakeGain {
-  gain = new FakeParam();
-  connect() {}
+
+class Node {
+  out: Node[] = [];
+  gain = new Param();
+  frequency = new Param();
+  playbackRate = new Param();
+  buffer: unknown = null;
+  loop = false;
+  type = '';
+  connect(n: Node) {
+    this.out.push(n);
+    return n;
+  }
+  start() {}
+  stop() {}
+  setPeriodicWave() {}
+  getChannelData() {
+    return new Float32Array(8);
+  }
 }
 
 class FakeContext {
   static last: FakeContext | null = null;
   state = 'running';
   sampleRate = 48000;
-  currentTime = 5;
-  destination = {};
+  currentTime = 2;
+  destination = new Node();
   constructor() {
     FakeContext.last = this;
-    return new Proxy(this, { get: (t, k) => (k in t ? t[k as keyof FakeContext] : anything) });
   }
   createGain() {
-    return new FakeGain();
+    return new Node();
+  }
+  createOscillator() {
+    return new Node();
+  }
+  createBufferSource() {
+    return new Node();
+  }
+  createBuffer() {
+    return new Node();
+  }
+  createPeriodicWave() {
+    return {};
   }
   resume() {
-    this.state = 'running';
-    return Promise.resolve();
-  }
-  suspend() {
-    this.state = 'suspended';
     return Promise.resolve();
   }
 }
 
 beforeEach(() => {
-  FakeContext.last = null;
+  vi.useFakeTimers();
   vi.stubGlobal('window', { AudioContext: FakeContext });
   vi.stubGlobal('document', {
     visibilityState: 'visible',
-    addEventListener: () => {},
+    addEventListener() {},
     createElement: () => ({ setAttribute() {}, play: () => Promise.resolve() }),
   });
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
-interface Gains {
-  master: FakeGain;
-  musicGain: FakeGain;
-  sfxGain: FakeGain;
-  musicFade: FakeGain;
-}
-function unlocked() {
+const SONG = { id: 'tune', bpm: 120, loop: true, pulse1: 'c4 d4 e4 f4' };
+const OTHER = { id: 'other', bpm: 120, loop: true, pulse1: 'g4 a4 b4 a4' };
+
+function setup() {
   const audio = new AudioManager();
+  audio.registerSongs([SONG, OTHER]);
   audio.unlock();
-  const ctx = FakeContext.last as FakeContext;
-  const apu = (audio as unknown as { apu: Gains }).apu;
-  return { audio, ctx, apu, fade: apu.musicFade.gain };
+  const apu = (audio as unknown as { apu: Apu }).apu;
+  const fade = apu.musicFade.gain as unknown as Param;
+  return { audio, apu, fade, ctx: FakeContext.last as FakeContext };
 }
-const ramps = (p: FakeParam) => p.events.filter((e) => e[0] === 'ramp');
 
-describe('the music fades in when sound starts', () => {
-  it('about a second', () => {
-    expect(MUSIC_FADE_IN_S).toBeGreaterThanOrEqual(1);
-    expect(MUSIC_FADE_IN_S).toBeLessThanOrEqual(1.5);
+describe('the music fade', () => {
+  it('sits between the music voices and the music volume; the effects bypass it', () => {
+    const apu = new Apu(new FakeContext() as unknown as BaseAudioContext);
+    const outs = (v: { gain: GainNode }) => (v.gain as unknown as Node).out;
+    for (const v of [apu.voices.pulse1, apu.voices.pulse2, apu.voices.triangle, apu.voices.noise])
+      expect(outs(v)).toEqual([apu.musicFade]);
+    expect((apu.musicFade as unknown as Node).out).toEqual([apu.musicGain]);
+    for (const v of [apu.voices.sfxPulse, apu.voices.sfxPulse2, apu.voices.sfxNoise, apu.voices.sfxTriangle])
+      expect(outs(v)).toEqual([apu.sfxGain]);
   });
 
-  it('the first press: from silence up to full over MUSIC_FADE_IN_S; sound effects are not faded', () => {
-    const { apu, fade } = unlocked();
-    expect(fade.events).toEqual([
-      ['cancel', 5],
-      ['set', 0, 5],
-      ['ramp', 1, 5 + MUSIC_FADE_IN_S],
-    ]);
-    for (const g of [apu.master, apu.musicGain, apu.sfxGain]) expect(ramps(g.gain)).toEqual([]);
-  });
-
-  it('later presses with sound running do not fade again', () => {
-    const { audio, ctx, fade } = unlocked();
-    fade.events = [];
-    ctx.currentTime = 9;
-    audio.unlock();
-    audio.unlock();
-    expect(fade.events).toEqual([]);
-  });
-
-  it('back from the background (the browser stopped the sound): fades in again', () => {
-    const { audio, ctx, fade } = unlocked();
-    fade.events = [];
-    ctx.state = 'interrupted';
-    ctx.currentTime = 30;
-    audio.wake();
-    expect(ramps(fade)).toEqual([['ramp', 1, 30 + MUSIC_FADE_IN_S]]);
-    expect(fade.events[1]).toEqual(['set', 0, 30]);
-  });
-
-  it('a press that restarts suspended sound fades it in', () => {
-    const { audio, ctx, fade } = unlocked();
-    fade.events = [];
-    ctx.state = 'suspended';
-    ctx.currentTime = 12;
-    audio.unlock();
-    expect(ramps(fade)).toEqual([['ramp', 1, 12 + MUSIC_FADE_IN_S]]);
-  });
-
-  it('a window coming back into focus with sound still playing: no dip', () => {
-    const { audio, fade } = unlocked();
-    fade.events = [];
-    audio.wake();
-    audio.unlock(); // the next press after wake (stale): the unlock again, but no fade
-    expect(fade.events).toEqual([]);
-  });
-
-  it("the game's own pause and resume are unchanged (no fade)", () => {
-    const { audio, fade } = unlocked();
-    fade.events = [];
-    audio.pause();
-    audio.resume();
-    expect(fade.events).toEqual([]);
-  });
-
-  it('mute and the sliders still set the master, music and sound gains; the fade is its own stage', () => {
-    const { audio, apu, fade } = unlocked();
-    audio.setVolumes({ master: 0.4, music: 0.5, sfx: 0.3, muted: false });
-    expect(apu.master.gain.value).toBeCloseTo(0.2);
-    expect(apu.musicGain.gain.value).toBe(0.5);
-    expect(apu.sfxGain.gain.value).toBe(0.3);
+  it('fades the song to silence over the given time, leaving volume and mute alone', () => {
+    const { audio, apu, fade, ctx } = setup();
+    audio.setVolumes({ master: 0.6, music: 0.4 });
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    expect(fade.calls.slice(-1)).toEqual([`ramp 0@${ctx.currentTime + 0.5}`]);
+    expect(apu.musicGain.gain.value).toBe(0.4);
+    expect(apu.master.gain.value).toBeCloseTo(0.3);
+    // Mute and volume still work as before, mid-fade.
     audio.setVolumes({ muted: true });
     expect(apu.master.gain.value).toBe(0);
-    expect(fade.events.length).toBe(3); // only the first press's fade
+    audio.setVolumes({ muted: false, music: 0.8 });
+    expect(apu.musicGain.gain.value).toBe(0.8);
+    expect(apu.master.gain.value).toBeCloseTo(0.3);
+  });
+
+  it('the next song starts at full level', () => {
+    const { audio, fade } = setup();
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    fade.calls = [];
+    audio.playMusic('other');
+    expect(fade.value).toBe(1);
+    expect(fade.calls.some((c) => c.startsWith('set 1@'))).toBe(true);
+  });
+
+  it('the same song asked for again mid-fade comes back up instead of staying silent', () => {
+    const { audio, fade } = setup();
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    fade.calls = [];
+    audio.playMusic('tune');
+    expect(fade.calls.at(-1)).toMatch(/^ramp 1@/);
+  });
+
+  it('a jingle or a stop puts the level back too', () => {
+    const { audio, fade } = setup();
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    audio.stopMusic();
+    expect(fade.value).toBe(1);
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    fade.value = 0;
+    audio.playJingle('other');
+    expect(fade.value).toBe(1);
+  });
+
+  it('is optional on a sink and a no-op before the first unlock', () => {
+    expect(NULL_AUDIO.fadeOutMusic).toBeUndefined();
+    expect(() => new AudioManager().fadeOutMusic(1)).not.toThrow();
+  });
+});
+
+// Both fades (0.4.49): the start fade-in (Apu.startFade, audio-start-fade.test.ts) is its own
+// stage after the music volume, in series with this page fade, so neither stomps the other.
+describe('the page fade with the start fade-in', () => {
+  it('the music runs through both, in series: page fade, music volume, start fade-in, master', () => {
+    const apu = new Apu(new FakeContext() as unknown as BaseAudioContext);
+    expect((apu.musicFade as unknown as Node).out).toEqual([apu.musicGain]);
+    expect((apu.musicGain as unknown as Node).out).toEqual([apu.startFade]);
+    expect((apu.startFade as unknown as Node).out).toEqual([apu.master]);
+    expect((apu.sfxGain as unknown as Node).out).toEqual([apu.master]);
+  });
+
+  it('a page-slide fade during the start fade-in still ends at full volume on the new song', () => {
+    const { audio, apu, fade, ctx } = setup(); // the first press at t=2: the fade-in starts
+    const start = apu.startFade.gain as unknown as Param;
+    const fadeIn = ['cancel@2', 'set 0@2', `ramp 1@${2 + MUSIC_FADE_IN_S}`];
+    expect(start.calls).toEqual(fadeIn);
+    audio.playMusic('tune');
+    ctx.currentTime = 2.4; // halfway up, the map slides to the next page
+    audio.fadeOutMusic(0.5);
+    ctx.currentTime = 2.9;
+    audio.playMusic('other'); // the next page's song
+    // The page fade is back at full for the new song...
+    expect(fade.value).toBe(1);
+    expect(fade.calls.at(-1)).toBe('set 1@2.9');
+    // ...and the fade-in was never cut short: it still rises to full, where it stays.
+    expect(start.calls).toEqual(fadeIn);
+    expect(start.calls.at(-1)).toMatch(/^ramp 1@/);
+    // Neither fade touched the volume or mute.
+    expect(apu.musicGain.gain.value).toBe(1);
+    expect(apu.master.gain.value).toBeCloseTo(0.2);
+  });
+
+  it('sound coming back from the background mid page fade: the fade-in leaves the page fade alone', () => {
+    const { audio, apu, fade, ctx } = setup();
+    audio.playMusic('tune');
+    audio.fadeOutMusic(0.5);
+    const page = [...fade.calls];
+    ctx.state = 'interrupted';
+    ctx.currentTime = 10;
+    audio.wake();
+    expect(fade.calls).toEqual(page);
+    expect((apu.startFade.gain as unknown as Param).calls.slice(-2)).toEqual([
+      'set 0@10',
+      `ramp 1@${10 + MUSIC_FADE_IN_S}`,
+    ]);
   });
 });

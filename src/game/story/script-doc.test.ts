@@ -15,6 +15,7 @@ import {
   CASTLE_PAGES,
   castleRemark,
   gateScript,
+  HOME_REMARKS,
   REMARK_CASTLES,
   RIFT_SEALED_PAGES,
   sealedHint,
@@ -133,9 +134,15 @@ function scriptPages(): Map<string, Page> {
   for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}`, p.pages);
   // S2 (0.4.23): each hint NPC's after-freed page, and every hero's freed talk (2.4-2.11).
   for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}.after`, p.after ?? []);
+  // 0.4.47: each NPC's own-hero pages, and the fairy's clearer page when asked again.
+  for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}.own`, p.own ?? []);
+  for (const [who, p] of Object.entries(PARTNERS)) list(`PARTNERS.${who}.again`, p.again ?? []);
   for (const id of Object.keys(FREED_TALKS)) list(`FREED_TALKS.${id}`, freedTalk(id, HERO));
   // S3 (0.4.23): the castle remarks, the world gates, the rift's reminder and the welcomes.
   for (const id of REMARK_CASTLES) add(`castleRemark.${id}`, castleRemark(id, HERO) as Page);
+  // 0.4.47 (#31): the castle's own hero's line at their villain's costume, in their own name.
+  for (const [id, who] of HOME_REMARKS)
+    add(`castleRemark.${id}.${who}`, castleRemark(id, fontText(hero(who).name).toUpperCase(), who) as Page);
   for (let w = 1; w <= 7; w++) {
     const g = gateScript(w, HERO);
     if (!g) continue;
@@ -147,6 +154,8 @@ function scriptPages(): Map<string, Page> {
   for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}`, w.pages);
   // Each local's after-freed page (0.4.23 review: talking again once the world's hero is freed).
   for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}.after`, w.after ?? []);
+  // 0.4.47: each local's own-hero page (talking as the world's own hero).
+  for (const [page, w] of Object.entries(WELCOMES)) list(`WELCOMES.${page}.own`, w.own ?? []);
   // 0.4.41: Kakariko Village's townsfolk (2.5), the old man's with TOOLS, the well's with <HERO>.
   for (const [name, pages] of Object.entries(KAKARIKO_PAGES)) list(`KAKARIKO.${name}`, pages);
   list('oldManPages', oldManPages('TOOLS'));
@@ -178,9 +187,9 @@ describe('docs/STORY.md and script.ts agree (Chapter 1: 2.1 to 2.14)', () => {
     expect(NOT_BUILT).toEqual([]);
     // Jason's three pages and his after page, Sophia III's challenge, and her freed talk (three
     // pages of hers, two of Jason's) are among the pages the doc and script share, and (0.4.39)
-    // her line in 4-2's anchor scene.
+    // her line in 4-2's anchor scene; (0.4.47) Jason's own-hero page, Sophia III talking to him.
     const firsts = blocks.filter((b) => !b.old).map((b) => b.lines[0]);
-    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(6);
+    expect(firsts.filter((l) => l === 'JASON:')).toHaveLength(7);
     expect(firsts.filter((l) => l === 'SOPHIA III:')).toHaveLength(5);
   });
 

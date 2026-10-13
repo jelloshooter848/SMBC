@@ -52,9 +52,10 @@ import {
   type TeleportZone,
 } from '../entities/objects/teleporter';
 import { PowerUp } from '../entities/objects/powerup';
-import { isPickupKind, Pickup } from '../entities/objects/pickup';
+import { isPickupKind, Pickup, type PickupKind } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
+import { heroItems } from '../items/catalog';
 import { isFound } from '../items/flags';
 import { FlagScore, Flagpole } from '../entities/objects/flagpole';
 import { Projectile } from '../entities/projectiles/projectile';
@@ -100,6 +101,8 @@ import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CASTLE_PAGES, REMARK_CASTLES } from '../story/script';
 import { CastleUnmask, walkStep } from './unmask';
+import { BossBar } from './boss-bar';
+import { CostumePile } from '../entities/effects/costume-pile';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
@@ -109,6 +112,20 @@ const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
 export const ITEM_CAPTION_FRAMES = 120;
 /** A HeroItem's entries from the Top Secret Area's fixed grow block (`R`): the grow item for anyone. */
 const GROW_BLOCK: Readonly<Record<string, string>> = Object.freeze({});
+
+/**
+ * SMB's rule for an item already out of its block (0.4.46, owner #20): a Mega Man whose Helmet a
+ * hit knocked off since the block was struck takes the Helmet from it, never a weapon (his weapons
+ * come only with the Helmet). His alone (no change for the other heroes: Sophia III knocked to
+ * Normal still takes her Crusher). In a found kit (the campaign and training) only.
+ */
+function growFirst(p: Player, id: string): string {
+  if (p.def.id !== 'megaman') return id;
+  const rules = itemRules(p.def.id);
+  const grow = heroItems(p.def.id)?.grow;
+  if (!rules || !grow || id === grow || !isFound(p) || !rules.small(p)) return id;
+  return grow;
+}
 
 export type WorldEvent =
   /** `chain`: a climb up an anchor chain (the arrival's vine is drawn as a chain too). */
@@ -152,7 +169,11 @@ export type WorldEvent =
   /** A hidden path's block was bumped (World.layPath): its clouds are being laid. */
   | { type: 'path' }
   /** A line for the screen reader (the campaign's castle pages): the level announces it. */
-  | { type: 'say'; text: string };
+  | { type: 'say'; text: string }
+  /** Player `player` touched a dropped pickup (0.4.46: its one-time explainer, tutorial/explainers.ts). */
+  | { type: 'pickup'; item: PickupKind; player: number }
+  /** Player `player` took their item `item` for the first time (its one-time explainer, if any). */
+  | { type: 'item'; item: string; player: number };
 
 /**
  * Campaign play's captive heroes (Captive): who is freed already on the file, and each hero's
@@ -173,6 +194,8 @@ export interface WorldFeats {
   powerBlocks: number;
   /** Bricks broken. */
   bricks: number;
+  /** Blocks a shot flying through walls bumped (0.4.46: Mega Man's charge shot, Simon's axe). */
+  pierced: number;
 }
 
 export interface WorldStart {
@@ -467,6 +490,8 @@ export class World {
    * it runs; then the axe drops the bridge as usual.
    */
   unmask: CastleUnmask | null = null;
+  /** The Bowser bar (0.4.47, campaign only): his hit points while his fight is on (boss-bar.ts). */
+  readonly bossBar = new BossBar();
   /**
    * Set by LevelScene in the campaign: shows the hero's remark at castle `level`'s axe if it is
    * due (story/castle-remark.ts) and returns true, calling `done` when the card closes; false when
@@ -510,7 +535,7 @@ export class World {
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
-  readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0 };
+  readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0, pierced: 0 };
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
@@ -1207,6 +1232,37 @@ export class World {
     this.strikeBlock(tx, ty, p, true); // only brick-breaking shots call this
   }
 
+  /**
+   * A block-bumping shot flying through tiles (ProjectileSpec.bumpsBlocks, 0.4.46): the block its
+   * centre is crossing is struck once on its owner's behalf, as their head bump would (a ? block
+   * gives its item or coin, a brick breaks by their rules); a shot that only bumps ? blocks leaves
+   * bricks be. On Mega Man's airship a cannon it crosses takes the hit, and the shot ends there
+   * (returns true).
+   */
+  pierceBlocks(pr: Projectile): boolean {
+    const b = pr.body;
+    const tx = tileAt(b.x + (b.w >> 1));
+    const ty = tileAt(b.y + (b.h >> 1));
+    const key = `${tx},${ty}`;
+    if (pr.bumped.has(key)) return false;
+    const id = this.map.get(tx, ty);
+    // A training stage's closed gate (blank solid tiles, not a block mid-bump) stops it.
+    if (id === T.BUMPING)
+      return !this.entities.some((e) => e instanceof BlockBump && e.alive && e.tx === tx && e.ty === ty);
+    const block = tileDef(id).block;
+    if (!block || block.kind === 'hidden') {
+      if (!this.map.isSolid(tx, ty)) return false;
+      pr.bumped.add(key);
+      return this.shotWall(pr, b.x + (b.w >> 1), b.y + (b.h >> 1));
+    }
+    if (pr.spec.bumpsBlocks === 'question' && block.kind !== 'question') return false;
+    pr.bumped.add(key);
+    const p = pr.owner instanceof Player ? pr.owner : this.nearestPlayer(b.x);
+    this.feats.pierced++;
+    this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
+    return false;
+  }
+
   /* ---------- Scoring ---------- */
 
   /**
@@ -1217,6 +1273,7 @@ export class World {
    */
   collectPickup(p: Player, e: Pickup): void {
     e.destroy();
+    this.events.push({ type: 'pickup', item: e.item, player: Math.max(0, this.players.indexOf(p)) });
     if (p.def.behaviour.onPickup?.(p, e.item, this)) return;
     this.addScore(PICKUP_FULL_SCORE, e.body.x, e.body.y - px(8));
     this.audio.sfx('coin');
@@ -1284,6 +1341,7 @@ export class World {
 
   update(inputs: InputFrame[]): void {
     this.frame++;
+    this.bossBar.tick((o) => (o as Entity).alive);
     if (this.itemCaption && --this.itemCaption.t <= 0) this.itemCaption = null;
     if (this.shakeFrames > 0) this.shakeFrames--;
 
@@ -1558,6 +1616,7 @@ export class World {
       if (partner) {
         partner.prompt = false; // hidden under its pages; back on the next update in reach
         partner.talked = true;
+        partner.talks++;
         this.events.push({ type: 'partner', who: partner.who, player: i });
         return;
       }
@@ -2082,6 +2141,7 @@ export class World {
     let id: string | null = e.item;
     if (p.def.id !== e.hero)
       id = e.entries === GROW_BLOCK ? blockItem(p, null, 'mushroom') : blockItem(p, e.entries);
+    else id = growFirst(p, id);
     // A hero without items of their own (Mario or Luigi in an older co-op file): SMB's item, whose
     // onPowerUp scores its own 1000.
     if (id === null) {
@@ -2099,6 +2159,7 @@ export class World {
     this.audio.sfx(itemSfx(id));
     this.itemCaption = { text: got.name.toUpperCase(), t: ITEM_CAPTION_FRAMES };
     this.events.push({ type: 'say', text: `${got.name}: ${got.does}.` });
+    this.events.push({ type: 'item', item: id, player: Math.max(0, this.players.indexOf(p)) });
   }
 
   /**
@@ -2198,6 +2259,8 @@ export class World {
       } else if (e instanceof Projectile) this.projectile(p, e);
       else if (e instanceof Flagpole && !this.clear && overlaps(pb, e.body)) this.startClear(e, p);
       else if (e instanceof Axe && overlaps(pb, e.body)) {
+        // The axe ends the fight: the Bowser bar goes with it (0.4.47).
+        this.bossBar.axe();
         if (!this.unmaskAtAxe(e, p)) this.startBossClear(e, p);
       }
       if (p.dead || this.clear || this.bossClear || this.unmask) return;
@@ -2912,6 +2975,16 @@ export class World {
   }
 
   /**
+   * The villain costume fake Bowser `b` wears (0.4.47, roadmap #31): the castle's world (2-7) in
+   * the campaign's castles 2-4 to 7-4 (those with the unmask scenes; World 1's fake wears the
+   * plain king suit), else 0.
+   */
+  costumeOf(b: Bowser): number {
+    const w = this.unmaskCastle(b) ? trueFormOf(this.state.world) : 0;
+    return w >= 2 && w <= 7 ? w : 0;
+  }
+
+  /**
    * Bowser `b` took a killing hit (Bowser.flipOut): in a castle with the unmask scenes his
    * disguise bursts, the creature drops onto the bridge dazed, and the hero jumps over it to the
    * axe (world/unmask.ts). True when the scene started (he stays, harmless, until the axe).
@@ -3026,7 +3099,10 @@ export class World {
       if (cut) this.audio.sfx('break');
     }
     for (const e of this.entities)
-      if (e instanceof Bowser || ((e instanceof WandPoof || e instanceof WandBreak) && e.alive))
+      if (
+        e instanceof Bowser ||
+        ((e instanceof WandPoof || e instanceof WandBreak || e instanceof CostumePile) && e.alive)
+      )
         e.update(this);
     // The axe drops the bridge's Bowser; a fake one elsewhere in the castle is left alone.
     const bowser = this.entities.find((e): e is Bowser => e instanceof Bowser && e.alive && !e.fake);

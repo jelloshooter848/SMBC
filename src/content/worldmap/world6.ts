@@ -34,7 +34,7 @@ export const WORLD_6: WorldMapPage = {
   label: 'WORLD 6',
   title: 'DRAGON VALLEY',
   theme: 'ninja',
-  music: 'map',
+  music: 'map-ninja',
   tiles: autoShore(SKETCH_6),
   nodes: worldNodes(
     6,

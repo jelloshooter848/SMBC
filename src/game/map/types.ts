@@ -22,7 +22,8 @@ export type MapTheme =
   | 'transylvania' // World 5 since 0.4.28: Simon's TRANSYLVANIA
   | 'ninja' // World 6 since 0.4.29: Ryu's DRAGON VALLEY
   | 'contra' // World 7 since 0.4.30: Bill's GALUGA ISLAND
-  | 'blaster'; // World 8 since 0.4.31: Sophia's BOWSER'S UNDERWORLD
+  | 'blaster' // World 8 since 0.4.31: Sophia's BOWSER'S UNDERWORLD
+  | 'kingdom'; // World 1 in campaign play since 0.4.48: the Mushroom Kingdom drawn from above
 
 /**
  * A page's id: 'smb-1'..'smb-8' (Super Mario Bros. worlds), 'hub' (the Warp Zone),
@@ -161,6 +162,18 @@ export interface MapActor {
   props?: Record<string, number | string>;
 }
 
+/**
+ * A landmark on a top-down page (theme 'kingdom'): a frame of the `kingdom` sheet with its top-left
+ * at (x, y) px. Flat ones (the plaza) lie under the roads; standing ones are drawn with the
+ * page's scenery, nearer ones (lower feet) over farther ones.
+ */
+export interface MapProp {
+  frame: string;
+  x: number;
+  y: number;
+  flat?: boolean;
+}
+
 export interface WorldMapPage {
   id: PageId;
   group: PageGroup;
@@ -177,6 +190,8 @@ export interface WorldMapPage {
   paths: MapPath[];
   exits: WorldExit[];
   actors: MapActor[];
+  /** Landmarks of a top-down page (theme 'kingdom'), drawn from its sheet. */
+  props?: MapProp[];
 }
 
 /** The part of a save file the map rules read and write. */

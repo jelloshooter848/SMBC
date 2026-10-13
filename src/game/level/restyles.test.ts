@@ -362,7 +362,7 @@ describe('the restyles’ music', () => {
 });
 
 describe('castle and solid-floor theme families', () => {
-  it("the castle family is the castles, their Lost Levels skins, 5-4's hall, 2-4's palace, 3-4's fortress, 4-4's Tourian, 6-4's demon temple and 7-4's alien lair", () => {
+  it("the castle family is the castles, their Lost Levels skins, 5-4's hall, 2-4's palace, 3-4's fortress, 4-4's Tourian, 6-4's demon temple, 7-4's alien lair and 1-4's keep", () => {
     expect(THEMES.filter(isCastleTheme)).toEqual([
       'castle',
       'castle-overworld',
@@ -373,6 +373,8 @@ describe('castle and solid-floor theme families', () => {
       'tourian-lair',
       'ng-temple',
       'contra-lair',
+      // World 1 as the Mushroom Kingdom (0.4.48): 1-4's keep.
+      'kingdom-keep',
     ]);
   });
 
@@ -400,7 +402,9 @@ describe('castle and solid-floor theme families', () => {
           t === 'contra-lair' ||
           t === 'contra-base' ||
           // World 8 (0.4.31): the coin rooms (Jason's dungeon) the underground
-          t === 'bm-vault',
+          t === 'bm-vault' ||
+          // World 1 (0.4.48): 1-4's keep is a castle
+          t === 'kingdom-keep',
       );
     expect(hasSolidFloors('castlevania')).toBe(true);
     expect(hasSolidFloors('brinstar')).toBe(true);

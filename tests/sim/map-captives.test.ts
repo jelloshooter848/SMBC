@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapPage } from '@content/worldmap';
+import { mapPage, pageLook } from '@content/worldmap';
 import { HIDING_SAID, WorldMapScene } from '@game/scenes/world-map';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import type { MapNode, WorldMapPage } from '@game/map/types';
@@ -50,7 +50,7 @@ const CASES: Case[] = [
   {
     hero: 'luigi',
     colour: 'mario@luigi',
-    shade: 'mario@luigi~shade-grass',
+    shade: 'mario@luigi~shade-kingdom', // World 1 from above (0.4.48)
     page: 'smb-1',
     node: '1-1',
     before: { cleared: ['1-0'], position: { page: 'smb-1', node: '1-1' } },
@@ -109,14 +109,17 @@ function onMap(over: Partial<SaveFile>, dev = false): { h: H; map: WorldMapScene
   return { h, map };
 }
 
+/** Node `id` of `page` as campaign play shows it (World 1 from above since 0.4.48). */
 const nodeOf = (page: string, id: string) =>
-  (mapPage(page) as WorldMapPage).nodes.find((n) => n.id === id) as MapNode;
+  (pageLook(mapPage(page), true) as WorldMapPage).nodes.find((n) => n.id === id) as MapNode;
 
 /** The sprites drawn this frame for case `c`: its node's dot, and the hero in colour or shade. */
 function hintSprites(map: WorldMapScene, c: Case) {
   const { sprites, texts } = draw(map);
   const n = nodeOf(c.page, c.node);
-  const nodeAt = sprites.findIndex((s) => s.x === n.x * 16 && s.y === n.y * 16 && /^map-node/.test(s.frame));
+  const nodeAt = sprites.findIndex(
+    (s) => s.x === n.x * 16 && s.y === n.y * 16 && /^(map-)?node-/.test(s.frame),
+  );
   const shade = sprites.findIndex((s) => s.key === c.shade);
   // The trophy: the hero in colour, not the player's own marker (the player is Mario).
   const trophy = sprites.findIndex((s) => s.key === c.colour);
@@ -182,7 +185,7 @@ describe('map hint for hidden heroes: the three stages', () => {
     const { h, map } = onMap({ cleared: ['1-0', '1-1'], position: { page: 'smb-1', node: '1-1' } });
     expect(h.said.some((t) => t.includes(HIDING))).toBe(true);
     h.said.length = 0;
-    h.tap('up'); // 1-1 → 1-2
+    h.tap('down'); // 1-1 → 1-2 (World 1 from above, 0.4.48: the road leaves 1-1 south)
     h.until(() => map.node === '1-2' && map.hintLine === '' && h.said.length > 0, 300);
     expect(h.said.join(' ')).not.toMatch(/hiding|toad:/i);
     // Back: said again on arrival.
@@ -255,7 +258,8 @@ describe('the trophy reads as a statue, not a second player (owner note 13)', ()
     const statue = sprites.find((s) => s.key === 'mario@luigi')!;
     expect(statue.scale).toBe(TROPHY_SCALE);
     expect(TROPHY_SCALE).toBe(0.5);
-    const player = sprites.find((s) => s.key === 'mario@mario')!;
+    // (World 1 from above draws the player from above too: td-mario, 0.4.48.)
+    const player = sprites.find((s) => s.key === 'mario@mario' || s.key.startsWith('td-mario'))!;
     expect(player.scale).toBe(1);
     // The pedestal: stone rects right under the statue's feet (Luigi's 16 px portrait at half: 8).
     const feet = statue.y + 8;
@@ -272,7 +276,8 @@ describe('the trophy reads as a statue, not a second player (owner note 13)', ()
   it("the statue and its pedestal stay clear of the player's marker", () => {
     const { map } = onMap(freedFile);
     const { sprites, rects } = frame(map);
-    const player = sprites.find((s) => s.key === 'mario@mario')!;
+    // (World 1 from above draws the player from above too: td-mario, 0.4.48.)
+    const player = sprites.find((s) => s.key === 'mario@mario' || s.key.startsWith('td-mario'))!;
     const stone = rects.filter((b) => (PEDESTAL_STONE as readonly string[]).includes(b.c));
     const statue = sprites.find((s) => s.key === 'mario@luigi')!;
     const boxes = [...stone, { x: statue.x - 1, y: statue.y - 1, w: 10, h: 10 }];
@@ -424,7 +429,7 @@ describe('map hint: shimmer and reduce flashing', () => {
     const frames = 720;
     for (let i = 0; i < frames; i++) {
       h.step();
-      if (draw(map).sprites.some((s) => s.key === 'mario@luigi~shade-grass-glow')) glow++;
+      if (draw(map).sprites.some((s) => s.key === 'mario@luigi~shade-kingdom-glow')) glow++;
     }
     expect(glow).toBeGreaterThan(0);
     expect(glow).toBeLessThan(frames / 4);
@@ -433,7 +438,7 @@ describe('map hint: shimmer and reduce flashing', () => {
   it('with reduce flashing there is no shimmer', () => {
     const { h, map } = onMap(cleared);
     h.game.ctx.reduceFlashing = true;
-    expect(keysOver(h, map, 720)).toEqual(new Set(['mario@luigi~shade-grass']));
+    expect(keysOver(h, map, 720)).toEqual(new Set(['mario@luigi~shade-kingdom']));
   });
 });
 

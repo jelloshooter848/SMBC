@@ -35,7 +35,7 @@ export const WORLD_7: WorldMapPage = {
   label: 'WORLD 7',
   title: 'GALUGA ISLAND',
   theme: 'contra',
-  music: 'map',
+  music: 'map-contra',
   tiles: autoShore(SKETCH_7),
   nodes: worldNodes(
     7,

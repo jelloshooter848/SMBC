@@ -7,8 +7,8 @@ import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { ControlScheme } from '@game/scenes/game';
 import { LevelScene } from '@game/scenes/level';
 import { CardScene } from '@game/scenes/message';
-import { demoVariant, DEMO_H, type DemoVariant } from '@game/tutorial/demo-panel';
-import { RUN_CLIP_FRAMES, RUN_DEMO } from '@game/tutorial/demos';
+import { demoVariant, drawDemoPanel, DEMO_H, type DemoVariant } from '@game/tutorial/demo-panel';
+import { BOOMERANG_UP_DEMO, RUN_CLIP_FRAMES, RUN_DEMO } from '@game/tutorial/demos';
 import { MARIO_LESSONS } from '@game/tutorial/mario-1-0';
 import { TIP_LOCK_FRAMES } from '@game/tutorial/tips';
 import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
@@ -189,5 +189,22 @@ describe('the RUN demo panel', () => {
     expect(level(h).tutorial?.lesson?.id).toBe('sprint');
     expect(tipHeld(h)).toBe(false);
     expect(level(h).tutorial?.demo).toBeNull();
+  });
+});
+
+describe("Link's boomerang-up demo on touch (0.4.46 review)", () => {
+  it("names the button as it reads in play (BOOMERANG), never TOOL (the TOOLS button's look-alike)", () => {
+    const h = makeGame();
+    Object.assign(h.game.deps, {
+      settings: defaultSettings(),
+      controlScheme: () => 'touch' as ControlScheme,
+    });
+    const seen = new Set<string>();
+    for (let t = 0; t < BOOMERANG_UP_DEMO.length('touch'); t += 8) {
+      const d = draw({ render: (r) => drawDemoPanel(r, h.game, BOOMERANG_UP_DEMO, t, 8, 40, 240) });
+      for (const s of d.texts) seen.add(s.str);
+    }
+    expect([...seen]).toContain('BOOMERANG');
+    expect([...seen]).not.toContain('TOOL');
   });
 });

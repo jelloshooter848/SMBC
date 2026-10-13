@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { View } from '../entities/entity';
+import { KEEP_WINDOW_PERIOD, KINGDOM_HORIZON } from '@content/sprites/kingdom-level';
 
 /*
  * Backdrops painted behind a theme's level, in screen space before the decor and the tiles (World
@@ -53,6 +54,11 @@ import type { View } from '../entities/entity';
  *   - `bm-techno` (8-2): the techno castle's machine towers at half the camera's speed.
  *   - `bm-ice` (8-3): ice spires at a quarter of the camera's speed.
  *   - `bm-vault` (the coin rooms): the dungeon wall from below the HUD's band down, with the level.
+ * - World 1 as the Mushroom Kingdom (0.4.48; the `kingdom-level` sheet); nothing in these blinks:
+ *   - `kingdom` (1-0, 1-1, 1-3): a pale horizon band over the ground and far hills with Peach's Castle
+ *     on one at a quarter of the camera's speed, standing on GATE_BOTTOM.
+ *   - `kingdom-keep` (1-4): the keep's block wall from below the HUD's band down, with the level, a
+ *     window onto the night and a Bowser banner every KEEP_WINDOW_PERIOD px, iron sconces.
  */
 
 /** The black band left at the top for the HUD (a vampire-hunting stage keeps its HUD on black). */
@@ -296,6 +302,27 @@ function bmVault(r: Renderer, view: View): void {
   wall64(r, view, 'decor-bm-vault', 'bmv-wall');
 }
 
+/** The horizon band's height over the ground (the far hills stand in it). */
+export const HORIZON_H = 58;
+
+function kingdomHills(r: Renderer, view: View): void {
+  if (!view.assets.has('kingdom-level')) return;
+  const sheet = view.assets.sheet('kingdom-level');
+  const f = sheet.frames.get('far-hills');
+  if (!f) return;
+  r.rect(0, GATE_BOTTOM - HORIZON_H, SCREEN_W, HORIZON_H, KINGDOM_HORIZON);
+  for (let x = -wrap(view.camX >> 2, f.w); x < SCREEN_W; x += f.w)
+    r.sprite(sheet, 'far-hills', x, GATE_BOTTOM - f.h);
+}
+
+function kingdomKeep(r: Renderer, view: View): void {
+  if (!view.assets.has('kingdom-level')) return;
+  const sheet = view.assets.sheet('kingdom-level');
+  if (!sheet.frames.has('keep-wall')) return;
+  for (let x = -wrap(view.camX, KEEP_WINDOW_PERIOD); x < SCREEN_W; x += KEEP_WINDOW_PERIOD)
+    r.sprite(sheet, 'keep-wall', x, HALL_TOP);
+}
+
 const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   castlevania: castleHall,
   'ninja-city': citySkyline,
@@ -325,6 +352,9 @@ const BACKDROPS: Readonly<Record<string, (r: Renderer, view: View) => void>> = {
   'bm-techno': bmTechno,
   'bm-ice': bmIce,
   'bm-vault': bmVault,
+  // World 1 as the Mushroom Kingdom (0.4.48).
+  kingdom: kingdomHills,
+  'kingdom-keep': kingdomKeep,
 };
 
 /** Whether a theme paints a backdrop. */

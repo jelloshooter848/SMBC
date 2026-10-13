@@ -139,6 +139,11 @@ export interface SaveFile extends MapProgress {
    * (beats.ts seedSeen). No format change.
    */
   story?: string[];
+  /**
+   * The one-time explainers this file has shown (0.4.46, tutorial/explainers.ts: '<hero>:<pickup
+   * or item>'), each once. Missing in older files: none shown. No format change.
+   */
+  explained?: string[];
 }
 
 export function saveKey(slot: SaveSlot): string {
@@ -301,6 +306,7 @@ export function newSave(
     ...bonusSaveFields(newBonusState(character)),
     heroKits: {},
     wallet: false,
+    explained: [],
   };
 }
 
@@ -507,6 +513,10 @@ export function migrateSave(
     wallet,
     // The seen story beats: kept only when well formed (else seeded on load, Game.openFile).
     ...(isStrings(stored.story) ? { story: [...new Set(stored.story)] } : {}),
+    // The explainers shown: strings only, each once (missing: none).
+    explained: Array.isArray(stored.explained)
+      ? [...new Set(stored.explained.filter((x): x is string => typeof x === 'string'))]
+      : [],
   };
 }
 

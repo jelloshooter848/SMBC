@@ -30,7 +30,7 @@ import {
 } from './stage-prompts';
 import { MARIO_TUTORIAL } from './mario-1-0';
 import { giveQuietly, itemName, ownsItem, refillHealth } from './kit';
-import { DEMO_H, demoVariant, drawDemoPanel, type LessonDemo } from './demo-panel';
+import { demoHeight, demoVariant, drawDemoPanel, type LessonDemo } from './demo-panel';
 
 /*
  * Stage tutorials (0.5.0): a level whose play is a list of lessons (stage-prompts.ts), shown one at
@@ -330,8 +330,10 @@ export class TutorialDirector {
     if (!l) return;
     const world = this.scene.world;
     markLessonUp(world);
-    if (this.scene.restartAt) this.giveFloor();
-    for (const p of world.players) refillHealth(p);
+    if (!l.keepKit) {
+      if (this.scene.restartAt) this.giveFloor();
+      for (const p of world.players) refillHealth(p);
+    }
     l.enter?.(world);
   }
 
@@ -660,6 +662,7 @@ export class TutorialDirector {
     const map = world.map;
     for (const l of t.lessons.slice(t.index)) {
       if (l.brick && spentTile(map.get(l.brick.x, l.brick.y))) return l;
+      if (l.spentWhen?.(world)) return l;
       const items = lessonItems(l);
       const blocks = lessonBlocks(l);
       for (let i = 0; i < blocks.length; i++) {
@@ -704,7 +707,11 @@ export class TutorialDirector {
     if (!this.tracker.lessons[i] || !this.game.tips.wouldHold(this.tipKey(i))) return true;
     const p = world.players[0];
     const steady =
-      !p || p.dead || p.out || p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging;
+      !p ||
+      p.dead ||
+      p.out ||
+      // A grow or shrink under way plays out first (0.4.46: the hit's shrink shows, not a frozen flicker).
+      ((p.body.onGround || !!p.vine || !!p.stairs || p.inWater || p.clinging) && !p.transition);
     if (steady || ++this.airWait > TIP_LAND_WAIT) {
       this.airWait = 0;
       return true;
@@ -871,7 +878,10 @@ export class TutorialDirector {
     const demo = this.demo;
     if (demo) {
       const top = box.y === PROMPT_BOX_Y;
-      const py = top ? box.y + box.h + 4 : box.y - DEMO_H - 4;
+      // A lesson whose box is at the bottom to leave its mark in view (boxLow) has its picture up
+      // under the HUD instead, clear of the hero on the ground.
+      const low = !top && !!this.tracker.lessons[this.shown]?.boxLow;
+      const py = top ? box.y + box.h + 4 : low ? PROMPT_BOX_Y : box.y - demoHeight(demo) - 4;
       drawDemoPanel(r, this.game, demo, this.game.tips.heldFrames, box.x, py, box.w);
     }
   }
@@ -891,6 +901,9 @@ export class TutorialDirector {
     extra: number;
   } | null {
     if (this.busy || !this.run.greeted) return null;
+    // Another box holds the game (a pickup's explainer, 0.4.46): this one waits out of its way.
+    const holder = this.game.tips.holder;
+    if (holder && holder !== this) return null;
     const lines = this.lines();
     if (!lines.length) return null;
     const world = this.scene.world;
@@ -911,7 +924,8 @@ export class TutorialDirector {
     const high = world.players.some(
       (p) => !p.dead && !p.out && Math.round(p.body.y / px(1)) - camY < PROMPT_BOX_Y + h + 8,
     );
-    const y = high ? SCREEN_H - h - 6 : PROMPT_BOX_Y;
+    // A lesson whose mark is up there (Mega Man's cloud) has its box at the bottom too.
+    const y = high || l?.boxLow ? SCREEN_H - h - 6 : PROMPT_BOX_Y;
     return { rows, x, y, w: boxW, h, meter, lights, extra: blank * 10 };
   }
 

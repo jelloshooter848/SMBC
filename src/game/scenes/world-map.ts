@@ -4,8 +4,18 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
-import { MAP_PAGES, mapPage } from '@content/worldmap';
+import { MAP_PAGES, mapPage, pageLook } from '@content/worldmap';
 import { drawMapActor, drawMapTile, mapSky } from '@content/worldmap/render';
+import {
+  drawKingdomGround,
+  drawKingdomRoads,
+  drawKingdomScenery,
+  isKingdomPage,
+  kingdomNodeFrame,
+  kingdomRoadCells,
+  type RoadCell,
+} from '@content/worldmap/kingdom-render';
+import { overheadLook } from '../town/hero';
 import type { MapActor, MapNode, MapProgress, PageGroup, PageId, WorldMapPage } from '../map/types';
 import {
   exitId,
@@ -239,6 +249,8 @@ interface PageView {
   /** `sheet`: the frame's sheet when it is not the items sheet (the bonus spot's SMB3 icon). */
   nodes: { node: MapNode; frame: string; sheet?: string }[];
   heroes: HeroMark[];
+  /** A top-down page's road tiles (isKingdomPage), drawn in place of the dots; else null. */
+  roads: RoadCell[] | null;
 }
 
 /** The hero's frames on the map: standing, and walking when the sheet has them. */
@@ -295,6 +307,22 @@ const EMPTY_PAGE: WorldMapPage = {
   actors: [],
 };
 
+/** The edge between a page drawn from above and one drawn side-on, sliding: its shade each side. */
+const SEAM_SHADES: readonly (readonly [number, number, string])[] = [
+  [-4, 3, 'rgba(0,0,0,0.18)'],
+  [-1, 2, 'rgba(0,0,0,0.55)'],
+  [1, 3, 'rgba(0,0,0,0.3)'],
+  [4, 3, 'rgba(0,0,0,0.12)'],
+];
+
+/**
+ * The seam where a top-down page (World 1 in the campaign) meets a side-on one in a slide, at
+ * screen x `x`: a soft shadow, so the change of view reads as turning to the next page of the map.
+ */
+function drawPageSeam(r: Renderer, x: number): void {
+  for (const [dx, w, c] of SEAM_SHADES) r.rect(x + dx, MAP_HEADER_H, w, 240 - MAP_HEADER_H, c);
+}
+
 /** Dot centres along a tile path: every tile centre and half way between. */
 function pathDots(points: [number, number][], skipFirst: boolean, skipLast: boolean): number[] {
   const out: number[] = [];
@@ -320,7 +348,9 @@ function furthestOpenPage(progress: MapProgress, unlockAll: boolean): PageId {
 
 /** -1 / 1: whether `to` comes before or after `from` in the registry (play order). */
 function pageOrder(from: WorldMapPage, to: WorldMapPage): -1 | 1 {
-  return MAP_PAGES.indexOf(from) < MAP_PAGES.indexOf(to) ? 1 : -1;
+  // By id: a page's campaign look (pageLook) stands in the registry's place.
+  const at = (p: WorldMapPage) => MAP_PAGES.findIndex((q) => q.id === p.id);
+  return at(from) < at(to) ? 1 : -1;
 }
 
 /**
@@ -337,6 +367,8 @@ export class WorldMapScene implements Scene {
   hx = 0;
   hy = 0;
   private facingLeft = false;
+  /** The way the hero last walked (a top-down page draws him from above, facing it). */
+  private facing: Dir = 'down';
   private t = 0;
   private walkPts: [number, number][] = [];
   private walkStep: MapStep | null = null;
@@ -407,7 +439,8 @@ export class WorldMapScene implements Scene {
     // A file left on "Unlock all" (dev mode since turned off) may stand somewhere locked.
     const recheck = game.devUnlockAll;
     if (recheck && !(isPageOpen(prog, id, all) && mapPage(id))) id = furthestOpenPage(prog, all);
-    this.page = mapPage(id) ?? mapPage(FIRST_PAGE) ?? MAP_PAGES[0] ?? EMPTY_PAGE;
+    this.page =
+      pageLook(mapPage(id) ?? mapPage(FIRST_PAGE) ?? MAP_PAGES[0], game.campaign !== null) ?? EMPTY_PAGE;
     const pos = prog.position;
     let here = pos.page === this.page.id ? this.nodeById(pos.node) : undefined;
     if (recheck && here && !isOpen(prog, this.page, here.id, all)) here = undefined;
@@ -417,6 +450,11 @@ export class WorldMapScene implements Scene {
 
   private get progress() {
     return this.game.mapProgress;
+  }
+
+  /** Page `id` as this play shows it (campaign play: World 1 from above, pageLook). */
+  private pageById(id: PageId): WorldMapPage | undefined {
+    return pageLook(mapPage(id), this.game.campaign !== null);
   }
 
   /** Developer "Unlock all" in effect (the file's flag, while dev mode is on). */
@@ -432,7 +470,7 @@ export class WorldMapScene implements Scene {
     this.takeReveal();
     if (this.startCrash()) return;
     this.announceHere();
-    const from = this.opts.slideFrom === undefined ? undefined : mapPage(this.opts.slideFrom);
+    const from = this.opts.slideFrom === undefined ? undefined : this.pageById(this.opts.slideFrom);
     if (from && from !== this.page) {
       // A warp: slide in from the page warped from (fade in from another group); the reveal
       // follows (updateSlide / updateFade).
@@ -741,7 +779,22 @@ export class WorldMapScene implements Scene {
       // Every node may have a hero beside it: a shown node's silhouette or trophy, and with the
       // crystal ball a silhouette by a node not reached yet (heroMarks).
       heroes: page.nodes.flatMap((node) => this.heroMarks(page, node)),
+      roads: null,
     };
+    if (isKingdomPage(page))
+      v.roads = kingdomRoadCells(page, [
+        ...paths.map((p) => ({
+          id: pathId(p),
+          points: p.points,
+          dots: pathDots(p.points, true, true).length / 2,
+        })),
+        ...exits.map((e) => ({
+          id: exitId(e),
+          points: e.points,
+          dots: pathDots(e.points, true, false).length / 2,
+          side: e.side,
+        })),
+      ]);
     this.views.set(page, v);
     return v;
   }
@@ -896,11 +949,13 @@ export class WorldMapScene implements Scene {
 
   /**
    * TALK (or JUMP) on a start node with a local: the welcome again, in the box at the top (the
-   * after-freed page once the world's hero is freed).
+   * after-freed page once the world's hero is freed; 0.4.47: that hero playing hears its own page).
    */
   private talkToLocal(): void {
     const game = this.game;
-    const pages = welcomePages(this.page.id, game.freed);
+    // 0.4.47: the world's own hero in the party hears the local's own-hero page.
+    const playing = [game.state.character.id, ...(game.state.character2 ? [game.state.character2.id] : [])];
+    const pages = welcomePages(this.page.id, game.freed, playing);
     if (!pages.length) return;
     const guide = new ToadGuide(
       [{ ids: [], pages: [...pages], walk: false }],
@@ -1162,12 +1217,15 @@ export class WorldMapScene implements Scene {
       }
       return;
     }
+    // A diagonal (the touch pad holds two directions at once between its zones) takes whichever
+    // of them has a road; only when none has does it bump.
+    let bumped = false;
     for (const d of DIRS) {
       if (!input.pressed(d)) continue;
       const step = here ? nextStep(this.page, this.progress, this.node, d, MAP_PAGES, this.unlockAll) : null;
       if (!step) {
-        this.game.ctx.audio.sfx('bump');
-        return;
+        bumped = true;
+        continue;
       }
       this.walkStep = step;
       this.walkPts = step.points.map(([x, y]): [number, number] => [x * 16, y * 16]);
@@ -1181,6 +1239,7 @@ export class WorldMapScene implements Scene {
       this.mode = 'walk';
       return;
     }
+    if (bumped) this.game.ctx.audio.sfx('bump');
   }
 
   private updateWalk(): void {
@@ -1193,6 +1252,7 @@ export class WorldMapScene implements Scene {
     const dx = target[0] - this.hx;
     const dy = target[1] - this.hy;
     if (dx) this.facingLeft = dx < 0;
+    if (dx || dy) this.facing = dx ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
     this.hx += Math.sign(dx) * Math.min(MAP_WALK_SPEED, Math.abs(dx));
     this.hy += Math.sign(dy) * Math.min(MAP_WALK_SPEED, Math.abs(dy));
     if (this.hx !== target[0] || this.hy !== target[1]) return;
@@ -1204,7 +1264,7 @@ export class WorldMapScene implements Scene {
       return;
     }
     const toPage = step.kind === 'exit' ? step.exit.to : step.page;
-    const next = mapPage(toPage);
+    const next = this.pageById(toPage);
     if (!next || !isPageOpen(this.progress, toPage, this.unlockAll)) {
       this.mode = 'idle';
       this.placeHero();
@@ -1212,6 +1272,7 @@ export class WorldMapScene implements Scene {
     }
     const side = step.kind === 'exit' ? step.exit.side : null;
     const dir: -1 | 1 = step.kind === 'back' ? (this.hx < 128 ? -1 : 1) : side === 'left' ? -1 : 1;
+    this.fadeMusicTo(next, MAP_SLIDE_FRAMES);
     this.slide = {
       from: this.page,
       dir,
@@ -1223,6 +1284,15 @@ export class WorldMapScene implements Scene {
     this.guard = null;
     this.mode = 'slide';
     this.takeReveal(); // hidden while sliding in, drawn in on arrival
+  }
+
+  /**
+   * Leaving for page `next` over `frames`: when its song differs (each world has its own since
+   * 0.4.48), this page's fades out meanwhile, and `next`'s starts on arrival (updateSlide,
+   * updateFade), so the switch never cuts a note off.
+   */
+  private fadeMusicTo(next: WorldMapPage, frames: number): void {
+    if (next.music !== this.page.music) this.game.ctx.audio.fadeOutMusic?.(frames / 60);
   }
 
   private updateSlide(): void {
@@ -1250,7 +1320,7 @@ export class WorldMapScene implements Scene {
    * only through developer "Unlock all" travels without opening anything in the file.
    */
   private warp(n: MapNode): void {
-    const next = n.to === undefined ? undefined : mapPage(n.to);
+    const next = n.to === undefined ? undefined : this.pageById(n.to);
     if (!next) return;
     this.game.ctx.audio.sfx('coin');
     this.game.mapLastNode[this.page.id] = this.node;
@@ -1259,6 +1329,7 @@ export class WorldMapScene implements Scene {
     // the hero: the start instead.
     const target =
       n.toNode && isOpen(this.progress, next, n.toNode, this.unlockAll) ? n.toNode : startNode(next)?.id;
+    this.fadeMusicTo(next, MAP_FADE_FRAMES);
     this.fade = { from: this.page, t: 0, node: target ?? '' };
     this.page = next;
     this.views.clear();
@@ -1548,6 +1619,8 @@ export class WorldMapScene implements Scene {
       r.clear(mapSky(s.from));
       this.drawPage(r, s.from, -off, false);
       this.drawPage(r, this.page, s.dir * 256 - off, false);
+      // From above to side-on (World 1 in the campaign and World 2): the seam is a page's edge.
+      if (isKingdomPage(s.from) !== isKingdomPage(this.page)) drawPageSeam(r, s.dir > 0 ? 256 - off : -off);
     } else if (this.fade) {
       // First half: the page left darkens to black; second half: the new page comes up.
       const half = MAP_FADE_FRAMES / 2;
@@ -1582,10 +1655,19 @@ export class WorldMapScene implements Scene {
   private drawPage(r: Renderer, page: WorldMapPage, ox: number, hero: boolean): void {
     const assets = this.game.ctx.assets;
     if (ox !== 0) r.rect(ox, 0, 256, 240, mapSky(page));
-    const tiles = page.tiles;
-    for (let y = 0; y < tiles.length; y++) {
-      const row = tiles[y] as string;
-      for (let x = 0; x < 16; x++) drawMapTile(r, assets, page, row[x] ?? '.', ox + x * 16, y * 16, this.t);
+    const v = this.view(page);
+    const revealing = page === this.page && this.revealShown.size > 0;
+    if (v.roads) {
+      // From above (World 1 in campaign play): the ground, the roads as they open, the scenery.
+      drawKingdomGround(r, assets, page, ox, this.t);
+      drawKingdomRoads(r, assets, v.roads, ox, revealing ? this.revealShown : null);
+      drawKingdomScenery(r, assets, page, ox);
+    } else {
+      const tiles = page.tiles;
+      for (let y = 0; y < tiles.length; y++) {
+        const row = tiles[y] as string;
+        for (let x = 0; x < 16; x++) drawMapTile(r, assets, page, row[x] ?? '.', ox + x * 16, y * 16, this.t);
+      }
     }
     const actors = page.actors;
     const scratch = this.scratchActor;
@@ -1603,9 +1685,7 @@ export class WorldMapScene implements Scene {
       drawMapActor(r, assets, page, scratch, this.t);
     }
     const items = assets.sheet('items');
-    const v = this.view(page);
-    const revealing = page === this.page && this.revealShown.size > 0;
-    for (let i = 0; i < v.runs.length; i++) {
+    for (let i = 0; i < v.runs.length && !v.roads; i++) {
       const run = v.runs[i] as DotRun;
       const shown = revealing ? this.revealShown.get(run.id) : undefined;
       const n = shown === undefined ? run.dots.length : shown * 2;
@@ -1624,7 +1704,12 @@ export class WorldMapScene implements Scene {
         drawArenaPad(r, this.game, nv.node, ox, this.t);
         continue;
       }
-      r.sprite(nv.sheet ? assets.sheet(nv.sheet) : items, nv.frame, ox + nv.node.x * 16, nv.node.y * 16);
+      const sheet = nv.sheet ? assets.sheet(nv.sheet) : items;
+      // A marker bigger than its tile (Bowser's fort) stands on it, centred.
+      const f = sheet.frames.get(nv.frame);
+      const dx = f && f.w > 16 ? 8 - (f.w >> 1) : 0;
+      const dy = f && f.h > 16 ? 16 - f.h : 0;
+      r.sprite(sheet, nv.frame, ox + nv.node.x * 16 + dx, nv.node.y * 16 + dy);
     }
     for (let i = 0; i < v.heroes.length; i++) {
       const m = v.heroes[i] as HeroMark;
@@ -1666,6 +1751,11 @@ export class WorldMapScene implements Scene {
 
   private nodeFrame(page: WorldMapPage, n: MapNode): string {
     const cleared = isCleared(this.progress, page, n.id);
+    if (isKingdomPage(page)) {
+      const warpOpen = isWarpNode(n) && isWarpOpen(this.progress, n, this.unlockAll);
+      const f = kingdomNodeFrame(n.kind, { cleared, warpOpen, secret: hasSecretExit(n.level) });
+      if (f) return `kingdom:${f}`;
+    }
     if (isWarpNode(n)) return isWarpOpen(this.progress, n, this.unlockAll) ? 'map-warp' : 'map-warp-locked';
     switch (n.kind) {
       case 'start':
@@ -1776,8 +1866,33 @@ export class WorldMapScene implements Scene {
   private drawHeroes(r: Renderer, x = this.hx, y = this.hy): void {
     const s = this.game.state;
     // Player two a little behind and to the side.
-    if (s.character2) this.drawHero(r, s.character2, x - 7, y - 2);
+    if (s.character2) this.drawHero(r, s.character2, x - 7, y - 2, true);
     this.drawHero(r, s.character, x, y);
+  }
+
+  /**
+   * A hero from above on a top-down page (Kakariko's overhead sprites, town/hero.ts): facing the
+   * way he walks, toward the player while he stands, feet on the node. False without that art (the
+   * side-view walker stands in).
+   */
+  private drawOverhead(r: Renderer, c: CharacterDef, x: number, y: number, second: boolean): boolean {
+    const s = this.game.state;
+    const walking = this.mode === 'walk';
+    const step = (walking ? (this.t >> 3) & 1 : 0) as 0 | 1;
+    const look = overheadLook(
+      c,
+      second ? s.powerState2 : s.powerState,
+      second ? s.kit2 : s.kit,
+      walking ? this.facing : 'down',
+      step,
+    );
+    const assets = this.game.ctx.assets;
+    if (!assets.has(look.sheet)) return false;
+    const sheet = assets.sheet(look.sheet, look.palette);
+    const f = sheet.frames.get(look.frame);
+    if (!f) return false;
+    r.sprite(sheet, look.frame, Math.round(x + 8 - f.w / 2), Math.round(y + 11 - f.h), look.flip);
+    return true;
   }
 
   private framesFor(c: CharacterDef): HeroFrames {
@@ -1791,7 +1906,8 @@ export class WorldMapScene implements Scene {
     return f;
   }
 
-  private drawHero(r: Renderer, c: CharacterDef, x: number, y: number): void {
+  private drawHero(r: Renderer, c: CharacterDef, x: number, y: number, second = false): void {
+    if (isKingdomPage(this.page) && this.drawOverhead(r, c, x, y, second)) return;
     const sheet = this.game.ctx.assets.sheet(c.portrait.sheet, c.portrait.palette);
     const frames = this.framesFor(c);
     let frame = frames.idle;

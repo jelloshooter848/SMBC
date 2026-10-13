@@ -101,6 +101,8 @@ export interface PlayLog {
    * clung, climbed, swam) when each began (the bot presses OK through them).
    */
   holds: { lesson: string; ground: boolean }[];
+  /** The one-time pickup explainers that held the game (0.4.46): their ids, in order. */
+  explained: string[];
 }
 
 /**
@@ -115,7 +117,7 @@ export function playStage(
   stop: () => boolean,
   max = 7200,
 ): PlayLog {
-  const log: PlayLog = { frames: 0, cards: [], spent: [], holds: [], fills: new Set() };
+  const log: PlayLog = { frames: 0, cards: [], spent: [], holds: [], explained: [], fills: new Set() };
   // Records the screen-wide fills of a frame (reduce flashing is on in the harness).
   const rec: Renderer = Object.assign(new NullRenderer(), {
     clear(color: string): void {
@@ -159,6 +161,12 @@ export function playStage(
         log.holds.push({ lesson: stage.director.lesson?.id ?? '', ground });
       }
       checkBox(stage);
+      h.step(held % 24 === 0 ? ['jump'] : []);
+      continue;
+    }
+    // A pickup's first explainer holds it too (0.4.46): OK once the lock is over.
+    if (stage.explainers.frozen) {
+      if (held++ === 0) log.explained.push(stage.explainers.current?.id ?? '');
       h.step(held % 24 === 0 ? ['jump'] : []);
       continue;
     }

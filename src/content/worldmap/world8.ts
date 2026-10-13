@@ -36,7 +36,7 @@ export const WORLD_8: WorldMapPage = {
   label: 'WORLD 8',
   title: "BOWSER'S UNDERWORLD",
   theme: 'blaster',
-  music: 'map-bowser',
+  music: 'map-blaster',
   tiles: autoShore(SKETCH_8),
   nodes: worldNodes(
     8,

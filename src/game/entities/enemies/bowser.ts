@@ -6,6 +6,8 @@ import type { Theme } from '../../level/schema';
 import { Enemy } from './enemy';
 import type { View } from '../entity';
 import { drawSparkle, WandPoof, WAND_SPARKLE } from '../effects/wand-poof';
+import { CostumePile } from '../effects/costume-pile';
+import { costumeSaid } from '../../story/script';
 import { ENEMY_SCORES } from '../../rules/score';
 import type { World } from '../../world/world';
 import type { DamageSource } from '../../rules/damage';
@@ -33,6 +35,8 @@ const MAX_FLAMES = 2;
 const MAX_HAMMERS = 6;
 /** BowserFake.WALK_DISTANCE = TILE_SIZE * 5. */
 const FAKE_WALK = px(5 * 16);
+/** Hits from fire, buster or sword that beat him (Bowser.as). */
+export const BOWSER_HP = 5;
 /** Milliseconds to frames. */
 const ms = (n: number): number => Math.max(1, Math.round((n * 60) / 1000));
 /** FB_DEL_TMR (450 ms) and AFTER_FB_TMR (300 ms). */
@@ -132,6 +136,16 @@ export class Bowser extends Enemy {
   standing = 0;
   /** The true form standing was beaten with weapons: dazed, little stars over its head. */
   dazed = false;
+  /** His Bowser bar has come up (campaign; world/boss-bar.ts). */
+  private barStarted = false;
+  /** The hit points the screen reader last heard for his bar (-1: none yet). */
+  private barSaid = -1;
+  /**
+   * The villain costume he wears over the disguise (0.4.47, #31): the castle's world (2-7) in the
+   * campaign's castles 2-4 to 7-4 (World.costumeOf), 0 for none or once it has dropped.
+   */
+  costume = 0;
+  private costumeSet = false;
 
   constructor(
     tx: number,
@@ -142,7 +156,7 @@ export class Bowser extends Enemy {
   ) {
     super(px(tx * 16 + 2), px((ty + 1) * 16 - 30), 28, 30);
     this.feetY = this.body.y + this.body.h;
-    this.hp = 5;
+    this.hp = BOWSER_HP;
     this.scores = ENEMY_SCORES.BOWSER;
     this.spriteOffsetX = 2;
     this.spriteOffsetY = 2;
@@ -173,8 +187,43 @@ export class Bowser extends Enemy {
     return this.attack !== 'fire';
   }
 
-  protected override onHpHit(_src: DamageSource, _world: World): void {
+  protected override onHpHit(src: DamageSource, world: World): void {
     this.mouthOpen = 10;
+    this.barHit(world, src, false);
+  }
+
+  /**
+   * The campaign's Bowser bar (world/boss-bar.ts, 0.4.47): a hit from `src` takes its notches
+   * (`killed`: the last one, by a weapon; the emptied bar shows a moment), said for the screen
+   * reader.
+   */
+  private barHit(world: World, src: DamageSource, killed: boolean): void {
+    if (!world.storyMode) return;
+    const before = Math.min(BOWSER_HP, this.hp + src.amount);
+    if (killed) world.bossBar.beaten(this, BOWSER_HP, before);
+    else world.bossBar.hit(this, BOWSER_HP, before, this.hp);
+    this.barStarted = true;
+    this.barSaid = Math.max(0, this.hp);
+    world.events.push({ type: 'say', text: `Bowser: ${this.barSaid} of ${BOWSER_HP}.` });
+  }
+
+  /** Campaign: on screen and fighting, his bar comes up (once; world/boss-bar.ts). */
+  private showBar(world: World): void {
+    if (!world.storyMode) return;
+    // Off screen again (the hero turned back, or a maze castle looped him round): the bar goes,
+    // and comes back when he does.
+    if (this.barStarted && !this.onScreen(world)) {
+      world.bossBar.end(this);
+      this.barStarted = false;
+      return;
+    }
+    if (this.barStarted || !this.onScreen(world)) return;
+    if (!world.bossBar.start(this, BOWSER_HP, this.hp)) return;
+    this.barStarted = true;
+    // Back in view at the health already said (he walks in and out at the screen's edge): no repeat.
+    if (this.hp === this.barSaid) return;
+    this.barSaid = this.hp;
+    world.events.push({ type: 'say', text: `Bowser's health: ${this.hp} of ${BOWSER_HP}.` });
   }
 
   /**
@@ -186,7 +235,10 @@ export class Bowser extends Enemy {
    * end, so they need it. In a castle the true forms take the grey-outlined `bowser-true-form`
    * palette so they show on the black. In the campaign a fake's disguise bursts first (unmask).
    */
-  protected override flipOut(_src: DamageSource, world: World): void {
+  protected override flipOut(src: DamageSource, world: World): void {
+    // His bar: a weapon's last hit empties it (it shows empty a moment); the axe takes it away.
+    if (src.kind === 'axe') world.bossBar.end(this);
+    else this.barHit(world, src, true);
     // The campaign's castles 1-4 to 7-4: the disguise bursts and the creature drops onto the
     // bridge, dazed, while the hero jumps over it to the axe (world/unmask.ts).
     if (world.unmaskOnKill(this)) return;
@@ -222,6 +274,7 @@ export class Bowser extends Enemy {
     this.stompable = false;
     this.body.vx = 0;
     if (!world) return;
+    world.bossBar.end(this);
     // Already unmasked (the castle's unmask scene): no second puff.
     const n = this.standing || this.unmask(world);
     this.standing = 0;
@@ -245,6 +298,13 @@ export class Bowser extends Enemy {
     const n = world.storyMode ? trueFormOf(world.state.world) : 0;
     if (!n) return 0;
     const b = this.body;
+    // 0.4.47 (#31): his villain costume drops in a pile where he stood, behind the true form.
+    if (this.costume) {
+      const at = CostumePile.at(toPx(b.x) - this.spriteOffsetX, toPx(b.y) - this.spriteOffsetY, this.facing);
+      world.spawn(new CostumePile(at.x, at.y, this.costume, this.facing > 0));
+      world.events.push({ type: 'say', text: costumeSaid(this.costume, false) });
+      this.costume = 0;
+    }
     world.spawn(new WandPoof(b.x + (b.w >> 1), b.y + (b.h >> 1)));
     world.audio.sfx('poof');
     return n;
@@ -256,6 +316,8 @@ export class Bowser extends Enemy {
    * form (0: none, nothing happens).
    */
   burst(world: World, dazed: boolean): number {
+    // Burst at the axe (not beaten): his bar goes at once.
+    if (!dazed) world.bossBar.end(this);
     const n = this.unmask(world);
     if (!n) return 0;
     this.standing = n;
@@ -341,6 +403,9 @@ export class Bowser extends Enemy {
       return;
     }
     super.render(r, view);
+    // 0.4.47 (#31): the world's villain costume over him (castles 2-4 to 7-4), off while the tell
+    // shows the true form (above).
+    if (this.costume) r.sprite(assets.sheet('costumes'), `costume-${this.costume}`, x, y, flip);
     // Reduce flashing: no flicker; the true form's bright outline held over him for the window.
     if (view.reduceFlashing && this.tellWindow)
       r.sprite(
@@ -396,6 +461,11 @@ export class Bowser extends Enemy {
   update(world: World): void {
     const b = this.body;
     this.disguise = world.storyMode ? trueFormOf(world.state.world) : 0;
+    // The villain costume he wears (0.4.47; worn until his disguise bursts, never once it has).
+    if (!this.costumeSet) {
+      this.costume = world.costumeOf(this);
+      this.costumeSet = true;
+    }
     if (this.dead) {
       b.vy += 0x00400;
       b.y += velToSub(b.vy);
@@ -411,6 +481,7 @@ export class Bowser extends Enemy {
     if (world.bossClear) return;
     this.age++;
     if (!this.started) this.start(world);
+    this.showBar(world);
 
     // Timers (Bowser.as jumpTmrLsr, fbTmrLsr, fbDelTmrLsr, throwHammerTmrHandler).
     if (this.jumpTmr > 0 && --this.jumpTmr === 0 && b.onGround && !this.chasing) {
@@ -450,6 +521,10 @@ export class Bowser extends Enemy {
     // Campaign: fallen off the level (the lava, a pit), he is gone; the hero's line comes at the
     // axe (World.bowserFell, 0.4.43). Classic play keeps the original's endless fall.
     if (world.storyMode && this.isBelowLevel()) {
+      world.bossBar.end(this);
+      // His costume goes down with him (no pile to see): said all the same.
+      if (this.costume) world.events.push({ type: 'say', text: costumeSaid(this.costume, true) });
+      this.costume = 0;
       world.bowserFell(this);
       this.destroy();
       return;
