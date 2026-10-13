@@ -31,6 +31,8 @@ import type { WorldMapPage } from '@game/map/types';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ALL_STORY } from './story-seen';
+import { resolvePalette } from '@engine/gfx/palette';
+import { shadeTheme } from '@content/worldmap/above-render';
 
 // 0.4.50: Worlds 2 and 3 drawn from above in campaign play (world2-hyrule.ts, world3-megacity.ts).
 // The pages keep World 2 and 3's node and road ids, so a file anywhere on them loads where it was,
@@ -49,7 +51,7 @@ beforeEach(() => {
 
 /** Records the sprite frames drawn, by sheet, and the seam's shades. */
 class FrameRenderer implements Renderer {
-  frames: { sheet: string; frame: string; x: number; y: number }[] = [];
+  frames: { sheet: string; frame: string; x: number; y: number; flip: boolean }[] = [];
   rects = 0;
   clear(): void {}
   rect(_x: number, y: number, _w: number, h: number): void {
@@ -59,8 +61,8 @@ class FrameRenderer implements Renderer {
   text(): void {}
   debugText(): void {}
   line(): void {}
-  sprite(s: SpriteSheet, frame: string, x: number, y: number): void {
-    this.frames.push({ sheet: s.id, frame, x, y });
+  sprite(s: SpriteSheet, frame: string, x: number, y: number, flip?: boolean): void {
+    this.frames.push({ sheet: s.id, frame, x, y, flip: !!flip });
   }
 }
 
@@ -383,5 +385,91 @@ describe('a level’s shown label (the campaign order, level-order.md)', () => {
     const node = { id: '4-2', kind: 'level', level: '4-2', shown: '4-1', x: 0, y: 0 } as const;
     expect(mapHeaderLabel({ ...WORLD_2, label: 'WORLD 4' }, node)).toBe('WORLD 4-1');
     expect(mapHeaderLabel(WORLD_2_HYRULE, WORLD_2_HYRULE.nodes[1] ?? null)).toBe('WORLD 2-1');
+  });
+});
+
+describe('the hidden heroes from above (silhouettes beside their nodes)', () => {
+  const CASES = [
+    [
+      'Link on Hyrule',
+      'smb-2',
+      '2-1',
+      'link',
+      [...ALL_W1, ...ALL_W2],
+      ['bonus-2', 'kakariko'],
+      'hyrule-above',
+    ],
+    [
+      'Mega Man on Mega City',
+      'smb-3',
+      '3-1',
+      'megaman',
+      [...ALL_W1, ...ALL_W2, ...ALL_W3],
+      ['bonus-3'],
+      'megacity-above',
+    ],
+  ] as const;
+
+  it.each(CASES)(
+    '%s: a faint shadow in the ground’s own shade, clear of every road',
+    (_, pageId, node, hero, cleared, secrets, sheet) => {
+      const h = makeGame();
+      open(h, {
+        cleared: [...cleared],
+        secrets: [...secrets],
+        freed: FREED.filter((f) => f !== hero),
+        pages: ['smb-1', 'smb-2', 'smb-3', 'smb-4'],
+        position: { page: pageId, node },
+        bonusOpen: true,
+      });
+      h.step();
+      const marks = h.r.frames.filter((f) => f.sheet.includes('~shade-'));
+      expect(marks.length, 'a silhouette').toBe(1);
+      const mark = marks[0] as (typeof marks)[0];
+      // Its shade is the look's ground shade (between its dark and main ground colours), not the
+      // classic page's.
+      expect(mark.sheet).toContain(`~shade-${shadeTheme(h.map().page)}`);
+      const [shade] = resolvePalette(PALETTES, mark.sheet.slice(mark.sheet.indexOf('@') + 1), 'default');
+      const lum = (c: string) => [1, 3, 5].reduce((a, i) => a + parseInt(c.slice(i, i + 2), 16), 0);
+      const ground = PALETTES.default[sheet] as readonly string[];
+      expect(lum(shade as string)).toBeGreaterThanOrEqual(lum(ground[1] as string));
+      expect(lum(shade as string)).toBeLessThanOrEqual(lum(ground[2] as string));
+      // It peeks out from behind its node's marker (the node's own tile is under the marker); no
+      // other pixel of it lies on a road's drawn pixels.
+      const n = h.map().page.nodes.find((x) => x.id === node);
+      const onNode = (f: { x: number; y: number }) => f.x === (n?.x ?? -1) * 16 && f.y === (n?.y ?? -1) * 16;
+      const rows = (key: string, frame: string) => SPRITES[key.split('@')[0] as string]?.frames[frame] ?? [];
+      const markRows = rows(mark.sheet, mark.frame);
+      const w = markRows[0]?.length ?? 0;
+      const at = (x: number, y: number): boolean => {
+        const r = markRows[y - mark.y];
+        if (!r) return false;
+        const i = x - mark.x;
+        if (i < 0 || i >= w) return false;
+        return (r[mark.flip ? w - 1 - i : i] ?? '.') !== '.';
+      };
+      const hits: string[] = [];
+      for (const f of h.r.frames.filter(
+        (g) => g.sheet === sheet && /^(road|walk)-/.test(g.frame) && !onNode(g),
+      ))
+        rows(f.sheet, f.frame).forEach((r, dy) =>
+          [...r].forEach((c, dx) => {
+            if (c !== '.' && at(f.x + dx, f.y + dy)) hits.push(`${f.frame}@${f.x + dx},${f.y + dy}`);
+          }),
+        );
+      expect(hits).toEqual([]);
+    },
+  );
+});
+
+describe('Hyrule in the colour-blind modes', () => {
+  it('keeps its dirt, rock, wood and trunks brown: no red shift turns them pink', () => {
+    const base = PALETTES.default['hyrule-above'] as readonly string[];
+    const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
+    for (const mode of ['deuteranopia', 'protanopia'] as const)
+      for (const role of ['4', '5', '6', 'k', 'l', 'm', 'd', 'p', 'q', 'r']) {
+        const i = ROLES.indexOf(role);
+        expect(PALETTES[mode]?.['hyrule-above']?.[i], `${mode} ${role}`).toBe(base[i]);
+      }
   });
 });

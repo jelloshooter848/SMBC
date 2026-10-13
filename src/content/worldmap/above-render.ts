@@ -120,6 +120,15 @@ export const lazySheetReady = (id: string): boolean => LAZY_SHEETS.get(id)?.read
 /** Whether `page` is drawn from above (rules.drawnFromAbove: theme 'kingdom' or an `above` look). */
 export const isAbovePage = drawnFromAbove;
 
+/**
+ * The map shade a hidden hero takes on `page` (palette-fx mapShadePalette's theme): a page with an
+ * `above` look takes its sheet's ground ('above-hyrule', 'above-megacity': sprites/index.ts), so
+ * the silhouette is a faint shadow on that ground; every other page its theme's.
+ */
+export function shadeTheme(page: WorldMapPage): string {
+  return page.above ? `above-${page.above}` : page.theme;
+}
+
 /** The look `page` is drawn from above with, or null for a page drawn side-on. */
 export function aboveLook(page: WorldMapPage): AboveLook | null {
   if (page.above) return LOOKS[page.above];

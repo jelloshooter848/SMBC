@@ -37,8 +37,8 @@ export const HYRULE_ABOVE_PALETTE: readonly string[] = [
   '#2a6a30', // 1 grass dark
   '#48a048', // 2 grass
   '#84cc68', // 3 grass light
-  '#7c5028', // 4 dirt dark
-  '#b88850', // 5 dirt
+  '#745a2c', // 4 dirt dark (0.4.50: green enough to stay tan in the colour-blind modes)
+  '#b48c50', // 5 dirt
   '#e4c48c', // 6 dirt light
   '#5c6474', // 7 stone dark
   '#9ca4b4', // 8 stone
@@ -46,21 +46,21 @@ export const HYRULE_ABOVE_PALETTE: readonly string[] = [
   '#18442a', // a leaves dark
   '#2a7034', // b leaves
   '#4c9e40', // c leaves light
-  '#58361a', // d trunk
+  '#544220', // d trunk (0.4.50: green enough to stay brown in the colour-blind modes)
   '#24428e', // e water dark
   '#3a70cc', // f water
   '#8cc4f4', // g water light
   '#7a1c20', // h red dark
   '#c43a34', // i red
   '#ec7a5c', // j red light
-  '#4e3420', // k rock dark
-  '#86603a', // l rock
+  '#4a3a24', // k rock dark (green enough to stay brown in the colour-blind modes)
+  '#826846', // l rock
   '#b89060', // m rock light
   '#f2e6c6', // n plaster
   '#c8ae84', // o plaster shade
-  '#4a2a10', // p wood dark
-  '#8a5224', // q wood
-  '#c88a48', // r wood light
+  '#463a14', // p wood dark (green enough to stay brown in the colour-blind modes)
+  '#84682c', // q wood
+  '#c49c50', // r wood light
   '#f8c838', // s gold
   '#ecd496', // t sand
   '#c4a062', // u sand dark

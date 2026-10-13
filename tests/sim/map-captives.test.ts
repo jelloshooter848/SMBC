@@ -60,7 +60,7 @@ const CASES: Case[] = [
   {
     hero: 'link',
     colour: 'link@link',
-    shade: 'link@link~shade-hyrule', // World 2 is Hyrule since 0.4.24
+    shade: 'link@link~shade-above-hyrule', // Hyrule from above in campaign play (0.4.50): its grass's shade
     page: 'smb-2',
     node: '2-1',
     before: { cleared: W1_CLEAR, pages: ['smb-1', 'smb-2'], position: { page: 'smb-2', node: '2-1' } },
@@ -70,7 +70,7 @@ const CASES: Case[] = [
   {
     hero: 'megaman',
     colour: 'megaman@megaman',
-    shade: 'megaman@megaman~shade-megaman', // World 3 is Mega Man's since 0.4.26
+    shade: 'megaman@megaman~shade-above-megacity', // Mega City from above (0.4.50): its pavement's shade
     page: 'smb-3',
     node: '3-1',
     before: {
