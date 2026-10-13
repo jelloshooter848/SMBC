@@ -10,23 +10,33 @@ import { PORTCULLIS_STEP } from '@content/sprites/keys';
 
 /*
  * Keys and locked doors (0.4.52, owner design; docs/STORY.md "Simon's way in"): a small mechanic
- * built once and reused (Simon's crypt from 5-1-bonus now; Sophia III's garage from 8-1-bonus in
- * 0.4.54). Campaign only (World.storyMode): classic play keeps the coin bricks and has no doors.
+ * built once and reused (Simon's crypt from 5-1-bonus; since 0.4.54 Sophia III's garage from
+ * 8-1-bonus). Campaign only (World.storyMode): classic play keeps the coin bricks and has no doors.
  *
- * - `key-box x y hero=<id>`: lays a key box (T.BRICK_KEY) over the brick at (x, y). Bumped from
- *   below like a ? block (every hero, small or big; it never breaks), the key pops out and the box
- *   is spent. Once the room's hero is freed on the file it lays nothing: the brick keeps its coins.
- * - `key` (KeyItem): pops up a tile, hops left and falls; then lies still. In reach the TALK
- *   button reads PICK UP; pressed, the player carries it (World.keyHolder, the HUD's key icon).
- * - `locked-door x y hero=<id> to=<level> tx=<x> ty=<y>`: a door (two tiles, x y its top) in the
- *   background. Locked, its strip reads LOCKED. It OPENS BY ITSELF when the player carrying the key
- *   touches it (the padlock drops, key-get sfx, the key is used up); then UP goes through, to
- *   `to` (dropping in from the top). Once the hero is freed it stands open for good.
+ * - `key-box x y hero=<id> [out=down]`: lays a key box (T.BRICK_KEY) over the brick at (x, y).
+ *   Bumped from below like a ? block (every hero, small or big; it never breaks), the key pops out
+ *   and the box is spent. Once the room's hero is freed on the file it lays nothing: the brick
+ *   keeps its coins.
+ * - `key` (KeyItem): pops up a tile, hops left and falls; then lies still. Or (0.4.54, `out=down`:
+ *   8-1-bonus, whose box sits over a brick ledge a left hop would strand it on) it drops out of
+ *   the box's underside and falls straight to the floor below. In reach the TALK button reads
+ *   PICK UP; pressed, the player carries it (World.keyHolder, the HUD's key icon).
+ * - `locked-door x y hero=<id> to=<level> tx=<x> ty=<y> [look=vault]`: a door (two tiles, x y its
+ *   top) in the background. Locked, its strip reads LOCKED. It OPENS BY ITSELF when the player
+ *   carrying the key touches it (the padlock drops, key-get sfx, the key is used up); then UP goes
+ *   through, to `to` (dropping in from the top). Once the hero is freed it stands open for good.
+ *   Its look: the crypt's planked door (5-1-bonus), or (0.4.54, `look=vault`) the Underworld
+ *   dungeon's blast door on its bottom tile (8-1-bonus: `bm-dungeon` door-locked-side / -open-side).
  * - `locked-gate x y hero=<id>`: a portcullis on the start screen (5-1's crypt gate), in the
  *   background, never in the way. While its hero is captive it is always shut: the TALK button
  *   reads OPEN, and pressing it plays the locked card (a `gate` event) once a visit; then just
  *   LOCKED. Simon's sighting draws it raised and dropping over it (story/sightings.ts, drawGate).
  *   Freed: plain scenery, shut, without its padlock.
+ * - `locked-hatch x y hero=<id>` (0.4.54): 8-1's steel hatch in the ground by the start (two tiles
+ *   wide, x y its left tile, on the ground's top row). A gate laid flat: the ground under it is
+ *   the map's own, so it is always solid and nothing ever opens it in play; standing on it, the
+ *   TALK button reads OPEN and the locked card plays once a visit, then LOCKED. Sophia III's
+ *   sighting draws it open and slamming shut over it (story/sightings.ts, drawHatch).
  *
  * The key lasts one visit: death, leaving or a restart reload the room, so the box is full and
  * the door locked again; a co-op carrier who dies puts it back in its box (World.returnKey). No
@@ -81,6 +91,8 @@ export class KeyBox extends Entity {
     readonly tx: number,
     readonly ty: number,
     readonly hero: string,
+    /** Which way the key comes out: up (a hop left) or (0.4.54) down, to the floor below. */
+    readonly out: KeyOut = 'up',
   ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
     this.despawnMargin = null;
@@ -103,7 +115,13 @@ export class KeyBox extends Entity {
 
 /* ---------------------------------------------------------------- the key */
 
-/** The key: out of its box, it rises, hops left, falls and lies still until picked up. */
+/** Which way a key comes out of its box (`key-box ... out=`). */
+export type KeyOut = 'up' | 'down';
+
+/**
+ * The key: out of its box, it rises, hops left, falls and lies still until picked up (or, `down`,
+ * it slides out of the box's underside and falls straight to the floor).
+ */
 export class KeyItem extends Entity implements KeyThing {
   readonly kind = 'key';
   /** A player is in reach (PICK UP shows over it). */
@@ -111,8 +129,12 @@ export class KeyItem extends Entity implements KeyThing {
   private t = 0;
   private readonly near = new Set<Player>();
 
-  /** Out of the box at tile (tx, ty), rising from inside it. */
-  constructor(tx: number, ty: number) {
+  /** Out of the box at tile (tx, ty), rising from inside it (or, `down`, sinking out of it). */
+  constructor(
+    tx: number,
+    ty: number,
+    readonly out: KeyOut = 'up',
+  ) {
     super(px(tx * 16), px(ty * 16), 16, 16);
     // Behind the tiles while it rises, so it comes up out of the box (as a ? block's item).
     this.layer = 'back';
@@ -139,8 +161,8 @@ export class KeyItem extends Entity implements KeyThing {
   update(world: World): void {
     this.t++;
     if (this.t <= KEY_RISE_FRAMES) {
-      this.body.y -= px(1);
-      if (this.t === KEY_RISE_FRAMES) {
+      this.body.y += this.out === 'down' ? px(1) : -px(1);
+      if (this.t === KEY_RISE_FRAMES && this.out === 'up') {
         this.body.vy = KEY_HOP_VY;
         this.body.vx = KEY_HOP_VX;
       }
@@ -179,6 +201,21 @@ export interface DoorTarget {
   y: number;
 }
 
+/** A locked door's art (`look=`): the crypt's (5-1-bonus) or, since 0.4.54, the vault's (8-1-bonus). */
+export type DoorLook = 'crypt' | 'vault';
+
+/**
+ * Each look's frames (shut and open), drawn `dy` px down the door's two tiles, and where its
+ * padlock hangs (px down from the door's top; it drops to the floor as the key turns).
+ */
+export const DOOR_ART: Readonly<
+  Record<DoorLook, { sheet: string; shut: string; open: string; dy: number; lockY: number }>
+> = {
+  crypt: { sheet: 'crypt', shut: 'door', open: 'door-open', dy: 0, lockY: 13 },
+  // The Underworld dungeon's own blast door (Jason's overhead dungeons), on the floor tile.
+  vault: { sheet: 'bm-dungeon', shut: 'door-locked-side', open: 'door-open-side', dy: 16, lockY: 21 },
+};
+
 /** A locked door in a room's wall (`locked-door`): LOCKED; opened by the carried key; UP enters. */
 export class LockedDoor extends Entity implements KeyThing {
   readonly kind = 'locked-door';
@@ -197,6 +234,8 @@ export class LockedDoor extends Entity implements KeyThing {
     readonly target: DoorTarget | null,
     /** Open for good (its hero is freed on the file). */
     freed: boolean,
+    /** Its art: the crypt's planked door, or (0.4.54) the Underworld vault's blast door. */
+    readonly look: DoorLook = 'crypt',
   ) {
     super(px(tx * 16), px(ty * 16), 16, 32);
     this.layer = 'main';
@@ -270,14 +309,15 @@ export class LockedDoor extends Entity implements KeyThing {
   render(r: Renderer, view: View): void {
     const x = toPx(this.body.x) - view.camX;
     const y = toPx(this.body.y);
-    const crypt = view.assets.sheet('crypt');
-    r.sprite(crypt, this.open ? 'door-open' : 'door', x, y);
+    const art = DOOR_ART[this.look];
+    r.sprite(view.assets.sheet(art.sheet), this.open ? art.open : art.shut, x, y + art.dy);
     const keys = view.assets.sheet('keys');
-    // The padlock on the planks, then dropping to the floor (no flash) as the key turns.
-    if (!this.open) r.sprite(keys, 'padlock', x + 4, y + 13);
+    // The padlock on the door, then dropping to the floor (no flash) as the key turns.
+    const lockY = y + art.lockY;
+    if (!this.open) r.sprite(keys, 'padlock', x + 4, lockY);
     else if (this.dropT >= 0 && this.dropT < PADLOCK_DROP_FRAMES) {
       const k = this.dropT / PADLOCK_DROP_FRAMES;
-      r.sprite(keys, 'padlock', x + 4, Math.round(y + 13 + k * k * 11));
+      r.sprite(keys, 'padlock', x + 4, Math.round(lockY + k * k * (24 - art.lockY)));
     }
     if (!this.prompt) return;
     if (this.open) {
@@ -290,7 +330,9 @@ export class LockedDoor extends Entity implements KeyThing {
 
 /** A portcullis by the start (`locked-gate`): always shut while its hero is captive. */
 export class LockedGate extends Entity implements KeyThing {
-  readonly kind = 'locked-gate';
+  readonly kind: string = 'locked-gate';
+  /** What the screen reader calls it as a player comes near, untried (a gate, or the hatch). */
+  protected readonly called: 'gate' | 'hatch' = 'gate';
   /** Tried this visit: the card has played; now it just reads LOCKED. */
   tried = false;
   /** Plain scenery: its hero is freed (no padlock, no prompt). */
@@ -338,7 +380,7 @@ export class LockedGate extends Entity implements KeyThing {
       if (!this.near.has(p))
         world.events.push({
           type: 'key-near',
-          what: this.tried ? 'locked' : 'gate',
+          what: this.tried ? 'locked' : this.called,
           player: world.players.indexOf(p),
         });
     this.near.clear();
@@ -353,6 +395,48 @@ export class LockedGate extends Entity implements KeyThing {
     if (this.tried) drawTalkPrompt(r, view, 'LOCKED', toPx(this.centerX) - view.camX, y, 'none');
     else drawTalkPrompt(r, view, 'OPEN', toPx(this.centerX) - view.camX, y);
   }
+}
+
+/* ---------------------------------------------------------------- the hatch */
+
+/**
+ * 8-1's steel hatch by the start (`locked-hatch`, 0.4.54): a locked gate laid flat in the ground.
+ * Two tiles wide and one tall, on the ground's top row; the ground under it is the map's own, so
+ * it is always solid. Standing on it, OPEN plays the locked card once a visit, then LOCKED.
+ */
+export class LockedHatch extends LockedGate {
+  override readonly kind: string = 'locked-hatch';
+  protected override readonly called = 'hatch';
+
+  constructor(tx: number, ty: number, hero: string, freed: boolean) {
+    super(tx, ty, hero, freed);
+    this.body.w = px(32);
+    this.body.h = px(16);
+  }
+
+  /** Standing on it (on the ground, feet on its top, within reach of its middle). */
+  override inReach(p: Player): boolean {
+    return !this.freed && reaches(p, this.centerX, this.body.y);
+  }
+
+  override render(r: Renderer, view: View): void {
+    const x = toPx(this.body.x) - view.camX;
+    const y = toPx(this.body.y);
+    drawHatch(r, view, x, y, false);
+    if (!this.prompt) return;
+    // The strip over the head of a hero standing on it (as over the key).
+    const cx = toPx(this.centerX) - view.camX;
+    if (this.tried) drawTalkPrompt(r, view, 'LOCKED', cx, y - 32, 'none');
+    else drawTalkPrompt(r, view, 'OPEN', cx, y - 32);
+  }
+}
+
+/**
+ * The hatch at screen (x, y) (its top-left, on the ground's top), open or shut. Shared with
+ * Sophia III's sighting, which opens it for her and slams it shut over the level's own.
+ */
+export function drawHatch(r: Renderer, view: View, x: number, y: number, open: boolean): void {
+  r.sprite(view.assets.sheet('keys'), open ? 'hatch-open' : 'hatch-shut', x, y);
 }
 
 /**

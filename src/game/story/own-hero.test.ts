@@ -10,8 +10,8 @@ import { PARTNERS, partnerPages, partnerSet, WELCOMES, type Page } from './scrip
 // Mega City robot seeing Mega Man). Order: own hero playing > hero still missing > hero freed.
 // #28: the fairy's hints are riddles now; talked to again she gives one clearer fallback.
 
-/** Who speak for no one (the pipe keeper), or are gone before their hero can play (Fred). */
-const NO_OWN = ['pipe-keeper', 'fred'];
+/** Who speak for no one (the pipe keeper). (Fred, gone before his hero could play, until 0.4.54.) */
+const NO_OWN = ['pipe-keeper'];
 
 const text = (pages: readonly Page[]) => pages.flat().join(' ');
 

@@ -12,6 +12,7 @@ import { T } from '@game/level/tiles';
 import type { World } from '@game/world/world';
 import { Fred, FRED_DIVES_SAID } from '@game/entities/objects/fred';
 import { Partner } from '@game/entities/objects/partner';
+import { KeyItem, LockedDoor } from '@game/entities/objects/keys';
 import { carryTime, LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { CardScene } from '@game/scenes/message';
@@ -21,7 +22,7 @@ import { hiddenHeroes, hiddenHeroesAt } from '@game/map/captives';
 import { MINIGAMES, type MiniGameDef } from '@game/minigames';
 import { arenaGames, metHero } from '@game/arena';
 import { beat } from '@game/story/beats';
-import { PARTNERS, RIFT_SEALED_PAGES, sealedHint } from '@game/story/script';
+import { RIFT_SEALED_PAGES, sealedHint } from '@game/story/script';
 import { CreditsScene } from '@game/scenes/credits';
 import { px, toPx } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
@@ -29,12 +30,15 @@ import { captives, closeCards, draw, file, makeGame, useStorage, type H } from '
 import { sophiaDef } from '@content/sprites/sophia';
 import { ALL_STORY } from './story-seen';
 
-// Sophia III, the last hidden hero (owner design, 0.4.18, S4): in campaign play 8-4-end's trap pipe
-// (column 10), which classic play takes back into the castle maze (8-4 at 19), leads instead to
-// Jason's secret area (8-4-jason). Jason, her pilot, is calling his frog Fred, who dives into the
-// pool; the hero follows him down into a flooded tunnel (8-4-fred, swum as in 8-4's water) to the
-// pipe up into Sophia III's garage (8-4-garage), whose pipe brings the hero back up out of 8-4-end's
-// trap pipe: a secret detour, not a shortcut. The clock runs on throughout.
+// Sophia III, the last hidden hero. Since 0.4.54 (owner) her way in is from 8-1: she drops into a
+// steel hatch by its start (always shut in play), and the real way down is 8-1's coin room
+// (8-1-bonus), where the key opens a locked blast door down into her garage (8-4-garage, its id
+// kept, an area of 8-1 now), whose pipe brings the hero back up out of 8-1's pipe at column 115:
+// a secret detour, not a shortcut. The clock runs on throughout. (The key route itself is
+// tests/sim/sophia-keys.test.ts.) Until then (0.4.18, S4) the way in was 8-4-end's trap pipe to
+// Jason's secret area (8-4-jason), after Fred through a flooded tunnel (8-4-fred): both are
+// retired, kept for Fred's dive and swim and the tests below, and the trap pipe is the
+// original's again.
 
 useStorage();
 
@@ -47,10 +51,11 @@ const camp84 = () => campaignLevel(getLevel('8-4-end'));
 const pipes = (zones: Zone[]) => zones.filter((z): z is Zone & { kind: 'pipe' } => z.kind === 'pipe');
 
 const TRAP = { level: '8-4', x: 19, y: 10, exitDir: 'up' };
-const INTO_JASON = { level: '8-4-jason', x: 1, y: 10, exitDir: 'up' };
 const INTO_TUNNEL = { level: '8-4-fred', x: 4, y: 0, exitDir: 'fall' };
-const INTO_GARAGE = { level: '8-4-garage', x: 1, y: 10, exitDir: 'up' };
-const BACK_TO_END = { level: '8-4-end', x: 10, y: 10, exitDir: 'up' };
+const INTO_GARAGE = { level: '8-4-garage', x: 2, y: 0, exitDir: 'fall' };
+const BACK_TO_81 = { level: '8-1', x: 115, y: 10, exitDir: 'up' };
+/** The retired tunnel's pipe: back up out of 8-4-end's trap pipe (it stays within 8-4). */
+const OUT_OF_TUNNEL = { level: '8-4-end', x: 10, y: 10, exitDir: 'up' };
 const SOPHIA_AT = { x: 8, y: 12 };
 
 /** Every hero, at small and big where it has power states (Sophia: Normal and Hyper). */
@@ -130,8 +135,8 @@ function swimBot(index = 0) {
   };
 }
 
-describe('8-4-end outside the campaign is v0.4.12 tile for tile: the trap pipe as ever', () => {
-  it('the same tiles, theme, music, start, entities; the only new zone is the sleeping campaign pipe', () => {
+describe('8-4-end is v0.4.12 tile for tile: the trap pipe as ever, in the campaign too (0.4.54)', () => {
+  it('the same tiles, theme, music, start, entities and zones; nothing of the old route is left', () => {
     const l = end84();
     const old = v0412();
     expect([l.width, l.height]).toEqual([old.width, old.height]);
@@ -145,24 +150,29 @@ describe('8-4-end outside the campaign is v0.4.12 tile for tile: the trap pipe a
       old.camera,
       old.parent,
     ]);
-    // (0.4.23: Fred by the trap pipe sleeps outside the campaign.)
-    expect(l.entities.filter((e) => e.props?.campaign !== true)).toEqual(old.entities);
-    expect(l.entities.filter((e) => e.props?.campaign === true)).toEqual([
-      { type: 'partner', x: 8, y: 12, props: { who: 'fred', campaign: true } },
-    ]);
+    // (0.4.23 to 0.4.53: Fred by the trap pipe, and the campaign pipe to Jason's area.)
+    expect(l.entities).toEqual(old.entities);
     expect(l.decor).toEqual(old.decor);
-    expect(l.zones.filter((z) => !('campaign' in z && z.campaign))).toEqual(old.zones);
-    expect(l.zones.filter((z) => 'campaign' in z && z.campaign)).toEqual([
-      { kind: 'pipe', x: 10, y: 11, dir: 'down', target: INTO_JASON, campaign: true },
-    ]);
+    expect(l.zones).toEqual(old.zones);
+  });
+
+  it('the campaign variant: the trap pipe goes back into the maze; only Toad stands at the end', () => {
+    const l = camp84();
+    const base = end84();
+    expect(l.tiles).toEqual(base.tiles);
+    expect(pipes(l.zones)).toEqual([{ kind: 'pipe', x: 10, y: 11, dir: 'down', target: TRAP }]);
+    expect(l.entities.map((e) => e.type)).toEqual(
+      base.entities.map((e) => (e.type === 'princess' ? 'toad' : e.type)),
+    );
   });
 
   it.each([
-    ['Mario', MARIO],
-    ['Sophia III', CHARACTERS.find((c) => c.id === 'sophia')!],
-  ])('%s down the pipe at 10 goes back into the castle maze (8-4 at 19)', (_n, c) => {
+    ['Mario', MARIO, false],
+    ['Mario', MARIO, true],
+    ['Sophia III', CHARACTERS.find((c) => c.id === 'sophia')!, true],
+  ])('%s down the pipe at 10 goes back into the castle maze (8-4 at 19; campaign %s)', (_n, c, campaign) => {
     const r = runSim({
-      level: end84(),
+      level: campaign ? camp84() : end84(),
       character: c,
       script: none,
       start: { x: 10, y: 10, mode: 'stand', time: 300 },
@@ -174,35 +184,7 @@ describe('8-4-end outside the campaign is v0.4.12 tile for tile: the trap pipe a
   });
 });
 
-describe('the campaign variant of 8-4-end', () => {
-  it('the trap pipe at 10 leads to Jason instead; nothing else changes (Toad stands at the end)', () => {
-    const l = camp84();
-    const base = end84();
-    expect(l.tiles).toEqual(base.tiles);
-    expect(pipes(l.zones)).toEqual([{ kind: 'pipe', x: 10, y: 11, dir: 'down', target: INTO_JASON }]);
-    expect(l.zones.filter((z) => z.kind !== 'pipe')).toEqual(base.zones.filter((z) => z.kind !== 'pipe'));
-    expect(l.entities.map((e) => e.type)).toEqual(
-      base.entities.map((e) => (e.type === 'princess' ? 'toad' : e.type)),
-    );
-    expect(camp84()).toBe(l); // cached
-  });
-
-  it.each(runs)("%s: down the pipe at 10 into Jason's area", (_n, c, power) => {
-    const r = runSim({
-      level: camp84(),
-      character: c,
-      state: heroState(power),
-      script: none,
-      start: { x: 10, y: 10, mode: 'stand', time: 300 },
-      maxFrames: 300,
-      controller: downPipe(10),
-    });
-    expect(r.outcome).toBe('pipe');
-    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_JASON });
-  });
-});
-
-describe("Jason's area (8-4-jason)", () => {
+describe("Jason's old area (8-4-jason; retired in 0.4.54, kept for Fred's dive)", () => {
   const jason = () => getLevel('8-4-jason');
 
   it('an area of 8-4 that keeps the clock: one locked Underworld screen, up out of a pipe', () => {
@@ -214,11 +196,16 @@ describe("Jason's area (8-4-jason)", () => {
       'locked',
       'pipe-exit',
     ]);
-    expect(l.start).toEqual({ x: INTO_JASON.x, y: INTO_JASON.y });
+    expect(l.start).toEqual({ x: 1, y: 10 });
     expect(l.width).toBe(16);
     expect([tile(l, 1, 11), tile(l, 2, 11)]).toEqual([T.PIPE_TL, T.PIPE_TR]);
     expect(carryTime(end84(), l, 250)).toBe(250);
     for (let y = 0; y < 2; y++) for (let x = 0; x < l.width; x++) expect(tile(l, x, y)).toBe(T.AIR);
+    // No level leads here any more: only the developer level select.
+    for (const id of levelIds())
+      for (const z of campaignLevel(getLevel(id)).zones)
+        if ('target' in z && z.target)
+          expect((z.target as { level: string }).level, id).not.toBe('8-4-jason');
   });
 
   it('Jason (a campaign partner) by the pipe, Fred on the edge of the pool, the pool a pit into the tunnel', () => {
@@ -312,7 +299,7 @@ describe("Jason's area (8-4-jason)", () => {
   });
 });
 
-describe("Fred's flooded tunnel (8-4-fred)", () => {
+describe("Fred's flooded tunnel (8-4-fred; retired in 0.4.54, kept for Fred's swim)", () => {
   const tunnel = () => getLevel('8-4-fred');
 
   it("an area of 8-4 that keeps the clock, swum in the Underworld's look (`swim: true`)", () => {
@@ -322,7 +309,7 @@ describe("Fred's flooded tunnel (8-4-fred)", () => {
     expect(l.swim).toBe(true);
     expect(isSwimLevel(l)).toBe(true);
     expect(l.start).toEqual({ x: INTO_TUNNEL.x, y: INTO_TUNNEL.y });
-    expect(l.zones).toEqual([{ kind: 'pipe', x: 36, y: 12, dir: 'right', target: INTO_GARAGE }]);
+    expect(l.zones).toEqual([{ kind: 'pipe', x: 36, y: 12, dir: 'right', target: OUT_OF_TUNNEL }]);
     expect(l.entities).toEqual([{ type: 'fred', x: 8, y: 11, props: { mode: 'swim', to: 35 } }]);
     // The hole in the roof the hero drops in by, over the arrival column.
     for (const x of [3, 4, 5, 6]) expect(tile(l, x, 2)).toBe(T.WATER);
@@ -356,7 +343,7 @@ describe("Fred's flooded tunnel (8-4-fred)", () => {
     expect(fall.world.player.inWater).toBe(false);
   });
 
-  it.each(runs)('%s: drops in and swims after Fred to the pipe up into the garage', (_n, c, power) => {
+  it.each(runs)('%s: drops in and swims after Fred to the pipe at the far end', (_n, c, power) => {
     const r = runSim({
       level: campaignLevel(tunnel()),
       character: c,
@@ -367,7 +354,7 @@ describe("Fred's flooded tunnel (8-4-fred)", () => {
       controller: swimBot(),
     });
     expect(r.outcome, `${c.name} ${power} at ${toPx(r.world.player.body.x) >> 4}`).toBe('pipe');
-    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_GARAGE });
+    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: OUT_OF_TUNNEL });
   });
 
   it('Fred swims on ahead while a hero is near, waits by the pipe and slips in as the hero comes', () => {
@@ -408,99 +395,89 @@ describe("Fred's flooded tunnel (8-4-fred)", () => {
   });
 });
 
-describe("Sophia III's garage (8-4-garage)", () => {
+describe("Sophia III's garage (8-4-garage, an area of 8-1 since 0.4.54)", () => {
   const garage = () => getLevel('8-4-garage');
 
-  it('an area of 8-4 that keeps the clock, one locked screen, the bm-garage music', () => {
+  it('an area of 8-1 that keeps the clock, one locked screen, dropped into, the bm-garage music', () => {
     const l = garage();
-    expect([l.parent, l.time, l.world, l.stage]).toEqual(['8-4', null, 8, 4]);
-    expect([l.theme, l.music, l.camera, l.startMode]).toEqual([
-      'underworld',
-      'bm-garage',
-      'locked',
-      'pipe-exit',
-    ]);
+    expect([l.parent, l.time, l.world, l.stage, l.name]).toEqual(['8-1', null, 8, 1, 'WORLD 8-1']);
+    expect([l.theme, l.music, l.camera, l.startMode]).toEqual(['underworld', 'bm-garage', 'locked', 'fall']);
     expect(l.start).toEqual({ x: INTO_GARAGE.x, y: INTO_GARAGE.y });
     expect(l.entities).toEqual([
       { type: 'captive', x: SOPHIA_AT.x, y: SOPHIA_AT.y, props: { hero: 'sophia' } },
       { type: 'fred', x: 5, y: 12, props: { mode: 'rest' } },
     ]);
     expect(tile(l, SOPHIA_AT.x, SOPHIA_AT.y + 1)).toBe(T.GROUND);
-    // The way back: up out of 8-4-end's trap pipe, so the level goes on as before.
-    expect(l.zones).toEqual([{ kind: 'pipe', x: 13, y: 11, dir: 'down', target: BACK_TO_END }]);
+    // Rows 0-1 clear under the HUD; the roof (row 2) has the shaft the hero drops in by (columns 2-3).
+    for (let x = 0; x < l.width; x++) {
+      for (const y of [0, 1]) expect(tile(l, x, y), `${x},${y}`).toBe(T.AIR);
+      expect(tile(l, x, 2), `${x},2`).toBe(x === 2 || x === 3 ? T.AIR : T.HARD);
+    }
+    // The way back: up out of 8-1's pipe at column 115 (where the coin room's own pipe comes out).
+    expect(l.zones).toEqual([{ kind: 'pipe', x: 13, y: 11, dir: 'down', target: BACK_TO_81 }]);
     expect([tile(l, 13, 11), tile(l, 14, 11)]).toEqual([T.PIPE_TL, T.PIPE_TR]);
+    expect(getLevel('8-1-bonus').zones).toContainEqual({
+      kind: 'pipe',
+      x: 13,
+      y: 12,
+      dir: 'right',
+      target: BACK_TO_81,
+    });
   });
 
-  it.each(runs)(
-    '%s: up out of the pipe, past Sophia III, onto the pipe and back to 8-4-end',
-    (_n, c, power) => {
-      let reached = false;
-      const r = runSim({
-        level: campaignLevel(garage()),
-        character: c,
-        state: heroState(power),
-        script: none,
-        start: { x: 1, y: 10, mode: 'pipe-exit', time: 300, clearEnemies: 'keep-piranhas' },
-        maxFrames: 1200,
-        controller: (w) => {
-          const b = w.player.body;
-          if (b.onGround && Math.abs(toPx(w.player.centerX) - (SOPHIA_AT.x * 16 + 8)) < 24) reached = true;
-          return walkToPipe(13)(w);
-        },
-      });
-      expect(reached, `${c.name} ${power} beside Sophia III`).toBe(true);
-      expect(r.outcome, `${c.name} ${power}`).toBe('pipe');
-      expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: BACK_TO_END });
-    },
-  );
+  it.each(runs)('%s: drops in, past Sophia III, onto the pipe and back up to 8-1', (_n, c, power) => {
+    let reached = false;
+    const r = runSim({
+      level: campaignLevel(garage()),
+      character: c,
+      state: heroState(power),
+      script: none,
+      start: { x: 2, y: 0, mode: 'fall', time: 300, clearEnemies: 'keep-piranhas' },
+      maxFrames: 1200,
+      controller: (w) => {
+        const b = w.player.body;
+        if (b.onGround && Math.abs(toPx(w.player.centerX) - (SOPHIA_AT.x * 16 + 8)) < 24) reached = true;
+        return walkToPipe(13)(w);
+      },
+    });
+    expect(reached, `${c.name} ${power} beside Sophia III`).toBe(true);
+    expect(r.outcome, `${c.name} ${power}`).toBe('pipe');
+    expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: BACK_TO_81 });
+  });
 
-  it.each(runs)(
-    '%s: back in 8-4-end up out of the trap pipe, and on to the right as before',
-    (_n, c, power) => {
-      const r = runSim({
-        level: camp84(),
-        character: c,
-        state: heroState(power),
-        script: none,
-        start: { x: 10, y: 10, mode: 'pipe-exit', time: 300, clearEnemies: 'keep-piranhas' },
-        maxFrames: 600,
-        controller: walkToPipe(null),
-        until: (w) => w.player.body.onGround && toPx(w.player.centerX) >> 4 >= 16,
-      });
-      expect(r.outcome).toBe('stopped');
-      expect(r.world.player.dead).toBe(false);
-      expect(toPx(r.world.player.centerX) >> 4).toBeGreaterThanOrEqual(16);
-    },
-  );
+  it.each(runs)('%s: back in 8-1 up out of the pipe at 115, and on to the right', (_n, c, power) => {
+    const r = runSim({
+      level: campaignLevel(getLevel('8-1')),
+      character: c,
+      state: heroState(power),
+      script: none,
+      start: { x: 115, y: 10, mode: 'pipe-exit', time: 300, clearEnemies: 'all' },
+      maxFrames: 900,
+      controller: walkToPipe(null),
+      until: (w) => w.player.body.onGround && toPx(w.player.centerX) >> 4 >= 119,
+    });
+    expect(r.outcome).toBe('stopped');
+    expect(r.world.player.dead).toBe(false);
+  });
 });
 
 describe('co-op', () => {
-  it('both players drop into the pool together, swim the tunnel and go up into the garage', () => {
+  it('both players drop into the garage together and go back up the pipe', () => {
     for (const c of CHARACTERS) {
       const st = { character2: c, powerState2: 'small' as const, hp2: 0 };
-      const a = runSim({
-        level: getLevel('8-4-jason'),
+      const r = runSim({
+        level: campaignLevel(getLevel('8-4-garage')),
         character: MARIO,
         state: st,
         script: none,
-        start: { x: 1, y: 10, mode: 'pipe-exit', time: 300 },
-        maxFrames: 900,
-        controller: () => ['right'],
+        start: { x: 2, y: 0, mode: 'fall', time: 300 },
+        maxFrames: 1200,
+        controller: walkToPipe(13),
       });
-      expect(a.outcome, c.name).toBe('pipe');
-      expect(a.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: INTO_TUNNEL });
-      const b = runSim({
-        level: getLevel('8-4-fred'),
-        character: MARIO,
-        state: st,
-        script: none,
-        start: { x: 4, y: 0, mode: 'fall', time: 300 },
-        maxFrames: 2400,
-        controller: swimBot(),
-      });
-      expect(b.outcome, c.name).toBe('pipe');
-      expect(b.world.players).toHaveLength(2);
-      for (const p of b.world.players) expect(p.dead, `${c.name} P${p.index + 1}`).toBe(false);
+      expect(r.outcome, c.name).toBe('pipe');
+      expect(r.events.find((e) => e.type === 'pipe')).toEqual({ type: 'pipe', target: BACK_TO_81 });
+      expect(r.world.players).toHaveLength(2);
+      for (const p of r.world.players) expect(p.dead, `${c.name} P${p.index + 1}`).toBe(false);
     }
   });
 });
@@ -520,58 +497,91 @@ function world8(over: Parameters<typeof file>[0] = {}) {
 const scene = (h: H) => h.game.scenes.find((s): s is LevelScene => s instanceof LevelScene) as LevelScene;
 const levelId = (h: H) => scene(h)?.world.level.id;
 
+/**
+ * 8-1-bonus as a player plays it: right along the floor to under the key box (never on into the
+ * exit pipe's mouth), a jump to bump it, PICK UP the key on the floor, left to the blast door (it
+ * opens by itself as the key touches it), then UP in the doorway.
+ */
+function vaultBot() {
+  let jumpHold = 0;
+  return (w: World, f: number): Action[] => {
+    const p = w.player;
+    const b = p.body;
+    const cx = toPx(p.centerX);
+    const a: Action[] = [];
+    if (jumpHold > 0) {
+      jumpHold--;
+      a.push('jump');
+    }
+    const key = w.entities.find((e): e is KeyItem => e instanceof KeyItem && e.alive);
+    const door = w.entities.find((e): e is LockedDoor => e instanceof LockedDoor && e.alive);
+    if (w.map.get(12, 9) === T.BRICK_KEY) {
+      if (!b.onGround) return a;
+      if (cx < 12 * 16 + 5) a.push('right');
+      else if (cx > 12 * 16 + 11) a.push('left');
+      else if (jumpHold === 0) jumpHold = 20;
+    } else if (w.keyHolder === null && !door?.open) {
+      if (key && !key.rising && key.body.onGround) {
+        if (key.inReach(p)) {
+          if (f % 2 === 0) a.push('special');
+        } else if (b.onGround) a.push(toPx(key.body.x) + 8 < cx ? 'left' : 'right');
+      }
+    } else if (door && !door.open) a.push('left');
+    else if (door) {
+      const dx = toPx(door.body.x) + 8 - cx;
+      if (Math.abs(dx) > 4) a.push(dx < 0 ? 'left' : 'right');
+      else if (b.onGround && f % 2 === 0) a.push('up');
+    }
+    return a;
+  };
+}
+
 describe('the whole way in campaign play', () => {
-  it('8-4-end → Jason → tunnel → garage → 8-4-end: the clock carries over, nothing recorded', () => {
+  it('8-1 → coin room (the key, the door) → garage → 8-1: the clock carries over, nothing recorded', () => {
     const h = makeGame();
     world8();
     h.game.openFile(1);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
-    h.game.startLevel(getLevel('8-4-end'), { x: 10, y: 10, mode: 'stand', time: 250 });
+    const cleared = [...h.game.mapProgress.cleared];
+    h.game.startLevel(getLevel('8-1'), { x: 104, y: 8, mode: 'stand', time: 250 });
     h.step();
     expect(closeCards(h)).toEqual([]);
-    for (let f = 0; f < 300 && levelId(h) === '8-4-end'; f++) h.step(downPipe(10)(scene(h).world));
-    expect(levelId(h)).toBe('8-4-jason');
+    for (let f = 0; f < 300 && levelId(h) === '8-1'; f++) h.step(downPipe(104)(scene(h).world));
+    expect(levelId(h)).toBe('8-1-bonus');
     const arrived = scene(h).world.time as number;
     expect(arrived).toBeLessThanOrEqual(250);
-    expect(arrived).toBeGreaterThan(240);
-    // Jason is there (the story plays); up talks: his three pages, then Fred dives.
+    expect(arrived).toBeGreaterThan(235);
+    // Jason is there (the story plays).
     h.idle(60);
     const jason = scene(h).world.entities.find((e): e is Partner => e instanceof Partner);
     expect(jason?.who).toBe('jason');
-    for (let f = 0; f < 300 && !jason!.inReach(scene(h).world.player); f++) h.step(['right']);
-    h.idle(4);
-    h.tap('special');
-    expect(closeCards(h)).toEqual(PARTNERS.jason!.pages.map((p) => [...p]));
-    // Fred dives as the pages close (the hero still stands by Jason).
-    h.idle(60);
-    expect(h.said).toContain(FRED_DIVES_SAID);
-    for (let f = 0; f < 900 && levelId(h) === '8-4-jason'; f++) h.step(['right']);
-    expect(levelId(h)).toBe('8-4-fred');
-    const bot = swimBot();
-    for (let f = 0; f < 2400 && levelId(h) === '8-4-fred'; f++) h.step(bot(scene(h).world));
+    const bot = vaultBot();
+    for (let f = 0; f < 3000 && levelId(h) === '8-1-bonus'; f++) h.step(bot(scene(h).world, f));
     expect(levelId(h)).toBe('8-4-garage');
     h.idle(120);
     expect(captives(scene(h)).map((x) => x.hero.id)).toEqual(['sophia']);
+    // The key was used up in the door: nothing carried into the garage.
+    expect(scene(h).world.keyHolder).toBeNull();
     const walk = walkToPipe(13);
     for (let f = 0; f < 1200 && levelId(h) === '8-4-garage'; f++) h.step(walk(scene(h).world));
-    expect(levelId(h)).toBe('8-4-end');
+    expect(levelId(h)).toBe('8-1');
     const main = scene(h).world;
     expect(main.time).toBeLessThan(arrived);
-    expect(main.time).toBeGreaterThan(arrived - 60);
+    expect(main.time).toBeGreaterThan(arrived - 90);
     h.idle(120);
     expect(main.player.dead).toBe(false);
-    // Up out of the trap pipe, standing on it.
-    expect(toPx(main.player.centerX) >> 4).toBeGreaterThanOrEqual(10);
-    expect(toPx(main.player.centerX) >> 4).toBeLessThanOrEqual(11);
+    // Up out of the pipe at 115, standing on it.
+    expect(toPx(main.player.centerX) >> 4).toBeGreaterThanOrEqual(115);
+    expect(toPx(main.player.centerX) >> 4).toBeLessThanOrEqual(116);
     expect(h.game.mapProgress.secrets).toEqual([]);
-    expect(h.game.mapProgress.cleared).not.toContain('8-4');
+    expect(h.game.mapProgress.cleared).toEqual(cleared);
   });
 });
 
 describe('captive Sophia III', () => {
   const intoGarage = (h: H) => {
     h.game.openFile(1);
-    h.game.startLevel(getLevel('8-4-garage'), { mode: 'pipe-exit', x: 1, y: 10, time: 250 });
+    h.game.startLevel(getLevel('8-4-garage'), { mode: 'fall', x: 2, y: 0, time: 250 });
     h.step();
     return h.top() as LevelScene;
   };
@@ -639,20 +649,20 @@ describe('captive Sophia III', () => {
     }
   });
 
-  it('the map hints at node 8-4 on World 8', () => {
+  it('the map hints at node 8-1 on World 8 (0.4.54: the garage is an area of 8-1)', () => {
     expect(hiddenHeroes()).toContainEqual({
       hero: 'sophia',
       level: '8-4-garage',
-      main: '8-4',
+      main: '8-1',
       page: 'smb-8',
-      node: '8-4',
+      node: '8-1',
     });
-    expect(hiddenHeroesAt('smb-8', '8-4').map((x) => x.hero)).toEqual(['sophia']);
-    expect(hiddenHeroesAt('smb-8', '8-3')).toEqual([]);
+    expect(hiddenHeroesAt('smb-8', '8-1').map((x) => x.hero)).toEqual(['sophia']);
+    expect(hiddenHeroesAt('smb-8', '8-4')).toEqual([]);
   });
 });
 
-describe("Sophia III's story lines play now that she hides in 8-4", () => {
+describe("Sophia III's story lines play now that she hides under 8-1", () => {
   it("after the 8-4 credits: the rift still shut without her (0.4.23); Toad's reminder, the sealed hint", () => {
     const h = makeGame();
     world8({ story: ALL_STORY.filter((id) => id !== beat.rift && id !== beat.sealed('smb-8')) });
@@ -693,8 +703,13 @@ describe("Sophia III's story lines play now that she hides in 8-4", () => {
 
 describe('the bundled areas', () => {
   it('every level reached on the way has its own data (no dangling link)', () => {
-    for (const l of [camp84(), getLevel('8-4-jason'), getLevel('8-4-fred'), getLevel('8-4-garage')])
+    const vault = campaignLevel(getLevel('8-1-bonus'));
+    for (const l of [camp84(), vault, getLevel('8-4-jason'), getLevel('8-4-fred'), getLevel('8-4-garage')])
       for (const z of l.zones)
         if ('target' in z && z.target) expect(levelIds()).toContain((z.target as { level: string }).level);
+    // The blast door's way down.
+    const door = vault.entities.find((e) => e.type === 'locked-door');
+    expect(door?.props).toMatchObject({ to: '8-4-garage', tx: 2, ty: 0 });
+    expect(levelIds()).toContain(String(door?.props?.to));
   });
 });

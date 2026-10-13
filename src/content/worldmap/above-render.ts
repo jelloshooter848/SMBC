@@ -14,12 +14,19 @@ import {
 } from '@content/sprites/transylvania-above';
 import { GALESBURG_ROAD_FRAMES, galesburgGround, galesburgNodeFrame } from '@content/sprites/galesburg-above';
 import { GALUGA_ROAD_FRAMES, galugaGround, galugaNodeFrame } from '@content/sprites/galuga-above';
+import {
+  UNDERWORLD_ROAD_FRAMES,
+  underworldGround,
+  underworldNodeFrame,
+} from '@content/sprites/underworld-above';
+import { VALLEY_ROAD_FRAMES, valleyGround, valleyNodeFrame } from '@content/sprites/valley-above';
 
 /*
  * The map kit for pages drawn from above (campaign play): World 1 from the `kingdom` sheet since
  * 0.4.48, Worlds 2 and 3 from `hyrule-above` and `megacity-above` since 0.4.50, Worlds 4 and 5
  * from `zebes-above` and `transylvania-above` since 0.4.52, Worlds 6 and 7 from `galesburg-above`
- * and `galuga-above` since 0.4.53. A page's look
+ * and `galuga-above` since 0.4.53, World 8 from `underworld-above` and the VALLEY OF BOWSER from
+ * `valley-above` since 0.4.54. A page's look
  * (AboveLook) names its sheet, its ground (tiles → ground frames, water, standing scenery), its 16
  * road joins and its node markers; everything else is shared: the ground and flat landmarks, the
  * roads drawn in as they open, the standing scenery and landmarks by their feet. Everything a page
@@ -131,6 +138,23 @@ const LOOKS: Readonly<Record<AboveLookId, AboveLook>> = {
     roads: GALUGA_ROAD_FRAMES,
     node: galugaNodeFrame,
   },
+  // World 8, THE UNDERWORLD (sprites/underworld-above.ts): pale worn stone roads with a light halo;
+  // board spaces in a stone ring, a dungeon hatch (shut and grey once used), the plutonium fortress
+  // (its cores dark and its gate open once cleared).
+  underworld: {
+    sheet: 'underworld-above',
+    ground: (page) => underworldGround(page.tiles),
+    roads: UNDERWORLD_ROAD_FRAMES,
+    node: underworldNodeFrame,
+  },
+  // The VALLEY OF BOWSER (sprites/valley-above.ts): pale tan roads; the start a green space, BOWSER'S
+  // CASTLE its gate in front of the castle (the portcullis up and the pink flag flying once cleared).
+  valley: {
+    sheet: 'valley-above',
+    ground: (page) => valleyGround(page.tiles),
+    roads: VALLEY_ROAD_FRAMES,
+    node: valleyNodeFrame,
+  },
 };
 
 export { prepaintSheet };
@@ -144,8 +168,9 @@ export const isAbovePage = drawnFromAbove;
 /**
  * The map shade a hidden hero takes on `page` (palette-fx mapShadePalette's theme): a page with an
  * `above` look takes its sheet's ground ('above-hyrule', 'above-megacity', 'above-zebes',
- * 'above-transylvania', 'above-galesburg', 'above-galuga': sprites/index.ts), so the silhouette is
- * a faint shadow on that ground; every other page its theme's.
+ * 'above-transylvania', 'above-galesburg', 'above-galuga', 'above-underworld', 'above-valley':
+ * sprites/index.ts), so the silhouette is a faint shadow on that ground; every other page its
+ * theme's.
  */
 export function shadeTheme(page: WorldMapPage): string {
   return page.above ? `above-${page.above}` : page.theme;

@@ -235,12 +235,23 @@ export function spoken(text: string): string {
 
 /**
  * The header's top right: the page label ('WORLD 1', 'LOST A', 'WARP ZONE'), with the stage when
- * the hero stands on a level or castle node ('WORLD 1-2', 'LOST A-2'); at most 10 chars.
+ * the hero stands on a level or castle node ('WORLD 1-2', 'LOST A-2'); at most 10 chars. A node
+ * shown by its name (MapNode.name: BOWSER'S CASTLE) has no stage: the label alone, its name taking
+ * the title's place (mapHeaderTitle).
  */
 export function mapHeaderLabel(page: WorldMapPage, node: MapNode | null): string {
   // The stage is the shown level's last part ('1-2' → 2, 'll-10-3' → 3; rules.shownLevel).
-  const stage = node && levelNode(node) ? shownLevel(node)?.split('-').pop() : undefined;
+  const stage = node && levelNode(node) && !node.name ? shownLevel(node)?.split('-').pop() : undefined;
   return (stage ? `${page.label}-${stage}` : page.label).slice(0, 10);
+}
+
+/**
+ * The header's top left: the page's title ('MUSHROOM KINGDOM'), or the name of the node the hero
+ * stands on when it is shown by its name (0.4.54: "BOWSER'S CASTLE" on the VALLEY OF BOWSER); at
+ * most 20 chars.
+ */
+export function mapHeaderTitle(page: WorldMapPage, node: MapNode | null): string {
+  return (node?.name ?? page.title).toUpperCase().slice(0, 20);
 }
 
 /**
@@ -941,6 +952,8 @@ export class WorldMapScene implements Scene {
 
   private nodeLabelPlain(n: MapNode, label: string, state: string): string {
     if (n.kind === 'start' && !n.level) return `${label} start`;
+    // A node shown by its name (BOWSER'S CASTLE), never by a stage number.
+    if (n.name) return `${spoken(n.name)}, ${state}`;
     // The stage is the shown level's last part ('1-2' → 2, 'll-10-3' → 3; rules.shownLevel).
     const stage = shownLevel(n)?.split('-').pop();
     const lvl = stage ? `${label}-${stage}` : label;
@@ -1595,11 +1608,11 @@ export class WorldMapScene implements Scene {
 
   /**
    * The pages the map menu "Worlds" lists, in play order: the open pages of the story (SMB
-   * worlds, then the Lost Levels worlds, its extension since 0.4.7), plus the hub when it is
-   * open; on the hub, the hub first.
+   * worlds, the VALLEY OF BOWSER once live, then the Lost Levels worlds, its extension since
+   * 0.4.7), plus the hub when it is open; on the hub, the hub first.
    */
   worldsMenuPages(): WorldMapPage[] {
-    const story = (g: PageGroup) => g === 'smb' || g === 'll';
+    const story = (g: PageGroup) => g === 'smb' || g === 'valley' || g === 'll';
     const group = this.page.group;
     const same = (p: WorldMapPage) => p.group === group || (story(p.group) && story(group));
     const open = MAP_PAGES.filter(
@@ -2071,7 +2084,7 @@ export class WorldMapScene implements Scene {
       h.score = s.score;
       h.coins = s.coins;
       h.wallet = s.wallet;
-      h.title = page.title.toUpperCase().slice(0, 20);
+      h.title = mapHeaderTitle(page, node);
       h.world = mapHeaderLabel(page, node);
       h.livesText = `${s.character.hudName.slice(0, 5)}×${pad(s.lives, 2)}`;
       h.scoreText = pad(s.score, 7);

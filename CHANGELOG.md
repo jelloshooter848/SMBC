@@ -8,6 +8,30 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.54] - 2026-10-13
+
+### Added
+
+- Hero sighting: Sophia III drives off at the start of 8-1, hover-hops over Fred and drops into a hatch; Fred dives after
+  her and it slams shut.
+
+### Changed
+
+- Campaign World 8 is now THE UNDERWORLD, drawn from above in Blaster Master's style. No castle stands on its map; 8-4's
+  plutonium fortress is its last stop. Classic play keeps BOWSER'S UNDERWORLD.
+- Campaign 8-4 is the eighth fake Bowser: a Piranha Plant in a Plutonium Boss costume of party balloons and glow sticks.
+  Classic 8-4 is still the real king.
+- Sophia III's way in moves to 8-1: the hatch by the start won't open; Jason lost the key to the blast door in 8-1's coin
+  room, which leads down to her garage. World 8's hints and Sophia III's map hint now point to the forest.
+- The Valley of Bowser page and its own map song are built; they stay hidden until Bowser's Castle arrives, and until then
+  World 8's road leads on to the Lost Levels as before.
+- Colour-blind modes: the browns on Planet Zebes, Transylvania and THE UNDERWORLD no longer turn pink in the red/green modes.
+
+### Fixed
+
+- Old saves: a pending map reveal of a world road that has moved is dropped on load, while a road reserved for a later
+  release is kept.
+
 ## [0.4.53] - 2026-10-13
 
 ### Added
@@ -1174,7 +1198,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...HEAD
+[0.4.54]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...v0.4.54
 [0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53
 [0.4.52]: https://github.com/jelloshooter848/SMBC/compare/v0.4.51...v0.4.52
 [0.4.51]: https://github.com/jelloshooter848/SMBC/compare/v0.4.50...v0.4.51

@@ -38,6 +38,12 @@ campaignMusic: bm-area
 [entities]
 ;; Campaign only (0.4.40, docs/STORY.md): a friendly mutant at the start, among the forest ruins.
 partner 10 12 who=mutant campaign=true
+;; Campaign only (0.4.54, docs/STORY.md "Sophia III's way in"): the steel hatch in the ground by
+;; the start (columns 13-14, on the ground's top row). Sophia III's sighting drives into it and
+;; Fred dives after her, and it slams shut. In play it is always shut: the ground under it is the
+;; map's own, so it is solid. Standing on it, trying it (OPEN on the TALK button) plays the locked
+;; card once a visit, then it just reads LOCKED. The real way down is the coin room (pipe at 104).
+locked-hatch 13 13 hero=sophia campaign=true
 decor-castle-big -2 12
 goomba 24 12 dx=8
 goomba 31 12 dx=8

@@ -47,6 +47,10 @@ import { galesburgAboveSheet, GALESBURG_ABOVE_PALETTE } from './galesburg-above'
 import { galugaAboveSheet, GALUGA_ABOVE_PALETTE } from './galuga-above';
 import { WORLD_6_GALESBURG } from '@content/worldmap/world6-galesburg';
 import { WORLD_7_GALUGA } from '@content/worldmap/world7-galuga';
+import { underworldAboveSheet, UNDERWORLD_ABOVE_PALETTE } from './underworld-above';
+import { valleyAboveSheet, VALLEY_ABOVE_PALETTE } from './valley-above';
+import { WORLD_8_UNDERWORLD } from '@content/worldmap/world8-underworld';
+import { VALLEY_OF_BOWSER } from '@content/worldmap/valley-of-bowser';
 import { WORLD_2_HYRULE } from '@content/worldmap/world2-hyrule';
 import { WORLD_3_MEGACITY } from '@content/worldmap/world3-megacity';
 import {
@@ -153,6 +157,11 @@ export const SPRITES: Record<string, SpriteDef> = {
   // the same way: the first time each page shows (or ahead, while the map idles).
   'galesburg-above': galesburgAboveSheet([WORLD_6_GALESBURG.tiles]),
   'galuga-above': galugaAboveSheet([WORLD_7_GALUGA.tiles]),
+  // 0.4.54: THE UNDERWORLD (World 8's campaign page) and the VALLEY OF BOWSER from above, painted
+  // the same way. The Valley's sheet is painted only once its page shows, so never while the page
+  // is not live (valley-of-bowser.ts VALLEY_LIVE).
+  'underworld-above': underworldAboveSheet([WORLD_8_UNDERWORLD.tiles]),
+  'valley-above': valleyAboveSheet([VALLEY_OF_BOWSER.tiles]),
 };
 
 const defaults: Record<string, readonly string[]> = {
@@ -204,6 +213,8 @@ const defaults: Record<string, readonly string[]> = {
   'transylvania-above': TRANSYLVANIA_ABOVE_PALETTE,
   'galesburg-above': GALESBURG_ABOVE_PALETTE,
   'galuga-above': GALUGA_ABOVE_PALETTE,
+  'underworld-above': UNDERWORLD_ABOVE_PALETTE,
+  'valley-above': VALLEY_ABOVE_PALETTE,
 };
 
 // Fallbacks so every theme/character variant the game asks for exists even if art only ships one.
@@ -270,10 +281,21 @@ if (modes.highContrast && costumesHc)
  * nudged its browns green enough instead; the brick cannot be, and stay brick.) Their true reds,
  * the lacquer, the neon, the alien lair and the warning lights, still shift, so an open level's
  * red space stays apart from the start's green one. By palette role (index 0-9, then a-z).
+ *
+ * 0.4.54: the same for Zebes's and Transylvania's browns (Brinstar's orange rock and Samus's
+ * gunship; the cobbles, the wood and the cave rock), which turned pink, and for THE UNDERWORLD's
+ * (its cave dirt, red rock and gnarled wood) and the VALLEY OF BOWSER's lamplight (the windows' and
+ * braziers' amber glow; its tan road and grey-blue rock never shift). Their true reds still shift:
+ * Norfair's rock and the lava, the magenta brick, the drapes and an open level's space, the
+ * plutonium and the warning red, the Valley's lava and the king's banners.
  */
 export const KEEP_EARTH_TONES: Readonly<Record<string, string>> = {
   'galesburg-above': '4dhij', // road rim, wood, brick (dark, mid, light)
   'galuga-above': '04dhi', // outline, track rim, trunk, rock (dark, mid)
+  'zebes-above': '567', // Brinstar's orange rock (dark, mid, light)
+  'transylvania-above': 'ijklmrs', // cave rock (dark, mid, light), cobbles (dark, mid), wood (dark, mid)
+  'underworld-above': '123789d', // cave dirt (dark, mid, light), red rock (dark, mid, light), wood
+  'valley-above': 'o', // the windows' and braziers' amber glow
 };
 const ROLES = '0123456789abcdefghijklmnopqrstuvwxyz';
 for (const mode of ['deuteranopia', 'protanopia'] as const)
@@ -304,6 +326,10 @@ export const PALETTES: PaletteBook = {
       // (Bill's camp).
       'map-above-galesburg': ['#000000', '#262a40', '#363c5a'],
       'map-above-galuga': ['#000000', '#1a4412', '#2a6418'],
+      // 0.4.54: THE UNDERWORLD's moss ledge beside 8-1 (Sophia's garage is reached from 8-1); the
+      // VALLEY OF BOWSER's cavern floor (no hero hides there).
+      'map-above-underworld': ['#000000', '#263410', '#44621a'],
+      'map-above-valley': ['#000000', '#1a2232', '#2a3850'],
     }),
   },
 };

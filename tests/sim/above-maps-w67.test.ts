@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLevel } from '@content/levels';
 import { WORLD_6 } from '@content/worldmap/world6';
 import { WORLD_7 } from '@content/worldmap/world7';
-import { WORLD_8 } from '@content/worldmap/world8';
+import { WORLD_8_UNDERWORLD } from '@content/worldmap/world8-underworld';
 import { WORLD_5_TRANSYLVANIA } from '@content/worldmap/world5-transylvania';
 import { WORLD_6_GALESBURG } from '@content/worldmap/world6-galesburg';
 import { WORLD_7_GALUGA } from '@content/worldmap/world7-galuga';
@@ -45,7 +45,8 @@ import { ALL_STORY } from './story-seen';
 // anywhere on them loads where it was (an old file's stale reveals dropped), every road walks both
 // ways, a clear draws its road in, the slides run 5 -> 6 -> 7 -> 8 and back (the page's edge shaded
 // only between above and side-on: 7 to 8), and the first node of each world is its hero's level,
-// its intro card, HUD and announcer saying 6-1 or 7-1. Classic play keeps the real ids.
+// its intro card, HUD and announcer saying 6-1 or 7-1. Classic play keeps the real ids. (Since
+// 0.4.54 World 8 is drawn from above too, so no slide here runs between above and side-on.)
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -420,7 +421,7 @@ describe('old files on Worlds 6 and 7 (before the campaign order)', () => {
 });
 
 describe('the slides 5 → 6 → 7 → 8 and back', () => {
-  it('runs along each exit and back, the page’s edge shaded only between above and side-on (7 to 8)', () => {
+  it('runs along each exit and back, every page from above (0.4.54: World 8 too), so no edge is shaded', () => {
     const h = makeGame();
     open(h, {
       cleared: [...W1_5, ...world(6), ...world(7)],
@@ -445,10 +446,9 @@ describe('the slides 5 → 6 → 7 → 8 and back', () => {
     expect(h.map().page).toBe(WORLD_7_GALUGA);
     for (const id of ['7-3', '7-1', '7-2', '7-4']) walkTo(h, id);
     const s78 = slide('right', 'smb-8');
-    expect(h.map().page).toBe(WORLD_8);
-    expect([s56, s67]).toEqual([0, 0]);
-    expect(s78).toBeGreaterThan(0);
-    expect(slide('left', 'smb-7')).toBeGreaterThan(0);
+    expect(h.map().page).toBe(WORLD_8_UNDERWORLD);
+    expect([s56, s67, s78]).toEqual([0, 0, 0]);
+    expect(slide('left', 'smb-7')).toBe(0);
     expect(h.map().node).toBe('7-4');
     for (const id of ['7-2', '7-1', '7-3', 'start']) walkTo(h, id);
     expect(slide('left', 'smb-6')).toBe(0);

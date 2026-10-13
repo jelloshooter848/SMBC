@@ -8,6 +8,8 @@ import { loadSave, migrateSave, newSave, saveKey } from '@game/save/save-files';
 import { playStoryCards } from '@game/story/cards';
 import { beat, seedSeen, STORY_REV } from '@game/story/beats';
 import { BowserSaysScene, BRIDGE_ROOM } from '@game/story/level-beats';
+import { finaleKingIsReal } from '@game/story/finale';
+import { HeroSightingScene } from '@game/story/hero-sighting';
 import { riftPages } from '@game/story/script';
 import { CHARACTERS } from '@game/characters/registry';
 import { ALL_STORY } from './story-seen';
@@ -204,29 +206,60 @@ describe('developer "Unlock all": story scenes play but are never recorded', () 
     h.step();
   };
 
-  it('a level beat (8-4): plays, nothing marked; once Unlock all is off it plays for real', () => {
+  // 0.4.54: Bowser's boast plays only where the real king waits (story/finale.ts); while the last
+  // castle is 8-4 (a fake) it plays nowhere, so a sighting is this release's level beat.
+  it('a level beat (8-1, the sighting): plays, nothing marked; once Unlock all is off it plays for real', () => {
     const h = devFile();
     expect(h.game.mapUnlockAll).toBe(true);
-    const bowser = () => {
-      into(h, BRIDGE_ROOM);
-      expect(h.top()).toBeInstanceOf(BowserSaysScene);
+    const sighting = () => {
+      into(h, '8-1');
+      h.until(() => h.top() instanceof HeroSightingScene, 30);
+      expect(h.top()).toBeInstanceOf(HeroSightingScene);
+      h.idle(CARD_GUARD_FRAMES + 1);
+      h.tap('jump');
+      expect(h.top()).toBeInstanceOf(CardScene);
       h.idle(CARD_GUARD_FRAMES + 1);
       h.tap('jump');
       expect(h.top()).toBeInstanceOf(LevelScene);
     };
-    bowser();
-    // Nothing in the game's list, nothing on the file...
-    expect(h.game.story).not.toContain(beat.bowser84);
+    sighting();
+    expect(h.game.story).not.toContain(beat.sighting('sophia'));
     h.game.autosave();
     expect(loadSave(1)?.story).toEqual([STORY_REV]);
-    // ...and not again while Unlock all stays on (no loop over the level).
-    into(h, BRIDGE_ROOM);
+    into(h, '8-1');
+    h.idle(10);
     expect(h.top()).toBeInstanceOf(LevelScene);
-    // Unlock all off: the beat plays for real, and is saved.
     h.game.devUnlockAll = false;
-    bowser();
-    expect(loadSave(1)?.story).toEqual([STORY_REV, beat.bowser84]);
+    sighting();
+    expect(loadSave(1)?.story).toEqual([STORY_REV, beat.sighting('sophia')]);
   });
+
+  it.runIf(finaleKingIsReal())(
+    'a level beat (the bridge room): plays, nothing marked; once Unlock all is off it plays for real',
+    () => {
+      const h = devFile();
+      expect(h.game.mapUnlockAll).toBe(true);
+      const bowser = () => {
+        into(h, BRIDGE_ROOM);
+        expect(h.top()).toBeInstanceOf(BowserSaysScene);
+        h.idle(CARD_GUARD_FRAMES + 1);
+        h.tap('jump');
+        expect(h.top()).toBeInstanceOf(LevelScene);
+      };
+      bowser();
+      // Nothing in the game's list, nothing on the file...
+      expect(h.game.story).not.toContain(beat.bowser84);
+      h.game.autosave();
+      expect(loadSave(1)?.story).toEqual([STORY_REV]);
+      // ...and not again while Unlock all stays on (no loop over the level).
+      into(h, BRIDGE_ROOM);
+      expect(h.top()).toBeInstanceOf(LevelScene);
+      // Unlock all off: the beat plays for real, and is saved.
+      h.game.devUnlockAll = false;
+      bowser();
+      expect(loadSave(1)?.story).toEqual([STORY_REV, beat.bowser84]);
+    },
+  );
 
   it("a map beat (Toad's rift scene on World 8): plays, nothing marked; then for real", () => {
     const story = ALL_STORY.filter((id) => id !== beat.rift);

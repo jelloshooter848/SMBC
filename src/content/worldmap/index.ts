@@ -17,6 +17,8 @@ import { WORLD_4_ZEBES } from './world4-zebes';
 import { WORLD_5_TRANSYLVANIA } from './world5-transylvania';
 import { WORLD_6_GALESBURG } from './world6-galesburg';
 import { WORLD_7_GALUGA } from './world7-galuga';
+import { WORLD_8_UNDERWORLD } from './world8-underworld';
+import { VALLEY_LIVE, VALLEY_OF_BOWSER } from './valley-of-bowser';
 
 /*
  * The page registry (docs/WORLD_MAP.md). The eight themed SMB pages ('smb-1'..'smb-8'): every
@@ -39,8 +41,18 @@ export const SMB_PAGES: WorldMapPage[] = [
   WORLD_8,
 ];
 
-/** Every page: SMB worlds, the Warp Zone hub, the Lost Levels worlds, the Mini Game Arena. */
-export const MAP_PAGES: WorldMapPage[] = [...SMB_PAGES, HUB_PAGE, ...LOST_PAGES, ARENA_PAGE];
+/**
+ * The VALLEY OF BOWSER (valley-of-bowser.ts, campaign play: World 8's road leads there), registered
+ * only once it is live (VALLEY_LIVE: its castle's level, '8-5', exists). Between the SMB worlds and
+ * the Lost Levels, so the slides 8 → Valley → Lost 1 run forward.
+ */
+export const VALLEY_PAGES: readonly WorldMapPage[] = VALLEY_LIVE ? [VALLEY_OF_BOWSER] : [];
+
+/**
+ * Every page: SMB worlds, the Valley (once live), the Warp Zone hub, the Lost Levels worlds, the
+ * Mini Game Arena.
+ */
+export const MAP_PAGES: WorldMapPage[] = [...SMB_PAGES, ...VALLEY_PAGES, HUB_PAGE, ...LOST_PAGES, ARENA_PAGE];
 
 /** The registered page `id`. */
 export function mapPage(id: PageId): WorldMapPage | undefined {
@@ -66,10 +78,12 @@ export function levelPage(levelId: string): WorldMapPage | undefined {
  * Pages drawn differently in campaign play, by id: drawn from above, World 1 since 0.4.48
  * (world1-kingdom.ts), Worlds 2 and 3 since 0.4.50 (world2-hyrule.ts, world3-megacity.ts), Worlds
  * 4 and 5 since 0.4.52 (world4-zebes.ts, world5-transylvania.ts), Worlds 6 and 7 since 0.4.53
- * (world6-galesburg.ts, world7-galuga.ts). Each keeps its registered page's id, node ids, kinds and
- * order, and exits, so saves and save codes read it exactly as the registered one; its roads keep
- * their ids too, but for a world the campaign plays in another order (map/campaign-order.ts:
- * Worlds 4, 6 and 7), whose roads follow that order.
+ * (world6-galesburg.ts, world7-galuga.ts), World 8 since 0.4.54 (world8-underworld.ts). Each keeps
+ * its registered page's id, node ids, kinds and order, and exits, so saves and save codes read it
+ * exactly as the registered one; its roads keep their ids too, but for a world the campaign plays
+ * in another order (map/campaign-order.ts: Worlds 4, 6 and 7), whose roads follow that order. World
+ * 8's title is THE UNDERWORLD, and once the Valley is live its exit leads there (8-4>valley-of-bowser)
+ * instead of on to Lost World 1.
  */
 const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = Object.fromEntries(
   [
@@ -80,6 +94,7 @@ const CAMPAIGN_LOOKS: Readonly<Record<PageId, WorldMapPage>> = Object.fromEntrie
     WORLD_5_TRANSYLVANIA,
     WORLD_6_GALESBURG,
     WORLD_7_GALUGA,
+    WORLD_8_UNDERWORLD,
   ].map((p) => [p.id, p]),
 );
 
