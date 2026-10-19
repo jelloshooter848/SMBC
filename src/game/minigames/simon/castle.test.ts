@@ -14,6 +14,7 @@ import { ARENA_GAMES } from '@game/arena';
 import { MINIGAMES, miniGameFor } from '..';
 import { SIMON_MINIGAME } from '.';
 import { castleStage } from './stage';
+import { drawCastleHud } from './hud';
 import {
   Bat,
   BAT_SWOOP,
@@ -99,6 +100,34 @@ const STUB_ASSETS = {
   sheet: () => ({ id: 'stub', image: null, frames: new Map() }),
   has: () => false,
 } as unknown as AssetRegistry;
+
+/** The items-sheet dagger as it looked before 0.4.57 turned the shot frame to point left. */
+const DAGGER_ON_MAIN = [
+  '................',
+  '................',
+  '....0000000000..',
+  '0999011bbbbbbbb0',
+  '09990bbbbbbbbb0.',
+  '....0000000000..',
+  '................',
+  '................',
+];
+
+/** The dagger's rows as `draw` puts them on screen (mirrored when it draws flipped). */
+function daggerDrawn(draw: (r: Renderer) => void): string[] {
+  const drawn: { f: string; flip: boolean }[] = [];
+  draw(
+    Object.assign(new NullRenderer(), {
+      sprite: (_s: unknown, f: string, _x: number, _y: number, flip?: boolean) =>
+        drawn.push({ f, flip: !!flip }),
+    }),
+  );
+  const d = drawn.find((c) => c.f === 'dagger');
+  if (!d) throw new Error('no dagger drawn');
+  return (SPRITES.items?.frames.dagger as string[]).map((row) =>
+    d.flip ? [...row].reverse().join('') : row,
+  );
+}
 
 function ready(h: CastleHarness): void {
   h.step([], READY_FRAMES);
@@ -263,29 +292,11 @@ describe("Dracula's Castle: candles and creatures", () => {
     const item = the(h, SubWeaponItem)[0] as SubWeaponItem;
     expect(item).toBeDefined();
     // The pickup lies pointing right, pixel for pixel as before the shot frame was turned (0.4.57).
-    const drawn: { f: string; flip: boolean }[] = [];
-    item.render(
-      Object.assign(new NullRenderer(), {
-        sprite: (_s: unknown, f: string, _x: number, _y: number, flip?: boolean) =>
-          drawn.push({ f, flip: !!flip }),
-      }),
-      { camX: 0, frame: 0, assets: { sheet: () => ({}) } } as unknown as View,
-    );
-    const pick = drawn[0] as { f: string; flip: boolean };
     expect(
-      (SPRITES.items?.frames[pick.f] as string[]).map((row) =>
-        pick.flip ? [...row].reverse().join('') : row,
+      daggerDrawn((r) =>
+        item.render(r, { camX: 0, frame: 0, assets: { sheet: () => ({}) } } as unknown as View),
       ),
-    ).toEqual([
-      '................',
-      '................',
-      '....0000000000..',
-      '0999011bbbbbbbb0',
-      '09990bbbbbbbbb0.',
-      '....0000000000..',
-      '................',
-      '................',
-    ]);
+    ).toEqual(DAGGER_ON_MAIN);
     for (let i = 0; i < 60 && item.alive; i++) h.step(['right']);
     expect(h.scene.hasDagger).toBe(true);
     const r = new TextRenderer();
@@ -302,6 +313,15 @@ describe("Dracula's Castle: candles and creatures", () => {
     h.world.spawn(roast);
     h.step([], 30);
     expect(p.hp).toBe(4 + ROAST_HP);
+  });
+
+  it("the HUD's sub-weapon box shows the dagger pointing right, as before 0.4.57", () => {
+    const assets = {
+      sheet: (id: string) => ({ id, image: null, frames: new Map(id === 'items' ? [['dagger', {}]] : []) }),
+      has: () => true,
+    } as unknown as AssetRegistry;
+    const hud = { score: 0, time: 300, stage: 1, hp: 16, maxHp: 16, enemy: 16, hearts: 5, lives: 3 };
+    expect(daggerDrawn((r) => drawCastleHud(r, assets, { ...hud, sub: 'dagger' }))).toEqual(DAGGER_ON_MAIN);
   });
 
   it('a bat roosts until Simon comes near, swoops to his head height, flies on and crumbles when it strikes', () => {

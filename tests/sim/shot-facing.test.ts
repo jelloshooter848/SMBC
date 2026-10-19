@@ -5,7 +5,9 @@ import { px } from '@engine/math/units';
 import { SPRITES } from '@content/sprites';
 import type { View } from '@game/entities/entity';
 import type { Player } from '@game/entities/player';
-import { Projectile, SWORD_BEAM, type ProjectileSpec } from '@game/entities/projectiles/projectile';
+import { FIREBALL, Projectile, SWORD_BEAM, type ProjectileSpec } from '@game/entities/projectiles/projectile';
+import { Flash } from '@game/entities/effects/effects';
+import type { World } from '@game/world/world';
 import { SAMUS } from '@game/characters/samus';
 import { SAMUS_CLASSIC } from '@game/characters/samus/classic';
 import { ICE_BEAM, LONG_BEAM, MISSILE, POWER_BEAM } from '@game/characters/samus/weapons';
@@ -32,7 +34,7 @@ import { useStorage } from './heroes-harness';
 useStorage();
 
 /** The rows a shot draws this frame, mirrored as the renderer mirrors them. */
-function drawn(shot: Projectile): { frame: string; rows: string[] } {
+function drawn(shot: Projectile | Flash): { frame: string; rows: string[]; flip: boolean } {
   const calls: { f: string; flip: boolean }[] = [];
   const rr: Renderer = Object.assign(new NullRenderer(), {
     sprite(_s: SpriteSheet, f: string, _x: number, _y: number, flip?: boolean) {
@@ -42,9 +44,20 @@ function drawn(shot: Projectile): { frame: string; rows: string[] } {
   shot.render(rr, { camX: 0, frame: 0, assets: { sheet: () => ({ frames: new Map() }) } } as unknown as View);
   const c = calls.at(-1);
   if (!c) throw new Error(`${shot.kind} drew nothing`);
-  const rows = SPRITES[shot.spec.sheet]?.frames[c.f] as string[] | undefined;
-  if (!rows) throw new Error(`${shot.spec.sheet}:${c.f} is not a frame`);
-  return { frame: c.f, rows: rows.map((r) => (c.flip ? [...r].reverse().join('') : r)) };
+  const sheet = shot instanceof Flash ? shot.sheet : shot.spec.sheet;
+  const rows = SPRITES[sheet]?.frames[c.f] as string[] | undefined;
+  if (!rows) throw new Error(`${sheet}:${c.f} is not a frame`);
+  return { frame: c.f, flip: c.flip, rows: rows.map((r) => (c.flip ? [...r].reverse().join('') : r)) };
+}
+
+/** The Flash a shot fired `dir` leaves when it bursts (Projectile.burst, no held burst). */
+function burstFlash(spec: ProjectileSpec, dir: -1 | 1): Flash {
+  const spawned: unknown[] = [];
+  const shot = new Projectile(px(64), px(64), dir, spec, null);
+  shot.burst({ spawn: (e: unknown) => spawned.push(e) } as unknown as World);
+  const f = spawned.find((e): e is Flash => e instanceof Flash);
+  if (!f) throw new Error(`${spec.kind} left no flash`);
+  return f;
 }
 
 /** Mean x (or y) of the pixels in `chars`, as a fraction across the frame. */
@@ -100,6 +113,27 @@ describe('shots fly head first', () => {
       if (dir > 0) expect(lead).toBeGreaterThan(0);
       else expect(lead).toBeLessThan(0);
     }
+  });
+});
+
+describe('burst flashes', () => {
+  it.each([
+    { name: 'Power Beam', spec: POWER_BEAM, tail: '5' },
+    { name: 'Long Beam', spec: LONG_BEAM, tail: '5' },
+    { name: 'Ice Beam', spec: ICE_BEAM, tail: 'a' },
+  ])("$name: the impact flash points the shot's way, fired right and fired left", ({ spec, tail }) => {
+    for (const dir of [1, -1] as const) {
+      const { frame, rows } = drawn(burstFlash(spec, dir));
+      expect(frame).toBe(spec.burstFrame);
+      const lead = at(rows, '1') - at(rows, tail);
+      if (dir > 0) expect(lead, 'fired right').toBeGreaterThan(0);
+      else expect(lead, 'fired left').toBeLessThan(0);
+    }
+  });
+
+  it("every other shot's burst flash is drawn as stored, as before (the missile's explosion, the fireball)", () => {
+    for (const spec of [MISSILE, FIREBALL])
+      for (const dir of [1, -1] as const) expect(drawn(burstFlash(spec, dir)).flip, spec.kind).toBe(false);
   });
 });
 
