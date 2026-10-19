@@ -87,3 +87,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Owner: area memory (saveAreaStats) + flag-walk camera follow -> same PR as left scroll (claude/classic-scroll). Sent to scroll agent. #155 (v0.4.57) merged.
 - Release schedule sent to release session (0.4.58 chain, .59 scroll, .60 Peach+Arthur, .61 Yoshi, .62 options I, .63 options II/skins, .64 survival+cheats, .65 spike top).
 - Arthur DONE af3b3f9c (classic-extras-arthur). Owner note: torch fire 60f→3 touches (design said 4; 73f would match). Yoshi + dev toggles launched (claude/classic-extras-yoshi, wip classic-wip-yoshi, 5214).
+- Scroll PR opened #156 (classic-scroll aa1f4a9e, base main). QA reviewer running (5215). Subscribed.
