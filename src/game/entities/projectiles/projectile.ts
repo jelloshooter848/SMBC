@@ -90,6 +90,13 @@ export interface ProjectileSpec {
    * hit once.
    */
   rehitAfter?: number;
+  /** Fall speed cap with `gravity` (velocity units). Absent: 4 px/f (0x04000), today's value. */
+  maxFall?: number;
+  /**
+   * A bouncing shot (`bounceVy`) that meets a ceiling bursts, as on a wall (Classic SMBC's
+   * fireball, ML-C20). Absent: it stops rising and falls.
+   */
+  burstOnCeiling?: boolean;
 }
 
 /** A Classic shot's tile rules (BR-C2, BR-C9, BR-C16). */
@@ -345,7 +352,8 @@ export class Projectile extends Entity {
       }
       if (this.spec.gravity || this.spec.arc) {
         b.vy += this.spec.gravity || 0x00400;
-        if (b.vy > 0x04000) b.vy = 0x04000;
+        const maxFall = this.spec.maxFall ?? 0x04000;
+        if (b.vy > maxFall) b.vy = maxFall;
         moveY(b, world.map, velToSub(b.vy));
         if (b.onGround && this.spec.arc) {
           const s = this.spec.spawnOnLand;
@@ -357,7 +365,10 @@ export class Projectile extends Entity {
         }
         if (b.onGround && this.spec.bounceVy !== null) b.vy = this.spec.bounceVy;
         else if (b.onGround) b.vy = 0;
-        if (b.hitHead) b.vy = 0;
+        if (b.hitHead) {
+          if (this.spec.burstOnCeiling) return this.burst(world);
+          b.vy = 0;
+        }
       } else if (b.vy !== 0) {
         moveY(b, world.map, velToSub(b.vy));
         if (b.onGround || b.hitHead) {
