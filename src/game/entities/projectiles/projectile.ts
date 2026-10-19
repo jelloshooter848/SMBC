@@ -30,6 +30,11 @@ export interface ProjectileSpec {
   frameRate: number;
   /** Frame shown briefly when the projectile dies on a wall. */
   burstFrame?: string;
+  /**
+   * The burst Flash is mirrored like the shot (Projectile.render: flying right): for a pointed
+   * burst frame stored pointing left (Samus's beams). Absent: the Flash is drawn as stored.
+   */
+  burstMirrors?: boolean;
   /** Keeps going after hitting an enemy (each enemy is hit once). */
   pierce?: boolean;
   /**
@@ -217,7 +222,7 @@ export const SWORD_BEAM: ProjectileSpec = {
   speed: 0x03000,
   w: 16,
   h: 8,
-  frames: ['sword-beam'],
+  frames: ['sword-beam-left'],
   frameRate: 1,
 };
 
@@ -517,7 +522,10 @@ export class Projectile extends Entity {
       return;
     }
     if (this.spec.burstFrame) {
-      world.spawn(new Flash(this.body.x, this.body.y, this.spec.sheet, this.spec.burstFrame, 6, -4, -4));
+      const flip = !!this.spec.burstMirrors && this.facing > 0;
+      world.spawn(
+        new Flash(this.body.x, this.body.y, this.spec.sheet, this.spec.burstFrame, 6, -4, -4, flip),
+      );
     }
     this.destroy();
   }

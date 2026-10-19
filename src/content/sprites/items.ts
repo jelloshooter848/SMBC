@@ -301,6 +301,10 @@ const chargeShot0 = [
   '........................',
 ];
 
+/* Sword beam, 8x8: a light blue spark (white core) at the head with a streak behind it. Drawn
+ * pointing right for Classic Link's shot (LinkShot mirrors it itself when fired left) and its
+ * `-up` / `-down` turns; the campaign's beam flies on Projectile.render, which mirrors a shot
+ * flying right, so it uses `sword-beam-left`. */
 const swordBeam = [
   '........',
   '.....a..',
@@ -308,6 +312,16 @@ const swordBeam = [
   'aaaa111a',
   '....a1a.',
   '.....a..',
+  '........',
+  '........',
+];
+const swordBeamLeft = [
+  '........',
+  '..a.....',
+  '.a1a....',
+  'a111aaaa',
+  '.a1a....',
+  '..a.....',
   '........',
   '........',
 ];
@@ -947,24 +961,24 @@ const flameWave1 = [
   '8877555555555788',
 ];
 
-/* Clenched metal fist punching right: purple hand and cuff, pink thumb curled over the top with a
- * white glint, three pink knuckle bumps on the leading edge. */
+/* Clenched metal fist punching left (mirrored when fired right): purple hand and cuff, pink thumb
+ * curled over the top with a white glint, three pink knuckle bumps on the leading edge. */
 const knuckle = [
   '................',
   '................',
-  '......00000.....',
-  '.....0ddddd0....',
-  '....0d1dddcd0...',
-  '.0000dddddccc0..',
-  '0ccc0cccccccc00.',
-  '0ccc0ccccccccdd0',
-  '0ccc0cccccc000d0',
-  '0ccc0ccccccccdd0',
-  '0ccc0cccccc000d0',
-  '0ccc0ccccccccdd0',
-  '.00000cccccc0d0.',
-  '......0cccccc0..',
-  '.......000000...',
+  '.....00000......',
+  '....0ddddd0.....',
+  '...0dcddd1d0....',
+  '..0cccddddd0000.',
+  '.00cccccccc0ccc0',
+  '0ddcccccccc0ccc0',
+  '0d000cccccc0ccc0',
+  '0ddcccccccc0ccc0',
+  '0d000cccccc0ccc0',
+  '0ddcccccccc0ccc0',
+  '.0d0cccccc00000.',
+  '..0cccccc0......',
+  '...000000.......',
   '................',
 ];
 
@@ -1205,25 +1219,25 @@ const iconRush = [
 
 /* ---------- bounty-hunter beams, missiles and pickups ---------- */
 
-/* Power beam: a short gold bolt with a pale head, travelling right. Frame 1 stretches the tail a
- * pixel so the two flicker. */
+/* Power beam: a short gold bolt with a pale head, travelling left (Projectile.render mirrors a shot
+ * flying right). Frame 1 stretches the tail a pixel so the two flicker. */
 const beam0 = [
   '........',
   '........',
-  '...5556.',
-  '..556661',
-  '..556661',
-  '...5556.',
+  '.6555...',
+  '166655..',
+  '166655..',
+  '.6555...',
   '........',
   '........',
 ];
 const beam1 = [
   '........',
   '........',
-  '....556.',
-  '.5556661',
-  '.5556661',
-  '....556.',
+  '.655....',
+  '1666555.',
+  '1666555.',
+  '.655....',
   '........',
   '........',
 ];
@@ -1243,20 +1257,21 @@ const waveBeam0 = [
 ];
 const waveBeam1 = vflip(waveBeam0);
 
-/* Missile, 16x8: grey tube with a light stripe, a red nose cone, tail fins and an orange flame. */
+/* Missile, 16x8: grey tube with a light stripe, a red nose cone, tail fins and an orange flame.
+ * Stored pointing LEFT like the other shots (Projectile.render mirrors a shot flying right). */
 const missile = [
   '................',
-  '....0b0.........',
-  '....0b00000000..',
-  '.7.0bbb1bbbbb20.',
-  '7550bbbbbbbbb220',
-  '.7.0bbbbbbbbb20.',
-  '....0b00000000..',
-  '....0b0.........',
+  '.........0b0....',
+  '..00000000b0....',
+  '.02bbbbb1bbb0.7.',
+  '022bbbbbbbbb0557',
+  '.02bbbbbbbbb0.7.',
+  '..00000000b0....',
+  '.........0b0....',
 ];
 
 /* The same missile pointing straight up, 8x16 (Classic SMBC's upward missile, SA-C18). */
-const missileUp = vflip(transpose(missile));
+const missileUp = transpose(missile);
 
 /* Morph bomb: a small grey sphere whose gold core blinks white. */
 const morphBomb0 = [
@@ -1371,15 +1386,16 @@ const iconMissile = [
 /** Rotate a square block a quarter turn clockwise. */
 const rotateCW = (rows: readonly string[]): string[] => flipH(transpose(rows));
 
-/* Thrown dagger, 16x8, flying right: brown grip with a dark pommel, a black cross-guard and a long
- * grey blade with a light highlight near the guard, tapering to the point. */
+/* Thrown dagger, 16x8, flying left (mirrored when thrown right): brown grip with a dark pommel, a
+ * black cross-guard and a long grey blade with a light highlight near the guard, tapering to the
+ * point. */
 const dagger = [
   '................',
   '................',
-  '....0000000000..',
-  '0999011bbbbbbbb0',
-  '09990bbbbbbbbb0.',
-  '....0000000000..',
+  '..0000000000....',
+  '0bbbbbbbb1109990',
+  '.0bbbbbbbbb09990',
+  '..0000000000....',
   '................',
   '................',
 ];
@@ -1812,13 +1828,14 @@ const rifleShot = [
   '........',
 ];
 
-/* Machine-gun shot, 8x8: a longer orange slug tapering to a gold and white tip on the right. */
+/* Machine-gun shot, 8x8: a longer orange slug tapering to a gold and white tip on the left (it flies
+ * left; mirrored when fired right). */
 const mgShot = [
   '........',
   '........',
   '..7777..',
-  '.7776661',
-  '.7776661',
+  '1666777.',
+  '1666777.',
   '..7777..',
   '........',
   '........',
@@ -1921,23 +1938,23 @@ const spellFire1 = [
   '....7.7.........',
 ];
 
-/* Flame shot, 16x16: a rolling fireball flying right, orange outside, gold inside and a white-hot
- * heart, with a tail of flame streaming back on the left. Frame 1 rolls the tongues and the tail
- * so the two flicker. */
+/* Flame shot, 16x16: a rolling fireball flying left (mirrored when fired right), orange outside,
+ * gold inside and a white-hot heart, with a tail of flame streaming back on the right. Frame 1
+ * rolls the tongues and the tail so the two flicker. */
 const flameShot0 = [
   '................',
   '................',
-  '..........777...',
-  '........7755577.',
-  '.......77566657.',
-  '...7..7756611657',
-  '.777775561111657',
-  '7775556611116657',
-  '.777556661116657',
-  '...775566666577.',
-  '......775555577.',
-  '.....7..7777777.',
-  '..........7.7...',
+  '...777..........',
+  '.7755577........',
+  '.75666577.......',
+  '7561166577..7...',
+  '756111165577777.',
+  '7566111166555777',
+  '756611166655777.',
+  '.775666665577...',
+  '.775555577......',
+  '.7777777..7.....',
+  '...7.7..........',
   '................',
   '................',
   '................',
@@ -1945,17 +1962,17 @@ const flameShot0 = [
 const flameShot1 = [
   '................',
   '................',
-  '..........7.7...',
-  '.........777777.',
-  '.......77555557.',
-  '......7756666657',
-  '.....77566111657',
-  '.777755661111657',
-  '7775555661111657',
-  '..7.77556666657.',
-  '......775555577.',
-  '........777777..',
-  '..........7.....',
+  '...7.7..........',
+  '.777777.........',
+  '.75555577.......',
+  '7566666577......',
+  '75611166577.....',
+  '756111166557777.',
+  '7561111665555777',
+  '.75666665577.7..',
+  '.775555577......',
+  '..777777........',
+  '.....7..........',
   '................',
   '................',
   '................',
@@ -2087,6 +2104,7 @@ export const itemsDef: SpriteDef = {
     'charge-shot-0': chargeShot0,
     'charge-shot-1': swapColors(chargeShot0, { '5': '6', '6': '5' }),
     'sword-beam': swordBeam,
+    'sword-beam-left': swordBeamLeft,
     'spell-fire-0': spellFire0,
     'spell-fire-1': spellFire1,
     'bowser-flame-0': bowserFlame0,

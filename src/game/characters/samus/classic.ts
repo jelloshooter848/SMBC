@@ -562,4 +562,41 @@ export function classicSamus(
   return def;
 }
 
-export const SAMUS_CLASSIC: CharacterDef = classicSamus();
+/*
+ * SA-C32 (Samus.as initiateNormalDeath, SamusGuts.as): six pieces from her anchor (centre x, feet),
+ * the original's numbers halved for our 16 px tiles and taken per 60 fps frame: 1-3 right, 4-6
+ * left, 5 px out; top 24 px up (vy -200 px/s, gravity 500 px/s²), middle 15 px (-200, 350),
+ * bottom 6 px (-100, 150); 150 px/s sideways, gone 50 px out (MAX_X_DIST 100). The die timer is
+ * DIE_TMR_DEL_NORMAL 3000 ms, DIE_TMR_DEL_PIT 2500 ms; SFX_SAMUS_DIE plays both ways.
+ */
+const PX_S = 0.5 / 60;
+const PX_S2 = 0.5 / 3600;
+const ROWS = [
+  { y: 24, vy: -200, g: 500 },
+  { y: 15, vy: -200, g: 350 },
+  { y: 6, vy: -100, g: 150 },
+] as const;
+const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
+  sheet: 'samus-classic',
+  pieces: [1, -1].flatMap((side, s) =>
+    ROWS.map((r, i) => ({
+      frame: `guts-${s * 3 + i + 1}`,
+      x: side * 5,
+      y: r.y,
+      vx: side * 150 * PX_S,
+      vy: r.vy * PX_S,
+      gravity: r.g * PX_S2,
+      range: 50,
+    })),
+  ),
+  jingle: 'samus-classic-death',
+  frames: 180,
+  pitFrames: 150,
+};
+
+export const SAMUS_CLASSIC: CharacterDef = {
+  ...classicSamus(),
+  deathBurst: SAMUS_DEATH,
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'the hatchling',
+};

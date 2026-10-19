@@ -298,6 +298,8 @@ function remember(p: Player): void {
 }
 
 export const SIMON_CLASSIC: CharacterDef = {
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'your friend',
   ...SIMON,
   rules: 'classic',
   movement: SIMON_CLASSIC_PROFILE,
