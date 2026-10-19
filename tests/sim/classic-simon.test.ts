@@ -656,3 +656,51 @@ describe('water, blocks and armour (SI-C9, SI-C23, SI-C27, SI-C28)', () => {
     expect(r.p.activeMelee).toBeNull();
   });
 });
+
+describe('vines (SI-C30)', () => {
+  /** Puts Simon on a vine through his body, 16 px up. */
+  function onVine(r: Rig): void {
+    const b = r.p.body;
+    r.p.vine = { x: b.x + (b.w >> 1), top: 0, bottom: 200 };
+    b.y -= px(16);
+  }
+
+  it('SI-C30: on a vine no whip, no throw and no Select', () => {
+    const r = rig('fire');
+    r.p.scratch.hearts = 20;
+    const tool = r.p.scratch.tool;
+    onVine(r);
+    for (const a of ['attack', 'special', 'select'] as const) {
+      r.step([a]);
+      r.step([]);
+    }
+    expect(r.p.attackTimer).toBe(0);
+    expect(r.p.activeMelee).toBeNull();
+    expect(shots(r)).toHaveLength(0);
+    expect(r.p.scratch.tool).toBe(tool);
+    expect(r.p.scratch.hearts).toBe(20);
+  });
+
+  it('SI-C30: grabbing a vine ends a knockback lock', () => {
+    const r = rig('big');
+    r.world.hurtPlayer(r.p, 1);
+    expect(r.p.hurtLock).not.toBeNull();
+    onVine(r);
+    r.step([]);
+    expect(r.p.hurtLock).toBeNull();
+  });
+
+  it('SI-C30: a vine does not give the air jump back', () => {
+    const r = rig();
+    r.step(['jump']);
+    for (let i = 0; i < 6; i++) r.step([]);
+    r.step(['jump']);
+    expect(r.p.airJumpsLeft).toBe(0);
+    onVine(r);
+    r.step([]);
+    r.p.letGo();
+    r.step([]);
+    expect(r.p.body.onGround).toBe(false);
+    expect(r.p.airJumpsLeft).toBe(0);
+  });
+});

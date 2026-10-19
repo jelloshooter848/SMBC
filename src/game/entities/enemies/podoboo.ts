@@ -70,7 +70,7 @@ export class Podoboo extends Enemy {
 
   override render(r: Renderer, view: View): void {
     if (!this.airborne) return;
-    const sheet = view.assets.sheet(this.sheet, this.palette(view));
+    const sheet = view.assets.sheet(this.sheet, this.drawPalette(view));
     // Falling: tail up.
     r.sprite(
       sheet,

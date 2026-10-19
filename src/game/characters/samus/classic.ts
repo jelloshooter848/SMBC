@@ -217,8 +217,9 @@ function beamSpec(p: Player): ProjectileSpec {
 function devTools(p: Player): ToolInfo[] {
   if (!s(p).classicAll) return [];
   return [
-    { id: 'wave', icon: 'icon-wave-beam', count: null, usable: true },
-    { id: 'ice', icon: 'icon-ice-beam', count: null, usable: true },
+    // The missile count rides with the beam icon (the slot hudAmmo uses otherwise).
+    { id: 'wave', icon: 'icon-wave-beam', count: s(p).missiles ?? 0, usable: true },
+    { id: 'ice', icon: 'icon-ice-beam', count: s(p).missiles ?? 0, usable: true },
   ];
 }
 function iceSelected(p: Player): boolean {
