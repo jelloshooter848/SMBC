@@ -35,6 +35,13 @@ under `## [Unreleased]`.
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
   the HUD. Under water only Mario and Luigi stroke; the others jump from the floor with their own water gravity, nobody
   stomps under water, and 2-2 and 7-2 get coral stepping stones for floor jumpers. Current play is unchanged.
+- Classic rules: **Bill** plays as in the original. He walks at a steady pace that starts and stops at once, has the
+  original's fixed somersault jump, and lies flat only when he holds Down alone (Down with a direction walks with the
+  gun aimed down). Small he has the rifle; the Mushroom gives the Machine Gun (hold to keep firing); the Fire Flower adds
+  the Spread on ATTACK with the Machine Gun on SPECIAL, and SELECT swaps them. His slow bullets fly through ground and
+  pipes, open `?` blocks and break bricks from range, and burst on the first enemy they meet; standing shots fly over a
+  Goomba. Any hit freezes the game for a second and takes both guns. With the developer full kit SELECT also reaches
+  the Laser and the Flare. The CLASSIC tag now shows for Bill.
 
 ## [0.4.55] - 2026-10-13
 
