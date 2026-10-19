@@ -59,7 +59,8 @@ export const BASS_CLASSIC: CharacterDef = classicMegaMan({
   profile: BASS_CLASSIC_PROFILE,
   sheet: 'bass',
   palette: 'bass',
-  buster: { spec: BASS_BUSTER, cap: BASS_CAP_SMALL },
+  buster: { spec: BASS_BUSTER, cap: BASS_CAP_BIG },
+  busterCapSmall: BASS_CAP_SMALL,
   charge: null,
   flowerWeapon: 'water-shield',
   rush: false,
@@ -67,7 +68,6 @@ export const BASS_CLASSIC: CharacterDef = classicMegaMan({
   rapid: {
     step: BASS_FIRE_STEP,
     every: BASS_FIRE_EVERY,
-    capBig: BASS_CAP_BIG,
     aim: bassAim,
     poses: AIM_POSE,
   },

@@ -76,9 +76,10 @@ export interface CharacterBehaviour {
    */
   canSlide?(p: Player): boolean;
   /**
-   * True while the hero cannot walk on the ground this frame (Classic Simon's whip and throw root
-   * him, SI-C4; Classic Bass while his buster button is held, BA-9): read by Player.update before
-   * movement, so vx is 0 that frame. The hook may turn the hero itself (Bass). Absent: never rooted.
+   * True while the hero cannot walk on the ground this frame, read by Player.update before the
+   * walk (only on the ground), so vx is 0 that frame: Classic Simon's whip and throw (SI-C4),
+   * Classic Bass while his buster button is held (BA-9; the hook may turn him itself), Classic
+   * Samus crouched or holding Down (SA-C4), a Classic Pit aiming up (PI-9). Absent: never rooted.
    */
   rooted?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
@@ -263,6 +264,35 @@ export interface CharacterDef {
    * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
    */
   rules?: 'classic';
+  /**
+   * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
+   * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame
+   * `frames`, or `pitFrames` for a fall off the screen (no hop). Absent: today's hop.
+   */
+  deathHop?: {
+    freeze: number;
+    vy: number;
+    gravity: number;
+    maxFall: number;
+    frames: number;
+    pitFrames: number;
+  };
+  /**
+   * Classic SMBC's walk to Toad after the castle axe (ML-C26): `speed` (velocity units) a frame,
+   * then a slide to a stop, vx *= `stop` (16.16) a frame until below `snap`. Absent: 1 px a frame,
+   * stopping dead.
+   */
+  axeWalk?: { speed: number; stop: number; snap: number };
+  /**
+   * A Blooper cannot hurt this hero standing on the sea floor two tiles above the stage bottom
+   * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
+   */
+  seaFloorSafe?: boolean;
+  /**
+   * The sound the character select plays when this hero is picked (Classic Proto Man's whistle,
+   * PM-18). Absent: the select's usual sound. Only Classic-only extras set it.
+   */
+  pickSfx?: string;
 }
 
 /**

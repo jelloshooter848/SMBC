@@ -23,8 +23,7 @@ function restore(): void {
  * Snapshots the Classic registry before each test and puts it back after (whatever the test
  * registered or removed). With `hide`, each test starts with no Classic hero registered, as
  * before any hero slice (Classic-only extras stay). With `hideExtras`, each test starts with no
- * Classic-only extra registered (tests written with stand-in extras, or for an empty second row;
- * each built extra has its own test file).
+ * Classic-only extra built (tests that place their own stand-in extra, or count the roster).
  */
 export function isolateClassicRegistry(opts: { hide?: boolean; hideExtras?: boolean } = {}): void {
   beforeEach(() => {

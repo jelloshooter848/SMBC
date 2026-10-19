@@ -20,6 +20,12 @@ export const samusPalettes: Record<string, string[]> = {
   'samus-star-1': [NES.black, NES.cyan, NES.blueMid, NES.pink, NES.white, NES.white],
   'samus-star-2': [NES.black, NES.pink, NES.magenta, NES.greenLight, NES.white, NES.cyan],
   'samus-star-3': [NES.black, NES.white, NES.lightGray, NES.greenLight, NES.white, NES.yellow],
+  // Classic-only extras (pit-build report PI-20): Pit in white and light brown with a bare face,
+  // golden with the Flower; Dark Pit in dark grey and purple, his glow red.
+  pit: [NES.black, NES.white, NES.brownLight, NES.skin, NES.white, NES.yellow],
+  'pit-varia': [NES.black, NES.yellowLight, NES.brownLight, NES.skin, NES.white, NES.yellow],
+  darkpit: [NES.black, NES.darkGray, NES.purple, NES.skin, NES.lightGray, NES.red],
+  'darkpit-varia': [NES.black, NES.gray, NES.purple, NES.skin, NES.lightGray, NES.red],
 };
 
 /* ---------- composition helpers ---------- */
@@ -194,6 +200,25 @@ const jump = shooting(legsJump);
 // Standing with the cannon pointing straight up past the helmet.
 const aimUp = compose(W, H, [head, -1, 4], [torsoShoot, -1, 14], [legsStand, -1, 25], [cannonUp, 12, 4]);
 
+// Crouch (Classic SMBC, SA-C4), the body in the bottom 15 rows: helmet, shoulder pads and knees
+// folded under; `crouch-shoot` holds the cannon level at helmet height (the crouched muzzle).
+const legsCrouch = [
+  '..0222111122220.',
+  '.02221100112220.',
+  '.0222100.022210.',
+  '022222000222220.',
+  '0000000.0000000.',
+];
+const crouch = compose(W, H, [head, 0, 17], [torso.slice(0, 4), 0, 24], [legsCrouch, 0, 27]);
+const crouchShoot = compose(
+  W,
+  H,
+  [head, -2, 17],
+  [torsoShoot.slice(0, 4), -2, 24],
+  [legsCrouch, -1, 27],
+  [cannonFwd, 11, 18],
+);
+
 // Knockback: head thrown back, cannon arm flung up and out, legs splayed.
 const hurt = compose(
   W,
@@ -343,4 +368,13 @@ export const samusDef: SpriteDef = {
     'bomb-1': bomb1,
     'bomb-burst': bombBurst,
   },
+};
+
+/**
+ * Classic SMBC Samus's extra frames (SA-C4: `crouch`, `crouch-shoot`), a sheet of their own
+ * (`samus-classic`, the same palettes) so the Current sheet keeps its documented frame set.
+ */
+export const samusClassicDef: SpriteDef = {
+  palette: 'samus',
+  frames: { crouch, 'crouch-shoot': crouchShoot },
 };
