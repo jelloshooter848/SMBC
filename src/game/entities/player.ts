@@ -1,8 +1,15 @@
-import type { InputFrame } from '@engine/input/input-manager';
+import { NO_INPUT, type InputFrame } from '@engine/input/input-manager';
 import type { AABB } from '@engine/math/aabb';
 import { px, sign, tileAt, tileToSub, velToSub } from '@engine/math/units';
 import { JUMP_BUFFER_FRAMES } from '../constants';
-import { pickJumpTier, type JumpTier, type MovementProfile, type SwimProfile } from '../characters/profile';
+import {
+  damp,
+  pickJumpTier,
+  pickRiseTier,
+  type JumpTier,
+  type MovementProfile,
+  type SwimProfile,
+} from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body } from './body';
 import type { TileMap } from '../world/tilemap';
@@ -173,6 +180,38 @@ export class Player {
   private waterTier = false;
   private airCap: number;
   private sinceGround = 0;
+  /*
+   * Classic SMBC movement state (MovementProfile.rise / softCut / inertia / step / slide.distance;
+   * Player.root). Unused, and left at these values, for every Current profile.
+   */
+  /** Feet height (subpixels) at the last jump's take-off, until landing; null when not in a jump. */
+  riseY0: number | null = null;
+  /** In a constant rise: gravity off, vy held at the rise speed (RiseJump). */
+  rising = false;
+  /** The take-off tier's rise cap in px (RiseTier.cap). */
+  private riseCap = 0;
+  /** Jump was let go since the last take-off (the first release counts; MovementProfile.softCut). */
+  jumpReleased = false;
+  /** The soft cut is damping upward speed (MovementProfile.softCut). */
+  cutting = false;
+  /** In a crouch-jump (MovementProfile.crouchJump): crouch pose and hitbox until landing. */
+  crouchJump = false;
+  /** InertiaProfile: the acceleration set on the last ground frame, and the speed cap now. */
+  private inertiaAx = 0;
+  private inertiaCap = 0;
+  /** Frames left of a step nudge's stop (MovementProfile.step); the step pose shows meanwhile. */
+  stepT = 0;
+  /**
+   * Frames left of a thrown weapon's stop (Classic Mega Man's rooting, MM-C24), set by the hero's
+   * behaviour: on the ground no walking (vx 0) and no slide start. With `rootFreeze` the body also
+   * hangs still in the air (no gravity, no move: Hard Knuckle fired in the air, MM-C25).
+   */
+  root = 0;
+  rootFreeze = false;
+  /** Where a distance slide started (subpixels; MovementProfile slide.distance). */
+  private slideX0 = 0;
+  /** A distance slide turned round under a ceiling ends as soon as the ceiling clears (MM-C7). */
+  private slideEndOnClear = false;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -187,6 +226,13 @@ export class Player {
     this.body = makeBody(x, y, hb.w, hb.h);
     this.tier = this.profile.jump[0] as JumpTier;
     this.airCap = this.profile.maxWalk;
+    this.inertiaCap = this.profile.maxWalk;
+    this.inertiaAx = this.profile.inertia?.accel ?? 0;
+  }
+
+  /** This frame starts a jump: jump went down (or was buffered, unless `jumpBuffer` is false). */
+  private jumpPressed(input: InputFrame): boolean {
+    return this.profile.jumpBuffer === false ? input.pressed('jump') : input.bufferedJump(JUMP_BUFFER_FRAMES);
   }
 
   /** Re-fit the hitbox to the current state, keeping the feet in place. */
@@ -255,9 +301,25 @@ export class Player {
     if (this.vine) return this.climb(input, map, audio);
     if (this.stairs) return this.stairWalk(input);
     if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
+    if (this.profile.rise) return this.riseUpdate(input, map, audio, onHeadBump);
     let p = this.profile;
     const b = this.body;
     let dir = input.dirX;
+    // A thrown weapon's stop (Player.root; only Classic behaviours set it).
+    let rooted = false;
+    if (this.root > 0) {
+      this.root--;
+      if (b.onGround) {
+        rooted = true;
+        dir = 0;
+      } else if (this.rootFreeze) {
+        b.vx = 0;
+        b.vy = 0;
+        this.fallSpeed = 0;
+        this.updateAnim(0);
+        return;
+      }
+    } else this.rootFreeze = false;
     const wantRun = p.canRun && (input.held('attack') || input.held('run')) && !this.inWater;
     if (wantRun) this.runTimer = p.runTimerFrames;
     else if (this.runTimer > 0) this.runTimer--;
@@ -275,10 +337,18 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
+    // CharacterBehaviour.rooted (Classic Link's ground stab): no walking, turning or jumping.
+    const stabRooted = b.onGround && this.def.behaviour.rooted?.(this, input) === true;
+    if (stabRooted) dir = 0;
 
+    // A distance slide (slide.distance, Classic SMBC) has its own rules; false once it ends.
+    const distanceSlide =
+      this.stun === 0 && this.sliding > 0 && p.slide?.distance !== undefined && this.classicSlide(map, dir);
     if (this.stun > 0) {
       this.stun--;
       if (b.onGround) this.sinceGround = 0;
+    } else if (distanceSlide) {
+      this.sinceGround = 0;
     } else if (this.sliding > 0) {
       this.sliding--;
       b.vx = this.facing * (p.slide?.speed ?? 0);
@@ -293,10 +363,13 @@ export class Player {
       }
     } else if (b.onGround) {
       this.sinceGround = 0;
-      this.groundMove(dir, running);
+      if (p.inertia) this.inertiaStep(input, this.crouching && !cramped);
+      else if (!(p.step && this.stepNudge(input, map, dir, p.step))) this.groundMove(dir, running);
     } else {
       this.sinceGround++;
-      this.airMove(dir);
+      this.stepT = 0;
+      if (p.inertia) this.inertiaStep(input, false);
+      else this.airMove(dir);
     }
 
     const sw = p.swim;
@@ -313,18 +386,27 @@ export class Player {
       this.waterTier = false;
     }
 
+    // Jumping out of a slide (slide.jumpOut, Classic SMBC MM-C9): Down up and no ceiling above.
+    const slideJump =
+      this.sliding > 0 &&
+      p.slide?.jumpOut === true &&
+      b.onGround &&
+      !input.held('down') &&
+      !this.slideCeiling(map);
     const canJump =
-      this.sliding === 0 &&
+      (this.sliding === 0 || slideJump) &&
       !this.hurtLock &&
+      !stabRooted &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     // A hit's knock back takes the air jumps until he lands (the original turns his input off).
     if (this.stun > 0 && !b.onGround) this.airJumpsLeft = 0;
     if (b.onGround) this.airJumpsLeft = p.airJumps ?? 0;
-    if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
+    if (canJump && this.jumpPressed(input)) {
       if (p.slide && input.held('down') && b.onGround) {
         input.consumeJumpBuffer();
-        this.startSlide();
+        // No slide during a thrown weapon's stop or while the behaviour says no (Player.root).
+        if (!rooted && !stabRooted && (this.def.behaviour.canSlide?.(this) ?? true)) this.startSlide();
       } else {
         input.consumeJumpBuffer();
         const wallJump = this.clinging;
@@ -335,9 +417,16 @@ export class Player {
           this.clinging = false;
           this.clingLock = 12;
         }
+        if (this.sliding > 0) {
+          // A slide-jump: a normal jump at walking speed the way held (no slide speed kept).
+          this.endSlide();
+          b.vx = dir * p.maxWalk;
+        }
         this.tier = pickJumpTier(p, b.vx);
         b.vy = -this.tier.initial;
         b.onGround = false;
+        this.jumpReleased = false;
+        this.cutting = false;
         // A wall kick is a full jump even for characters whose jumps cut short on release.
         this.jumping = !(wallJump && p.variableJump === 'cut');
         // Only a genuine run (faster than the walk cap) keeps the run cap in the air; a jump at
@@ -374,6 +463,7 @@ export class Player {
     // is applied after the move. Applying gravity first shaved a frame off every jump (standing
     // apex 62 px instead of the 4 tiles SMB1 clears).
     if (!b.onGround && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
+    if (p.softCut !== undefined && !b.onGround && !this.launched) this.softCutStep(input, p.softCut);
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
     const holding =
       (p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0) || this.launched;
@@ -383,12 +473,17 @@ export class Player {
     }
 
     if (this.stun === 0) {
-      if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
+      if (p.turnInAir === false) {
+        if (b.onGround && dir !== 0) this.facing = dir;
+      } else if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
       else if (dir !== 0) this.facing = dir;
     }
 
     const wasOnGround = b.onGround;
-    const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
+    const gapSpeed =
+      wasOnGround &&
+      ((p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx) ||
+        (this.sliding > 0 && p.slide?.crossGaps === true));
     moveX(b, map, velToSub(b.vx));
     this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
@@ -399,6 +494,8 @@ export class Player {
       this.jumping = false;
       this.combo = 0;
       b.vy = 0;
+      this.jumpReleased = false;
+      this.cutting = false;
     } else if (!this.clinging) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
       if (surface) {
@@ -412,6 +509,318 @@ export class Player {
       }
     }
     this.updateAnim(dir);
+  }
+
+  /**
+   * The constant-rise path (MovementProfile.rise; ML-C2, ML-C4, ML-C5, ML-C8..ML-C13, ML-C22):
+   * the original's frame order, gravity before the move. See RiseJump and InertiaProfile.
+   */
+  private riseUpdate(
+    rawInput: InputFrame,
+    map: TileMap,
+    audio: AudioSink,
+    onHeadBump?: (tx: number, ty: number) => void,
+  ): void {
+    const p = this.profile;
+    const r = p.rise as NonNullable<MovementProfile['rise']>;
+    const b = this.body;
+    // A hit's push or knock back takes the controls (none for the plumbers, whose hits freeze).
+    const locked = this.stun > 0 || this.hurtLock !== null;
+    if (this.stun > 0) this.stun--;
+    const input = locked ? NO_INPUT : rawInput;
+    const dir = input.dirX;
+    this.skidding = false;
+    // Anything that stood him up (a power-up, a vine) ends a crouch-jump.
+    if (!this.crouching) this.crouchJump = false;
+
+    // Crouching (ML-C6): on the ground only, and only tall enough. Releasing Down skips the
+    // horizontal step once (`justCrouched`); under a low ceiling he stays down.
+    let skipStep = false;
+    if (b.onGround && !this.crouchJump) {
+      const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+      const want = input.held('down') && canCrouch;
+      const cramped = this.crouching && !want && !this.roomToStand(map);
+      if (want !== this.crouching && !cramped) {
+        this.crouching = want;
+        this.refitHitbox();
+        if (!want) skipStep = true;
+      }
+    }
+
+    if (this.inWater) {
+      // Under water: no rise, a jump press is a stroke (ML-C15); the horizontal step with the
+      // walking acceleration and no run cap.
+      this.rising = false;
+      this.cutting = false;
+      this.riseY0 = null;
+      this.crouchJump = false;
+      if (b.onGround) this.sinceGround = 0;
+      if (p.inertia && !skipStep) this.inertiaStep(input, this.crouching);
+      else if (!p.inertia) {
+        if (b.onGround) this.groundMove(this.crouching ? 0 : dir, false);
+        else this.airMove(dir);
+      }
+      return this.swim(input, map, audio, dir, onHeadBump);
+    }
+
+    // Take-off (ML-C8): a press on the ground (no buffer when `jumpBuffer` is false).
+    const canJump = b.onGround && !locked && (this.def.behaviour.canJump?.(this) ?? true);
+    if (b.onGround) {
+      this.sinceGround = 0;
+      this.airJumpsLeft = 0;
+    } else this.sinceGround++;
+    if (canJump && this.jumpPressed(input)) {
+      input.consumeJumpBuffer();
+      const t = pickRiseTier(r, b.vx);
+      b.vy = -t.speed;
+      b.onGround = false;
+      this.riseY0 = b.y + b.h;
+      this.riseCap = t.cap;
+      this.rising = true;
+      this.jumpReleased = false;
+      this.cutting = false;
+      this.jumping = true;
+      this.launched = false;
+      this.crouchJump = p.crouchJump === true && this.crouching;
+      if (!this.crouchJump && this.crouching) {
+        this.crouching = false;
+        this.refitHitbox();
+      }
+      audio.sfx(this.def.jumpSfx(this));
+    }
+
+    if (!b.onGround) {
+      const y0 = this.riseY0;
+      const h = y0 === null ? 0 : y0 - (b.y + b.h);
+      const minLine = px(r.minLine);
+      // 1. The first release (ML-C9.1, ML-C10).
+      if (y0 !== null && !this.jumpReleased && !input.held('jump')) {
+        this.jumpReleased = true;
+        if (h >= minLine) {
+          this.cutting = true;
+          this.rising = false;
+        }
+      }
+      // 2. The rise lines (ML-C9.2): back onto the line just crossed, then coast.
+      if (this.rising && y0 !== null) {
+        const cap = px(this.riseCap);
+        if (h >= cap) {
+          b.y = y0 - cap - b.h;
+          this.rising = false;
+          if (this.jumpReleased) this.cutting = true;
+        } else if (this.jumpReleased && h >= minLine) {
+          b.y = y0 - minLine - b.h;
+          this.rising = false;
+          this.cutting = true;
+        }
+      }
+      // 3. The soft cut (ML-C10): Luigi's factor is 1, but the flag still ends at the fall.
+      if (this.cutting) {
+        if (b.vy < 0) {
+          if (p.softCut !== undefined) b.vy = damp(b.vy, p.softCut);
+        } else this.cutting = false;
+      }
+    }
+
+    // 4. The horizontal step (ML-C4, ML-C13).
+    if (!skipStep) {
+      if (p.inertia) this.inertiaStep(input, this.crouching);
+      else if (b.onGround)
+        this.groundMove(this.crouching ? 0 : dir, input.held('attack') || input.held('run'));
+      else this.airMove(dir);
+    }
+    // Facing (ML-C5): with turnInAir false, on the ground to the direction held, never in the air.
+    if (!locked) {
+      if (p.turnInAir === false) {
+        if (b.onGround && dir !== 0) this.facing = dir;
+      } else if (b.vx !== 0) this.facing = sign(b.vx) as -1 | 1;
+      else if (dir !== 0) this.facing = dir;
+    }
+
+    // 5, 6. Gravity unless rising, then the fall cap (a clamp). Above a water level's surface the
+    // swim profile's own values (SW-C10); a spring's rise its own gravity (ML-C23).
+    if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
+    if (!b.onGround && !this.rising) {
+      const surface = this.aboveWater ? p.swim?.surface : undefined;
+      const g = surface
+        ? surface.gravity
+        : this.launched && this.launchGravity
+          ? this.launchGravity
+          : r.gravity;
+      b.vy += g;
+      const cap = surface ? surface.fallMax : p.maxFall;
+      if (b.vy > cap) b.vy = cap;
+    }
+
+    // 7. The move.
+    const wasOnGround = b.onGround;
+    const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
+    moveX(b, map, velToSub(b.vx));
+    this.fallSpeed = b.onGround ? 0 : b.vy;
+    const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
+    moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
+    if (gapSpeed && !b.onGround) this.crossSmallGap(map);
+    if (b.hitHead) {
+      // ML-C11: the rise ends, and the hero is sent down.
+      this.rising = false;
+      if (this.jumpReleased) this.cutting = true;
+      b.vy = r.headBump ?? 0;
+    }
+    if (b.onGround) {
+      this.jumping = false;
+      this.combo = 0;
+      b.vy = 0;
+      this.riseY0 = null;
+      this.rising = false;
+      this.cutting = false;
+      this.jumpReleased = false;
+      if (this.crouchJump) {
+        // ML-C22: crouched if Down is held, else up (once there is room to stand).
+        this.crouchJump = false;
+        if (!rawInput.held('down') && this.roomToStand(map)) {
+          this.crouching = false;
+          this.refitHitbox();
+        }
+      }
+    } else if (wasOnGround && this.crouching && !this.crouchJump) {
+      // Slid off a ledge crouched: a crouch-jump's pose to the landing, or up (the tier path's rule).
+      if (p.crouchJump) this.crouchJump = true;
+      else if (this.roomToStand(map)) {
+        this.crouching = false;
+        this.refitHitbox();
+      }
+    }
+    if (b.onGround && p.inertia) {
+      const k = p.inertia;
+      this.skidding = dir !== 0 && Math.abs(b.vx) > k.skidPose && sign(b.vx) === -dir && !this.crouching;
+    }
+    this.updateAnim(dir);
+    // The crouch-jump keeps the crouch frame in the air (MarioBase: the air state never replaces it).
+    if (this.crouchJump && this.anim === 'jump') this.anim = 'crouch';
+  }
+
+  /**
+   * The exponential horizontal step (MovementProfile.inertia, ML-C4). `crouched`: in the crouch
+   * pose (on the ground or in a crouch-jump), so no walking and no run cap.
+   */
+  private inertiaStep(input: InputFrame, crouched: boolean): void {
+    const p = this.profile;
+    const k = p.inertia as NonNullable<MovementProfile['inertia']>;
+    const b = this.body;
+    const water = this.inWater;
+    const run = !water && p.canRun && (input.held('attack') || input.held('run'));
+    const both = input.held('left') && input.held('right');
+    const dir = input.dirX;
+    const ground = b.onGround;
+    const pose = crouched || this.crouchJump;
+    if (ground) this.inertiaAx = run ? k.runAccel : k.accel;
+    const ax = water ? k.accel : this.inertiaAx;
+    const snap = () => {
+      if (Math.abs(b.vx) < k.stopSnap) b.vx = 0;
+    };
+    if (dir !== 0 && !(crouched && ground)) {
+      b.vx += dir * ax;
+      if (ground && sign(b.vx) === -dir) b.vx = damp(b.vx, k.skid);
+    } else if ((crouched && ground) || (run && (both || (dir === 0 && ground)))) {
+      b.vx = damp(b.vx, k.brake);
+      snap();
+    } else if (both || (dir === 0 && ground)) {
+      b.vx = damp(b.vx, k.release);
+      snap();
+    }
+    if (run && !pose) this.inertiaCap = p.maxRun;
+    if (b.vx > this.inertiaCap) b.vx = this.inertiaCap;
+    else if (b.vx < -this.inertiaCap) b.vx = -this.inertiaCap;
+    if (!run) {
+      if (Math.abs(b.vx) > p.maxWalk && dir !== 0) b.vx = damp(b.vx, k.runToWalk);
+      if (Math.abs(b.vx) <= p.maxWalk) this.inertiaCap = p.maxWalk;
+    }
+  }
+
+  /** The tier path's soft cut (MovementProfile.softCut): before gravity and the move. */
+  private softCutStep(input: InputFrame, k: number): void {
+    const b = this.body;
+    if (!this.jumpReleased && !input.held('jump')) {
+      this.jumpReleased = true;
+      if (b.vy < 0) this.cutting = true;
+    }
+    if (!this.cutting) return;
+    if (b.vy < 0) b.vy = damp(b.vy, k);
+    else this.cutting = false;
+  }
+
+  /**
+   * A step nudge (MovementProfile.step, Classic Mega Man MM-C2). True while it holds the walk this
+   * frame: the press frame (moved `px` at once) and the `frames` frames after.
+   */
+  private stepNudge(
+    input: InputFrame,
+    map: TileMap,
+    dir: -1 | 0 | 1,
+    step: { px: number; frames: number },
+  ): boolean {
+    const b = this.body;
+    if (this.stepT > 0) {
+      this.stepT--;
+      b.vx = 0;
+      return true;
+    }
+    if (dir === 0 || !input.pressed(dir > 0 ? 'right' : 'left') || b.vx * dir > 0) return false;
+    moveX(b, map, dir * px(step.px));
+    b.vx = 0;
+    this.facing = dir;
+    this.stepT = step.frames;
+    return true;
+  }
+
+  /**
+   * One frame of a distance slide (slide.distance, Classic Mega Man MM-C5..MM-C7), before the move.
+   * Sets vx and returns true while it goes on; ends it and returns false otherwise (the walk or
+   * fall code then runs this frame).
+   */
+  private classicSlide(map: TileMap, dir: -1 | 0 | 1): boolean {
+    const s = this.profile.slide as NonNullable<MovementProfile['slide']>;
+    const b = this.body;
+    const ceiling = s.ceilingHold === true && this.slideCeiling(map);
+    if (ceiling) {
+      if (dir !== 0 && dir === -this.facing) {
+        this.facing = dir;
+        this.slideEndOnClear = true;
+      }
+    } else {
+      const reverse = s.reverseCancel === true && dir !== 0 && dir === -this.facing;
+      const wall = b.hitWall !== 0 && b.hitWall === this.facing;
+      const done =
+        this.slideEndOnClear || !b.onGround || wall || Math.abs(b.x - this.slideX0) >= px(s.distance ?? 0);
+      if (reverse || done) {
+        this.endSlide();
+        if (reverse || wall) b.vx = 0;
+        return false;
+      }
+    }
+    b.vx = this.facing * s.speed;
+    return true;
+  }
+
+  /**
+   * A low ceiling over a slide (MM-C7): a solid tile overlapping the band from 30 px to 5 px above
+   * the feet (15 px above a 15 px slide body's top, down to 5 px above its bottom) and the body's
+   * columns, its centre within 25 px of the body's centre.
+   */
+  slideCeiling(map: TileMap): boolean {
+    const b = this.body;
+    const bottom = b.y + b.h;
+    const cx = b.x + (b.w >> 1);
+    const cy = bottom - (b.h >> 1);
+    const near = px(25);
+    for (let ty = tileAt(bottom - px(30)); ty <= tileAt(bottom - px(5) - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) {
+        if (!map.isSolid(tx, ty)) continue;
+        const tcx = tileToSub(tx) + px(8);
+        const tcy = tileToSub(ty) + px(8);
+        if (Math.abs(tcx - cx) <= near && Math.abs(tcy - cy) <= near) return true;
+      }
+    return false;
   }
 
   /** HurtLock's end conditions, checked before this frame's move (see HurtLock). */
@@ -484,7 +893,7 @@ export class Player {
     const seabedJump = seabed && (b.onGround || (b.vy >= 0 && this.overVoid(map)));
     const canJump =
       this.sliding === 0 && (this.def.behaviour.canJump?.(this) ?? true) && (!seabed || seabedJump);
-    if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
+    if (canJump && this.jumpPressed(input)) {
       input.consumeJumpBuffer();
       // A slide starts on the floor only, as on land (not in a push-off over bottomless water).
       if (seabed && p.slide && input.held('down') && b.onGround) this.startSlide();
@@ -498,7 +907,10 @@ export class Player {
     }
     if (seabed && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
     if (this.stun === 0) {
-      if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
+      // turnInAir false: under water the facing turns freely, to the direction held (ML-C5).
+      if (p.turnInAir === false) {
+        if (dir !== 0) this.facing = dir;
+      } else if (b.vx !== 0 && this.sliding === 0) this.facing = sign(b.vx) as -1 | 1;
       else if (dir !== 0) this.facing = dir;
     }
     moveX(b, map, velToSub(b.vx));
@@ -662,6 +1074,13 @@ export class Player {
     const bottom = b.y + b.h;
     b.h = px(s.hitboxH);
     b.y = bottom - b.h;
+    if (s.distance !== undefined) {
+      // A distance slide starts moving on this frame (Player.classicSlide).
+      this.slideX0 = b.x;
+      this.slideEndOnClear = false;
+      this.stepT = 0;
+      b.vx = this.facing * s.speed;
+    }
   }
 
   private endSlide(): void {
@@ -701,7 +1120,13 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
-    if (control === 'none' || dir === 0) return;
+    if (control === 'none') return;
+    if (dir === 0) {
+      // MovementProfile.airStop (Classic Link, Mega Man): with full air control, letting go in
+      // the air stops him dead.
+      if (p.airStop && control === 'full') b.vx = 0;
+      return;
+    }
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;
       return;
@@ -746,6 +1171,9 @@ export class Player {
     this.jumping = this.profile.variableJump !== 'cut';
     this.launched = true;
     this.launchGravity = 0;
+    // A rise path launch is no jump rise and keeps the last jump's release state (ML-C23).
+    this.rising = false;
+    this.crouchJump = false;
     // Leaving a spring gives the air jumps back (Simon.checkState: lastOnSpring && !onSpring).
     this.airJumpsLeft = this.profile.airJumps ?? 0;
     this.sliding = 0;
@@ -764,9 +1192,24 @@ export class Player {
     this.launchGravity = riseGravity;
   }
 
-  /** Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic). */
+  /**
+   * Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic), unless the
+   * profile sets a fixed `stompBounce`.
+   */
   stompBounce(): void {
     const b = this.body;
+    const fixed = this.profile.stompBounce;
+    if (fixed !== undefined) {
+      // A fixed bounce with normal gravity (ML-C21): no rise, no hold boost, and the last jump's
+      // release state and lines stay as they were.
+      b.vy = -fixed;
+      b.onGround = false;
+      this.jumping = false;
+      this.rising = false;
+      this.launched = false;
+      this.airJumpsLeft = this.profile.airJumps ?? 0;
+      return;
+    }
     b.vy = -0x04000;
     this.tier = pickJumpTier(this.profile, b.vx);
     this.jumping = true;
