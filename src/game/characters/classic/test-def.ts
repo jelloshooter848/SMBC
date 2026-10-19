@@ -38,7 +38,8 @@ export interface ClassicStandInOptions {
  */
 export function classicStandIn(base: CharacterDef, opts: ClassicStandInOptions = {}): CharacterDef {
   const plumber = base.id === 'mario' || base.id === 'luigi';
-  const response = CLASSIC_HIT_RESPONSES[base.id] ?? (CLASSIC_HIT_RESPONSES.mario as ClassicPowerKit['response']);
+  const response =
+    CLASSIC_HIT_RESPONSES[base.id] ?? (CLASSIC_HIT_RESPONSES.mario as ClassicPowerKit['response']);
   const kit: ClassicPowerKit = { response, ...(plumber ? { grows: true } : {}), ...opts.kit };
   const drops = opts.drops ?? CLASSIC_DROPS[base.id];
   const start = opts.start ?? {};

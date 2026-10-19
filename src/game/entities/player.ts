@@ -59,7 +59,12 @@ const floorJumpProfiles = new WeakMap<MovementProfile, MovementProfile>();
 function floorJumpProfile(base: MovementProfile, sw: SwimProfile): MovementProfile {
   let p = floorJumpProfiles.get(base);
   if (!p) {
-    const tier: JumpTier = { maxVx: Infinity, initial: sw.stroke, holdGravity: sw.gravity, fallGravity: sw.gravity };
+    const tier: JumpTier = {
+      maxVx: Infinity,
+      initial: sw.stroke,
+      holdGravity: sw.gravity,
+      fallGravity: sw.gravity,
+    };
     p = { ...base, jump: [tier], maxFall: sw.sinkMax, fallReset: sw.sinkMax };
     floorJumpProfiles.set(base, p);
   }

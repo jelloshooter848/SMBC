@@ -823,7 +823,12 @@ export class World {
     }
     // Per-rules level variants (TG-45): Classic SMBC's cells (2-2's and 7-2's stepping stones for
     // floor jumpers, SW-C12). Under Current the map is the level's own.
-    if (this.rules === 'classic') applyClassicLevelEdits(this.map, level.id, this.players.map((p) => p.def));
+    if (this.rules === 'classic')
+      applyClassicLevelEdits(
+        this.map,
+        level.id,
+        this.players.map((p) => p.def),
+      );
 
     // Static objects from the tile grid.
     for (let tx = 0; tx < level.width; tx++) {

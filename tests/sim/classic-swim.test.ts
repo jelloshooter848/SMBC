@@ -215,7 +215,16 @@ describe('floor jumpers (SW-C2, SW-C3)', () => {
     const water = slide(deepWater());
     const land = slide(
       parseTextMap(
-        ['id: dry', 'time: 300', 'start: 4,12', '', '[tiles]', ...Array(13).fill('.'.repeat(48)), '#'.repeat(48), '#'.repeat(48)].join('\n'),
+        [
+          'id: dry',
+          'time: 300',
+          'start: 4,12',
+          '',
+          '[tiles]',
+          ...Array(13).fill('.'.repeat(48)),
+          '#'.repeat(48),
+          '#'.repeat(48),
+        ].join('\n'),
       ),
     );
     expect(water.sliding).toBeGreaterThan(20);
@@ -418,7 +427,11 @@ describe('stepping stones for floor jumpers (SW-C12, TG-45)', () => {
 
   it('Classic Mario, Current Link and Current Mario get the map as it is', () => {
     const plain = new TileMap(getLevel('2-2'));
-    for (const w of [world(classicStandIn(MARIO), 'classic'), world(LINK, 'current'), world(MARIO, 'current')]) {
+    for (const w of [
+      world(classicStandIn(MARIO), 'classic'),
+      world(LINK, 'current'),
+      world(MARIO, 'current'),
+    ]) {
       expect(at(w, 134, 13)).toBe(plain.get(134, 13));
       expect(at(w, 134, 13)).not.toBe(T.HARD);
       expect(at(w, 160, 12)).toBe(T.COIN);

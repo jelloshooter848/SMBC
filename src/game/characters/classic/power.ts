@@ -314,7 +314,11 @@ function lookActive(p: Player, look: ClassicLook): boolean {
  * (Samus 25 ms: toggles after 2, 1, 2, 1… frames; Mega Man 70 ms: 5, 4, 4, 4, 4, 5…). With
  * Reduce flashing, flicker and palette-flash heroes are drawn at 65 % opacity instead.
  */
-export function classicLook(p: Player, reduceFlashing: boolean, look: ClassicLook): { visible: boolean; alpha: number } {
+export function classicLook(
+  p: Player,
+  reduceFlashing: boolean,
+  look: ClassicLook,
+): { visible: boolean; alpha: number } {
   if (p.dead || !lookActive(p, look)) return SHOWN;
   if (look.flickerMs !== undefined) {
     if (reduceFlashing) return SOFT;
