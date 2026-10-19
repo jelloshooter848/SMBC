@@ -426,6 +426,8 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
 }
 
 export const LINK_CLASSIC: CharacterDef = {
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'Princess Zelda',
   id: LINK.id,
   name: LINK.name,
   hudName: LINK.hudName,
