@@ -75,6 +75,12 @@ export interface CharacterBehaviour {
    * MM-C6). Absent: a profile with a slide always may.
    */
   canSlide?(p: Player): boolean;
+  /**
+   * True while left and right must not walk this frame (read by Player.update's tier path before
+   * the walk): Classic Samus crouched or holding Down on the ground (SA-C4), a Classic Pit aiming up
+   * on the ground (PI-9). Absent: the shared rules only (a `crouches` def's crouch).
+   */
+  holdsStill?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */
@@ -257,6 +263,30 @@ export interface CharacterDef {
    * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
    */
   rules?: 'classic';
+  /**
+   * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
+   * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame
+   * `frames`, or `pitFrames` for a fall off the screen (no hop). Absent: today's hop.
+   */
+  deathHop?: {
+    freeze: number;
+    vy: number;
+    gravity: number;
+    maxFall: number;
+    frames: number;
+    pitFrames: number;
+  };
+  /**
+   * Classic SMBC's walk to Toad after the castle axe (ML-C26): `speed` (velocity units) a frame,
+   * then a slide to a stop, vx *= `stop` (16.16) a frame until below `snap`. Absent: 1 px a frame,
+   * stopping dead.
+   */
+  axeWalk?: { speed: number; stop: number; snap: number };
+  /**
+   * A Blooper cannot hurt this hero standing on the sea floor two tiles above the stage bottom
+   * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
+   */
+  seaFloorSafe?: boolean;
 }
 
 /**

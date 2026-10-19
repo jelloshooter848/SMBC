@@ -8,7 +8,7 @@ import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
-import { samusPalettes, samusDef } from './samus';
+import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
 import { ryuPalettes, ryuDef } from './ryu';
 import { billPalettes, billDef } from './bill';
@@ -96,6 +96,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   link: linkDef,
   megaman: megamanDef,
   samus: samusDef,
+  'samus-classic': samusClassicDef,
   simon: simonDef,
   ryu: ryuDef,
   bill: billDef,
