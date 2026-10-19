@@ -46,3 +46,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Bass DONE 3cb3ad38. Bass agent integrating PR5 -> claude/classic-extras (Bass+PM+Pit, stack on heroes-2).
 - PR3 QA done (no blockers); fixes sent to Link agent (af37444) on heroes-1.
 - PR4 integrated: claude/classic-heroes-2 46ef39cb (Samus/Simon/Ryu/Bill/Sophia, on heroes-1). Bill buttons -> hide (sent). QA reviewer on PR4 running (5204). Needs re-merge of heroes-1 fixes.
+- PR4 Bill buttons hidden d7f414d3. PR5 integrated: claude/classic-extras 016cc6e5 (on heroes-2 46ef39cb). PR5 QA running (5205). Chain: heroes-1 fix -> merge into heroes-2 -> merge into extras.
