@@ -8,6 +8,16 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic Sophia III on moving lifts: with wall climbing she drives round a lift's end onto its side and underneath
+  it, and a jump grips its underside; she rides it there and lets go when it carries her away (an elevator wrapping
+  round). Her corner turns no longer jerk the screen: it eases after her.
+- Classic Samus: her suit bursts into six pieces when she dies, to her own new death jingle.
+- Classic rules: after each castle, "BUT OUR PRINCESS IS IN ANOTHER CASTLE!" names the hero's own rescue as in the
+  original (Luigi: YOUR PRINCESS, Link: PRINCESS ZELDA, Mega Man: DR. LIGHT, Samus: THE HATCHLING, Simon: YOUR FRIEND,
+  Ryu: IRENE, Bill: YOUR BUDDY, Sophia III: YOUR FROG; Mario keeps OUR PRINCESS). The campaign's text is unchanged.
+
 ## [0.4.56] - 2026-10-19
 
 ### Added

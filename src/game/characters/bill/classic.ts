@@ -384,6 +384,8 @@ export const BILL_CLASSIC_GUIDE: CharacterGuide = {
 /* ---------- the def ---------- */
 
 export const BILL_CLASSIC: CharacterDef = {
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'your buddy',
   id: BILL.id,
   name: BILL.name,
   hudName: BILL.hudName,
