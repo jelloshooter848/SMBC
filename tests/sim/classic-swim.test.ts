@@ -20,6 +20,11 @@ import { applyClassicLevelEdits, FLOOR_JUMPER_EDITS } from '@game/rules/classic-
 import { Goomba } from '@game/entities/enemies/goomba';
 import type { World } from '@game/world/world';
 import { TileMap } from '@game/world/tilemap';
+import { isolateClassicRegistry } from './classic-registry';
+
+// Independent of which hero slices have landed: no registered Classic hero def replaces this
+// file's stand-ins (tests/sim/classic-registry.ts).
+isolateClassicRegistry({ hide: true });
 
 // Classic SMBC swimming (2026-10-07-classic-swimming.md, SW-C1..SW-C12; TG-27, TG-45), driven
 // with stand-in Classic defs (characters/classic/test-def.ts) until the hero slices land.

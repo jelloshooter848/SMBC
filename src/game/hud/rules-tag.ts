@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
+import { fxPalette } from '@content/sprites/palette-fx';
 
 /**
  * The Classic rules tag (TG-31, TG-32) at the top right, under TIME and its digits (200, 8-23),
@@ -32,7 +33,19 @@ export function rulesTagX(tag: string): number {
   return tag.endsWith('?') ? 188 : 196;
 }
 
-/** Draws the tag (if any) in the HUD font. */
+/** The dark outline's offsets (as the HUD's outlined text): once each way, under the letters. */
+const OUTLINE: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
+
+/**
+ * Draws the tag (if any) in the HUD font, always with a 1-px dark outline: it sits over the sky,
+ * where white clouds would swallow plain white letters. The outline is the font's silhouette
+ * glyphs (one sprite a letter), then the letters as text.
+ */
 export function drawRulesTag(
   r: Renderer,
   assets: AssetRegistry,
@@ -40,7 +53,15 @@ export function drawRulesTag(
   heroes: readonly CharacterDef[],
 ): void {
   const tag = rulesTag(rules, heroes);
-  if (tag) r.text(assets.sheet('font'), tag, rulesTagX(tag), rulesTagY(heroes.length));
+  if (!tag) return;
+  const x = rulesTagX(tag);
+  const y = rulesTagY(heroes.length);
+  const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
+  for (const [dx, dy] of OUTLINE)
+    [...tag].forEach((ch, i) => {
+      if (ch !== ' ') r.sprite(dark, ch, x + i * 8 + dx, y + dy);
+    });
+  r.text(assets.sheet('font'), tag, x, y);
 }
 
 /** The F1 overlay's rules line (TG-33), e.g. `rules classic p1 link classic p2 mario current`. */

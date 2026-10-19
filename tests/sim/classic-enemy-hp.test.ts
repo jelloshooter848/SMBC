@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { px } from '@engine/math/units';
+import { parseTextMap } from '@game/level/textmap';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { MEGAMAN } from '@game/characters/megaman';
@@ -18,8 +19,6 @@ import { Spiny } from '@game/entities/enemies/spiny';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import type { Enemy } from '@game/entities/enemies/enemy';
 import type { Reaction } from '@game/rules/damage';
-import type { CharacterDef } from '@game/characters/character';
-import { CLASSIC_CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
 import { runSim } from '@game/sim/headless';
 import {
   CLASSIC_ATTACK_MULT,
@@ -41,6 +40,11 @@ import {
   tile,
   weapon,
 } from './classic-harness';
+import { builtClassicDefs, isolateClassicRegistry } from './classic-registry';
+
+// Independent of which hero slices have landed: no registered Classic hero def replaces this
+// file's stand-ins (tests/sim/classic-registry.ts).
+isolateClassicRegistry({ hide: true });
 
 // Classic enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24): HP
 // in the original's units, armour, hit-stun, freeze, Bowser's forms and the instant kills. The
@@ -506,10 +510,8 @@ describe('damage units follow the attacker (TG-20, TG-24)', () => {
   });
 
   it('guard: every registered Classic def that swings a melee hitbox defines meleeDamage', () => {
-    const defs = [
-      ...Object.values(CLASSIC_CHARACTERS).filter((d): d is CharacterDef => !!d),
-      ...CLASSIC_EXTRAS,
-    ];
+    // The defs registered before this file hid them.
+    const defs = builtClassicDefs();
     const bad: string[] = [];
     for (const def of defs) {
       let swung = false;
@@ -527,5 +529,54 @@ describe('damage units follow the attacker (TG-20, TG-24)', () => {
       if (swung && !def.behaviour.meleeDamage) bad.push(def.id);
     }
     expect(bad).toEqual([]);
+  });
+});
+
+describe("Bowser's HP is picked at spawn (HP-C4)", () => {
+  const level = () =>
+    parseTextMap(
+      [
+        'id: t',
+        'time: 300',
+        'start: 2,12',
+        '',
+        '[tiles]',
+        ...Array.from({ length: 13 }, () => '.'.repeat(32)),
+        '#'.repeat(32),
+        '#'.repeat(32),
+        '',
+        '[entities]',
+        'bowser 10 11 attack=hammer',
+      ].join('\n'),
+    );
+  for (const [def, hp] of [
+    [MARIO, 5000],
+    [LINK, 3600],
+  ] as const) {
+    it(`${def.id}: ${hp} before any hit`, () => {
+      const w = runSim({
+        level: level(),
+        character: classicStub(def),
+        rules: 'classic',
+        script: { steps: [] },
+        maxFrames: 30,
+        until: (world) => world.entities.some((e) => e instanceof Bowser),
+      }).world;
+      const b = w.entities.find((e): e is Bowser => e instanceof Bowser);
+      expect(b?.classicHp).toBe(hp);
+    });
+  }
+
+  it('Current: no Classic HP at spawn', () => {
+    const w = runSim({
+      level: level(),
+      character: LINK,
+      script: { steps: [] },
+      maxFrames: 30,
+      until: (world) => world.entities.some((e) => e instanceof Bowser),
+    }).world;
+    const b = w.entities.find((e): e is Bowser => e instanceof Bowser);
+    expect(b).toBeDefined();
+    expect(b?.classicHp).toBeNull();
   });
 });

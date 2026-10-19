@@ -52,6 +52,8 @@ export interface BlockStrike {
 
 export interface ClassicRulesHooks {
   enemyHit(e: Enemy, src: DamageSource, world: World): Reaction;
+  /** A map enemy just spawned: its Classic hit points are picked now (HP-C4). */
+  enemySpawned(e: Enemy, world: World): void;
   strikeBlock(
     world: World,
     tx: number,
