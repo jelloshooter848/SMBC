@@ -30,11 +30,12 @@ export function recordClassicClear(levelId: string): void {
   saveProgress({ ...p, cleared: [...p.cleared, levelId] });
 }
 
-/** A menu line as MenuScene reads it: label, value and hint. */
+/** A menu line as MenuScene reads it (label, value and hint), without a doubled full stop. */
 function spokenItem(it: MenuItem | undefined): string {
   if (!it) return '';
   const v = it.value ? `: ${it.value()}` : '';
-  return `${it.label}${v}${it.hint ? `. ${it.hint}` : ''}`;
+  const line = `${it.label}${v}`;
+  return it.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line;
 }
 
 const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
@@ -76,6 +77,10 @@ export class ClassicMenuScene extends MenuScene {
 
   override enter(): void {
     this.game.deps.announcer?.say(`Classic. The original game. ${spokenItem(this.items[this.index])}`);
+  }
+
+  protected override announce(): void {
+    this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 }
 
