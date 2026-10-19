@@ -16,3 +16,6 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - S1 integrated: claude/classic-mode (b3b6d71a + final fixes pending). QA passed, owner shown screenshots. Next: open PR 1.
 - S2-a DONE: claude/classic-shared-a 0fce9b81. Helpers in characters/classic/power.ts (classicOnHurt/OnPowerUp/Busy/StartKit/Respawn/Drop), classic-swim.ts, classic-water.ts, test-def.ts. Conflict expected in World.strikeBlock w/ S2-b (blockDrop calls).
 - Owner: no co-op in Classic; Lost Levels only after (non-dev) Classic clear; dev rows in classic pause.
+- PR 1 opened: #146 (claude/classic-mode 055ecafe). Subscribed.
+- PR2 integrated: claude/classic-shared d886a1bf (base classic-mode). Reviewer running.
+- Heroes launched: ML (wip claude/classic-wip-ml, 5186, base shared-a), MM (wip claude/classic-wip-mm, 5187, base classic-shared), Bill (wip claude/classic-wip-bill, 5188, base classic-shared). Next: Link after ML; Samus, Simon, Ryu, Sophia.
