@@ -16,6 +16,11 @@ import { CLASSIC_DROPS, classicDrop } from '@game/characters/classic/power';
 import type { CharacterDef } from '@game/characters/character';
 import type { World } from '@game/world/world';
 import { classicStub, classicWorld, sfxLog, shotSpec, step, testLevel, tile } from './classic-harness';
+import { isolateClassicRegistry } from './classic-registry';
+
+// Independent of which hero slices have landed: no registered Classic hero def replaces this
+// file's stand-ins (tests/sim/classic-registry.ts).
+isolateClassicRegistry({ hide: true });
 
 // Classic block rules (bug-reports/2026-10-07-classic-bricks-and-shots.md, BR-C1..BR-C19): brick
 // HP 125, weapons that break bricks and bump item blocks from any side, shots that pass through

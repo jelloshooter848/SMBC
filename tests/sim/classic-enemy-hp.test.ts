@@ -18,8 +18,6 @@ import { Spiny } from '@game/entities/enemies/spiny';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import type { Enemy } from '@game/entities/enemies/enemy';
 import type { Reaction } from '@game/rules/damage';
-import type { CharacterDef } from '@game/characters/character';
-import { CLASSIC_CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
 import { runSim } from '@game/sim/headless';
 import {
   CLASSIC_ATTACK_MULT,
@@ -41,6 +39,11 @@ import {
   tile,
   weapon,
 } from './classic-harness';
+import { builtClassicDefs, isolateClassicRegistry } from './classic-registry';
+
+// Independent of which hero slices have landed: no registered Classic hero def replaces this
+// file's stand-ins (tests/sim/classic-registry.ts).
+isolateClassicRegistry({ hide: true });
 
 // Classic enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24): HP
 // in the original's units, armour, hit-stun, freeze, Bowser's forms and the instant kills. The
@@ -506,10 +509,8 @@ describe('damage units follow the attacker (TG-20, TG-24)', () => {
   });
 
   it('guard: every registered Classic def that swings a melee hitbox defines meleeDamage', () => {
-    const defs = [
-      ...Object.values(CLASSIC_CHARACTERS).filter((d): d is CharacterDef => !!d),
-      ...CLASSIC_EXTRAS,
-    ];
+    // The defs registered before this file hid them.
+    const defs = builtClassicDefs();
     const bad: string[] = [];
     for (const def of defs) {
       let swung = false;

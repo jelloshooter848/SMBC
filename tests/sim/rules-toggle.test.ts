@@ -28,6 +28,10 @@ import { hasTraining, trainingScene } from '@game/tutorial/training';
 import { saveFromState } from '@game/save/save-files';
 import { fontText } from '@game/hud/text';
 import { file, makeGame, useStorage } from './heroes-harness';
+import { hideClassicHeroes, isolateClassicRegistry } from './classic-registry';
+
+// Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts).
+isolateClassicRegistry();
 
 // The Classic rules plumbing (umbrella report TG-9..TG-43, Classic mode's rules model): with no
 // Classic defs yet every hero plays Current under Classic rules and the tag reads CLASSIC?. Where
@@ -116,6 +120,8 @@ describe('Rules type and context (TG-9, TG-15)', () => {
   });
 
   it('newGameState writes rules only for classic, and Current states are as before', () => {
+    hideClassicHeroes(); // about heroes with no Classic def, whatever is built
+    hideClassicHeroes(); // about heroes with no Classic def, whatever is built
     const cur = newGameState(MARIO, LINK);
     expect('rules' in cur).toBe(false);
     expect(newGameState(MARIO, LINK, 'current')).toEqual(cur);
@@ -394,6 +400,8 @@ describe('the CLASSIC tag and the F1 line (TG-31..33)', () => {
   });
 
   it('the F1 overlay names each hero rules in a Classic world', () => {
+    hideClassicHeroes(); // about heroes with no Classic def, whatever is built
+    hideClassicHeroes(); // about heroes with no Classic def, whatever is built
     fakeClassic(MARIO);
     const w = new World(getLevel('1-1'), ctx('classic'), newGameState(MARIO, LINK, 'classic'));
     const o = new DebugOverlay();
