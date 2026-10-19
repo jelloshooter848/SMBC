@@ -12,7 +12,7 @@ import { SOPHIA } from './sophia';
 import { BILL_CLASSIC } from './bill/classic';
 import { RYU_CLASSIC } from './ryu/classic';
 import { installClassicRules } from '../rules/hooks';
-import { classicHit } from '../rules/classic-enemies';
+import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { MARIO_CLASSIC } from './mario/classic';
@@ -25,6 +25,7 @@ import { SIMON_CLASSIC } from './simon/classic';
 // to import classic modules.
 installClassicRules({
   enemyHit: classicHit,
+  enemySpawned: classicEnemySpawned,
   strikeBlock: classicStrikeBlock,
   levelEdits: applyClassicLevelEdits,
 });

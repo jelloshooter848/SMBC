@@ -995,7 +995,10 @@ export class World {
       if (tileToSub(s.x) > limit) break;
       this.spawnIndex++;
       const e = this.makeEntity(s);
-      if (e) this.entities.push(e);
+      if (!e) continue;
+      this.entities.push(e);
+      // Classic: an enemy's hit points are picked as it spawns (HP-C4: Bowser's from player 1's hero).
+      if (this.rules === 'classic' && e instanceof Enemy) classicRules().enemySpawned(e, this);
     }
   }
 
@@ -1317,9 +1320,9 @@ export class World {
     const breaker = owner ?? this.nearestPlayer(cx);
     for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
       for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++) {
-        const def = tileDef(this.map.get(tx, ty));
-        // Blasts always break (Classic: they take `amount` off a brick's 125, BR-C13).
-        if (def.block && def.block.kind !== 'hidden')
+        // Blasts always break (Classic: they take `amount` off a brick's 125 and open hidden
+        // blocks too, BR-C11/BR-C13; Current's strikeBlock leaves hidden blocks to heads).
+        if (weaponStrikable(this.map.get(tx, ty)))
           this.strikeBlock(tx, ty, breaker, true, { source: 'blast', damage: opts.amount ?? 2 });
       }
   }
@@ -2319,6 +2322,8 @@ export class World {
     hit: BlockHit = { source: 'head' },
   ): BlockStrike | undefined {
     if (this.rules === 'classic') return classicRules().strikeBlock(this, tx, ty, p, breakBricks, hit);
+    // Current: only a head opens a hidden block (shots, blasts and melee pass them by).
+    if (hit.source !== 'head' && tileDef(this.map.get(tx, ty)).block?.kind === 'hidden') return undefined;
     this.bumpBlock(tx, ty, p, breakBricks);
     return undefined;
   }
