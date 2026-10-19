@@ -269,6 +269,24 @@ const KIT: ClassicPowerKit = {
 
 const PICKUPS: Partial<Record<PickupKind, ClassicAmmo>> = { 'heart-small': HEARTS, 'heart-large': HEARTS };
 
+/**
+ * CharacterBehaviour.rooted (SI-C4): runs before movement, so it also roots him on the press
+ * frame of a whip or throw (frame 0) and lets him go on frame 21. A jump frees him.
+ */
+function rooted(p: Player, input: InputFrame): boolean {
+  if (input.pressed('jump') || classicBusy(p)) return false;
+  const s = p.scratch;
+  if (s._act) return (s._af ?? 0) + 1 < ACTION_FRAMES;
+  if (input.pressed('attack')) return true;
+  if (input.pressed('special')) {
+    const w = specialWeapon(p);
+    return w.spec !== null && hasAmmo(p, 'hearts', w.cost);
+  }
+  if (input.pressed('select') && !fullKit(p) && p.powerState === 'fire')
+    return hasAmmo(p, 'hearts', weaponById(EXTRA_WEAPON).cost);
+  return false;
+}
+
 /** Remembers this frame's ground, air-jump and spring state, to see next frame's jumps. */
 function remember(p: Player): void {
   p.scratch._g = p.body.onGround ? 1 : 0;
@@ -354,7 +372,7 @@ export const SIMON_CLASSIC: CharacterDef = {
       p.attackTimer = s._act ? ACTION_FRAMES - t : 0;
     },
     // On the ground he is rooted for the whole whip or throw, unless he jumps out of it (SI-C4).
-    rooted: (p: Player, input: InputFrame) => !!p.scratch._act && !input.pressed('jump'),
+    rooted,
     meleeDamage: (p) => ({
       kind: 'sword',
       amount: WHIP_DAMAGE[p.powerState] ?? 200,
