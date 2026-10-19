@@ -12,6 +12,7 @@ import {
   type Vulnerability,
 } from '../../rules/damage';
 import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
+import { classicRules } from '../../rules/hooks';
 import { CORPSE_GRAVITY_DEFAULT, Corpse } from '../effects/effects';
 import { isSwimLevel, type Theme } from '../../level/schema';
 
@@ -99,6 +100,21 @@ export abstract class Enemy extends Entity {
   /** Popped up by a bumped block: falls with BUMP_POP_GRAVITY until it lands. */
   protected bumpPopped = false;
 
+  // Classic rules only (rules/classic-enemies.ts, HP-C1..HP-C17). Current never sets them, so
+  // they stay at their resting values and change nothing.
+  /** Classic hit points (the original's units), set on the first Classic hit; null until then. */
+  classicHp: number | null = null;
+  /** Classic hit-stun: the world skips update() while > 0, but touching it still hurts (HP-C18). */
+  stopFrames = 0;
+  /** Classic Ice freeze: stopped and harmless to touch while > 0 (HP-C17). */
+  frozen = 0;
+  /** Classic flicker after a hit (drawn only without Reduce flashing). */
+  flashFrames = 0;
+  /** Classic blink: drawn invisible while > 0 (Mega Man's hits). */
+  blinkFrames = 0;
+  /** Classic invulnerability after a hit: no attack damages it while > 0 (HP-C11). */
+  invulnFrames = 0;
+
   constructor(x: number, y: number, wPx: number, hPx: number) {
     super(x, y, wPx, hPx);
     this.body.vx = -this.walkSpeed;
@@ -113,8 +129,18 @@ export abstract class Enemy extends Entity {
     return enemyPalette(theme);
   }
 
-  /** Apply a damage source. Returns the reaction so the world can score it / hurt the attacker. */
+  /**
+   * Apply a damage source. Returns the reaction so the world can score it / hurt the attacker.
+   * The single door for damage to enemies (TG-24): under Classic rules the hit goes to
+   * rules/classic-enemies.ts instead.
+   */
   hit(src: DamageSource, world: World): Reaction {
+    if (world.rules === 'classic') return classicRules().enemyHit(this, src, world);
+    return this.currentHit(src, world);
+  }
+
+  /** The Current reaction-table hit (also what Classic uses for stomps, bumps and the like). */
+  currentHit(src: DamageSource, world: World): Reaction {
     const reaction = this.vulnerability[src.kind] ?? 'immune';
     switch (reaction) {
       case 'kill':
@@ -150,6 +176,7 @@ export abstract class Enemy extends Entity {
         break;
       case 'immune':
       case 'hurtAttacker':
+      case 'blocked':
         break;
     }
     return reaction;
@@ -167,6 +194,36 @@ export abstract class Enemy extends Entity {
   }
 
   protected onHpHit(_src: DamageSource, _world: World): void {}
+
+  /** Classic rules: knocked out by a hit (flipped off, then the kill hooks; HP-C5). */
+  classicKill(src: DamageSource, world: World): void {
+    this.flipOut(src, world);
+    this.onKilled(src, world);
+  }
+
+  /** Classic rules: a hit took hit points and it lives (Bowser opens his mouth). */
+  classicHpHit(src: DamageSource, world: World): void {
+    this.onHpHit(src, world);
+  }
+
+  /** Classic rules: one frame of the hit effects' clocks (the world calls it every frame). */
+  tickClassicFx(): void {
+    if (this.flashFrames > 0) this.flashFrames--;
+    if (this.blinkFrames > 0) this.blinkFrames--;
+    if (this.invulnFrames > 0) this.invulnFrames--;
+    if (this.frozen > 0) this.frozen--;
+  }
+
+  /**
+   * Classic rules: not drawn this frame (a blink or a flicker of the hit flash or a thawing
+   * freeze's last 75 frames); always drawn under Reduce flashing.
+   */
+  classicHidden(view: View): boolean {
+    if (this.blinkFrames > 0 && !view.reduceFlashing) return true;
+    const flicker = this.flashFrames > 0 || (this.frozen > 0 && this.frozen <= 75);
+    return flicker && !view.reduceFlashing && (view.frame & 2) === 0;
+  }
+
   protected onShell(_src: DamageSource, _world: World): void {}
   protected onBounce(_src: DamageSource, _world: World): void {}
 
