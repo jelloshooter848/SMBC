@@ -40,6 +40,12 @@ under `## [Unreleased]`.
   in mid-air, no early jump presses, speed that builds and runs down smoothly (Luigi is slow to start and slides far), a
   small stomp bounce, the crouch-jump, the original fireball (slower, lower bounces, bursts on ceilings), a Mushroom
   while big gives fire, and their own death hop and walk to Toad. Both get their own Classic guide page.
+- Classic Simon (Classic rules): a quicker walk that starts and stops at once and steers in mid-air, a short fixed jump
+  with one more jump in mid-air, 10 hearts and no health bar. The whip hits late, roots him on the ground, breaks
+  bricks and freezes what it hits for a moment; the Mushroom gives the Morning Star and the Fire Flower the long Flame
+  Whip, with one, two or three throws at a time. Special throws the Axe (1 heart); with the Fire Flower, Select throws
+  a Cross that flies out and comes back to be caught (2 hearts). His head only bumps bricks, and any hit makes him
+  small again. In developer mode `&kit=full` adds the Dagger, Holy Water and Stopwatch, picked with Select.
 
 ## [0.4.55] - 2026-10-13
 

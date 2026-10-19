@@ -29,6 +29,7 @@ export const SIMON_CLASSIC_GUIDE: CharacterGuide = {
     { item: 'drops', does: 'Hearts, small and large: your throwing ammo. Any hit makes you small again.' },
   ],
   tips: [
+    'The whip lashes at chest height: crouch to whip short enemies such as Goombas.',
     'Your head only bumps bricks. Whip them, or throw an axe through them.',
     'A hit knocks you into a hop. Mind the pits.',
   ],
