@@ -36,6 +36,13 @@ under `## [Unreleased]`.
   Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
   buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
   (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
+- Classic mode: **Proto Man** and **Break Man** join the select screen's second row (Classic mode and developer Classic
+  runs only). They play as Classic Mega Man, but charge the buster from the start, fire two buster shots at a time
+  until they take a Mushroom, are knocked back twice as far by a hit, and shoot a little lower. Proto Man whistles
+  when picked.
+- Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
+  crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
+  crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in

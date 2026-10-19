@@ -598,7 +598,11 @@ export const MM_SHOT_PAD: ShotPad = { ground: 13, air: 17 };
  * Spawn point like the buster's (MM-C19): 19 px ahead of his centre, `pad` above his feet (13, or
  * 17 airborne, for Mega Man).
  */
-export function busterSpawn(p: Player, spec: ProjectileSpec, pad: ShotPad = MM_SHOT_PAD): { x: number; y: number } {
+export function busterSpawn(
+  p: Player,
+  spec: ProjectileSpec,
+  pad: ShotPad = MM_SHOT_PAD,
+): { x: number; y: number } {
   const b = p.body;
   const cx = b.x + (b.w >> 1);
   const muzzleY = b.y + b.h - px(b.onGround ? pad.ground : pad.air);

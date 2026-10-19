@@ -16,7 +16,7 @@ import type { GameState } from '@game/context';
 import { fontText } from '@game/hud/text';
 import { SPRITES } from '@content/sprites';
 import { sfx } from '@content/sfx/sfx';
-import { CharacterSelectScene } from '@game/scenes/character-select';
+import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { defaultSettings } from '@engine/save/settings';
 import { makeGame, useStorage } from './heroes-harness';
 import { testLevel } from './classic-harness';
