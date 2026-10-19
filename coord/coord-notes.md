@@ -38,3 +38,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Ryu DONE 4938519d + follow-up pending (Fire Wheel stop, art).
 - Sophia building separately (own PR later).
 - Bass launched (wip-bass, 5199, base shared+MM). Next: ProtoMan/BreakMan + Pit/DarkPit builder (base shared+MM+Samus).
+- Ryu follow-up DONE 9a2641d8. ProtoMan+Pit launched (wip-pm-pit, 5200).
