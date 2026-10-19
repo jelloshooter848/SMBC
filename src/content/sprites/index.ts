@@ -10,6 +10,7 @@ import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
+import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { simonPalettes, simonDef } from './simon';
 import { simonFlameDef } from './simon-flame';
 import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
@@ -103,6 +104,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   bass: bassDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
+  pit: pitDef,
+  'pit-shots': pitShotsDef,
+  'darkpit-shots': darkpitShotsDef,
   // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
   warriors: warriorsDef,
   'warriors-fx': warriorsFxDef,
@@ -190,6 +195,8 @@ const defaults: Record<string, readonly string[]> = {
   ...megamanPalettes,
   ...bassPalettes,
   ...samusPalettes,
+  ...pitPalettes,
+  ...pitShotPalettes,
   ...warriorsPalettes,
   ...simonPalettes,
   ...ryuPalettes,

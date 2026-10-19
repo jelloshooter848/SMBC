@@ -74,6 +74,11 @@ export interface ClassicSamusVariant {
   standShotHeight: number;
   /** Every beam's sound (PI-22). */
   beamSfx: string;
+  /**
+   * Art only: the look of each beam and missile it fires (Pit's arrows, PI-21), a copy of the spec
+   * with its sheet and frames swapped and every number kept. Absent: the spec's own.
+   */
+  shotLook?: (spec: ProjectileSpec) => ProjectileSpec;
 }
 
 export const SAMUS_VARIANT: ClassicSamusVariant = {
@@ -258,7 +263,7 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
     Math.round(x),
     Math.round(y),
     p.facing,
-    spec,
+    v.shotLook ? v.shotLook(spec) : spec,
     p,
     up ? { vx: 0, vy: -spec.speed, waveSign } : { waveSign },
   );
@@ -347,6 +352,11 @@ export function classicSamus(
     variant?: Partial<ClassicSamusVariant>;
     /** Palette prefix: `<prefix>` small and Mushroom, `<prefix>-varia` with the Flower. */
     palette?: string;
+    /**
+     * Its own sheet with every frame (Pit's art, PI-21), crouches included, on Samus's palette
+     * roles. Absent: Samus's sheets (`samus`, and `samus-classic` for the crouch).
+     */
+    sheet?: string;
     guide?: CharacterGuide;
     jumpSfx?: string;
   } = {},
@@ -401,7 +411,7 @@ export function classicSamus(
     else if (!b.onGround) name = flipping(p) ? `spin-${(frame >> 2) & 3}` : 'jump';
     else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
     else name = shooting ? 'shoot' : 'idle';
-    const sheet = name.startsWith('crouch') ? 'samus-classic' : 'samus';
+    const sheet = opts.sheet ?? (name.startsWith('crouch') ? 'samus-classic' : 'samus');
     return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
   }
 

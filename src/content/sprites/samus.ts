@@ -20,12 +20,7 @@ export const samusPalettes: Record<string, string[]> = {
   'samus-star-1': [NES.black, NES.cyan, NES.blueMid, NES.pink, NES.white, NES.white],
   'samus-star-2': [NES.black, NES.pink, NES.magenta, NES.greenLight, NES.white, NES.cyan],
   'samus-star-3': [NES.black, NES.white, NES.lightGray, NES.greenLight, NES.white, NES.yellow],
-  // Classic-only extras (pit-build report PI-20): Pit in white and light brown with a bare face,
-  // golden with the Flower; Dark Pit in dark grey and purple, his glow red.
-  pit: [NES.black, NES.white, NES.brownLight, NES.skin, NES.white, NES.yellow],
-  'pit-varia': [NES.black, NES.yellowLight, NES.brownLight, NES.skin, NES.white, NES.yellow],
-  darkpit: [NES.black, NES.darkGray, NES.purple, NES.skin, NES.lightGray, NES.red],
-  'darkpit-varia': [NES.black, NES.gray, NES.purple, NES.skin, NES.lightGray, NES.red],
+  // Pit and Dark Pit's palettes live with their own sheet (pit.ts).
 };
 
 /* ---------- composition helpers ---------- */
