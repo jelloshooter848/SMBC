@@ -217,7 +217,9 @@ export class SubWeaponItem extends Entity {
   }
 
   render(r: Renderer, view: View): void {
-    r.sprite(view.assets.sheet('items'), 'dagger', this.screenX(view), this.screenY());
+    // The `dagger` shot frame points left (Projectile.render mirrors it when thrown right); the
+    // pickup lies pointing right, as it always has.
+    r.sprite(view.assets.sheet('items'), 'dagger', this.screenX(view), this.screenY(), true);
   }
 }
 

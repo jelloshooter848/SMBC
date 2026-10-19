@@ -8,6 +8,27 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.57] - 2026-10-19
+
+### Added
+
+- Classic Sophia III on moving lifts: with wall climbing she drives round a lift's end onto its side and underneath
+  it, and a jump grips its underside; she rides it there and lets go when it carries her away (an elevator wrapping
+  round). Her corner turns no longer jerk the screen: it eases after her.
+- Classic Samus: her suit bursts into six pieces when she dies, to her own new death jingle.
+- Classic rules: after each castle, "BUT OUR PRINCESS IS IN ANOTHER CASTLE!" names the hero's own rescue as in the
+  original (Luigi: YOUR PRINCESS, Link: PRINCESS ZELDA, Mega Man: DR. LIGHT, Samus: THE HATCHLING, Simon: YOUR FRIEND,
+  Ryu: IRENE, Bill: YOUR BUDDY, Sophia III: YOUR FROG; Mario keeps OUR PRINCESS). The campaign's text is unchanged.
+
+### Fixed
+
+- Samus's missile now flies nose-first (it was drawn backwards), in the campaign and in Classic mode.
+- Other shots that flew tail-first now lead with their heads too: Samus's Power, Long and Ice Beams, Bill's machine-gun
+  and flame-thrower shots, Simon's dagger, Mega Man's Homing Knuckle and Hard Knuckle, and Link's sword beam in the
+  campaign.
+
+## [0.4.56] - 2026-10-19
+
 ### Added
 
 - CLASSIC MODE: a new **Classic** entry on the title, after Start game, plays the original game: Super Mario Bros.
@@ -1312,7 +1333,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...HEAD
+[0.4.57]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...v0.4.57
+[0.4.56]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...v0.4.55
 [0.4.54]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...v0.4.54
 [0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53
