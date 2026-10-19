@@ -73,3 +73,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - v0.4.56 RELEASED (#152). PR7 art opened #153 (classic-art 5a08077c, base extras-2), held. Patch builder still running.
 - #153 fixes 3816f6b8 (arrows head-first, key icon). Patch opened #154 (classic-patch b8c3d1df on main). Extras rescue names: Bass Dr. Wily; Proto/Break Roll; Pit Palutena; Dark Pit the Reaper; VV/WoL none -> add to held chain after #154 merges.
 - Owner: yes to design agents; wishlist heroes Classic-only. Launched: Peach+Arthur (wip design-peach-arthur, 5209), Yoshi (wip design-yoshi, 5210), follow-ups proposal (wip design-followups). Brief d1-wishlist.md. #154 green, in release review.
+- Follow-ups proposal DONE (wip design-followups 82fad175, docs/classic/FOLLOW_UPS_PROPOSAL.md). Finding: original Classic camera scrolls back left by default; ours locks -> asked owner. 4 owner questions pending.
