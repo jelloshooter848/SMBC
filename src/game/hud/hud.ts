@@ -243,6 +243,7 @@ export function drawHeroStats(
         r.rect(x, y0 + (segs - 1 - i) * 2 + 1, 6, 1, on ? m.colour : '#202020');
       }
     } else if (m) {
+      if (m.backing) r.rect(22, 32, 46, 10, '#000');
       text(m.label, 24, 33);
       r.rect(32, 34, 34, 5, '#fcfcfc'); // white frame so the bar reads against the sky
       r.rect(33, 35, 32, 3, '#202020');

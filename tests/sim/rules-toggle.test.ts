@@ -121,7 +121,6 @@ describe('Rules type and context (TG-9, TG-15)', () => {
 
   it('newGameState writes rules only for classic, and Current states are as before', () => {
     hideClassicHeroes(); // about heroes with no Classic def, whatever is built
-    hideClassicHeroes(); // about heroes with no Classic def, whatever is built
     const cur = newGameState(MARIO, LINK);
     expect('rules' in cur).toBe(false);
     expect(newGameState(MARIO, LINK, 'current')).toEqual(cur);
@@ -400,7 +399,6 @@ describe('the CLASSIC tag and the F1 line (TG-31..33)', () => {
   });
 
   it('the F1 overlay names each hero rules in a Classic world', () => {
-    hideClassicHeroes(); // about heroes with no Classic def, whatever is built
     hideClassicHeroes(); // about heroes with no Classic def, whatever is built
     fakeClassic(MARIO);
     const w = new World(getLevel('1-1'), ctx('classic'), newGameState(MARIO, LINK, 'classic'));

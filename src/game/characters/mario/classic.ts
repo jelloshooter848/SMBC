@@ -117,6 +117,7 @@ export function plumberClassicProfile(c: PlumberConstants): MovementProfile {
     fallReset: c.maxFall,
     canRun: true,
     coyoteFrames: 0,
+    // ML-C27: gap crossing, vines, pipes, the flagpole and the head bump as in Current.
     crossGapMinVx: MARIO_PROFILE.crossGapMinVx,
     swim: CLASSIC_SWIM.mario,
     rise,
@@ -178,6 +179,7 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
     damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
     stomps: true,
     crouches: true,
+    // ML-C24: big and fire heads break bricks, small heads bump them; the fireball never touches them.
     canBreakBricks: (p) => p.powerState !== 'small',
     sprite: (p, frame, reduceFlashing) => plumberSprite(p, frame, reduceFlashing, parts.palettes),
     blockPowerUp: classicBlockPowerUp,
