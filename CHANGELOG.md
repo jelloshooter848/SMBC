@@ -14,6 +14,10 @@ under `## [Unreleased]`.
   screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
   you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself. Auto-scrolling
   stages and one-screen rooms keep their own camera, and the campaign's camera is unchanged.
+- Classic rules: an area you leave by a pipe, vine or pit is kept as you left it, as in the original: back from a bonus
+  room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
+  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
+  the flagpole the screen follows your hero's walk to the castle. The campaign is unchanged.
 
 ## [0.4.57] - 2026-10-19
 

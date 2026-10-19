@@ -274,7 +274,31 @@ export interface WorldStart {
   deathStyle?: DeathStyle;
   /** The sound a non-hop death makes, in place of its style's own (DEATH_SFX). */
   deathSfx?: string;
+  /**
+   * Classic SMBC: the stage's areas left so far (World.areaMemory), passed on by a transfer to
+   * another area of the same stage. Left out, a Classic World starts a fresh memory (a new
+   * stage, a death, a warp: StatManager.resetLevelStats).
+   */
+  areaMemory?: AreaMemory;
 }
+
+/**
+ * An area as it was left (StatManager.saveAreaStats: its objects, ground and scenery): the tile
+ * map (bricks broken, blocks used, coins taken), the brick hit points and multi-coin blocks, the
+ * spawn list's progress and the map's own entities (enemies where and as they were, spawners,
+ * lifts) with any items still out.
+ */
+export interface AreaSnapshot {
+  tiles: Uint16Array;
+  brickHp: Map<string, number>;
+  coinBlocks: Map<string, { left: number; until: number }>;
+  spawnIndex: number;
+  spawns: EntitySpawn[];
+  entities: Entity[];
+}
+
+/** Classic SMBC: the areas of one stage left so far, by level id. */
+export type AreaMemory = Map<string, AreaSnapshot>;
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
@@ -525,15 +549,16 @@ export class World {
   private spawnIndex = 0;
   private spawns: EntitySpawn[];
   /**
-   * Scroll-back camera (Classic SMBC): the map's entities that may be parked off screen instead
-   * of despawning (parkable), and those parked now. The original keeps every object of an area
-   * from its load and only takes it off the stage, still, while it is more than 2 tiles off
-   * screen (AnimatedObject.checkStgPos: removeChild, timers stopped); it comes back as it was.
+   * Classic SMBC: the entities that came from the map's spawn list (fromMap), and, with the
+   * scroll-back camera, those parked off screen now instead of despawned. The original keeps
+   * every object of an area from its load and only takes it off the stage, still, while it is
+   * more than 2 tiles off screen (AnimatedObject.checkStgPos: removeChild, timers stopped); it
+   * comes back as it was.
    */
-  private parkable = new WeakSet<Entity>();
+  private readonly fromMap = new WeakSet<Entity>();
   private parked: Entity[] = [];
-  /** Scroll-back: spawns left of this x (subpixels) at the first frame are not parked (an arrival). */
-  private parkFrom = 0;
+  /** Classic SMBC: this stage's areas as they were left (see AreaSnapshot); null under Current. */
+  readonly areaMemory: AreaMemory | null;
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
@@ -565,6 +590,8 @@ export class World {
     player: Player;
     /** Fireworks to set off after the tally (1, 3 or 6, else 0): StatManager.touchFlag's HUD time. */
     fireworks: number;
+    /** Scroll-back camera: the hero's screen x (centre, subpixels) the walk to the castle keeps. */
+    camHold?: number;
   } | null = null;
   private pipeAnim: PipeAnim | null = null;
   /** Rising out of a pipe; `feet` is the subpixel y of the pipe top, where the rise ends. */
@@ -723,6 +750,7 @@ export class World {
     // off). Free, locked and auto-scroll cameras keep their own rules.
     this.camera.scrollBack =
       this.rules === 'classic' && !this.camera.free && !this.camera.locked && !this.camera.auto;
+    this.areaMemory = this.rules === 'classic' ? (start.areaMemory ?? new Map()) : null;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     // A fill-up spot off the map (the Top Secret Area) runs no clock.
@@ -867,28 +895,23 @@ export class World {
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
     this.camera.snapTo(this.player.body.x, this.player.body.y);
-    // A pipe, pit or vine arrival from another area: the original brings that area back as it was
-    // left (StatManager.saveAreaStats); with no such memory, what lies behind the arrival screen
-    // despawns as before rather than coming back to life.
-    if (this.camera.scrollBack && (start.clearEnemies === 'keep-piranhas' || mode === 'climb'))
-      this.parkFrom = this.camera.x - px(SPAWN_MARGIN_PX);
     this.alignBeam();
-    if (start.clearEnemies) {
-      // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
-      // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
-      // transporter at the right edge of the start cell (the pipe's middle; pitTransferEnd is
-      // shiftRight), a checkpoint from the player's centre. Fire bars and lava balls are
-      // projectiles there (FireBar, LavaFireBall), not enemies.
-      const x0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
-      const keepPiranhas = start.clearEnemies === 'keep-piranhas';
-      this.spawns = this.spawns.filter((s) => {
-        const cx = tileToSub(s.x) + px(8 + Number(s.props?.dx ?? 0));
-        if (Math.abs(cx - x0) >= px(ENEMY_REMOVAL_PX)) return true;
-        const e = this.makeEntity(s);
-        const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
-        return !enemy || (keepPiranhas && e instanceof Piranha);
-      });
-    }
+    // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
+    // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
+    // transporter at the right edge of the start cell (the pipe's middle; pitTransferEnd is
+    // shiftRight), a checkpoint from the player's centre. Fire bars and lava balls are
+    // projectiles there (FireBar, LavaFireBall), not enemies.
+    const clearX0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
+    const keepPiranhas = start.clearEnemies === 'keep-piranhas';
+    const cleared = (e: Entity | null): boolean => {
+      const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
+      return enemy && !(keepPiranhas && e instanceof Piranha);
+    };
+    const keepSpawn = (s: EntitySpawn): boolean => {
+      const cx = tileToSub(s.x) + px(8 + Number(s.props?.dx ?? 0));
+      return Math.abs(cx - clearX0) >= px(ENEMY_REMOVAL_PX) || !cleared(this.makeEntity(s));
+    };
+    if (start.clearEnemies) this.spawns = this.spawns.filter(keepSpawn);
     // Water levels (any swimming theme, or a map's `swim: true`): everything from the first row of
     // wave tiles down is swimmable.
     if (isSwimLevel(level)) {
@@ -939,6 +962,61 @@ export class World {
       const hidden = !!z.block && tileDef(this.map.get(z.block.x, z.block.y)).block?.content === 'teleporter';
       this.entities.push(new TeleportPad(z, hidden));
     }
+    // Classic SMBC: an area left earlier in this stage comes back as it was left
+    // (Level.rebuildLevel), and the arrival still clears the enemies near it.
+    const snap = this.areaMemory?.get(level.id);
+    if (snap) {
+      this.map.tiles.set(snap.tiles);
+      this.cracked = 0;
+      for (const id of this.map.tiles) if (id === T.CRACKED) this.cracked++;
+      for (const [k, v] of snap.brickHp) this.brickHp.set(k, v);
+      for (const [k, c] of snap.coinBlocks) this.coinBlocks.set(k, { ...c });
+      this.spawnIndex = snap.spawnIndex;
+      const rest = snap.spawns.slice(snap.spawnIndex);
+      this.spawns = [
+        ...snap.spawns.slice(0, snap.spawnIndex),
+        ...(start.clearEnemies ? rest.filter(keepSpawn) : rest),
+      ];
+      for (const e of snap.entities) {
+        if (
+          start.clearEnemies &&
+          cleared(e) &&
+          Math.abs(e.body.x + (e.body.w >> 1) - clearX0) < px(ENEMY_REMOVAL_PX)
+        )
+          continue;
+        if (!(e instanceof Pickup || e instanceof PowerUp)) this.fromMap.add(e);
+        if (this.camera.scrollBack && this.fromMap.has(e)) this.parked.push(e);
+        else this.entities.push(e);
+      }
+      this.areaMemory?.delete(level.id);
+    }
+  }
+
+  /**
+   * Classic SMBC (StatManager.saveAreaStats, on Level.loadArea): keeps this area as it is now for
+   * a later return within the stage. The map's entities still alive (parked ones too) and items
+   * still out are kept; everything else (projectiles, effects, Lakitu, flying fish, bullets)
+   * goes, as the original destroys them on leaving.
+   */
+  rememberArea(): void {
+    if (!this.areaMemory) return;
+    const kept: Entity[] = [];
+    for (const e of [...this.entities, ...this.parked]) {
+      if (!e.alive) continue;
+      if (this.fromMap.has(e) || e instanceof Pickup || e instanceof PowerUp) kept.push(e);
+      else e.destroy();
+    }
+    const coinBlocks = new Map<string, { left: number; until: number }>();
+    // Timers count on from the new World's first frame.
+    for (const [k, c] of this.coinBlocks) coinBlocks.set(k, { left: c.left, until: c.until - this.frame });
+    this.areaMemory.set(this.level.id, {
+      tiles: new Uint16Array(this.map.tiles),
+      brickHp: new Map(this.brickHp),
+      coinBlocks,
+      spawnIndex: this.spawnIndex,
+      spawns: this.spawns,
+      entities: kept,
+    });
   }
 
   /** The player who touched the flagpole (its level-clear sequence is running), else null. */
@@ -1018,8 +1096,7 @@ export class World {
       const e = this.makeEntity(s);
       if (!e) continue;
       this.entities.push(e);
-      if (this.camera.scrollBack && e.despawnMargin !== null && tileToSub(s.x) >= this.parkFrom)
-        this.parkable.add(e);
+      if (this.areaMemory) this.fromMap.add(e);
       // Classic: an enemy's hit points are picked as it spawns (HP-C4: Bowser's from player 1's hero).
       if (this.rules === 'classic' && e instanceof Enemy) classicRules().enemySpawned(e, this);
     }
@@ -2306,7 +2383,7 @@ export class World {
         this.entities.splice(i, 1);
         continue;
       }
-      if (this.parkable.has(e) && this.outOfReach(e)) {
+      if (this.camera.scrollBack && e.despawnMargin !== null && this.fromMap.has(e) && this.outOfReach(e)) {
         // Scroll-back: still, off the stage, until the camera comes back (see `parked`).
         this.parked.push(e);
         this.entities.splice(i, 1);
@@ -3490,6 +3567,9 @@ export class World {
           c.phase = 'walk';
           c.t = 0;
           p.facing = 1;
+          // Scroll-back camera: MarioBase's flag-pole hop sets rightScrollPosOvRd to the hero's
+          // screen x, so the screen follows the walk to the castle from there.
+          if (this.camera.scrollBack) c.camHold = p.centerX - this.camera.x;
           this.audio.playJingle('level-clear');
         }
         break;
@@ -3505,6 +3585,8 @@ export class World {
           b.y = tileToSub(feetRow) - b.h;
           b.vy = 0;
         } else b.y = before + velToSub(b.vy);
+        if (c.camHold !== undefined && p.centerX - this.camera.x > c.camHold)
+          this.camera.x = Math.min(this.camera.maxX, p.centerX - c.camHold);
         if (b.x >= c.walkTo) {
           c.phase = 'countdown';
           c.t = 0;
