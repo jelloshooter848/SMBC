@@ -26,6 +26,7 @@ import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
 import { drawRulesTag } from '../hud/rules-tag';
 import { rulesOf } from '../context';
+import { reconcileRules } from '../rules/reconcile';
 import { SCREEN_W } from '@engine/viewport';
 import { talkToCaptive } from './free-hero';
 import { endStageRound } from '../arena/stage-round';
@@ -151,7 +152,7 @@ export class LevelScene implements Scene {
     // tests (no GameDeps.freshSeeds) keep the level's fixed seed.
     const seed = start.seed ?? (game.deps.freshSeeds === true ? freshSeed() : levelSeed(level));
     // Power carried from other rules goes back to the start before the World is built (TG-16).
-    game.reconcileRules(start.rules ?? rulesOf(game.ctx));
+    reconcileRules(game, start.rules ?? rulesOf(game.ctx));
     this.world = new World(level, game.ctx, game.state, { ...start, seed });
     // The TALK prompt over a captive or a partner names the TALK button's key ("TALK (C)"); on
     // touch "TALK", the button it is then (0.4.35). Up no longer talks (0.4.43).

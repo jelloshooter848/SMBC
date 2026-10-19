@@ -311,39 +311,6 @@ export class Game {
     return [...this.deps.characters, ...CLASSIC_EXTRAS];
   }
 
-  /**
-   * Before a World is built (LevelScene, TG-16): power, hit points and kit carried from other
-   * rules go back to each hero's start for `rules` (lives, score, coins, checkpoint, time and the
-   * rest stay), and a Classic-only extra no longer in the roster gives way to the first hero
-   * (TG-42). `state.rules` is then set ('classic', or no key for Current). Said aloud.
-   */
-  reconcileRules(rules: Rules): void {
-    const s = this.state;
-    if ((s.rules ?? 'current') !== rules) {
-      const reset = (c: CharacterDef) => {
-        const d = heroFor(c, rules);
-        return { powerState: defaultPower(d), hp: startHp(d) };
-      };
-      const p1 = reset(s.character);
-      s.powerState = p1.powerState;
-      s.hp = p1.hp;
-      s.kit = {};
-      if (s.character2) {
-        const p2 = reset(s.character2);
-        s.powerState2 = p2.powerState;
-        s.hp2 = p2.hp;
-      }
-      s.kit2 = {};
-      if (rules === 'classic') s.rules = 'classic';
-      else delete s.rules;
-      this.deps.announcer?.say('Rules changed. Power reset.');
-    }
-    const roster = this.roster;
-    const gone = (c: CharacterDef) => CLASSIC_EXTRAS.includes(c) && !roster.includes(c);
-    if (gone(s.character)) this.setHero(0, this.firstHero);
-    if (s.character2 && gone(s.character2)) this.setHero(1, this.firstHero);
-  }
-
   get ctx(): GameContext {
     return this.deps.ctx;
   }

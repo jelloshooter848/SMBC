@@ -97,7 +97,7 @@ export interface GameState {
    * The rules `powerState`, `hp`, `kit` and their player-2 copies were earned under (TG-15).
    * Written only as 'classic' (absent: 'current'), so every Current state is exactly as before.
    * Never written into a campaign save (campaign files always play Current). A level start under
-   * other rules resets the carried power (LevelScene: reconcileRules).
+   * other rules resets the carried power (rules/reconcile.ts).
    */
   rules?: Rules;
 }
