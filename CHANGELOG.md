@@ -23,6 +23,13 @@ under `## [Unreleased]`.
   hero you play has its Classic version. Changing the rules puts your hero's power back to the start ("Rules changed.
   Power reset."). Campaign files, mini games and training rooms always play today's rules. In developer mode the Level
   select also has a **Rules** row, and `?dev=1&rules=classic&level=1-1&char=<id>` starts a run under Classic SMBC rules.
+- Classic rules: **Mega Man** plays as in the original. No health bar: he starts small, the Mushroom gives the charge
+  shot (two levels) and the Fire Flower gives Metal Blade on Special, aimed eight ways, with its own energy bar; one hit
+  takes both away. Buster shots fly through walls and pipes and break bricks. He takes a small first step, his jump
+  eases off when you let go, and he can jump out of a slide, slide under low ceilings and over one-tile holes. A tap of
+  Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
+  buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
+  (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
 - Classic rules: enemies have the original's hit points and take numbered damage (a Goomba takes three Mega Buster
   shots; Bowser's health depends on his form and on whether Mario or Luigi faces him). Buzzy Beetles and Bullet Bills
   are armoured: only piercing weapons hurt them, and a blocked hit plays a new armour sound. Hit-stun, freeze and the
