@@ -1243,20 +1243,21 @@ const waveBeam0 = [
 ];
 const waveBeam1 = vflip(waveBeam0);
 
-/* Missile, 16x8: grey tube with a light stripe, a red nose cone, tail fins and an orange flame. */
+/* Missile, 16x8: grey tube with a light stripe, a red nose cone, tail fins and an orange flame.
+ * Stored pointing LEFT like the other shots (Projectile.render mirrors a shot flying right). */
 const missile = [
   '................',
-  '....0b0.........',
-  '....0b00000000..',
-  '.7.0bbb1bbbbb20.',
-  '7550bbbbbbbbb220',
-  '.7.0bbbbbbbbb20.',
-  '....0b00000000..',
-  '....0b0.........',
+  '.........0b0....',
+  '..00000000b0....',
+  '.02bbbbb1bbb0.7.',
+  '022bbbbbbbbb0557',
+  '.02bbbbbbbbb0.7.',
+  '..00000000b0....',
+  '.........0b0....',
 ];
 
 /* The same missile pointing straight up, 8x16 (Classic SMBC's upward missile, SA-C18). */
-const missileUp = vflip(transpose(missile));
+const missileUp = transpose(missile);
 
 /* Morph bomb: a small grey sphere whose gold core blinks white. */
 const morphBomb0 = [
