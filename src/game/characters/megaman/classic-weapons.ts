@@ -122,6 +122,7 @@ const SHOT: Body = {
   sheet: 'items',
   classicHit: MM_HIT,
   classicBlocks: PASS_END,
+  // MM-C26: armour bounces it back, harmless.
   onBlocked: 'deflect',
 };
 const WEAPON: Body = { ...SHOT, damage: 'weapon' };

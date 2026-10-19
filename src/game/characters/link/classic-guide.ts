@@ -2,7 +2,7 @@ import type { CharacterGuide } from '../character';
 
 /** Classic SMBC Link's "How to play" page (TG-22, LK-C3). */
 export const LINK_CLASSIC_GUIDE: CharacterGuide = {
-  tagline: 'Link: stab, thrust, boomerang',
+  tagline: 'Stab, thrust and boomerang',
   controls: [
     {
       action: 'left/right',

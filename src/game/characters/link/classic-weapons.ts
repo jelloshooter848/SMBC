@@ -219,6 +219,9 @@ const BOOMERANG_SPEC: ProjectileSpec = {
   classicBlocks: { ground: 'none', afterBlock: 'continue', strikesBlocks: false },
 };
 
+/**
+ * LK-C34: no damage, a 180-frame stop through armour; Bowser and Lakitu resist it (resistsStop).
+ */
 /** The yellow boomerang (LK-C32): 300 px/s, brakes 75 px out, pull 0.00694 per px. */
 export const SHORT_BOOMERANG: BoomerangKind = { spec: BOOMERANG_SPEC, range: 75, pull: 0.00694 };
 /** The Magic Boomerang (LK-C33): 400 px/s, no range, pull 0.01667 per px. */
