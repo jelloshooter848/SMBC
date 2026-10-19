@@ -15,6 +15,7 @@ import { ENEMY_SCORES, killScore, type KillScores } from '../../rules/score';
 import { classicRules } from '../../rules/hooks';
 import { CORPSE_GRAVITY_DEFAULT, Corpse } from '../effects/effects';
 import { isSwimLevel, type Theme } from '../../level/schema';
+import { fxPalette } from '@content/sprites/palette-fx';
 
 /**
  * A block bumped under a koopa or spiny pops it up (KoopaGreen.gBounceHit / Spiney.gBounceHit):
@@ -63,6 +64,22 @@ export function enemyPalette(theme: Theme): string {
     default:
       return 'enemies-overworld';
   }
+}
+
+/** A Classic freeze's last, flashing stretch: from 4750 of its 6000 ms (StatFxFreeze), 75 frames. */
+const FREEZE_FLASH_FRAMES = 75;
+
+/**
+ * Whether a Classic Ice-frozen enemy (`frozen` frames left) shows the frozen colour now (SA-C21,
+ * HP-C17): all the freeze, except that from frame 285 it switches between the frozen colour and
+ * its own every 40 ms (2 and 3 frames in turn); with Reduce flashing it stays frozen-coloured.
+ * Never for `frozen` 0 (Current never freezes).
+ */
+export function frozenLook(frozen: number, reduceFlashing: boolean): boolean {
+  if (frozen <= 0) return false;
+  if (reduceFlashing || frozen > FREEZE_FLASH_FRAMES) return true;
+  const k = FREEZE_FLASH_FRAMES - frozen;
+  return Math.floor((k * 1000) / 60 / 40) % 2 === 0;
 }
 
 export abstract class Enemy extends Entity {
@@ -215,13 +232,18 @@ export abstract class Enemy extends Entity {
   }
 
   /**
-   * Classic rules: not drawn this frame (a blink or a flicker of the hit flash or a thawing
-   * freeze's last 75 frames); always drawn under Reduce flashing.
+   * Classic rules: not drawn this frame (a blink or a flicker of the hit flash); always drawn
+   * under Reduce flashing. A freeze shows by colour instead (drawPalette).
    */
   classicHidden(view: View): boolean {
     if (this.blinkFrames > 0 && !view.reduceFlashing) return true;
-    const flicker = this.flashFrames > 0 || (this.frozen > 0 && this.frozen <= 75);
-    return flicker && !view.reduceFlashing && (view.frame & 2) === 0;
+    return this.flashFrames > 0 && !view.reduceFlashing && (view.frame & 2) === 0;
+  }
+
+  /** The palette the enemy is drawn with now: `palette(view)`, or frozen (frozenLook). */
+  drawPalette(view: View): string {
+    const pal = this.palette(view);
+    return frozenLook(this.frozen, view.reduceFlashing) ? fxPalette(pal, 'frozen') : pal;
   }
 
   protected onShell(_src: DamageSource, _world: World): void {}
@@ -303,7 +325,7 @@ export abstract class Enemy extends Entity {
     if (!this.currentFrame) return;
     // A stunned enemy flickers (skipped every fourth frame) unless reduced flashing is on.
     if (this.stunned > 0 && !view.reduceFlashing && (view.frame & 3) === 0) return;
-    const sheet = view.assets.sheet(this.sheet, this.palette(view));
+    const sheet = view.assets.sheet(this.sheet, this.drawPalette(view));
     r.sprite(sheet, this.currentFrame, this.screenX(view), this.screenY(), this.facing > 0);
   }
 }

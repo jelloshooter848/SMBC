@@ -159,7 +159,7 @@ export class Cheep extends Enemy {
   override render(r: Renderer, view: View): void {
     // Leaping fish on the way down flip tail-up like the original.
     if (this.flying && this.body.vy > 0) {
-      const sheet = view.assets.sheet(this.sheet, this.palette(view));
+      const sheet = view.assets.sheet(this.sheet, this.drawPalette(view));
       r.sprite(sheet, this.currentFrame, this.screenX(view), this.screenY(), this.facing > 0, true);
       return;
     }

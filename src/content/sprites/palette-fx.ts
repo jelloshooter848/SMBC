@@ -8,11 +8,13 @@ import { hexToRgb, type Palette, type PaletteFx } from '@engine/gfx/palette';
  *   true-form outline with reduce flashing on, full contrast over his green, tan and red and the
  *   castle's black (docs/STORY.md 2.3a);
  * - `brainwashed` / `brainwashed-glow`: a captive hero's dark purple trance, by brightness (the
- *   glow a little lighter, for the captive's slow pulse).
+ *   glow a little lighter, for the captive's slow pulse);
+ * - `frozen`: an icy blue ramp by brightness (Classic SMBC's Ice Beam freeze, SA-C21/HP-C17;
+ *   Enemy.drawPalette).
  * Map pages add `shade-<theme>` / `shade-<theme>-glow` (mapShadeFx): a hidden hero's faint
  * silhouette on the world map, in the page's own ground shade.
  */
-export type HeroFx = 'silhouette' | 'rim' | 'tell' | 'brainwashed' | 'brainwashed-glow';
+export type HeroFx = 'silhouette' | 'rim' | 'tell' | 'brainwashed' | 'brainwashed-glow' | 'frozen';
 
 /** The palette name for `palette` recoloured by `fx` ('luigi' → 'luigi~silhouette'). */
 export function fxPalette(palette: string, fx: HeroFx): string {
@@ -23,6 +25,14 @@ const hex = (n: number) =>
   Math.max(0, Math.min(255, Math.round(n)))
     .toString(16)
     .padStart(2, '0');
+
+/** An ice-blue ramp by brightness: dark stays a deep blue, white becomes near white. */
+const ice: PaletteFx = (pal: Palette) =>
+  pal.map((c) => {
+    const [r, g, b] = hexToRgb(c);
+    const t = (0.3 * r + 0.55 * g + 0.15 * b) / 255;
+    return `#${hex(24 + 200 * t)}${hex(72 + 180 * t)}${hex(160 + 95 * t)}`;
+  });
 
 /** A purple ramp by brightness: black stays a deep violet, white becomes a pale lilac. */
 function purple(boost: number): PaletteFx {
@@ -40,6 +50,7 @@ export const HERO_FX: Record<HeroFx, PaletteFx> = {
   tell: (pal) => pal.map(() => '#00fcfc'),
   brainwashed: purple(0),
   'brainwashed-glow': purple(0.25),
+  frozen: (pal) => ice(pal),
 };
 
 /** The trance's lilac the map shade's shimmer leans toward. */

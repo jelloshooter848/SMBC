@@ -69,12 +69,14 @@ export interface CharacterBehaviour {
   /** An enemy projectile is about to hit the player; return true to block it (shields). */
   blocks?(p: Player, projectile: Projectile): boolean;
   /**
-   * True while the hero is rooted to the spot (Classic Link's ground stab and throw, LK-C6): on
-   * the ground Left/Right neither move nor turn him and he cannot jump. Read by Player.update
-   * (tier path) before the walk step, with this frame's input, so an attack pressed now roots
-   * him from this frame. Absent: never rooted.
+   * The hero is rooted to the spot this frame (Classic SMBC only; absent: never). Read by
+   * Player.update (tier path) before the walk step, with this frame's input, and only on the
+   * ground, next to Player.root (a stop counted in frames): Left/Right neither move nor turn him.
+   * `true` also forbids jumping (Classic Link's ground stab and throw, LK-C6); `'canJump'` lets
+   * him jump out of it (Classic Simon's whip and throws SI-C4, Samus crouched or holding Down
+   * SA-C4, Pit aiming up PI-9). `false`: free.
    */
-  rooted?(p: Player, input: InputFrame): boolean;
+  rooted?(p: Player, input: InputFrame): boolean | 'canJump';
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
   /**
@@ -293,6 +295,40 @@ export interface CharacterDef {
    * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
    */
   seaFloorSafe?: boolean;
+  /**
+   * Down crouches only with no left/right and no up held (Classic SMBC Bill, BI-C3/BI-C8: Down plus a
+   * direction walks with the gun aimed down, and Up wins over Down). Absent: Down crouches whatever
+   * else is held, as today.
+   */
+  crouchNeedsNoDirection?: boolean;
+  /**
+   * A death that throws the body (Classic SMBC Bill, BI-C15): vx = `vx` in direction `dir(p)`,
+   * vy = -`vy`, then each frame gravity (added before the move, as the original does) capped at
+   * `maxFall`; the body lands on the ground and lies there. The death ends `afterLand` frames
+   * after landing, or at `maxFrames` if he never lands. A fall off the bottom of the screen keeps
+   * the shared pit death. Velocity units. Absent: today's hop.
+   */
+  deathThrow?: {
+    vx: number;
+    vy: number;
+    gravity: number;
+    maxFall: number;
+    afterLand: number;
+    maxFrames: number;
+    dir(p: Player): -1 | 1;
+  };
+  /**
+   * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
+   * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
+   * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.
+   */
+  levelFlags?: {
+    horz?: boolean;
+    vert?: boolean;
+    wide?: boolean;
+    goodSwimmer?: boolean;
+    poorBowser?: boolean;
+  };
 }
 
 /**

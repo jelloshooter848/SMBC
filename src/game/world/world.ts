@@ -5,7 +5,8 @@ import { SCORE_MAX } from '../hud/hud';
 import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
-import { overlaps } from '@engine/math/aabb';
+import { overlaps, type AABB } from '@engine/math/aabb';
+import type { Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -101,7 +102,15 @@ import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, trueFormOf, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
-import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type DeathStyle } from './death-style';
+import {
+  DEATH_FRAMES,
+  DEATH_SFX,
+  renderDeath,
+  startDeath,
+  stepDeath,
+  stepThrow,
+  type DeathStyle,
+} from './death-style';
 import { Axe } from '../entities/objects/axe';
 import { CaveFire, Moblin } from '../entities/objects/moblin';
 import { YoshiEgg } from '../entities/objects/yoshi-egg';
@@ -299,6 +308,37 @@ const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
 function weaponStrikable(id: number): boolean {
   const block = tileDef(id).block;
   return !!block && !(block.kind === 'hidden' && block.content === 'teleporter');
+}
+
+/** The block a Classic frozen enemy carries (HP-C17): 16x16, left and bottom on its hitbox's. */
+function frozenBlock(e: Enemy): AABB {
+  const b = e.body;
+  return { x: b.x, y: b.y + b.h - px(16), w: px(16), h: px(16) };
+}
+
+/**
+ * Keeps a player's body out of a solid box that is not on the tile grid (a frozen enemy's block):
+ * lands on its top, bumps its underside, stops at its sides (as Spring.block does).
+ */
+function solidBox(b: Body, s: AABB): void {
+  if (!(b.x < s.x + s.w && b.x + b.w > s.x && b.y < s.y + s.h && b.y + b.h > s.y)) return;
+  if (b.vy >= 0 && b.prevBottom <= s.y + px(4)) {
+    b.y = s.y - b.h;
+    b.vy = 0;
+    b.onGround = true;
+  } else if (b.vy < 0 && b.y - velToSub(b.vy) >= s.y + s.h - px(4)) {
+    b.y = s.y + s.h;
+    b.vy = 0;
+    b.hitHead = true;
+  } else if (b.x + b.w / 2 < s.x + s.w / 2) {
+    b.x = s.x - b.w;
+    if (b.vx > 0) b.vx = 0;
+    b.hitWall = 1;
+  } else {
+    b.x = s.x + s.w;
+    if (b.vx < 0) b.vx = 0;
+    b.hitWall = -1;
+  }
 }
 
 /** A hero's attack in flight: a shot or thrown weapon a player owns (or a hero shot's own shot). */
@@ -540,6 +580,8 @@ export class World {
   private readonly deathTimers = new Map<Player, number>();
   /** Players whose CharacterDef.deathHop death began below the screen (a pit: no hop). */
   private readonly pitDeaths = new Set<Player>();
+  /** Thrown deaths (CharacterDef.deathThrow): the frame he landed (null while in the air). */
+  private readonly throwDeaths = new Map<Player, { landed: number | null }>();
   private readonly respawnTimers = new Map<Player, number>();
   /** Players still in a fall arrival's straight drop (FALL_IN_STEER_Y): no steering yet. */
   private readonly fallingIn = new Set<Player>();
@@ -842,12 +884,13 @@ export class World {
       this.waterTop = tileToSub(row) + px(8);
     }
     // Per-rules level variants (TG-45): Classic SMBC's cells (2-2's and 7-2's stepping stones for
-    // floor jumpers, SW-C12). Under Current the map is the level's own.
+    // floor jumpers, SW-C12; wide heroes' shafts, SO-48). Under Current the map is the level's own.
     if (this.rules === 'classic')
       classicRules().levelEdits(
         this.map,
         level.id,
         this.players.map((p) => p.def),
+        this.spawns,
       );
 
     // Static objects from the tile grid.
@@ -1633,6 +1676,10 @@ export class World {
       } else p.def.behaviour.update(p, input, this);
       // Springboards are solid: keep the player out of their box (landing on top starts a ride).
       for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
+      // Classic Ice (HP-C17, SA-C21): a frozen enemy carries a solid 16x16 block for players only
+      // (its left and bottom edges on the enemy's). Only Classic hits ever set `frozen`.
+      for (const e of this.entities)
+        if (e instanceof Enemy && e.alive && e.frozen > 0) solidBox(p.body, frozenBlock(e));
       if (p.body.x < this.camera.x) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
@@ -1666,6 +1713,10 @@ export class World {
           e.stopFrames--;
           continue;
         }
+      } else if (e instanceof Projectile && e.stopFrames > 0) {
+        // Classic Stopwatch (SI-C25): an enemy projectile held still.
+        e.stopFrames--;
+        continue;
       }
       e.levelHeightPx = this.heightPx;
       e.update(this);
@@ -2760,7 +2811,7 @@ export class World {
       if (!pr.spec.pierce) pr.destroy();
       return;
     }
-    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected) return;
+    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected || pr.bursting > 0) return;
     // Mega Man's airship: Larry's wand blasts can be shot down (a few points; the shot goes on
     // only if it pierces).
     if (this.megamanShip)
@@ -2801,7 +2852,9 @@ export class World {
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');
       // A shot that pierces what it defeats goes on only past a kill.
-      const through = pr.spec.pierce || (pr.spec.pierceDefeat && r !== 'hp' && r !== 'stun');
+      const through =
+        pr.spec.pierce ||
+        (pr.spec.pierceKillsOnly ? r === 'kill' : pr.spec.pierceDefeat && r !== 'hp' && r !== 'stun');
       if (!through) {
         pr.burst(this);
         return;
@@ -2867,6 +2920,14 @@ export class World {
     p.star = 0;
     p.activeMelee = null;
     this.deathTimers.set(p, 0);
+    const dt = p.def.deathThrow;
+    if (dt && this.deathStyle === 'hop' && toPx(p.body.y) <= this.heightPx) {
+      // Thrown away from the hit (Classic SMBC Bill, BI-C15); a pit death keeps the shared timing.
+      p.body.vx = dt.dir(p) * dt.vx;
+      p.body.vy = -dt.vy;
+      p.body.onGround = false;
+      this.throwDeaths.set(p, { landed: null });
+    }
     if (this.deathSfx) {
       // A mini game's own death (WorldStart.deathStyle): its sound, and the music stops.
       startDeath(this.deathStyle, p);
@@ -2891,8 +2952,14 @@ export class World {
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
-    const hop = this.deathStyle === 'hop' ? p.def.deathHop : undefined;
-    if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
+    const thrown = this.throwDeaths.get(p);
+    const dt = p.def.deathThrow;
+    const hop = this.deathStyle === 'hop' && !(thrown && dt) ? p.def.deathHop : undefined;
+    if (thrown && dt) {
+      // A thrown body (CharacterDef.deathThrow, Classic SMBC Bill BI-C15).
+      stepThrow(p, dt.gravity, dt.maxFall, this.map);
+      if (thrown.landed === null && p.body.onGround) thrown.landed = t;
+    } else if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
     else if (hop) {
       // A hero's own death (CharacterDef.deathHop, Classic SMBC ML-C18): no hop after a pit.
       if (t === 1 && toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
@@ -2910,7 +2977,16 @@ export class World {
         p.body.y += velToSub(p.body.vy);
       }
     }
-    const end = hop ? (this.pitDeaths.has(p) ? hop.pitFrames : hop.frames) : DEATH_FRAMES[this.deathStyle];
+    const end =
+      thrown && dt
+        ? thrown.landed !== null
+          ? thrown.landed + dt.afterLand
+          : dt.maxFrames
+        : hop
+          ? this.pitDeaths.has(p)
+            ? hop.pitFrames
+            : hop.frames
+          : DEATH_FRAMES[this.deathStyle];
     if (t === end) {
       this.pitDeaths.delete(p);
       if (!this.coop) {
@@ -2948,6 +3024,7 @@ export class World {
     p.body.vx = 0;
     p.body.vy = 0;
     this.deathTimers.delete(p);
+    this.throwDeaths.delete(p);
     this.respawnTimers.set(p, COOP_RESPAWN_FRAMES);
     p.def.behaviour.onRespawn?.(p, this);
   }

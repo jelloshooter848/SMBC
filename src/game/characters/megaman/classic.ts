@@ -84,7 +84,7 @@ export const MEGAMAN_CLASSIC_PROFILE: MovementProfile = {
   maxFall: 0x05d55,
   fallReset: 0x05d55,
   variableJump: false,
-  softCut: 52055, // 0.7943 = 1e-6^(1/60) (MegaManBase fy^dt)
+  softCut: 52057, // 0.79433 = 1e-6^(1/60) (MegaManBase fy^dt)
   airStop: true,
   step: { px: 2, frames: 6 },
   slide: {

@@ -37,6 +37,12 @@ export interface ProjectileSpec {
    * original's PR_PASSTHROUGH_DEFEAT: Mega Man's full charge shot).
    */
   pierceDefeat?: boolean;
+  /**
+   * Classic rules (Ryu's Fire Wheel and Dragon Ball, RY-C29): goes on only through an enemy the
+   * hit killed; anything else it hits (hurt, shelled, stunned) stops it. Absent: `pierce` and
+   * `pierceDefeat` decide.
+   */
+  pierceKillsOnly?: boolean;
   /** Initial vertical speed (velocity units); callers can override per shot. */
   vy?: number;
   /** Falls under gravity and dies on landing (no bounce). */
@@ -64,8 +70,13 @@ export interface ProjectileSpec {
    * only ? blocks (Simon's campaign axe). Its centre decides which tile it is crossing.
    */
   bumpsBlocks?: 'all' | 'question';
-  /** Snakes up and down around its launch height (px amplitude, frames per cycle). */
-  wave?: { amplitude: number; period: number };
+  /**
+   * Snakes up and down around its launch height (px amplitude, frames per cycle, which may be
+   * fractional). `vertical`: flying straight up or down (vx 0) it snakes left and right around its
+   * launch x instead (Classic Samus's Wave Beam, SA-C22); absent, a vertical shot flies straight.
+   * ProjectileOptions.waveSign starts it the other way.
+   */
+  wave?: { amplitude: number; period: number; vertical?: true };
   /** An arcing projectile leaves this behind where it lands (holy water's flame). */
   spawnOnLand?: ProjectileSpec;
   /**
@@ -97,6 +108,14 @@ export interface ProjectileSpec {
    * fireball, ML-C20). Absent: it stops rising and falls.
    */
   burstOnCeiling?: boolean;
+  /**
+   * Classic SMBC (Samus's beams, SA-C19): instead of vanishing into a burst Flash, the shot stops
+   * where it ended and shows `burstFrame` for this many frames, harmless (it hits nothing more)
+   * but still on screen, so it still counts toward its owner's shot cap. Absent: today's burst.
+   */
+  burstHold?: number;
+  /** Removed once it is wholly above the top of the screen (Classic Samus's shots, SA-C18). */
+  endsOffTop?: boolean;
 }
 
 /** A Classic shot's tile rules (BR-C2, BR-C9, BR-C16). */
@@ -122,6 +141,8 @@ export interface ProjectileOptions {
   vy?: number;
   /** Starting angle in degrees for orbiting projectiles. */
   angle?: number;
+  /** -1: a `wave` shot starts the other way (up, or left when vertical). Default 1. */
+  waveSign?: -1 | 1;
 }
 
 export const FIREBALL: ProjectileSpec = {
@@ -284,8 +305,17 @@ export class Projectile extends Entity {
   markHit(id: number, frame: number): void {
     (this.hitAt ??= new Map()).set(id, frame);
   }
+  /** Frames left of a held burst (ProjectileSpec.burstHold); 0 while it flies. */
+  bursting = 0;
+  /**
+   * Classic: frames it is held still (Simon's Stopwatch on enemy projectiles, SI-C25): World.update
+   * skips its update meanwhile; it still touches players. Never set under Current.
+   */
+  stopFrames = 0;
   private angle = 0;
   private readonly originY: number;
+  private readonly originX: number;
+  private readonly waveSign: -1 | 1;
   constructor(
     x: number,
     y: number,
@@ -303,6 +333,8 @@ export class Projectile extends Entity {
     this.despawnMargin = 16;
     if (spec.orbit) this.angle = opts.angle ?? (dirX > 0 ? 0 : 180);
     this.originY = y;
+    this.originX = x;
+    this.waveSign = opts.waveSign ?? 1;
   }
 
   private get ownerGone(): boolean {
@@ -321,6 +353,10 @@ export class Projectile extends Entity {
 
   update(world: World): void {
     const b = this.body;
+    if (this.bursting > 0) {
+      if (--this.bursting <= 0) this.destroy();
+      return;
+    }
     this.age++;
     if (this.spec.lifetime !== null && this.age > this.spec.lifetime) return this.end(world);
     if (this.spec.orbit && !this.thrown) return this.orbitOwner();
@@ -392,13 +428,21 @@ export class Projectile extends Entity {
       // Free flight: tiles are ignored, but gravity still applies when the spec asks for it.
       if (this.spec.gravity) {
         b.vy += this.spec.gravity;
-        if (b.vy > 0x04000) b.vy = 0x04000;
+        const maxFall = this.spec.maxFall ?? 0x04000;
+        if (b.vy > maxFall) b.vy = maxFall;
       }
       b.x += velToSub(b.vx);
       b.y += velToSub(b.vy);
       if (this.spec.wave && b.vx !== 0) {
         const w = this.spec.wave;
-        b.y = this.originY + Math.round(Math.sin((this.age * 2 * Math.PI) / w.period) * px(w.amplitude));
+        b.y =
+          this.originY +
+          this.waveSign * Math.round(Math.sin((this.age * 2 * Math.PI) / w.period) * px(w.amplitude));
+      } else if (this.spec.wave?.vertical && b.vy !== 0) {
+        const w = this.spec.wave;
+        b.x =
+          this.originX +
+          this.waveSign * Math.round(Math.sin((this.age * 2 * Math.PI) / w.period) * px(w.amplitude));
       }
       if (cb) {
         if (cb.ground === 'pass' && world.shotBlocks(this)) return this.burst(world);
@@ -413,6 +457,7 @@ export class Projectile extends Entity {
     const camL = world.camera.x - px(16);
     const camR = world.camera.right + px(16);
     if (b.x + b.w < camL || b.x > camR || this.isBelowLevel()) this.end(world);
+    else if (this.spec.endsOffTop && b.y + b.h < 0) this.end(world);
   }
 
   /**
@@ -464,6 +509,13 @@ export class Projectile extends Entity {
 
   /** Dies with a little burst (wall hit or enemy hit). */
   burst(world: World): void {
+    if (this.bursting > 0) return;
+    if (this.spec.burstHold) {
+      this.bursting = this.spec.burstHold;
+      this.body.vx = 0;
+      this.body.vy = 0;
+      return;
+    }
     if (this.spec.burstFrame) {
       world.spawn(new Flash(this.body.x, this.body.y, this.spec.sheet, this.spec.burstFrame, 6, -4, -4));
     }
@@ -471,9 +523,10 @@ export class Projectile extends Entity {
   }
 
   render(r: Renderer, view: View): void {
-    const f = this.spec.frames[
-      Math.floor(this.age / this.spec.frameRate) % this.spec.frames.length
-    ] as string;
+    const f =
+      this.bursting > 0 && this.spec.burstFrame
+        ? this.spec.burstFrame
+        : (this.spec.frames[Math.floor(this.age / this.spec.frameRate) % this.spec.frames.length] as string);
     // What it fetches rides on it, centred: its coins too (0.4.43: a coin it took from the level
     // used to vanish until the catch), each spinning, stacked a few pixels apart; the boomerang is
     // drawn over them, so it still shows.
