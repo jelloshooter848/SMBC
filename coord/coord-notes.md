@@ -66,3 +66,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - #147 MERGED (main c2e484c9). #148 retargeted to main (clean). Owner 'Proceed' => art follow-up PR7 (claude/classic-art on extras-2, wip classic-wip-art, 5207) incl. pending nits. Builder launched.
 - #148 MERGED; #149 retargeted to main (clean). Release plan: #147-#149 -> v0.4.56; #150, #151, PR7 stay open until owner's bug-fix releases are out; keep mergeable, don't rush.
 - #149 MERGED (main 28e21738). #150 retargeted to main, clean; held per release plan.
+- Owner APPROVED VV/WoL designs (relayed to release session). Owner asked about gaps; answered.
