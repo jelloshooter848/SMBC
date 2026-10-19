@@ -42,6 +42,9 @@ const floorJumper = (stroke: number, gravity: number, extra: Partial<SwimProfile
 export const CLASSIC_SWIM: Readonly<Record<string, SwimProfile>> = {
   mario: PLUMBER,
   luigi: PLUMBER,
+  // Peach (PE-20, D-PE-9): no stroke and no float, a floor jump on her rise path's seabed mode
+  // with Link's numbers (T): apex about 123 px; floor walk at her walk speed.
+  peach: { stroke: 0x0418e, gravity: 0x0011c, sinkMax: SINK, mode: 'seabed', surfaceTest: 'top' },
   // 500 px/s jump (0x042AB), water gravity 500 (0x0011C): apex 123 px. Above the line his land
   // gravity 1300 (0x002E4) and VY_MAX_PSV water 500 (0x042AB).
   link: floorJumper(0x0418e, 0x0011c, { surface: { gravity: 0x002e4, fallMax: 0x042ab } }),

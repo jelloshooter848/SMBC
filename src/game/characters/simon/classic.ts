@@ -31,6 +31,7 @@ import {
 } from '../classic/power';
 import { SIMON, SIMON_TOOL_LABELS } from './index';
 import { SIMON_CLASSIC_GUIDE } from './classic-guide';
+import { startStopwatch, stopwatchRunning } from '../classic/freeze';
 import {
   ACTION_FRAMES,
   AXE_CLASSIC,
@@ -158,19 +159,11 @@ function endAction(p: Player): void {
   p.activeMelee = null;
 }
 
-/** The Stopwatch's level-wide freeze, by world: the frame it ends (SI-C25, SI-C31). */
-const watchEnds = new WeakMap<World, number>();
-
-/** Every enemy and enemy projectile in the level stops for 180 f; Lakitu resists (SI-C25). */
+/** Every enemy and enemy projectile in the level stops for 180 f; Lakitu resists (SI-C25; classic/freeze.ts). */
 function stopwatch(p: Player, world: World): void {
-  if ((watchEnds.get(world) ?? -1) > world.frame) return;
+  if (stopwatchRunning(world)) return;
   if (!spendAmmo(p, 'hearts', STOPWATCH_COST)) return;
-  watchEnds.set(world, world.frame + STOPWATCH_FRAMES);
-  for (const e of world.enemies)
-    if (e.kind !== 'lakitu') e.stopFrames = Math.max(e.stopFrames, STOPWATCH_FRAMES);
-  for (const e of world.entities)
-    if (e instanceof Projectile && e.alive && e.spec.hitsPlayer) e.stopFrames = STOPWATCH_FRAMES;
-  world.audio.sfx('magic');
+  startStopwatch(world, STOPWATCH_FRAMES);
 }
 
 /** This player's sub-weapons on screen (bottles and flames too), for the shot cap (SI-C19). */

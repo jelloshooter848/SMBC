@@ -105,6 +105,8 @@ export type ClassicHitResponse =
 export const CLASSIC_HIT_RESPONSES: Readonly<Record<string, ClassicHitResponse>> = {
   mario: { kind: 'freeze', frames: CLASSIC_FREEZE_FRAMES, invuln: 150, look: { alpha: true } },
   luigi: { kind: 'freeze', frames: CLASSIC_FREEZE_FRAMES, invuln: 150, look: { alpha: true } },
+  // Classic-only Peach (PE-16): Mario's row.
+  peach: { kind: 'freeze', frames: CLASSIC_FREEZE_FRAMES, invuln: 150, look: { alpha: true } },
   link: {
     kind: 'push',
     vx: 0x042ab,

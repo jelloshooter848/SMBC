@@ -12,6 +12,7 @@ import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
+import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
 import { simonPalettes, simonDef } from './simon';
 import { simonFlameDef } from './simon-flame';
 import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
@@ -114,6 +115,9 @@ export const SPRITES: Record<string, SpriteDef> = {
   // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
   warriors: warriorsDef,
   'warriors-fx': warriorsFxDef,
+  // Princess Peach, a Classic-only hero (PE-24, PE-25), and her plucks.
+  peach: peachDef,
+  'peach-items': peachItemsDef,
   simon: simonDef,
   'simon-flame': simonFlameDef,
   ryu: ryuDef,
@@ -202,6 +206,8 @@ const defaults: Record<string, readonly string[]> = {
   ...pitPalettes,
   ...pitShotPalettes,
   ...warriorsPalettes,
+  ...peachPalettes,
+  ...peachItemPalettes,
   ...simonPalettes,
   ...ryuPalettes,
   ...billPalettes,
