@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { levelIds } from '@content/levels';
+import { SPRITES } from '@content/sprites';
+import type { View } from '@game/entities/entity';
 import type { AssetRegistry } from '@engine/assets/registry';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { px, tileToSub, toPx } from '@engine/math/units';
@@ -260,6 +262,30 @@ describe("Dracula's Castle: candles and creatures", () => {
     expect(dagger.alive).toBe(false);
     const item = the(h, SubWeaponItem)[0] as SubWeaponItem;
     expect(item).toBeDefined();
+    // The pickup lies pointing right, pixel for pixel as before the shot frame was turned (0.4.57).
+    const drawn: { f: string; flip: boolean }[] = [];
+    item.render(
+      Object.assign(new NullRenderer(), {
+        sprite: (_s: unknown, f: string, _x: number, _y: number, flip?: boolean) =>
+          drawn.push({ f, flip: !!flip }),
+      }),
+      { camX: 0, frame: 0, assets: { sheet: () => ({}) } } as unknown as View,
+    );
+    const pick = drawn[0] as { f: string; flip: boolean };
+    expect(
+      (SPRITES.items?.frames[pick.f] as string[]).map((row) =>
+        pick.flip ? [...row].reverse().join('') : row,
+      ),
+    ).toEqual([
+      '................',
+      '................',
+      '....0000000000..',
+      '0999011bbbbbbbb0',
+      '09990bbbbbbbbb0.',
+      '....0000000000..',
+      '................',
+      '................',
+    ]);
     for (let i = 0; i < 60 && item.alive; i++) h.step(['right']);
     expect(h.scene.hasDagger).toBe(true);
     const r = new TextRenderer();
