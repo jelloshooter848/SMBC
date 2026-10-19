@@ -113,6 +113,12 @@ export interface CharacterBehaviour {
     audio: AudioSink,
     onHeadBump?: (tx: number, ty: number) => void,
   ): boolean;
+  /**
+   * Runs for each active player after the lifts moved and carried their riders
+   * (World.resolveLifts): a hero who holds a lift other than by standing on it follows it here
+   * (Classic SMBC Sophia III on a lift's side or underside, SO-38). Absent: nothing.
+   */
+  afterLifts?(p: Player, world: World): void;
   /** False to leave this vine (or ladder, chain) alone: a tank never grabs a ladder. */
   canGrabVine?(p: Player, art: VineArt, world: World): boolean;
   /**
@@ -318,6 +324,12 @@ export interface CharacterDef {
    * princess" by ScreenManager.addTxtTmrHandler). Absent: "OUR PRINCESS", as today.
    */
   rescueName?: string;
+  /**
+   * The x (subpixels) the camera follows for this hero in place of `body.x`, asked once a frame
+   * while the hero leads (Classic SMBC Sophia III, SO-39: a corner turn's jump in her anchor is
+   * eased, Sophia.as screenScrollPosOffset). Absent: `body.x`, as today.
+   */
+  cameraX?(p: Player): number;
   /**
    * A death that bursts the body into pieces (Classic SMBC Samus, SA-C32; Samus.as
    * initiateNormalDeath, SamusGuts.as): the hero vanishes and each piece starts `x`, `y` px from

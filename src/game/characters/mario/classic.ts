@@ -209,11 +209,11 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
 
 export const MARIO_CLASSIC: CharacterDef = {
   ...plumberClassic({
-  base: MARIO,
-  constants: MARIO_CONSTANTS,
-  palettes: MARIO_PALETTES,
-  guide: plumberClassicGuide('Mario', 'a sharp rocket jump'),
-}),
+    base: MARIO,
+    constants: MARIO_CONSTANTS,
+    palettes: MARIO_PALETTES,
+    guide: plumberClassicGuide('Mario', 'a sharp rocket jump'),
+  }),
   // The castle text's name (PM-M8): the original's default skin names nobody (BmdInfo.as), so the shared line stays.
   rescueName: 'our princess',
 };

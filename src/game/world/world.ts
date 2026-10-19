@@ -1765,7 +1765,8 @@ export class World {
     if (this.camera.auto) this.autoScroll();
     else if (lead) {
       const before = this.camera.x;
-      this.camera.follow(lead.body.x, lead.body.y);
+      // A hero may lead the camera from an eased anchor (CharacterDef.cameraX: Classic Sophia III).
+      this.camera.follow(lead.def.cameraX?.(lead) ?? lead.body.x, lead.body.y);
       // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
       // held where it was, never pulled back (the screen does not scroll left), and a locked
       // screen is left alone.
@@ -2909,6 +2910,7 @@ export class World {
       if (!(e instanceof Lift) || !e.alive) continue;
       for (const p of this.activePlayers()) e.carry(p.body, this);
     }
+    for (const p of this.activePlayers()) p.def.behaviour.afterLifts?.(p, this);
   }
 
   /* ---------- Death ---------- */

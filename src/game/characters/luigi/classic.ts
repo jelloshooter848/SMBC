@@ -27,11 +27,11 @@ export const LUIGI_CLASSIC_PROFILE = plumberClassicProfile(LUIGI_CONSTANTS);
 
 export const LUIGI_CLASSIC: CharacterDef = {
   ...plumberClassic({
-  base: LUIGI,
-  constants: LUIGI_CONSTANTS,
-  palettes: LUIGI_PALETTES,
-  guide: plumberClassicGuide('Luigi', 'slippery, floats high'),
-}),
+    base: LUIGI,
+    constants: LUIGI_CONSTANTS,
+    palettes: LUIGI_PALETTES,
+    guide: plumberClassicGuide('Luigi', 'slippery, floats high'),
+  }),
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'your princess',
 };
