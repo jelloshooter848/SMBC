@@ -109,7 +109,9 @@ export function drawHud(
   };
   // The hero being played (players[i].def: the def for the World's rules, TG-19), else the
   // state's (the intro card has no players yet). Under Current both are the same def.
-  const name = (players[0]?.def ?? state.character).hudName.slice(0, 6).padEnd(6);
+  // Up to 7 letters, the score's width under it (Classic Warriors of Light's WARRIOR, WL-M13);
+  // every other hero's name has 6 or fewer.
+  const name = (players[0]?.def ?? state.character).hudName.slice(0, 7).padEnd(6);
   const place = shownPlace(state.world, state.stage)?.shown;
   text(name, 24, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
@@ -231,7 +233,11 @@ export function drawHeroStats(
       }
     }
     const extra = def.hudExtra?.(player);
-    if (extra) text(extra, dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : 24, 24);
+    // A Classic hero with a power icon in that corner (PS-C26) writes after it (the Warriors of
+    // Light's class, WL-M13).
+    const ex =
+      dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : def.powerIcon ? POWER_ICON_P1.x + 12 : 24;
+    if (extra) text(extra, ex, 24);
     const m = def.meter?.(player);
     if (m && dmg.kind === 'hp' && dmg.hudStyle === 'bar') {
       // Weapon energy: a second vertical bar beside the health bar.

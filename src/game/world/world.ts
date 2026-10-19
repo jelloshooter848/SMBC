@@ -3707,7 +3707,7 @@ export class World {
       }
       return;
     }
-    const thanks = `THANK YOU ${fontText(p.def.name)}!`;
+    const thanks = `THANK YOU ${fontText(p.def.thanksName ?? p.def.name)}!`;
     if (s === 30) this.castleText = [thanks];
     const ok = c.at !== undefined && cardContinues(s - c.at, inputs, CASTLE_OK_KEYS);
     const leave = () => {

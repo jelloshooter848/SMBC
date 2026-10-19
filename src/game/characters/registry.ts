@@ -20,6 +20,7 @@ import { SAMUS_CLASSIC } from './samus/classic';
 import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 import { VICVIPER_CLASSIC } from './vicviper/classic';
+import { WARRIORS_CLASSIC } from './warriors/classic';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -60,6 +61,7 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
+  WARRIORS_CLASSIC,
 ];
 
 /**

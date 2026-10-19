@@ -1,11 +1,10 @@
-import { px, velToSub, tileAt, tileToSub } from '@engine/math/units';
+import { px, velToSub } from '@engine/math/units';
 import type { InputFrame } from '@engine/input/input-manager';
 import { FLY_SHIP_X } from '@content/sprites/vicviper';
 import type { CharacterDef, SpriteSpec } from '../character';
 import { CLASSIC_POWER_STATES } from '../character';
 import type { MovementProfile } from '../profile';
 import { MARIO } from '../mario';
-import type { Body } from '../../entities/body';
 import { moveX, moveY } from '../../entities/body';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
@@ -158,23 +157,6 @@ const KIT: ClassicPowerKit = {
 /** Capsules drop from kills, broken bricks and coin blocks at the shared rates (VV-M3, PS-C15). */
 const VIC_DROPS: ClassicDropTable = { sources: ['enemy', 'brick', 'coin'], items: [['power-capsule', 1]] };
 
-/**
- * Up through blocks as plain ceiling (VV-25): no bump, and hidden blocks are passed through (only
- * truly solid tiles stop it). Down and sideways: the shared moves.
- */
-function flyUp(b: Body, map: TileMap, dy: number): void {
-  b.prevBottom = b.y + b.h;
-  b.hitHead = false;
-  b.y += dy;
-  const row = tileAt(b.y);
-  for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++)
-    if (map.isSolid(tx, row)) {
-      b.y = tileToSub(row + 1);
-      b.hitHead = true;
-      return;
-    }
-}
-
 /** Frames the nose takes to tilt one step further (VV art `up` / `down`, 4 frames each). */
 const TILT_STEP = 4;
 
@@ -200,8 +182,8 @@ function fly(p: Player, input: InputFrame, map: TileMap): true {
   b.vy = 0;
   p.fallSpeed = 0;
   moveX(b, map, velToSub(vx));
-  if (vy < 0) flyUp(b, map, velToSub(vy));
-  else if (vy > 0) moveY(b, map, velToSub(vy), { ignoreOneWay: false });
+  // Blocks are plain ceiling from below (no bump callback) and hidden blocks are not there (VV-25).
+  if (vy !== 0) moveY(b, map, velToSub(vy), { ignoreHidden: true });
   b.onGround = false;
   // The nose tilts while Up or Down is held, and levels out again.
   const want = vy < 0 ? -2 * TILT_STEP : vy > 0 ? 2 * TILT_STEP : 0;
@@ -281,6 +263,8 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   name: 'Vic Viper',
   // VV-M24: VIC_VIPER is too wide beside the coins.
   hudName: 'VIPER',
+  // Toad: THANK YOU VIPER! (VV-M24).
+  thanksName: 'VIPER',
   rules: 'classic',
   movement: VIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
@@ -288,6 +272,7 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   crouches: false,
   canBreakBricks: () => false,
   headBumps: () => false,
+  passesHiddenBlocks: true,
   flies: true,
   pipesAirborne: true,
   autoScroll: { speed: AUTO_SCROLL },

@@ -65,6 +65,7 @@ import {
 import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
+import { warriorsDef, warriorsFxDef, warriorsPalettes } from './warriors';
 import { HERO_FX, mapShadeFx } from './palette-fx';
 
 /** `rows` cropped to its drawn pixels (no transparent border). */
@@ -98,6 +99,9 @@ export const SPRITES: Record<string, SpriteDef> = {
   megaman: megamanDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
+  warriors: warriorsDef,
+  'warriors-fx': warriorsFxDef,
   simon: simonDef,
   ryu: ryuDef,
   bill: billDef,
@@ -179,6 +183,7 @@ const defaults: Record<string, readonly string[]> = {
   ...linkPalettes,
   ...megamanPalettes,
   ...samusPalettes,
+  ...warriorsPalettes,
   ...simonPalettes,
   ...ryuPalettes,
   ...billPalettes,

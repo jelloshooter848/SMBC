@@ -38,6 +38,8 @@ export const SPRING_GREEN_BOOST: Readonly<Record<string, number>> = {
   breakman: flash(3000),
   pit: flash(1750),
   darkpit: flash(1750),
+  // The Warriors of Light: SpringGreen names no Warrior class, so the red spring's 1000 (WL-6).
+  warriors: flash(1000),
 };
 /**
  * The rise after a launch uses the hero's own gravity (the launch starts no jump rise), in Flash
@@ -59,6 +61,7 @@ export const SPRING_RISE_GRAVITY: Readonly<Record<string, number>> = {
   breakman: flashAccel(1500),
   pit: flashAccel(700),
   darkpit: flashAccel(700),
+  warriors: flashAccel(1400),
 };
 
 /**
