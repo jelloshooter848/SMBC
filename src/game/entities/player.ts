@@ -313,9 +313,9 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
-    // A hero's own reason to stand still (Classic Samus crouched or holding Down; Classic Pit
-    // aiming up on the ground): CharacterBehaviour.holdsStill, absent for every Current def.
-    if (this.def.behaviour.holdsStill?.(this, input)) dir = 0;
+    // A hero's own reason to stand still on the ground (CharacterBehaviour.holdsStill: Classic
+    // Samus's crouch, Pit's aim-up, Simon's whip and throws), absent for every Current def.
+    if (b.onGround && this.def.behaviour.holdsStill?.(this, input)) dir = 0;
 
     if (this.stun > 0) {
       this.stun--;
@@ -992,9 +992,12 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
-    // MovementProfile.airStop (Classic SMBC): full air control stops him when nothing is held.
-    if (dir === 0 && p.airStop && control === 'full') b.vx = 0;
-    if (control === 'none' || dir === 0) return;
+    if (control === 'none') return;
+    if (dir === 0) {
+      // MovementProfile.airStop (Classic Samus, Simon, Mega Man...): letting go stops him dead.
+      if (p.airStop) b.vx = 0;
+      return;
+    }
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;
       return;

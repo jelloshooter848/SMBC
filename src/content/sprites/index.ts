@@ -10,6 +10,7 @@ import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
+import { simonFlameDef } from './simon-flame';
 import { ryuPalettes, ryuDef } from './ryu';
 import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
@@ -98,6 +99,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   samus: samusDef,
   'samus-classic': samusClassicDef,
   simon: simonDef,
+  'simon-flame': simonFlameDef,
   ryu: ryuDef,
   bill: billDef,
   map: mapDef,

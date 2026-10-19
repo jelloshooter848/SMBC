@@ -71,9 +71,10 @@ export interface CharacterBehaviour {
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
   /**
-   * True while left and right must not walk this frame (read by Player.update's tier path before
-   * the walk): Classic Samus crouched or holding Down on the ground (SA-C4), a Classic Pit aiming up
-   * on the ground (PI-9). Absent: the shared rules only (a `crouches` def's crouch).
+   * True while the hero cannot walk on the ground this frame: read by Player.update (tier path)
+   * before the walk, only while on the ground, so vx is 0 that frame and the facing does not turn.
+   * Classic Samus crouched or holding Down (SA-C4), a Classic Pit aiming up (PI-9), Classic Simon
+   * rooted by his whip or a throw (SI-C4). Absent: the shared rules only (a `crouches` def's crouch).
    */
   holdsStill?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */

@@ -53,6 +53,12 @@ under `## [Unreleased]`.
   pipes, open `?` blocks and break bricks from range, and burst on the first enemy they meet; standing shots fly over a
   Goomba. Any hit freezes the game for a second and takes both guns. With the developer full kit SELECT also reaches
   the Laser and the Flare. The CLASSIC tag now shows for Bill.
+- Classic Simon (Classic rules): a quicker walk that starts and stops at once and steers in mid-air, a short fixed jump
+  with one more jump in mid-air, 10 hearts and no health bar. The whip hits late, roots him on the ground, breaks
+  bricks and freezes what it hits for a moment; the Mushroom gives the Morning Star and the Fire Flower the long Flame
+  Whip, with one, two or three throws at a time. Special throws the Axe (1 heart); with the Fire Flower, Select throws
+  a Cross that flies out and comes back to be caught (2 hearts). His head only bumps bricks, and any hit makes him
+  small again. In developer mode `&kit=full` adds the Dagger, Holy Water and Stopwatch, picked with Select.
 
 ## [0.4.55] - 2026-10-13
 

@@ -352,13 +352,13 @@ const swingLash = [
 ];
 const whip1 = compose(WW, H, [torsoArmUp, 0, 7], [head, -2, 3], [legsWalk0, 0, 22], [swingLash, 16, 4]);
 
-// Standing strike: lash level with the shoulder at row 14.
-const strike = (lash: readonly string[]): string[] =>
-  compose(WW, H, [head, 0, 3], [torsoStrike, 0, 13], [legsWalk0, 0, 22], [lash, 16, 14 - lashRow(lash)]);
+// Standing strike: lash level with the shoulder at row 14. `w`: the frame width (a longer lash).
+export const strike = (lash: readonly string[], w = WW): string[] =>
+  compose(w, H, [head, 0, 3], [torsoStrike, 0, 13], [legsWalk0, 0, 22], [lash, 16, 14 - lashRow(lash)]);
 
 // Crouching strike: lash at row 22.
-const crouchStrike = (lash: readonly string[]): string[] =>
-  compose(WW, H, [crouchStrikeBody, 0, 16], [lash, 16, 22 - lashRow(lash)]);
+export const crouchStrike = (lash: readonly string[], w = WW): string[] =>
+  compose(w, H, [crouchStrikeBody, 0, 16], [lash, 16, 22 - lashRow(lash)]);
 
 /** Row of the lash line inside a whip layer (the row that starts with a 5). */
 function lashRow(lash: readonly string[]): number {

@@ -139,6 +139,12 @@ export interface MovementProfile {
    */
   turnInAir?: false | undefined;
   /**
+   * In the air (with any air control but 'none'), no direction held (or both) sets vx to 0 at
+   * once, as a held one sets it straight to `maxWalk` with `instantAccel`: "stops dead" (Classic
+   * Simon SI-C6, Samus SA-C3, Mega Man MM-C4, Link LK-C5, Ryu). Absent: vx is kept (today).
+   */
+  airStop?: true | undefined;
+  /**
    * false: no jump buffer. A jump (or stroke) starts only on the frame jump goes down while the
    * hero can jump; a press just before landing is lost and holding through a landing does not
    * jump again (ML-C2, LK-C10, SI-C7). Absent: JUMP_BUFFER_FRAMES (today).
@@ -156,11 +162,6 @@ export interface MovementProfile {
    * ends on leaving the ground.
    */
   crouchJump?: boolean | undefined;
-  /**
-   * With `airControl: 'full'`, no direction held in the air sets vx to 0 (Mega Man MM-C4, SI-C6,
-   * LK-C5, Samus SA-C3). Absent: vx is kept (today's airMove).
-   */
-  airStop?: true | undefined;
 }
 
 /**
