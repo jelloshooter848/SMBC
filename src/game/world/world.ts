@@ -71,7 +71,8 @@ import {
 import { castleFlagStart, Firework, FIREWORK_FRAMES, FIREWORK_TILES } from '../entities/effects/firework';
 import { WandBreak, WAND_SCENE_FRAMES } from '../entities/effects/wand-break';
 import { WandPoof } from '../entities/effects/wand-poof';
-import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
+import type { ClassicHitProps, DamageKind, DamageSource, Reaction } from '../rules/damage';
+import { classicRules, type BlockHit, type BlockStrike } from '../rules/hooks';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import { rulesOf, type GameContext, type GameState, type Rules } from '../context';
 import { heroFor } from '../characters/registry';
@@ -290,6 +291,15 @@ const BRIDGE_BOOM_SFX = hasSfx('bridge-boom') ? 'bridge-boom' : 'explosion';
 /** The cracked wall's rubble (the `crypt` sheet's; BrickPiece falls back to the brick piece). */
 const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
 
+/**
+ * A tile a Classic weapon (shot or melee) strikes: any block, hidden ones too (BR-C11), but our
+ * own hidden teleporter, which keeps today's head-bump-only behaviour.
+ */
+function weaponStrikable(id: number): boolean {
+  const block = tileDef(id).block;
+  return !!block && !(block.kind === 'hidden' && block.content === 'teleporter');
+}
+
 /** A hero's attack in flight: a shot or thrown weapon a player owns (or a hero shot's own shot). */
 function heroShot(e: Entity): e is Projectile {
   if (!(e instanceof Projectile)) return false;
@@ -488,6 +498,11 @@ export class World {
   private loopPrevX: number | null = null;
   private readonly loopChecks = new Set<string>();
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
+  /**
+   * Classic rules: hit points of plain bricks a weapon has hurt ("x,y"; 125 when absent, BR-C1).
+   * Each level or area is a new World, so it starts empty. Current never writes it.
+   */
+  readonly brickHp = new Map<string, number>();
   private clear: {
     phase: ClearPhase;
     t: number;
@@ -1218,7 +1233,13 @@ export class World {
     cy: number,
     radiusPx: number,
     owner: Player | null,
-    opts: { hurtsPlayers?: boolean; amount?: number; small?: boolean } = {},
+    opts: {
+      hurtsPlayers?: boolean;
+      amount?: number;
+      small?: boolean;
+      /** Classic rules: the blast's pierce, hit-stun and flash (HP-C16). */
+      classicHit?: ClassicHitProps;
+    } = {},
   ): void {
     const r = px(radiusPx);
     const box = { x: cx - r, y: cy - r, w: r * 2, h: r * 2 };
@@ -1227,7 +1248,7 @@ export class World {
     for (const e of this.enemies) {
       if (!overlaps(box, e.body)) continue;
       const res = e.hit(
-        { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1 },
+        { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1, ...opts.classicHit },
         this,
       );
       this.scoreKill(e, 'bomb', res);
@@ -1242,7 +1263,9 @@ export class World {
     for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
       for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++) {
         const def = tileDef(this.map.get(tx, ty));
-        if (def.block && def.block.kind !== 'hidden') this.strikeBlock(tx, ty, breaker, true); // blasts always break
+        // Blasts always break (Classic: they take `amount` off a brick's 125, BR-C13).
+        if (def.block && def.block.kind !== 'hidden')
+          this.strikeBlock(tx, ty, breaker, true, { source: 'blast', damage: opts.amount ?? 2 });
       }
   }
 
@@ -1318,7 +1341,73 @@ export class World {
     const def = tileDef(this.map.get(tx, ty));
     if (!def.block || def.block.kind === 'hidden') return;
     const p = owner instanceof Player ? owner : this.nearestPlayer(x);
-    this.strikeBlock(tx, ty, p, true); // only brick-breaking shots call this
+    // Only brick-breaking shots (Current specs) call this: they break a brick outright, under
+    // Classic rules too.
+    this.strikeBlock(tx, ty, p, true, { source: 'shot', damage: Number.MAX_SAFE_INTEGER });
+  }
+
+  /**
+   * A Classic shot (ProjectileSpec.classicBlocks, TG-26, BR-C9..BR-C11, BR-C17) strikes each block
+   * tile its body overlaps once per contact (bricks, ? blocks, item bricks, hidden blocks; used
+   * blocks are plain ground). True when the shot ends there by its `afterBlock` rule.
+   */
+  shotBlocks(pr: Projectile): boolean {
+    if (!pr.spec.classicBlocks?.strikesBlocks) return false;
+    const b = pr.body;
+    const now = new Set<string>();
+    let end = false;
+    for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) {
+        const key = `${tx},${ty}`;
+        const id = this.map.get(tx, ty);
+        // A block mid-hop is still the block this shot is touching (one coin per contact).
+        if (id === T.BUMPING && pr.touching.has(key)) now.add(key);
+        if (!weaponStrikable(id)) continue;
+        now.add(key);
+        if (pr.touching.has(key)) continue;
+        if (this.shotStrike(pr, tx, ty)) end = true;
+      }
+    pr.touching.clear();
+    for (const k of now) pr.touching.add(k);
+    return end;
+  }
+
+  /** A Classic shot that collides with ground struck the tile at (x, y) (subpixels). */
+  shotBlockAt(pr: Projectile, x: number, y: number): void {
+    if (!pr.spec.classicBlocks?.strikesBlocks) return;
+    const tx = tileAt(x);
+    const ty = tileAt(y);
+    if (weaponStrikable(this.map.get(tx, ty))) this.shotStrike(pr, tx, ty);
+  }
+
+  /** One Classic shot strike; true when the shot ends by its `afterBlock` rule (BR-C9). */
+  private shotStrike(pr: Projectile, tx: number, ty: number): boolean {
+    const p = pr.owner instanceof Player ? pr.owner : this.nearestPlayer(pr.body.x);
+    const res = this.strikeBlock(tx, ty, p, false, { source: 'shot', damage: pr.spec.amount });
+    switch (pr.spec.classicBlocks?.afterBlock) {
+      case 'continue':
+        return false;
+      case 'continueIfBroken':
+        return (res?.hp ?? 0) > 0;
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Classic melee (CharacterDef.meleeStrikesBlocks, BR-C6): every block tile the active hitbox
+   * overlaps is struck once per swing (a plain brick breaks, an item block bumps).
+   */
+  private meleeBlocks(p: Player): void {
+    const m = p.activeMelee;
+    if (!m) return;
+    for (let ty = tileAt(m.y); ty <= tileAt(m.y + m.h - 1); ty++)
+      for (let tx = tileAt(m.x); tx <= tileAt(m.x + m.w - 1); tx++) {
+        const key = `hitb:${tx},${ty}`;
+        if (p.scratch[key] || !weaponStrikable(this.map.get(tx, ty))) continue;
+        p.scratch[key] = 1;
+        this.strikeBlock(tx, ty, p, true, { source: 'melee' });
+      }
   }
 
   /**
@@ -1536,9 +1625,17 @@ export class World {
 
     for (const e of this.entities) {
       if (!e.alive) continue;
-      if (e instanceof Enemy && e.stunned > 0) {
-        e.stunned--;
-        continue;
+      if (e instanceof Enemy) {
+        if (e.stunned > 0) {
+          e.stunned--;
+          continue;
+        }
+        // Classic hit-stun and freeze (rules/classic-enemies.ts): held still, clocks running.
+        e.tickClassicFx();
+        if (e.stopFrames > 0) {
+          e.stopFrames--;
+          continue;
+        }
       }
       e.levelHeightPx = this.heightPx;
       e.update(this);
@@ -2113,11 +2210,35 @@ export class World {
   /* ---------- Blocks & tiles ---------- */
 
   private hitBlock(tx: number, ty: number, p: Player): void {
+    // A head that touches blocks as plain ground (Classic: Samus in the ball, Ryu on a wall).
+    if (p.def.headBumps?.(p) === false) return;
     this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
   }
 
-  /** Hit a block from below on a player's behalf; `breakBricks` decides whether plain bricks shatter. */
-  strikeBlock(tx: number, ty: number, p: Player, breakBricks: boolean): void {
+  /**
+   * Strike a block on a player's behalf: the only place a block reacts (TG-25). `breakBricks`
+   * decides whether plain bricks shatter; `hit` says what struck it (a head bump by default) and
+   * how hard. Under Classic rules the strike goes to rules/classic-bricks.ts (brick HP, weapons
+   * from the side) and reports what it did; Current bumps or breaks it as from below and reports
+   * nothing.
+   */
+  strikeBlock(
+    tx: number,
+    ty: number,
+    p: Player,
+    breakBricks: boolean,
+    hit: BlockHit = { source: 'head' },
+  ): BlockStrike | undefined {
+    if (this.rules === 'classic') return classicRules().strikeBlock(this, tx, ty, p, breakBricks, hit);
+    this.bumpBlock(tx, ty, p, breakBricks);
+    return undefined;
+  }
+
+  /**
+   * A block reacts as to a head bump from `p` (the hop, enemies and coins on top, its item or
+   * coin; a plain brick breaks when `breakBricks`). Called by strikeBlock (and the Classic strike).
+   */
+  bumpBlock(tx: number, ty: number, p: Player, breakBricks: boolean): void {
     const id = this.map.get(tx, ty);
     const def = tileDef(id);
     if (!def.block) {
@@ -2410,11 +2531,18 @@ export class World {
 
     // Melee hitbox vs enemies (before contact so a sword hit beats a body hit).
     if (p.activeMelee) {
+      if (p.def.meleeStrikesBlocks) this.meleeBlocks(p);
       for (const e of this.enemies) {
-        if (this.thrustIgnoresShell(p, e)) continue;
+        // A Classic frozen enemy is out of melee's reach (HP-C17).
+        if (this.thrustIgnoresShell(p, e) || e.frozen > 0) continue;
         if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
           p.scratch[`hit${e.id}`] = 1;
-          const src: DamageSource = { kind: 'sword', amount: 1, owner: null, dirX: p.facing };
+          const src: DamageSource = p.def.behaviour.meleeDamage?.(p, e) ?? {
+            kind: 'sword',
+            amount: 1,
+            owner: null,
+            dirX: p.facing,
+          };
           const res = e.hit(src, this);
           this.scoreKill(e, src.kind, res);
           if (res === 'hp') this.audio.sfx('hurt-enemy');
@@ -2538,7 +2666,8 @@ export class World {
         return;
       }
     }
-    if (e.stunned > 0) return;
+    // A Classic hit-stun still hurts (HP-C18); only a frozen enemy is harmless (HP-C17).
+    if (e.stunned > 0 || e.frozen > 0) return;
     if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
     if (!e.contactHurts) return;
     const custom = p.def.behaviour.contactDamage(p, e, this);
@@ -2576,7 +2705,7 @@ export class World {
       if (!pr.spec.pierce) pr.destroy();
       return;
     }
-    if (!pr.spec.hitsEnemies || pr.owner !== p) return;
+    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected) return;
     // Mega Man's airship: Larry's wand blasts can be shot down (a few points; the shot goes on
     // only if it pierces).
     if (this.megamanShip)
@@ -2591,6 +2720,7 @@ export class World {
           return;
         }
       }
+    if (pr.spec.rehitAfter !== undefined) pr.releaseHits(this.enemies, this.frame);
     for (const e of this.enemies) {
       if (pr.hitIds.has(e.id) || !overlaps(pr.body, e.body)) continue;
       const src: DamageSource = {
@@ -2598,13 +2728,20 @@ export class World {
         amount: pr.spec.amount,
         owner: pr,
         dirX: pr.body.vx > 0 ? 1 : -1,
+        ...pr.spec.classicHit,
       };
       const r = e.hit(src, this);
+      if (r === 'blocked') {
+        pr.hitIds.add(e.id);
+        if (this.blockedShot(pr)) return;
+        continue;
+      }
       if (r === 'immune') {
         if (pr.spec.hitsTiles && !pr.spec.pierce) pr.burst(this);
         return;
       }
       pr.hitIds.add(e.id);
+      if (pr.spec.rehitAfter !== undefined) pr.hitAt.set(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');
@@ -2614,6 +2751,30 @@ export class World {
         pr.burst(this);
         return;
       }
+    }
+  }
+
+  /**
+   * Armour stopped a Classic shot (HP-C14, ProjectileSpec.onBlocked). True when the shot is done
+   * with enemies this frame.
+   */
+  private blockedShot(pr: Projectile): boolean {
+    switch (pr.spec.onBlocked ?? 'burst') {
+      case 'continue':
+        return false;
+      case 'remove':
+        pr.destroy();
+        return true;
+      case 'deflect':
+        // MegaManProjectile: vx reversed, vy -350 px/s (2.9167 px/f), and it hits nothing more.
+        pr.body.vx = -pr.body.vx;
+        pr.body.vy = -0x02eab;
+        pr.facing = pr.body.vx > 0 ? 1 : -1;
+        pr.deflected = true;
+        return true;
+      case 'burst':
+        pr.burst(this);
+        return true;
     }
   }
 
@@ -3452,17 +3613,25 @@ export class World {
       const top = toPx(this.waterTop) - 8;
       r.rect(0, top, SCREEN_W, this.heightPx - top, FLOODED[theme] ?? FLOODED_WATER);
     }
-    for (const e of this.entities) if (e.alive && e.layer === 'back') e.render(r, view);
+    for (const e of this.entities)
+      if (e.alive && e.layer === 'back' && this.drawn(e, view)) e.render(r, view);
     this.backdrop?.(screen);
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
     if (this.assist.safetyFloor) this.renderSafetyFloor(r, view);
-    for (const e of this.entities) if (e.alive && e.layer === 'main') e.render(r, view);
+    for (const e of this.entities)
+      if (e.alive && e.layer === 'main' && this.drawn(e, view)) e.render(r, view);
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);
     this.renderBeam(r, view);
-    for (const e of this.entities) if (e.alive && e.layer === 'front') e.render(r, view);
+    for (const e of this.entities)
+      if (e.alive && e.layer === 'front' && this.drawn(e, view)) e.render(r, view);
     this.renderWarpText(r, view);
     this.renderCastleText(screen, view);
+  }
+
+  /** Not skipped this frame by a Classic hit's blink or flicker (Enemy.classicHidden). */
+  private drawn(e: Entity, view: View): boolean {
+    return !(e instanceof Enemy) || !e.classicHidden(view);
   }
 
   /**

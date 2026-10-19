@@ -21,6 +21,13 @@ under `## [Unreleased]`.
   right of the HUD and the intro card (**CLASSIC?** while a hero has no Classic version yet and plays as today). A change
   of rules resets the carried power ("Rules changed. Power reset."). Campaign files, mini games and training rooms always
   play the current rules.
+- Classic rules: enemies have the original's hit points and take numbered damage (a Goomba takes three Mega Buster
+  shots; Bowser's health depends on his form and on whether Mario or Luigi faces him). Buzzy Beetles and Bullet Bills
+  are armoured: only piercing weapons hurt them, and a blocked hit plays a new armour sound. Hit-stun, freeze and the
+  Star or a kicked shell beating Bowser follow the original. Flickers stay solid with Reduce flashing on.
+- Classic rules: bricks have 125 hit points against shots and blasts, melee breaks them in one hit, any weapon opens a
+  `?` block or a hidden block from any side, and many shots fly through ground and pipes while still striking blocks.
+  Heroes' weapons plug in as their Classic versions arrive.
 
 ## [0.4.55] - 2026-10-13
 
