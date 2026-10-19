@@ -51,6 +51,7 @@ export function classicStandIn(base: CharacterDef, opts: ClassicStandInOptions =
     movement: swim ? { ...base.movement, swim } : base.movement,
     stomps: plumber,
     blockPowerUp: classicBlockPowerUp,
+    powerIcon: true,
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, kit.response.look),
     starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
     drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, drops, 'enemy') : null),

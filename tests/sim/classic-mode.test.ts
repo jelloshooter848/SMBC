@@ -21,12 +21,14 @@ import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
-import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
+import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
+import { reconcileRules } from '@game/rules/reconcile';
 import { ClassicMenuScene, ClassicOptionsScene, lostLevelsOpen } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { WorldMapScene } from '@game/scenes/world-map';
+import type { Renderer } from '@engine/gfx/renderer';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
@@ -460,6 +462,112 @@ describe('a dev-started Classic run never opens the Lost Levels', () => {
     expect(h.game.classicDev).toBe(false);
     beat84(h);
     expect(lostLevelsOpen()).toBe(true);
+  });
+});
+
+describe('the CLASSIC tag: fully on screen, clear of every HUD line', () => {
+  /** Boxes overlap (text cells are 8 px; `gap` px of air required between them). */
+  const touches = (
+    a: { x: number; y: number; str: string },
+    b: { x: number; y: number; str: string },
+    gap = 2,
+  ) =>
+    a.x < b.x + b.str.length * 8 + gap &&
+    b.x < a.x + a.str.length * 8 + gap &&
+    a.y < b.y + 8 + gap &&
+    b.y < a.y + 8 + gap;
+
+  function check(scene: { render(r: Renderer): void }): void {
+    const t = draw(scene).texts;
+    const tag = t.find((x) => x.str.startsWith('CLASSIC'));
+    expect(tag).toBeDefined();
+    if (!tag) return;
+    expect(tag.y).toBeGreaterThanOrEqual(4);
+    expect(tag.x + tag.str.length * 8).toBeLessThanOrEqual(256);
+    for (const o of t)
+      if (o !== tag && o.str.trim()) expect(touches(tag, o), `${tag.str} vs ${o.str}`).toBe(false);
+  }
+
+  it('one player: in the level and on the intro card', () => {
+    const h = classic();
+    h.game.classicGame(LINK);
+    expect(h.top()).toBeInstanceOf(IntroScene);
+    check(h.top() as IntroScene);
+    check(enterLevel(h));
+  });
+
+  it("two players (a dev free play under Classic rules): under player two's lines", () => {
+    const h = classic({ dev: true });
+    h.game.newGame(MARIO, '1-1', LINK, { rules: 'classic' });
+    expect(h.top()).toBeInstanceOf(IntroScene);
+    check(h.top() as IntroScene);
+    check(enterLevel(h));
+  });
+});
+
+describe('QA nits', () => {
+  it('the Classic Lost Levels 8-4 card names the ability (no button letter) and is announced', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, 'll-8-4');
+    const l = enterLevel(h);
+    l.world.events.push({ type: 'exit', next: 'end' });
+    h.step();
+    const card = h.top() as CardScene;
+    expect(card).toBeInstanceOf(CardScene);
+    expect(card.lines).not.toContain('PUSH BUTTON B');
+    expect(card.lines).toContain('TO GO ON');
+    const press = card.lines.find((x) => x.startsWith('PRESS OK'));
+    expect(press).toBeDefined();
+    expect(h.said.at(-1)).toContain(press as string);
+    expect(h.said.at(-1)).not.toMatch(/\bBUTTON B\b/);
+  });
+
+  it('free play keeps the NES wording on that card', () => {
+    const h = classic();
+    h.game.newGame(MARIO, 'll-8-4');
+    const l = enterLevel(h);
+    l.world.events.push({ type: 'exit', next: 'end' });
+    h.step();
+    expect((h.top() as CardScene).lines).toContain('PUSH BUTTON B');
+  });
+
+  it('game over, NO: a Classic run goes back to the CLASSIC menu; free play to the title', () => {
+    for (const run of ['classic', 'free'] as const) {
+      const h = classic();
+      if (run === 'classic') h.game.classicGame(MARIO);
+      else h.game.newGame(MARIO);
+      enterLevel(h);
+      h.game.state.lives = 1;
+      die(h);
+      expect(h.top()).toBeInstanceOf(GameOverScene);
+      h.idle(GAME_OVER_CARD_FRAMES);
+      h.tap('down'); // NO
+      h.tap('jump');
+      expect(h.top()).toBeInstanceOf(run === 'classic' ? ClassicMenuScene : TitleScene);
+      expect(h.game.classicRun).toBe(false);
+    }
+  });
+
+  it("a rules change resets player two's kit only when there is a player two", () => {
+    const h = classic();
+    h.game.newGame(MARIO, '1-1', null, { rules: 'current' });
+    const s = h.game.state;
+    s.kit2 = { keep: 1 };
+    reconcileRules(h.game, 'classic');
+    expect(s.rules).toBe('classic');
+    expect(s.kit2).toEqual({ keep: 1 });
+    // Rules unchanged: nothing is reset.
+    s.kit = { tool: 2 };
+    reconcileRules(h.game, 'classic');
+    expect(s.kit).toEqual({ tool: 2 });
+    // With a player two, a change resets both kits.
+    h.game.newGame(MARIO, '1-1', LINK, { rules: 'current' });
+    const t = h.game.state;
+    t.kit = { a: 1 };
+    t.kit2 = { b: 1 };
+    reconcileRules(h.game, 'classic');
+    expect(t.kit).toEqual({});
+    expect(t.kit2).toEqual({});
   });
 });
 

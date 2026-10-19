@@ -416,6 +416,7 @@ export function classicSamus(
     hitbox: (p) => ({ w: 12, h: inBall(p) ? BALL_H : crouchPose(p) ? CROUCH_H : STAND_H }),
     sprite,
     blockPowerUp: classicBlockPowerUp,
+    powerIcon: true,
     jumpSfx: () => opts.jumpSfx ?? 'jump-big',
     guide: opts.guide ?? samusClassicGuide(base.name),
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, kit.response.look),

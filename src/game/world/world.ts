@@ -536,6 +536,8 @@ export class World {
    * Each level or area is a new World, so it starts empty. Current never writes it.
    */
   readonly brickHp = new Map<string, number>();
+  /** Scratch for shotBlocks: the block tiles a Classic shot touches this frame. */
+  private readonly touchingNow = new Set<string>();
   private clear: {
     phase: ClearPhase;
     t: number;
@@ -1397,21 +1399,23 @@ export class World {
   shotBlocks(pr: Projectile): boolean {
     if (!pr.spec.classicBlocks?.strikesBlocks) return false;
     const b = pr.body;
-    const now = new Set<string>();
+    const now = this.touchingNow;
+    now.clear();
     let end = false;
     for (let ty = tileAt(b.y); ty <= tileAt(b.y + b.h - 1); ty++)
       for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) {
         const key = `${tx},${ty}`;
         const id = this.map.get(tx, ty);
         // A block mid-hop is still the block this shot is touching (one coin per contact).
-        if (id === T.BUMPING && pr.touching.has(key)) now.add(key);
+        if (id === T.BUMPING && pr.touching?.has(key)) now.add(key);
         if (!weaponStrikable(id)) continue;
         now.add(key);
-        if (pr.touching.has(key)) continue;
+        if (pr.touching?.has(key)) continue;
         if (this.shotStrike(pr, tx, ty)) end = true;
       }
-    pr.touching.clear();
-    for (const k of now) pr.touching.add(k);
+    const touching = pr.touchingTiles();
+    touching.clear();
+    for (const k of now) touching.add(k);
     return end;
   }
 
@@ -1447,7 +1451,12 @@ export class World {
     for (let ty = tileAt(m.y); ty <= tileAt(m.y + m.h - 1); ty++)
       for (let tx = tileAt(m.x); tx <= tileAt(m.x + m.w - 1); tx++) {
         const key = `hitb:${tx},${ty}`;
-        if (p.scratch[key] || !weaponStrikable(this.map.get(tx, ty))) continue;
+        if (p.scratch[key]) continue;
+        const id = this.map.get(tx, ty);
+        // Already struck this swing by the hero's own block strike (Link's strikeBlocks): mid-hop,
+        // it stays marked so it is not struck again when it settles (a multi-coin brick).
+        if (id === T.BUMPING) p.scratch[key] = 1;
+        if (!weaponStrikable(id)) continue;
         p.scratch[key] = 1;
         this.strikeBlock(tx, ty, p, true, { source: 'melee' });
       }
@@ -1480,7 +1489,7 @@ export class World {
     pr.bumped.add(key);
     const p = pr.owner instanceof Player ? pr.owner : this.nearestPlayer(b.x);
     this.feats.pierced++;
-    this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
+    this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p), { source: 'shot' });
     return false;
   }
 
@@ -2611,6 +2620,7 @@ export class World {
             amount: 1,
             owner: null,
             dirX: p.facing,
+            by: p,
           };
           const res = e.hit(src, this);
           this.scoreKill(e, src.kind, res);
@@ -2816,7 +2826,7 @@ export class World {
         return;
       }
       pr.hitIds.add(e.id);
-      if (pr.spec.rehitAfter !== undefined) pr.hitAt.set(e.id, this.frame);
+      if (pr.spec.rehitAfter !== undefined) pr.markHit(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');

@@ -202,8 +202,8 @@ export class CannonShot extends Projectile {
         const plain = def.block.kind === 'brick' && def.block.content === 'none';
         if (plain && this.level === 0 && !isWeakened(map, tx, ty)) {
           weakenBrick(map, tx, ty);
-          world.strikeBlock(tx, ty, p, false);
-        } else world.strikeBlock(tx, ty, p, plain);
+          world.strikeBlock(tx, ty, p, false, { source: 'shot' });
+        } else world.strikeBlock(tx, ty, p, plain, { source: 'shot' });
       }
       return this.burst(world);
     }
@@ -265,7 +265,7 @@ export class TripleMissile extends Projectile {
     const def = tileDef(world.map.get(tx, ty));
     if (def.block && def.block.kind !== 'hidden' && world.map.isSolid(tx, ty)) {
       const p = this.owner instanceof Player ? this.owner : world.nearestPlayer(b.x);
-      world.strikeBlock(tx, ty, p, true);
+      world.strikeBlock(tx, ty, p, true, { source: 'shot' });
       return this.burst(world);
     }
     const camL = world.camera.x - px(16);

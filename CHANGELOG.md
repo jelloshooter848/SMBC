@@ -23,13 +23,12 @@ under `## [Unreleased]`.
   hero you play has its Classic version. Changing the rules puts your hero's power back to the start ("Rules changed.
   Power reset."). Campaign files, mini games and training rooms always play today's rules. In developer mode the Level
   select also has a **Rules** row, and `?dev=1&rules=classic&level=1-1&char=<id>` starts a run under Classic SMBC rules.
-- Classic rules: enemies have the original's hit points and take numbered damage (a Goomba takes three Mega Buster
-  shots; Bowser's health depends on his form and on whether Mario or Luigi faces him). Buzzy Beetles and Bullet Bills
-  are armoured: only piercing weapons hurt them, and a blocked hit plays a new armour sound. Hit-stun, freeze and the
-  Star or a kicked shell beating Bowser follow the original. Flickers stay solid with Reduce flashing on.
-- Classic rules: bricks have 125 hit points against shots and blasts, melee breaks them in one hit, any weapon opens a
-  `?` block or a hidden block from any side, and many shots fly through ground and pipes while still striking blocks.
-  Heroes' weapons plug in as their Classic versions arrive.
+- Classic rules shared systems for enemies and blocks (ready for the Classic heroes): enemies get the original's hit
+  points and numbered damage, Bowser's health by his form (and for Mario or Luigi), armoured Buzzy Beetles and Bullet
+  Bills that only piercing weapons hurt (a blocked hit plays a new armour sound), hit-stun, freeze, and the Star or a
+  kicked shell beating Bowser. Bricks get 125 hit points against shots and blasts, melee breaks them in one hit, any
+  weapon opens a `?` or hidden block from any side, and shots can fly through ground and pipes while still striking
+  blocks. Flickers stay solid with Reduce flashing on. Current play is unchanged.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
