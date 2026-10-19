@@ -308,6 +308,9 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
+    // CharacterBehaviour.rooted (Classic Link's ground stab): no walking, turning or jumping.
+    const rooted = b.onGround && this.def.behaviour.rooted?.(this, input) === true;
+    if (rooted) dir = 0;
 
     if (this.stun > 0) {
       this.stun--;
@@ -351,6 +354,7 @@ export class Player {
     const canJump =
       this.sliding === 0 &&
       !this.hurtLock &&
+      !rooted &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     // A hit's knock back takes the air jumps until he lands (the original turns his input off).
@@ -984,7 +988,12 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
-    if (control === 'none' || dir === 0) return;
+    if (control === 'none') return;
+    if (dir === 0) {
+      // MovementProfile.airStop (Classic Link): letting go in the air stops him dead.
+      if (p.airStop) b.vx = 0;
+      return;
+    }
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;
       return;

@@ -156,6 +156,12 @@ export interface MovementProfile {
    * ends on leaving the ground.
    */
   crouchJump?: boolean | undefined;
+  /**
+   * Nothing held in the air stops the hero dead (vx = 0), as on the ground with `instantAccel`
+   * (LK-C5: Link's digital control; Simon's report proposes the same). Absent: letting go in
+   * the air keeps vx (today).
+   */
+  airStop?: true | undefined;
 }
 
 /**

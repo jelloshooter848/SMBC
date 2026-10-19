@@ -1496,8 +1496,9 @@ export class World {
   /**
    * Score a hit if it killed the enemy, by how it died (Enemy.as: takeDamage scores ATTACK,
    * hitCharacter with a star STAR, gBounceHit BELOW). Hit-point kills count once the last point goes.
+   * Public for Classic weapons that hit by hand (Link's bomb blast).
    */
-  private scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
+  scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
     if (r === 'kill' || r === 'flip' || (r === 'hp' && !e.alive))
       this.addScore(e.scoreFor(kind), e.body.x, e.body.y);
   }

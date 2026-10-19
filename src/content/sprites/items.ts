@@ -1878,6 +1878,27 @@ const iconFlameGun = [
   '....7...',
 ];
 
+/* Classic SMBC Link's arrow (dev full kit), 16x5, flying right: a brown shaft, a grey head and
+ * white fletching. */
+const arrow = [
+  '1.1...........0.',
+  '.1.1..........b0',
+  '1111999999999bb1',
+  '.1.1..........b0',
+  '1.1...........0.',
+];
+/* The arrow's HUD icon, 8x8, pointing up-right. */
+const iconArrow = [
+  '.....bb.',
+  '......b.',
+  '.....9.b',
+  '....9...',
+  '...9....',
+  '1.9.....',
+  '.1......',
+  '1.1.....',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -1946,6 +1967,17 @@ export const itemsDef: SpriteDef = {
     'heart-small': heartSmall,
     'icon-boomerang': iconBoomerang,
     'icon-bomb': iconBomb,
+    // Classic SMBC Link: the beam flying up or down, the Magic Boomerang (blue), the arrow.
+    'sword-beam-down': transpose(swordBeam),
+    'sword-beam-up': vflip(transpose(swordBeam)),
+    'magic-boomerang-0': swapColors(vflip(transpose(boomerangSide)), { '3': 'a', '7': 'e' }),
+    'magic-boomerang-1': swapColors(vflip(boomerangCorner), { '3': 'a', '7': 'e' }),
+    'magic-boomerang-2': swapColors(boomerangSide, { '3': 'a', '7': 'e' }),
+    'magic-boomerang-3': swapColors(boomerangCorner, { '3': 'a', '7': 'e' }),
+    arrow,
+    'arrow-up': vflip(transpose(arrow)),
+    'arrow-down': transpose(arrow),
+    'icon-arrow': iconArrow,
     'icon-jump': iconJump,
     'icon-shield': iconShield,
     'icon-fire': iconFire,
