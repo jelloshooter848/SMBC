@@ -414,8 +414,8 @@ export const BILL_CLASSIC: CharacterDef = {
     const s = specialGun(p);
     return {
       attack: 'SHOOT',
-      special: s ? CLASSIC_GUNS[s].label : '-',
-      select: p.powerState === 'fire' ? (fullKit(p) ? 'WEAPON' : 'SWAP') : '-',
+      special: s ? CLASSIC_GUNS[s].label : null,
+      select: p.powerState === 'fire' ? (fullKit(p) ? 'WEAPON' : 'SWAP') : null,
     };
   },
   behaviour: {
