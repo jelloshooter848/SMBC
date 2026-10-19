@@ -8,9 +8,11 @@ import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
+import { bassPalettes, bassDef } from './bass';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
-import { ryuPalettes, ryuDef } from './ryu';
+import { simonFlameDef } from './simon-flame';
+import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
 import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
 import { stationPalettes, stationDef } from './station';
@@ -97,13 +99,17 @@ export const SPRITES: Record<string, SpriteDef> = {
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,
+  // Classic SMBC's Bass (characters/bass/classic.ts).
+  bass: bassDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
   // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
   warriors: warriorsDef,
   'warriors-fx': warriorsFxDef,
   simon: simonDef,
+  'simon-flame': simonFlameDef,
   ryu: ryuDef,
+  'ryu-wave': ryuWaveDef,
   bill: billDef,
   map: mapDef,
   // Walls and doors are drawn for the north edge; the top-down kit adds rotated west twins.
@@ -182,6 +188,7 @@ const defaults: Record<string, readonly string[]> = {
   ...enemyPalettes,
   ...linkPalettes,
   ...megamanPalettes,
+  ...bassPalettes,
   ...samusPalettes,
   ...warriorsPalettes,
   ...simonPalettes,

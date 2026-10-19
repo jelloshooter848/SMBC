@@ -92,7 +92,7 @@ function axes(p: Player, st: SophiaState): { ax: number; ay: number; nx: number;
  * underside) and 12.5 px up from it; raised, 4 px behind it and 25 px up, "up" being away from
  * the surface.
  */
-function muzzle(
+export function muzzle(
   p: Player,
   st: SophiaState,
   raised: boolean,
@@ -118,7 +118,7 @@ function muzzle(
 }
 
 /** The cannon is pointing away from the surface (up held for 9 frames, SO-28). */
-const raised = (st: SophiaState): boolean => st.raise >= CANNON_RAISE_FRAMES;
+export const raised = (st: SophiaState): boolean => st.raise >= CANNON_RAISE_FRAMES;
 
 function fireCannon(p: Player, st: SophiaState, world: World): void {
   if (world.countProjectiles(p, 'sophia-cannon') >= MAX_CANNON_SHOTS) return;
@@ -168,7 +168,7 @@ function addAmmo(p: Player, triple: number, homing: number): boolean {
 }
 
 /** Back upright and every jump state ended (a hit, a vine, the flagpole). */
-function settle(p: Player, st: SophiaState): void {
+export function settle(p: Player, st: SophiaState): void {
   if (st.surface !== FLOOR || st.turn) becomeUpright(p, st);
   st.push = null;
   st.squat = 0;
@@ -207,7 +207,7 @@ function tankFrame(p: Player, st: SophiaState, frame: number): string {
   return `drive-${Math.floor(frame / rate) & 3}`;
 }
 
-function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
+export function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const st = sophiaState(p);
   if (st.jason) return jasonSprite(p, frame, reduceFlashing);
   let palette = HULL[p.powerState] ?? 'sophia';

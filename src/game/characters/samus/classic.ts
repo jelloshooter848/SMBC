@@ -444,14 +444,15 @@ export function classicSamus(
     behaviour: {
       // No jump in the ball (Jump leaves it, SA-C26), nor from a crouch with no room to stand.
       canJump: (p) => !inBall(p) && !(crouchPose(p) && !v.crouchWalk && !s(p)._roomOk),
-      holdsStill(p, input) {
+      // She may always jump out of it ('canJump'; canJump above still checks the crouch's room).
+      rooted(p, input) {
         const b = p.body;
         if (inBall(p) || !b.onGround) return false;
-        if (v.noWalkWhileAimUp && input.held('up')) return true; // PI-9 (and PI-M7)
+        if (v.noWalkWhileAimUp && input.held('up')) return 'canJump'; // PI-9 (and PI-M7)
         if (v.crouchWalk) return false; // PI-7
         // SA-C4: crouched, or Down held, she cannot walk; walking with Down up stands her up.
-        if (input.held('down')) return true;
-        return crouchPose(p) && !(input.dirX !== 0 && (s(p)._roomOk ?? 0) > 0);
+        if (input.held('down')) return 'canJump';
+        return crouchPose(p) && !(input.dirX !== 0 && (s(p)._roomOk ?? 0) > 0) ? 'canJump' : false;
       },
       onGrabVine(p) {
         // Character.getOnVine: she climbs standing; the somersault and the ball end.
@@ -512,7 +513,7 @@ export function classicSamus(
           const leave = input.pressed('up') || !b.onGround || (input.dirX !== 0 && !input.held('down'));
           if (leave && roomToStand(p, world)) setCrouch(p, false);
         }
-        // Room for the walk-out next frame (holdsStill runs before this frame's own update).
+        // Room for the walk-out next frame (rooted runs before this frame's own update).
         if (crouchPose(p) && roomToStand(p, world)) s(p)._roomOk = 1;
         else delete s(p)._roomOk;
         if (inBall(p)) return;

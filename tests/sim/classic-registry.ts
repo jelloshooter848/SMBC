@@ -30,7 +30,7 @@ export function isolateClassicRegistry(opts: { hide?: boolean; hideExtras?: bool
     snapshot = { ...CLASSIC_CHARACTERS };
     extras = [...CLASSIC_EXTRAS];
     if (opts.hide) hideClassicHeroes();
-    if (opts.hideExtras) CLASSIC_EXTRAS.splice(0);
+    if (opts.hideExtras) CLASSIC_EXTRAS.splice(0, CLASSIC_EXTRAS.length);
   });
   afterEach(restore);
 }

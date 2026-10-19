@@ -161,7 +161,7 @@ export function cureReady(p: Player): boolean {
   return p.scratch[K.cureAt] === undefined || p.scratch[K.cureAt] !== p.scratch[K.stage];
 }
 
-/** The action that will run this frame (Player.update reads it, through holdsStill, before update). */
+/** The action that will run this frame (Player.update reads it, through rooted, before update). */
 function acting(p: Player): boolean {
   const t = p.scratch[K.actT] ?? 0;
   switch (p.scratch[K.act] ?? 0) {
@@ -368,9 +368,11 @@ export const WARRIORS_CLASSIC: CharacterDef = {
     };
   },
   behaviour: {
-    holdsStill: (p, input) =>
-      p.body.onGround &&
-      (acting(p) || ((p.scratch[K.act] ?? 0) === ACT.idle && input.pressed('attack') && !!moveFor(p, input))),
+    // An action roots the hero on the ground; a ground jump still cancels it (WL-5): 'canJump'.
+    rooted: (p, input) =>
+      acting(p) || ((p.scratch[K.act] ?? 0) === ACT.idle && input.pressed('attack') && !!moveFor(p, input))
+        ? 'canJump'
+        : false,
     update(p, input, world) {
       const b = p.body;
       p.scratch[K.stage] = stageKey(world);

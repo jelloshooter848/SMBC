@@ -36,6 +36,12 @@ under `## [Unreleased]`.
   Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
   buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
   (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
+- Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
+  only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
+  up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
+  Down + Jump at full height, and a jump out of the dash keeps its speed. The Fire Flower gives the Water Shield and
+  its energy bar, and Select swaps the shot and shield buttons at once. He cannot charge and has no Rush. New
+  original art.
 - Classic mode: **Proto Man** and **Break Man** join the select screen's second row (Classic mode and developer Classic
   runs only). They play as Classic Mega Man, but charge the buster from the start, fire two buster shots at a time
   until they take a Mushroom, are knocked back twice as far by a hit, and shoot a little lower. Proto Man whistles
@@ -43,15 +49,13 @@ under `## [Unreleased]`.
 - Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
   crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
   crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
-<<<<<<< HEAD
 - Classic mode: **Vic Viper**, the starfighter cut from the original, joins the second row. The screen scrolls right by
   itself and carries the ship; it flies freely in eight directions with no gravity, shoots straight ahead through
   walls (breaking bricks and bumping blocks), enters pipes in mid-air, and cannot stomp or bump blocks from below.
-  Getting pinned against a wall by the scrolling screen is fatal. Power capsules (from power-up blocks after the
+  Pinned against a wall by the scrolling screen, the ship is pushed free, as in the original. Power capsules (from power-up blocks after the
   Mushroom, and from defeated enemies) light a Gradius-style power bar on the HUD; POWER takes the lit power-up:
   Speed Up, a ground Missile that breaks armour, Double, Laser, up to four Options and a front Shield. The Mushroom
   turns the trim blue. Current play is unchanged.
-=======
 - Classic mode: the **Warriors of Light** close the second row, the original game's unfinished party of four classes,
   finished here with new art. The **Fighter** swings a strong sword, the **Thief** a weak dagger, the **Black Mage**
   casts Fire, Ice (down) and a full-height Bolt (up) after a short wind-up, through walls and bricks, and the **White
@@ -60,7 +64,6 @@ under `## [Unreleased]`.
   is announced, shown on the HUD and kept when you lose a life. They walk and stop at once, jump one fixed height, stand
   still while attacking, cannot stomp, and blocks do nothing when hit from below. The Fire Flower gives every class a
   new outfit.
->>>>>>> origin/claude/classic-wip-warriors
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
@@ -78,6 +81,38 @@ under `## [Unreleased]`.
   bombs that hang in the air and lift her, the somersault after a running jump, and three shots at a time. Her head
   only bumps bricks; her shots break them. The Ice Beam, which freezes enemies into blocks to stand on, comes only with
   the developer full kit (Select switches Wave and Ice). She gets her own Classic guide page.
+- Classic rules: **Bill** plays as in the original. He walks at a steady pace that starts and stops at once, has the
+  original's fixed somersault jump, and lies flat only when he holds Down alone (Down with a direction walks with the
+  gun aimed down). Small he has the rifle; the Mushroom gives the Machine Gun (hold to keep firing); the Fire Flower adds
+  the Spread on ATTACK with the Machine Gun on SPECIAL, and SELECT swaps them. His slow bullets fly through ground and
+  pipes, open `?` blocks and break bricks from range, and burst on the first enemy they meet; standing shots fly over a
+  Goomba. Any hit freezes the game for a second and takes both guns. With the developer full kit SELECT also reaches
+  the Laser and the Flare. The CLASSIC tag now shows for Bill.
+- Classic Simon (Classic rules): a quicker walk that starts and stops at once and steers in mid-air, a short fixed jump
+  with one more jump in mid-air, 10 hearts and no health bar. The whip hits late, roots him on the ground, breaks
+  bricks and freezes what it hits for a moment; the Mushroom gives the Morning Star and the Fire Flower the long Flame
+  Whip, with one, two or three throws at a time. Special throws the Axe (1 heart); with the Fire Flower, Select throws
+  a Cross that flies out and comes back to be caught (2 hearts). His head only bumps bricks, and any hit makes him
+  small again. In developer mode `&kit=full` adds the Dagger, Holy Water and Stopwatch, picked with Select.
+- Classic Ryu (Classic rules): a steady walk that starts and stops at once, one fixed jump height, and he stops to
+  slash. He grabs walls and stays on without holding: climb up and down, jump away for a small hop, or hop up and over
+  at the top; he also hangs on the sides of lifts. The Mushroom gives a longer sword (he does not grow), the Fire Flower
+  the Scroll (up to 200 ninpo) and a Windmill Shuriken that swings back to him. He starts with 25 ninpo and a
+  Shuriken, one on screen at a time; thrown arts fly through walls and break bricks, the sword breaks bricks, and his
+  head only bumps them. A hit takes the sword and the Flower but keeps the Scroll and the ninpo. The developer full kit
+  adds the Fire Wheel, the Fire Dragon Ball and the Jump Slash. He gets his own Classic guide page.
+- Classic Link (Classic rules): no hearts or magic, the Mushroom and Fire Flower instead (the Blue Ring and a stronger
+  sword, then the Red Ring's beam, the Magic Sword and Magic Boomerang; any hit takes them, he keeps his bombs). He starts
+  and stops at once, also in mid-air, and a tap of jump is a short hop. Stabs root him for a moment and break bricks;
+  Up or Down with Attack stabs up or down, and in mid-air Up or Down thrusts (the down-thrust bounces off enemies and
+  blocks). The boomerang flies eight ways, stops enemies and brings back items; bombs never hurt him, three at a time.
+  His own Classic guide page. In developer mode the full kit adds the Bow, and Tools picks boomerang, bombs or arrows.
+- Classic Sophia III (Classic rules): the same tank, with the original's power-ups (a Mushroom gives the Hyper cannon
+  and the hover, a Flower the Crusher cannon, wall and ceiling climbing and the Triple Missile; another Flower gives
+  more missiles), the original's damage (a Goomba takes three Normal shots, two Hyper, one Crusher; armour stops the
+  cannon but not the Triple Missile), missile ammo drops only once she has missiles, and a hit that takes every power
+  but keeps the missiles. No Jason in Classic: SELECT swaps the missiles when she has both. The Lost Levels castles
+  (and the water of 3-2 and 6-2) get the original's wider shafts for her, as the other levels already do.
 
 ## [0.4.55] - 2026-10-13
 

@@ -68,6 +68,15 @@ export interface CharacterBehaviour {
   onPickup?(p: Player, kind: PickupKind, world: World): boolean;
   /** An enemy projectile is about to hit the player; return true to block it (shields). */
   blocks?(p: Player, projectile: Projectile): boolean;
+  /**
+   * The hero is rooted to the spot this frame (Classic SMBC only; absent: never). Read by
+   * Player.update (tier path) before the walk step, with this frame's input, and only on the
+   * ground, next to Player.root (a stop counted in frames): Left/Right neither move nor turn him.
+   * `true` also forbids jumping (Classic Link's ground stab and throw, LK-C6); `'canJump'` lets
+   * him jump out of it (Classic Simon's whip and throws SI-C4, Samus crouched or holding Down
+   * SA-C4, Pit aiming up PI-9). `false`: free.
+   */
+  rooted?(p: Player, input: InputFrame): boolean | 'canJump';
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
   /**
@@ -75,12 +84,6 @@ export interface CharacterBehaviour {
    * MM-C6). Absent: a profile with a slide always may.
    */
   canSlide?(p: Player): boolean;
-  /**
-   * True while left and right must not walk this frame (read by Player.update's tier path before
-   * the walk): Classic Samus crouched or holding Down on the ground (SA-C4), a Classic Pit aiming up
-   * on the ground (PI-9). Absent: the shared rules only (a `crouches` def's crouch).
-   */
-  holdsStill?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */
@@ -347,6 +350,40 @@ export interface CharacterDef {
    * campaign (Classic Warriors of Light's class, WL-M3). Absent: a death wipes the whole kit.
    */
   keepOnDeath?: readonly string[];
+  /**
+   * Down crouches only with no left/right and no up held (Classic SMBC Bill, BI-C3/BI-C8: Down plus a
+   * direction walks with the gun aimed down, and Up wins over Down). Absent: Down crouches whatever
+   * else is held, as today.
+   */
+  crouchNeedsNoDirection?: boolean;
+  /**
+   * A death that throws the body (Classic SMBC Bill, BI-C15): vx = `vx` in direction `dir(p)`,
+   * vy = -`vy`, then each frame gravity (added before the move, as the original does) capped at
+   * `maxFall`; the body lands on the ground and lies there. The death ends `afterLand` frames
+   * after landing, or at `maxFrames` if he never lands. A fall off the bottom of the screen keeps
+   * the shared pit death. Velocity units. Absent: today's hop.
+   */
+  deathThrow?: {
+    vx: number;
+    vy: number;
+    gravity: number;
+    maxFall: number;
+    afterLand: number;
+    maxFrames: number;
+    dir(p: Player): -1 | 1;
+  };
+  /**
+   * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
+   * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
+   * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.
+   */
+  levelFlags?: {
+    horz?: boolean;
+    vert?: boolean;
+    wide?: boolean;
+    goodSwimmer?: boolean;
+    poorBowser?: boolean;
+  };
 }
 
 /**

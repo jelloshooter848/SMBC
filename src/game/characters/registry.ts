@@ -9,7 +9,12 @@ import { SIMON } from './simon';
 import { RYU } from './ryu';
 import { BILL } from './bill';
 import { SOPHIA } from './sophia';
+import { BILL_CLASSIC } from './bill/classic';
+import { RYU_CLASSIC } from './ryu/classic';
+import { LINK_CLASSIC } from './link/classic';
 import { MEGAMAN_CLASSIC } from './megaman/classic';
+import { BASS_CLASSIC } from './bass/classic';
+import { SOPHIA_CLASSIC } from './sophia/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -21,6 +26,8 @@ import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 import { VICVIPER_CLASSIC } from './vicviper/classic';
 import { WARRIORS_CLASSIC } from './warriors/classic';
+import { SIMON_CLASSIC } from './simon/classic';
+import { applyWideVariants } from '../rules/classic-level-variants';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -29,7 +36,11 @@ installClassicRules({
   enemyHit: classicHit,
   enemySpawned: classicEnemySpawned,
   strikeBlock: classicStrikeBlock,
-  levelEdits: applyClassicLevelEdits,
+  levelEdits: (map, id, defs, spawns) => {
+    // Both tables apply.
+    const water = applyClassicLevelEdits(map, id, defs);
+    return applyWideVariants(map, id, defs, spawns) || water;
+  },
 });
 
 /** Playable characters in select-screen order. */
@@ -45,7 +56,12 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   mario: MARIO_CLASSIC,
   luigi: LUIGI_CLASSIC,
   samus: SAMUS_CLASSIC,
+  bill: BILL_CLASSIC,
+  simon: SIMON_CLASSIC,
+  ryu: RYU_CLASSIC,
+  link: LINK_CLASSIC,
   megaman: MEGAMAN_CLASSIC,
+  sophia: SOPHIA_CLASSIC,
 };
 
 /**
@@ -55,7 +71,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
  * the training rooms.
  */
 export const CLASSIC_EXTRAS: CharacterDef[] = [
-  // (Bass, Sophia III go first as they land.)
+  BASS_CLASSIC,
   PROTOMAN_CLASSIC,
   BREAKMAN_CLASSIC,
   PIT_CLASSIC,

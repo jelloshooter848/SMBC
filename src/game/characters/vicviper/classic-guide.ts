@@ -30,7 +30,7 @@ export const VIC_GUIDE: CharacterGuide = {
     'Double and laser replace each other.',
     'You cannot stomp. Shoot or steer clear.',
     'Bumping blocks from below does nothing. Shoot them instead.',
-    'Do not get pinned against a wall by the scrolling screen.',
+    'The screen keeps scrolling: steer around walls ahead.',
   ],
   demo: ['idle', 'walk', 'attack'],
 };

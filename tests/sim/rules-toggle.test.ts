@@ -30,7 +30,8 @@ import { fontText } from '@game/hud/text';
 import { file, makeGame, useStorage } from './heroes-harness';
 import { hideClassicHeroes, isolateClassicRegistry } from './classic-registry';
 
-// Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts).
+// Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts). The
+// built Classic-only extras are hidden: these tests use stand-ins (each extra has its own file).
 isolateClassicRegistry({ hideExtras: true });
 
 // The Classic rules plumbing (umbrella report TG-9..TG-43, Classic mode's rules model): with no

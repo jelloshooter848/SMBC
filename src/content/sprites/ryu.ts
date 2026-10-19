@@ -469,6 +469,37 @@ const swim1 = compose(
   [legsStand, 0, 21],
 );
 
+/*
+ * Classic SMBC's Sword Extension (RY-C25): a crescent wave of light past the blade tip on the
+ * sword's hit frames. The wave frames are 56 wide (body in 0-15, blade to 23, wave to 55, reaching
+ * the extended sword's 45.5 px past his centre); `-1` swaps the wave's two shades (a shimmer that
+ * Reduce flashing holds still).
+ */
+const swordWave = [
+  '..........44............',
+  '............4455........',
+  '..............44455.....',
+  '................4455....',
+  '.................44455..',
+  '..................4455..',
+  '...................4455.',
+  '...................44455',
+  '...................44455',
+  '...................4455.',
+  '..................4455..',
+  '.................44455..',
+  '................4455....',
+  '..............44455.....',
+  '............4455........',
+  '..........44............',
+];
+const swordWaveAlt = swordWave.map((r) => r.replace(/[45]/g, (c) => (c === '4' ? '5' : '4')));
+const WAVE_W = 56;
+const slashWave0 = compose(WAVE_W, H, [slash1, 0, 0], [swordWave, 31, 8]);
+const slashWave1 = compose(WAVE_W, H, [slash1, 0, 0], [swordWaveAlt, 31, 8]);
+const crouchSlashWave0 = compose(WAVE_W, H, [crouchSlash, 0, 0], [swordWave, 32, 14]);
+const crouchSlashWave1 = compose(WAVE_W, H, [crouchSlash, 0, 0], [swordWaveAlt, 32, 14]);
+
 export const ryuDef: SpriteDef = {
   palette: 'ryu',
   frames: {
@@ -491,5 +522,19 @@ export const ryuDef: SpriteDef = {
     'spin-3': spinFrame(spin3),
     'swim-0': swim0,
     'swim-1': swim1,
+  },
+};
+
+/**
+ * The Sword Extension's slash frames (Classic SMBC Ryu, RY-C25), on their own sheet `ryu-wave`
+ * so the ninja sheet keeps its documented frame set. Same palettes as `ryu`.
+ */
+export const ryuWaveDef: SpriteDef = {
+  palette: 'ryu',
+  frames: {
+    'slash-wave-0': slashWave0,
+    'slash-wave-1': slashWave1,
+    'crouch-slash-wave-0': crouchSlashWave0,
+    'crouch-slash-wave-1': crouchSlashWave1,
   },
 };

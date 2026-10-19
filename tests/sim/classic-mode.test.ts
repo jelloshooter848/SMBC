@@ -32,7 +32,8 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
-// Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts).
+// Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts). The
+// built Classic-only extras are hidden: these tests use stand-ins (each extra has its own file).
 isolateClassicRegistry({ hideExtras: true });
 
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
