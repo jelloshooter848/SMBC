@@ -3,6 +3,10 @@ import { parseTextMap } from '@game/level/textmap';
 import { runSim } from '@game/sim/headless';
 import { heroVariant } from '@game/level/variants';
 import { getLevel } from '@content/levels';
+import { MARIO } from '@game/characters/mario';
+import type { CharacterDef } from '@game/characters/character';
+import type { EntitySpawn } from '@game/level/schema';
+import { WIDE_VARIANTS } from '@game/rules/classic-level-variants';
 import { SOPHIA } from '@game/characters/sophia';
 import { SOPHIA_CLASSIC, selectedMissile } from '@game/characters/sophia/classic';
 import { CANNON_CLASSIC, TRIPLE_CLASSIC } from '@game/characters/sophia/classic-weapons';
@@ -584,6 +588,41 @@ describe('Classic Sophia III: level data (SO-45 to SO-48)', () => {
     expect(solid(heroVariant(lv, ['sophia'], false))).toBe(false);
     const one = heroVariant(getLevel('1-1'), ['sophia'], false);
     expect(one.entities.some((e) => e.type === 'lift-fall' && e.x === 193 && e.y === 4)).toBe(true);
+  });
+});
+
+describe('Classic Sophia III: wide-hero variants in the World (TG-45, SO-48)', () => {
+  const load = (id: string, character: CharacterDef, rules: 'classic' | 'current') =>
+    runSim({ level: getLevel(id), character, rules, script: { steps: [] }, maxFrames: 1 }).world;
+
+  it('ll-7-4 and ll-12-4: the shaft at 29 is two tiles wide for Sophia, only under Classic', () => {
+    for (const id of ['ll-7-4', 'll-12-4']) {
+      const open = (w: World) => [3, 6, 10].every((y) => w.map.get(30, y) === T.AIR);
+      expect(open(load(id, SOPHIA, 'classic')), id).toBe(true);
+      expect(open(load(id, SOPHIA, 'current')), id).toBe(false);
+      expect(open(load(id, MARIO, 'classic')), id).toBe(false);
+    }
+  });
+
+  it('ll-13-4-end: the pillar at 87 is lava and its Podoboo moves; the level data stays as it is', () => {
+    const w = load('ll-13-4-end', SOPHIA, 'classic');
+    expect(w.map.get(87, 8)).toBe(T.AIR);
+    expect(w.map.get(87, 13)).toBe(T.LAVA);
+    const spawns = (w as unknown as { spawns: EntitySpawn[] }).spawns;
+    expect(spawns.some((e) => e.type === 'podoboo' && e.x === 87 && e.y === 12)).toBe(true);
+    expect(getLevel('ll-13-4-end').entities.some((e) => e.type === 'podoboo' && e.x === 88)).toBe(true);
+    expect(load('ll-13-4-end', SOPHIA, 'current').map.get(87, 8)).not.toBe(T.AIR);
+  });
+
+  it('every table entry changes its map for Sophia and leaves Mario’s alone', () => {
+    for (const [id, v] of Object.entries(WIDE_VARIANTS)) {
+      const lv = getLevel(id);
+      const changed = v.tiles.filter(([x, y, t]) => lv.tiles[y * lv.width + x] !== t);
+      expect(changed.length, id).toBe(v.tiles.length);
+      const w = load(id, MARIO, 'classic');
+      for (const [x, y] of v.tiles)
+        expect(w.map.get(x, y), `${id} ${x},${y}`).toBe(lv.tiles[y * lv.width + x]);
+    }
   });
 });
 

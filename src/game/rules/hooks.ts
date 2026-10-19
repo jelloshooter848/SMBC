@@ -4,6 +4,7 @@ import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import type { TileMap } from '../world/tilemap';
 import type { CharacterDef } from '../characters/character';
+import type { EntitySpawn } from '../level/schema';
 
 /**
  * The Classic rules' doors into the shared systems (umbrella report TG-24, TG-25, TG-45).
@@ -59,8 +60,12 @@ export interface ClassicRulesHooks {
     breakBricks: boolean,
     hit: BlockHit,
   ): BlockStrike;
-  /** The level-load edits for these heroes (TG-45, rules/classic-water.ts); true when any applied. */
-  levelEdits(map: TileMap, levelId: string, defs: readonly CharacterDef[]): boolean;
+  /**
+   * The level-load edits for these heroes (TG-45: rules/classic-water.ts,
+   * rules/classic-level-variants.ts); true when any applied. `spawns` is the World's own list of
+   * the area's spawns (a copy of the level's), which an edit may change before they spawn.
+   */
+  levelEdits(map: TileMap, levelId: string, defs: readonly CharacterDef[], spawns?: EntitySpawn[]): boolean;
 }
 
 let hooks: ClassicRulesHooks | null = null;

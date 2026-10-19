@@ -16,6 +16,7 @@ import { installClassicRules } from '../rules/hooks';
 import { classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
+import { applyWideVariants } from '../rules/classic-level-variants';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -23,7 +24,11 @@ import { applyClassicLevelEdits } from '../rules/classic-water';
 installClassicRules({
   enemyHit: classicHit,
   strikeBlock: classicStrikeBlock,
-  levelEdits: applyClassicLevelEdits,
+  levelEdits: (map, id, defs, spawns) => {
+    // Both tables apply.
+    const water = applyClassicLevelEdits(map, id, defs);
+    return applyWideVariants(map, id, defs, spawns) || water;
+  },
 });
 
 /** Playable characters in select-screen order. */
