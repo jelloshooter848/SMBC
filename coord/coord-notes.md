@@ -27,3 +27,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Bill DONE: claude/classic-heroes-bill 81a46c5f (deathThrow vs ML deathHop -> merge in World.updateDeath).
 - MM DONE: claude/classic-heroes-mm 08fcaa4e (factory classicMegaMan(options) for Bass/ProtoMan; softCut same name as ML -> player.ts conflict).
 - Running: S2-b fix (PR2), Link (5189), Samus (5195), Simon (5196), Ryu (5197). Sophia not yet launched.
+- #146 MERGED 04:58. #147 (claude/classic-shared ac0b52db) retargeted to main, CI running, subscribed.
