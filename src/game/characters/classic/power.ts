@@ -163,6 +163,17 @@ export const CLASSIC_HIT_RESPONSES: Readonly<Record<string, ClassicHitResponse>>
     invuln: CLASSIC_PUSH_INVULN,
     look: { alpha: true, from: 'land' },
   },
+  // Sir Arthur, a Classic-only extra (AR-16): GnG's backward hop, vy 3 px/f (a tuning value).
+  arthur: {
+    kind: 'push',
+    vx: 0x01400,
+    from: 'source',
+    vy: 0x03000,
+    faceSource: true,
+    lock: { untilLand: true },
+    invuln: CLASSIC_PUSH_INVULN,
+    look: { alpha: true, from: 'land' },
+  },
 };
 
 /** An ammo counter with its cap (a number, or one that depends on the kit). */

@@ -26,6 +26,7 @@ import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 import { VICVIPER_CLASSIC } from './vicviper/classic';
 import { WARRIORS_CLASSIC } from './warriors/classic';
 import { PEACH_CLASSIC } from './peach/classic';
+import { ARTHUR_CLASSIC } from './arthur/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
@@ -70,7 +71,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
 
 /**
  * Classic-only heroes (TG-41), in select order (Bass, Proto Man, Pit, Vic Viper, Warriors of
- * Light, Peach, ...), only the built ones; each has `rules: 'classic'`. Only Game.roster lists them
+ * Light, Peach, Arthur, ...), only the built ones; each has `rules: 'classic'`. Only Game.roster lists them
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
@@ -83,6 +84,8 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   VICVIPER_CLASSIC,
   WARRIORS_CLASSIC,
   PEACH_CLASSIC,
+  // Sir Arthur (AR-2): after Peach.
+  ARTHUR_CLASSIC,
 ];
 
 /**

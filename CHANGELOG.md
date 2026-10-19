@@ -65,6 +65,14 @@ under `## [Unreleased]`.
   is announced, shown on the HUD and kept when you lose a life. They walk and stop at once, jump one fixed height, stand
   still while attacking, cannot stomp, and blocks do nothing when hit from below. The Fire Flower gives every class a
   new outfit.
+- Classic mode: **Sir Arthur** joins the second row, a knight who was never in the original game, with new art. He
+  starts in his boxers; the Mushroom is his **steel armour** and the Fire Flower **gold armour**, and one hit bursts all
+  of it off (in boxers a hit leaves a heap of bones). He walks slowly, his jump keeps the direction he takes off in, and
+  he gets one more jump in the air, in the direction held. THROW sends his weapon (he stops for a moment on the ground;
+  in the air, down and THROW throws straight down): the **lance**, then whatever a weapon pot holds (one defeated enemy
+  in eight drops one): a fast **dagger**, a **torch** whose fire burns through armour, or an **axe** that arcs through
+  walls. Gold armour makes every weapon stronger and armour-piercing, and adds **MAGIC** (Special): lightning on both
+  sides after a short wind-up. The HUD names the weapon he holds, and a new weapon is announced.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
