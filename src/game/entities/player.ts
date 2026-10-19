@@ -319,10 +319,10 @@ export class Player {
     const b = this.body;
     let dir = input.dirX;
     const startAir = !b.onGround;
-    // Standing still on the ground (Classic only; the one place it is decided): a weapon's stop
-    // counted in frames (Player.root: Mega Man, Ryu; `rootFreeze` also hangs him in the air), or
-    // the hero's own condition this frame (CharacterBehaviour.holdsStill: Samus's crouch, Pit's
-    // aim-up, Simon's whip and throws).
+    // Rooted on the ground (Classic only; the one place it is decided): a weapon's stop counted in
+    // frames (Player.root: Mega Man, Ryu; `rootFreeze` also hangs him in the air), or the hero's
+    // own condition this frame (CharacterBehaviour.rooted: Link's stab, which also stops jumps;
+    // Simon's whip and throws, Samus's crouch, Pit's aim-up).
     let rooted = false;
     if (this.root > 0) {
       this.root--;
@@ -335,7 +335,10 @@ export class Player {
         return;
       }
     } else this.rootFreeze = false;
-    if (b.onGround && this.def.behaviour.holdsStill?.(this, input)) rooted = true;
+    const heroRooted = b.onGround ? (this.def.behaviour.rooted?.(this, input) ?? false) : false;
+    if (heroRooted) rooted = true;
+    // `rooted: true` also takes the jump (Link's stab); `'canJump'` keeps it.
+    const stabRooted = heroRooted === true;
     if (rooted) dir = 0;
     const wantRun = p.canRun && (input.held('attack') || input.held('run')) && !this.inWater;
     if (wantRun) this.runTimer = p.runTimerFrames;
@@ -359,9 +362,6 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
-    // CharacterBehaviour.rooted (Classic Link's ground stab): no walking, turning or jumping.
-    const stabRooted = b.onGround && this.def.behaviour.rooted?.(this, input) === true;
-    if (stabRooted) dir = 0;
 
     // A distance slide (slide.distance, Classic SMBC) has its own rules; false once it ends.
     const distanceSlide =

@@ -61,7 +61,7 @@ describe('Classic Samus: resolution and Current (SA-C34, TG-38)', () => {
     expect(SAMUS_CLASSIC.powerIcon).toBe(true);
     expect(SAMUS.powerIcon).toBeUndefined();
     expect(SAMUS.damage.kind).toBe('hp');
-    expect(SAMUS.behaviour.holdsStill).toBeUndefined();
+    expect(SAMUS.behaviour.rooted).toBeUndefined();
     expect(SAMUS.movement.airStop).toBeUndefined();
     expect(SAMUS.movement.softCut).toBeUndefined();
   });

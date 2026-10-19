@@ -61,7 +61,7 @@ describe('registry and Current (TG-17, TG-18, TG-38, acceptance 11)', () => {
     expect(SIMON.movement).toBe(SIMON_PROFILE);
     for (const k of ['airStop', 'turnInAir', 'jumpBuffer', 'rise', 'softCut', 'inertia'])
       expect(k in SIMON_PROFILE, k).toBe(false);
-    expect(SIMON.behaviour.holdsStill).toBeUndefined();
+    expect(SIMON.behaviour.rooted).toBeUndefined();
     expect(SIMON.meleeStrikesBlocks).toBeUndefined();
     expect(SIMON.canBreakBricks({} as never)).toBe(true);
     expect(HAND_AXE.maxFall).toBeUndefined();

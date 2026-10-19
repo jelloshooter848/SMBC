@@ -275,7 +275,7 @@ const KIT: ClassicPowerKit = {
 const PICKUPS: Partial<Record<PickupKind, ClassicAmmo>> = { 'heart-small': HEARTS, 'heart-large': HEARTS };
 
 /**
- * CharacterBehaviour.holdsStill (SI-C4): runs before movement, so it also roots him on the press
+ * CharacterBehaviour.rooted (SI-C4, 'canJump'): runs before movement, so it also roots him on the press
  * frame of a whip or throw (frame 0) and lets him go on frame 21. A jump frees him.
  */
 function rooted(p: Player, input: InputFrame): boolean {
@@ -385,7 +385,7 @@ export const SIMON_CLASSIC: CharacterDef = {
       p.attackTimer = s._act ? ACTION_FRAMES - t : 0;
     },
     // On the ground he is rooted for the whole whip or throw, unless he jumps out of it (SI-C4).
-    holdsStill: rooted,
+    rooted: (p, input) => (rooted(p, input) ? 'canJump' : false),
     meleeDamage: (p) => ({
       kind: 'sword',
       amount: WHIP_DAMAGE[p.powerState] ?? 200,

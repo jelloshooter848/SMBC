@@ -69,21 +69,16 @@ export interface CharacterBehaviour {
   /** An enemy projectile is about to hit the player; return true to block it (shields). */
   blocks?(p: Player, projectile: Projectile): boolean;
   /**
-   * True while the hero is rooted to the spot (Classic Link's ground stab and throw, LK-C6): on
-   * the ground Left/Right neither move nor turn him and he cannot jump. Read by Player.update
-   * (tier path) before the walk step, with this frame's input, so an attack pressed now roots
-   * him from this frame. Absent: never rooted.
+   * The hero is rooted to the spot this frame (Classic SMBC only; absent: never). Read by
+   * Player.update (tier path) before the walk step, with this frame's input, and only on the
+   * ground, next to Player.root (a stop counted in frames): Left/Right neither move nor turn him.
+   * `true` also forbids jumping (Classic Link's ground stab and throw, LK-C6); `'canJump'` lets
+   * him jump out of it (Classic Simon's whip and throws SI-C4, Samus crouched or holding Down
+   * SA-C4, Pit aiming up PI-9). `false`: free.
    */
-  rooted?(p: Player, input: InputFrame): boolean;
+  rooted?(p: Player, input: InputFrame): boolean | 'canJump';
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
-  /**
-   * True while the hero cannot walk on the ground this frame: read by Player.update (tier path)
-   * before the walk, only while on the ground, next to Player.root (a stop counted in frames), so vx is 0 that frame and the facing does not turn.
-   * Classic Samus crouched or holding Down (SA-C4), a Classic Pit aiming up (PI-9), Classic Simon
-   * rooted by his whip or a throw (SI-C4). Absent: the shared rules only (a `crouches` def's crouch).
-   */
-  holdsStill?(p: Player, input: InputFrame): boolean;
   /**
    * False while Down + Jump must not start a slide (Classic Mega Man carrying a Super Arm brick,
    * MM-C6). Absent: a profile with a slide always may.
