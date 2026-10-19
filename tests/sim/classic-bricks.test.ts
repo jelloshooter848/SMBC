@@ -317,3 +317,53 @@ describe('heroes without a Classic def yet (TG-20)', () => {
     expect(w.map.get(10, 9)).toBe(T.AIR);
   });
 });
+
+describe('strike sources (TG-25)', () => {
+  it("a hero's own melee strike is a melee strike under Classic (it breaks; it is not a head bump)", () => {
+    const w = classicWorld(smallHead(LINK), testLevel({ 9: '....=' }));
+    w.strikeBlock(4, 9, w.player, true, { source: 'melee' });
+    expect(w.map.get(4, 9)).toBe(T.AIR);
+    // The same call with a head source and a hero who cannot break bricks only bumps.
+    const w2 = classicWorld(smallHead(LINK), testLevel({ 9: '....=' }));
+    w2.strikeBlock(4, 9, w2.player, false);
+    step(w2, 20);
+    expect(w2.map.get(4, 9)).toBe(T.BRICK);
+  });
+
+  it('a swing struck by both the hero and meleeStrikesBlocks gives one coin from a multi-coin brick', () => {
+    const def = classicStub(LINK, { canBreakBricks: () => false, meleeStrikesBlocks: true });
+    const w = classicWorld(def, testLevel({ 10: '....C' }));
+    const box = { x: tile(4), y: tile(10), w: tile(1), h: tile(1) };
+    let first = true;
+    def.behaviour = {
+      ...LINK.behaviour,
+      update: (p, input, world) => {
+        LINK.behaviour.update(p, input, world);
+        p.activeMelee = box;
+        // The hero's own strike (as Link's strikeBlocks does), once per swing.
+        if (first) world.strikeBlock(4, 10, p, true, { source: 'melee' });
+        first = false;
+      },
+    };
+    const coins = w.state.coins;
+    step(w, 40);
+    expect(w.state.coins - coins).toBe(1);
+  });
+
+  it("a strike with no damage keeps its caller's breakBricks (Current behaviours under Classic)", () => {
+    const w = classicWorld(smallHead(SAMUS), testLevel({ 9: '....==' }));
+    w.strikeBlock(4, 9, w.player, false, { source: 'shot' });
+    w.strikeBlock(5, 9, w.player, true, { source: 'shot' });
+    step(w, 20);
+    expect([w.map.get(4, 9), w.map.get(5, 9)]).toEqual([T.BRICK, T.AIR]);
+  });
+
+  it('Current ignores the source: a melee or shot strike is the same as before', () => {
+    for (const hit of [undefined, { source: 'melee' as const }, { source: 'shot' as const, damage: 1 }]) {
+      const w = classicWorld(SAMUS, testLevel({ 9: '....=' }), 'current');
+      expect(w.strikeBlock(4, 9, w.player, false, hit)).toBeUndefined();
+      step(w, 20);
+      expect(w.map.get(4, 9)).toBe(T.BRICK);
+    }
+  });
+});

@@ -18,16 +18,29 @@ import { Spiny } from '@game/entities/enemies/spiny';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import type { Enemy } from '@game/entities/enemies/enemy';
 import type { Reaction } from '@game/rules/damage';
+import type { CharacterDef } from '@game/characters/character';
+import { CLASSIC_CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
+import { runSim } from '@game/sim/headless';
 import {
   CLASSIC_ATTACK_MULT,
   CLASSIC_HP,
   CURRENT_POINT_DAMAGE,
+  attackerDef,
   classicDamage,
   classicMaxHp,
   isArmoured,
   resistsStop,
 } from '@game/rules/classic-enemies';
-import { classicStub, classicWorld, sfxLog, shotSpec, step, tile, weapon } from './classic-harness';
+import {
+  classicStub,
+  classicWorld,
+  sfxLog,
+  shotSpec,
+  step,
+  testLevel,
+  tile,
+  weapon,
+} from './classic-harness';
 
 // Classic enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24): HP
 // in the original's units, armour, hit-stun, freeze, Bowser's forms and the instant kills. The
@@ -296,11 +309,11 @@ describe('hit-stun, invulnerability and freeze (HP-C11, HP-C15..HP-C19)', () => 
     expect(g.stopFrames).toBe(180);
   });
 
-  it("Samus's hit: 9 frames when nothing damages it", () => {
+  it("Samus's hit: 9 frames when nothing damages it (the hit still ends a shot)", () => {
     const w = classicWorld(classicStub(SAMUS));
     const g = place(w, new Koopa(tile(20), tile(12)));
     expect(g.hit(weapon(w, 'buster', 150, { stopFrames: 9, invulnFrames: 9 }), w)).toBe('hp');
-    expect(g.hit(weapon(w, 'buster', 150), w)).toBe('immune');
+    expect(g.hit(weapon(w, 'buster', 150), w)).toBe('blocked');
     expect(g.classicHp).toBe(450);
     step(w, 9);
     expect(g.hit(weapon(w, 'buster', 150), w)).toBe('hp');
@@ -418,6 +431,7 @@ describe('melee damage hook (TG-24)', () => {
       amount: 1,
       owner: null,
       dirX: cur.player.facing,
+      by: cur.player,
     });
     // 1 point from a Current def: 1000, a dead Koopa.
     expect(g2.alive).toBe(false);
@@ -462,5 +476,56 @@ describe('the single door (TG-24)', () => {
     const k2 = place(cur, new Koopa(tile(20), tile(12), 'green'));
     k2.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, cur);
     expect(k2.hit({ kind: 'boomerang', amount: 1, owner: null, dirX: 1 }, cur)).toBe('immune');
+  });
+});
+
+describe('damage units follow the attacker (TG-20, TG-24)', () => {
+  it('the default melee hit of a Classic def without meleeDamage is 1 unit, not a Current point', () => {
+    const def = classicStub(LINK);
+    const w = classicWorld(def);
+    const g = place(w, new Goomba(tile(20), tile(12)));
+    g.body.vx = 0;
+    def.behaviour = {
+      ...LINK.behaviour,
+      update: (p, input, world) => {
+        LINK.behaviour.update(p, input, world);
+        p.activeMelee = { x: g.body.x, y: g.body.y, w: g.body.w, h: g.body.h };
+      },
+    };
+    w.player.invuln = 1000;
+    step(w);
+    expect(g.classicHp).toBe(249);
+  });
+
+  it("a shot spawned by a shot counts in its player's units (the owner chain is followed)", () => {
+    const w = classicWorld(classicStub(SIMON));
+    const bottle = new Projectile(0, 0, 1, shotSpec({ amount: 50 }), w.player);
+    const flame = new Projectile(0, 0, 1, shotSpec({ amount: 200 }), bottle);
+    expect(classicDamage({ kind: 'weapon', amount: 200, owner: flame, dirX: 1 })).toBe(200);
+    expect(attackerDef({ kind: 'weapon', amount: 200, owner: flame, dirX: 1 })?.rules).toBe('classic');
+  });
+
+  it('guard: every registered Classic def that swings a melee hitbox defines meleeDamage', () => {
+    const defs = [
+      ...Object.values(CLASSIC_CHARACTERS).filter((d): d is CharacterDef => !!d),
+      ...CLASSIC_EXTRAS,
+    ];
+    const bad: string[] = [];
+    for (const def of defs) {
+      let swung = false;
+      runSim({
+        level: testLevel(),
+        character: def,
+        rules: 'classic',
+        maxFrames: 90,
+        script: { steps: [] },
+        controller: (world, f) => {
+          if (world.player.activeMelee) swung = true;
+          return f % 20 < 4 ? ['attack'] : f % 20 < 8 ? ['up', 'attack'] : [];
+        },
+      });
+      if (swung && !def.behaviour.meleeDamage) bad.push(def.id);
+    }
+    expect(bad).toEqual([]);
   });
 });

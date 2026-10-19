@@ -45,13 +45,19 @@ export function classicStrikeBlock(
       breaks = true; // BR-C6: one hit, whatever its damage
     else {
       // BR-C7: shots and blasts take their damage off the brick's HP; a hit it survives is silent.
-      // A Current def's blast or shot (no Classic def yet, TG-20) counts its points as the HP door does.
-      const units = p.def.rules === 'classic' ? 1 : CURRENT_POINT_DAMAGE;
-      const hp = (world.brickHp.get(key) ?? BRICK_HP) - (hit.damage ?? 0) * units;
-      breaks = hp <= 0;
-      if (!breaks) {
-        world.brickHp.set(key, hp);
-        return { broken: false, bumped: false, hp };
+      // A strike with no damage (a Current behaviour's own shot or blast: Sophia's cannon, a
+      // block-bumping shot) breaks by its caller's `breakBricks`, as today.
+      if (hit.damage === undefined) breaks = breakBricks;
+      else {
+        // A Current def's blast or shot (no Classic def yet, TG-20) counts its points as the HP
+        // door does.
+        const units = p.def.rules === 'classic' ? 1 : CURRENT_POINT_DAMAGE;
+        const hp = (world.brickHp.get(key) ?? BRICK_HP) - hit.damage * units;
+        breaks = hp <= 0;
+        if (!breaks) {
+          world.brickHp.set(key, hp);
+          return { broken: false, bumped: false, hp };
+        }
       }
     }
     world.bumpBlock(tx, ty, p, breaks);
