@@ -58,6 +58,36 @@ export interface SwimProfile {
   surface?: { gravity: number; fallMax: number } | undefined;
 }
 
+/**
+ * A slide (Down + Jump on the ground; Mega Man). The first three fields are today's slide: it runs
+ * `frames` frames at `speed` with a `hitboxH` tall body. The optional fields are Classic SMBC's
+ * (2026-10-07-megaman-classic-smbc-rules.md MM-C5..MM-C9), set only by Classic profiles; absent,
+ * today's slide runs unchanged (TG-23).
+ */
+export interface SlideProfile {
+  speed: number;
+  frames: number;
+  hitboxH: number;
+  /**
+   * The slide ends once the body has moved this many px from where it started (MM-C5), not after
+   * `frames`; it also ends at a wall in front, on leaving the ground (a normal fall from there), and
+   * (with `reverseCancel`) when the other direction is pressed (MM-C6). Player.classicSlide.
+   */
+  distance?: number | undefined;
+  /**
+   * Under a low ceiling (a solid tile in the band from 15 px above the slide body's top to 5 px above
+   * its bottom, MM-C7) the slide never ends: not at `distance`, a wall or the other direction, which
+   * turns it round instead and ends it as soon as the ceiling clears. Needs `distance`.
+   */
+  ceilingHold?: boolean | undefined;
+  /** The other direction ends the slide where he is (vx 0; MM-C6). Needs `distance`. */
+  reverseCancel?: boolean | undefined;
+  /** Jump during a slide, with Down up and no ceiling (`ceilingHold`'s band), jumps out of it (MM-C9). */
+  jumpOut?: boolean | undefined;
+  /** A slide carries the hero over one-tile gaps (Player.crossSmallGap, MM-C8); walking drops in. */
+  crossGaps?: boolean | undefined;
+}
+
 export interface MovementProfile {
   /** Speed snapped to when starting to walk from rest. */
   minWalk: number;
@@ -86,7 +116,7 @@ export interface MovementProfile {
   instantAccel: boolean;
   /** Frames after leaving a ledge during which a jump is still allowed (assist; 0 = SMB1 behaviour). */
   coyoteFrames: number;
-  slide?: { speed: number; frames: number; hitboxH: number } | undefined;
+  slide?: SlideProfile | undefined;
   /** Underwater movement; absent: the player's shared default (`DEFAULT_SWIM` in player.ts). */
   swim?: SwimProfile | undefined;
   /**
@@ -101,10 +131,37 @@ export interface MovementProfile {
    * takes the direction held then, or stops him. Undefined: none.
    */
   airJumps?: number | undefined;
+  /*
+   * ---- Classic SMBC optional fields (no Current profile sets any of these; TG-23) ----
+   * `softCut` keeps the name and meaning the Mario/Luigi slice gave it (ML-C), so the two merge.
+   */
+  /**
+   * Soft jump cut, a 16.16 factor (`Math.trunc(vy * softCut / 65536)` per frame): the first release
+   * of jump in a jump arms it, and from then on upward speed is damped every frame (before
+   * gravity and the move) until the hero starts to fall; a later release does nothing. Never during
+   * a spring or Rush launch. Mega Man 0.7943 (52055, MM-C11). Absent: `variableJump`'s rules.
+   */
+  softCut?: number | undefined;
+  /**
+   * With `airControl: 'full'`, no direction held in the air sets vx to 0 (Mega Man MM-C4, SI-C6,
+   * LK-C5). Absent: vx is kept (today's airMove).
+   */
+  airStop?: true | undefined;
+  /**
+   * A step nudge (Mega Man MM-C2): pressing a direction on the ground while not already moving that
+   * way moves the body `px` that way at once and holds vx at 0 for `frames` frames (the step pose);
+   * then a held direction walks as usual. Absent: none.
+   */
+  step?: { px: number; frames: number } | undefined;
 }
 
 export function pickJumpTier(p: MovementProfile, vx: number): JumpTier {
   const a = Math.abs(vx);
   for (const t of p.jump) if (a < t.maxVx) return t;
   return p.jump[p.jump.length - 1] as JumpTier;
+}
+
+/** A 16.16 damping factor applied to a velocity, truncated toward 0 (MovementProfile.softCut). */
+export function damp(v: number, k: number): number {
+  return Math.trunc((v * k) / 65536);
 }

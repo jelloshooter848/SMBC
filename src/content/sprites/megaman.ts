@@ -33,6 +33,10 @@ export const megamanPalettes: Record<string, string[]> = {
   'megaman-knuckle': [NES.black, NES.pink, NES.magenta, NES.skin, NES.white, NES.lavender],
   'megaman-bolt': [NES.black, NES.yellowLight, NES.peach, NES.skin, NES.white, NES.white],
   'megaman-rush': [NES.black, NES.redBright, NES.redDark, NES.skin, NES.white, NES.yellow],
+  // Classic SMBC's Robot Master weapon suits (characters/megaman/classic-weapons.ts).
+  'megaman-arm': [NES.black, NES.tan, NES.orangeBrown, NES.skin, NES.white, NES.yellow],
+  'megaman-kick': [NES.black, NES.peach, NES.red, NES.skin, NES.white, NES.yellow],
+  'megaman-water': [NES.black, NES.cyan, NES.blueLight, NES.skin, NES.white, NES.white],
   // Dark Mega Man, the station's brainwashed copy: dark purple armour with a deep indigo helmet,
   // gloves and boots, an ashen face, and red where the eye whites and the muzzle glint are, so
   // every frame glares.
