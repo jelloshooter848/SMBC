@@ -10,6 +10,7 @@ import { MenuScene } from './menu';
 import type { CharacterDef, DemoPose, GuideAction } from '../characters/character';
 import { Player } from '../entities/player';
 import { wrapText, fontText } from '../hud/text';
+import { heroFor } from '../characters/registry';
 
 const COLS = 30;
 const PAGE_X = 8;
@@ -54,16 +55,23 @@ export function wrapHanging(text: string, cols: number): string[] {
   return lines.map((l, i) => (i ? `  ${l}` : l));
 }
 
-/** Index of heroes; picking one opens its guide. */
+/**
+ * Index of heroes; picking one opens its guide. The heroes are the live roster, each as the def
+ * the run's rules play (TG-22): a Classic run's guides are the Classic defs' own (and list the
+ * Classic-only extras); under Current it is deps.characters, unchanged.
+ */
 export class GuideIndexScene extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'HOW TO PLAY', [], onBack);
+    const rules = game.liveRules;
     this.setItems([
-      ...game.deps.characters.map((c) => ({
-        label: c.name,
-        select: () => game.scenes.push(new GuideScene(game, c, () => game.scenes.pop())),
-        hint: c.guide.tagline,
-      })),
+      ...game.roster
+        .map((hero) => heroFor(hero, rules))
+        .map((c) => ({
+          label: c.name,
+          select: () => game.scenes.push(new GuideScene(game, c, () => game.scenes.pop())),
+          hint: c.guide.tagline,
+        })),
       { label: 'Back', select: onBack },
     ]);
   }
