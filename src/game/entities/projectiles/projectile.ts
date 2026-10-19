@@ -261,12 +261,22 @@ export class Projectile extends Entity {
   readonly carried: Entity[] = [];
   /** Coins a fetching boomerang carries. */
   carriedCoins = 0;
-  /** Classic: the frame each enemy was last hit (ProjectileSpec.rehitAfter). */
-  readonly hitAt = new Map<number, number>();
+  /** Classic: the frame each enemy was last hit (ProjectileSpec.rehitAfter; made on first use). */
+  hitAt: Map<number, number> | null = null;
   /** Classic: deflected by armour (onBlocked 'deflect'); it hits nothing more. */
   deflected = false;
-  /** Classic: block tiles ("x,y") the shot is touching now, each struck once per contact. */
-  readonly touching = new Set<string>();
+  /** Classic: block tiles ("x,y") the shot is touching now, each struck once per contact (made on first use). */
+  touching: Set<string> | null = null;
+
+  /** The Classic contact set, made on first use (Current shots never allocate it). */
+  touchingTiles(): Set<string> {
+    return (this.touching ??= new Set());
+  }
+
+  /** Classic re-hits: `id` was hit on `frame`. */
+  markHit(id: number, frame: number): void {
+    (this.hitAt ??= new Map()).set(id, frame);
+  }
   private angle = 0;
   private readonly originY: number;
   constructor(
@@ -403,9 +413,9 @@ export class Projectile extends Entity {
     for (const id of this.hitIds) {
       const e = enemies.find((x) => x.id === id);
       if (e && overlaps(e.body, this.body)) continue;
-      if (frame - (this.hitAt.get(id) ?? -Infinity) < after) continue;
+      if (frame - (this.hitAt?.get(id) ?? -Infinity) < after) continue;
       this.hitIds.delete(id);
-      this.hitAt.delete(id);
+      this.hitAt?.delete(id);
     }
   }
 

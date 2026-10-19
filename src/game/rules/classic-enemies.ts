@@ -73,11 +73,18 @@ export function classicMaxHp(e: Enemy, world: World): number | null {
   return (CLASSIC_HP as Record<string, number>)[e.kind] ?? null;
 }
 
-/** The def of the player behind a hit (directly, or through their projectile), if any. */
-function attackerDef(src: DamageSource): CharacterDef | null {
+/**
+ * The def of the player behind a hit: `src.by`, else the owner chain followed to its end (a
+ * player, their projectile, a projectile that projectile spawned, ...), if any.
+ */
+export function attackerDef(src: DamageSource): CharacterDef | null {
+  if (src.by) return src.by.def;
   let o: unknown = src.owner;
-  if (o && typeof o === 'object' && 'spec' in o && 'owner' in o) o = (o as { owner: unknown }).owner;
-  if (o && typeof o === 'object' && 'def' in o) return (o as { def: CharacterDef }).def;
+  for (let depth = 0; depth < 16 && o && typeof o === 'object'; depth++) {
+    if ('def' in o) return (o as { def: CharacterDef }).def;
+    if (!('owner' in o)) break;
+    o = (o as { owner: unknown }).owner;
+  }
   return null;
 }
 
@@ -118,8 +125,10 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
     return 'kill';
   }
   e.classicHp ??= max;
-  // HP-C11: nothing damages it during a Samus hit's invulnerability.
-  if (e.invulnFrames > 0) return 'immune';
+  // HP-C11: nothing damages it during a Samus hit's invulnerability. The original still confirms
+  // the hit (Enemy.confirmedHitProj -> Projectile.confirmedHit, damaged false), so a shot ends as
+  // against armour (its onBlocked), with no armour sound.
+  if (e.invulnFrames > 0) return 'blocked';
   // HP-C17: a frozen enemy thaws on the next hit, which then deals its damage as usual.
   const wasFrozen = e.frozen > 0;
   if (wasFrozen) {
