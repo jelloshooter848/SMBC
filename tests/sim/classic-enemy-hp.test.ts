@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { px } from '@engine/math/units';
+import { parseTextMap } from '@game/level/textmap';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { MEGAMAN } from '@game/characters/megaman';
@@ -528,5 +529,54 @@ describe('damage units follow the attacker (TG-20, TG-24)', () => {
       if (swung && !def.behaviour.meleeDamage) bad.push(def.id);
     }
     expect(bad).toEqual([]);
+  });
+});
+
+describe("Bowser's HP is picked at spawn (HP-C4)", () => {
+  const level = () =>
+    parseTextMap(
+      [
+        'id: t',
+        'time: 300',
+        'start: 2,12',
+        '',
+        '[tiles]',
+        ...Array.from({ length: 13 }, () => '.'.repeat(32)),
+        '#'.repeat(32),
+        '#'.repeat(32),
+        '',
+        '[entities]',
+        'bowser 10 11 attack=hammer',
+      ].join('\n'),
+    );
+  for (const [def, hp] of [
+    [MARIO, 5000],
+    [LINK, 3600],
+  ] as const) {
+    it(`${def.id}: ${hp} before any hit`, () => {
+      const w = runSim({
+        level: level(),
+        character: classicStub(def),
+        rules: 'classic',
+        script: { steps: [] },
+        maxFrames: 30,
+        until: (world) => world.entities.some((e) => e instanceof Bowser),
+      }).world;
+      const b = w.entities.find((e): e is Bowser => e instanceof Bowser);
+      expect(b?.classicHp).toBe(hp);
+    });
+  }
+
+  it('Current: no Classic HP at spawn', () => {
+    const w = runSim({
+      level: level(),
+      character: LINK,
+      script: { steps: [] },
+      maxFrames: 30,
+      until: (world) => world.entities.some((e) => e instanceof Bowser),
+    }).world;
+    const b = w.entities.find((e): e is Bowser => e instanceof Bowser);
+    expect(b).toBeDefined();
+    expect(b?.classicHp).toBeNull();
   });
 });

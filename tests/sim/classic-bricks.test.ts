@@ -372,3 +372,23 @@ describe('strike sources (TG-25)', () => {
     }
   });
 });
+
+describe('blasts and hidden blocks (BR-C11, BR-C13)', () => {
+  it('a Classic bomb blast opens a hidden 1-up block; under Current it stays hidden', () => {
+    const w = classicWorld(smallHead(LINK), testLevel({ 9: '..........1' }));
+    w.explode(tile(10) + px(8), tile(9) + px(8), 8, w.player, { amount: 800, hurtsPlayers: false });
+    step(w, 20);
+    expect(w.map.get(10, 9)).toBe(T.USED);
+    expect(w.entities.some((e) => e instanceof PowerUp && e.item === '1up')).toBe(true);
+    const cur = classicWorld(LINK, testLevel({ 9: '..........1' }), 'current');
+    cur.explode(tile(10) + px(8), tile(9) + px(8), 8, cur.player, { hurtsPlayers: false });
+    step(cur, 20);
+    expect(cur.map.get(10, 9)).toBe(T.HIDDEN_1UP);
+  });
+
+  it('our hidden teleporter is left to heads, under Classic too', () => {
+    const w = classicWorld(smallHead(LINK), testLevel({ 9: '..........8' }));
+    w.explode(tile(10) + px(8), tile(9) + px(8), 8, w.player, { amount: 800, hurtsPlayers: false });
+    expect(w.map.get(10, 9)).toBe(T.HIDDEN_TELEPORTER);
+  });
+});

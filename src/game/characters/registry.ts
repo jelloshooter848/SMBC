@@ -10,7 +10,7 @@ import { RYU } from './ryu';
 import { BILL } from './bill';
 import { SOPHIA } from './sophia';
 import { installClassicRules } from '../rules/hooks';
-import { classicHit } from '../rules/classic-enemies';
+import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 
@@ -19,6 +19,7 @@ import { applyClassicLevelEdits } from '../rules/classic-water';
 // to import classic modules.
 installClassicRules({
   enemyHit: classicHit,
+  enemySpawned: classicEnemySpawned,
   strikeBlock: classicStrikeBlock,
   levelEdits: applyClassicLevelEdits,
 });

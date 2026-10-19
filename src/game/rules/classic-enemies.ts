@@ -74,6 +74,15 @@ export function classicMaxHp(e: Enemy, world: World): number | null {
 }
 
 /**
+ * A map enemy spawned under Classic rules: its full HP is set now (HP-C4: Bowser's form and
+ * player 1's hero at the moment he spawns). An enemy made some other way (a Lakitu's Spiny, a
+ * test's) gets it on its first hit instead; its HP depends on nothing that changes.
+ */
+export function classicEnemySpawned(e: Enemy, world: World): void {
+  e.classicHp ??= classicMaxHp(e, world);
+}
+
+/**
  * The def of the player behind a hit: `src.by`, else the owner chain followed to its end (a
  * player, their projectile, a projectile that projectile spawned, ...), if any.
  */
