@@ -137,21 +137,7 @@ const torsoBow = [
 ];
 
 // The bow held down in the front hand, 3 x 13 (rows 14..26 standing, x 13).
-const bowDown = [
-  '00.',
-  '050',
-  '405',
-  '405',
-  '405',
-  '405',
-  '.05',
-  '.05',
-  '405',
-  '405',
-  '405',
-  '050',
-  '00.',
-];
+const bowDown = ['00.', '050', '405', '405', '405', '405', '.05', '.05', '405', '405', '405', '050', '00.'];
 
 // The bow raised and drawn: the front arm level from the shoulder, the bow upright at its end and
 // the string pulled back to the chest; 7 x 13 (rows 12..24 standing).
@@ -254,7 +240,15 @@ const W = 16;
 const H = 32;
 
 const standing = (legs: readonly string[], dy = 0): string[] =>
-  compose(W, H, [legs, 0, 25 + dy], [torso, 0, 16 + dy], [wings, 0, 8 + dy], [head, 0, 6 + dy], [bowDown, 13, 14 + dy]);
+  compose(
+    W,
+    H,
+    [legs, 0, 25 + dy],
+    [torso, 0, 16 + dy],
+    [wings, 0, 8 + dy],
+    [head, 0, 6 + dy],
+    [bowDown, 13, 14 + dy],
+  );
 
 // Shooting poses sit one pixel to the left so the drawn bow fits in the frame.
 const shooting = (legs: readonly string[], dy = 0): string[] =>
@@ -289,7 +283,15 @@ const jump = compose(
 );
 
 // Aiming up: the bow level over his head, the arm straight up.
-const aimUp = compose(W, H, [legsStand, -1, 25], [torsoBow, -1, 16], [wings, -1, 8], [head, -1, 6], [bowUp, 9, 0]);
+const aimUp = compose(
+  W,
+  H,
+  [legsStand, -1, 25],
+  [torsoBow, -1, 16],
+  [wings, -1, 8],
+  [head, -1, 6],
+  [bowUp, 9, 0],
+);
 
 // Crouch (PI-21: one frame for the crouch, crouch-walk and air crouch), body in the bottom 15
 // rows: head low, wings folded over the back, knees bent; `crouch-shoot` holds the bow drawn.

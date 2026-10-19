@@ -70,7 +70,8 @@ export const VIC_HITBOX = { w: 15, h: 10 } as const;
 /** The power bar's slots in order (VV-20) with their caps (powerLevelIsAvailable, VV-21). */
 export const VIC_BAR = [
   { key: 'vvSpeed', cell: 'SP', name: 'SPEED', spoken: 'Speed Up', max: 5 },
-  { key: 'vvMissile', cell: 'MS', name: 'MISSILE', spoken: 'Missile', max: 1 },
+  // Six letters at most in the HUD (POWER_BAR.nameX), so MISSILE is shortened there.
+  { key: 'vvMissile', cell: 'MS', name: 'MISSL', spoken: 'Missile', max: 1 },
   { key: 'vvDouble', cell: 'DB', name: 'DOUBLE', spoken: 'Double', max: 2 },
   { key: 'vvLaser', cell: 'LS', name: 'LASER', spoken: 'Laser', max: 2 },
   { key: 'vvOption', cell: 'OP', name: 'OPTION', spoken: 'Option', max: 4 },

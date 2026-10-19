@@ -107,7 +107,7 @@ export const CLASSIC_GUNS: Readonly<Record<ClassicGunId, ClassicGun>> = {
     icon: 'icon-laser',
     spec: { ...base, kind: 'bill-laser', amount: 100, speed: 0x02c66, frames: ['bill-laser'] },
   },
-  // 211: 1.758 px/f for the centre; armour-piercing (BillBullet.as:229).
+  // 211: 1.758 px/f for the centre; armour-piercing, strength 6 (PIERCE_STR_ARMOR_PIERCING, BillBullet.as:229).
   flare: {
     id: 'flare',
     straight: 0x01c22,
@@ -123,7 +123,7 @@ export const CLASSIC_GUNS: Readonly<Record<ClassicGunId, ClassicGun>> = {
       speed: 0x01c22,
       frames: ['fireball-0', 'fireball-1', 'fireball-2', 'fireball-3'],
       frameRate: 2,
-      classicHit: { pierce: 5 },
+      classicHit: { pierce: 6 },
     },
   },
 };

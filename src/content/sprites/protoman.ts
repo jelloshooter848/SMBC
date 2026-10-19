@@ -186,7 +186,11 @@ const climb0 = compose(
   H,
   [recolour(MM.climb0, { '2': '1' }, 8, 16, 2, 13), 0, 0],
   [['.44.', '.44.', '.44.', '.44.'], 6, 9],
-  [['00000000', '05555550', '00555500', '.0555 0.'.replace(' ', '5'), '.00550..', '..050...', '..00....'], 4, 16],
+  [
+    ['00000000', '05555550', '00555500', '.0555 0.'.replace(' ', '5'), '.00550..', '..050...', '..00....'],
+    4,
+    16,
+  ],
 );
 const climb1 = flipH(climb0);
 const climbTop = compose(
@@ -194,6 +198,8 @@ const climbTop = compose(
   H,
   [recolour(MM.climbTop, { '2': '1' }, 17, 21, 2, 13), 0, 0],
   [['.44.', '.44.', '.44.'], 6, 18],
+  // The scarf's knot at the nape, its tail over his back.
+  [['00000000', '05555550', '.005500.', '..0550..', '...00...'], 4, 21],
 );
 
 export const protomanDef: SpriteDef = {
