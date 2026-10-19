@@ -86,7 +86,7 @@ export const MEGAMAN_CLASSIC_PROFILE: MovementProfile = {
   maxFall: 0x05d55,
   fallReset: 0x05d55,
   variableJump: false,
-  softCut: 52055, // 0.7943 = 1e-6^(1/60) (MegaManBase fy^dt)
+  softCut: 52057, // 0.79433 = 1e-6^(1/60) (MegaManBase fy^dt)
   airStop: true,
   step: { px: 2, frames: 6 },
   slide: {
@@ -276,7 +276,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     const from = p.scratch._fillFrom;
     if (from !== undefined && p.transition?.kind === 'freeze')
       value = Math.min(value, from + 4 * Math.floor(p.transition.t / 3));
-    return { value, max: WEAPON_UNITS, colour: mmWeapon(w).colour, label: 'W' };
+    // A dark backing: the bar sits on a castle's ceiling bricks (1-4).
+    return { value, max: WEAPON_UNITS, colour: mmWeapon(w).colour, label: 'W', backing: true };
   }
 
   function fireCtx(p: Player, world: World, input: InputFrame): MMFire {
@@ -618,6 +619,9 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     rules: 'classic',
     movement: profile,
     damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
+    // MM-C34: no stomp; firebars hurt. MM-C12: springs unchanged (spring.ts, by hero id). MM-C32:
+    // no Energy Balancer, no reserve. MM-C35: the weapon never changes in play (kit=full aside),
+    // so nothing clears the screen.
     stomps: false,
     crouches: false,
     // He bumps bricks from below in every state and never breaks them (MM-C33).

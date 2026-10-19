@@ -107,7 +107,7 @@ describe('movement and jumping (LK-C4..LK-C10)', () => {
     }
   });
 
-  it('jump heights: held 66-68 px (apex frame 27-29), 1 f 20-23, 5 f 34-37, 10 f 48-50', () => {
+  it('LK-C8 jump heights: held 66-68 px (apex frame 27-29), 1 f 20-23, 5 f 34-37, 10 f 48-50', () => {
     const held = measureJump(LINK, 0, INF);
     expect(held.apex).toBeGreaterThanOrEqual(66);
     expect(held.apex).toBeLessThanOrEqual(68);
@@ -368,7 +368,7 @@ describe('bombs (LK-C36, LK-C37)', () => {
     expect(g.alive).toBe(false);
   });
 
-  it('no bombs before the first Mushroom; the first gives 3, a second none', () => {
+  it('LK-C14, LK-C20: no bombs before the first Mushroom; the first gives 3 and the HUD count', () => {
     const r = rig('small');
     r.step(['select']);
     expect(r.world.entities.some((e) => e instanceof LinkBomb)).toBe(false);
@@ -380,7 +380,7 @@ describe('bombs (LK-C36, LK-C37)', () => {
   });
 });
 
-describe('the boomerang (LK-C30..LK-C35)', () => {
+describe('the boomerang (LK-C30..LK-C35, LK-C34 stop)', () => {
   it('the short one turns 80-84 px out and is caught', () => {
     const r = rig();
     r.step(['special']);

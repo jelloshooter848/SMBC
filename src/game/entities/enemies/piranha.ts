@@ -157,7 +157,7 @@ export class Piranha extends Enemy {
     if (this.visiblePx <= 0) return;
     // Draw the whole 24-tall sprite anchored to the pipe mouth; the pipe tiles (drawn later) cover
     // the rest. Hanging, it is flipped head-down and grows below the rim.
-    const sheet = view.assets.sheet(this.sheet, this.palette(view));
+    const sheet = view.assets.sheet(this.sheet, this.drawPalette(view));
     const x = toPx(this.body.x) - view.camX - 2;
     const mouth = toPx(this.mouthY);
     if (this.hanging) r.sprite(sheet, this.currentFrame, x, mouth + this.visiblePx - HEIGHT, false, true);

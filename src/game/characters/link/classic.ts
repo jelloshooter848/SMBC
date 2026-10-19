@@ -99,6 +99,7 @@ export const FIRST_BOMBS = 3;
 export const REPEAT_BOMBS = 3;
 
 /** Sword damage by power state (DamageValue.as: Lv 1, Lv 2, Magic Sword; LK-C24). */
+// LK-C42: fire Bowser (2400) takes 12 / 9 / 6 stabs, beams 12, bombs 3, arrows 7.
 export const SWORD_DAMAGE = { small: 200, big: 275, fire: 400 } as const;
 
 /** Stab poses (`_pose`): 1 forward, 2 up, 3 down; 4 a throw or bomb (no sword). */
@@ -383,6 +384,10 @@ function update(p: Player, input: InputFrame, world: World): void {
   }
 }
 
+/**
+ * LK-C21: green, blue (`link-blue`) and red tunics by state. LK-C39: the shield is only drawn (no
+ * `blocks` hook, no block pose).
+ */
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   let palette = p.powerState === 'fire' ? 'link-red' : p.powerState === 'big' ? 'link-blue' : 'link';
   const star = classicStarPaletteStep(p, frame, reduceFlashing);
@@ -429,6 +434,8 @@ export const LINK_CLASSIC: CharacterDef = {
   rules: 'classic',
   movement: LINK_CLASSIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
+  // LK-C27: no stomp (landing on an enemy hurts unless thrusting); LK-C2: no crouch, no hearts,
+  // meter, spells, shield block or belt.
   stomps: false,
   crouches: false,
   canBreakBricks: () => false,
@@ -437,6 +444,9 @@ export const LINK_CLASSIC: CharacterDef = {
   blockPowerUp: classicBlockPowerUp,
   powerIcon: true,
   jumpSfx: LINK.jumpSfx,
+  // LK-C11: springs unchanged (spring.ts keys its numbers by hero id). LK-C44: every count and
+  // timer is per player (scratch, bombsOut, countProjectiles by owner); bombs never hurt players.
+
   guide: LINK_CLASSIC_GUIDE,
   touchLabels: (p) =>
     fullKit(p)
@@ -446,6 +456,7 @@ export const LINK_CLASSIC: CharacterDef = {
   starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
   drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, DROPS, 'enemy') : null),
   blockDrop: (rng, p, source) => classicDrop(rng, p, DROPS, source),
+  // LK-C20: no hearts or meter; the bomb count once owned, and the power icon.
   hudAmmo: (p) => (ownsBombs(p) && !fullKit(p) ? { icon: 'icon-bomb', count: p.scratch.bombs ?? 0 } : null),
   tools,
   // TG-44, LK-C38: the Flower state (main.ts), bombs, the Bow, full ammo, Select cycling.
@@ -474,11 +485,14 @@ export const LINK_CLASSIC: CharacterDef = {
       if (p.scratch.downThrust) thrustBounce(p, enemy.body.y);
       else if (p.scratch.upThrust && b.vy < 0) b.vy = 0;
     },
+    // LK-C43: on a vine World skips `update` (no stab, boomerang, bomb or jump); grabbing one
+    // ends a push (Player.tickHurtLock) and the attack state here.
     onGrabVine(p) {
       p.attackTimer = 0;
       p.scratch._pose = 0;
       clearThrust(p);
     },
+    // LK-C40: the plain power-up, a 60-frame freeze going up a state (none for a Star or a repeat).
     onPowerUp: (p, kind, world) => classicOnPowerUp(p, kind, world, KIT),
     onHurt: (p, world, fromDir) => classicOnHurt(p, world, fromDir, KIT),
     // Drops are bomb ammo only (LK-C19): the arrow drop needs the Bow choice, out of scope.
