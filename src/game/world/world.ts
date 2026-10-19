@@ -523,6 +523,16 @@ export class World {
   hurryPlayed = false;
   private spawnIndex = 0;
   private spawns: EntitySpawn[];
+  /**
+   * Scroll-back camera (Classic SMBC): the map's entities that may be parked off screen instead
+   * of despawning (parkable), and those parked now. The original keeps every object of an area
+   * from its load and only takes it off the stage, still, while it is more than 2 tiles off
+   * screen (AnimatedObject.checkStgPos: removeChild, timers stopped); it comes back as it was.
+   */
+  private parkable = new WeakSet<Entity>();
+  private parked: Entity[] = [];
+  /** Scroll-back: spawns left of this x (subpixels) at the first frame are not parked (an arrival). */
+  private parkFrom = 0;
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
@@ -708,6 +718,10 @@ export class World {
     });
     this.heightPx = level.height * 16;
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
+    // Classic SMBC: SMBC 3.1.21's default camera scrolls back left (Cheats.classicScreenScroll
+    // off). Free, locked and auto-scroll cameras keep their own rules.
+    this.camera.scrollBack =
+      this.rules === 'classic' && !this.camera.free && !this.camera.locked && !this.camera.auto;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     // A fill-up spot off the map (the Top Secret Area) runs no clock.
@@ -852,6 +866,11 @@ export class World {
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
     this.camera.snapTo(this.player.body.x, this.player.body.y);
+    // A pipe, pit or vine arrival from another area: the original brings that area back as it was
+    // left (StatManager.saveAreaStats); with no such memory, what lies behind the arrival screen
+    // despawns as before rather than coming back to life.
+    if (this.camera.scrollBack && (start.clearEnemies === 'keep-piranhas' || mode === 'climb'))
+      this.parkFrom = this.camera.x - px(SPAWN_MARGIN_PX);
     this.alignBeam();
     if (start.clearEnemies) {
       // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
@@ -998,6 +1017,8 @@ export class World {
       const e = this.makeEntity(s);
       if (!e) continue;
       this.entities.push(e);
+      if (this.camera.scrollBack && e.despawnMargin !== null && tileToSub(s.x) >= this.parkFrom)
+        this.parkable.add(e);
       // Classic: an enemy's hit points are picked as it spawns (HP-C4: Bowser's from player 1's hero).
       if (this.rules === 'classic' && e instanceof Enemy) classicRules().enemySpawned(e, this);
     }
@@ -1764,7 +1785,8 @@ export class World {
     if (this.camera.auto) this.autoScroll();
     else if (lead) {
       const before = this.camera.x;
-      this.camera.follow(lead.body.x, lead.body.y);
+      if (this.camera.scrollBack) this.camera.followBack(lead.centerX, this.bowserOnScreen());
+      else this.camera.follow(lead.body.x, lead.body.y);
       // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
       // held where it was, never pulled back (the screen does not scroll left), and a locked
       // screen is left alone.
@@ -2273,9 +2295,16 @@ export class World {
 
   private cull(): void {
     const left = this.camera.x;
+    if (this.camera.scrollBack) this.unpark();
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const e = this.entities[i] as Entity;
       if (!e.alive) {
+        this.entities.splice(i, 1);
+        continue;
+      }
+      if (this.parkable.has(e) && this.outOfReach(e)) {
+        // Scroll-back: still, off the stage, until the camera comes back (see `parked`).
+        this.parked.push(e);
         this.entities.splice(i, 1);
         continue;
       }
@@ -2286,6 +2315,41 @@ export class World {
         this.entities.splice(i, 1);
       }
     }
+  }
+
+  /**
+   * Scroll-back: a map entity beyond reach of the screen: past its despawn margin on the left, or
+   * more than 2 tiles past the spawn margin on the right (the camera went back after it spawned).
+   */
+  private outOfReach(e: Entity): boolean {
+    const b = e.body;
+    if (b.x + b.w < this.camera.x - px(e.despawnMargin ?? 0)) return true;
+    return b.x > this.camera.right + px(SPAWN_MARGIN_PX + 32);
+  }
+
+  /** Scroll-back: parked entities the screen has come back to resume where they were. */
+  private unpark(): void {
+    for (let i = this.parked.length - 1; i >= 0; i--) {
+      const e = this.parked[i] as Entity;
+      if (!e.alive) this.parked.splice(i, 1);
+      else if (!this.outOfReach(e)) {
+        this.parked.splice(i, 1);
+        this.entities.push(e);
+      }
+    }
+  }
+
+  /** Scroll-back camera: a live Bowser within 2 tiles of the screen (Level.as bowser.onScreen). */
+  private bowserOnScreen(): boolean {
+    for (const e of this.entities)
+      if (
+        e instanceof Bowser &&
+        e.alive &&
+        e.body.x + e.body.w > this.camera.x - px(32) &&
+        e.body.x < this.camera.right + px(32)
+      )
+        return true;
+    return false;
   }
 
   /* ---------- Blocks & tiles ---------- */

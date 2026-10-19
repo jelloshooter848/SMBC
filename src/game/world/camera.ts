@@ -21,6 +21,22 @@ export interface CameraOptions {
 export const DEFAULT_AUTO_SCROLL = 0.5;
 
 /**
+ * Scroll-back camera (SMBC 3.1.21's default, Level.scrollScreen with screenScrollsLeft): the
+ * lead's centre is held at the middle of the screen both ways (DEFAULT_LEFT_SCROLL_POS =
+ * DEFAULT_RIGHT_SCROLL_POS = half the screen), back to the area's left end.
+ */
+export const SCROLL_BACK_CENTER = px(SCREEN_W / 2);
+/**
+ * Scroll-back camera with Bowser on screen: the camera pans right on its own at
+ * SCROLL_SPEED_BEAT_DUNGEON (150 Flash px/s = 1.25 px a frame) while the lead is right of a tenth
+ * of the screen (leftScrollPos = SCREEN_WIDTH*.1), and only follows right past the screen's
+ * last 4 px (SCREEN_WIDTH - BOWSER_AXE_SCREEN_SCROLL_OFFSET, 8 Flash px).
+ */
+const BOSS_PAN = px(1.25);
+const BOSS_LEFT = Math.round(px(SCREEN_W * 0.1));
+const BOSS_RIGHT = px(SCREEN_W - 4);
+
+/**
  * The platformer camera: SMB1's right-only horizontal scrolling (left scroll is an accessibility
  * option). A `free` camera (tall maps with shafts) also scrolls left and follows the player up
  * and down, keeping the body's top inside a band of the screen; every other camera keeps y at 0.
@@ -38,6 +54,16 @@ export class Camera {
   /** Lowest allowed camera y in subpixels (0 for a one-screen map). */
   readonly maxY: number;
   allowLeftScroll = false;
+  /**
+   * Scroll-back camera (followBack): set once by a Classic SMBC World. Only a plain camera
+   * (not locked, free or auto) uses it; `follow` stays the Current camera.
+   */
+  scrollBack = false;
+  /** followBack: the lead's screen x (centre, subpixels) past which the camera follows. */
+  private backLeft = SCROLL_BACK_CENTER;
+  private backRight = SCROLL_BACK_CENTER;
+  /** followBack: Bowser has left the screen and the camera is easing back to centre. */
+  private backUncentered = false;
   /** Screen x at which the player starts pushing the camera. SMB1 uses 0x50. */
   pushX = px(80);
   /** Free camera: the band (screen y of the body's top) the player is kept inside. */
@@ -99,9 +125,39 @@ export class Camera {
     this.keepInRoom();
   }
 
+  /**
+   * The scroll-back camera's frame (SMBC 3.1.21 Level.scrollScreen, screenScrollsLeft on):
+   * `centerX` is the lead's centre (subpixels). `boss`: Bowser is on screen (within 2 tiles,
+   * bowser.onScreen), so the camera pans toward the bridge's end by itself; once he is gone the
+   * left limit eases back to the centre at the same speed (playerUncentered).
+   */
+  followBack(centerX: number, boss: boolean): void {
+    if (this.locked || this.auto) return;
+    if (boss) {
+      this.backRight = BOSS_RIGHT;
+      this.backLeft = BOSS_LEFT;
+      if (centerX - this.x > this.backLeft) this.x = Math.min(this.maxX, this.x + BOSS_PAN);
+      this.backUncentered = true;
+    } else if (this.backUncentered) {
+      if (centerX - this.x < SCROLL_BACK_CENTER)
+        this.backLeft = Math.min(SCROLL_BACK_CENTER, this.backLeft + BOSS_PAN);
+      else {
+        this.backLeft = this.backRight = SCROLL_BACK_CENTER;
+        this.backUncentered = false;
+      }
+    }
+    const sx = centerX - this.x;
+    if (sx > this.backRight) this.x = centerX - this.backRight;
+    else if (sx < this.backLeft) this.x = centerX - this.backLeft;
+    this.x = clamp(this.x, 0, this.maxX);
+    this.keepInRoom();
+  }
+
   /** Jump the camera so the player is on screen (level start / pipe exit). */
   snapTo(playerX: number, playerY?: number): void {
-    this.x = clamp(playerX - this.pushX, 0, this.maxX);
+    // Scroll-back: centred, as followBack holds it (a 16 px body's centre; forceShiftScreenToFollowPlayer).
+    const push = this.scrollBack ? SCROLL_BACK_CENTER - px(8) : this.pushX;
+    this.x = clamp(playerX - push, 0, this.maxX);
     if (this.free && playerY !== undefined) this.y = clamp(playerY - this.pushBottom, 0, this.maxY);
     this.keepInRoom();
   }
