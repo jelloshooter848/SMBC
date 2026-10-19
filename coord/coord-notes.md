@@ -52,3 +52,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Warriors DONE a27b233d (wip-warriors). Uses holdsStill (now 'rooted' in heroes-2) -> unify at PR6 integration. Owner notes: hit response is our call; placeholder sounds.
 - VicViper DONE 50249c50 (wip-vicviper). VV agent integrating PR6 -> claude/classic-extras-2 (VV+Warriors, stack on extras). Owner note: 1-1 first pipe crush trap.
 - heroes-1 guide fix d85cdba3. PR5 QA done (no blockers); fixes sent to Bass agent (row nav, merge heroes-2 after PR4 fixes).
+- PR5: row nav done on wip-extras (not yet on claude/classic-extras). Waiting heroes-2 fix push -> then resume Bass agent (ac3b3fb) to merge, commit classic-extras-guide test, full suite, push.
