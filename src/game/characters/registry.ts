@@ -9,10 +9,16 @@ import { SIMON } from './simon';
 import { RYU } from './ryu';
 import { BILL } from './bill';
 import { SOPHIA } from './sophia';
+import { MEGAMAN_CLASSIC } from './megaman/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
+import { MARIO_CLASSIC } from './mario/classic';
+import { LUIGI_CLASSIC } from './luigi/classic';
+import { SAMUS_CLASSIC } from './samus/classic';
+import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
+import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -33,7 +39,12 @@ export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, S
  * This file is the only one outside the classic modules allowed to import them (TG-39). Empty
  * until the hero slices land: a hero with no entry plays Current under Classic rules (TG-20).
  */
-export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {};
+export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
+  mario: MARIO_CLASSIC,
+  luigi: LUIGI_CLASSIC,
+  samus: SAMUS_CLASSIC,
+  megaman: MEGAMAN_CLASSIC,
+};
 
 /**
  * Classic-only heroes (TG-41), in select order (Bass, Proto Man, Pit, Vic Viper, Warriors of
@@ -41,11 +52,21 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {};
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
-export const CLASSIC_EXTRAS: CharacterDef[] = [];
+export const CLASSIC_EXTRAS: CharacterDef[] = [
+  // (Bass, Sophia III go first as they land.)
+  PROTOMAN_CLASSIC,
+  BREAKMAN_CLASSIC,
+  PIT_CLASSIC,
+  DARKPIT_CLASSIC,
+];
 
-/** The def a World plays for roster hero `def` under `rules` (TG-17). */
+/**
+ * The def a World plays for roster hero `def` under `rules` (TG-17). A def that is already a
+ * Classic one (an extra, or a test's stand-in) plays as itself.
+ */
 export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {
-  return rules === 'classic' ? (CLASSIC_CHARACTERS[def.id] ?? def) : def;
+  if (rules !== 'classic' || def.rules === 'classic') return def;
+  return CLASSIC_CHARACTERS[def.id] ?? def;
 }
 
 export function characterById(id: string): CharacterDef {

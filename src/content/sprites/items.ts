@@ -1060,6 +1060,88 @@ const iconBuster = [
   '...eeeee',
   '........',
 ];
+/* Classic Mega Man's Robot Master weapons (characters/megaman/classic-weapons.ts): HUD icons, a
+ * Water Shield drop and a spinning Screw Crusher. Drawn here from scratch. */
+const iconSuperArm = [
+  '.000000.',
+  '09939990',
+  '09939990',
+  '03333330',
+  '09993990',
+  '09993990',
+  '03333330',
+  '.000000.',
+];
+const iconPharaoh = [
+  '..5555..',
+  '.566665.',
+  '56611665',
+  '56611665',
+  '56666665',
+  '56666665',
+  '.566665.',
+  '..5555..',
+];
+const iconKick = [
+  '........',
+  '...222..',
+  '...2222.',
+  '7..2222.',
+  '.7.22222',
+  '7.222222',
+  '..000000',
+  '........',
+];
+const iconMagma = [
+  '7......7',
+  '.7....7.',
+  '..7557..',
+  '.755557.',
+  '.755557.',
+  '..7557..',
+  '.7....7.',
+  '7......7',
+];
+const iconWaterShield = [
+  '..a..a..',
+  '.a....a.',
+  'a......a',
+  '...ee...',
+  '...ee...',
+  'a......a',
+  '.a....a.',
+  '..a..a..',
+];
+const iconScrew = [
+  '...bb...',
+  '..bbbb..',
+  '.b1bbbb.',
+  'bbbbbbbb',
+  '.bbbbbb.',
+  '..bbbb..',
+  '...bb...',
+  '........',
+];
+const waterDrop = [
+  '...00...',
+  '..0aa0..',
+  '.0a1aa0.',
+  '0aa1aaa0',
+  '0aaaaee0',
+  '0aaaaee0',
+  '.0aeee0.',
+  '..0000..',
+];
+const screw0 = [
+  '..0000..',
+  '.0bbbb0.',
+  '0b1bbbb0',
+  '0bbbbbb0',
+  '.0bbbb0.',
+  '..0bb0..',
+  '...00...',
+  '........',
+];
 const iconSaw = [
   '...bb...',
   '.b.bb.b.',
@@ -1172,6 +1254,9 @@ const missile = [
   '....0b00000000..',
   '....0b0.........',
 ];
+
+/* The same missile pointing straight up, 8x16 (Classic SMBC's upward missile, SA-C18). */
+const missileUp = vflip(transpose(missile));
 
 /* Morph bomb: a small grey sphere whose gold core blinks white. */
 const morphBomb0 = [
@@ -1973,6 +2058,15 @@ export const itemsDef: SpriteDef = {
     'icon-knuckle': iconKnuckle,
     'icon-bolt': iconBolt,
     'icon-rush': iconRush,
+    'icon-super-arm': iconSuperArm,
+    'icon-pharaoh': iconPharaoh,
+    'icon-kick': iconKick,
+    'icon-magma': iconMagma,
+    'icon-water-shield': iconWaterShield,
+    'icon-screw': iconScrew,
+    'water-drop': waterDrop,
+    'screw-0': screw0,
+    'screw-1': flipH(screw0),
     'beam-0': beam0,
     'beam-1': beam1,
     'ice-beam-0': iceBeam(beam0),
@@ -1980,6 +2074,7 @@ export const itemsDef: SpriteDef = {
     'wave-beam-0': waveBeam0,
     'wave-beam-1': waveBeam1,
     missile,
+    'missile-up': missileUp,
     'morph-bomb-0': morphBomb0,
     'morph-bomb-1': morphBomb1,
     'energy-orb-small': energyOrbSmall,

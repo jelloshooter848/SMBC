@@ -243,4 +243,11 @@ export const sfx: Sfx[] = [
   // 0.4.33: each hero item's own pickup cue (hero-items.ts).
   ...heroItemSfx,
   ...townSfx,
+  // Classic-only extras (2026-10-07-protoman-build-classic-character.md PM-18, pit report PI-22).
+  // Proto Man's pick: a short whistled call, up a sixth and gently back down (about 1.3 s).
+  { id: 'protoman-whistle', pulse: '@2 v10 q7 x0 l16 o5 e g o6 c8 r32 o5 b a g8 x1 e4' },
+  // Pit's shot: a thin, bright zip falling fast, like a loosed arrow.
+  { id: 'pit-shoot', pulse: '@2 v9 q8 x1 p-9 o7 d32' },
+  // Pit's jump: a light flutter rising a fifth.
+  { id: 'pit-jump', pulse: '@2 v10 q8 x1 p7 o5 a16' },
 ];
