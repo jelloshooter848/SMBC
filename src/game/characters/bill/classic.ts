@@ -307,7 +307,8 @@ const DEATH_THROW: NonNullable<CharacterDef['deathThrow']> = {
   maxFall: 0x05000,
   afterLand: 90,
   maxFrames: 360,
-  dir: (p) => (p.scratch._dieDir === 1 || p.scratch._dieDir === -1 ? p.scratch._dieDir : (-p.facing as -1 | 1)),
+  dir: (p) =>
+    p.scratch._dieDir === 1 || p.scratch._dieDir === -1 ? p.scratch._dieDir : (-p.facing as -1 | 1),
 };
 
 /* ---------- looks (BI-C30) ---------- */
@@ -329,13 +330,18 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   } else if (!b.onGround) {
     if (p.scratch._somersault)
       name =
-        p.attackTimer > 0 && ay !== 0 ? (ay < 0 ? 'aim-diag-up' : 'aim-diag-down') : `spin-${(frame >> 2) & 3}`;
+        p.attackTimer > 0 && ay !== 0
+          ? ay < 0
+            ? 'aim-diag-up'
+            : 'aim-diag-down'
+          : `spin-${(frame >> 2) & 3}`;
     else if (ay < 0) name = ax === 0 ? 'aim-up' : 'aim-diag-up';
     else if (ay > 0) name = 'aim-diag-down';
     else name = 'shoot'; // a fall: a still pose with the gun forward
   } else if (ay < 0 && ax === 0) name = 'aim-up';
   else if (ay < 0) name = 'aim-diag-up';
-  else if (ay > 0) name = 'aim-diag-down'; // walking with Down + a direction
+  else if (ay > 0)
+    name = 'aim-diag-down'; // walking with Down + a direction
   else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${p.walkFrame}`;
   else name = p.attackTimer > 0 ? 'shoot' : 'idle';
   return { sheet: 'bill', palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
@@ -354,7 +360,10 @@ export const BILL_CLASSIC_GUIDE: CharacterGuide = {
       does: 'Fire the gun in hand. Shots fly through ground and open blocks.',
     },
     { action: 'up', does: 'Aim up, diagonally while walking.' },
-    { action: 'down', does: 'Lie flat when still. With a direction: walk and aim down. Somersault: aim down.' },
+    {
+      action: 'down',
+      does: 'Lie flat when still. With a direction: walk and aim down. Somersault: aim down.',
+    },
     { action: 'special', touch: 'GUN', does: 'With the Fire Flower: fire the other gun.' },
     { action: 'select', touch: 'SWAP', does: 'With the Fire Flower: swap the two guns.' },
   ],

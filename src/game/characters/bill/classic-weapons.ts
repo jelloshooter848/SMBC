@@ -58,7 +58,16 @@ const base: ProjectileSpec = {
 
 export const CLASSIC_GUNS: Readonly<Record<ClassicGunId, ClassicGun>> = {
   // 288 Flash px/s: 2.40 px/f; diagonal 1.80 px/f each axis.
-  rifle: { id: 'rifle', straight: 0x02666, diag: 0x01ccd, amount: 100, cap: 4, label: 'RIFLE', icon: 'icon-rifle', spec: base },
+  rifle: {
+    id: 'rifle',
+    straight: 0x02666,
+    diag: 0x01ccd,
+    amount: 100,
+    cap: 4,
+    label: 'RIFLE',
+    icon: 'icon-rifle',
+    spec: base,
+  },
   // 315: 2.625 px/f.
   mg: {
     id: 'mg',
