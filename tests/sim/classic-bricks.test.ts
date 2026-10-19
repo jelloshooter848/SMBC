@@ -304,3 +304,11 @@ describe('heads that touch blocks as ground (BR-C3 BRICK_NONE)', () => {
     expect(w.map.get(2, 9)).toBe(T.Q_COIN);
   });
 });
+
+describe('heroes without a Classic def yet (TG-20)', () => {
+  it("a Current def's bomb under Classic rules still breaks a brick (its points count 1000 each)", () => {
+    const w = classicWorld(LINK, testLevel({ 9: '..........=' }));
+    w.explode(tile(10) + px(8), tile(9) + px(8), 8, w.player, { hurtsPlayers: false });
+    expect(w.map.get(10, 9)).toBe(T.AIR);
+  });
+});

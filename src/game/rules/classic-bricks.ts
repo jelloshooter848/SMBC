@@ -5,6 +5,7 @@ import { Pickup, type PickupKind } from '../entities/objects/pickup';
 import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import type { BlockHit, BlockStrike } from './hooks';
+import { CURRENT_POINT_DAMAGE } from './classic-enemies';
 
 /**
  * Classic SMBC block rules (bug-reports/2026-10-07-classic-bricks-and-shots.md, BR-C1..BR-C19):
@@ -81,7 +82,9 @@ export function classicStrikeBlock(
       breaks = true; // BR-C6: one hit, whatever its damage
     else {
       // BR-C7: shots and blasts take their damage off the brick's HP; a hit it survives is silent.
-      const hp = (world.brickHp.get(key) ?? BRICK_HP) - (hit.damage ?? 0);
+      // A Current def's blast or shot (no Classic def yet, TG-20) counts its points as the HP door does.
+      const units = p.def.rules === 'classic' ? 1 : CURRENT_POINT_DAMAGE;
+      const hp = (world.brickHp.get(key) ?? BRICK_HP) - (hit.damage ?? 0) * units;
       breaks = hp <= 0;
       if (!breaks) {
         world.brickHp.set(key, hp);
