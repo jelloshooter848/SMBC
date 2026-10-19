@@ -13,6 +13,7 @@ import { BILL_CLASSIC } from './bill/classic';
 import { RYU_CLASSIC } from './ryu/classic';
 import { LINK_CLASSIC } from './link/classic';
 import { MEGAMAN_CLASSIC } from './megaman/classic';
+import { SOPHIA_CLASSIC } from './sophia/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -21,6 +22,7 @@ import { MARIO_CLASSIC } from './mario/classic';
 import { LUIGI_CLASSIC } from './luigi/classic';
 import { SAMUS_CLASSIC } from './samus/classic';
 import { SIMON_CLASSIC } from './simon/classic';
+import { applyWideVariants } from '../rules/classic-level-variants';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -29,7 +31,11 @@ installClassicRules({
   enemyHit: classicHit,
   enemySpawned: classicEnemySpawned,
   strikeBlock: classicStrikeBlock,
-  levelEdits: applyClassicLevelEdits,
+  levelEdits: (map, id, defs, spawns) => {
+    // Both tables apply.
+    const water = applyClassicLevelEdits(map, id, defs);
+    return applyWideVariants(map, id, defs, spawns) || water;
+  },
 });
 
 /** Playable characters in select-screen order. */
@@ -50,6 +56,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   ryu: RYU_CLASSIC,
   link: LINK_CLASSIC,
   megaman: MEGAMAN_CLASSIC,
+  sophia: SOPHIA_CLASSIC,
 };
 
 /**

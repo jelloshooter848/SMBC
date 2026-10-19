@@ -312,6 +312,18 @@ export interface CharacterDef {
     maxFrames: number;
     dir(p: Player): -1 | 1;
   };
+  /**
+   * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
+   * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
+   * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.
+   */
+  levelFlags?: {
+    horz?: boolean;
+    vert?: boolean;
+    wide?: boolean;
+    goodSwimmer?: boolean;
+    poorBowser?: boolean;
+  };
 }
 
 /**

@@ -79,6 +79,12 @@ under `## [Unreleased]`.
   Up or Down with Attack stabs up or down, and in mid-air Up or Down thrusts (the down-thrust bounces off enemies and
   blocks). The boomerang flies eight ways, stops enemies and brings back items; bombs never hurt him, three at a time.
   His own Classic guide page. In developer mode the full kit adds the Bow, and Tools picks boomerang, bombs or arrows.
+- Classic Sophia III (Classic rules): the same tank, with the original's power-ups (a Mushroom gives the Hyper cannon
+  and the hover, a Flower the Crusher cannon, wall and ceiling climbing and the Triple Missile; another Flower gives
+  more missiles), the original's damage (a Goomba takes three Normal shots, two Hyper, one Crusher; armour stops the
+  cannon but not the Triple Missile), missile ammo drops only once she has missiles, and a hit that takes every power
+  but keeps the missiles. No Jason in Classic: SELECT swaps the missiles when she has both. The Lost Levels castles
+  (and the water of 3-2 and 6-2) get the original's wider shafts for her, as the other levels already do.
 
 ## [0.4.55] - 2026-10-13
 
