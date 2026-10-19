@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic rules: the camera now scrolls back left, as the original game does, keeping your hero in the middle of the
+  screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
+  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself. Auto-scrolling
+  stages and one-screen rooms keep their own camera, and the campaign's camera is unchanged.
+
 ## [0.4.56] - 2026-10-19
 
 ### Added
