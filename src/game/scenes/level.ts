@@ -24,6 +24,8 @@ import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
+import { drawRulesTag } from '../hud/rules-tag';
+import { rulesOf } from '../context';
 import { SCREEN_W } from '@engine/viewport';
 import { talkToCaptive } from './free-hero';
 import { endStageRound } from '../arena/stage-round';
@@ -148,6 +150,8 @@ export class LevelScene implements Scene {
     // In play each visit plays out differently (swimming Cheep Cheeps, timers); headless sims and
     // tests (no GameDeps.freshSeeds) keep the level's fixed seed.
     const seed = start.seed ?? (game.deps.freshSeeds === true ? freshSeed() : levelSeed(level));
+    // Power carried from other rules goes back to the start before the World is built (TG-16).
+    game.reconcileRules(start.rules ?? rulesOf(game.ctx));
     this.world = new World(level, game.ctx, game.state, { ...start, seed });
     // The TALK prompt over a captive or a partner names the TALK button's key ("TALK (C)"); on
     // touch "TALK", the button it is then (0.4.35). Up no longer talks (0.4.43).
@@ -224,7 +228,7 @@ export class LevelScene implements Scene {
 
   /** The level's music (levelMusic), or its section's (World.sectionMusic), at the clock's tempo. */
   playMusic(): void {
-    const music = this.world.sectionMusic ?? levelMusic(this.level, this.game.state.character);
+    const music = this.world.sectionMusic ?? levelMusic(this.level, this.world.player.def);
     this.game.ctx.audio.setTempoScale(this.world.time !== null && this.world.time <= 100 ? 1.4 : 1);
     this.game.ctx.audio.playMusic(music);
   }
@@ -610,6 +614,7 @@ export class LevelScene implements Scene {
         shiftY: SMB3_WORLD_SHIFT,
         bottom: STATUS_BAR_Y,
       });
+      this.drawRulesTag(r);
       return;
     }
     this.world.render(r);
@@ -635,6 +640,21 @@ export class LevelScene implements Scene {
     this.explainers.render(r);
     if (this.world.castleWaiting) this.drawCastlePrompt(r);
     this.debug.render(r, this.world, this.game.deps.fps?.() ?? 0);
+    this.drawRulesTag(r);
+  }
+
+  /**
+   * CLASSIC (or CLASSIC?) at the top right while this World plays Classic rules (TG-31): after
+   * the HUD and the F1 overlay, so it shows under the pause menu and in every screenshot.
+   */
+  private drawRulesTag(r: Renderer): void {
+    const w = this.world;
+    drawRulesTag(
+      r,
+      this.game.ctx.assets,
+      w.rules,
+      w.players.map((p) => p.def),
+    );
   }
 
   /** A hero item's name under the HUD the first time it is found (World.itemCaption). */

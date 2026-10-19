@@ -140,6 +140,7 @@ export class CastleScene implements Scene {
     state.lives = this.lives.lives;
     const { x, y } = this.lives.start;
     const world = new World(level, this.game.ctx, state, {
+      rules: 'current', // mini games are scripted around Current kits (TG-14)
       x,
       y,
       seed: this.seed ?? levelSeed(level),

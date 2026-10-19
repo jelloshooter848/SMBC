@@ -183,5 +183,8 @@ describe('Current parity fixture (TG-36)', () => {
     it(`${s.name} plays exactly as recorded`, () => {
       expect(record(s)).toEqual(fixture[s.name]);
     });
+    it(`${s.name} plays exactly as recorded with rules: 'current'`, () => {
+      expect(record(s, { rules: 'current' })).toEqual(fixture[s.name]);
+    });
   }
 });

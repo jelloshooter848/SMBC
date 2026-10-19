@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { toPx, velToPxf } from '@engine/math/units';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { World } from '../world/world';
+import { rulesLine } from '../hud/rules-tag';
 
 /**
  * Developer overlay: tile grid, column numbers, player stats and a free camera for checking
@@ -37,6 +38,14 @@ export class DebugOverlay {
       `vx ${velToPxf(b.vx).toFixed(3)} vy ${velToPxf(b.vy).toFixed(3)} ${b.onGround ? 'ground' : 'air'}`,
       `cam ${camPx} frame ${world.frame} fps ${fps.toFixed(0)}${this.freeCamera ? ' FREECAM' : ''}`,
     ];
+    // Which rules each hero plays (TG-33); Current worlds keep the overlay as it was.
+    if (world.rules === 'classic')
+      lines.push(
+        rulesLine(
+          world.rules,
+          world.players.map((p) => p.def),
+        ),
+      );
     lines.forEach((l, i) => {
       r.rect(0, 2 + i * 9, l.length * 5 + 4, 9, 'rgba(0,0,0,0.6)');
       r.debugText(l, 2, 9 + i * 9);

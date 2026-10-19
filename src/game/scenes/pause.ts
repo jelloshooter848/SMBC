@@ -36,12 +36,15 @@ export class PauseScene extends MenuScene {
     if (game.tutorialRun) items.push(...lastTipsItem(game, this.world));
     // The hero's own guide (and player two's in co-op).
     const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
-    for (const c of heroes)
-      items.push({
-        label: heroes.length > 1 ? `Guide: ${c.name}` : 'Guide',
-        select: () => game.scenes.push(new GuideScene(game, c, () => game.scenes.pop())),
-      });
     const world = this.world;
+    // The guide of the hero being played (the def for the World's rules, TG-19).
+    heroes.forEach((c, i) => {
+      const def = world?.players[i]?.def ?? c;
+      items.push({
+        label: heroes.length > 1 ? `Guide: ${def.name}` : 'Guide',
+        select: () => game.scenes.push(new GuideScene(game, def, () => game.scenes.pop())),
+      });
+    });
     // Campaign levels: replay the hero's training stage, then back to this paused level.
     if (world)
       heroes.forEach((c, i) => {

@@ -173,6 +173,7 @@ export class EscapeScene implements Scene {
     this.state.hp = ESCAPE_KIT.maxHp;
     const world = new World(level, this.game.ctx, this.state, {
       ...this.lives.start,
+      rules: 'current', // mini games are scripted around Current kits (TG-14)
       mode: 'stand',
       deathStyle: 'explode',
       seed: this.seed,

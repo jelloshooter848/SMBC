@@ -1,6 +1,19 @@
 import type { AssetRegistry } from '@engine/assets/registry';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import { startHp, type CharacterDef } from './characters/character';
+import { heroFor } from './characters/registry';
+
+/**
+ * Which rules the heroes play by (TG-9): 'current' is this game as it has always played;
+ * 'classic' is SMBC 3.1.21's rules (Classic mode and dev Classic starts only, never a campaign
+ * file: Game.liveRules decides). Absent anywhere means 'current'.
+ */
+export type Rules = 'current' | 'classic';
+
+/** The rules a context (or a state) names: 'current' unless it says 'classic'. */
+export function rulesOf(ctx: { rules?: Rules | undefined }): Rules {
+  return ctx.rules ?? 'current';
+}
 
 /** Per-game assist/accessibility options that affect simulation. */
 export interface AssistOptions {
@@ -35,6 +48,12 @@ export interface GameContext {
   assist: AssistOptions;
   /** Reduced-flashing accessibility option (star palette cycling, etc.). */
   reduceFlashing: boolean;
+  /**
+   * The live rules (TG-9). Optional: absent is 'current', so every hand-built context (the sims,
+   * the test harnesses) plays Current. Game makes it a live view of Game.liveRules; a World reads
+   * it once, in its constructor (World.rules).
+   */
+  rules?: Rules;
 }
 
 /** Progress carried between levels. */
@@ -74,25 +93,48 @@ export interface GameState {
    * level (Game.goToLevel). Never in classic play or the Lost Levels.
    */
   campaignOrder?: boolean;
+  /**
+   * The rules `powerState`, `hp`, `kit` and their player-2 copies were earned under (TG-15).
+   * Written only as 'classic' (absent: 'current'), so every Current state is exactly as before.
+   * Never written into a campaign save (campaign files always play Current). A level start under
+   * other rules resets the carried power (LevelScene: reconcileRules).
+   */
+  rules?: Rules;
 }
 
 export function playerCount(s: GameState): number {
   return s.character2 ? 2 : 1;
 }
 
-export function newGameState(character: CharacterDef, character2: CharacterDef | null = null): GameState {
-  return {
+/** A hero's power at the start of a run (and after a death): small, or full hit points. */
+export function defaultPower(def: CharacterDef): string {
+  return def.damage.kind === 'powerup' ? 'small' : 'full';
+}
+
+/**
+ * A fresh run. `character`/`character2` are the roster (Current) defs; the default power and HP
+ * come from the defs the World will play (heroFor under `rules`). `rules` is written only when
+ * 'classic' (TG-15).
+ */
+export function newGameState(
+  character: CharacterDef,
+  character2: CharacterDef | null = null,
+  rules: Rules = 'current',
+): GameState {
+  const h1 = heroFor(character, rules);
+  const h2 = character2 ? heroFor(character2, rules) : null;
+  const s: GameState = {
     character,
     character2,
-    powerState2: character2?.damage.kind === 'powerup' ? 'small' : 'full',
-    hp2: character2 ? startHp(character2) : 0,
+    powerState2: h2 ? defaultPower(h2) : 'full',
+    hp2: h2 ? startHp(h2) : 0,
     score: 0,
     coins: 0,
     lives: character2 ? 5 : 3,
     world: 1,
     stage: 1,
-    powerState: character.damage.kind === 'powerup' ? 'small' : 'full',
-    hp: startHp(character),
+    powerState: defaultPower(h1),
+    hp: startHp(h1),
     time: null,
     checkpoint: null,
     kit: {},
@@ -100,4 +142,6 @@ export function newGameState(character: CharacterDef, character2: CharacterDef |
     warped: false,
     wallet: false,
   };
+  if (rules === 'classic') s.rules = 'classic';
+  return s;
 }

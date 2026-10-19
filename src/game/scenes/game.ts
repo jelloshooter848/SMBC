@@ -3,8 +3,9 @@ import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
-import type { GameContext, GameState } from '../context';
-import { newGameState } from '../context';
+import type { GameContext, GameState, Rules } from '../context';
+import { defaultPower, newGameState } from '../context';
+import { CLASSIC_EXTRAS, heroFor } from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
@@ -157,6 +158,13 @@ export class Game {
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
   campaign: { slot: SaveSlot } | null = null;
+  /**
+   * The rules chosen for this non-campaign run (Classic mode, TG-9 rules model). Run starters set
+   * it: devStart's and newGame's `opts.rules`, or the Classic mode flow before it starts a run;
+   * showTitle, playtest and playShared put it back to 'current'. Never read directly to decide
+   * play: liveRules does that, and ignores it while a campaign file is open.
+   */
+  runRules: Rules = 'current';
 
   /**
    * The map pages the rules read for this run (content/worldmap rulePages): the campaign's, whose
@@ -268,6 +276,72 @@ export class Game {
 
   constructor(readonly deps: GameDeps) {
     this.state = newGameState(deps.characters[0] as CharacterDef);
+    // ctx.rules is a live view of liveRules (TG-9), so every World and the intro card read the
+    // run's rules, and never stale ones once a campaign file opens. Setting it sets runRules.
+    Object.defineProperty(deps.ctx, 'rules', {
+      get: () => this.liveRules,
+      set: (r: Rules) => {
+        this.runRules = r;
+      },
+      enumerable: true,
+      configurable: true,
+    });
+  }
+
+  /**
+   * The one place that decides the live rules (TG-9 rules model): 'current' whenever a campaign
+   * file is open, else the run's (runRules). A World reads them once, when it is built.
+   */
+  get liveRules(): Rules {
+    return this.campaign !== null ? 'current' : this.runRules;
+  }
+
+  /**
+   * Who can be picked for this run (TG-41): the roster plus the Classic-only extras in a
+   * Classic-rules run outside the campaign, else deps.characters (the same array, untouched).
+   * heroesToFind, captives, the map and the training rooms keep reading deps.characters.
+   */
+  get roster(): CharacterDef[] {
+    return this.rosterFor(this.liveRules);
+  }
+
+  /** The roster for a non-campaign run under `rules` (the dev Level select's Rules row). */
+  rosterFor(rules: Rules): CharacterDef[] {
+    if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
+    return [...this.deps.characters, ...CLASSIC_EXTRAS];
+  }
+
+  /**
+   * Before a World is built (LevelScene, TG-16): power, hit points and kit carried from other
+   * rules go back to each hero's start for `rules` (lives, score, coins, checkpoint, time and the
+   * rest stay), and a Classic-only extra no longer in the roster gives way to the first hero
+   * (TG-42). `state.rules` is then set ('classic', or no key for Current). Said aloud.
+   */
+  reconcileRules(rules: Rules): void {
+    const s = this.state;
+    if ((s.rules ?? 'current') !== rules) {
+      const reset = (c: CharacterDef) => {
+        const d = heroFor(c, rules);
+        return { powerState: defaultPower(d), hp: startHp(d) };
+      };
+      const p1 = reset(s.character);
+      s.powerState = p1.powerState;
+      s.hp = p1.hp;
+      s.kit = {};
+      if (s.character2) {
+        const p2 = reset(s.character2);
+        s.powerState2 = p2.powerState;
+        s.hp2 = p2.hp;
+      }
+      s.kit2 = {};
+      if (rules === 'classic') s.rules = 'classic';
+      else delete s.rules;
+      this.deps.announcer?.say('Rules changed. Power reset.');
+    }
+    const roster = this.roster;
+    const gone = (c: CharacterDef) => CLASSIC_EXTRAS.includes(c) && !roster.includes(c);
+    if (gone(s.character)) this.setHero(0, this.firstHero);
+    if (s.character2 && gone(s.character2)) this.setHero(1, this.firstHero);
   }
 
   get ctx(): GameContext {
@@ -410,6 +484,7 @@ export class Game {
 
   showTitle(): void {
     this.airship = null;
+    this.runRules = 'current';
     this.deps.ctx.audio.stopMusic();
     this.pendingLevel = null;
     this.playtestDone = null;
@@ -1061,22 +1136,33 @@ export class Game {
 
   /**
    * Developer level select: any level, character and power state, with 99 lives. `seed` fixes the
-   * level's world seed (tests); otherwise LevelScene picks it (GameDeps.freshSeeds).
+   * level's world seed (tests); otherwise LevelScene picks it (GameDeps.freshSeeds). `opts.rules`
+   * is the run's rules (default 'current'); the kit and power come from the def played under them.
    */
-  devStart(levelId: string, character: CharacterDef, power: string, fullKit = false, seed?: number): void {
+  devStart(
+    levelId: string,
+    character: CharacterDef,
+    power: string,
+    fullKit = false,
+    seed?: number,
+    opts: { rules?: Rules } = {},
+  ): void {
     this.tutorialRun = null;
-    this.state = newGameState(character);
+    this.campaign = null;
+    this.runRules = opts.rules ?? 'current';
+    const rules = this.liveRules;
+    const hero = heroFor(character, rules);
+    this.state = newGameState(character, null, rules);
     this.state.lives = 99;
-    if (fullKit && character.devKit) this.state.kit = character.devKit();
-    if (character.damage.kind === 'powerup') this.state.powerState = power;
+    if (fullKit && hero.devKit) this.state.kit = hero.devKit();
+    if (hero.damage.kind === 'powerup') this.state.powerState = power;
     else {
-      const max = this.state.kit.maxHp ?? startHp(character);
+      const max = this.state.kit.maxHp ?? startHp(hero);
       this.state.hp = power === 'full' ? max : power === 'half' ? Math.max(1, Math.ceil(max / 2)) : 1;
     }
     this.playtestDone = null;
     this.pendingLevel = null;
     this.quickRespawn = true;
-    this.campaign = null;
     this.backupDue = null;
     if (levelId === DEV_VILLAGE) {
       this.deps.ctx.audio.stopMusic();
@@ -1114,6 +1200,7 @@ export class Game {
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
   playtest(level: LevelData, done: () => void): void {
     this.tutorialRun = null;
+    this.runRules = 'current';
     this.state = newGameState(this.state.character);
     this.state.lives = 99;
     this.playtestDone = done;
@@ -1127,6 +1214,7 @@ export class Game {
   playShared(level: LevelData): void {
     this.tutorialRun = null;
     this.sharedLevel = level;
+    this.runRules = 'current';
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -1135,12 +1223,22 @@ export class Game {
     this.startLevel(level, { mode: 'stand' });
   }
 
-  newGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
+  /**
+   * A non-campaign run from `levelId`. `opts.rules` sets the run's rules; left out, the run keeps
+   * runRules as it stands ('current' unless the Classic mode flow set it).
+   */
+  newGame(
+    character: CharacterDef,
+    levelId = '1-1',
+    character2: CharacterDef | null = null,
+    opts: { rules?: Rules } = {},
+  ): void {
     this.tutorialRun = null;
-    this.state = newGameState(character, character2);
+    this.campaign = null;
+    if (opts.rules) this.runRules = opts.rules;
+    this.state = newGameState(character, character2, this.liveRules);
     this.playtestDone = null;
     this.quickRespawn = false;
-    this.campaign = null;
     this.backupDue = null;
     const id = this.pendingLevel ?? levelId;
     this.pendingLevel = null;
@@ -1395,10 +1493,12 @@ export class Game {
    */
   resetAfterDeath(): void {
     const s = this.state;
-    const fresh = (c: CharacterDef): HeroPower =>
-      this.campaign
-        ? heroStart(c)
-        : { powerState: c.damage.kind === 'powerup' ? 'small' : 'full', hp: startHp(c), kit: {} };
+    const rules = this.liveRules;
+    const fresh = (c: CharacterDef): HeroPower => {
+      if (this.campaign) return heroStart(c);
+      const d = heroFor(c, rules); // the def played under the run's rules (TG-17a)
+      return { powerState: defaultPower(d), hp: startHp(d), kit: {} };
+    };
     const p1 = fresh(s.character);
     s.powerState = p1.powerState;
     s.hp = p1.hp;
@@ -1455,16 +1555,18 @@ export class Game {
       }
       return;
     }
-    const power = c.damage.kind === 'powerup' ? 'small' : 'full';
+    // The default of the def played under the run's rules (TG-17a).
+    const d = heroFor(c, this.liveRules);
+    const power = defaultPower(d);
     if (player === 1) {
       s.character2 = c;
       s.powerState2 = power;
-      s.hp2 = startHp(c);
+      s.hp2 = startHp(d);
       s.kit2 = {};
     } else {
       s.character = c;
       s.powerState = power;
-      s.hp = startHp(c);
+      s.hp = startHp(d);
       s.kit = {};
     }
   }
@@ -1498,7 +1600,7 @@ export class Game {
    */
   continueGame(levelId: string | null, player = 0): void {
     const old = this.state;
-    this.state = newGameState(old.character, old.character2);
+    this.state = newGameState(old.character, old.character2, this.liveRules);
     this.state.warped = old.warped;
     const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
     if (id === null) {
