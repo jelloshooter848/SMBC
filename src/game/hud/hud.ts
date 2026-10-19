@@ -89,7 +89,9 @@ export function drawHud(
     }
     r.text(font, str, x, y);
   };
-  const name = state.character.hudName.slice(0, 6).padEnd(6);
+  // The hero being played (players[i].def: the def for the World's rules, TG-19), else the
+  // state's (the intro card has no players yet). Under Current both are the same def.
+  const name = (players[0]?.def ?? state.character).hudName.slice(0, 6).padEnd(6);
   const place = shownPlace(state.world, state.stage)?.shown;
   text(name, 24, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
@@ -148,10 +150,11 @@ export function drawHeroStats(
   text: (str: string, x: number, y: number) => void,
 ): void {
   const player = players[0] ?? null;
-  const dmg = state.character.damage;
+  const def = player?.def ?? state.character;
+  const dmg = def.damage;
   if (dmg.kind === 'hp' && player) {
     if (dmg.hudStyle === 'number') {
-      const tanks = state.character.energyTanks?.(player);
+      const tanks = def.energyTanks?.(player);
       if (tanks) {
         // NES Metroid: a row of small boxes above EN, filled while the tank holds energy.
         for (let i = 0; i < tanks.total; i++) {
@@ -183,7 +186,7 @@ export function drawHeroStats(
   }
   // Tool belt (icon + ammo) under the coin counter and a secondary meter under the hearts.
   if (player) {
-    const tools = state.character.tools?.(player);
+    const tools = def.tools?.(player);
     if (tools && tools.length) {
       const n = tools.length;
       const i = (((player.scratch.tool ?? 0) % n) + n) % n;
@@ -196,9 +199,9 @@ export function drawHeroStats(
         if (t.count !== null) text(`×${pad(t.count, 2)}`, 97 + iw, 24);
       }
     }
-    const extra = state.character.hudExtra?.(player);
+    const extra = def.hudExtra?.(player);
     if (extra) text(extra, dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : 24, 24);
-    const m = state.character.meter?.(player);
+    const m = def.meter?.(player);
     if (m && dmg.kind === 'hp' && dmg.hudStyle === 'bar') {
       // Weapon energy: a second vertical bar beside the health bar.
       const x = 16;
@@ -231,8 +234,8 @@ export function drawPlayerTwoStats(
 ): void {
   const p2 = players[1];
   if (p2 && state.character2) {
-    const d2 = state.character2.damage;
-    text(state.character2.hudName.slice(0, 6), 144, 24);
+    const d2 = p2.def.damage;
+    text(p2.def.hudName.slice(0, 6), 144, 24);
     if (d2.kind === 'hp' && d2.hudStyle === 'hearts') {
       const full = Math.floor(p2.hp / 2);
       const half = p2.hp % 2;

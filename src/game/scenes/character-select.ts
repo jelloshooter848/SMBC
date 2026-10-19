@@ -45,7 +45,8 @@ export interface HeroPick {
  * mode's (title > CLASSIC). `begin` starts the run with the picked heroes; `back` leaves.
  */
 export interface NewGamePick {
-  begin: (c: CharacterDef, c2: CharacterDef | null) => void;
+  /** Starts the run (one player: Classic mode has no co-op, so player two cannot join). */
+  begin: (c: CharacterDef) => void;
   back: () => void;
 }
 
@@ -65,12 +66,9 @@ export class CharacterSelectScene implements Scene {
     private readonly start: NewGamePick | null = null,
   ) {}
 
-  /**
-   * The heroes to pick from: the game's roster when it has one (extra heroes follow the usual
-   * ones), else the registry's.
-   */
+  /** The heroes to pick from: the run's roster (Game.roster; the Classic extras follow the usual ones). */
   get chars(): readonly CharacterDef[] {
-    return (this.game as { roster?: readonly CharacterDef[] }).roster ?? this.game.deps.characters;
+    return this.game.roster;
   }
 
   /**
@@ -144,7 +142,7 @@ export class CharacterSelectScene implements Scene {
     this.index = this.unlocked(this.index);
     this.index2 = this.unlocked(this.index2);
     this.game.deps.announcer?.say(
-      'Select your hero. Left and right to choose, OK to begin. Player two: press menu to join.' +
+      `Select your hero. Left and right to choose, OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
         this.toFind(),
     );
   }
@@ -214,7 +212,8 @@ export class CharacterSelectScene implements Scene {
     }
     this.index = move(this.index, input);
     const f2 = inputs[1];
-    if (f2) {
+    // Classic mode is one player (no join).
+    if (f2 && !this.start) {
       if (!this.p2 && f2.pressed('start')) {
         this.p2 = true;
         this.game.ctx.audio.sfx('1up');
@@ -228,7 +227,7 @@ export class CharacterSelectScene implements Scene {
       const c = chars[this.index];
       const c2 = this.p2 ? (chars[this.index2] ?? null) : null;
       if (c) {
-        if (this.start) this.start.begin(c, c2);
+        if (this.start) this.start.begin(c);
         else this.game.newGame(c, '1-1', c2);
       }
       return;
@@ -305,7 +304,7 @@ export class CharacterSelectScene implements Scene {
     } else if (this.p2) {
       const c2 = chars[this.index2];
       if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158 + low);
-    } else if ((this.t >> 6) % 2 === 1) {
+    } else if (!this.start && (this.t >> 6) % 2 === 1) {
       const join = fontText(`P2 ${abilityHint(this.game, 'MENU', 'start', 1)} TO JOIN`);
       r.text(font, join, 128 - join.length * 4, 158 + low);
     }

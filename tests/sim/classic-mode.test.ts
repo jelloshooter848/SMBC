@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getLevel } from '@content/levels';
 import { px } from '@engine/math/units';
 import { loadProgress, saveProgress } from '@engine/save/progress';
 import { defaultSettings, loadSettings, SETTINGS_KEY, type Settings } from '@engine/save/settings';
 import type { CharacterDef } from '@game/characters/character';
-import { CHARACTERS } from '@game/characters/registry';
+import { CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
 import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
 import { Bowser } from '@game/entities/enemies/bowser';
@@ -137,7 +137,16 @@ describe('the title and the CLASSIC menu', () => {
     const it = items(title)[1] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
-    // Five rows with Dev mode: every row stays above the credits.
+    // Without dev mode: four rows where main's three were (x 80, from y 96, 12 px apart).
+    h.idle(TITLE_TIMING.dropEnd + 10);
+    const four = draw(h.top() as TitleScene).texts.filter((t) =>
+      labels(h.top()).some((l) => l.toUpperCase() === t.str),
+    );
+    const last = (str: string) => four.filter((t) => t.str === str).at(-1);
+    ['START GAME', 'CLASSIC', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
+      expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
+    );
+    // Five rows with Dev mode: the usual 12 px step, every row above the credits.
     h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
@@ -145,7 +154,12 @@ describe('the title and the CLASSIC menu', () => {
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     expect(rows.length).toBeGreaterThanOrEqual(5);
-    for (const r of rows) expect(r.y + 8).toBeLessThanOrEqual(148);
+    for (const r of rows) expect(r.y + 8).toBeLessThanOrEqual(148 - 4);
+    // (shadows draw 1 px right and down)
+    const ys = [...new Set(rows.filter((r) => r.x === 64).map((r) => r.y))].sort((a, b) => a - b);
+    for (let i = 1; i < ys.length; i++) expect((ys[i] as number) - (ys[i - 1] as number)).toBe(12);
+    // Clear of CHAPTER 1 above.
+    expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);
   });
 
   it('the menu: Super Mario Bros., Options, Back; each line is announced', () => {
@@ -164,11 +178,11 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 
-  it('The Lost Levels show once SMB is beaten: in Classic mode, or on a campaign file', () => {
+  it('The Lost Levels show only once SMB is beaten in Classic mode (a campaign clear does not count)', () => {
     expect(lostLevelsOpen()).toBe(false);
     file({ gameCleared: true });
-    expect(lostLevelsOpen()).toBe(true);
-    store.clear();
+    expect(lostLevelsOpen()).toBe(false);
+    expect(labels(toClassicMenu(classic()))).toEqual(['Super Mario Bros.', 'Options', 'Back']);
     saveProgress({ ...loadProgress(), cleared: ['8-4'] });
     const h = classic();
     expect(labels(toClassicMenu(h))).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
@@ -180,18 +194,24 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('Options: Rules (Classic SMBC / Current), saved in settings, then every other option', () => {
+  it('Options: Classic rules (Classic SMBC / Current), saved in settings, then every other option', () => {
     const h = classic();
     toClassicMenu(h);
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
     expect(opts).toBeInstanceOf(ClassicOptionsScene);
-    expect(labels(opts)).toEqual(['Rules', 'All options', 'Back']);
-    expect(h.said.at(-1)).toMatch(/^Classic options\. Rules: Classic SMBC\./);
+    expect(labels(opts)).toEqual(['Classic rules', 'All options', 'Back']);
+    expect(h.said.at(-1)).toMatch(/^Classic options\. Classic rules: Classic SMBC\./);
+    // Drawn in full: the label, and the value right-aligned on its row.
+    let t = draw(opts).texts.map((x) => x.str);
+    expect(t).toContain('CLASSIC RULES');
+    expect(t).toContain('CLASSIC SMBC');
     h.idle(8);
     h.tap('right');
     expect(h.settings.classicRules).toBe('current');
-    expect(h.said.at(-1)).toMatch(/^Rules: Current/);
+    expect(h.said.at(-1)).toMatch(/^Classic rules: Current/);
+    t = draw(opts).texts.map((x) => x.str);
+    expect(t).toContain('CURRENT');
     h.tap('jump');
     expect(h.settings.classicRules).toBe('classic');
     pick(h, 'All options');
@@ -360,7 +380,7 @@ describe('a Classic run', () => {
   it('no Bowser health bar in 8-4 (a campaign addition)', () => {
     const h = classic({ dev: true });
     h.game.ctx.assist.invulnerable = true;
-    h.game.devClassicStart('8-4-end', MARIO, 'fire');
+    h.game.devStart('8-4-end', MARIO, 'fire', false, undefined, { rules: 'classic', classic: true });
     const l = enterLevel(h);
     const w = l.world;
     const axe = l.level.entities.find((e) => e.type === 'axe') as { x: number; y: number };
@@ -407,7 +427,7 @@ describe('a Classic run', () => {
 });
 
 describe('the Classic pause menu', () => {
-  it('Continue, Options, Quit to title (and Dev mode with dev mode on)', () => {
+  it('Continue, Options, Quit to title (and every dev row with dev mode on)', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     enterLevel(h);
@@ -426,7 +446,8 @@ describe('the Classic pause menu', () => {
     enterLevel(d);
     d.idle(4);
     d.tap('start');
-    expect(labels(d.top())).toEqual(['Continue', 'Options', 'Dev mode', 'Quit to title']);
+    // Every developer row free play or a campaign file's pause has in dev mode.
+    expect(labels(d.top())).toEqual(['Continue', 'Options', 'Dev mode', 'Assists', 'Quit to title']);
   });
 });
 
@@ -440,8 +461,8 @@ describe('dev Level select: Mode', () => {
   it("a Mode row, Free play by default: today's dev start (99 lives, straight back after a death)", () => {
     const h = classic({ dev: true });
     const s = devSelect(h);
-    expect(labels(s)).toEqual(['Level', 'Character', 'Power', 'Kit', 'Mode', 'Start', 'Back']);
-    const mode = items(s)[4] as MenuItem;
+    expect(labels(s)).toEqual(['Level', 'Character', 'Power', 'Kit', 'Rules', 'Mode', 'Start', 'Back']);
+    const mode = items(s)[5] as MenuItem;
     expect(mode.value?.()).toBe('Free play');
     pick(h, 'Start');
     enterLevel(h);
@@ -451,10 +472,11 @@ describe('dev Level select: Mode', () => {
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
   });
 
-  it('Classic run: the Classic flow (3 lives, character select after a death)', () => {
+  it("Classic run: the Classic flow (3 lives, character select after a death), the Rules row's rules", () => {
     const h = classic({ dev: true });
     const s = devSelect(h);
-    const mode = items(s)[4] as MenuItem;
+    const mode = items(s)[5] as MenuItem;
+    (items(s)[4] as MenuItem).adjust?.(1); // Rules: Classic SMBC
     mode.adjust?.(1);
     expect(mode.value?.()).toBe('Classic run');
     pick(h, 'Start');
@@ -486,8 +508,10 @@ describe('the campaign is unaffected', () => {
 
   it('every other start ends a Classic run', () => {
     const h = classic();
+    h.game.classicGame(MARIO);
+    h.game.newGame(MARIO, '1-1', null, { rules: 'current' });
+    expect(h.game.classicRun).toBe(false);
     const starts: Array<() => void> = [
-      () => h.game.newGame(MARIO),
       () => h.game.devStart('1-1', MARIO, 'small'),
       () => h.game.playShared(getLevel('1-1')),
       () => h.game.playtest(getLevel('1-1'), () => {}),
@@ -514,12 +538,54 @@ describe('the campaign is unaffected', () => {
   });
 });
 
-describe('the select screen: a second row for extra heroes', () => {
-  const EXTRA: CharacterDef = { ...MARIO, id: 'extra', name: 'Extra' };
+describe('the select screen: Classic extras on a second row', () => {
+  // A stand-in Classic-only hero, registered as the extras will be (registry.ts CLASSIC_EXTRAS).
+  const EXTRA: CharacterDef = { ...MARIO, id: 'extra', name: 'Extra', rules: 'classic' };
+  beforeEach(() => void CLASSIC_EXTRAS.push(EXTRA));
+  afterEach(() => void CLASSIC_EXTRAS.splice(CLASSIC_EXTRAS.indexOf(EXTRA), 1));
+
+  it('offered on the FIRST Classic pick (title > CLASSIC > Super Mario Bros.), and playable', () => {
+    const h = classic();
+    toClassicMenu(h);
+    pick(h, 'Super Mario Bros.');
+    const sel = h.top() as CharacterSelectScene;
+    expect(sel).toBeInstanceOf(CharacterSelectScene);
+    expect(sel.chars).toContain(EXTRA);
+    expect(h.game.heroLocked(EXTRA)).toBe(false);
+    choose(h, EXTRA);
+    enterLevel(h);
+    expect(h.game.state.character).toBe(EXTRA);
+  });
+
+  it('also on the Lost Levels entry; never with Classic rules set to Current', () => {
+    saveProgress({ ...loadProgress(), cleared: ['8-4'] });
+    const h = classic();
+    toClassicMenu(h);
+    pick(h, 'The Lost Levels');
+    expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
+    const c = classic({ classicRules: 'current' });
+    toClassicMenu(c);
+    pick(c, 'Super Mario Bros.');
+    expect((c.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
+  });
+
+  it('not offered in free play or on a campaign file', () => {
+    const h = classic();
+    h.game.showTitle();
+    h.game.showCharacterSelect(); // custom levels' / free play's select
+    expect((h.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
+    h.game.newGame(MARIO);
+    die(h);
+    expect((h.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
+    file();
+    h.game.openFile(1);
+    expect(h.game.roster).not.toContain(EXTRA);
+    h.game.enterLevelFromMap('1-1');
+    expect((h.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
+  });
 
   it('the first row is drawn as today; extras sit 40 px below; left and right walk the whole roster', () => {
     const h = classic();
-    Object.defineProperty(h.game, 'roster', { value: [...CHARACTERS, EXTRA] });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.firstRow).toBe(CHARACTERS.length);
@@ -538,8 +604,8 @@ describe('the select screen: a second row for extra heroes', () => {
     expect(h.said.at(-1)).toBe(CHARACTERS[0]?.name);
   });
 
-  it('without extras the roster is the registry, in one row', () => {
-    const h = classic();
+  it('Classic rules Current: the registry, in one row', () => {
+    const h = classic({ classicRules: 'current' });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars).toBe(CHARACTERS);
@@ -548,6 +614,45 @@ describe('the select screen: a second row for extra heroes', () => {
     h.idle(12);
     h.tap('attack');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+  });
+});
+
+describe('one player only', () => {
+  it('the Classic select offers no player two join, and the run is one player', () => {
+    const h = classic();
+    toClassicMenu(h);
+    pick(h, 'Super Mario Bros.');
+    const sel = h.top() as CharacterSelectScene;
+    expect(h.said.at(-1)).not.toMatch(/Player two/);
+    h.idle(12);
+    h.tap('start', 1);
+    expect(h.said.at(-1)).not.toBe('Player two joined.');
+    for (let i = 0; i < 140; i++) {
+      h.step();
+      expect(draw(sel).texts.some((x) => x.str.includes('TO JOIN'))).toBe(false);
+    }
+    h.tap('jump');
+    enterLevel(h);
+    expect(h.game.state.character2).toBeNull();
+  });
+});
+
+describe('dev Classic runs skip the campaign rooms', () => {
+  it.each(['1-0', 'village'])('%s starts 1-1 instead', (id) => {
+    const h = classic({ dev: true });
+    h.game.devStart(id, MARIO, 'small', false, undefined, { rules: 'classic', classic: true });
+    expect(h.game.town).toBeNull();
+    expect(h.game.tutorialRun).toBeNull();
+    expect(enterLevel(h).level.id).toBe('1-1');
+    expect(h.game.classicRun).toBe(true);
+  });
+
+  it('the URL start (?mode=classic) does too, one player', () => {
+    const h = classic({ dev: true });
+    h.game.devClassicGame(LINK, '1-0', 'classic');
+    expect(enterLevel(h).level.id).toBe('1-1');
+    expect(h.game.state.character2).toBeNull();
+    expect(h.game.runRules).toBe('classic');
   });
 });
 

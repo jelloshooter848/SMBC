@@ -48,7 +48,11 @@ const STAMP_Y = 54;
 const MENU_X = 80;
 const MENU_Y = 96;
 const MENU_STEP = 12;
-const MENU_STEP_TIGHT = 10;
+/**
+ * Five rows (Dev mode on): the block moves up a little and left, clear of the stamp, so its last
+ * row stays above the credits with the usual row step.
+ */
+const MENU_FIVE = { x: 64, y: 86 } as const;
 /** The rift's centre on screen (where letters and heroes fly out from). */
 const RIFT_CX = 128;
 const RIFT_CY = 50;
@@ -565,16 +569,20 @@ export class TitleScene extends MenuScene {
 
   private menu(r: Renderer, dy: number): void {
     // Five rows (with Dev mode) close up so the last stays clear of the credits below.
-    const stepY = this.items.length > 4 ? MENU_STEP_TIGHT : MENU_STEP;
+    const five = this.items.length > 4;
+    const x = five ? MENU_FIVE.x : MENU_X;
+    const top = five ? MENU_FIVE.y : MENU_Y;
     this.items.forEach((it, i) => {
-      const y = MENU_Y + i * stepY + dy;
-      if (i === this.index && (this.t >> 4) % 2 === 0) this.text(r, '>', MENU_X - 12, y, undefined, true);
-      this.text(r, it.label.toUpperCase(), MENU_X, y, it.label === 'Dev mode' ? 'grey' : undefined, true);
+      const y = top + i * MENU_STEP + dy;
+      if (i === this.index && (this.t >> 4) % 2 === 0) this.text(r, '>', x - 12, y, undefined, true);
+      this.text(r, it.label.toUpperCase(), x, y, it.label === 'Dev mode' ? 'grey' : undefined, true);
     });
   }
 
   private credits(r: Renderer, dy: number): void {
-    this.ctext(r, MADE, 148 + dy, 'gold', true);
+    // "DEV MODE UNLOCKED" flashes in the credit line's place, clear of the menu's five rows.
+    const unlocked = this.unlockedFlash > 0 && (this.calm || (this.unlockedFlash >> 3) % 2 === 0);
+    this.ctext(r, unlocked ? 'DEV MODE UNLOCKED' : MADE, 148 + dy, 'gold', true);
     this.ctext(r, BASED[0] as string, 160 + dy);
     this.ctext(r, BASED[1] as string, 169 + dy);
     this.text(r, FOOTER, 4, 228 + dy, undefined, true);
@@ -583,8 +591,6 @@ export class TitleScene extends MenuScene {
     const v = this.version;
     const vy = FOOTER.length + 1 + v.length > 31 ? 214 : 228;
     this.text(r, v, 252 - (v.length * 8 - 1), vy + dy, undefined, true);
-    if (this.unlockedFlash > 0 && (this.calm || (this.unlockedFlash >> 3) % 2 === 0))
-      this.ctext(r, 'DEV MODE UNLOCKED', 140 + dy, 'gold', true);
   }
 
   override render(r: Renderer): void {

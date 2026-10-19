@@ -190,6 +190,7 @@ export class StationScene implements Scene {
     const station = this.station;
     const world = new World(level, game.ctx, this.state, {
       ...this.lives.start,
+      rules: 'current', // mini games are scripted around Current kits (TG-14)
       mode: 'beam',
       deathStyle: 'orbs',
       scorePopups: false, // the HUD shows no score

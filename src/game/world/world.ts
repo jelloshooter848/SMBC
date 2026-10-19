@@ -73,7 +73,8 @@ import { WandBreak, WAND_SCENE_FRAMES } from '../entities/effects/wand-break';
 import { WandPoof } from '../entities/effects/wand-poof';
 import type { DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { shellKickSeqScore, stompScore } from '../rules/score';
-import type { GameContext, GameState } from '../context';
+import { rulesOf, type GameContext, type GameState, type Rules } from '../context';
+import { heroFor } from '../characters/registry';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
@@ -217,6 +218,11 @@ export interface WorldFeats {
 }
 
 export interface WorldStart {
+  /**
+   * The rules this World plays by, instead of the context's (TG-14). Mini games and training
+   * rooms pass 'current': they are scripted around Current kits.
+   */
+  rules?: Rules;
   /** Override the level's start tile. */
   x?: number;
   y?: number;
@@ -454,6 +460,11 @@ export class World {
   readonly events: WorldEvent[] = [];
   readonly audio: GameContext['audio'];
   readonly assist: GameContext['assist'];
+  /**
+   * The rules this World plays by, read once when it is built (TG-13): WorldStart.rules, else
+   * the context's. A World never changes rules; a switch shows at the next World.
+   */
+  readonly rules: Rules;
   frame = 0;
   /** Timer in SMB1 units; null = no timer. */
   time: number | null;
@@ -609,6 +620,7 @@ export class World {
   ) {
     this.audio = ctx.audio;
     this.assist = ctx.assist;
+    this.rules = start.rules ?? rulesOf(ctx);
     this.extraEntities = start.extraEntities;
     this.deathStyle = start.deathStyle ?? 'hop';
     this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
@@ -659,8 +671,11 @@ export class World {
     }
     this.spawns = this.spawns.filter((e) => e.type !== 'stairs');
     this.bowserFire = BowserFire.forLevel(level);
-    const defs: [CharacterDef, string, number][] = [[state.character, state.powerState, state.hp]];
-    if (state.character2) defs.push([state.character2, state.powerState2, state.hp2]);
+    // The state holds the roster (Current) defs; the players play the defs for these rules (TG-19).
+    const defs: [CharacterDef, string, number][] = [
+      [heroFor(state.character, this.rules), state.powerState, state.hp],
+    ];
+    if (state.character2) defs.push([heroFor(state.character2, this.rules), state.powerState2, state.hp2]);
     defs.forEach(([def, power, hp], i) => {
       const tmp = new Player(0, 0, def, power, hp);
       const hb = def.hitbox(tmp);

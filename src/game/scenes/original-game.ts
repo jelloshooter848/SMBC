@@ -3,7 +3,7 @@ import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import type { Game } from './game';
-import { listSaves } from '../save/save-files';
+import type { Renderer } from '@engine/gfx/renderer';
 
 /**
  * Classic mode (title > CLASSIC): the original game with none of the campaign's additions. This
@@ -15,12 +15,11 @@ import { listSaves } from '../save/save-files';
 export const SMB_LAST_CASTLE = '8-4';
 
 /**
- * Whether the CLASSIC menu offers The Lost Levels: SMB beaten, in a Classic mode run (the global
- * progress store's cleared list) or on any campaign file (its gameCleared flag).
+ * Whether the CLASSIC menu offers The Lost Levels: SMB beaten in a Classic mode run (the global
+ * progress store's cleared list). A campaign file's clear does not count (owner decision).
  */
 export function lostLevelsOpen(): boolean {
-  if (loadProgress().cleared.includes(SMB_LAST_CASTLE)) return true;
-  return listSaves().some((s) => s !== null && typeof s !== 'string' && s.gameCleared === true);
+  return loadProgress().cleared.includes(SMB_LAST_CASTLE);
 }
 
 /** A Classic mode run beat `levelId` (SMB 8-4): kept in the global progress store. */
@@ -37,6 +36,10 @@ function spokenItem(it: MenuItem | undefined): string {
   const line = `${it.label}${v}`;
   return it.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line;
 }
+
+/** Where the Classic rules value is drawn: right edge, and the first full-screen menu row's y. */
+const CLASSIC_RULES_RIGHT = 248;
+const CLASSIC_RULES_Y = 64;
 
 const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
 
@@ -86,6 +89,9 @@ export class ClassicMenuScene extends MenuScene {
 
 /** Classic mode's options: its rules, then every other setting (the usual Options). */
 export class ClassicOptionsScene extends MenuScene {
+  /** While drawing: the Classic rules row draws its own value (it needs the full row). */
+  private drawing = false;
+
   constructor(game: Game, onBack: () => void) {
     super(game, 'CLASSIC OPTIONS', [], onBack);
     const step = () => {
@@ -96,10 +102,10 @@ export class ClassicOptionsScene extends MenuScene {
     };
     this.setItems([
       {
-        label: 'Rules',
-        value: () => RULES_LABELS[game.deps.settings?.classicRules ?? 'classic'],
+        label: 'Classic rules',
+        value: () => (this.drawing ? '' : this.rulesLabel),
         adjust: step,
-        hint: 'Classic rules. Classic SMBC plays the heroes as the original did; Current as the campaign does',
+        hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
       },
       {
         label: 'All options',
@@ -110,6 +116,10 @@ export class ClassicOptionsScene extends MenuScene {
     ]);
   }
 
+  private get rulesLabel(): string {
+    return RULES_LABELS[this.game.deps.settings?.classicRules ?? 'classic'];
+  }
+
   private back(): void {
     this.game.scenes.pop();
     this.announce();
@@ -117,5 +127,20 @@ export class ClassicOptionsScene extends MenuScene {
 
   override enter(): void {
     this.game.deps.announcer?.say(`Classic options. ${spokenItem(this.items[this.index])}`);
+  }
+
+  /**
+   * "CLASSIC RULES" and "CLASSIC SMBC" are too long for a menu row's value column: the value is
+   * drawn right-aligned to the screen's edge (the menu is full screen, its first row unscrolled).
+   */
+  override render(r: Renderer): void {
+    this.drawing = true;
+    try {
+      super.render(r);
+    } finally {
+      this.drawing = false;
+    }
+    const v = this.rulesLabel.toUpperCase();
+    r.text(this.game.ctx.assets.sheet('font'), v, CLASSIC_RULES_RIGHT - v.length * 8, CLASSIC_RULES_Y);
   }
 }

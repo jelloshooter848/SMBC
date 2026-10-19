@@ -143,6 +143,13 @@ export interface MeterInfo {
   label: string;
 }
 
+/**
+ * A hero definition. Optional-field policy (TG-23): what Classic SMBC adds goes in OPTIONAL fields
+ * here, on MovementProfile/SwimProfile (profile.ts) and on projectile specs, set only by Classic
+ * defs (`characters/<id>/classic.ts`, `characters/classic/`). Absent, today's code path runs
+ * unchanged; no Current def sets one. A shared system that must differ beyond that branches on
+ * `world.rules` in exactly one place (Enemy.hit, World.strikeBlock, ...).
+ */
 export interface CharacterDef {
   id: string;
   name: string;
@@ -197,7 +204,21 @@ export interface CharacterDef {
    * Start "MENU", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
    */
   touchLabels?(p: Player, world: World): TouchLabels;
+  /**
+   * 'classic' on a Classic SMBC def (TG-18): registry.ts's CLASSIC_CHARACTERS and CLASSIC_EXTRAS.
+   * Never set on a CHARACTERS entry (TG-39). Classic defs use `damage: { kind: 'powerup', states:
+   * ['small', 'big', 'fire'] }` (TG-21: Mushroom tier stored as 'big', Flower as 'fire') and leave
+   * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
+   */
+  rules?: 'classic';
 }
+
+/**
+ * The power states every Classic def uses (TG-21): small, the Mushroom tier stored as 'big' and
+ * the Flower tier as 'fire', the ids the dev select, saves, the co-op drop-in and the HUD know.
+ */
+export type ClassicPowerState = 'small' | 'big' | 'fire';
+export const CLASSIC_POWER_STATES: readonly ClassicPowerState[] = ['small', 'big', 'fire'];
 
 /** Hit points a fresh run of this character starts with (0 for power-up characters). */
 export function startHp(def: CharacterDef): number {

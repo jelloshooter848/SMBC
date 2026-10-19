@@ -5,7 +5,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { toPx } from '@engine/math/units';
 import type { LevelData } from '../level/schema';
 import { levelSeed, World, type WorldEvent, type WorldStart } from '../world/world';
-import { DEFAULT_ASSIST, newGameState, type AssistOptions, type GameState } from '../context';
+import { DEFAULT_ASSIST, newGameState, type AssistOptions, type GameState, type Rules } from '../context';
 import type { CharacterDef } from '../characters/character';
 
 /** Scripted input: each step sets the held actions from `frame` onward (presses are edges of holds). */
@@ -77,6 +77,11 @@ export interface SimOptions {
    * would, so a run through a castle still ends (default true). False leaves it waiting.
    */
   castleOk?: boolean;
+  /**
+   * The rules to play by (TG-37, default 'current'): put in the context and the state, so
+   * `runSim({ character: LINK, rules: 'classic', … })` plays Classic Link.
+   */
+  rules?: Rules;
 }
 
 export interface SimResult {
@@ -94,10 +99,17 @@ export interface SimResult {
 /** Run a level with scripted input and no rendering or audio. Deterministic. */
 export function runSim(opts: SimOptions): SimResult {
   const assets = new AssetRegistry({ default: {} });
-  const state = { ...newGameState(opts.character), ...opts.state };
+  const rules = opts.rules ?? 'current';
+  const state = { ...newGameState(opts.character, null, rules), ...opts.state };
   const world = new World(
     opts.level,
-    { assets, audio: NULL_AUDIO, assist: { ...DEFAULT_ASSIST, ...opts.assist }, reduceFlashing: true },
+    {
+      assets,
+      audio: NULL_AUDIO,
+      assist: { ...DEFAULT_ASSIST, ...opts.assist },
+      reduceFlashing: true,
+      ...(opts.rules ? { rules } : {}),
+    },
     state,
     { ...opts.start, seed: opts.start?.seed ?? opts.seed ?? levelSeed(opts.level) },
   );
