@@ -247,6 +247,30 @@ export interface CharacterDef {
    * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
    */
   rules?: 'classic';
+  /**
+   * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
+   * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame
+   * `frames`, or `pitFrames` for a fall off the screen (no hop). Absent: today's hop.
+   */
+  deathHop?: {
+    freeze: number;
+    vy: number;
+    gravity: number;
+    maxFall: number;
+    frames: number;
+    pitFrames: number;
+  };
+  /**
+   * Classic SMBC's walk to Toad after the castle axe (ML-C26): `speed` (velocity units) a frame,
+   * then a slide to a stop, vx *= `stop` (16.16) a frame until below `snap`. Absent: 1 px a frame,
+   * stopping dead.
+   */
+  axeWalk?: { speed: number; stop: number; snap: number };
+  /**
+   * A Blooper cannot hurt this hero standing on the sea floor two tiles above the stage bottom
+   * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
+   */
+  seaFloorSafe?: boolean;
 }
 
 /**
