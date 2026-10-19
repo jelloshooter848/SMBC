@@ -57,9 +57,6 @@ function grab(r: Rig): void {
   expect(n).toBeLessThan(200);
 }
 
-function enemies(r: Rig): Enemy[] {
-  return r.world.entities.filter((e): e is Enemy => e.alive && (e instanceof Goomba || e instanceof Koopa));
-}
 function shots(r: Rig, kind?: string): Projectile[] {
   return r.world.entities.filter(
     (e): e is Projectile => e instanceof Projectile && e.alive && (!kind || e.kind === kind),
@@ -316,6 +313,29 @@ describe('wall climb (RY-C10..RY-C13)', () => {
     expect(t.p.wall).toBeNull();
   });
 
+  it('after the top hop the same edge is not grabbed again for 15 frames (RY-C12)', () => {
+    const r = rig(LOW_WALL);
+    grab(r);
+    r.until(() => false, ['up'], 80);
+    r.step(['right', 'jump']);
+    for (let i = 0; i < 14; i++) {
+      expect(r.p.wall, `frame ${i + 2}`).toBeNull();
+      r.step(['right']);
+    }
+  });
+
+  it('when the bricks he holds break he falls (RY-C16)', () => {
+    const r = rig({ 10: col(12, '='), 11: col(12, '='), 12: col(12, '=') });
+    grab(r);
+    r.step();
+    expect(r.p.wall).not.toBeNull();
+    for (const y of [10, 11, 12]) r.world.map.set(12, y, T.AIR);
+    r.step();
+    expect(r.p.wall).toBeNull();
+    r.step();
+    expect(r.p.body.vy).toBeGreaterThan(0);
+  });
+
   it('climbing down onto the floor stands him there (RY-C13)', () => {
     const r = rig(LOW_WALL);
     grab(r);
@@ -568,6 +588,24 @@ describe('Jump Slash (RY-C31)', () => {
   });
 });
 
+describe('Jump Slash against armour (RY-C24, RY-C31)', () => {
+  it('a Buzzy Beetle takes nothing, and touching it does not hurt him', () => {
+    const r = rig({}, 'big');
+    Object.assign(r.p.scratch, { classicAll: 1, tool: 4, ninpo: 50 });
+    r.step(['jump']);
+    r.step(['special']);
+    const z = new Koopa(0, 0, 'buzzy');
+    z.body.x = r.p.body.x + px(4);
+    z.body.y = r.p.body.y;
+    z.update = () => {};
+    r.world.spawn(z);
+    for (let i = 0; i < 5; i++) r.step();
+    expect(z.alive).toBe(true);
+    expect(z.classicHp ?? 600).toBe(600);
+    expect(r.p.powerState).toBe('big');
+  });
+});
+
 describe('bricks (RY-C35, RY-C36)', () => {
   it('his head only bumps a brick; the sword breaks it; a shuriken through a pipe breaks one', () => {
     const r = rig({ 9: col(6, '=') });
@@ -644,6 +682,42 @@ describe('water (RY-C17)', () => {
       if (i > 0 && r.p.body.onGround) break;
     }
     expect(Math.abs((y0 - top) / 256 - 78)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('water walls (RY-C17, SW-C4)', () => {
+  it('wall hops keep their speeds with water gravity: about 44 px away from the wall', () => {
+    const floor = 28;
+    const rows = Array.from({ length: 30 }, (_, y) =>
+      y >= floor ? '#'.repeat(48) : (y === 2 ? 'w'.repeat(48) : y >= 10 ? col(8, '#') : '').padEnd(48, '.'),
+    );
+    const level = parseTextMap(
+      [
+        'id: deep',
+        'theme: water',
+        'swim: true',
+        'time: 300',
+        `start: 4,${floor - 1}`,
+        'height: 30',
+        'camera: free',
+        '',
+        '[tiles]',
+        ...rows,
+      ].join('\n'),
+    );
+    const r = new Rig(RYU, level, 'classic');
+    r.settle();
+    grab(r);
+    for (let i = 0; i < 5; i++) r.step();
+    const y0 = r.p.feetY;
+    let top = y0;
+    r.step(['left', 'jump']);
+    expect(r.p.body.vy).toBe(-(0x02800 - 0x0011c) + 0x0011c);
+    for (let i = 0; i < 80; i++) {
+      top = Math.min(top, r.p.feetY);
+      r.step();
+    }
+    expect(Math.abs((y0 - top) / 256 - 44)).toBeLessThanOrEqual(1.5);
   });
 });
 
