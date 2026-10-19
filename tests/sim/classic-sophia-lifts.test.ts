@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseTextMap } from '@game/level/textmap';
 import { runSim } from '@game/sim/headless';
+import { getLevel } from '@content/levels';
 import { SOPHIA } from '@game/characters/sophia';
 import { SOPHIA_CLASSIC } from '@game/characters/sophia/classic';
 import { CEIL, FLOOR, LEFT, RIGHT, sophiaState } from '@game/characters/sophia/state';
@@ -291,5 +292,64 @@ describe('SO-38: only Classic Sophia', () => {
   it('Current Sophia drives straight off a lift where Classic wraps round it', () => {
     const cur = play(SWING, () => ['right', 'down'], 120, { ...ON_TOP, rules: 'current' });
     expect(cur.log.every((r) => r.surface === FLOOR && !r.held)).toBe(true);
+  });
+});
+
+describe('SO-38: a lift that swings her into a wall carries her (checkPlatform)', () => {
+  it('3-3: on the right side of the sideways lift at column 102 she is not dropped by the col-107 ledge', () => {
+    const LIFT_X = px(102 * 16 - 8);
+    let phase = 0;
+    let lift: Lift | undefined;
+    let minGap = Infinity;
+    let dropped = false;
+    let overlapped = false;
+    runSim({
+      level: getLevel('3-3'),
+      character: SOPHIA,
+      rules: 'classic',
+      script: { steps: [] },
+      maxFrames: 900,
+      state: { kit: {}, powerState: 'fire' },
+      assist: { invulnerable: true },
+      controller: (w) => {
+        const p = w.player;
+        const b = p.body;
+        const st = sophiaState(p);
+        if (phase === 0) {
+          // Bring the lift on screen, then stand her on it.
+          b.x = px(1560);
+          b.y = px(40);
+          b.vy = 0;
+          w.camera.snapTo(b.x);
+          lift = w.entities.find(
+            (e): e is Lift =>
+              e instanceof Lift && e.kind === 'lift-h' && Math.abs(e.body.x - LIFT_X) < px(40),
+          );
+          if (lift) {
+            b.x = lift.body.x + px(16);
+            b.y = lift.body.y - b.h;
+            phase = 1;
+          }
+          return [];
+        }
+        const L = lift as Lift;
+        if (phase === 1) {
+          if (st.surface !== LEFT || st.turn) return ['right', 'down'];
+          phase = 2;
+        }
+        // Hanging on its right side while it swings to the ledge and back.
+        if (heldLift(p) !== L || st.surface !== LEFT) dropped = true;
+        const gap = px(107 * 16) - (L.body.x + L.body.w);
+        minGap = Math.min(minGap, gap);
+        if (b.x + b.w > px(107 * 16)) overlapped = true;
+        return [];
+      },
+    });
+    expect(phase).toBe(2);
+    // The lift's end comes closer to the ledge than her 15.5 px side box is wide...
+    expect(minGap).toBeLessThan(px(15.5));
+    expect(overlapped).toBe(true);
+    // ...and she rides it through, still holding on.
+    expect(dropped).toBe(false);
   });
 });

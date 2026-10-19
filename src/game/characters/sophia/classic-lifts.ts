@@ -38,8 +38,9 @@ import { CEIL, FLOOR, LEFT, RIGHT, sophiaState, type SophiaState, type Surface }
  * side and on round onto its underside (and back), and a rising jump grips its underside. While
  * attached she rides it: each frame, after the lifts have moved, she is put back where she was
  * on it (World.resolveLifts, CharacterBehaviour.afterLifts). She lets go more than MAX_PLAT_DIST
- * (100 Flash px: 50 px) from its centre (an elevator wrapping round), when it is gone, or when the
- * lift pushes her into a wall. On its top she is an ordinary rider (Lift.carry): falling and
+ * (100 Flash px: 50 px) from its centre (an elevator wrapping round) or when it is gone; nothing
+ * else drops her (checkPlatform): a lift that swings her into a wall carries her through it, as
+ * the original does (3-3's lift beside its ledge). On its top she is an ordinary rider (Lift.carry): falling and
  * pulley lifts behave as for every hero; like the original's setCharOnPlat, they also feel her
  * hanging on a side or underneath.
  *
@@ -313,7 +314,6 @@ export function afterLifts(p: Player, world: World): void {
       b.x = st.surface === LEFT ? L.x + L.w : L.x - b.w;
       b.y = centreY(L) - (b.h >> 1);
     }
-    if (boxBlocked(world.map, b)) return release(p, st, r);
     // Platform.setCharOnPlat: she weighs on it wherever she holds it.
     lift.ridden = true;
     lift.rider = b;
