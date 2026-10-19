@@ -72,7 +72,7 @@ describe('definition and roster (WL-2, WL-4, TG-41..43)', () => {
     expect(W.passesHiddenBlocks).toBe(true);
     expect(W.meleeStrikesBlocks).toBe(true);
     expect(W.drop).toBeUndefined();
-    expect(W.devKit).toBeUndefined();
+    expect(W.devKit?.()).toEqual({});
     expect(W.meter).toBeUndefined();
     expect(W.tools).toBeUndefined();
     expect(CLASSIC_EXTRAS.at(-1)).toBe(W);
@@ -394,7 +394,7 @@ describe('no head bump, no stomp (WL-20, WL-21)', () => {
     r.step(['jump']);
     for (let i = 0; i < 70; i++) r.step([]);
     expect(r.world.map.get(6, 9)).toBe(T.Q_COIN);
-    expect(r.world.coins ?? 0).toBe(0);
+    expect(r.world.state.coins).toBe(0);
     expect(r.world.entities.some((e) => e instanceof PowerUp)).toBe(false);
   });
 

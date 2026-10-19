@@ -343,6 +343,9 @@ export const WARRIORS_CLASSIC: CharacterDef = {
   // The class survives a death (StatManager.currentWarriorType, WL-M3).
   keepOnDeath: [K.job],
   powerIcon: true,
+  // `&kit=full` (TG-8, TG-44): nothing to unlock (every attack comes with a class, WL-19), so an
+  // empty kit; it starts the hero at the top power state.
+  devKit: () => ({}),
   drawLook: (p, _frame, reduce) => classicLook(p, reduce, WARRIORS_HIT.look),
   starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
   // WL-2, WL-M2: the job on the HUD's third row; the White Mage's Cure charge.

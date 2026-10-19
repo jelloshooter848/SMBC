@@ -43,6 +43,14 @@ under `## [Unreleased]`.
 - Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
   crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
   crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
+- Classic mode: the **Warriors of Light** close the second row, the original game's unfinished party of four classes,
+  finished here with new art. The **Fighter** swings a strong sword, the **Thief** a weak dagger, the **Black Mage**
+  casts Fire, Ice (down) and a full-height Bolt (up) after a short wind-up, through walls and bricks, and the **White
+  Mage** swings a staff and, when small, casts **Cure** (down) once a level to bring back the Mushroom. Change class at
+  any time with CLASS (Special) and a direction: up Fighter, right Black Mage, down Thief, left White Mage; the class
+  is announced, shown on the HUD and kept when you lose a life. They walk and stop at once, jump one fixed height, stand
+  still while attacking, cannot stomp, and blocks do nothing when hit from below. The Fire Flower gives every class a
+  new outfit.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
