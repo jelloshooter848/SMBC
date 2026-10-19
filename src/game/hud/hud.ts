@@ -67,12 +67,14 @@ export function powerIcon(p: Player | undefined): 'icon-mushroom' | 'icon-flower
   return null;
 }
 
-/**
- * Where the carried key's icon goes (8x8, hud/hud.ts): player 1's, then player 2's (4 px after a
- * seven-letter name at 144, so the name's last letter shows: WARRIOR's R ends at x 199).
- */
+/** Where the carried key's icon goes (8x8, hud/hud.ts): player 1's, then player 2's. */
 export const KEY_ICON_P1 = { x: 132, y: 24 } as const;
-export const KEY_ICON_P2 = { x: 204, y: 24 } as const;
+export const KEY_ICON_P2 = { x: 196, y: 24 } as const;
+/**
+ * Player 2's key after a seven-letter name at 144 (Classic Warriors of Light's WARRIOR, whose R ends
+ * at x 199), so its last letter shows. Every shorter name keeps KEY_ICON_P2.
+ */
+export const KEY_ICON_P2_LONG = { x: 204, y: 24 } as const;
 
 /** TIME's x when the WORLD column holds a place's name on two rows (BOWSER'S CASTLE). */
 export const TIME_X_PLACE = 216;
@@ -157,7 +159,8 @@ export function drawHud(
   }
   drawHeroStats(r, assets, state, players, text);
   if (opts.keyHolder === 0 || opts.keyHolder === 1) {
-    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : KEY_ICON_P2;
+    const long = (players[1]?.def.hudName.slice(0, 7).length ?? 0) >= 7;
+    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : long ? KEY_ICON_P2_LONG : KEY_ICON_P2;
     r.sprite(assets.sheet('keys'), 'key-icon', at.x, at.y);
   }
   // Blink the timer label when low.

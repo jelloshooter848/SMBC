@@ -383,8 +383,9 @@ const spinFrame = (rows: readonly string[]): string[] => compose(W, H, [rows, 0,
 
 /**
  * Pit's shots drawn as arrows (PI-21: the original's Pit draws beams as arrows), on the boxes of
- * Samus's beams (8 x 8) and missiles (16 x 8, 8 x 16 up); the specs keep every number. Facing right
- * as the items sheet's shots do. Index roles: 0 outline, 1 shaft, 2 fletching, 3 head, 4 glow,
+ * Samus's beams (8 x 8) and missiles (16 x 8, 8 x 16 up); the specs keep every number. Drawn below
+ * pointing right, then stored pointing LEFT as the items sheet's shots are (Projectile.render
+ * mirrors a shot flying right); the `-up` frames point up (beams fired up). Index roles: 0 outline, 1 shaft, 2 fletching, 3 head, 4 glow,
  * 5 flash.
  */
 export const pitShotPalettes: Record<string, string[]> = {
@@ -464,16 +465,27 @@ const burst = [
   '........',
 ];
 
+/** A right-pointing side view turned to point left. */
+const left = (rows: readonly string[]): string[] => rows.map((r) => [...r].reverse().join(''));
+/** A right-pointing 8 x 8 side view turned to point up (three quarters clockwise). */
+const up = (rows: readonly string[]): string[] => rotateCW(rotateCW(rotateCW(rows)));
+
 export const pitShotsDef: SpriteDef = {
   palette: 'pit-shots',
   frames: {
-    'arrow-0': arrow0,
-    'arrow-1': arrow1,
-    'ice-arrow-0': iceArrow0,
-    'ice-arrow-1': iceArrow1,
-    'light-arrow-0': lightArrow0,
-    'light-arrow-1': lightArrow1,
-    'heavy-arrow': heavyArrow,
+    'arrow-0': left(arrow0),
+    'arrow-1': left(arrow1),
+    'ice-arrow-0': left(iceArrow0),
+    'ice-arrow-1': left(iceArrow1),
+    'light-arrow-0': left(lightArrow0),
+    'light-arrow-1': left(lightArrow1),
+    'arrow-up-0': up(arrow0),
+    'arrow-up-1': up(arrow1),
+    'ice-arrow-up-0': up(iceArrow0),
+    'ice-arrow-up-1': up(iceArrow1),
+    'light-arrow-up-0': up(lightArrow0),
+    'light-arrow-up-1': up(lightArrow1),
+    'heavy-arrow': left(heavyArrow),
     'heavy-arrow-up': heavyArrowUp,
     burst,
   },

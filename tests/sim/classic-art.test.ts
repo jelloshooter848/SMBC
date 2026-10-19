@@ -23,7 +23,10 @@ import { VIC_BAR, VICVIPER_CLASSIC as VIC_CLASSIC } from '@game/characters/vicvi
 import { SOPHIA_CLASSIC_GUIDE } from '@game/characters/sophia/classic-guide';
 import { CLASSIC_GUNS as BILL_GUNS } from '@game/characters/bill/classic-weapons';
 import { Projectile } from '@game/entities/projectiles/projectile';
-import { drawHud, KEY_ICON_P2, POWER_BAR } from '@game/hud/hud';
+import { drawHud, KEY_ICON_P2, KEY_ICON_P2_LONG, POWER_BAR } from '@game/hud/hud';
+import { WARRIORS_CLASSIC } from '@game/characters/warriors/classic';
+import { SOPHIA } from '@game/characters/sophia';
+import type { View } from '@game/entities/entity';
 import { rulesTagX } from '@game/hud/rules-tag';
 import { newGameState } from '@game/context';
 import { Rig, flatLevel } from './classic-plumber-harness';
@@ -160,6 +163,50 @@ describe('Pit and Dark Pit: their own sheet', () => {
   });
 });
 
+describe("Pit's arrows fly head first", () => {
+  /** The newest arrow's drawn head (role 3, or the light arrow's 5) as a fraction across its box. */
+  function head(r: Rig): { frame: string; at: number } {
+    const shot = r.world.entities
+      .filter((e): e is Projectile => e instanceof Projectile && e.owner === r.p)
+      .at(-1);
+    if (!shot) throw new Error('no shot');
+    const calls: { f: string; flip: boolean }[] = [];
+    const rr: Renderer = Object.assign(new NullRenderer(), {
+      sprite(_s: SpriteSheet, f: string, _x: number, _y: number, flip?: boolean) {
+        calls.push({ f, flip: !!flip });
+      },
+    });
+    shot.render(rr, { camX: 0, frame: 0, assets: { sheet: () => ({}) } } as unknown as View);
+    const c = calls.at(-1) as { f: string; flip: boolean };
+    const rows = (SPRITES[shot.spec.sheet]?.frames[c.f] ?? []).map((row) =>
+      c.flip ? [...row].reverse().join('') : row,
+    );
+    const xs = rows.flatMap((row) => [...row].flatMap((ch, x) => (ch === '3' || ch === '5' ? [x] : [])));
+    const w = rows[0]?.length ?? 1;
+    return { frame: c.f, at: xs.reduce((a, b) => a + b, 0) / xs.length / (w - 1) };
+  }
+
+  it('fired right the head is at the right edge; fired left at the left; up an up frame', () => {
+    for (const power of ['small', 'fire']) {
+      const r = rig(PIT_CLASSIC, power, { missileUp: 1, missiles: 9 });
+      r.step(['attack']);
+      expect(head(r).at, `${power} right`).toBeGreaterThan(0.7);
+      for (let i = 0; i < 20; i++) r.step(['left']);
+      r.step(['left', 'attack']);
+      expect(head(r).at, `${power} left`).toBeLessThan(0.3);
+      for (let i = 0; i < 20; i++) r.step();
+      r.step(['special']);
+      expect(head(r).at, `${power} missile left`).toBeLessThan(0.3);
+      for (let i = 0; i < 20; i++) r.step(['up']);
+      r.step(['up', 'attack']);
+      expect(head(r).frame, power).toMatch(/-up-\d$/);
+    }
+    const r = rig(PIT_CLASSIC, 'big', { missileUp: 1, missiles: 9 });
+    r.step(['special']);
+    expect(head(r).at, 'missile right').toBeGreaterThan(0.7);
+  });
+});
+
 describe('Proto Man and Break Man: their own sheet', () => {
   it('every pose is on the `protoman` sheet, with every suit palette he can wear', () => {
     for (const def of [PROTOMAN_CLASSIC, BREAKMAN_CLASSIC])
@@ -272,9 +319,29 @@ describe('review nits', () => {
     );
   });
 
-  it("player two's key icon starts after a seven-letter name (WARRIOR's last R)", () => {
-    expect(KEY_ICON_P2.x).toBeGreaterThanOrEqual(144 + 7 * 8);
-    const { sprites } = hudWords(true, 0, 1);
-    expect(sprites.filter((s) => s.f === 'key-icon')).toEqual([{ f: 'key-icon', ...KEY_ICON_P2 }]);
+  /** Where player two's key icon is drawn with `p2` (under `rules`) beside Vic Viper. */
+  function keyAt(p2: CharacterDef, rules: 'current' | 'classic') {
+    const one = rig(VIC_CLASSIC);
+    const two = new Rig(p2, flatLevel(), rules);
+    const sprites: { f: string; x: number; y: number }[] = [];
+    const rr: Renderer = Object.assign(new NullRenderer(), {
+      sprite(_s: SpriteSheet, f: string, x: number, y: number) {
+        sprites.push({ f, x, y });
+      },
+    });
+    const state = newGameState(VIC_CLASSIC, p2, rules);
+    drawHud(rr, { sheet: () => ({}) } as unknown as AssetRegistry, state, 300, 0, [one.p, two.p], {
+      keyHolder: 1,
+    });
+    return sprites.filter((s) => s.f === 'key-icon').map(({ x, y }) => ({ x, y }));
+  }
+
+  it("player two's key icon: at 196 as today, after a seven-letter name (WARRIOR's last R) at 204", () => {
+    expect(KEY_ICON_P2).toEqual({ x: 196, y: 24 });
+    expect(SOPHIA.hudName.length).toBeLessThan(7);
+    expect(keyAt(SOPHIA, 'current')).toEqual([KEY_ICON_P2]);
+    expect(WARRIORS_CLASSIC.hudName).toBe('WARRIOR');
+    expect(keyAt(WARRIORS_CLASSIC, 'classic')).toEqual([KEY_ICON_P2_LONG]);
+    expect(KEY_ICON_P2_LONG.x).toBeGreaterThanOrEqual(144 + 7 * 8);
   });
 });

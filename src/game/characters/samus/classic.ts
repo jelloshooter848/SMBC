@@ -76,9 +76,10 @@ export interface ClassicSamusVariant {
   beamSfx: string;
   /**
    * Art only: the look of each beam and missile it fires (Pit's arrows, PI-21), a copy of the spec
-   * with its sheet and frames swapped and every number kept. Absent: the spec's own.
+   * with its sheet and frames swapped and every number kept; `up` when fired straight up. Absent:
+   * the spec's own.
    */
-  shotLook?: (spec: ProjectileSpec) => ProjectileSpec;
+  shotLook?: (spec: ProjectileSpec, up: boolean) => ProjectileSpec;
 }
 
 export const SAMUS_VARIANT: ClassicSamusVariant = {
@@ -263,7 +264,7 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
     Math.round(x),
     Math.round(y),
     p.facing,
-    v.shotLook ? v.shotLook(spec) : spec,
+    v.shotLook ? v.shotLook(spec, up) : spec,
     p,
     up ? { vx: 0, vy: -spec.speed, waveSign } : { waveSign },
   );

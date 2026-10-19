@@ -41,18 +41,25 @@ const ARROW_FRAMES: Readonly<Record<string, string>> = {
  * Each beam and missile drawn as an arrow from `sheet` (`pit-shots`, or Dark Pit's `darkpit-shots`):
  * the same spec with its frames swapped and every number kept; its end is a small burst of light.
  */
-function arrows(sheet: string): (spec: ProjectileSpec) => ProjectileSpec {
+function arrows(sheet: string): (spec: ProjectileSpec, up: boolean) => ProjectileSpec {
   const memo = new Map<ProjectileSpec, ProjectileSpec>();
-  return (spec) => {
-    let look = memo.get(spec);
+  const memoUp = new Map<ProjectileSpec, ProjectileSpec>();
+  return (spec, up) => {
+    const book = up ? memoUp : memo;
+    let look = book.get(spec);
     if (!look) {
+      // A beam fired up points up (`<arrow>-up-N`); the missile has its own up spec and frame.
+      const frame = (f: string): string => {
+        const a = ARROW_FRAMES[f] ?? 'arrow-0';
+        return up && a !== 'heavy-arrow-up' ? a.replace(/-(\d)$/, '-up-$1') : a;
+      };
       look = {
         ...spec,
         sheet,
-        frames: spec.frames.map((f) => ARROW_FRAMES[f] ?? 'arrow-0'),
+        frames: spec.frames.map(frame),
         ...(spec.burstFrame ? { burstFrame: 'burst' } : {}),
       };
-      memo.set(spec, look);
+      book.set(spec, look);
     }
     return look;
   };
