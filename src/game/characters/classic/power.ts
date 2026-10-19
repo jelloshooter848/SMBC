@@ -43,6 +43,11 @@ export const CLASSIC_STAR_SLOW_FROM = 570;
 export const CLASSIC_STAR_MUSIC_LEFT = 78;
 /** The whole game freezes this long when a hero goes up a state (PS-C4), and on Mario's and Bill's hits. */
 export const CLASSIC_FREEZE_FRAMES = 60;
+/**
+ * Player.startTransition length for a freeze of CLASSIC_FREEZE_FRAMES whole frames: the world
+ * runs again on the frame the transition reaches its length (World.update, tickTransition).
+ */
+const FREEZE_LEN = CLASSIC_FREEZE_FRAMES + 1;
 /** Every Mushroom, Fire Flower and Star scores this (`ScoreValue.POWER_UP`, PS-C3). */
 export const CLASSIC_POWER_SCORE = 1000;
 /** The semi-transparent look (`Character.TD_ALPHA`, PS-C13). */
@@ -205,7 +210,7 @@ export function classicOnPowerUp(
         const fire = p.powerState === 'big';
         p.powerState = fire ? 'fire' : 'big';
         p.crouching = false;
-        p.startTransition(kit.grows ? 'grow' : 'freeze', CLASSIC_FREEZE_FRAMES);
+        p.startTransition(kit.grows ? 'grow' : 'freeze', FREEZE_LEN);
         if (fire) kit.gainFire?.(p, world);
         else kit.gainBig?.(p, world);
       } else if (kit.repeat) {
@@ -257,7 +262,7 @@ function startResponse(p: Player, fromDir: -1 | 1, kit: ClassicPowerKit): void {
   if (r.kind === 'freeze') {
     // The world stands still for the freeze (World.update returns while a transition runs, and
     // Player.update with it), so the invulnerable frames start counting when it ends.
-    p.startTransition(kit.grows ? 'shrink' : 'freeze', r.frames);
+    p.startTransition(kit.grows ? 'shrink' : 'freeze', r.frames + 1);
     p.invuln = r.invuln;
     return;
   }

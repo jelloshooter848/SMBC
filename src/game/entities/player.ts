@@ -423,7 +423,8 @@ export class Player {
     if (!done) return;
     this.hurtLock = null;
     this.stun = 0;
-    this.invuln = l.invulnAfter;
+    // This frame is the first invulnerable one (its countdown already ran above).
+    this.invuln = l.invulnAfter - 1;
     if (b.onGround) b.vx = 0;
   }
 
