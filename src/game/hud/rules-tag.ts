@@ -4,8 +4,8 @@ import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
 
 /**
- * The Classic rules tag (TG-31, TG-32) at the top right, above TIME (200, 8) and clear of the F1
- * overlay: CLASSIC while every hero plays a Classic def, CLASSIC? at x 188 while any hero has
+ * The Classic rules tag (TG-31, TG-32) at the top right, under TIME and its digits (200, 8-23),
+ * clear of the screen's top edge and of every HUD line: CLASSIC while every hero plays a Classic def, CLASSIC? at x 188 while any hero has
  * no Classic def yet and plays Current (TG-20). Nothing under Current rules.
  */
 export function rulesTag(rules: Rules, heroes: readonly CharacterDef[]): string | null {
@@ -13,7 +13,19 @@ export function rulesTag(rules: Rules, heroes: readonly CharacterDef[]): string 
   return heroes.every((d) => d.rules === 'classic') ? 'CLASSIC' : 'CLASSIC?';
 }
 
-export const RULES_TAG_Y = 0;
+/**
+ * The tag's top: under TIME's digits (y 16-23) with a few px between, the right of the HUD's third
+ * row being empty for one player (the hearts, meters and tool belt end left of x 150; an SMB3
+ * piece's status is at the bottom). Co-op's player-two lines take that row (its name and power at
+ * 144-192, y 24-39, OUT at 200, 24), so with two heroes the tag goes under them.
+ */
+export const RULES_TAG_Y = 28;
+export const RULES_TAG_Y_COOP = 42;
+
+/** The tag's top for `players` heroes. */
+export function rulesTagY(players: number): number {
+  return players > 1 ? RULES_TAG_Y_COOP : RULES_TAG_Y;
+}
 
 /** The tag's x: CLASSIC at 196, CLASSIC? at 188 (the font's 8-px cells, ending at 252). */
 export function rulesTagX(tag: string): number {
@@ -28,7 +40,7 @@ export function drawRulesTag(
   heroes: readonly CharacterDef[],
 ): void {
   const tag = rulesTag(rules, heroes);
-  if (tag) r.text(assets.sheet('font'), tag, rulesTagX(tag), RULES_TAG_Y);
+  if (tag) r.text(assets.sheet('font'), tag, rulesTagX(tag), rulesTagY(heroes.length));
 }
 
 /** The F1 overlay's rules line (TG-33), e.g. `rules classic p1 link classic p2 mario current`. */

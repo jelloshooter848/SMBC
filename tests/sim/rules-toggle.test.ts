@@ -36,14 +36,24 @@ import { file, makeGame, useStorage } from './heroes-harness';
 
 useStorage();
 
-const added: string[] = [];
+/** CLASSIC_CHARACTERS entries as they were before a test changed them (put back after it). */
+const saved = new Map<string, CharacterDef | undefined>();
 const extras: CharacterDef[] = [];
-/** Registers a stand-in Classic def for `def` (removed after the test). */
+function remember(id: string): void {
+  if (!saved.has(id)) saved.set(id, CLASSIC_CHARACTERS[id]);
+}
+/** Registers a stand-in Classic def for `def` (the real entry, if any, comes back after the test). */
 function fakeClassic(def: CharacterDef): CharacterDef {
   const c: CharacterDef = { ...def, rules: 'classic' };
+  remember(def.id);
   CLASSIC_CHARACTERS[def.id] = c;
-  added.push(def.id);
   return c;
+}
+/** Makes `def` a hero with no Classic def for this test (its real one comes back after it). */
+function unbuilt(def: CharacterDef): CharacterDef {
+  remember(def.id);
+  delete CLASSIC_CHARACTERS[def.id];
+  return def;
 }
 /** Registers a stand-in Classic-only extra (removed after the test). */
 function fakeExtra(id: string): CharacterDef {
@@ -59,7 +69,11 @@ function fakeExtra(id: string): CharacterDef {
   return c;
 }
 afterEach(() => {
-  for (const id of added.splice(0)) delete CLASSIC_CHARACTERS[id];
+  for (const [id, prev] of saved) {
+    if (prev) CLASSIC_CHARACTERS[id] = prev;
+    else delete CLASSIC_CHARACTERS[id];
+  }
+  saved.clear();
   for (const c of extras.splice(0)) CLASSIC_EXTRAS.splice(CLASSIC_EXTRAS.indexOf(c), 1);
 });
 
@@ -142,8 +156,14 @@ describe('heroFor and the registry (TG-17, TG-20)', () => {
   it('returns the Current def under Current, and while a hero has no Classic def', () => {
     for (const c of CHARACTERS) {
       expect(heroFor(c, 'current')).toBe(c);
-      expect(heroFor(c, 'classic')).toBe(c);
+      // A hero whose Classic def is built plays it; one not built yet plays its Current def.
+      expect(heroFor(c, 'classic')).toBe(CLASSIC_CHARACTERS[c.id] ?? c);
     }
+    // A hero that is certainly not built (a stand-in id no Classic file has).
+    const ghost: CharacterDef = { ...MARIO, id: 'ghost-hero', name: 'Ghost' };
+    expect(heroFor(ghost, 'classic')).toBe(ghost);
+    unbuilt(MARIO);
+    expect(heroFor(MARIO, 'classic')).toBe(MARIO);
     const cm = fakeClassic(MARIO);
     expect(heroFor(MARIO, 'classic')).toBe(cm);
     expect(heroFor(MARIO, 'current')).toBe(MARIO);
@@ -174,7 +194,7 @@ describe('World.rules and the player build (TG-13, TG-14, TG-19, TG-37)', () => 
       expect(r.world.state.rules).toBe('classic');
       expect(r.world.state.character).toBe(c);
       expect(def.id).toBe(c.id);
-      expect(def).toBe(c === MARIO ? cm : c);
+      expect(def).toBe(c === MARIO ? cm : (CLASSIC_CHARACTERS[c.id] ?? c));
     }
   });
 
@@ -349,20 +369,22 @@ describe('mini games and training rooms stay Current (TG-14)', () => {
 
 describe('the CLASSIC tag and the F1 line (TG-31..33)', () => {
   it('shows CLASSIC? while a hero has no Classic def, CLASSIC when all have, nothing under Current', () => {
+    unbuilt(MARIO);
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1);
     let l = level(h);
     expect(texts(l).some((t) => t.str.startsWith('CLASSIC'))).toBe(false);
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
     l = level(h);
-    expect(texts(l)).toContainEqual({ str: 'CLASSIC?', x: 188, y: 0 });
+    expect(texts(l)).toContainEqual({ str: 'CLASSIC?', x: 188, y: 28 });
     fakeClassic(MARIO);
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
     l = level(h);
-    expect(texts(l)).toContainEqual({ str: 'CLASSIC', x: 196, y: 0 });
+    expect(texts(l)).toContainEqual({ str: 'CLASSIC', x: 196, y: 28 });
   });
 
   it('the intro card shows the same tag', () => {
+    unbuilt(MARIO);
     const h = makeGame({ dev: true });
     h.game.runRules = 'classic';
     const intro = new IntroScene(h.game, () => undefined, 300);

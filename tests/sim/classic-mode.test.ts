@@ -27,6 +27,7 @@ import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { WorldMapScene } from '@game/scenes/world-map';
+import type { Renderer } from '@engine/gfx/renderer';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
@@ -460,6 +461,46 @@ describe('a dev-started Classic run never opens the Lost Levels', () => {
     expect(h.game.classicDev).toBe(false);
     beat84(h);
     expect(lostLevelsOpen()).toBe(true);
+  });
+});
+
+describe('the CLASSIC tag: fully on screen, clear of every HUD line', () => {
+  /** Boxes overlap (text cells are 8 px; `gap` px of air required between them). */
+  const touches = (
+    a: { x: number; y: number; str: string },
+    b: { x: number; y: number; str: string },
+    gap = 2,
+  ) =>
+    a.x < b.x + b.str.length * 8 + gap &&
+    b.x < a.x + a.str.length * 8 + gap &&
+    a.y < b.y + 8 + gap &&
+    b.y < a.y + 8 + gap;
+
+  function check(scene: { render(r: Renderer): void }): void {
+    const t = draw(scene).texts;
+    const tag = t.find((x) => x.str.startsWith('CLASSIC'));
+    expect(tag).toBeDefined();
+    if (!tag) return;
+    expect(tag.y).toBeGreaterThanOrEqual(4);
+    expect(tag.x + tag.str.length * 8).toBeLessThanOrEqual(256);
+    for (const o of t)
+      if (o !== tag && o.str.trim()) expect(touches(tag, o), `${tag.str} vs ${o.str}`).toBe(false);
+  }
+
+  it('one player: in the level and on the intro card', () => {
+    const h = classic();
+    h.game.classicGame(LINK);
+    expect(h.top()).toBeInstanceOf(IntroScene);
+    check(h.top() as IntroScene);
+    check(enterLevel(h));
+  });
+
+  it("two players (a dev free play under Classic rules): under player two's lines", () => {
+    const h = classic({ dev: true });
+    h.game.newGame(MARIO, '1-1', LINK, { rules: 'classic' });
+    expect(h.top()).toBeInstanceOf(IntroScene);
+    check(h.top() as IntroScene);
+    check(enterLevel(h));
   });
 });
 
