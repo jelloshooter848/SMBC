@@ -70,6 +70,12 @@ export interface CharacterBehaviour {
   blocks?(p: Player, projectile: Projectile): boolean;
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
+  /**
+   * True while the hero cannot walk on the ground this frame (Classic Simon's whip and throw root
+   * him, SI-C4): read by Player.update before movement, so vx is 0 that frame and he does not
+   * turn. Absent: never rooted.
+   */
+  rooted?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */

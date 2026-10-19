@@ -308,6 +308,8 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
+    // A hero rooted by an attack on the ground cannot walk (CharacterBehaviour.rooted, SI-C4).
+    if (b.onGround && this.def.behaviour.rooted?.(this, input)) dir = 0;
 
     if (this.stun > 0) {
       this.stun--;
@@ -984,7 +986,12 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
-    if (control === 'none' || dir === 0) return;
+    if (control === 'none') return;
+    if (dir === 0) {
+      // MovementProfile.airStop (Classic Simon, SI-C6): letting go stops him dead in the air.
+      if (p.airStop) b.vx = 0;
+      return;
+    }
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;
       return;

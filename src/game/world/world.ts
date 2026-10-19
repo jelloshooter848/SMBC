@@ -1653,6 +1653,10 @@ export class World {
           e.stopFrames--;
           continue;
         }
+      } else if (e instanceof Projectile && e.stopFrames > 0) {
+        // Classic Stopwatch (SI-C25): an enemy projectile held still.
+        e.stopFrames--;
+        continue;
       }
       e.levelHeightPx = this.heightPx;
       e.update(this);

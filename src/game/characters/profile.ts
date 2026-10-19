@@ -139,6 +139,12 @@ export interface MovementProfile {
    */
   turnInAir?: false | undefined;
   /**
+   * In the air, no direction held (or both) sets vx to 0 at once, as a held one sets it straight
+   * to `maxWalk` with `instantAccel` (Classic Simon's default air steering, SI-C6: "stops dead").
+   * Absent: vx is kept when no direction is held (today).
+   */
+  airStop?: true | undefined;
+  /**
    * false: no jump buffer. A jump (or stroke) starts only on the frame jump goes down while the
    * hero can jump; a press just before landing is lost and holding through a landing does not
    * jump again (ML-C2, LK-C10, SI-C7). Absent: JUMP_BUFFER_FRAMES (today).

@@ -24,6 +24,7 @@ installClassicRules({
 });
 import { MARIO_CLASSIC } from './mario/classic';
 import { LUIGI_CLASSIC } from './luigi/classic';
+import { SIMON_CLASSIC } from './simon/classic';
 
 /** Playable characters in select-screen order. */
 export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, SIMON, RYU, BILL, SOPHIA];
@@ -37,6 +38,7 @@ export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, S
 export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   mario: MARIO_CLASSIC,
   luigi: LUIGI_CLASSIC,
+  simon: SIMON_CLASSIC,
 };
 
 /**
