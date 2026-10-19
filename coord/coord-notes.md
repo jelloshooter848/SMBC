@@ -44,3 +44,5 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PM+Pit DONE 290a3281 (wip-pm-pit): 4 slots PROTOMAN,BREAKMAN,PIT,DARKPIT; hideExtras test helper. Owner calls for PR5: Proto Shield (PM-M1), castle names, music, Proto Man palette w/ Flower (uses MM weapon palettes).
 - PR6 builders launched: Vic Viper (wip-vicviper 5202), Warriors (wip-warriors 5203), base shared+pm-pit, recommended design defaults.
 - Bass DONE 3cb3ad38. Bass agent integrating PR5 -> claude/classic-extras (Bass+PM+Pit, stack on heroes-2).
+- PR3 QA done (no blockers); fixes sent to Link agent (af37444) on heroes-1.
+- PR4 integrated: claude/classic-heroes-2 46ef39cb (Samus/Simon/Ryu/Bill/Sophia, on heroes-1). Bill buttons -> hide (sent). QA reviewer on PR4 running (5204). Needs re-merge of heroes-1 fixes.
