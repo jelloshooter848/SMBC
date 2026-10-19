@@ -256,26 +256,29 @@ export function drawHeroStats(
   drawPlayerTwoStats(r, state, players, text, assets);
 }
 
-/** Where the power bar's cells start (third HUD row, after the power icon), and the lit slot's name. */
-export const POWER_BAR = { x: 36, y: 24, cellW: 16, cellH: 8, nameX: 136 } as const;
+/**
+ * Where the power bar's cells start (third HUD row, after the power icon), and the lit slot's name
+ * (under the bar, clear of the rules tag at the top right).
+ */
+export const POWER_BAR = { x: 36, y: 24, cellW: 18, cellH: 8, nameX: 36, nameY: 34 } as const;
 
 /**
- * The power bar (VV-20): one 16 x 8 cell a slot, its short label in it (blank once maxed), the
- * lit cell in orange; the lit slot's full name after the bar.
+ * The power bar (VV-20): one 16 x 8 cell a slot (2 px apart), its short label in it (blank once maxed), the
+ * lit cell in orange; the lit slot's full name under the bar.
  */
 function drawPowerBar(
   r: Renderer,
   bar: NonNullable<ReturnType<NonNullable<Player['def']['powerBar']>>>,
   text: (str: string, x: number, y: number) => void,
 ): void {
-  const { x, y, cellW, cellH, nameX } = POWER_BAR;
+  const { x, y, cellW, cellH, nameX, nameY } = POWER_BAR;
   bar.slots.forEach((s, i) => {
     const cx = x + i * cellW;
     const lit = bar.selected === i + 1;
-    r.rect(cx, y, cellW - 1, cellH, lit ? '#e45c10' : '#0000bc');
-    if (s.available) text(s.label, cx + (s.label.length === 1 ? 4 : 0), y);
+    r.rect(cx, y, cellW - 2, cellH, lit ? '#e45c10' : '#0000bc');
+    if (s.available) text(s.label, cx + (s.label.length === 1 ? 5 : 1), y);
   });
-  if (bar.selected > 0 && bar.name) text(bar.name, nameX, y);
+  if (bar.selected > 0 && bar.name) text(bar.name, nameX, nameY);
 }
 
 /** Player two: name under WORLD, hearts or a short bar at the right edge (`text`: the caller's). */

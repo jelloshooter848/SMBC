@@ -299,6 +299,11 @@ export interface CharacterDef {
    * whenever the world stands still (pipes, clears, freezes). Absent: the camera follows.
    */
   autoScroll?: { speed: number };
+  /**
+   * Flies with no gravity (Vic Viper, VV-5): dropped in from the top of an area, it is steered at
+   * once instead of after the fall-in (it never lands). Absent: today's fall-in.
+   */
+  flies?: boolean;
   /** Enters pipes in mid-air too (Vic Viper's canEnterPipesUngrounded, VV-27). Absent: on the ground only. */
   pipesAirborne?: boolean;
   /**
@@ -306,7 +311,9 @@ export interface CharacterDef {
    * (blank when maxed: `available` false), the lit one (1-based; 0 for none) and its full name.
    * Null hides it. Absent: nothing.
    */
-  powerBar?(p: Player): { slots: { label: string; available: boolean }[]; selected: number; name: string } | null;
+  powerBar?(
+    p: Player,
+  ): { slots: { label: string; available: boolean }[]; selected: number; name: string } | null;
   /**
    * How a power-up of `kind` struck from a block by this hero is drawn (Vic Viper's Fire Flower is
    * a power capsule, VV-M3). Null or absent: the item's own art.

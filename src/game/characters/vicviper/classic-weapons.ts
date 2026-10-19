@@ -344,8 +344,20 @@ function shotsFrom(p: Player, world: World, gun: number, kind: string): number {
   return n;
 }
 
-function shoot(world: World, p: Player, gun: number, spec: ProjectileSpec, cx: number, cy: number, vx: number, vy = 0): void {
-  const s = new Projectile(cx - px(spec.w >> 1), cy - (px(spec.h) >> 1), vx < 0 ? -1 : 1, spec, p, { vx, vy });
+function shoot(
+  world: World,
+  p: Player,
+  gun: number,
+  spec: ProjectileSpec,
+  cx: number,
+  cy: number,
+  vx: number,
+  vy = 0,
+): void {
+  const s = new Projectile(cx - px(spec.w >> 1), cy - (px(spec.h) >> 1), vx < 0 ? -1 : 1, spec, p, {
+    vx,
+    vy,
+  });
   gunOf.set(s, gun);
   world.spawn(s);
 }
@@ -374,7 +386,8 @@ export function fire(p: Player, world: World): void {
   guns.forEach((g, gun) => {
     if (laser) {
       const spec = laser >= 2 ? VIC_LASER_2 : VIC_LASER;
-      if (shotsFrom(p, world, gun, spec.kind) < LASER_CAP) shoot(world, p, gun, spec, g.cx, g.cy, LASER_SPEED);
+      if (shotsFrom(p, world, gun, spec.kind) < LASER_CAP)
+        shoot(world, p, gun, spec, g.cx, g.cy, LASER_SPEED);
     } else shoot(world, p, gun, VIC_BULLET, g.cx, g.cy, BULLET_SPEED);
     if (double >= 1 && !laser) shoot(world, p, gun, VIC_BULLET, g.cx, g.cy, DOUBLE_SPEED, -DOUBLE_SPEED);
     if (double >= 2 && !laser) shoot(world, p, gun, VIC_BULLET, g.lx, g.cy, -BULLET_SPEED);

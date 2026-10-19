@@ -224,9 +224,9 @@ function statePalette(state: string): string {
   return state === 'big' ? 'vicviper-mushroom' : state === 'fire' ? 'vicviper-flower' : 'vicviper';
 }
 
-/** Draw offsets: the hitbox sits centred on the ship's hull (VV-3). */
-const SHIP_DX = -(FLY_SHIP_X + 8);
-const SHIP_DY = -4;
+/** Draw offsets (px left of and above the hitbox): the hitbox sits centred on the ship's hull (VV-3). */
+const SHIP_DX = FLY_SHIP_X + 8;
+const SHIP_DY = 4;
 const BOOM_FRAMES = 4;
 const BOOM_RATE = 6;
 
@@ -241,8 +241,8 @@ function vicSprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpe
       palette: 'vicviper',
       frame: n < BOOM_FRAMES ? `boom-${n}` : 'none',
       flip: false,
-      offsetX: -5,
-      offsetY: -7,
+      offsetX: 5,
+      offsetY: 7,
     };
   }
   delete s._boom;
@@ -288,13 +288,15 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   crouches: false,
   canBreakBricks: () => false,
   headBumps: () => false,
+  flies: true,
   pipesAirborne: true,
   autoScroll: { speed: AUTO_SCROLL },
   hitbox: () => VIC_HITBOX,
   sprite: vicSprite,
   blockPowerUp: classicBlockPowerUp,
   // The Fire Flower comes out of a block as a power capsule (VV-M3).
-  powerUpArt: (kind) => (kind === 'flower' ? { sheet: 'vicviper', frames: ['capsule-0', 'capsule-1'] } : null),
+  powerUpArt: (kind) =>
+    kind === 'flower' ? { sheet: 'vicviper', frames: ['capsule-0', 'capsule-1'] } : null,
   jumpSfx: () => '',
   portrait: { sheet: 'vicviper', palette: 'vicviper', frame: 'portrait' },
   powerIcon: true,
@@ -329,9 +331,8 @@ export const VICVIPER_CLASSIC: CharacterDef = {
     drive: (p, input, map) => fly(p, input, map),
     update(p, input, world) {
       holdOnScreen(p, world);
-      const cam = world.camera;
       // Left is faster only while the screen scrolls (VV-5).
-      p.scratch._scroll = !cam.locked && cam.x < cam.maxX ? 1 : 0;
+      p.scratch._scroll = world.heroScrolled || world.camera.auto ? 1 : 0;
       recordTrail(p, world);
       keepEscort(p, world);
       if (classicBusy(p)) return;

@@ -1632,7 +1632,8 @@ export class World {
       }
       let input = inputs[i] ?? NO_INPUT;
       if (this.fallingIn.has(p)) {
-        if (p.body.onGround || p.body.y >= px(FALL_IN_STEER_Y)) this.fallingIn.delete(p);
+        // A hero that flies never lands: steered at once (CharacterDef.flies).
+        if (p.body.onGround || p.body.y >= px(FALL_IN_STEER_Y) || p.def.flies) this.fallingIn.delete(p);
         else input = withoutSteering(input);
       }
       if (this.autoWalk) input = AUTO_WALK_INPUT;
@@ -1817,19 +1818,37 @@ export class World {
   }
 
   /**
+   * Where a hero's auto-scroll ends for good (VV-12): the camera's end, or in a castle with an axe
+   * the screen that has the axe a tile in from its right edge (the original's axe limit), so the
+   * fight with Bowser is on a fixed screen.
+   */
+  private heroScrollEnd(): number {
+    const axe = this.level.entities.find((e) => e.type === 'axe');
+    if (!axe) return this.camera.maxX;
+    return Math.min(this.camera.maxX, Math.max(0, tileToSub(axe.x + 2) - px(SCREEN_W)));
+  }
+
+  /**
    * One frame of a hero's auto-scroll (VV-9, VV-10, VV-12): the camera moves right by `speed` up to
    * its end (where it stays), whatever the players do, and carries every player whose hero scrolls
    * (CharacterDef.autoScroll) by the same amount; anyone else is only pushed by the left edge.
    */
   private heroScroll(speed: number): void {
+    this.heroScrolled = false;
     if (this.camera.locked) return;
     const before = this.camera.x;
-    this.camera.x = Math.min(this.camera.maxX, this.camera.x + velToSub(speed));
+    const end = this.heroScrollEnd();
+    if (before >= end) return;
+    this.camera.x = Math.min(end, before + velToSub(speed));
     const dx = this.camera.x - before;
     if (dx <= 0) return;
+    this.heroScrolled = true;
     for (const p of this.activePlayers())
       if (p.def.autoScroll && !p.frozen && !p.hidden) moveX(p.body, this.playerMap(p), dx);
   }
+
+  /** The hero's auto-scroll moved the camera on this frame (CharacterDef.autoScroll). */
+  heroScrolled = false;
 
   /** The tile rows (of the side probe's span) in which the body already overlaps a solid tile. */
   private solidRows(p: Player): Set<number> {
@@ -2421,7 +2440,8 @@ export class World {
         break;
       }
       case 'powerup':
-        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(this.blockItem(tx, ty, p.def.blockPowerUp(p), p));
+        if (!this.spawnHeroItem(tx, ty, p, content))
+          this.spawn(this.blockItem(tx, ty, p.def.blockPowerUp(p), p));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;

@@ -132,7 +132,13 @@ const flameSlow = [
   ['........', '......88', '....8877', '......88', '........'],
   ['........', '....8888', '..887777', '....8888', '........'],
   ['........', '......88', '.....877', '......88', '........'],
-].map((rows) => cell(12, 5, rows.map((r) => r.padStart(12, '.'))));
+].map((rows) =>
+  cell(
+    12,
+    5,
+    rows.map((r) => r.padStart(12, '.')),
+  ),
+);
 const flameFast = [
   ['............', '.......88888', '...888877777', '.......88888', '............'],
   ['............', '.........888', '.....8887777', '.........888', '............'],
@@ -185,7 +191,9 @@ const laser = cell(16, 6, [
   '0444444444444440',
   '................',
 ]);
-const laserLong = laser.map((r) => (r[0] as string) + r.slice(1, 15).repeat(2) + r.slice(1, 3) + (r[15] as string));
+const laserLong = laser.map(
+  (r) => (r[0] as string) + r.slice(1, 15).repeat(2) + r.slice(1, 3) + (r[15] as string),
+);
 // Ground missile, 10 x 10 (VV-M5): flying down-forward, then running along the floor.
 const missileDown = cell(10, 10, [
   '..........',
@@ -259,7 +267,9 @@ const shieldTop = Array.from({ length: 13 }, (_, y) =>
   }).join(''),
 );
 const shieldBot = [...shieldTop].reverse();
-const shieldTopHurt = shieldTop.map((r, y) => r.replace(/[15]/g, (_c, x: number) => ((x + y) % 2 ? '.' : '4')));
+const shieldTopHurt = shieldTop.map((r, y) =>
+  r.replace(/[15]/g, (_c, x: number) => ((x + y) % 2 ? '.' : '4')),
+);
 const shieldBotHurt = [...shieldTopHurt].reverse();
 
 /* ---------- Power capsule, 16 x 16 (VV-M3) ---------- */
@@ -267,22 +277,23 @@ const shieldBotHurt = [...shieldTopHurt].reverse();
 const capsule0 = cell(16, 16, [
   '................',
   '................',
-  '....00000000....',
-  '...0333333330...',
-  '..033111133330..',
-  '..031133333330..',
+  '................',
+  '................',
+  '...0000000000...',
+  '..033333333330..',
+  '.03311111333330.',
   '.03333377333330.',
   '.03333777733330.',
-  '.03333777733330.',
   '.03333377333330.',
-  '..033333333330..',
-  '..033333333330..',
-  '...0333333330...',
-  '....00000000....',
+  '..032333333230..',
+  '...0000000000...',
+  '................',
+  '................',
   '................',
   '................',
 ]);
-const capsule1 = capsule0.map((r) => r.replace(/7/g, '1'));
+// The core blinks.
+const capsule1 = capsule0.map((r) => r.replace(/7/g, '8'));
 
 /* ---------- Death explosion, 24 x 24, 4 frames ---------- */
 
