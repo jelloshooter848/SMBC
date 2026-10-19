@@ -425,6 +425,52 @@ describe('Classic Samus: damage (SA-C21..SA-C23)', () => {
   });
 });
 
+describe('Classic Samus: the frozen block (HP-C17, SA-C21)', () => {
+  it('only while frozen: she stands on it, bumps its side, and drops when it thaws', () => {
+    const r = rig('fire', { ...SAMUS_CLASSIC.devKit?.(), tool: 1 });
+    const g = place(r, new Goomba(0, 0), 140);
+    hold(g);
+    g.frozen = 360;
+    g.stopFrames = 360;
+    const top = g.body.y + g.body.h - px(16);
+    // Walking into its side stops her at its left edge, unhurt.
+    for (let i = 0; i < 40; i++) r.step(['right']);
+    expect(r.p.body.x + r.p.body.w).toBe(g.body.x);
+    expect(r.p.powerState).toBe('fire');
+    // Dropped on top she stands there.
+    const b = r.p.body;
+    b.x = g.body.x + px(2);
+    b.y = top - b.h - px(4);
+    b.onGround = false;
+    r.step([]);
+    r.until(() => r.p.body.onGround, [], 20);
+    expect(r.p.feetY).toBe(top);
+    // When the freeze ends the block goes and she falls to the floor (touching it then hurts).
+    r.until(() => g.frozen === 0, [], 400);
+    r.step([]);
+    r.step([]);
+    expect(r.p.feetY).toBeGreaterThan(top);
+  });
+
+  it('a stunned (not frozen) enemy carries no block', () => {
+    const r = rig('fire');
+    const g = place(r, new Goomba(0, 0), 140);
+    hold(g);
+    g.stopFrames = 300;
+    const b = r.p.body;
+    b.x = g.body.x + px(2);
+    b.y = g.body.y - b.h - px(4);
+    b.onGround = false;
+    // No block to land on: she falls past its top.
+    let stood = false;
+    for (let i = 0; i < 6; i++) {
+      r.step([]);
+      if (r.p.body.onGround && r.p.feetY === g.body.y) stood = true;
+    }
+    expect(stood).toBe(false);
+  });
+});
+
 describe('Classic Samus: the Wave Beam (SA-C22)', () => {
   it('passes a ground column, breaks a brick and stops, waves ±15 px, alternates its start', () => {
     const r = rig(

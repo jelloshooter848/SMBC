@@ -400,7 +400,8 @@ export function classicSamus(
     else if (!b.onGround) name = flipping(p) ? `spin-${(frame >> 2) & 3}` : 'jump';
     else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
     else name = shooting ? 'shoot' : 'idle';
-    return { sheet: 'samus', palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
+    const sheet = name.startsWith('crouch') ? 'samus-classic' : 'samus';
+    return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
   }
 
   const def: CharacterDef = {

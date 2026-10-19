@@ -348,8 +348,6 @@ export const samusDef: SpriteDef = {
     'walk-shoot-2': walkShoot2,
     jump,
     'aim-up': aimUp,
-    crouch,
-    'crouch-shoot': crouchShoot,
     hurt,
     die,
     'spin-0': spinFrame(spin0),
@@ -364,4 +362,13 @@ export const samusDef: SpriteDef = {
     'bomb-1': bomb1,
     'bomb-burst': bombBurst,
   },
+};
+
+/**
+ * Classic SMBC Samus's extra frames (SA-C4: `crouch`, `crouch-shoot`), a sheet of their own
+ * (`samus-classic`, the same palettes) so the Current sheet keeps its documented frame set.
+ */
+export const samusClassicDef: SpriteDef = {
+  palette: 'samus',
+  frames: { crouch, 'crouch-shoot': crouchShoot },
 };
