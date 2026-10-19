@@ -60,3 +60,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PR6 opened #151 (extras-2 7080372a, base classic-extras). ALL PRs OPEN: #147->#148->#149->#150->#151. Remaining: watch CI, retarget as merges happen; propose follow-ups (FU) and wishlist when done.
 - Release session ACCEPTED #149. Pending nits for next heroes-2 push: sophia/classic-guide.ts:10 wording ('Jump height doesn't depend on speed. Hold for higher.'); bill Flare pierce 5->6.
 - #151 green. Release session: #150 gameplay OK; ART needs owner call (Pit/DarkPit + ProtoMan/BreakMan are recolours; Bass skin #fca044 blends). Hold new art until owner answers.
+- #151 release review REVISE: VV power-bar not announced (blocker) + spring solid + nameY + P2 7 letters -> VV agent fixing. Release session asked owner to confirm VV/WoL approval.
