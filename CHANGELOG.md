@@ -34,6 +34,11 @@ under `## [Unreleased]`.
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
   the HUD. Under water only Mario and Luigi stroke; the others jump from the floor with their own water gravity, nobody
   stomps under water, and 2-2 and 7-2 get coral stepping stones for floor jumpers. Current play is unchanged.
+- Classic Mario and Luigi (Classic rules): the original's jump, a fast constant rise to a set height that ends early
+  when you let go (Mario 4.2 tiles standing, 5.2 at walking speed or faster; Luigi 5.4 and 6.2, and he floats), no turning
+  in mid-air, no early jump presses, speed that builds and runs down smoothly (Luigi is slow to start and slides far), a
+  small stomp bounce, the crouch-jump, the original fireball (slower, lower bounces, bursts on ceilings), a Mushroom
+  while big gives fire, and their own death hop and walk to Toad. Both get their own Classic guide page.
 
 ## [0.4.55] - 2026-10-13
 
