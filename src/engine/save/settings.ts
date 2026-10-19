@@ -67,6 +67,18 @@ export interface Settings {
    * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
    */
   classicRules: ClassicRules;
+  /**
+   * Developer toggles for Classic mode (Dev menu; read only while dev mode is on, else the
+   * defaults): the Yoshi mount (off: Classic plays as the original) and the Classic heroes the
+   * original SMBC 3.1.21 did not have (`heroesOff`: their ids, hidden from the Classic select).
+   */
+  classicDev: ClassicDevToggles;
+}
+
+/** Settings.classicDev. */
+export interface ClassicDevToggles {
+  yoshiMount: boolean;
+  heroesOff: string[];
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
@@ -121,6 +133,7 @@ export function defaultSettings(): Settings {
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
+    classicDev: { yoshiMount: false, heroesOff: [] },
   };
 }
 
@@ -165,6 +178,7 @@ export function loadSettings(): Settings {
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
+  s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

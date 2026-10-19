@@ -228,6 +228,13 @@ export interface MovementProfile {
    * Current cling (`Player.clinging`, the wall kick) is not used. Absent: none.
    */
   wallClimb?: WallClimbProfile | undefined;
+  /**
+   * Classic Yoshi's flutter jump (2026-10-19-yoshi-build-classic-character.md YO-8; tier path):
+   * falling with jump held and the flutter not used since the last landing, spring or stomp
+   * bounce, gravity is off and vy -= `lift` a frame down to -`rise` (rising slowly), for at most
+   * `frames` frames; letting go of jump ends it. Once per jump. Absent: none.
+   */
+  flutter?: { frames: number; lift: number; rise: number } | undefined;
 }
 
 /**

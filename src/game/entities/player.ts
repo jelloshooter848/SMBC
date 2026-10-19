@@ -223,6 +223,17 @@ export class Player {
   wall: { dir: -1 | 1; lift: boolean } | null = null;
   /** After a high wall hop: the wall edge (column `tx`, side `dir`), or any lift, not grabbed for `t` frames. */
   wallLock: { tx: number; dir: -1 | 1; lift: boolean; t: number } | null = null;
+  /**
+   * MovementProfile.flutter (Classic Yoshi, YO-8): frames of the flutter so far (0: not
+   * fluttering), and whether this jump's flutter is spent. Unused by every other profile.
+   */
+  flutterT = 0;
+  flutterUsed = false;
+  /**
+   * A fall cap that replaces the profile's while above 0 (tier path, on land): Classic Yoshi's
+   * ground pound drop (YO-9), set and cleared by his behaviour. Always 0 for every other hero.
+   */
+  fallCap = 0;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -541,19 +552,46 @@ export class Player {
       this.jumpReleased = false;
       this.cutting = false;
       this.dashCarry = false;
+      if (p.flutter) {
+        this.flutterT = 0;
+        this.flutterUsed = false;
+      }
     } else if (!this.clinging) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
-      if (surface) {
+      if (p.flutter && this.flutterStep(input, p.flutter)) {
+        // Classic Yoshi's flutter (YO-8): no gravity this frame.
+      } else if (surface) {
         // Classic SMBC above a water level's surface line (SW-C10).
         b.vy += surface.gravity;
         if (b.vy > surface.fallMax) b.vy = surface.fallMax;
       } else {
         if (this.launched && this.launchGravity) b.vy += this.launchGravity;
         else b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
-        if (b.vy > p.maxFall) b.vy = p.fallReset;
+        if (this.fallCap > 0) {
+          if (b.vy > this.fallCap) b.vy = this.fallCap;
+        } else if (b.vy > p.maxFall) b.vy = p.fallReset;
       }
     }
     this.updateAnim(dir);
+  }
+
+  /**
+   * One frame of a flutter (MovementProfile.flutter, Classic Yoshi YO-8): true while it holds him
+   * up this frame (instead of gravity). It starts falling with jump held, once per jump, and ends
+   * when jump is let go or after `frames` frames.
+   */
+  private flutterStep(input: InputFrame, f: NonNullable<MovementProfile['flutter']>): boolean {
+    const b = this.body;
+    if (this.flutterT > 0) {
+      if (!input.held('jump') || this.flutterT >= f.frames) {
+        this.flutterT = 0;
+        return false;
+      }
+    } else if (this.flutterUsed || this.launched || b.vy <= 0 || !input.held('jump')) return false;
+    else this.flutterUsed = true;
+    this.flutterT++;
+    b.vy = Math.max(b.vy - f.lift, -f.rise);
+    return true;
   }
 
   /**
@@ -1395,6 +1433,9 @@ export class Player {
     this.dashCarry = false;
     this.sliding = 0;
     this.crouching = false;
+    // A spring gives the flutter back (MovementProfile.flutter, YO-8).
+    this.flutterT = 0;
+    this.flutterUsed = false;
     this.refitHitbox();
   }
 
@@ -1425,6 +1466,9 @@ export class Player {
       this.rising = false;
       this.launched = false;
       this.airJumpsLeft = this.profile.airJumps ?? 0;
+      // A bounce gives the flutter back (MovementProfile.flutter, YO-8).
+      this.flutterT = 0;
+      this.flutterUsed = false;
       return;
     }
     b.vy = -0x04000;

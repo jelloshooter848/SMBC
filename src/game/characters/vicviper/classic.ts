@@ -282,6 +282,7 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   // Toad: THANK YOU VIPER! (VV-M24).
   thanksName: 'VIPER',
   rules: 'classic',
+  notInOriginal: true,
   movement: VIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: false,

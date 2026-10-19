@@ -25,6 +25,7 @@ import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
 import { vicviperPalettes, vicviperDef } from './vicviper';
+import { yoshiDef, yoshiPalettes } from './yoshi';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
 import { npcsPalettes, npcsDef } from './npcs';
@@ -135,6 +136,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   sophia: sophiaSheet,
   // Vic Viper, a Classic-only hero (characters/vicviper/classic.ts).
   vicviper: vicviperDef,
+  // Yoshi, a Classic-only hero and the Classic mount (characters/yoshi/classic.ts).
+  yoshi: yoshiDef,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
@@ -218,6 +221,7 @@ const defaults: Record<string, readonly string[]> = {
   ...titleLogoPalettes,
   ...sophiaPalettes,
   ...vicviperPalettes,
+  ...yoshiPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
   ...npcsPalettes,
