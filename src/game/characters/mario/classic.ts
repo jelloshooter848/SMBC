@@ -208,5 +208,5 @@ export const MARIO_CLASSIC: CharacterDef = plumberClassic({
   base: MARIO,
   constants: MARIO_CONSTANTS,
   palettes: MARIO_PALETTES,
-  guide: plumberClassicGuide('Mario', 'quick to start and stop, a sharp rocket jump'),
+  guide: plumberClassicGuide('Mario', 'a sharp rocket jump'),
 });

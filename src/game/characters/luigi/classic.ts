@@ -29,5 +29,5 @@ export const LUIGI_CLASSIC: CharacterDef = plumberClassic({
   base: LUIGI,
   constants: LUIGI_CONSTANTS,
   palettes: LUIGI_PALETTES,
-  guide: plumberClassicGuide('Luigi', 'slow to start, slippery, and floats high'),
+  guide: plumberClassicGuide('Luigi', 'slippery, floats high'),
 });
