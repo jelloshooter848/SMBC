@@ -86,3 +86,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Owner lifted hold: #150->#151->#153 release as 0.4.58. Integrator launched: waits for #155 (v0.4.57) on main, merges main through chain, adds extras rescue names.
 - Owner: area memory (saveAreaStats) + flag-walk camera follow -> same PR as left scroll (claude/classic-scroll). Sent to scroll agent. #155 (v0.4.57) merged.
 - Release schedule sent to release session (0.4.58 chain, .59 scroll, .60 Peach+Arthur, .61 Yoshi, .62 options I, .63 options II/skins, .64 survival+cheats, .65 spike top).
+- Arthur DONE af3b3f9c (classic-extras-arthur). Owner note: torch fire 60f→3 touches (design said 4; 73f would match). Yoshi + dev toggles launched (claude/classic-extras-yoshi, wip classic-wip-yoshi, 5214).
