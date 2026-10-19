@@ -220,6 +220,8 @@ export interface CharacterDef {
   meter?(p: Player): MeterInfo | null;
   /** Fully stocked kit for the developer level select. */
   devKit?(): Record<string, number>;
+  /** The kit the How to play page's live demo uses (Classic Vic Viper: none). Absent: `devKit`. */
+  guideKit?(): Record<string, number>;
   /**
    * Reserve energy tanks drawn as small boxes above the EN number (Samus, NES Metroid style):
    * `full` of `total` hold energy, `bar` is the number shown. Null with no tanks.
@@ -309,8 +311,9 @@ export interface CharacterDef {
   autoScroll?: {
     speed: number;
     /**
-     * Pushed into a wall by the screen's left edge: 'eject' puts the hero free (up, down, or past
-     * the wall) instead of the squash death. Absent: squashed, as on an auto-scroll map.
+     * Pushed into a wall by the screen's left edge: 'eject' moves the hero to the nearest free
+     * place (up or down by up to two tiles, else just past the wall) and only squashes it when there
+     * is none. Absent: squashed, as on an auto-scroll map.
      */
     pinned?: 'eject';
   };

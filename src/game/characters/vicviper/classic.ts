@@ -1,6 +1,7 @@
 import { px, velToSub } from '@engine/math/units';
 import type { InputFrame } from '@engine/input/input-manager';
 import { FLY_SHIP_X } from '@content/sprites/vicviper';
+import { HUD_BOTTOM } from '../../hud/hud';
 import type { CharacterDef, SpriteSpec } from '../character';
 import { CLASSIC_POWER_STATES } from '../character';
 import type { MovementProfile } from '../profile';
@@ -38,7 +39,8 @@ import { fire, keepEscort, recordTrail, SHIELD_HP } from './classic-weapons';
  * - Auto-scroll (VV-9..VV-12, CharacterDef.autoScroll): the screen moves right at 0.833 px/f and
  *   carries the ship; left adds the scroll speed back (VV-7, VV-M13: kept as coded).
  * - Edges (VV-M11, VV-M12): held 3 px inside the right edge and below the screen top; pinned
- *   against a wall by the left edge, it is pushed out (up, down or past it), as in the original.
+ *   against a wall by the left edge, it is pushed out (up, down or past it), as in the original;
+ *   only with no free place at all is it squashed.
  * - Bullet (VV-14, VV-15), no stomp (VV-26), no head bump and hidden blocks stay hidden (VV-25),
  *   mid-air pipes (VV-27), no vines (VV-M16), springs are solid (VV-30).
  * - The Gradius power bar (VV-20..VV-22, VV-M1..VV-M9): capsules move the light, POWER (Jump or
@@ -246,16 +248,24 @@ function vicSprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpe
   };
 }
 
+/** Room above the hitbox the Shield's top piece takes (VV-M9: 1 px above, a 13 px box centred). */
+const SHIELD_ROOM = 8;
+
 /**
  * The right and top edges (VV-M11): the hitbox stays 3 px inside the camera's right edge and below
- * the top of the screen. Moved with tile collision, so it never ends inside a wall.
+ * the HUD's rows. Moved with tile collision, so it never ends inside a wall.
  */
 function holdOnScreen(p: Player, world: World): void {
   const b = p.body;
   const map = world.map;
   const right = world.camera.right - px(RIGHT_MARGIN);
   if (b.x + b.w > right) moveX(b, map, right - (b.x + b.w));
-  if (b.y < world.camera.y) b.y = world.camera.y;
+  // Below the HUD's rows (M11), with room for the Shield's top piece while it lasts: no flying
+  // over a level's ceiling in the HUD lane.
+  const top =
+    world.camera.y +
+    px(HUD_BOTTOM + ((p.scratch.vvShieldTop ?? 0) > 0 && p.scratch.vvShield ? SHIELD_ROOM : 0));
+  if (b.y < top) moveY(b, map, top - b.y, { ignoreHidden: true });
 }
 
 export const VICVIPER_CLASSIC: CharacterDef = {
@@ -276,7 +286,8 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   flies: true,
   pipesAirborne: true,
   // VV-M12: the original never kills a pinned ship (Level.scrollScreen carries it with no hit
-  // test, then groundHT pushes it out of the ground), so the ship is put free instead.
+  // test, then groundHT pushes it out of the ground), so the ship is put free instead; with no
+  // free place within reach it is still squashed.
   autoScroll: { speed: AUTO_SCROLL, pinned: 'eject' },
   hitbox: () => VIC_HITBOX,
   sprite: vicSprite,
@@ -305,6 +316,8 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   touchLabels: () => ({ attack: 'SHOOT', jump: 'POWER', special: 'POWER', select: null }),
   // TG-44: `&kit=full` gives a spent kit to try every power-up (Speed Up 2, Missile, Laser, two
   // Options, the Shield).
+  // The How to play demo shows the ship as it starts, not the spent kit.
+  guideKit: () => ({}),
   devKit: () => ({
     vvSpeed: 2,
     vvMissile: 1,

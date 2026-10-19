@@ -1,7 +1,7 @@
 import { gainCoins } from '../items/wallet';
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
-import { SCORE_MAX } from '../hud/hud';
+import { HUD_BOTTOM, SCORE_MAX } from '../hud/hud';
 import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
@@ -1821,7 +1821,8 @@ export class World {
       if (p.body.vx < 0) p.body.vx = 0;
       if (!this.squashed(p, blocked)) continue;
       // A hero whose own scroll pins it (CharacterDef.autoScroll.pinned 'eject': Vic Viper, as
-      // the original's hit test pushes the ship out of the ground it was shoved into) is put free.
+      // the original's hit test pushes the ship out of the ground it was shoved into) is put free
+      // where there is room; with none it is squashed like anyone else.
       if (p.def.autoScroll?.pinned === 'eject' && this.eject(p)) continue;
       this.kill(p);
     }
@@ -2573,11 +2574,6 @@ export class World {
     this.heroItems = new Map(entries.map((e) => [`${e.x},${e.y}`, e.items]));
   }
 
-  /**
-   * A power block struck in the campaign by a hero with items of their own: their item rises from
-   * it (docs/POWERUPS.md 3.3). False (nothing spawned) outside the campaign and for Mario and
-   * Luigi, whose blocks give SMB's mushroom and flower.
-   */
   /** A block's power-up for `p`, drawn with `p`'s own art for it if the def has one (powerUpArt). */
   private blockItem(tx: number, ty: number, kind: PowerUpKind, p: Player): PowerUp {
     const u = new PowerUp(tx, ty, kind);
@@ -2586,6 +2582,11 @@ export class World {
     return u;
   }
 
+  /**
+   * A power block struck in the campaign by a hero with items of their own: their item rises from
+   * it (docs/POWERUPS.md 3.3). False (nothing spawned) outside the campaign and for Mario and
+   * Luigi, whose blocks give SMB's mushroom and flower.
+   */
   private spawnHeroItem(
     tx: number,
     ty: number,
@@ -4155,7 +4156,7 @@ export class World {
     for (let d = 1; d <= 32; d++)
       for (const dy of [-d, d]) {
         const y = b.y + px(dy);
-        if (y >= this.camera.y && !this.overlapsSolid(at(b.x, y))) {
+        if (y >= this.camera.y + px(HUD_BOTTOM) && !this.overlapsSolid(at(b.x, y))) {
           b.y = y;
           return true;
         }

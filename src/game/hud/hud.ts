@@ -8,6 +8,12 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { GameState } from '../context';
 import type { Player } from '../entities/player';
 
+/**
+ * The bottom of the HUD's three text rows (name, score, the third row's icon / bar / tool), in
+ * screen px. Classic Vic Viper and the Warriors' Bolt keep out of the rows above it.
+ */
+export const HUD_BOTTOM = 32;
+
 /** The original's StatManager.SCORE_MAX. */
 export const SCORE_MAX = 9999999;
 

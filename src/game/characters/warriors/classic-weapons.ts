@@ -4,6 +4,7 @@ import type { View } from '../../entities/entity';
 import { Projectile, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
+import { HUD_BOTTOM } from '../../hud/hud';
 
 /**
  * The Black Mage's three spells (WL-13..WL-15; BlackMageSpell.as, BlackMage.as:19-55): no
@@ -104,7 +105,9 @@ export class WarriorSpell extends Projectile {
       // The column flickers between two looks; with Reduce flashing it holds one.
       const alt = !view.reduceFlashing && (this.age >> 1) & 1;
       const sheet = view.assets.sheet('warriors-fx', alt ? 'war-fx-alt' : 'war-fx');
-      for (let i = 0, sy = y; sy < y + h; i++, sy += 16) r.sprite(sheet, 'bolt', x + 1, sy, (i & 1) === 1);
+      // Drawn from under the HUD's rows down, so it never covers the HUD's text.
+      for (let i = 0, sy = y; sy < y + h; i++, sy += 16)
+        if (sy >= HUD_BOTTOM) r.sprite(sheet, 'bolt', x + 1, sy, (i & 1) === 1);
       return;
     }
     const sheet = view.assets.sheet('warriors-fx');

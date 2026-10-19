@@ -3,7 +3,10 @@
 Status: **approved and built** with the Recommended answer for every decision below (Classic mode, the
 second row of the select screen; `src/game/characters/vicviper/classic.ts`, art in `src/content/sprites/vicviper.ts`,
 tests in `tests/sim/classic-vicviper.test.ts`). Co-op does not apply to Classic mode (one player); dev free-play co-op
-keeps M14's Recommended rule. The text below is the proposal as approved.
+keeps M14's Recommended rule. Built differences: M11's top edge is the bottom of the HUD's rows (the ship, its
+Options and Shield never enter them, so no ceiling can be flown over); M12 follows the original instead (no crush
+code exists there: a pinned ship is pushed up, down or past the wall, and only squashed with no free place); the
+How to play demo shows the ship with no power-ups. The text below is the proposal as approved.
 
 Original status: proposal for owner approval. Source report:
 `bug-reports/2026-10-07-vicviper-build-classic-character.md` (IDs `VV-`). Draft art and the storyboard renderer:

@@ -52,7 +52,8 @@ under `## [Unreleased]`.
 - Classic mode: **Vic Viper**, the starfighter cut from the original, joins the second row. The screen scrolls right by
   itself and carries the ship; it flies freely in eight directions with no gravity, shoots straight ahead through
   walls (breaking bricks and bumping blocks), enters pipes in mid-air, and cannot stomp or bump blocks from below.
-  Pinned against a wall by the scrolling screen, the ship is pushed free, as in the original. Power capsules (from power-up blocks after the
+  Pinned against a wall by the scrolling screen, the ship is pushed free (up, down or past the wall); only with no room
+  anywhere is it crushed. Power capsules (from power-up blocks after the
   Mushroom, and from defeated enemies) light a Gradius-style power bar on the HUD; POWER takes the lit power-up:
   Speed Up, a ground Missile that breaks armour, Double, Laser, up to four Options and a front Shield. The Mushroom
   turns the trim blue. Current play is unchanged.

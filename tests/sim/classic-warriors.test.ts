@@ -79,7 +79,7 @@ describe('definition and roster (WL-2, WL-4, TG-41..43)', () => {
     expect(CHARACTERS).not.toContain(W);
     expect(heroFor(W, 'classic')).toBe(W);
     expect(fontText(W.hudName)).toBe(W.hudName);
-    for (const l of JOB_LABELS) expect(fontText(`${l} C1`)).toBe(`${l} C1`);
+    for (const l of JOB_LABELS) expect(fontText(`${l} CURE 1`)).toBe(`${l} CURE 1`);
     expect(SPRING_GREEN_BOOST.warriors).toBeCloseTo(0x08555, -1);
     expect(SPRING_RISE_GRAVITY.warriors).toBeCloseTo(0x0031c, -1);
   });
@@ -358,9 +358,9 @@ describe('Black Mage spells (WL-13..WL-15, WL-M9)', () => {
 });
 
 describe('White Mage Cure (WL-M1, WL-M2)', () => {
-  it('small: down + attack brings back the Mushroom once a stage; HUD C1 then C0', () => {
+  it('small: down + attack brings back the Mushroom once a stage; HUD CURE 1, hidden powered up, then CURE 0', () => {
     const r = rig('small', { job: JOB.wmage });
-    expect(W.hudExtra?.(r.p)).toBe('W.MAGE C1');
+    expect(W.hudExtra?.(r.p)).toBe('W.MAGE CURE 1');
     r.step(['down', 'attack']);
     for (let i = 0; i < 29; i++) r.step(['down']);
     expect(r.p.powerState).toBe('small');
@@ -368,11 +368,13 @@ describe('White Mage Cure (WL-M1, WL-M2)', () => {
     expect(r.p.powerState).toBe('big');
     expect(r.p.transition?.kind).toBe('freeze');
     expect(cureReady(r.p)).toBe(false);
-    expect(W.hudExtra?.(r.p)).toBe('W.MAGE C0');
+    expect(W.hudExtra?.(r.p)).toBe('W.MAGE');
+    expect(r.events.some((e) => e.e.type === 'say' && e.e.text === 'Cure used.')).toBe(true);
     for (let i = 0; i < 120; i++) r.step([]);
     r.world.hurtPlayer(r.p, 1);
     for (let i = 0; i < 120; i++) r.step([]);
     expect(r.p.powerState).toBe('small');
+    expect(W.hudExtra?.(r.p)).toBe('W.MAGE CURE 0');
     r.step(['down', 'attack']);
     for (let i = 0; i < 60; i++) r.step(['down']);
     expect(r.p.powerState).toBe('small');
@@ -456,6 +458,30 @@ describe('class switch (WL-17, WL-M3, WL-10)', () => {
     r.step(['left', 'special']);
     expect(r.p.body.onGround).toBe(false);
     expect(jobOf(r.p)).toBe(JOB.wmage);
+  });
+
+  it('Special + Left or Right switches in place: no walking while CLASS is held', () => {
+    for (const dir of ['left', 'right'] as const) {
+      const r = rig();
+      const x = r.p.body.x;
+      for (let i = 0; i < 10; i++) r.step([dir, 'special']);
+      expect(r.p.body.x).toBe(x);
+      expect(jobOf(r.p)).toBe(dir === 'left' ? JOB.wmage : JOB.bmage);
+      r.step([dir]);
+      r.step([dir]);
+      expect(r.p.body.x).not.toBe(x);
+    }
+  });
+
+  it('the Cure text is announced when it shows or changes; hidden for every other class', () => {
+    const r = rig('small', { job: JOB.fighter });
+    r.step([]);
+    expect(W.hudExtra?.(r.p)).toBe('FIGHTER');
+    r.step(['left', 'special']);
+    r.step([]);
+    const said = r.events.flatMap(({ e }) => (e.type === 'say' ? [e.text] : []));
+    expect(said).toContain('Cure ready.');
+    expect(W.hudExtra?.(r.p)).toBe('W.MAGE CURE 1');
   });
 
   it('is announced by ability names, and flashes only without Reduce flashing', () => {

@@ -71,6 +71,8 @@ const K = {
   walk: '_walk',
   /** The stage being played (stageKey), set each frame. */
   stage: '_stage',
+  /** What the HUD's Cure text showed last frame (0 none, 1 ready, 2 used), for the announcements. */
+  cureShown: '_cure',
 } as const;
 
 export function jobOf(p: Player): Job {
@@ -210,6 +212,25 @@ function start(p: Player, world: World, move: Move): void {
   world.audio.sfx('charge');
 }
 
+/**
+ * The White Mage's Cure charge on the HUD (WL-M2): "CURE 1" / "CURE 0", only while small (when Cure
+ * can do something); null otherwise.
+ */
+export function cureText(p: Player): string | null {
+  if (jobOf(p) !== JOB.wmage || p.powerState !== 'small') return null;
+  return `CURE ${cureReady(p) ? 1 : 0}`;
+}
+
+/** The HUD's Cure text changed (shown, or ready / used): the screen reader says so. */
+function announceCure(p: Player, world: World): void {
+  const now = cureText(p);
+  const code = now === null ? 0 : now.endsWith('1') ? 1 : 2;
+  const was = p.scratch[K.cureShown];
+  p.scratch[K.cureShown] = code;
+  if (was === undefined || was === code || code === 0) return;
+  world.events.push({ type: 'say', text: code === 1 ? 'Cure ready.' : 'Cure used.' });
+}
+
 /** The wind-up ends: the spell, or Cure (a small hero gains the Mushroom, WL-M1). */
 function release(p: Player, world: World): void {
   const s = p.scratch[K.spell] ?? 0;
@@ -219,6 +240,7 @@ function release(p: Player, world: World): void {
   }
   if (p.powerState !== 'small' || !cureReady(p)) return;
   p.scratch[K.cureAt] = stageKey(world);
+  world.events.push({ type: 'say', text: 'Cure used.' });
   p.powerState = 'big';
   p.crouching = false;
   // The shared grow flash: the 60-frame power-up freeze (PS-C4), no points.
@@ -353,10 +375,10 @@ export const WARRIORS_CLASSIC: CharacterDef = {
   devKit: () => ({}),
   drawLook: (p, _frame, reduce) => classicLook(p, reduce, WARRIORS_HIT.look),
   starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
-  // WL-2, WL-M2: the job on the HUD's third row; the White Mage's Cure charge.
+  // WL-2, WL-M2: the job on the HUD's third row; the White Mage's Cure charge while it matters.
   hudExtra: (p) => {
-    const job = jobOf(p);
-    return job === JOB.wmage ? `${JOB_LABELS[job]} C${cureReady(p) ? 1 : 0}` : JOB_LABELS[job];
+    const cure = cureText(p);
+    return cure ? `${JOB_LABELS[jobOf(p)]} ${cure}` : JOB_LABELS[jobOf(p)];
   },
   guide: WARRIORS_GUIDE,
   touchLabels(p) {
@@ -369,13 +391,17 @@ export const WARRIORS_CLASSIC: CharacterDef = {
   },
   behaviour: {
     // An action roots the hero on the ground; a ground jump still cancels it (WL-5): 'canJump'.
+    // CLASS held (the switch gesture) roots it too, so Special + Left/Right never walks.
     rooted: (p, input) =>
-      acting(p) || ((p.scratch[K.act] ?? 0) === ACT.idle && input.pressed('attack') && !!moveFor(p, input))
+      acting(p) ||
+      input.held('special') ||
+      ((p.scratch[K.act] ?? 0) === ACT.idle && input.pressed('attack') && !!moveFor(p, input))
         ? 'canJump'
         : false,
     update(p, input, world) {
       const b = p.body;
       p.scratch[K.stage] = stageKey(world);
+      announceCure(p, world);
       if ((p.scratch[K.flash] ?? 0) > 0) p.scratch[K.flash] = (p.scratch[K.flash] ?? 0) - 1;
       if (p.anim === 'walk' || p.anim === 'skid') p.scratch[K.walk] = (p.scratch[K.walk] ?? 0) + 1;
       else p.scratch[K.walk] = 0;

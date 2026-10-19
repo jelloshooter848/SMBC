@@ -139,7 +139,6 @@ export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 /** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
 export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
 
-/** Orchestrates scenes and carries GameState between levels. */
 /**
  * The keys of `kit` a death keeps for `def` (CharacterDef.keepOnDeath: Classic Warriors of Light's
  * class), outside the campaign; empty for every other hero.
@@ -150,6 +149,7 @@ function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Reco
   return out;
 }
 
+/** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
   /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */

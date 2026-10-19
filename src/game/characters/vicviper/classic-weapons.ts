@@ -7,6 +7,7 @@ import { Enemy } from '../../entities/enemies/enemy';
 import { Projectile, type ClassicBlocks, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
+import { HUD_BOTTOM } from '../../hud/hud';
 
 /**
  * Vic Viper's weapons (2026-10-07-vicviper-build-classic-character.md VV-14, VV-15 and the approved
@@ -206,7 +207,8 @@ export class VicOption extends Entity {
     if (p.dead || p.out || optionCount(p) < this.n) return this.destroy();
     const c = optionCentre(p, world, this.n);
     this.body.x = c.x - px(6);
-    this.body.y = c.y - px(4);
+    // Never up in the HUD's rows (VV-M11).
+    this.body.y = Math.max(world.camera.y + px(HUD_BOTTOM), c.y - px(4));
   }
 
   render(r: Renderer, view: View): void {
@@ -333,6 +335,14 @@ export function optionsOf(p: Player, world: World): VicOption[] {
   return e.options.filter((o) => o.alive).sort((a, b) => a.n - b.n);
 }
 
+/** A ship's shot: gone once it flies up into the HUD's rows (the Double's 45° shot). */
+export class VicShot extends Projectile {
+  override update(world: World): void {
+    super.update(world);
+    if (this.alive && this.body.y < world.camera.y + px(HUD_BOTTOM)) this.destroy();
+  }
+}
+
 /** Which gun (0 the ship, n Option n) fired each shot, for the per-gun caps. */
 const gunOf = new WeakMap<Projectile, number>();
 
@@ -354,7 +364,7 @@ function shoot(
   vx: number,
   vy = 0,
 ): void {
-  const s = new Projectile(cx - px(spec.w >> 1), cy - (px(spec.h) >> 1), vx < 0 ? -1 : 1, spec, p, {
+  const s = new VicShot(cx - px(spec.w >> 1), cy - (px(spec.h) >> 1), vx < 0 ? -1 : 1, spec, p, {
     vx,
     vy,
   });

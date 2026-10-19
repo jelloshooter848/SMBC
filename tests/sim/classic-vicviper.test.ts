@@ -16,14 +16,20 @@ import {
   flySpeed,
   spendPower,
 } from '@game/characters/vicviper/classic';
-import { VIC_BULLET, VicMissile, VicOption, VicShield } from '@game/characters/vicviper/classic-weapons';
+import {
+  VIC_BULLET,
+  VicMissile,
+  VicOption,
+  VicShield,
+  shieldBoxes,
+} from '@game/characters/vicviper/classic-weapons';
 import { DARKPIT_CLASSIC } from '@game/characters/pit/classic';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { PowerUp } from '@game/entities/objects/powerup';
 import { Pickup } from '@game/entities/objects/pickup';
-import { drawHud, POWER_BAR } from '@game/hud/hud';
+import { drawHud, HUD_BOTTOM, POWER_BAR } from '@game/hud/hud';
 import { fontText } from '@game/hud/text';
 import { newGameState } from '@game/context';
 import { flatLevel, Rig } from './classic-plumber-harness';
@@ -162,13 +168,44 @@ describe('flight and auto-scroll (VV-5..VV-12)', () => {
     expect(r.world.camera.x).toBe(px(40 * 16 - 256));
   });
 
-  it('the right edge holds the ship 3 px inside, the top at the screen top (VV-M11)', () => {
+  it('the right edge holds the ship 3 px inside, the top under the HUD rows (VV-M11)', () => {
     const r = rig(flatLevel());
     hold(r, 240, ['right', 'up']);
     const b = r.p.body;
     expect(sub(r.world.camera.right - (b.x + b.w))).toBeGreaterThanOrEqual(3);
     expect(sub(r.world.camera.right - (b.x + b.w))).toBeLessThan(4.7);
-    expect(b.y).toBe(0);
+    expect(b.y).toBe(px(HUD_BOTTOM));
+  });
+
+  it('the Options and the Shield stay under the HUD rows too; the Double shot ends there', () => {
+    const r = rig(flatLevel(), 'small', {
+      vvOption: 2,
+      vvShield: 1,
+      vvShieldTop: 4,
+      vvShieldBot: 4,
+      vvDouble: 1,
+    });
+    hold(r, 30, ['down']);
+    hold(r, 200, ['up', 'right']);
+    hold(r, 60, ['up']);
+    const b = r.p.body;
+    expect(b.y).toBe(px(HUD_BOTTOM + 8));
+    const top = (e: { body: { y: number } }) => e.body.y;
+    for (const o of r.world.entities.filter((e) => e instanceof VicOption && e.alive))
+      expect(top(o)).toBeGreaterThanOrEqual(px(HUD_BOTTOM));
+    const { top: piece } = shieldBoxes(r.p);
+    expect(piece.y).toBeGreaterThanOrEqual(px(HUD_BOTTOM));
+    r.step(['attack']);
+    hold(r, 30);
+    for (const s of shots(r)) expect(s.body.y).toBeGreaterThanOrEqual(px(HUD_BOTTOM));
+    expect(shots(r).some((s) => s.body.vy < 0)).toBe(false);
+  });
+
+  it('1-2: the HUD lane is closed, so the ship cannot fly over the ceiling', () => {
+    const r = rig(getLevel('1-2'));
+    r.p.star = 100000;
+    hold(r, 900, ['up', 'right']);
+    expect(r.p.body.y).toBeGreaterThanOrEqual(px(3 * 16));
   });
 
   it('pinned against a wall by the left edge, it is pushed out, not killed (VV-M12, as the original)', () => {
@@ -205,7 +242,7 @@ describe('areas entered from the top (1-2)', () => {
     const r = rig(getLevel('1-2'));
     hold(r, 2);
     const x = screenX(r);
-    hold(r, 30, ['right']);
+    hold(r, 30, ['right', 'down']);
     expect(screenX(r) - x).toBeGreaterThan(40);
   });
 
@@ -627,6 +664,12 @@ describe('roster, guide and touch (TG-40..TG-43, TG-22)', () => {
       jump: 'POWER',
       special: 'POWER',
     });
+  });
+
+  it('the How to play demo shows the ship as it starts, not the full kit', () => {
+    expect(VIC.guideKit?.()).toEqual({});
+    expect(Object.keys(VIC.devKit?.() ?? {}).length).toBeGreaterThan(0);
+    for (const c of CHARACTERS) expect(c.guideKit, c.id).toBeUndefined();
   });
 
   it('&kit=full: a spent kit with every kind of power-up (TG-44)', () => {
