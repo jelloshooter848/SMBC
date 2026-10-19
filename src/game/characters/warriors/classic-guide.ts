@@ -22,7 +22,7 @@ export const WARRIORS_GUIDE: CharacterGuide = {
     {
       action: 'special',
       touch: 'CLASS',
-      does: 'Change class: hold a direction as you use it. Up Fighter, right Black Mage, down Thief, left White Mage.',
+      does: 'Change class: use it while holding one direction. Up Fighter, right Black Mage, down Thief, left White Mage.',
     },
     { action: 'down', does: 'Crouch.' },
   ],
