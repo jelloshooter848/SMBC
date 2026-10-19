@@ -24,7 +24,7 @@ import {
 } from './classic-weapons';
 import {
   CLASSIC_DROPS,
-  CLASSIC_PUSH_INVULN,
+  CLASSIC_HIT_RESPONSES,
   CLASSIC_STAR_MUSIC_LEFT,
   classicBlockPowerUp,
   classicBusy,
@@ -137,18 +137,14 @@ function extraArt(p: Player): ClassicArt | null {
 const NINPO_AMMO: ClassicAmmo = { key: 'ninpo', max: classicNinpoMax };
 const START = { ninpo: CLASSIC_START_NINPO };
 
+const RYU_HIT = CLASSIC_HIT_RESPONSES.ryu as Extract<ClassicPowerKit['response'], { kind: 'push' }>;
+
 /** Ryu's power row (RY-C18..RY-C22): a push until landing, the Scroll kept after a hit. */
 export const RYU_CLASSIC_KIT: ClassicPowerKit = {
-  response: {
-    kind: 'push',
-    vx: 0x01400, // 150 px/s
-    from: 'source',
-    vy: 0x03039, // 385 px/s less one frame of gravity (RY-C7)
-    faceSource: true,
-    lock: { untilLand: true },
-    invuln: CLASSIC_PUSH_INVULN,
-    look: { alpha: true, from: 'land' },
-  },
+  // The shared row (PS-C10), with vy as our take-off: RY-C22 gives 385 px/s = 0x03355 and says
+  // "our initial 0x03039, RY-C7" (Ryu.as 1267-1291: the original adds gravity before it moves,
+  // ours after, so one frame of 0x0031C comes off as for every other launch of his body).
+  response: { ...RYU_HIT, vy: 0x03355 - 0x0031c },
   gainFire: (p) => {
     p.scratch.scroll = 1;
   },
@@ -383,18 +379,24 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const b = p.body;
   const t = p.attackTimer;
   let name: string;
+  let sheet = 'ryu';
   if (p.dead) name = 'die';
   else if (p.anim === 'hurt') name = 'hurt';
   else if (p.scratch._jslash) name = `spin-${(frame >> 1) & 3}`;
   else if ((p.scratch._throwT ?? 0) > 0) name = p.wall ? 'cling' : 'throw';
   else if (p.wall) name = 'cling';
-  else if (t > 0) name = p.crouching ? 'crouch-slash' : t > LIVE_FROM ? 'slash-0' : 'slash-1';
+  else if (t > 0 && t <= LIVE_FROM && t >= LIVE_TO && p.powerState !== 'small') {
+    // The Sword Extension's wave on the hit frames (RY-C25); Reduce flashing holds its shimmer.
+    const shimmer = reduceFlashing ? 0 : (frame >> 1) & 1;
+    name = `${p.crouching ? 'crouch-slash-wave' : 'slash-wave'}-${shimmer}`;
+    sheet = 'ryu-wave';
+  } else if (t > 0) name = p.crouching ? 'crouch-slash' : t > LIVE_FROM ? 'slash-0' : 'slash-1';
   else if (p.crouching) name = 'crouch';
   else if (!b.onGround) name = 'jump';
   else if (p.anim === 'walk') name = `walk-${p.walkFrame}`;
   else name = 'idle';
   return {
-    sheet: 'ryu',
+    sheet,
     palette,
     frame: name,
     flip: p.facing < 0,

@@ -2795,7 +2795,9 @@ export class World {
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');
       // A shot that pierces what it defeats goes on only past a kill.
-      const through = pr.spec.pierce || (pr.spec.pierceDefeat && r !== 'hp' && r !== 'stun');
+      const through =
+        pr.spec.pierce ||
+        (pr.spec.pierceKillsOnly ? r === 'kill' : pr.spec.pierceDefeat && r !== 'hp' && r !== 'stun');
       if (!through) {
         pr.burst(this);
         return;

@@ -26,6 +26,7 @@ import type { Enemy } from '@game/entities/enemies/enemy';
 import { T } from '@game/level/tiles';
 import { runSim } from '@game/sim/headless';
 import { fontText } from '@game/hud/text';
+import { SPRITES } from '@content/sprites';
 import { flatLevel, Rig } from './classic-plumber-harness';
 
 // Classic SMBC Ryu (bug-reports/2026-10-07-ryu-classic-smbc-rules.md, RY-C1..RY-C38): the
@@ -552,6 +553,50 @@ describe('throws (RY-C26..RY-C34)', () => {
     expect(caught).toBeLessThanOrEqual(60);
     expect(r.world.map.get(11, 11)).not.toBe(T.BRICK);
     expect(r.p.scratch.ninpo).toBe(20);
+  });
+});
+
+describe('Fire Wheel stops on what it does not kill; art (RY-C25, RY-C29, RY-C30)', () => {
+  it('a Koopa the Wheel only shells stops it; Current pierceDefeat specs are untouched', () => {
+    const r = rig({}, 'fire');
+    Object.assign(r.p.scratch, { classicAll: 1, tool: 2, ninpo: 50 });
+    r.step(['special']);
+    r.step();
+    r.step();
+    const w = shots(r, CLASSIC_FIRE_WHEEL.kind)[0] as Projectile;
+    const k = new Koopa(0, 0, 'green');
+    k.body.x = w.body.x + px(8);
+    k.body.y = w.body.y - px(8);
+    k.update = () => {};
+    r.world.spawn(k);
+    for (let i = 0; i < 6; i++) r.step();
+    expect(k.alive).toBe(true);
+    expect(k.classicHp).toBe(200);
+    expect(w.alive).toBe(false);
+    expect(CLASSIC_FIRE_WHEEL.pierceDefeat).toBeUndefined();
+    expect(CLASSIC_DRAGON_BALL.pierceKillsOnly).toBe(true);
+  });
+
+  it('the Sword Extension shows its wave on the hit frames, held still with Reduce flashing', () => {
+    const r = rig({}, 'big');
+    r.step(['attack']);
+    r.step();
+    r.step();
+    const a = RYU_CLASSIC.sprite(r.p, 0, true).frame;
+    const b = RYU_CLASSIC.sprite(r.p, 2, true).frame;
+    expect(a).toBe('slash-wave-0');
+    expect(RYU_CLASSIC.sprite(r.p, 0, true).sheet).toBe('ryu-wave');
+    expect(b).toBe(a);
+    expect(RYU_CLASSIC.sprite(r.p, 2, false).frame).toBe('slash-wave-1');
+    expect(SPRITES['ryu-wave']?.frames['slash-wave-0']?.[0]?.length).toBe(56);
+    const small = rig();
+    small.step(['attack']);
+    small.step();
+    small.step();
+    expect(RYU_CLASSIC.sprite(small.p, 0, false).frame).toBe('slash-1');
+    for (const f of CLASSIC_DRAGON_BALL.frames) expect(SPRITES.items?.frames[f], f).toBeDefined();
+    expect(CLASSIC_DRAGON_BALL.frames).not.toEqual(CLASSIC_FIRE_WHEEL.frames);
+    expect(SPRITES.items?.frames['icon-dragon-ball']).toBeDefined();
   });
 });
 

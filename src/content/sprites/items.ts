@@ -1669,6 +1669,39 @@ const iconFireWheel = [
   '.777777.',
   '7..77..7',
 ];
+/* Fire Dragon Ball (Classic Ryu, RY-C30): a red orb with a white-hot core and a ragged dark tail,
+ * so it reads apart from the orange Fire Wheel. 12x12, two flicker frames. */
+const dragonBall0 = [
+  '....8888....',
+  '..88222288..',
+  '.8227777228.',
+  '.8277117728.',
+  '827711117728',
+  '827711117728',
+  '827711117728',
+  '827771177728',
+  '.8277777728.',
+  '.8822222288.',
+  '..888..888..',
+  '...8....8...',
+];
+const dragonBall1 = [
+  '....8888....',
+  '..88222288..',
+  '.8227777228.',
+  '.8277777728.',
+  '827771177728',
+  '827711117728',
+  '827711117728',
+  '827711117728',
+  '.8277117728.',
+  '.8822222288.',
+  '..8.888.88..',
+  '..8...8..8..',
+];
+/** Its HUD icon: the Fire Wheel icon in the dragon's reds. */
+const iconDragonBall = (): string[] => swapColors(iconFireWheel, { '7': '2', '5': '8' });
+
 const iconSlash = [
   '......1b',
   '.....1bb',
@@ -2016,6 +2049,9 @@ export const itemsDef: SpriteDef = {
     'windmill-3': windmill3,
     'fire-wheel-0': fireWheel0,
     'fire-wheel-1': fireWheel1,
+    'dragon-ball-0': dragonBall0,
+    'dragon-ball-1': dragonBall1,
+    'icon-dragon-ball': iconDragonBall(),
     'ninpo-small': ninpoSmall,
     'ninpo-large': ninpoLarge,
     'icon-star': iconStar,

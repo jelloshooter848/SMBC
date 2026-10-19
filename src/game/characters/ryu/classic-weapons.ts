@@ -69,7 +69,7 @@ export const CLASSIC_FIRE_WHEEL: ProjectileSpec = {
   vy: -CLASSIC_FIRE_SPEED,
   lifetime: null,
   pierce: false,
-  pierceDefeat: true,
+  pierceKillsOnly: true,
   blocks: false,
   classicHit: { pierce: 0, blockedSfx: BLOCKED },
   onBlocked: 'remove',
@@ -81,6 +81,9 @@ export const CLASSIC_DRAGON_BALL: ProjectileSpec = {
   ...CLASSIC_FIRE_WHEEL,
   kind: 'classic-dragon-ball',
   vy: CLASSIC_FIRE_SPEED,
+  frames: ['dragon-ball-0', 'dragon-ball-1'],
+  w: 12,
+  h: 12,
   classicHit: { pierce: PIERCE },
 };
 
@@ -160,7 +163,7 @@ export const CLASSIC_ARTS: readonly ClassicArt[] = [
   { id: 'shuriken', icon: 'icon-star', label: 'SHURIKEN', cost: 3, spec: CLASSIC_SHURIKEN },
   { id: 'windmill', icon: 'icon-windmill', label: 'WINDMILL', cost: 5, spec: CLASSIC_WINDMILL },
   { id: 'fire-wheel', icon: 'icon-fire-wheel', label: 'WHEEL', cost: 5, spec: CLASSIC_FIRE_WHEEL },
-  { id: 'dragon-ball', icon: 'icon-fire-wheel', label: 'DRAGON', cost: 5, spec: CLASSIC_DRAGON_BALL },
+  { id: 'dragon-ball', icon: 'icon-dragon-ball', label: 'DRAGON', cost: 5, spec: CLASSIC_DRAGON_BALL },
   { id: 'jump-slash', icon: 'icon-slash', label: 'SPIN', cost: 5, spec: null },
 ];
 

@@ -37,6 +37,12 @@ export interface ProjectileSpec {
    * original's PR_PASSTHROUGH_DEFEAT: Mega Man's full charge shot).
    */
   pierceDefeat?: boolean;
+  /**
+   * Classic rules (Ryu's Fire Wheel and Dragon Ball, RY-C29): goes on only through an enemy the
+   * hit killed; anything else it hits (hurt, shelled, stunned) stops it. Absent: `pierce` and
+   * `pierceDefeat` decide.
+   */
+  pierceKillsOnly?: boolean;
   /** Initial vertical speed (velocity units); callers can override per shot. */
   vy?: number;
   /** Falls under gravity and dies on landing (no bounce). */
