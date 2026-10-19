@@ -32,9 +32,9 @@ export const TONGUE_HOLD = 2;
 /** The tip's box (px), and how far below the tongue's line it reaches. */
 const TIP = 8;
 const TIP_REACH_DOWN = 8;
-/** The mouth (px from the hitbox's centre ahead, and down from its top; YO-15's cell point). */
+/** The mouth: px ahead of the hitbox's centre and up from the feet (YO-15's cell point, 10 px under the cell top). */
 export const MOUTH_AHEAD = 13;
-export const MOUTH_DOWN = 2;
+export const MOUTH_UP = 22;
 
 /** What a catch does (YO-16's table). */
 export type Edible = 'mouth' | 'swallow' | 'shell' | null;
@@ -80,7 +80,7 @@ export function fillMouth(p: Player, fill: MouthFill): void {
 
 /** The mouth point (subpixels). */
 export function mouthPoint(p: Player): { x: number; y: number } {
-  return { x: p.centerX + p.facing * px(MOUTH_AHEAD), y: p.body.y + px(MOUTH_DOWN) };
+  return { x: p.centerX + p.facing * px(MOUTH_AHEAD), y: p.feetY - px(MOUTH_UP) };
 }
 
 /**

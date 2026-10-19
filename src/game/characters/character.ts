@@ -39,6 +39,14 @@ export interface SpriteSpec {
    * left). A turned sprite is drawn centred on the hitbox; `offsetX` / `offsetY` are ignored.
    */
   rotate?: 0 | 90 | 180 | 270;
+  /**
+   * A layer drawn before this sprite (Classic Yoshi's rider, 2026-10-19-yoshi-build-classic-
+   * character.md YM-20): another frame whose centre line is `dx` px from this sprite's left edge
+   * (mirrored with `flip`) and whose cut line is `dy` px below this sprite's top. Only the rows
+   * above the cut show: a frame 16 px tall or less loses its bottom 5 rows, a taller one its bottom
+   * 13 (the legs, behind the saddle). Absent: nothing under (every Current sprite).
+   */
+  under?: { sheet: string; palette: string; frame: string; flip: boolean; dx: number; dy: number };
 }
 
 export type HurtResult = 'dead' | 'hurt' | 'ignored';
@@ -281,6 +289,17 @@ export interface CharacterDef {
   rules?: 'classic';
   /** hero not in SMBC 3.1.21's final release; dev menu can toggle it */
   notInOriginal?: true;
+  /**
+   * False for a Classic hero that can never ride the Classic Yoshi mount (2026-10-19-yoshi-build-
+   * classic-character.md YM-3: Sophia III, Vic Viper, Yoshi): its egg blocks give their usual item.
+   * Absent: may ride.
+   */
+  rides?: false;
+  /**
+   * Stomps Spinies too (the Classic Yoshi mount's pair, YM-11): a stomp that would hurt the
+   * stomper (Reaction 'hurtAttacker') on a Spiny kills it instead. Absent: as today.
+   */
+  stompsSpiky?: true;
   /**
    * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
    * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame

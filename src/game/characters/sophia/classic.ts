@@ -217,6 +217,8 @@ function roll(p: Player, chance: number, r: { chance(p: number): boolean }): Pic
 export const SOPHIA_CLASSIC: CharacterDef = {
   ...SOPHIA,
   rules: 'classic',
+  // A tank never rides the Classic Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-3).
+  rides: false,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   blockPowerUp: classicBlockPowerUp,
   jumpSfx: () => SOUNDS.jump,

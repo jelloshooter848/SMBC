@@ -283,6 +283,8 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   thanksName: 'VIPER',
   rules: 'classic',
   notInOriginal: true,
+  // A ship never rides the Classic Yoshi mount (YM-3).
+  rides: false,
   movement: VIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: false,

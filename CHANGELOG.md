@@ -118,6 +118,19 @@ under `## [Unreleased]`.
   tunic, sandals and a bow (their shots fly as arrows), and Proto Man and Break Man wear a visor, a striped helmet and a
   flowing scarf that stays in every weapon suit; both show on the select screen. Bass's face is a paler tan, apart from
   his orange helmet. Nothing about how they play changes.
+- Classic mode: **Yoshi** closes the second row (a hero the original game never had). He walks with no run, flutters
+  when you hold JUMP while falling, ground-pounds with DOWN in the air (through bricks, onto enemies), licks enemies
+  with his tongue and swallows them into eggs (DOWN) or spits them (ATTACK), and aims eggs with a sweeping cursor: hold
+  EGG (Special) and let go to throw. Three eggs small, six with the Mushroom, red armour-piercing eggs with the Fire
+  Flower. His own art, sounds and Classic guide page.
+- Developer mode: the Dev menu (from the title or the Classic pause) has Classic mode toggles: **Yoshi mount** (off by
+  default, so Classic plays as the original) and an ON / OFF row for each Classic hero the original SMBC 3.1.21 did not
+  have (Vic Viper, the Warriors of Light, Yoshi; a hero turned off leaves the Classic select). With the mount on, the
+  first power-up `?` block of each overworld or underground area gives a Yoshi egg: land on his back to ride. Every
+  hero rides with Yoshi's run and jump; ATTACK licks (shells are held and spat, a red one as three fireballs) and
+  SPECIAL is the hero's own. A hit throws the rider off with their power kept and Yoshi runs away; DOWN + JUMP gets
+  off. He waits outside castles, water and bonus rooms and is back in the next area. `&yoshi=1` (or `ride`) turns it
+  on for a dev start.
 - Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
   the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
   while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.

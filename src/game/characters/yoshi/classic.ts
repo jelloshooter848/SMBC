@@ -382,6 +382,8 @@ export const YOSHI_CLASSIC: CharacterDef = {
   hudName: 'YOSHI',
   rules: 'classic',
   notInOriginal: true,
+  // He never rides the Classic mount (YM-3).
+  rides: false,
   movement: YOSHI_CLASSIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: true,
