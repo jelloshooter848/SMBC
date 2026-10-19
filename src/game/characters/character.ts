@@ -70,6 +70,11 @@ export interface CharacterBehaviour {
   blocks?(p: Player, projectile: Projectile): boolean;
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
+  /**
+   * False while Down + Jump must not start a slide (Classic Mega Man carrying a Super Arm brick,
+   * MM-C6). Absent: a profile with a slide always may.
+   */
+  canSlide?(p: Player): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */
