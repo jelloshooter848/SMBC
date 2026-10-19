@@ -292,6 +292,26 @@ export interface CharacterDef {
    * PM-18). Absent: the select's usual sound. Only Classic-only extras set it.
    */
   pickSfx?: string;
+  /**
+   * The screen scrolls right by itself while this hero is in the level (Classic Vic Viper, VV-9..
+   * VV-12): `speed` (velocity units) a frame, the camera ignoring the players, and each player
+   * with this field carried along by the same amount. It stops at the camera's end; it holds
+   * whenever the world stands still (pipes, clears, freezes). Absent: the camera follows.
+   */
+  autoScroll?: { speed: number };
+  /** Enters pipes in mid-air too (Vic Viper's canEnterPipesUngrounded, VV-27). Absent: on the ground only. */
+  pipesAirborne?: boolean;
+  /**
+   * A Gradius-style power bar on the HUD's third row (Vic Viper, VV-20): the slots' short labels
+   * (blank when maxed: `available` false), the lit one (1-based; 0 for none) and its full name.
+   * Null hides it. Absent: nothing.
+   */
+  powerBar?(p: Player): { slots: { label: string; available: boolean }[]; selected: number; name: string } | null;
+  /**
+   * How a power-up of `kind` struck from a block by this hero is drawn (Vic Viper's Fire Flower is
+   * a power capsule, VV-M3). Null or absent: the item's own art.
+   */
+  powerUpArt?(kind: PowerUpKind): { sheet: string; frames: readonly string[] } | null;
 }
 
 /**

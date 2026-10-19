@@ -24,6 +24,11 @@ export class PowerUp extends Entity {
   /** Popped up by a bumped block: falls with the bounce gravity until it lands. */
   private bounced = false;
   private readonly targetY: number;
+  /**
+   * Drawn with this art instead of the item's own (CharacterDef.powerUpArt: Vic Viper's capsule).
+   * Null for every Current hero.
+   */
+  art: { sheet: string; frames: readonly string[] } | null = null;
 
   constructor(
     tx: number,
@@ -101,6 +106,12 @@ export class PowerUp extends Entity {
   }
 
   render(r: Renderer, view: View): void {
+    if (this.art) {
+      const frames = this.art.frames;
+      const f = frames[(view.frame >> 3) % frames.length] as string;
+      r.sprite(view.assets.sheet(this.art.sheet), f, this.screenX(view), this.screenY());
+      return;
+    }
     const sheet = view.assets.sheet('items');
     let frame: string = this.item;
     if (this.item === 'flower') frame = `flower-${(view.frame >> 3) & 1}`;

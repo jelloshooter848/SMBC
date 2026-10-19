@@ -6,7 +6,7 @@ import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
 import { overlaps, type AABB } from '@engine/math/aabb';
-import type { Body } from '../entities/body';
+import { moveX, type Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -52,7 +52,7 @@ import {
   TeleportPad,
   type TeleportZone,
 } from '../entities/objects/teleporter';
-import { PowerUp } from '../entities/objects/powerup';
+import { PowerUp, type PowerUpKind } from '../entities/objects/powerup';
 import { isPickupKind, Pickup, type PickupKind } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
@@ -1745,7 +1745,9 @@ export class World {
     }
 
     const lead = this.rightmost();
+    const heroScroll = this.camera.auto ? 0 : this.heroScrollSpeed();
     if (this.camera.auto) this.autoScroll();
+    else if (heroScroll) this.autoScroll(heroScroll);
     else if (lead) {
       const before = this.camera.x;
       this.camera.follow(lead.body.x, lead.body.y);
@@ -1787,10 +1789,11 @@ export class World {
    * SMB3 (whatever the assists: there is no way out, as with a pit). The frames the world stands
    * still (pause, a death with no one left, pipes, growing) never get here, so the scroll holds.
    */
-  private autoScroll(): void {
+  private autoScroll(heroSpeed = 0): void {
     // A transfer under way, or the players still climbing in (a vine or anchor-chain arrival).
     if (this.leaving || this.arriving) return;
-    this.camera.scroll();
+    if (heroSpeed) this.heroScroll(heroSpeed);
+    else this.camera.scroll();
     for (const p of this.activePlayers()) {
       if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
       // Pushed by the screen's edge, a player on stairs is knocked off them and pushed like
@@ -1801,6 +1804,31 @@ export class World {
       if (p.body.vx < 0) p.body.vx = 0;
       if (this.squashed(p, blocked)) this.kill(p);
     }
+  }
+
+  /**
+   * The speed (velocity units) of a hero's own auto-scroll (CharacterDef.autoScroll: Vic Viper,
+   * VV-9, VV-M14): while any player still in the level plays such a hero; 0 otherwise, and the
+   * camera follows as usual.
+   */
+  private heroScrollSpeed(): number {
+    for (const p of this.players) if (!p.out && p.def.autoScroll) return p.def.autoScroll.speed;
+    return 0;
+  }
+
+  /**
+   * One frame of a hero's auto-scroll (VV-9, VV-10, VV-12): the camera moves right by `speed` up to
+   * its end (where it stays), whatever the players do, and carries every player whose hero scrolls
+   * (CharacterDef.autoScroll) by the same amount; anyone else is only pushed by the left edge.
+   */
+  private heroScroll(speed: number): void {
+    if (this.camera.locked) return;
+    const before = this.camera.x;
+    this.camera.x = Math.min(this.camera.maxX, this.camera.x + velToSub(speed));
+    const dx = this.camera.x - before;
+    if (dx <= 0) return;
+    for (const p of this.activePlayers())
+      if (p.def.autoScroll && !p.frozen && !p.hidden) moveX(p.body, this.playerMap(p), dx);
   }
 
   /** The tile rows (of the side probe's span) in which the body already overlaps a solid tile. */
@@ -2393,7 +2421,7 @@ export class World {
         break;
       }
       case 'powerup':
-        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(new PowerUp(tx, ty, p.def.blockPowerUp(p)));
+        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(this.blockItem(tx, ty, p.def.blockPowerUp(p), p));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;
@@ -2424,7 +2452,7 @@ export class World {
         // The Top Secret Area: always this item, whatever the hero's power (its onPowerUp gives
         // the hero's own flower or mushroom power). Campaign: the hero's own grow item from `R`,
         // their entry or default power from `W`.
-        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(new PowerUp(tx, ty, content));
+        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(this.blockItem(tx, ty, content, p));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;
@@ -2510,6 +2538,14 @@ export class World {
    * it (docs/POWERUPS.md 3.3). False (nothing spawned) outside the campaign and for Mario and
    * Luigi, whose blocks give SMB's mushroom and flower.
    */
+  /** A block's power-up for `p`, drawn with `p`'s own art for it if the def has one (powerUpArt). */
+  private blockItem(tx: number, ty: number, kind: PowerUpKind, p: Player): PowerUp {
+    const u = new PowerUp(tx, ty, kind);
+    const art = p.def.powerUpArt?.(kind);
+    if (art) u.art = art;
+    return u;
+  }
+
   private spawnHeroItem(
     tx: number,
     ty: number,
@@ -2991,7 +3027,8 @@ export class World {
 
   private checkPipes(p: Player, input: InputFrame): void {
     const b = p.body;
-    if (!b.onGround) return;
+    // A hero that flies enters pipes in mid-air too (CharacterDef.pipesAirborne, VV-27).
+    if (!b.onGround && !p.def.pipesAirborne) return;
     for (const z of this.level.zones) {
       // A sleeping pipe (`campaign`, woken only by the campaign variant) is no way in.
       if (z.kind !== 'pipe' || z.campaign) continue;

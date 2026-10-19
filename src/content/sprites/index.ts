@@ -20,6 +20,7 @@ import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
+import { vicviperPalettes, vicviperDef } from './vicviper';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
 import { npcsPalettes, npcsDef } from './npcs';
@@ -114,6 +115,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'title-logo': titleLogoDef,
   'title-rift': titleRiftDef,
   sophia: sophiaSheet,
+  // Vic Viper, a Classic-only hero (characters/vicviper/classic.ts).
+  vicviper: vicviperDef,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
@@ -191,6 +194,7 @@ const defaults: Record<string, readonly string[]> = {
   ...contraPalettes,
   ...titleLogoPalettes,
   ...sophiaPalettes,
+  ...vicviperPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
   ...npcsPalettes,
