@@ -49,3 +49,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PR4 Bill buttons hidden d7f414d3. PR5 integrated: claude/classic-extras 016cc6e5 (on heroes-2 46ef39cb). PR5 QA running (5205). Chain: heroes-1 fix -> merge into heroes-2 -> merge into extras.
 - PR3 opened #148 (heroes-1 4d51bdd6, base classic-shared; retarget to main after #147 merges). Subscribed. Samus agent merging heroes-1 fix into heroes-2.
 - #148 green 4d51bdd6. PR4 QA done (no blockers). Fixes: guide.ts Classic guides -> heroes-1 (Link agent); frozen tint + IDs -> heroes-2 (Samus agent). Then cascade into extras.
+- Warriors DONE a27b233d (wip-warriors). Uses holdsStill (now 'rooted' in heroes-2) -> unify at PR6 integration. Owner notes: hit response is our call; placeholder sounds.
