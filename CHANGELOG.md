@@ -28,6 +28,11 @@ under `## [Unreleased]`.
 - Classic rules: bricks have 125 hit points against shots and blasts, melee breaks them in one hit, any weapon opens a
   `?` block or a hidden block from any side, and many shots fly through ground and pipes while still striking blocks.
   Heroes' weapons plug in as their Classic versions arrive.
+- Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
+  Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
+  flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
+  the HUD. Under water only Mario and Luigi stroke; the others jump from the floor with their own water gravity, nobody
+  stomps under water, and 2-2 and 7-2 get coral stepping stones for floor jumpers. Current play is unchanged.
 
 ## [0.4.55] - 2026-10-13
 

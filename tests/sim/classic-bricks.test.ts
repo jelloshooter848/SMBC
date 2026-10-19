@@ -11,7 +11,8 @@ import { FIREBALL, Projectile, type ProjectileSpec } from '@game/entities/projec
 import { Pickup } from '@game/entities/objects/pickup';
 import { PowerUp } from '@game/entities/objects/powerup';
 import { Goomba } from '@game/entities/enemies/goomba';
-import { BRICK_HP, blockDropRoll, heartPick } from '@game/rules/classic-bricks';
+import { BRICK_HP } from '@game/rules/classic-bricks';
+import { CLASSIC_DROPS, classicDrop } from '@game/characters/classic/power';
 import type { CharacterDef } from '@game/characters/character';
 import type { World } from '@game/world/world';
 import { classicStub, classicWorld, sfxLog, shotSpec, step, testLevel, tile } from './classic-harness';
@@ -248,10 +249,13 @@ describe('melee and blasts (BR-C6, BR-C13)', () => {
 describe('drops from blocks (BR-C18)', () => {
   it('10 000 bricks for Simon: about 6.25 % drop a heart, about 1 in 5 of those big', () => {
     const rng = new Rng(12345);
+    const p = classicWorld(classicStub(SIMON)).player;
+    const roll = (source: 'brick' | 'coin', table = CLASSIC_DROPS.simon) =>
+      classicDrop(rng, p, table, source);
     let drops = 0;
     let big = 0;
     for (let i = 0; i < 10000; i++) {
-      const d = blockDropRoll(rng, 'brick', { bricks: true, coins: true }, heartPick);
+      const d = roll('brick');
       if (d) drops++;
       if (d === 'heart-large') big++;
     }
@@ -261,19 +265,20 @@ describe('drops from blocks (BR-C18)', () => {
     expect(big / drops).toBeLessThan(0.26);
     // Coins roll at 12.5 %, and only for a hero who gets coin drops.
     let coinDrops = 0;
-    for (let i = 0; i < 10000; i++)
-      if (blockDropRoll(rng, 'coin', { bricks: true, coins: true }, heartPick)) coinDrops++;
+    for (let i = 0; i < 10000; i++) if (roll('coin')) coinDrops++;
     expect(coinDrops / 10000).toBeGreaterThan(0.115);
     expect(coinDrops / 10000).toBeLessThan(0.135);
-    expect(blockDropRoll(rng, 'coin', { bricks: true }, heartPick)).toBeNull();
+    // Link and Samus get nothing from coins; Mega Man nothing from blocks at all.
+    expect(roll('coin', CLASSIC_DROPS.link)).toBeNull();
+    expect(roll('brick', CLASSIC_DROPS.megaman)).toBeNull();
   });
 
   it("a broken brick and a coin block call the def's blockDrop and the drop appears there", () => {
     const calls: string[] = [];
     const def = classicStub(SIMON, {
       canBreakBricks: () => false,
-      blockDrop: (_rng, kind) => {
-        calls.push(kind);
+      blockDrop: (_rng, _p, source) => {
+        calls.push(source);
         return 'heart-small';
       },
     });

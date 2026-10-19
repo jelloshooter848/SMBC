@@ -181,12 +181,6 @@ export interface CharacterDef {
   /** What (if anything) a killed enemy drops for this character (`killer`: the player who got it). */
   drop?(rng: Rng, enemy: Enemy, killer?: Player): PickupKind | null;
   /**
-   * Classic rules (classic-bricks-and-shots BR-C18): what a broken plain brick (`'brick'`) or a
-   * coin given by a block (`'coin'`) drops for this hero, if anything. Classic defs build it with
-   * rules/classic-bricks.ts's `blockDropRoll`; only Classic strikeBlock calls it.
-   */
-  blockDrop?(rng: Rng, kind: 'brick' | 'coin', p: Player): PickupKind | null;
-  /**
    * Classic rules (BR-C6): the published melee hitbox also strikes the blocks it overlaps, each
    * once per swing (a plain brick breaks, an item block bumps). Only Classic defs set it.
    */
@@ -226,6 +220,26 @@ export interface CharacterDef {
    * Start "MENU", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
    */
   touchLabels?(p: Player, world: World): TouchLabels;
+  /**
+   * How the hero looks this frame (Classic SMBC's hit looks, PS-C13: 65 % opacity, a flicker).
+   * Absent: Player.visible's blink while invulnerable. `alpha` 1 draws as usual.
+   */
+  drawLook?(p: Player, frame: number, reduceFlashing: boolean): { visible: boolean; alpha: number };
+  /**
+   * What a broken brick or a coin out of a block drops for this hero (Classic SMBC, PS-C15),
+   * rolled once per brick or coin by World.strikeBlock. Absent: nothing.
+   */
+  blockDrop?(rng: Rng, p: Player, source: 'brick' | 'coin'): PickupKind | null;
+  /**
+   * Star frames left when the level music comes back (Classic SMBC, PS-C19: 78). Absent: 1, the
+   * Star's last frame.
+   */
+  starMusicLeft?: number;
+  /**
+   * One ammo counter in the tool slot (Classic SMBC, PS-C27: icon, then ×NN), for a hero with no
+   * tool belt. Null hides it. Absent: nothing (a belt is drawn from `tools`).
+   */
+  hudAmmo?(p: Player): { icon: string; sheet?: string; count: number } | null;
   /**
    * 'classic' on a Classic SMBC def (TG-18): registry.ts's CLASSIC_CHARACTERS and CLASSIC_EXTRAS.
    * Never set on a CHARACTERS entry (TG-39). Classic defs use `damage: { kind: 'powerup', states:

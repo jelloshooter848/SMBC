@@ -2,13 +2,15 @@ import type { DamageSource, Reaction } from './damage';
 import type { Enemy } from '../entities/enemies/enemy';
 import type { Player } from '../entities/player';
 import type { World } from '../world/world';
+import type { TileMap } from '../world/tilemap';
+import type { CharacterDef } from '../characters/character';
 
 /**
- * The Classic rules' doors into the shared systems (umbrella report TG-24, TG-25).
+ * The Classic rules' doors into the shared systems (umbrella report TG-24, TG-25, TG-45).
  *
- * `Enemy.hit` and `World.strikeBlock` each branch on `world.rules` once and, under Classic, hand
- * the hit to the hook installed here. The hooks live in `rules/classic-enemies.ts` and
- * `rules/classic-bricks.ts`; only `characters/registry.ts` (the one non-classic file allowed to
+ * `Enemy.hit`, `World.strikeBlock` and the World's level load each branch on `world.rules` once
+ * and, under Classic, hand over to the hook installed here. The hooks live in
+ * `rules/classic-enemies.ts`, `rules/classic-bricks.ts` and `rules/classic-water.ts`; only `characters/registry.ts` (the one non-classic file allowed to
  * import classic modules, TG-39) installs them, and every World loads the registry (heroFor), so
  * they are always in place before a Classic World plays.
  */
@@ -42,6 +44,8 @@ export interface ClassicRulesHooks {
     breakBricks: boolean,
     hit: BlockHit,
   ): BlockStrike;
+  /** The level-load edits for these heroes (TG-45, rules/classic-water.ts); true when any applied. */
+  levelEdits(map: TileMap, levelId: string, defs: readonly CharacterDef[]): boolean;
 }
 
 let hooks: ClassicRulesHooks | null = null;

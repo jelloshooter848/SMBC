@@ -450,3 +450,17 @@ describe('re-hits and zero-damage hits (HP-C20, HP-C16)', () => {
     expect(b.stopFrames).toBe(0);
   });
 });
+
+describe('the single door (TG-24)', () => {
+  it("a Koopa shell goes through the Classic door for a boomerang too (Current's shell check is Current only)", () => {
+    const w = classicWorld(classicStub(LINK));
+    const k = place(w, new Koopa(tile(20), tile(12), 'green'));
+    k.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, w);
+    expect(k.isStillShell).toBe(true);
+    expect(k.hit(weapon(w, 'boomerang', 0, { pierce: 10, stopFrames: 180 }), w)).toBe('stun');
+    const cur = classicWorld(LINK, undefined, 'current');
+    const k2 = place(cur, new Koopa(tile(20), tile(12), 'green'));
+    k2.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, cur);
+    expect(k2.hit({ kind: 'boomerang', amount: 1, owner: null, dirX: 1 }, cur)).toBe('immune');
+  });
+});

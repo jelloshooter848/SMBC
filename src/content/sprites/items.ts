@@ -825,6 +825,27 @@ const iconFire = [
   '.7551157',
   '..75557.',
 ];
+/** Classic SMBC's power icons (PS-C26): the Mushroom and Fire Flower states, no black. */
+const iconMushroom = [
+  '..2222..',
+  '.233222.',
+  '22332232',
+  '22222333',
+  '.222222.',
+  '..3113..',
+  '..3333..',
+  '..3333..',
+];
+const iconFlower = [
+  '..7777..',
+  '.775577.',
+  '.751157.',
+  '.775577.',
+  '..7777..',
+  '...44...',
+  '4.444.4.',
+  '.44444..',
+];
 
 /* ---------- arm-cannon weapon pickups and projectiles ---------- */
 
@@ -1928,6 +1949,8 @@ export const itemsDef: SpriteDef = {
     'icon-jump': iconJump,
     'icon-shield': iconShield,
     'icon-fire': iconFire,
+    'icon-mushroom': iconMushroom,
+    'icon-flower': iconFlower,
     'saw-disc-0': sawDisc0,
     'saw-disc-1': sawDisc1,
     leaf,

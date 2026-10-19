@@ -12,10 +12,16 @@ import { SOPHIA } from './sophia';
 import { installClassicRules } from '../rules/hooks';
 import { classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
+import { applyClassicLevelEdits } from '../rules/classic-water';
 
-// The Classic rules' doors in Enemy.hit and World.strikeBlock (TG-24, TG-25; rules/hooks.ts):
-// installed here because this is the one non-classic file allowed to import classic modules.
-installClassicRules({ enemyHit: classicHit, strikeBlock: classicStrikeBlock });
+// The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
+// TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
+// to import classic modules.
+installClassicRules({
+  enemyHit: classicHit,
+  strikeBlock: classicStrikeBlock,
+  levelEdits: applyClassicLevelEdits,
+});
 
 /** Playable characters in select-screen order. */
 export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, SIMON, RYU, BILL, SOPHIA];

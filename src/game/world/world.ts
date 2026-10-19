@@ -4,7 +4,7 @@ import { worldLabel } from '../hud/world-label';
 import { SCORE_MAX } from '../hud/hud';
 import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
-import { OffsetRenderer, type Renderer } from '@engine/gfx/renderer';
+import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
 import { overlaps } from '@engine/math/aabb';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
@@ -836,6 +836,14 @@ export class World {
       }
       this.waterTop = tileToSub(row) + px(8);
     }
+    // Per-rules level variants (TG-45): Classic SMBC's cells (2-2's and 7-2's stepping stones for
+    // floor jumpers, SW-C12). Under Current the map is the level's own.
+    if (this.rules === 'classic')
+      classicRules().levelEdits(
+        this.map,
+        level.id,
+        this.players.map((p) => p.def),
+      );
 
     // Static objects from the tile grid.
     for (let tx = 0; tx < level.width; tx++) {
@@ -1583,7 +1591,13 @@ export class World {
       if (this.autoWalk) input = AUTO_WALK_INPUT;
       else if (this.vineArrival && p.vine) input = AUTO_CLIMB_INPUT;
       else if (this.talkTarget(p)) input = withoutSpecial(input);
-      p.inWater = p.body.y + (p.body.h >> 1) >= this.waterTop;
+      // Classic SMBC (SW-C9, SwimProfile.surfaceTest 'top'): the hitbox top against the wave
+      // row's top edge, so small and big bodies switch at one height.
+      p.inWater =
+        p.profile.swim?.surfaceTest === 'top'
+          ? p.body.y > this.waterTop - px(8)
+          : p.body.y + (p.body.h >> 1) >= this.waterTop;
+      p.aboveWater = !p.inWater && this.waterTop !== Infinity;
       this.grabVines(p, input);
       this.grabStairs(p, input);
       const spring = this.springUnder(p);
@@ -1692,7 +1706,7 @@ export class World {
         this.camera.x = Math.max(before, a - px(ANCHOR_ROOM));
     }
     for (const p of this.players) {
-      if (p.star === 1) this.audio.playMusic(this.music);
+      if (p.star === (p.def.starMusicLeft ?? 1)) this.audio.playMusic(this.music);
       if (toPx(p.body.y) > this.heightPx + 8 && !p.dead && !p.out && !this.leaving) {
         // Carried down a descent shaft by its lift: into the area below, dropping in from above.
         const down = this.descentLift(p);
@@ -2212,7 +2226,20 @@ export class World {
   private hitBlock(tx: number, ty: number, p: Player): void {
     // A head that touches blocks as plain ground (Classic: Samus in the ball, Ryu on a wall).
     if (p.def.headBumps?.(p) === false) return;
+    // A Classic SMBC hit's push bumps nothing (PS-C12, Player.hurtLock).
+    if (p.hurtLock) return;
     this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
+  }
+
+  /**
+   * A broken brick or a coin out of a block may drop something for the hero who struck it
+   * (CharacterDef.blockDrop: Classic SMBC's ammo, PS-C15): out of the brick's cell, or on top of
+   * the block that gave the coin. Heroes without the hook roll nothing.
+   */
+  private blockDrop(tx: number, ty: number, p: Player, source: 'brick' | 'coin'): void {
+    const kind = p.def.blockDrop?.(this.rng, p, source);
+    if (!kind) return;
+    this.spawn(new Pickup(tileToSub(tx) + px(8), tileToSub(source === 'brick' ? ty + 1 : ty), kind));
   }
 
   /**
@@ -2280,6 +2307,7 @@ export class World {
         this.addScore(50);
         this.audio.sfx('break');
         this.feats.bricks++;
+        this.blockDrop(tx, ty, p, 'brick');
       } else {
         this.bump(tx, ty, 'brick', id);
         this.audio.sfx('bump');
@@ -2292,6 +2320,7 @@ export class World {
         this.spawn(new CoinPop(tileToSub(tx) + px(4), tileToSub(ty - 1)));
         this.addCoin();
         this.feats.coinBlocks++;
+        this.blockDrop(tx, ty, p, 'coin');
         break;
       case 'coins10': {
         const key = `${tx},${ty}`;
@@ -2306,6 +2335,7 @@ export class World {
         c.left--;
         this.spawn(new CoinPop(tileToSub(tx) + px(4), tileToSub(ty - 1)));
         this.addCoin();
+        this.blockDrop(tx, ty, p, 'coin');
         if (c.left > 0 && this.frame < c.until) restore = id;
         break;
       }
@@ -2643,7 +2673,10 @@ export class World {
     const falling = p.fallSpeed > 0;
     const eh = e.body.h;
     const fromAbove = falling && feet - e.body.y <= eh * 0.8 && pb.prevBottom <= e.body.y + eh * 0.6;
-    if (fromAbove && e.stompable) {
+    // No stomp during a Classic SMBC hit's push (PS-C12), nor under water for a hero whose
+    // swim profile says so (SW-C7): plain contact.
+    const stompBarred = p.hurtLock !== null || (p.inWater && p.profile.swim?.noStomp === true);
+    if (fromAbove && e.stompable && !stompBarred) {
       if (p.def.stomps) {
         // Landing on a still shell kicks it; it is not a stomp, so it neither scores nor advances
         // the stomp sequence (KoopaGreen.stomp returns early for a shell, hitCharacter kicks it).
@@ -4128,6 +4161,12 @@ export class World {
       const draw = () => this.drawPlayer(r, view, p);
       if (renderDeath(this.deathStyle, r, view, p, t, this.heightPx, draw)) return;
       return draw();
+    }
+    // A hero's own look (Classic SMBC's hit looks, CharacterDef.drawLook), else the blink.
+    const look = p.def.drawLook?.(p, view.frame, view.reduceFlashing);
+    if (look) {
+      if (look.visible) translucent(r, look.alpha, () => this.drawPlayer(r, view, p));
+      return;
     }
     if (!p.visible(view.frame)) return;
     this.drawPlayer(r, view, p);

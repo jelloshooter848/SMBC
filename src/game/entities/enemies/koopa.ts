@@ -150,10 +150,13 @@ export class Koopa extends Enemy {
     return afterStomp ? KICK_SHELL.AFTER_STOMP : KICK_SHELL.NORMAL;
   }
 
-  /** A boomerang only stuns a walking koopa; shells just deflect it. */
-  override hit(src: DamageSource, world: World): Reaction {
+  /**
+   * A boomerang only stuns a walking koopa; shells just deflect it (Current rules: Enemy.hit's
+   * Classic door never comes here for a boomerang or ice).
+   */
+  override currentHit(src: DamageSource, world: World): Reaction {
     if ((src.kind === 'boomerang' || src.kind === 'ice') && this.state !== 'walk') return 'immune';
-    return super.hit(src, world);
+    return super.currentHit(src, world);
   }
 
   /**
