@@ -78,3 +78,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Yoshi design DONE (wip design-yoshi c5b0188e): YO-1..30, YM-1..30, decisions YM-D1..10, YO-D1..9. Sheets sent. All 3 design agents done; awaiting owner decisions.
 - #154 review: gameplay ACCEPT; blocker: merge main (v0.4.56) + CHANGELOG under Unreleased; 3-3 lift let-go fix. Sent to patch agent. v0.4.57 follows merge. TODO: held chain (#150/#151/#153) also needs main (v0.4.56) merged + CHANGELOG bullets moved to Unreleased.
 - Plan: after #154 merges (v0.4.57), one cascade: merge main into classic-extras -> extras-2 -> classic-art, CHANGELOG bullets under Unreleased, + add extras rescue names (Bass Dr. Wily, Proto/Break Roll, Pit Palutena, Dark Pit the Reaper).
+- #154 fixes d78cf9d2 (main merged, changelog, lift let-go). Sent to release session for re-check.
