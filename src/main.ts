@@ -21,7 +21,8 @@ import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
 import { Game } from '@game/scenes/game';
-import { CHARACTERS } from '@game/characters/registry';
+import { CHARACTERS, heroFor } from '@game/characters/registry';
+import { urlClassicRun, urlRules } from '@game/dev-url';
 import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 import { miniGameFor } from '@game/minigames';
@@ -282,13 +283,25 @@ function boot(): void {
   });
   const level = params.get('level');
   if (level) {
-    const c1 =
-      CHARACTERS.find((c) => c.id === params.get('char')) ?? (CHARACTERS[0] as (typeof CHARACTERS)[0]);
-    const c2 = CHARACTERS.find((c) => c.id === params.get('char2')) ?? null;
-    game.newGame(c1, level, c2);
-    if (params.get('kit') === 'full' && c1.devKit) {
-      game.state.kit = c1.devKit();
-      if (game.state.kit.maxHp) game.state.hp = game.state.kit.maxHp;
+    // `&rules=classic|current` (dev mode only, dev-url.ts): the run's rules; `char` reads the
+    // roster for them (the Classic extras too). `&mode=classic` (dev mode only): a Classic mode
+    // run, as the dev Level select's Mode row (its rules: `rules=`, else Options' Classic rules).
+    const classic = urlClassicRun(params, settings.dev);
+    const rules = urlRules(params, settings.dev) ?? (classic ? settings.classicRules : 'current');
+    const roster = game.rosterFor(rules);
+    const c1 = roster.find((c) => c.id === params.get('char')) ?? (roster[0] as (typeof roster)[0]);
+    const c2 = roster.find((c) => c.id === params.get('char2')) ?? null;
+    // Classic mode is one player: `char2` is for free play only.
+    if (classic) game.devClassicGame(c1, level, rules);
+    else game.newGame(c1, level, c2, { rules });
+    // The full kit of the def played under the run's rules (TG-8).
+    const hero = heroFor(c1, game.liveRules);
+    if (params.get('kit') === 'full' && hero.devKit) {
+      game.state.kit = hero.devKit();
+      if (game.liveRules === 'classic') {
+        // Classic: the top power state too (TG-8, TG-21).
+        if (hero.damage.kind === 'powerup') game.state.powerState = hero.damage.states.at(-1) ?? 'small';
+      } else if (game.state.kit.maxHp) game.state.hp = game.state.kit.maxHp;
     }
   } else if (shared) {
     game.showTitle();

@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- CLASSIC MODE: a new **Classic** entry on the title, after Start game, plays the original game: Super Mario Bros.
+  from World 1-1 for one player with every hero to pick, the original lives, warps, continues and ending, and none of
+  the campaign's additions (no map, story, captives, hero items or boss bars; nothing is saved to a file). Beating 8-4
+  in Classic mode opens **The Lost Levels** in the Classic menu, and they follow straight on.
+- Developer mode: the Level select has a **Mode** row (Free play, or Classic run with Classic mode's lives and
+  continues, playing the Rules row's rules); `?dev=1&mode=classic&rules=classic&level=..&char=..` starts a Classic run.
+  A Classic run started this way never opens the Lost Levels.
+- Classic rules: in CLASSIC > Options, **Classic rules** picks how the heroes play in Classic mode: **Classic SMBC**
+  (the original game's way) or **Current** (as in the campaign). The heroes still play today's way until their Classic
+  versions are built: a **CLASSIC?** tag at the top right of the screen shows this, and turns into **CLASSIC** once the
+  hero you play has its Classic version. Changing the rules puts your hero's power back to the start ("Rules changed.
+  Power reset."). Campaign files, mini games and training rooms always play today's rules. In developer mode the Level
+  select also has a **Rules** row, and `?dev=1&rules=classic&level=1-1&char=<id>` starts a run under Classic SMBC rules.
+
 ## [0.4.55] - 2026-10-13
 
 ### Added

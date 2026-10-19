@@ -6,6 +6,9 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
+import { drawRulesTag } from '../hud/rules-tag';
+import { rulesOf } from '../context';
+import { heroFor } from '../characters/registry';
 
 /** The black "WORLD 1-1  × 3" card shown before a level, under the HUD row. */
 export class IntroScene implements Scene {
@@ -46,5 +49,9 @@ export class IntroScene implements Scene {
     const f = sheet.frames.get(c.portrait.frame);
     r.sprite(sheet, c.portrait.frame, 96, 112 - (f?.h ?? 16) + 16);
     r.text(font, `×  ${s.lives}`, 120, 120);
+    // The Classic rules tag, as the level will show it (TG-32).
+    const rules = rulesOf(this.game.ctx);
+    const heroes = [s.character, ...(s.character2 ? [s.character2] : [])].map((d) => heroFor(d, rules));
+    drawRulesTag(r, assets, rules, heroes);
   }
 }

@@ -32,16 +32,32 @@ export class PauseScene extends MenuScene {
   private rebuild(): void {
     const game = this.game;
     const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
+    // A Classic mode run: the original's short pause, plus every developer row while dev mode is on.
+    if (game.classicRun && !game.playtestDone) {
+      items.push(...this.reserveItem());
+      items.push({
+        label: 'Options',
+        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
+      });
+      items.push(...this.devItems());
+      if (game.stageRound) items.push(this.giveUp());
+      items.push({ label: 'Quit to title', select: () => game.showTitle() });
+      this.setItems(items);
+      return;
+    }
     // A stage tutorial (1-0): its last three tips, read again (0.4.43).
     if (game.tutorialRun) items.push(...lastTipsItem(game, this.world));
     // The hero's own guide (and player two's in co-op).
     const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
-    for (const c of heroes)
-      items.push({
-        label: heroes.length > 1 ? `Guide: ${c.name}` : 'Guide',
-        select: () => game.scenes.push(new GuideScene(game, c, () => game.scenes.pop())),
-      });
     const world = this.world;
+    // The guide of the hero being played (the def for the World's rules, TG-19).
+    heroes.forEach((c, i) => {
+      const def = world?.players[i]?.def ?? c;
+      items.push({
+        label: heroes.length > 1 ? `Guide: ${def.name}` : 'Guide',
+        select: () => game.scenes.push(new GuideScene(game, def, () => game.scenes.pop())),
+      });
+    });
     // Campaign levels: replay the hero's training stage, then back to this paused level.
     if (world)
       heroes.forEach((c, i) => {
@@ -53,18 +69,7 @@ export class PauseScene extends MenuScene {
           hint: `Practise ${c.name}'s moves in a training stage`,
         });
       });
-    // Stored items (E-tanks) are used from here, like the original weapon menu.
-    const p = world?.player;
-    const reserve = p?.def.reserve;
-    const label = p && reserve ? reserve.label(p) : null;
-    if (world && p && reserve && label) {
-      items.push({
-        label,
-        select: () => {
-          if (reserve.use(p, world)) game.scenes.pop();
-        },
-      });
-    }
+    items.push(...this.reserveItem());
     // The on-screen pad can be forced on or off right here (saved and applied at once). On touch
     // the row skips Off, which would leave no touch control to turn it back on.
     const s = game.deps.settings;
@@ -86,21 +91,10 @@ export class PauseScene extends MenuScene {
       label: 'Options',
       select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
     });
-    if (this.showDev)
-      items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
-    // In campaign play dev mode offers only the assists (no level select, which would leave the file).
-    if (this.showAssists)
-      items.push({
-        label: 'Assists',
-        select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
-      });
+    items.push(...this.devItems());
     // A stage played as an arena round (arena/stage-round.ts): Give up ends the round, nothing else.
     if (game.stageRound) {
-      items.push({
-        label: 'Give up',
-        select: () => endStageRound(game, 'quit'),
-        hint: 'Ends the round',
-      });
+      items.push(this.giveUp());
       this.setItems(items);
       return;
     }
@@ -124,6 +118,42 @@ export class PauseScene extends MenuScene {
     this.setItems(items);
   }
 
+  /** Stored items (E-tanks) are used from here, like the original weapon menu. */
+  private reserveItem(): MenuItem[] {
+    const world = this.world;
+    const p = world?.player;
+    const reserve = p?.def.reserve;
+    const label = p && reserve ? reserve.label(p) : null;
+    if (!world || !p || !reserve || !label) return [];
+    return [
+      {
+        label,
+        select: () => {
+          if (reserve.use(p, world)) this.game.scenes.pop();
+        },
+      },
+    ];
+  }
+
+  /** The developer rows: Dev mode's menu, and the assists on their own (campaign, Classic run). */
+  private devItems(): MenuItem[] {
+    const game = this.game;
+    const items: MenuItem[] = [];
+    if (this.showDev)
+      items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
+    // In campaign play dev mode offers only the assists (no level select, which would leave the file).
+    if (this.showAssists)
+      items.push({
+        label: 'Assists',
+        select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
+      });
+    return items;
+  }
+
+  private giveUp(): MenuItem {
+    return { label: 'Give up', select: () => endStageRound(this.game, 'quit'), hint: 'Ends the round' };
+  }
+
   /** Dev mode's full menu (level select, dev mode off) stays out of campaign play. */
   private get showDev(): boolean {
     return this.game.devMode && !this.game.campaign && !this.game.stageRound;
@@ -131,7 +161,7 @@ export class PauseScene extends MenuScene {
 
   /** Campaign play in dev mode gets the assists on their own. */
   private get showAssists(): boolean {
-    return this.game.devMode && !!this.game.campaign;
+    return this.game.devMode && (!!this.game.campaign || this.game.classicRun);
   }
 
   override enter(): void {
