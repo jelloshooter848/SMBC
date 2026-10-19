@@ -21,12 +21,13 @@ export function reconcileRules(game: Game, rules: Rules): void {
     s.powerState = p1.powerState;
     s.hp = p1.hp;
     s.kit = {};
+    // Player two's carried power and kit only when there is a player two.
     if (s.character2) {
       const p2 = reset(s.character2);
       s.powerState2 = p2.powerState;
       s.hp2 = p2.hp;
+      s.kit2 = {};
     }
-    s.kit2 = {};
     if (rules === 'classic') s.rules = 'classic';
     else delete s.rules;
     game.deps.announcer?.say('Rules changed. Power reset.');

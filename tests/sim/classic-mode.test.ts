@@ -21,7 +21,8 @@ import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
-import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
+import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
+import { reconcileRules } from '@game/rules/reconcile';
 import { ClassicMenuScene, ClassicOptionsScene, lostLevelsOpen } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
@@ -501,6 +502,72 @@ describe('the CLASSIC tag: fully on screen, clear of every HUD line', () => {
     expect(h.top()).toBeInstanceOf(IntroScene);
     check(h.top() as IntroScene);
     check(enterLevel(h));
+  });
+});
+
+describe('QA nits', () => {
+  it('the Classic Lost Levels 8-4 card names the ability (no button letter) and is announced', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, 'll-8-4');
+    const l = enterLevel(h);
+    l.world.events.push({ type: 'exit', next: 'end' });
+    h.step();
+    const card = h.top() as CardScene;
+    expect(card).toBeInstanceOf(CardScene);
+    expect(card.lines).not.toContain('PUSH BUTTON B');
+    expect(card.lines).toContain('TO GO ON');
+    const press = card.lines.find((x) => x.startsWith('PRESS OK'));
+    expect(press).toBeDefined();
+    expect(h.said.at(-1)).toContain(press as string);
+    expect(h.said.at(-1)).not.toMatch(/\bBUTTON B\b/);
+  });
+
+  it('free play keeps the NES wording on that card', () => {
+    const h = classic();
+    h.game.newGame(MARIO, 'll-8-4');
+    const l = enterLevel(h);
+    l.world.events.push({ type: 'exit', next: 'end' });
+    h.step();
+    expect((h.top() as CardScene).lines).toContain('PUSH BUTTON B');
+  });
+
+  it('game over, NO: a Classic run goes back to the CLASSIC menu; free play to the title', () => {
+    for (const run of ['classic', 'free'] as const) {
+      const h = classic();
+      if (run === 'classic') h.game.classicGame(MARIO);
+      else h.game.newGame(MARIO);
+      enterLevel(h);
+      h.game.state.lives = 1;
+      die(h);
+      expect(h.top()).toBeInstanceOf(GameOverScene);
+      h.idle(GAME_OVER_CARD_FRAMES);
+      h.tap('down'); // NO
+      h.tap('jump');
+      expect(h.top()).toBeInstanceOf(run === 'classic' ? ClassicMenuScene : TitleScene);
+      expect(h.game.classicRun).toBe(false);
+    }
+  });
+
+  it("a rules change resets player two's kit only when there is a player two", () => {
+    const h = classic();
+    h.game.newGame(MARIO, '1-1', null, { rules: 'current' });
+    const s = h.game.state;
+    s.kit2 = { keep: 1 };
+    reconcileRules(h.game, 'classic');
+    expect(s.rules).toBe('classic');
+    expect(s.kit2).toEqual({ keep: 1 });
+    // Rules unchanged: nothing is reset.
+    s.kit = { tool: 2 };
+    reconcileRules(h.game, 'classic');
+    expect(s.kit).toEqual({ tool: 2 });
+    // With a player two, a change resets both kits.
+    h.game.newGame(MARIO, '1-1', LINK, { rules: 'current' });
+    const t = h.game.state;
+    t.kit = { a: 1 };
+    t.kit2 = { b: 1 };
+    reconcileRules(h.game, 'classic');
+    expect(t.kit).toEqual({});
+    expect(t.kit2).toEqual({});
   });
 });
 
