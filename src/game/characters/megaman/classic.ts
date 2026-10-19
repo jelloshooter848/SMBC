@@ -43,6 +43,7 @@ import {
   MM_ROOT_FRAMES,
   MM_WEAPONS,
   WEAPON_UNITS,
+  MM_SHOT_PAD,
   balloonOf,
   busterSpawn,
   capCount,
@@ -59,6 +60,7 @@ import {
   touchingBrick,
   type MMFire,
   type MMWeaponId,
+  type ShotPad,
 } from './classic-weapons';
 import { MMShot } from './classic-weapons';
 
@@ -137,6 +139,20 @@ export interface ClassicMegaManOptions {
   /** Rush Coil on a Select tap. */
   rush?: boolean;
   guide?: CharacterGuide;
+  /*
+   * Proto Man and Break Man's rule changes (2026-10-07-protoman-build-classic-character.md, PM-1).
+   * Absent, each is Mega Man's.
+   */
+  /** PM-11: the buster charges in every power state. Absent: only with the Mushroom (MM-C20). */
+  chargeWithoutMushroom?: boolean;
+  /** PM-12: the buster cap while small (3 again with the Mushroom). Absent: `buster.cap`. */
+  busterCapSmall?: number;
+  /** PM-9: a survived hit's push speed (`response.vx`). Absent: the response's own. */
+  knockbackVx?: number;
+  /** PM-13: buster-placed shots' height above the feet. Absent: MM_SHOT_PAD (13 / 17 px). */
+  shotPad?: ShotPad;
+  /** PM-18: the character select's pick sound (CharacterDef.pickSfx). Absent: the usual one. */
+  pickSfx?: string;
 }
 
 /* ---------- scratch keys (apart from Current's: w<id>, helmet, weapons, chargeT, etanks) ---------- */
@@ -154,7 +170,13 @@ const KICK = 'mmKick';
 export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const base = o.base;
   const profile = o.profile ?? MEGAMAN_CLASSIC_PROFILE;
-  const response = o.response ?? (CLASSIC_HIT_RESPONSES.megaman as ClassicHitResponse);
+  const baseResponse = o.response ?? (CLASSIC_HIT_RESPONSES.megaman as ClassicHitResponse);
+  const response: ClassicHitResponse =
+    o.knockbackVx !== undefined && baseResponse.kind === 'push'
+      ? { ...baseResponse, vx: o.knockbackVx }
+      : baseResponse;
+  const pad = o.shotPad ?? MM_SHOT_PAD;
+  const chargeSmall = o.chargeWithoutMushroom === true;
   const drops = o.drops ?? CLASSIC_DROPS.megaman;
   const sheet = o.sheet ?? 'megaman';
   const suit = o.palette ?? 'megaman';
@@ -228,6 +250,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       energy: (id) => energy(p, id),
       spend: (id, cost) => spendAmmo(p, energyKey(id), cost),
       has: (id, cost) => hasAmmo(p, energyKey(id), cost),
+      pad,
     };
   }
 
@@ -272,7 +295,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   }
 
   function fireBuster(p: Player, world: World, spec: ProjectileSpec): void {
-    const pos = busterSpawn(p, spec);
+    const pos = busterSpawn(p, spec, pad);
     world.spawn(new MMShot(pos.x, pos.y, p.facing, spec, p));
     world.audio.sfx(spec === buster.spec ? 'buster' : 'charge-shot');
     p.attackTimer = SHOOT_POSE;
@@ -281,10 +304,12 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   /** The buster button (MM-C19, MM-C20). */
   function busterButton(p: Player, input: InputFrame, world: World, btn: 'attack' | 'special'): void {
     const sliding = p.sliding > 0;
-    const canCharge = charge !== null && p.powerState !== 'small';
+    const small = p.powerState === 'small';
+    const canCharge = charge !== null && (chargeSmall || !small);
     if (input.pressed(btn)) {
       const fullOut = charge !== null && countShots(world, p, (k) => k === charge.full.kind) > 0;
-      if (!sliding && capCount(world, p) < buster.cap && !fullOut) fireBuster(p, world, buster.spec);
+      const cap = small ? (o.busterCapSmall ?? buster.cap) : buster.cap;
+      if (!sliding && capCount(world, p) < cap && !fullOut) fireBuster(p, world, buster.spec);
       if (canCharge) p.scratch._chargeT = 1;
       return;
     }
@@ -488,6 +513,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     meter,
     devKit: () => ({ ...START, [ALL]: 1 }),
     guide: o.guide ?? MEGAMAN_CLASSIC_GUIDE,
+    ...(o.pickSfx !== undefined ? { pickSfx: o.pickSfx } : {}),
     touchLabels(p) {
       const w = heldWeapon(p);
       const h = held(p);

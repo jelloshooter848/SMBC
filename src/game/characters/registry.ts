@@ -17,6 +17,8 @@ import { applyClassicLevelEdits } from '../rules/classic-water';
 import { MARIO_CLASSIC } from './mario/classic';
 import { LUIGI_CLASSIC } from './luigi/classic';
 import { SAMUS_CLASSIC } from './samus/classic';
+import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
+import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -50,7 +52,13 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
-export const CLASSIC_EXTRAS: CharacterDef[] = [];
+export const CLASSIC_EXTRAS: CharacterDef[] = [
+  // (Bass, Sophia III go first as they land.)
+  PROTOMAN_CLASSIC,
+  BREAKMAN_CLASSIC,
+  PIT_CLASSIC,
+  DARKPIT_CLASSIC,
+];
 
 /**
  * The def a World plays for roster hero `def` under `rules` (TG-17). A def that is already a

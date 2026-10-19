@@ -287,6 +287,11 @@ export interface CharacterDef {
    * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
    */
   seaFloorSafe?: boolean;
+  /**
+   * The sound the character select plays when this hero is picked (Classic Proto Man's whistle,
+   * PM-18). Absent: the select's usual sound. Only Classic-only extras set it.
+   */
+  pickSfx?: string;
 }
 
 /**

@@ -562,6 +562,8 @@ export interface MMFire {
   spend(id: MMWeaponId, cost: number): boolean;
   /** Whether `cost` units are there (or Star). */
   has(id: MMWeaponId, cost: number): boolean;
+  /** Where buster-placed shots leave (busterSpawn). Absent: Mega Man's MM_SHOT_PAD. */
+  pad?: ShotPad;
 }
 
 /** His projectiles on screen, all kinds or only `filter`'s. */
@@ -582,16 +584,29 @@ function upDown(input: InputFrame): -1 | 0 | 1 {
   return input.held('up') ? -1 : input.held('down') ? 1 : 0;
 }
 
-/** Spawn point like the buster's (MM-C19): 19 px ahead of his centre, 13 (17 airborne) above his feet. */
-export function busterSpawn(p: Player, spec: ProjectileSpec): { x: number; y: number } {
+/**
+ * The height above the feet (px, halves allowed) a buster-placed shot leaves from: on the ground
+ * and in the air. Mega Man 13 / 17 (MM-C19); Proto Man and Break Man 9.5 / 15.5 (PM-13).
+ */
+export interface ShotPad {
+  ground: number;
+  air: number;
+}
+export const MM_SHOT_PAD: ShotPad = { ground: 13, air: 17 };
+
+/**
+ * Spawn point like the buster's (MM-C19): 19 px ahead of his centre, `pad` above his feet (13, or
+ * 17 airborne, for Mega Man).
+ */
+export function busterSpawn(p: Player, spec: ProjectileSpec, pad: ShotPad = MM_SHOT_PAD): { x: number; y: number } {
   const b = p.body;
   const cx = b.x + (b.w >> 1);
-  const muzzleY = b.y + b.h - px(b.onGround ? 13 : 17);
+  const muzzleY = b.y + b.h - px(b.onGround ? pad.ground : pad.air);
   return { x: cx + p.facing * px(19) - px(spec.w >> 1), y: muzzleY - px(spec.h >> 1) };
 }
 
 function shoot(f: MMFire, spec: ProjectileSpec, opts: ProjectileOptions = {}, at?: { x: number; y: number }) {
-  const pos = at ?? busterSpawn(f.p, spec);
+  const pos = at ?? busterSpawn(f.p, spec, f.pad);
   const s = new MMShot(pos.x, pos.y, f.p.facing, spec, f.p, opts);
   f.world.spawn(s);
   return s;
@@ -691,7 +706,7 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
     }
     case 'hard-knuckle': {
       if (nonBuster(world, p) >= 1 || !f.spend(id, cost)) return false;
-      const pos = busterSpawn(p, HARD_KNUCKLE);
+      const pos = busterSpawn(p, HARD_KNUCKLE, f.pad);
       world.spawn(new KnuckleShot(pos.x, pos.y, p.facing, HARD_KNUCKLE, p, { vx: 0, vy: 0 }));
       // In the air he hangs still until it has appeared.
       if (!p.body.onGround) {
@@ -721,7 +736,7 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
     }
     case 'flame-blast': {
       if (capCount(world, p) >= 3 || !f.spend(id, cost)) return false;
-      const pos = busterSpawn(p, FLAME_BULLET);
+      const pos = busterSpawn(p, FLAME_BULLET, f.pad);
       world.spawn(new FlameBullet(pos.x, pos.y, p.facing, FLAME_BULLET, p));
       world.audio.sfx('fireball');
       return true;
