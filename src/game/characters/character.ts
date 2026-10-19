@@ -58,6 +58,12 @@ export interface CharacterBehaviour {
   onHurt(p: Player, world: World, fromDir?: -1 | 1): HurtResult;
   /** The published melee hitbox connected with an enemy. */
   onMeleeHit?(p: Player, enemy: Enemy, world: World): void;
+  /**
+   * The damage the published melee hitbox deals to `enemy` (TG-24; Classic defs: the original's
+   * units, pierce, hit-stun, blocked sound; `owner: p`). Without it a melee hit is
+   * `{ kind: 'sword', amount: 1 }`, as for every Current def.
+   */
+  meleeDamage?(p: Player, enemy: Enemy): DamageSource;
   /** Touched a dropped pickup. Return false to leave it lying there (already full). */
   onPickup?(p: Player, kind: PickupKind, world: World): boolean;
   /** An enemy projectile is about to hit the player; return true to block it (shields). */
@@ -175,6 +181,16 @@ export interface CharacterDef {
   /** What (if anything) a killed enemy drops for this character (`killer`: the player who got it). */
   drop?(rng: Rng, enemy: Enemy, killer?: Player): PickupKind | null;
   /**
+   * Classic rules (BR-C6): the published melee hitbox also strikes the blocks it overlaps, each
+   * once per swing (a plain brick breaks, an item block bumps). Only Classic defs set it.
+   */
+  meleeStrikesBlocks?: boolean;
+  /**
+   * False while the head touches blocks as plain ground: no bump, no break (Classic BR-C3's
+   * BRICK_NONE: Samus in the morph ball, Ryu clinging to a wall). Absent: the head bumps.
+   */
+  headBumps?(p: Player): boolean;
+  /**
    * No blinking while invulnerable after a hit (Player.visible): the hero shows it its own way
    * (Sophia III's hull flashes through palettes).
    */
@@ -204,6 +220,31 @@ export interface CharacterDef {
    * Start "MENU", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
    */
   touchLabels?(p: Player, world: World): TouchLabels;
+  /**
+   * How the hero looks this frame (Classic SMBC's hit looks, PS-C13: 65 % opacity, a flicker).
+   * Absent: Player.visible's blink while invulnerable. `alpha` 1 draws as usual.
+   */
+  drawLook?(p: Player, frame: number, reduceFlashing: boolean): { visible: boolean; alpha: number };
+  /**
+   * What a broken brick or a coin out of a block drops for this hero (Classic SMBC, PS-C15),
+   * rolled once per brick or coin by World.strikeBlock. Absent: nothing.
+   */
+  blockDrop?(rng: Rng, p: Player, source: 'brick' | 'coin'): PickupKind | null;
+  /**
+   * Star frames left when the level music comes back (Classic SMBC, PS-C19: 78). Absent: 1, the
+   * Star's last frame.
+   */
+  starMusicLeft?: number;
+  /**
+   * One ammo counter in the tool slot (Classic SMBC, PS-C27: icon, then ×NN), for a hero with no
+   * tool belt. Null hides it. Absent: nothing (a belt is drawn from `tools`).
+   */
+  hudAmmo?(p: Player): { icon: string; sheet?: string; count: number } | null;
+  /**
+   * The HUD shows a Mushroom or Fire Flower icon for this hero's power (Classic SMBC, PS-C26).
+   * Absent: no icon (Current heroes).
+   */
+  powerIcon?: boolean;
   /**
    * 'classic' on a Classic SMBC def (TG-18): registry.ts's CLASSIC_CHARACTERS and CLASSIC_EXTRAS.
    * Never set on a CHARACTERS entry (TG-39). Classic defs use `damage: { kind: 'powerup', states:

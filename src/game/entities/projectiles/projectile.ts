@@ -4,7 +4,7 @@ import { Entity, type View } from '../entity';
 import { overlaps } from '@engine/math/aabb';
 import { moveX, moveY } from '../body';
 import type { World } from '../../world/world';
-import type { DamageKind } from '../../rules/damage';
+import type { ClassicHitProps, DamageKind } from '../../rules/damage';
 import { Flash } from '../effects/effects';
 import type { Player } from '../player';
 
@@ -68,6 +68,46 @@ export interface ProjectileSpec {
   wave?: { amplitude: number; period: number };
   /** An arcing projectile leaves this behind where it lands (holy water's flame). */
   spawnOnLand?: ProjectileSpec;
+  /**
+   * Classic rules: what a hit does beyond its `amount` (pierce, hit-stun, flash, invulnerability,
+   * freeze, blocked sound; classic-enemy-hp-and-armour HP-C16). Only Classic weapon specs set it.
+   */
+  classicHit?: ClassicHitProps;
+  /**
+   * Classic rules: what the shot does when armour blocks it (HP-C14): 'burst' (the default: ends
+   * with its burst), 'remove' (gone), 'continue' (flies on) or 'deflect' (bounces back up and
+   * hits nothing more: Mega Man's buster and Metal Blade).
+   */
+  onBlocked?: 'burst' | 'deflect' | 'continue' | 'remove';
+  /**
+   * Classic rules: how the shot meets tiles and blocks (TG-26, classic-bricks-and-shots BR-C2).
+   * Specs that leave it out keep the flags above, so Current shots are unchanged.
+   */
+  classicBlocks?: ClassicBlocks;
+  /**
+   * Classic rules (HP-C20, Ryu's Windmill Shuriken): an enemy it has hit can be hit again once the
+   * shot has left it and this many frames have passed since that hit. Without it each enemy is
+   * hit once.
+   */
+  rehitAfter?: number;
+}
+
+/** A Classic shot's tile rules (BR-C2, BR-C9, BR-C16). */
+export interface ClassicBlocks {
+  /**
+   * 'pass': flies through every solid tile but still strikes bricks, ? blocks, item bricks and
+   * hidden blocks; 'collide': stops at (or bounces on) every solid tile, striking a block it hits;
+   * 'none': touches no tile at all (Link's boomerang).
+   */
+  ground: 'pass' | 'collide' | 'none';
+  /**
+   * After striking a block: 'end' (removed, broken or not), 'continue' (flies on, striking each
+   * block once per contact) or 'continueIfBroken' (flies on when the block's HP is now 0 or less:
+   * a broken brick or a bumped item block).
+   */
+  afterBlock: 'end' | 'continue' | 'continueIfBroken';
+  /** False when blocks are only ground to it (Mario's fireball). */
+  strikesBlocks: boolean;
 }
 
 export interface ProjectileOptions {
@@ -221,6 +261,22 @@ export class Projectile extends Entity {
   readonly carried: Entity[] = [];
   /** Coins a fetching boomerang carries. */
   carriedCoins = 0;
+  /** Classic: the frame each enemy was last hit (ProjectileSpec.rehitAfter; made on first use). */
+  hitAt: Map<number, number> | null = null;
+  /** Classic: deflected by armour (onBlocked 'deflect'); it hits nothing more. */
+  deflected = false;
+  /** Classic: block tiles ("x,y") the shot is touching now, each struck once per contact (made on first use). */
+  touching: Set<string> | null = null;
+
+  /** The Classic contact set, made on first use (Current shots never allocate it). */
+  touchingTiles(): Set<string> {
+    return (this.touching ??= new Set());
+  }
+
+  /** Classic re-hits: `id` was hit on `frame`. */
+  markHit(id: number, frame: number): void {
+    (this.hitAt ??= new Map()).set(id, frame);
+  }
   private angle = 0;
   private readonly originY: number;
   constructor(
@@ -286,11 +342,13 @@ export class Projectile extends Entity {
         );
       }
     }
-    if (this.spec.hitsTiles && !this.spec.piercesTiles) {
+    const cb = this.spec.classicBlocks;
+    if (this.spec.hitsTiles && !this.spec.piercesTiles && (!cb || cb.ground === 'collide')) {
       moveX(b, world.map, velToSub(b.vx));
       if (b.hitWall !== 0) {
         const wx = b.x + (b.hitWall > 0 ? b.w : -1);
         if (this.spec.breaksBricks) world.breakAt(wx, b.y + (b.h >> 1), this.owner);
+        if (cb) world.shotBlockAt(this, wx, b.y + (b.h >> 1));
         // Mega Man's airship: a cannon there takes the hit.
         world.shotWall(this, wx, b.y + (b.h >> 1));
         return this.burst(world);
@@ -312,8 +370,13 @@ export class Projectile extends Entity {
         if (b.hitHead) b.vy = 0;
       } else if (b.vy !== 0) {
         moveY(b, world.map, velToSub(b.vy));
-        if (b.onGround || b.hitHead) return this.burst(world);
+        if (b.onGround || b.hitHead) {
+          if (cb) world.shotBlockAt(this, b.x + (b.w >> 1), b.hitHead ? b.y - 1 : b.y + b.h);
+          return this.burst(world);
+        }
       }
+      // A Classic shot that stops at ground still strikes the hidden blocks it flies into.
+      if (cb && world.shotBlocks(this)) return this.burst(world);
     } else {
       // Free flight: tiles are ignored, but gravity still applies when the spec asks for it.
       if (this.spec.gravity) {
@@ -326,15 +389,34 @@ export class Projectile extends Entity {
         const w = this.spec.wave;
         b.y = this.originY + Math.round(Math.sin((this.age * 2 * Math.PI) / w.period) * px(w.amplitude));
       }
-      if (this.spec.breaksBricks && this.spec.piercesTiles && (this.age & 3) === 0)
-        world.breakAt(b.x + (b.w >> 1), b.y + (b.h >> 1), this.owner);
-      if (this.spec.bumpsBlocks && world.pierceBlocks(this)) return this.burst(world);
+      if (cb) {
+        if (cb.ground === 'pass' && world.shotBlocks(this)) return this.burst(world);
+      } else {
+        if (this.spec.breaksBricks && this.spec.piercesTiles && (this.age & 3) === 0)
+          world.breakAt(b.x + (b.w >> 1), b.y + (b.h >> 1), this.owner);
+        if (this.spec.bumpsBlocks && world.pierceBlocks(this)) return this.burst(world);
+      }
       if (this.spec.fetches) world.boomerangFetch(this);
     }
     // Off the right or left of the camera: gone.
     const camL = world.camera.x - px(16);
     const camR = world.camera.right + px(16);
     if (b.x + b.w < camL || b.x > camR || this.isBelowLevel()) this.end(world);
+  }
+
+  /**
+   * Classic re-hits (ProjectileSpec.rehitAfter): enemies the shot no longer touches, hit at least
+   * that long ago, can be hit again.
+   */
+  releaseHits(enemies: readonly Entity[], frame: number): void {
+    const after = this.spec.rehitAfter ?? Infinity;
+    for (const id of this.hitIds) {
+      const e = enemies.find((x) => x.id === id);
+      if (e && overlaps(e.body, this.body)) continue;
+      if (frame - (this.hitAt?.get(id) ?? -Infinity) < after) continue;
+      this.hitIds.delete(id);
+      this.hitAt?.delete(id);
+    }
   }
 
   /** Gone: what it carries goes to its owner first (World.deliverFetch). */

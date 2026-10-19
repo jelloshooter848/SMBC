@@ -36,6 +36,26 @@ export interface SwimProfile {
   mode?: 'stroke' | 'seabed' | undefined;
   /** Horizontal control off the floor under water; absent: the profile's `airControl`. */
   airControl?: MovementProfile['airControl'] | undefined;
+  /**
+   * Classic SMBC (SW-C2..SW-C4, set only by Classic profiles): no stroke. Under water the hero's
+   * own land movement runs (walk, jump release, air control, air jumps, wall cling, slide) with
+   * one jump tier whose take-off is `stroke` and whose gravity is `gravity` held or not, falling
+   * capped at `sinkMax`; so jump works only from the floor (or a wall, or an air jump). Absent:
+   * the stroke (or `mode`) above.
+   */
+  floorJumpOnly?: boolean | undefined;
+  /** Classic SMBC (SW-C7): landing on an enemy under water is plain contact, never a stomp. */
+  noStomp?: boolean | undefined;
+  /**
+   * Classic SMBC (SW-C9): 'top' puts the surface line at the hitbox top, y = 32 px (under water
+   * while the top is below it). Absent: the body's centre against the wave row + 8 px.
+   */
+  surfaceTest?: 'top' | undefined;
+  /**
+   * Classic SMBC (SW-C10): gravity and fall cap above the surface line in a water level (the
+   * player is out of the water there). Absent: the hero's land values.
+   */
+  surface?: { gravity: number; fallMax: number } | undefined;
 }
 
 export interface MovementProfile {

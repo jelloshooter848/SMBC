@@ -73,6 +73,8 @@ export class Koopa extends Enemy {
   /** Kills by a moving shell chain for combo scoring. */
   shellCombo = 0;
   readonly color: 'green' | 'red' | 'buzzy';
+  /** Spawned as a Paratroopa (Classic HP is picked from this at spawn, as overwriteInitialStats). */
+  readonly spawnedWithWings: boolean;
   /**
    * Standing collision height in px: Koopas 16 (KOOPA_H), Buzzy Beetles 14. A Koopa's 16x24
    * sprite stands 8 px taller than its box (walkOffsetY), so it walks under one-tile gaps as
@@ -94,6 +96,7 @@ export class Koopa extends Enemy {
     this.walkH = color === 'buzzy' ? 14 : KOOPA_H;
     this.walkOffsetY = color === 'buzzy' ? 2 : KOOPA_SPRITE_H - KOOPA_H;
     this.wings = wings;
+    this.spawnedWithWings = wings;
     this.glide = wings && glide;
     this.homeX = x;
     this.homeY = y;
@@ -147,10 +150,34 @@ export class Koopa extends Enemy {
     return afterStomp ? KICK_SHELL.AFTER_STOMP : KICK_SHELL.NORMAL;
   }
 
-  /** A boomerang only stuns a walking koopa; shells just deflect it. */
-  override hit(src: DamageSource, world: World): Reaction {
+  /**
+   * A boomerang only stuns a walking koopa; shells just deflect it (Current rules: Enemy.hit's
+   * Classic door never comes here for a boomerang or ice).
+   */
+  override currentHit(src: DamageSource, world: World): Reaction {
     if ((src.kind === 'boomerang' || src.kind === 'ice') && this.state !== 'walk') return 'immune';
-    return super.hit(src, world);
+    return super.currentHit(src, world);
+  }
+
+  /**
+   * Classic rules (KoopaGreen.takeDamage, HP-C6): after a hit that leaves `hp`, a walking or flying
+   * one with 200 or less pulls into its shell (as after a stomp); otherwise a flyer with 600 or
+   * less loses its wings. Returns what happened.
+   */
+  classicDamaged(hp: number): 'shell' | 'wings' | null {
+    if (this.state !== 'walk') return null;
+    if (hp <= 200) {
+      this.wings = false;
+      this.becomeShell();
+      return 'shell';
+    }
+    if (this.wings && hp <= 600) {
+      this.wings = false;
+      this.body.vy = 0;
+      this.body.vx = -this.walkSpeed;
+      return 'wings';
+    }
+    return null;
   }
 
   private becomeShell(): void {

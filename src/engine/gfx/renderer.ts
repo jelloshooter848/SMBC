@@ -34,6 +34,17 @@ export interface Renderer {
    * (the null and recording ones) draws unclipped: callers use `clipped` below.
    */
   clip?(x: number, y: number, w: number, h: number, draw: () => void): void;
+  /**
+   * Optional: runs `draw` at opacity `alpha` (0..1). A renderer without it (the null and
+   * recording ones) draws opaque: callers use `translucent` below.
+   */
+  alpha?(alpha: number, draw: () => void): void;
+}
+
+/** `draw` through `r` at opacity `alpha` where `r` can (Renderer.alpha), else opaque. */
+export function translucent(r: Renderer, alpha: number, draw: () => void): void {
+  if (alpha < 1 && r.alpha) r.alpha(alpha, draw);
+  else draw();
 }
 
 /** `draw` through `r`, clipped to (x, y, w, h) where `r` can clip (Renderer.clip), else plain. */
@@ -97,6 +108,9 @@ export class OffsetRenderer implements Renderer {
   }
   clip(x: number, y: number, w: number, h: number, draw: () => void): void {
     clipped(this.inner, x + this.dx, y + this.dy, w, h, draw);
+  }
+  alpha(alpha: number, draw: () => void): void {
+    translucent(this.inner, alpha, draw);
   }
 }
 
@@ -181,6 +195,16 @@ export class CanvasRenderer implements Renderer {
     ctx.beginPath();
     ctx.rect(x | 0, y | 0, w | 0, h | 0);
     ctx.clip();
+    try {
+      draw();
+    } finally {
+      ctx.restore();
+    }
+  }
+  alpha(alpha: number, draw: () => void): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
     try {
       draw();
     } finally {

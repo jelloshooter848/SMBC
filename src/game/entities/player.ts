@@ -29,7 +29,47 @@ export function carriedKit(p: Player): Record<string, number> {
 
 export type PlayerAnim =
   'idle' | 'walk' | 'skid' | 'jump' | 'crouch' | 'climb' | 'attack' | 'swim' | 'slide' | 'hurt';
-export type Transition = { kind: 'grow' | 'shrink'; t: number };
+/**
+ * A freeze of the whole world around one player: the grow/shrink flicker (48 frames), or, with
+ * `len`, a freeze of that many frames (Classic SMBC's 60-frame power-up and hit freezes, PS-C4,
+ * PS-C10). 'freeze' changes no size.
+ */
+export type Transition = { kind: 'grow' | 'shrink' | 'freeze'; t: number; len?: number };
+
+/**
+ * A hit's push and input lock (Classic SMBC, PS-C10..PS-C12; set only by
+ * characters/classic/power.ts). While set, input is ignored (`stun` holds it), there is no ground
+ * or air jump, and the World lets the player neither stomp nor bump blocks. It ends after
+ * `frames`, once `distance` px are covered or a wall on the push side `dir` is met, or on landing
+ * (`untilLand`; a vine, stairs or a spring end it too), whichever comes first; then the player is
+ * invulnerable for `invulnAfter` frames.
+ */
+export interface HurtLock {
+  t: number;
+  frames?: number;
+  distance?: number;
+  untilLand?: boolean;
+  startX: number;
+  dir: -1 | 1;
+  invulnAfter: number;
+}
+
+/** A floor jumper's movement under water (SwimProfile.floorJumpOnly), one per land profile. */
+const floorJumpProfiles = new WeakMap<MovementProfile, MovementProfile>();
+function floorJumpProfile(base: MovementProfile, sw: SwimProfile): MovementProfile {
+  let p = floorJumpProfiles.get(base);
+  if (!p) {
+    const tier: JumpTier = {
+      maxVx: Infinity,
+      initial: sw.stroke,
+      holdGravity: sw.gravity,
+      fallGravity: sw.gravity,
+    };
+    p = { ...base, jump: [tier], maxFall: sw.sinkMax, fallReset: sw.sinkMax };
+    floorJumpProfiles.set(base, p);
+  }
+  return p;
+}
 
 export interface PlayerAudio {
   audio: AudioSink;
@@ -96,6 +136,13 @@ export class Player {
   /** Set by the world each frame: the body's centre is under the water line (swim physics). */
   inWater = false;
   /**
+   * Set by the world each frame: a water level with the body above its surface line. Only read
+   * for SwimProfile.surface (Classic SMBC's gravity there).
+   */
+  aboveWater = false;
+  /** A Classic SMBC hit's push and input lock (HurtLock); null otherwise. */
+  hurtLock: HurtLock | null = null;
+  /**
    * Holding a vine: its centre line (subpixels) and the px span that can be climbed. `through`:
    * a climb arrival's vine, climbed through any tiles in the way (a hull under a deck).
    */
@@ -122,6 +169,8 @@ export class Player {
   private launchGravity = 0;
   private runTimer = 0;
   private tier: JumpTier;
+  /** `tier` is a floor jumper's water tier (SwimProfile.floorJumpOnly). */
+  private waterTier = false;
   private airCap: number;
   private sinceGround = 0;
   /** Frames since spawn, for sprite timing. */
@@ -170,8 +219,8 @@ export class Player {
     return true;
   }
 
-  startTransition(kind: 'grow' | 'shrink'): void {
-    this.transition = { kind, t: 0 };
+  startTransition(kind: Transition['kind'], len?: number): void {
+    this.transition = len === undefined ? { kind, t: 0 } : { kind, t: 0, len };
     this.refitHitbox();
   }
 
@@ -179,7 +228,7 @@ export class Player {
   tickTransition(): boolean {
     if (!this.transition) return false;
     this.transition.t++;
-    if (this.transition.t >= 48) {
+    if (this.transition.t >= (this.transition.len ?? 48)) {
       this.transition = null;
       this.refitHitbox();
       return false;
@@ -202,10 +251,11 @@ export class Player {
     if (this.vineLock > 0) this.vineLock--;
     if (this.stairLock && --this.stairLock.t <= 0) this.stairLock = null;
     if (this.frozen || this.dead) return;
+    if (this.hurtLock) this.tickHurtLock();
     if (this.vine) return this.climb(input, map, audio);
     if (this.stairs) return this.stairWalk(input);
     if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
-    const p = this.profile;
+    let p = this.profile;
     const b = this.body;
     let dir = input.dirX;
     const wantRun = p.canRun && (input.held('attack') || input.held('run')) && !this.inWater;
@@ -249,10 +299,23 @@ export class Player {
       this.airMove(dir);
     }
 
-    if (this.inWater) return this.swim(input, map, audio, dir, onHeadBump);
+    const sw = p.swim;
+    const floorJumper = this.inWater && sw?.floorJumpOnly === true;
+    if (this.inWater && !floorJumper) return this.swim(input, map, audio, dir, onHeadBump);
+    if (floorJumper && sw) {
+      // Classic SMBC's floor jumpers: the land code below with the water tier and sink cap.
+      p = floorJumpProfile(this.profile, sw);
+      this.tier = p.jump[0] as JumpTier;
+      this.waterTier = true;
+    } else if (this.waterTier) {
+      // Out of the water mid-jump: the land tier's gravity from here.
+      this.tier = pickJumpTier(p, b.vx);
+      this.waterTier = false;
+    }
 
     const canJump =
       this.sliding === 0 &&
+      !this.hurtLock &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     // A hit's knock back takes the air jumps until he lands (the original turns his input off).
@@ -287,6 +350,7 @@ export class Player {
       !b.onGround &&
       !this.clinging &&
       this.stun === 0 &&
+      !this.hurtLock &&
       this.sliding === 0 &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       input.pressed('jump')
@@ -336,11 +400,37 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else if (!this.clinging) {
-      if (this.launched && this.launchGravity) b.vy += this.launchGravity;
-      else b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
-      if (b.vy > p.maxFall) b.vy = p.fallReset;
+      const surface = this.aboveWater ? p.swim?.surface : undefined;
+      if (surface) {
+        // Classic SMBC above a water level's surface line (SW-C10).
+        b.vy += surface.gravity;
+        if (b.vy > surface.fallMax) b.vy = surface.fallMax;
+      } else {
+        if (this.launched && this.launchGravity) b.vy += this.launchGravity;
+        else b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
+        if (b.vy > p.maxFall) b.vy = p.fallReset;
+      }
     }
     this.updateAnim(dir);
+  }
+
+  /** HurtLock's end conditions, checked before this frame's move (see HurtLock). */
+  private tickHurtLock(): void {
+    const l = this.hurtLock as HurtLock;
+    const b = this.body;
+    l.t++;
+    const done =
+      (l.frames !== undefined && l.t > l.frames) ||
+      (l.distance !== undefined && (Math.abs(b.x - l.startX) >= px(l.distance) || b.hitWall === l.dir)) ||
+      (l.untilLand === true && (b.onGround || this.launched)) ||
+      this.vine !== null ||
+      this.stairs !== null;
+    if (!done) return;
+    this.hurtLock = null;
+    this.stun = 0;
+    // This frame is the first invulnerable one (its countdown already ran above).
+    this.invuln = l.invulnAfter - 1;
+    if (b.onGround) b.vx = 0;
   }
 
   /**
