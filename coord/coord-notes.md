@@ -50,3 +50,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PR3 opened #148 (heroes-1 4d51bdd6, base classic-shared; retarget to main after #147 merges). Subscribed. Samus agent merging heroes-1 fix into heroes-2.
 - #148 green 4d51bdd6. PR4 QA done (no blockers). Fixes: guide.ts Classic guides -> heroes-1 (Link agent); frozen tint + IDs -> heroes-2 (Samus agent). Then cascade into extras.
 - Warriors DONE a27b233d (wip-warriors). Uses holdsStill (now 'rooted' in heroes-2) -> unify at PR6 integration. Owner notes: hit response is our call; placeholder sounds.
+- VicViper DONE 50249c50 (wip-vicviper). VV agent integrating PR6 -> claude/classic-extras-2 (VV+Warriors, stack on extras). Owner note: 1-1 first pipe crush trap.
