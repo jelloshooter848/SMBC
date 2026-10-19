@@ -247,6 +247,11 @@ export interface CharacterDef {
    */
   hudAmmo?(p: Player): { icon: string; sheet?: string; count: number } | null;
   /**
+   * The HUD shows a Mushroom or Fire Flower icon for this hero's power (Classic SMBC, PS-C26).
+   * Absent: no icon (Current heroes).
+   */
+  powerIcon?: boolean;
+  /**
    * 'classic' on a Classic SMBC def (TG-18): registry.ts's CLASSIC_CHARACTERS and CLASSIC_EXTRAS.
    * Never set on a CHARACTERS entry (TG-39). Classic defs use `damage: { kind: 'powerup', states:
    * ['small', 'big', 'fire'] }` (TG-21: Mushroom tier stored as 'big', Flower as 'fire') and leave

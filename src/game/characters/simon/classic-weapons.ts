@@ -214,7 +214,7 @@ export class HolyWaterBottle extends Projectile {
     world.spawn(flame);
     world.shotBlockAt(flame, x, y);
     // The flame does not strike that block again while it touches it.
-    flame.touching.add(`${tileAt(x)},${tileAt(y)}`);
+    flame.touchingTiles().add(`${tileAt(x)},${tileAt(y)}`);
     world.audio.sfx('fireball');
     this.destroy();
   }
@@ -228,9 +228,9 @@ export class HolyFlame extends Projectile {
 
   override update(world: World): void {
     for (const id of [...this.hitIds]) {
-      if (world.frame - (this.hitAt.get(id) ?? -Infinity) < HIT_FREEZE) continue;
+      if (world.frame - (this.hitAt?.get(id) ?? -Infinity) < HIT_FREEZE) continue;
       this.hitIds.delete(id);
-      this.hitAt.delete(id);
+      this.hitAt?.delete(id);
     }
     super.update(world);
   }

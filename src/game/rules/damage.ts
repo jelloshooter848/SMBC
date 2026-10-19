@@ -59,6 +59,11 @@ export interface ClassicHitProps {
   instant?: true;
   /** Sound played when armour blocks this hit (`armour`, `bump`; none when absent; HP-C14). */
   blockedSfx?: string;
+  /**
+   * The player behind the hit when `owner` does not lead to one (the World's default melee
+   * source): Classic damage units follow this player's def. Current never reads it.
+   */
+  by?: Player;
 }
 
 export interface DamageSource extends ClassicHitProps {

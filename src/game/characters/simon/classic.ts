@@ -306,6 +306,8 @@ export const SIMON_CLASSIC: CharacterDef = {
   meleeStrikesBlocks: true,
   sprite,
   blockPowerUp: classicBlockPowerUp,
+  // No size change, so the HUD shows the Mushroom or Fire Flower (PS-C26).
+  powerIcon: true,
   guide: SIMON_CLASSIC_GUIDE,
   tools,
   devKit: () => ({ [FULL_KIT]: 1, hearts: MAX_HEARTS }),
