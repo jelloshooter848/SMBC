@@ -418,6 +418,7 @@ export const RYU_CLASSIC: CharacterDef = {
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
   sprite,
   blockPowerUp: classicBlockPowerUp,
+  powerIcon: true,
   drawLook: (p, _frame, reduce) => classicLook(p, reduce, RYU_CLASSIC_KIT.response.look),
   starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
   drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, CLASSIC_DROPS.ryu, 'enemy') : null),

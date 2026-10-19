@@ -82,6 +82,8 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
       RYU.portrait,
     ]);
     expect(RYU.rules).toBeUndefined();
+    expect(RYU_CLASSIC.powerIcon).toBe(true);
+    expect(RYU.powerIcon).toBeUndefined();
     expect(RYU.movement).toBe(RYU_PROFILE);
     for (const k of ['airStop', 'wallClimb', 'rise', 'softCut', 'jumpBuffer'])
       expect(k in RYU_PROFILE, k).toBe(false);
