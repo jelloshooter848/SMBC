@@ -43,6 +43,13 @@ under `## [Unreleased]`.
 - Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
   crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
   crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
+- Classic mode: **Vic Viper**, the starfighter cut from the original, joins the second row. The screen scrolls right by
+  itself and carries the ship; it flies freely in eight directions with no gravity, shoots straight ahead through
+  walls (breaking bricks and bumping blocks), enters pipes in mid-air, and cannot stomp or bump blocks from below.
+  Getting pinned against a wall by the scrolling screen is fatal. Power capsules (from power-up blocks after the
+  Mushroom, and from defeated enemies) light a Gradius-style power bar on the HUD; POWER takes the lit power-up:
+  Speed Up, a ground Missile that breaks armour, Double, Laser, up to four Options and a front Shield. The Mushroom
+  turns the trim blue. Current play is unchanged.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
