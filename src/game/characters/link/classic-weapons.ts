@@ -303,7 +303,7 @@ export class LinkBoomerang extends Projectile {
     const s = this.type.spec.speed / 4096;
     if (!this.turned) {
       // The first enemy touched (World.projectile records it in hitAt after this update) turns it.
-      if ([...this.hitAt.values()].some((f) => f >= this.checked)) this.turn();
+      if ([...(this.hitAt?.values() ?? [])].some((f) => f >= this.checked)) this.turn();
       else if (this.atScreenEdge(world)) this.turn();
       else if (this.type.range !== null) {
         const cx = b.x + (b.w >> 1);

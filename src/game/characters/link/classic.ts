@@ -99,7 +99,7 @@ export const FIRST_BOMBS = 3;
 export const REPEAT_BOMBS = 3;
 
 /** Sword damage by power state (DamageValue.as: Lv 1, Lv 2, Magic Sword; LK-C24). */
-export const SWORD_DAMAGE: Record<string, number> = { small: 200, big: 275, fire: 400 };
+export const SWORD_DAMAGE = { small: 200, big: 275, fire: 400 } as const;
 
 /** Stab poses (`_pose`): 1 forward, 2 up, 3 down; 4 a throw or bomb (no sword). */
 const FORWARD = 1;
@@ -435,6 +435,7 @@ export const LINK_CLASSIC: CharacterDef = {
   hitbox: () => ({ w: 12, h: 16 }),
   sprite,
   blockPowerUp: classicBlockPowerUp,
+  powerIcon: true,
   jumpSfx: LINK.jumpSfx,
   guide: LINK_CLASSIC_GUIDE,
   touchLabels: (p) =>
@@ -462,7 +463,7 @@ export const LINK_CLASSIC: CharacterDef = {
     rooted: (p, input) => p.attackTimer > 0 || startsAction(p, input),
     meleeDamage: (p): DamageSource => ({
       kind: 'sword',
-      amount: SWORD_DAMAGE[p.powerState] ?? 200,
+      amount: SWORD_DAMAGE[p.powerState as keyof typeof SWORD_DAMAGE] ?? SWORD_DAMAGE.small,
       owner: p,
       dirX: p.facing,
       ...LINK_STRIKE,
