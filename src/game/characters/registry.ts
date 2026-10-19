@@ -29,6 +29,12 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {};
  */
 export const CLASSIC_EXTRAS: CharacterDef[] = [];
 
+/**
+ * Classic SMBC's level-load step (TG-45, rules/classic-water.ts), re-exported here because only
+ * this file may import a classic module: the World calls it when its rules are 'classic'.
+ */
+export { applyClassicLevelEdits } from '../rules/classic-water';
+
 /** The def a World plays for roster hero `def` under `rules` (TG-17). */
 export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {
   return rules === 'classic' ? (CLASSIC_CHARACTERS[def.id] ?? def) : def;

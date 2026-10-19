@@ -205,6 +205,26 @@ export interface CharacterDef {
    */
   touchLabels?(p: Player, world: World): TouchLabels;
   /**
+   * How the hero looks this frame (Classic SMBC's hit looks, PS-C13: 65 % opacity, a flicker).
+   * Absent: Player.visible's blink while invulnerable. `alpha` 1 draws as usual.
+   */
+  drawLook?(p: Player, frame: number, reduceFlashing: boolean): { visible: boolean; alpha: number };
+  /**
+   * What a broken brick or a coin out of a block drops for this hero (Classic SMBC, PS-C15),
+   * rolled once per brick or coin by World.strikeBlock. Absent: nothing.
+   */
+  blockDrop?(rng: Rng, p: Player, source: 'brick' | 'coin'): PickupKind | null;
+  /**
+   * Star frames left when the level music comes back (Classic SMBC, PS-C19: 78). Absent: 1, the
+   * Star's last frame.
+   */
+  starMusicLeft?: number;
+  /**
+   * One ammo counter in the tool slot (Classic SMBC, PS-C27: icon, then ×NN), for a hero with no
+   * tool belt. Null hides it. Absent: nothing (a belt is drawn from `tools`).
+   */
+  hudAmmo?(p: Player): { icon: string; sheet?: string; count: number } | null;
+  /**
    * 'classic' on a Classic SMBC def (TG-18): registry.ts's CLASSIC_CHARACTERS and CLASSIC_EXTRAS.
    * Never set on a CHARACTERS entry (TG-39). Classic defs use `damage: { kind: 'powerup', states:
    * ['small', 'big', 'fire'] }` (TG-21: Mushroom tier stored as 'big', Flower as 'fire') and leave

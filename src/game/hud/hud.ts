@@ -43,6 +43,24 @@ export interface HudOptions {
   keyHolder?: number | null;
 }
 
+/**
+ * Where a Classic SMBC hero's power icon goes (PS-C26, 8x8, the third HUD row): player 1's, then
+ * player 2's (where player 2's hearts are in Current).
+ */
+export const POWER_ICON_P1 = { x: 24, y: 24 } as const;
+export const POWER_ICON_P2 = { x: 144, y: 32 } as const;
+
+/**
+ * A Classic SMBC hero's power icon (PS-C26): the Mushroom or the Fire Flower, nothing when small.
+ * Only Classic defs (`rules: 'classic'`) show one; Current Mario keeps today's HUD.
+ */
+export function powerIcon(p: Player | undefined): 'icon-mushroom' | 'icon-flower' | null {
+  if (!p || p.def.rules !== 'classic') return null;
+  if (p.powerState === 'big') return 'icon-mushroom';
+  if (p.powerState === 'fire') return 'icon-flower';
+  return null;
+}
+
 /** Where the carried key's icon goes (8x8, hud/hud.ts): player 1's, then player 2's. */
 export const KEY_ICON_P1 = { x: 132, y: 24 } as const;
 export const KEY_ICON_P2 = { x: 196, y: 24 } as const;
@@ -184,6 +202,16 @@ export function drawHeroStats(
       }
     }
   }
+  // Classic SMBC: the power icon (PS-C26) and one ammo counter in the tool slot (PS-C27).
+  const icon = powerIcon(players[0]);
+  if (icon) r.sprite(assets.sheet('items'), icon, POWER_ICON_P1.x, POWER_ICON_P1.y);
+  const ammo = player ? def.hudAmmo?.(player) : null;
+  if (ammo) {
+    const sheet = assets.sheet(ammo.sheet ?? 'items');
+    r.sprite(sheet, ammo.icon, 96, 24);
+    const iw = sheet.frames?.get(ammo.icon)?.w ?? 8;
+    text(`×${pad(ammo.count, ammo.count > 99 ? 3 : 2)}`, 97 + iw, 24);
+  }
   // Tool belt (icon + ammo) under the coin counter and a secondary meter under the hearts.
   if (player) {
     const tools = def.tools?.(player);
@@ -222,7 +250,7 @@ export function drawHeroStats(
       if (w > 0) r.rect(33, 35, w, 3, m.colour);
     }
   }
-  drawPlayerTwoStats(r, state, players, text);
+  drawPlayerTwoStats(r, state, players, text, assets);
 }
 
 /** Player two: name under WORLD, hearts or a short bar at the right edge (`text`: the caller's). */
@@ -231,11 +259,14 @@ export function drawPlayerTwoStats(
   state: GameState,
   players: Player[],
   text: (str: string, x: number, y: number) => void,
+  assets?: AssetRegistry,
 ): void {
   const p2 = players[1];
   if (p2 && state.character2) {
     const d2 = p2.def.damage;
     text(p2.def.hudName.slice(0, 6), 144, 24);
+    const icon = powerIcon(p2);
+    if (icon && assets) r.sprite(assets.sheet('items'), icon, POWER_ICON_P2.x, POWER_ICON_P2.y);
     if (d2.kind === 'hp' && d2.hudStyle === 'hearts') {
       const full = Math.floor(p2.hp / 2);
       const half = p2.hp % 2;
@@ -274,8 +305,14 @@ export function drawPlayerTwoStatsOver(
   const o = new OffsetRenderer(r, 0, dy);
   const font = assets.sheet('font');
   const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
-  drawPlayerTwoStats(o, state, players, (str, x, y) => {
-    for (const [ox, oy] of OUTLINE) o.text(dark, str, x + ox, y + oy);
-    o.text(font, str, x, y);
-  });
+  drawPlayerTwoStats(
+    o,
+    state,
+    players,
+    (str, x, y) => {
+      for (const [ox, oy] of OUTLINE) o.text(dark, str, x + ox, y + oy);
+      o.text(font, str, x, y);
+    },
+    assets,
+  );
 }
