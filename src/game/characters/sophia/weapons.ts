@@ -179,8 +179,9 @@ export class CannonShot extends Projectile {
     vy: number,
     readonly level: number,
     owner: Player,
+    /** Another spec for the shot (Classic SMBC's, in the original's damage units). */
+    spec: ProjectileSpec = CANNON[level] as ProjectileSpec,
   ) {
-    const spec = CANNON[level] as ProjectileSpec;
     super(cx - px(spec.w >> 1), cy - px(spec.h >> 1), vx < 0 ? -1 : 1, spec, owner, { vx, vy });
   }
 
@@ -198,7 +199,10 @@ export class CannonShot extends Projectile {
     if (map.inBounds(tx, ty) && map.isSolid(tx, ty)) {
       const def = tileDef(map.get(tx, ty));
       const p = this.owner instanceof Player ? this.owner : world.nearestPlayer(x);
-      if (def.block && def.block.kind !== 'hidden') {
+      if (def.block && def.block.kind !== 'hidden' && this.spec.classicBlocks) {
+        // Classic SMBC (BR-C7 to BR-C9): the shot's damage comes off the brick's 125 HP.
+        world.strikeBlock(tx, ty, p, false, { source: 'shot', damage: this.spec.amount });
+      } else if (def.block && def.block.kind !== 'hidden') {
         const plain = def.block.kind === 'brick' && def.block.content === 'none';
         if (plain && this.level === 0 && !isWeakened(map, tx, ty)) {
           weakenBrick(map, tx, ty);
@@ -246,8 +250,9 @@ export class TripleMissile extends Projectile {
     /** Sideways start speed (perpendicular to the axis, velocity units, signed). */
     private side: number,
     owner: Player,
+    spec: ProjectileSpec = TRIPLE,
   ) {
-    super(cx - px(TRIPLE.w >> 1), cy - px(TRIPLE.h >> 1), ax < 0 ? -1 : 1, TRIPLE, owner, { vx: 0, vy: 0 });
+    super(cx - px(spec.w >> 1), cy - px(spec.h >> 1), ax < 0 ? -1 : 1, spec, owner, { vx: 0, vy: 0 });
   }
 
   override update(world: World): void {
@@ -265,7 +270,10 @@ export class TripleMissile extends Projectile {
     const def = tileDef(world.map.get(tx, ty));
     if (def.block && def.block.kind !== 'hidden' && world.map.isSolid(tx, ty)) {
       const p = this.owner instanceof Player ? this.owner : world.nearestPlayer(b.x);
-      world.strikeBlock(tx, ty, p, true, { source: 'shot' });
+      world.strikeBlock(tx, ty, p, true, {
+        source: 'shot',
+        ...(this.spec.classicBlocks ? { damage: this.spec.amount } : {}),
+      });
       return this.burst(world);
     }
     const camL = world.camera.x - px(16);
@@ -328,8 +336,8 @@ export function nearestHomingTarget(world: World, x: number, y: number): Enemy |
 export class HomingMissile extends Projectile {
   private thrust = 0;
   private idle = 0;
-  constructor(cx: number, cy: number, owner: Player) {
-    super(cx - px(HOMING.w >> 1), cy - px(HOMING.h >> 1), 1, HOMING, owner, { vx: 0, vy: 0 });
+  constructor(cx: number, cy: number, owner: Player, spec: ProjectileSpec = HOMING) {
+    super(cx - px(spec.w >> 1), cy - px(spec.h >> 1), 1, spec, owner, { vx: 0, vy: 0 });
   }
 
   override update(world: World): void {

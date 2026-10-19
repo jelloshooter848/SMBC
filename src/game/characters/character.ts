@@ -276,6 +276,12 @@ export interface CharacterDef {
    * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
    */
   seaFloorSafe?: boolean;
+  /**
+   * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
+   * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
+   * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.
+   */
+  levelFlags?: { horz?: boolean; vert?: boolean; wide?: boolean; goodSwimmer?: boolean; poorBowser?: boolean };
 }
 
 /**
