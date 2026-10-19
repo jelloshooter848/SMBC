@@ -39,6 +39,12 @@ under `## [Unreleased]`.
   in mid-air, no early jump presses, speed that builds and runs down smoothly (Luigi is slow to start and slides far), a
   small stomp bounce, the crouch-jump, the original fireball (slower, lower bounces, bursts on ceilings), a Mushroom
   while big gives fire, and their own death hop and walk to Toad. Both get their own Classic guide page.
+- Classic Sophia III (Classic rules): the same tank, with the original's power-ups (a Mushroom gives the Hyper cannon
+  and the hover, a Flower the Crusher cannon, wall and ceiling climbing and the Triple Missile; another Flower gives
+  more missiles), the original's damage (a Goomba takes three Normal shots, two Hyper, one Crusher; armour stops the
+  cannon but not the Triple Missile), missile ammo drops only once she has missiles, and a hit that takes every power
+  but keeps the missiles. No Jason in Classic: SELECT swaps the missiles when she has both. The Lost Levels castles
+  (and the water of 3-2 and 6-2) get the original's wider shafts for her, as the other levels already do.
 
 ## [0.4.55] - 2026-10-13
 
