@@ -63,3 +63,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - #151 release review REVISE: VV power-bar not announced (blocker) + spring solid + nameY + P2 7 letters -> VV agent fixing. Release session asked owner to confirm VV/WoL approval.
 - #151 42c5c5a1 green + release ACCEPT. Pending nits for next extras-2 push: MISSILE touches CLASSIC tag (gap 8px); VV lit-slot name over P2 HUD in dev co-op; KEY_ICON_P2 may cover WARRIOR 'R'.
 - Owner decisions pending: #150 art (leave / fix in #150 / follow-up), merge timing #150/#151. All 5 PRs green.
+- #147 MERGED (main c2e484c9). #148 retargeted to main (clean). Owner 'Proceed' => art follow-up PR7 (claude/classic-art on extras-2, wip classic-wip-art, 5207) incl. pending nits. Builder launched.
