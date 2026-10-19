@@ -171,7 +171,8 @@ export class Spring extends Entity {
       b.y = s.y - b.h;
       b.vy = 0;
       b.onGround = true;
-      this.press(p);
+      // A hero that flies (CharacterDef.flies: Vic Viper, VV-30) only meets a solid block.
+      if (!p.def.flies) this.press(p);
     } else if (b.vy < 0 && b.y - velToSub(b.vy) >= s.y + s.h - px(4)) {
       b.y = s.y + s.h;
       b.vy = 0;

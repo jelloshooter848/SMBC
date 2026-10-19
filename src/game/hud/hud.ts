@@ -271,13 +271,13 @@ export function drawHeroStats(
 
 /**
  * Where the power bar's cells start (third HUD row, after the power icon), and the lit slot's name
- * (under the bar, clear of the rules tag at the top right).
+ * (after the bar on the same row; seven letters end at x 196, where the rules tag's row starts).
  */
-export const POWER_BAR = { x: 36, y: 24, cellW: 18, cellH: 8, nameX: 36, nameY: 34 } as const;
+export const POWER_BAR = { x: 34, y: 24, cellW: 17, cellH: 8, nameX: 140, nameY: 24 } as const;
 
 /**
- * The power bar (VV-20): one 16 x 8 cell a slot (2 px apart), its short label in it (blank once maxed), the
- * lit cell in orange; the lit slot's full name under the bar.
+ * The power bar (VV-20): one 16 x 8 cell a slot (1 px apart), its short label in it (blank once maxed), the
+ * lit cell in orange; the lit slot's name after the bar.
  */
 function drawPowerBar(
   r: Renderer,
@@ -288,7 +288,7 @@ function drawPowerBar(
   bar.slots.forEach((s, i) => {
     const cx = x + i * cellW;
     const lit = bar.selected === i + 1;
-    r.rect(cx, y, cellW - 2, cellH, lit ? '#e45c10' : '#0000bc');
+    r.rect(cx, y, cellW - 1, cellH, lit ? '#e45c10' : '#0000bc');
     if (s.available) text(s.label, cx + (s.label.length === 1 ? 5 : 1), y);
   });
   if (bar.selected > 0 && bar.name) text(bar.name, nameX, nameY);
@@ -305,7 +305,7 @@ export function drawPlayerTwoStats(
   const p2 = players[1];
   if (p2 && state.character2) {
     const d2 = p2.def.damage;
-    text(p2.def.hudName.slice(0, 6), 144, 24);
+    text(p2.def.hudName.slice(0, 7), 144, 24);
     const icon = powerIcon(p2);
     if (icon && assets) r.sprite(assets.sheet('items'), icon, POWER_ICON_P2.x, POWER_ICON_P2.y);
     if (d2.kind === 'hp' && d2.hudStyle === 'hearts') {

@@ -28,6 +28,7 @@ import { Projectile } from '@game/entities/projectiles/projectile';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { PowerUp } from '@game/entities/objects/powerup';
+import { Spring } from '@game/entities/objects/spring';
 import { Pickup } from '@game/entities/objects/pickup';
 import { drawHud, HUD_BOTTOM, POWER_BAR } from '@game/hud/hud';
 import { fontText } from '@game/hud/text';
@@ -281,6 +282,26 @@ describe('Bowser (VV-12, 4b)', () => {
 });
 
 describe('no head bump, no stomp, springs, water (VV-17, VV-25, VV-26, VV-30)', () => {
+  it('a springboard is a solid block: flown onto, it is not pressed and never launches', () => {
+    const r = rig(flatLevel({}, 16));
+    const sp = new Spring(8, 12);
+    r.world.spawn(sp);
+    hold(r, 2);
+    const b = r.p.body;
+    b.x = px(8 * 16) + ((px(16) - b.w) >> 1);
+    b.y = sp.body.y - b.h - px(20);
+    hold(r, 40, ['down']);
+    expect(sp.busy).toBe(false);
+    expect(b.y + b.h).toBe(sp.body.y);
+    hold(r, 60);
+    expect(b.y + b.h).toBe(sp.body.y);
+    // Flown into from the side: a wall.
+    b.x = px(4 * 16);
+    b.y = sp.body.y + px(4);
+    hold(r, 60, ['right']);
+    expect(b.x + b.w).toBeLessThanOrEqual(sp.body.x);
+  });
+
   it('flying up into a ? block: no bump, it stays a ? block; it is a ceiling', () => {
     // One screen wide: no scroll carries the ship off the column.
     const r = rig(flatLevel({ 9: `${'.'.repeat(6)}?` }, 16));
@@ -474,6 +495,21 @@ describe('power states (VV-18, VV-19)', () => {
 });
 
 describe('the power bar (VV-20, VV-21, VV-M1, VV-M2)', () => {
+  it('the bar is read out: a lit slot and a taken power-up (every new text is announced)', () => {
+    const r = rig(flatLevel());
+    addCapsule(r.p, r.world);
+    addCapsule(r.p, r.world);
+    spendPower(r.p, r.world);
+    const said = r.world.events.flatMap((e) => (e.type === 'say' ? [e.text] : []));
+    expect(said).toEqual([
+      'Speed Up lit. POWER to take it.',
+      'Missile lit. POWER to take it.',
+      'Missile taken.',
+    ]);
+    for (const t of said)
+      expect(t).not.toMatch(/\b(button|press|push|tap|hold)\s+[abc]\b|\([abc]\)|\b[abc]\s*:/i);
+  });
+
   it('six capsules light slots 1 to 6 in turn; the 7th selects slot 1', () => {
     const r = rig(flatLevel());
     for (let i = 1; i <= 6; i++) {

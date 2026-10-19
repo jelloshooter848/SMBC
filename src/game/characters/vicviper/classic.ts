@@ -69,12 +69,12 @@ export const VIC_HITBOX = { w: 15, h: 10 } as const;
 
 /** The power bar's slots in order (VV-20) with their caps (powerLevelIsAvailable, VV-21). */
 export const VIC_BAR = [
-  { key: 'vvSpeed', cell: 'SP', name: 'SPEED UP', max: 5 },
-  { key: 'vvMissile', cell: 'MS', name: 'MISSILE', max: 1 },
-  { key: 'vvDouble', cell: 'DB', name: 'DOUBLE', max: 2 },
-  { key: 'vvLaser', cell: 'LS', name: 'LASER', max: 2 },
-  { key: 'vvOption', cell: 'OP', name: 'OPTION', max: 4 },
-  { key: 'vvShield', cell: '?', name: 'SHIELD', max: 1 },
+  { key: 'vvSpeed', cell: 'SP', name: 'SPEED', spoken: 'Speed Up', max: 5 },
+  { key: 'vvMissile', cell: 'MS', name: 'MISSILE', spoken: 'Missile', max: 1 },
+  { key: 'vvDouble', cell: 'DB', name: 'DOUBLE', spoken: 'Double', max: 2 },
+  { key: 'vvLaser', cell: 'LS', name: 'LASER', spoken: 'Laser', max: 2 },
+  { key: 'vvOption', cell: 'OP', name: 'OPTION', spoken: 'Option', max: 4 },
+  { key: 'vvShield', cell: '?', name: 'SHIELD', spoken: 'Shield', max: 1 },
 ] as const;
 /** A capsule with every slot maxed scores this (VV-M2). */
 export const MAXED_CAPSULE_SCORE = 1000;
@@ -114,6 +114,8 @@ export function addCapsule(p: Player, world: World): void {
     if (slotAvailable(p, slot)) {
       p.scratch.vvSel = slot;
       world.audio.sfx('capsule');
+      // The bar's new text, read out (POWER is the ability's name).
+      world.events.push({ type: 'say', text: `${VIC_BAR[slot - 1]?.spoken ?? ''} lit. POWER to take it.` });
       return;
     }
   }
@@ -138,6 +140,7 @@ export function spendPower(p: Player, world: World): boolean {
   }
   s.vvSel = 0;
   world.audio.sfx('item-get');
+  world.events.push({ type: 'say', text: `${slot.spoken} taken.` });
   return true;
 }
 
@@ -182,6 +185,8 @@ function fly(p: Player, input: InputFrame, map: TileMap): true {
   p.jumping = false;
   b.vx = vx;
   b.vy = 0;
+  // Where the feet were before this frame's move (a springboard's solid box reads it).
+  b.prevBottom = b.y + b.h;
   p.fallSpeed = 0;
   moveX(b, map, velToSub(vx));
   // Blocks are plain ceiling from below (no bump callback) and hidden blocks are not there (VV-25).
