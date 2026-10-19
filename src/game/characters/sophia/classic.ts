@@ -30,6 +30,7 @@ import {
   HURT_PUSH_SLOW,
   MAX_CANNON_SHOTS,
   MAX_HOMING_OUT,
+  MIN_SPEED,
   MISSILE_SIDE,
   TRIPLE_COST,
   TRIPLE_DROP,
@@ -133,7 +134,8 @@ function touchLabels(p: Player): TouchLabels {
   const sub = selectedMissile(p);
   const usable =
     sub !== null &&
-    (p.star > 0 || (sub === 'triple' ? (p.scratch.triple ?? 0) >= TRIPLE_COST : (p.scratch.homing ?? 0) >= 1));
+    (p.star > 0 ||
+      (sub === 'triple' ? (p.scratch.triple ?? 0) >= TRIPLE_COST : (p.scratch.homing ?? 0) >= 1));
   return {
     attack: 'SHOOT',
     special: usable ? (sub === 'homing' ? 'HOMING' : 'MISSILE') : null,
@@ -175,7 +177,8 @@ const behaviour: CharacterBehaviour = {
   },
   onPickup(p, kind, world) {
     // Always taken (PS-C17), capped at the maximum.
-    if (kind === 'triple-ammo') p.scratch.triple = Math.min(TRIPLE_MAX, (p.scratch.triple ?? 0) + TRIPLE_DROP);
+    if (kind === 'triple-ammo')
+      p.scratch.triple = Math.min(TRIPLE_MAX, (p.scratch.triple ?? 0) + TRIPLE_DROP);
     else if (kind === 'homing-ammo')
       p.scratch.homing = Math.min(HOMING_MAX, (p.scratch.homing ?? 0) + HOMING_DROP);
     else return false;
@@ -238,6 +241,9 @@ export const SOPHIA_CLASSIC: CharacterDef = {
   blockDrop: (rng, p, source) => roll(p, CLASSIC_DROP_RATES[source], rng),
   // TG-44: both missiles, full; the Triple Missile selected first (SO-M9).
   devKit: () => ({ hasTriple: 1, triple: TRIPLE_MAX, hasHoming: 1, homing: HOMING_MAX }),
+  // SO-43: after the castle axe she drives on at her top speed, then her floor friction is
+  // FX_DUNGEON_GOT_AXE (1e-7 a second: x0.76441 a frame) down to her stop snap.
+  axeWalk: { speed: DRIVE_MAX, stop: 50096, snap: MIN_SPEED },
   // SO-5: the original's usesHorzObjs, usesVertObjs, isWideCharacter, isGoodSwimmer.
   levelFlags: { horz: true, vert: true, wide: true, goodSwimmer: true },
 };

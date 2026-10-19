@@ -72,7 +72,8 @@ function run(
 
 const shots = (w: World) => w.entities.filter((e): e is CannonShot => e instanceof CannonShot && e.alive);
 const hold = (w: World) => {
-  for (const e of w.entities) if (e instanceof Goomba || e instanceof Koopa || e instanceof BulletBill) e.body.vx = 0;
+  for (const e of w.entities)
+    if (e instanceof Goomba || e instanceof Koopa || e instanceof BulletBill) e.body.vx = 0;
 };
 
 /** Shots (or volleys) fired every 30 frames from frame 4 that a foe takes to die; -1 if it lives. */
@@ -440,7 +441,9 @@ describe('Classic Sophia III: wall and ceiling climbing (SO-36, SO-37)', () => {
     expect(end - start).toBe(12);
     expect(log[end]?.s).toBe(RIGHT);
     expect(log[end + 1]?.vy).toBe(-0x018ab);
-    const hyper = run(field(column(8, 10, 12)), (_w, f) => (f > 2 ? ['right', 'up'] : []), 60, { power: 'big' });
+    const hyper = run(field(column(8, 10, 12)), (_w, f) => (f > 2 ? ['right', 'up'] : []), 60, {
+      power: 'big',
+    });
     expect(sophiaState(hyper.world.player).surface).toBe(FLOOR);
   });
 
@@ -553,7 +556,11 @@ describe('Classic Sophia III: missiles (SO-30 to SO-32)', () => {
     const bare = run(field(), () => [], 2).world.player;
     expect(bare.def.drop?.(yes, {} as never, bare)).toBeNull();
     expect(bare.def.blockDrop?.(yes, bare, 'brick')).toBeNull();
-    expect(bare.def.touchLabels?.(bare, {} as World)).toEqual({ attack: 'SHOOT', special: null, select: null });
+    expect(bare.def.touchLabels?.(bare, {} as World)).toEqual({
+      attack: 'SHOOT',
+      special: null,
+      select: null,
+    });
     expect(bare.def.hudAmmo?.(bare)).toBeNull();
     const r = run(field(), () => [], 2, { kit: { hasTriple: 1, triple: 58 } });
     const p = r.world.player;
@@ -583,7 +590,12 @@ describe('Classic Sophia III: level data (SO-45 to SO-48)', () => {
 describe('Classic Sophia III: guide (TG-22, TG-40)', () => {
   it('names abilities, never button letters', () => {
     const g = SOPHIA_CLASSIC.guide;
-    const text = [g.tagline, ...g.controls.map((c) => c.does), ...g.powerups.map((p) => p.does), ...(g.tips ?? [])];
+    const text = [
+      g.tagline,
+      ...g.controls.map((c) => c.does),
+      ...g.powerups.map((p) => p.does),
+      ...(g.tips ?? []),
+    ];
     for (const t of text) expect(t).not.toMatch(/\b(press|hold) [ABXYZC]\b|\b[ABC] button\b/i);
     expect(g.controls.find((c) => c.action === 'select')?.touch).toBe('SWAP');
     expect(g.controls.some((c) => c.does.includes('Jason'))).toBe(false);

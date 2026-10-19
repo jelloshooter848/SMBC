@@ -281,7 +281,13 @@ export interface CharacterDef {
    * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
    * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.
    */
-  levelFlags?: { horz?: boolean; vert?: boolean; wide?: boolean; goodSwimmer?: boolean; poorBowser?: boolean };
+  levelFlags?: {
+    horz?: boolean;
+    vert?: boolean;
+    wide?: boolean;
+    goodSwimmer?: boolean;
+    poorBowser?: boolean;
+  };
 }
 
 /**
