@@ -42,6 +42,8 @@ import { FLOOR, SOUNDS, sophiaState, type SophiaState } from './state';
 import { CannonShot, HomingMissile, nearestHomingTarget, SOPHIA_SHEET, TripleMissile } from './weapons';
 import { CANNON_CLASSIC, HOMING_CLASSIC, TRIPLE_CLASSIC } from './classic-weapons';
 import { SOPHIA_CLASSIC_GUIDE } from './classic-guide';
+import { sophiaCameraX } from './classic-camera';
+import { afterLifts, classicDrive } from './classic-lifts';
 
 /*
  * Sophia III under Classic SMBC rules (bug-reports/2026-10-07-sophia-build-classic-character.md,
@@ -201,6 +203,9 @@ const behaviour: CharacterBehaviour = {
     return 'hurt';
   },
   canGrabVine: () => true,
+  // SO-38: her drive and the lift ride (classic-lifts.ts).
+  drive: classicDrive,
+  afterLifts,
   onRespawn(p, world) {
     // A co-op drop-in (PS-C22): back small with nothing (the missiles go with a death, SO-23).
     classicRespawn(p, {});
@@ -215,6 +220,8 @@ function roll(p: Player, chance: number, r: { chance(p: number): boolean }): Pic
 }
 
 export const SOPHIA_CLASSIC: CharacterDef = {
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'your frog',
   ...SOPHIA,
   rules: 'classic',
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
@@ -244,6 +251,8 @@ export const SOPHIA_CLASSIC: CharacterDef = {
   // SO-43: after the castle axe she drives on at her top speed, then her floor friction is
   // FX_DUNGEON_GOT_AXE (1e-7 a second: x0.76441 a frame) down to her stop snap.
   axeWalk: { speed: DRIVE_MAX, stop: 50096, snap: MIN_SPEED },
+  // SO-39: her corner turns ease the camera.
+  cameraX: sophiaCameraX,
   // SO-5: the original's usesHorzObjs, usesVertObjs, isWideCharacter, isGoodSwimmer.
   levelFlags: { horz: true, vert: true, wide: true, goodSwimmer: true },
 };

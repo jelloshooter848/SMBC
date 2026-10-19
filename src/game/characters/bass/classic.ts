@@ -54,25 +54,29 @@ const BASS_BASE: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'mu
 /** He wears the Water Shield suit while he holds the Flower (BA-33); his own suit otherwise. */
 const bassPalette = (id: MMWeaponId): string => (id === 'water-shield' ? 'bass-water' : 'bass');
 
-export const BASS_CLASSIC: CharacterDef = classicMegaMan({
-  base: BASS_BASE,
-  profile: BASS_CLASSIC_PROFILE,
-  sheet: 'bass',
-  palette: 'bass',
-  buster: { spec: BASS_BUSTER, cap: BASS_CAP_BIG },
-  busterCapSmall: BASS_CAP_SMALL,
-  charge: null,
-  flowerWeapon: 'water-shield',
-  rush: false,
-  guide: BASS_CLASSIC_GUIDE,
-  rapid: {
-    step: BASS_FIRE_STEP,
-    every: BASS_FIRE_EVERY,
-    aim: bassAim,
-    poses: AIM_POSE,
-  },
-  swapOnPress: true,
-  weaponPalette: bassPalette,
-  weaponLabel: (id) => (id === 'water-shield' ? 'WATER' : mmWeapon(id).label),
-  slideFrame: 'dash',
-});
+export const BASS_CLASSIC: CharacterDef = {
+  ...classicMegaMan({
+    base: BASS_BASE,
+    profile: BASS_CLASSIC_PROFILE,
+    sheet: 'bass',
+    palette: 'bass',
+    buster: { spec: BASS_BUSTER, cap: BASS_CAP_BIG },
+    busterCapSmall: BASS_CAP_SMALL,
+    charge: null,
+    flowerWeapon: 'water-shield',
+    rush: false,
+    guide: BASS_CLASSIC_GUIDE,
+    rapid: {
+      step: BASS_FIRE_STEP,
+      every: BASS_FIRE_EVERY,
+      aim: bassAim,
+      poses: AIM_POSE,
+    },
+    swapOnPress: true,
+    weaponPalette: bassPalette,
+    weaponLabel: (id) => (id === 'water-shield' ? 'WATER' : mmWeapon(id).label),
+    slideFrame: 'dash',
+  }),
+  // The castle text's name (BA-M13): the original's default skin (BmdInfo.as).
+  rescueName: 'Dr. Wily',
+};

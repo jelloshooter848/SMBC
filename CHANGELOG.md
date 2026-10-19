@@ -10,32 +10,6 @@ under `## [Unreleased]`.
 
 ### Added
 
-- CLASSIC MODE: a new **Classic** entry on the title, after Start game, plays the original game: Super Mario Bros.
-  from World 1-1 for one player with every hero to pick, the original lives, warps, continues and ending, and none of
-  the campaign's additions (no map, story, captives, hero items or boss bars; nothing is saved to a file). Beating 8-4
-  in Classic mode opens **The Lost Levels** in the Classic menu, and they follow straight on.
-- Developer mode: the Level select has a **Mode** row (Free play, or Classic run with Classic mode's lives and
-  continues, playing the Rules row's rules); `?dev=1&mode=classic&rules=classic&level=..&char=..` starts a Classic run.
-  A Classic run started this way never opens the Lost Levels.
-- Classic rules: in CLASSIC > Options, **Classic rules** picks how the heroes play in Classic mode: **Classic SMBC**
-  (the original game's way) or **Current** (as in the campaign). The heroes still play today's way until their Classic
-  versions are built: a **CLASSIC?** tag at the top right of the screen shows this, and turns into **CLASSIC** once the
-  hero you play has its Classic version. Changing the rules puts your hero's power back to the start ("Rules changed.
-  Power reset."). Campaign files, mini games and training rooms always play today's rules. In developer mode the Level
-  select also has a **Rules** row, and `?dev=1&rules=classic&level=1-1&char=<id>` starts a run under Classic SMBC rules.
-- Classic rules shared systems for enemies and blocks (ready for the Classic heroes): enemies get the original's hit
-  points and numbered damage, Bowser's health by his form (and for Mario or Luigi), armoured Buzzy Beetles and Bullet
-  Bills that only piercing weapons hurt (a blocked hit plays a new armour sound), hit-stun, freeze, and the Star or a
-  kicked shell beating Bowser. Bricks get 125 hit points against shots and blasts, melee breaks them in one hit, any
-  weapon opens a `?` or hidden block from any side, and shots can fly through ground and pipes while still striking
-  blocks. Flickers stay solid with Reduce flashing on. Current play is unchanged.
-- Classic rules: **Mega Man** plays as in the original. No health bar: he starts small, the Mushroom gives the charge
-  shot (two levels) and the Fire Flower gives Metal Blade on Special, aimed eight ways, with its own energy bar; one hit
-  takes both away. Buster shots fly through walls and pipes and break bricks. He takes a small first step, his jump
-  eases off when you let go, and he can jump out of a slide, slide under low ceilings and over one-tile holes. A tap of
-  Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
-  buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
-  (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
 - Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
   only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
   up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
@@ -65,6 +39,59 @@ under `## [Unreleased]`.
   is announced, shown on the HUD and kept when you lose a life. They walk and stop at once, jump one fixed height, stand
   still while attacking, cannot stomp, and blocks do nothing when hit from below. The Fire Flower gives every class a
   new outfit.
+- Classic mode: the castle's "another castle" line names each Classic-only hero's own rescue: Dr. Wily for Bass,
+  Roll for Proto Man and Break Man, Palutena for Pit and the Reaper for Dark Pit.
+  Vic Viper and the Warriors of Light keep the usual line.
+
+## [0.4.57] - 2026-10-19
+
+### Added
+
+- Classic Sophia III on moving lifts: with wall climbing she drives round a lift's end onto its side and underneath
+  it, and a jump grips its underside; she rides it there and lets go when it carries her away (an elevator wrapping
+  round). Her corner turns no longer jerk the screen: it eases after her.
+- Classic Samus: her suit bursts into six pieces when she dies, to her own new death jingle.
+- Classic rules: after each castle, "BUT OUR PRINCESS IS IN ANOTHER CASTLE!" names the hero's own rescue as in the
+  original (Luigi: YOUR PRINCESS, Link: PRINCESS ZELDA, Mega Man: DR. LIGHT, Samus: THE HATCHLING, Simon: YOUR FRIEND,
+  Ryu: IRENE, Bill: YOUR BUDDY, Sophia III: YOUR FROG; Mario keeps OUR PRINCESS). The campaign's text is unchanged.
+
+### Fixed
+
+- Samus's missile now flies nose-first (it was drawn backwards), in the campaign and in Classic mode.
+- Other shots that flew tail-first now lead with their heads too: Samus's Power, Long and Ice Beams, Bill's machine-gun
+  and flame-thrower shots, Simon's dagger, Mega Man's Homing Knuckle and Hard Knuckle, and Link's sword beam in the
+  campaign.
+
+## [0.4.56] - 2026-10-19
+
+### Added
+
+- CLASSIC MODE: a new **Classic** entry on the title, after Start game, plays the original game: Super Mario Bros.
+  from World 1-1 for one player with every hero to pick, the original lives, warps, continues and ending, and none of
+  the campaign's additions (no map, story, captives, hero items or boss bars; nothing is saved to a file). Beating 8-4
+  in Classic mode opens **The Lost Levels** in the Classic menu, and they follow straight on.
+- Developer mode: the Level select has a **Mode** row (Free play, or Classic run with Classic mode's lives and
+  continues, playing the Rules row's rules); `?dev=1&mode=classic&rules=classic&level=..&char=..` starts a Classic run.
+  A Classic run started this way never opens the Lost Levels.
+- Classic rules: in CLASSIC > Options, **Classic rules** picks how the heroes play in Classic mode: **Classic SMBC**
+  (the original game's way) or **Current** (as in the campaign). The heroes still play today's way until their Classic
+  versions are built: a **CLASSIC?** tag at the top right of the screen shows this, and turns into **CLASSIC** once the
+  hero you play has its Classic version. Changing the rules puts your hero's power back to the start ("Rules changed.
+  Power reset."). Campaign files, mini games and training rooms always play today's rules. In developer mode the Level
+  select also has a **Rules** row, and `?dev=1&rules=classic&level=1-1&char=<id>` starts a run under Classic SMBC rules.
+- Classic rules shared systems for enemies and blocks (ready for the Classic heroes): enemies get the original's hit
+  points and numbered damage, Bowser's health by his form (and for Mario or Luigi), armoured Buzzy Beetles and Bullet
+  Bills that only piercing weapons hurt (a blocked hit plays a new armour sound), hit-stun, freeze, and the Star or a
+  kicked shell beating Bowser. Bricks get 125 hit points against shots and blasts, melee breaks them in one hit, any
+  weapon opens a `?` or hidden block from any side, and shots can fly through ground and pipes while still striking
+  blocks. Flickers stay solid with Reduce flashing on. Current play is unchanged.
+- Classic rules: **Mega Man** plays as in the original. No health bar: he starts small, the Mushroom gives the charge
+  shot (two levels) and the Fire Flower gives Metal Blade on Special, aimed eight ways, with its own energy bar; one hit
+  takes both away. Buster shots fly through walls and pipes and break bricks. He takes a small first step, his jump
+  eases off when you let go, and he can jump out of a slide, slide under low ceilings and over one-tile holes. A tap of
+  Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
+  buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
+  (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
@@ -1335,7 +1362,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...HEAD
+[0.4.57]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...v0.4.57
+[0.4.56]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...v0.4.55
 [0.4.54]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...v0.4.54
 [0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53

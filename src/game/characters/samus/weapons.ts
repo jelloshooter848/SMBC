@@ -23,6 +23,7 @@ export const POWER_BEAM: ProjectileSpec = {
   lifetime: 20,
   frames: ['beam-0', 'beam-1'],
   burstFrame: 'beam-1',
+  burstMirrors: true,
 };
 
 /** Same shot, full range. */
@@ -35,6 +36,7 @@ export const ICE_BEAM: ProjectileSpec = {
   damage: 'ice',
   frames: ['ice-beam-0', 'ice-beam-1'],
   burstFrame: 'ice-beam-1',
+  burstMirrors: true,
 };
 
 /** Snakes through walls and enemies. */

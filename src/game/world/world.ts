@@ -2,7 +2,7 @@ import { gainCoins } from '../items/wallet';
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { HUD_BOTTOM, SCORE_MAX } from '../hud/hud';
-import { fontText } from '../hud/text';
+import { fontText, wrapText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
 import { overlaps, type AABB } from '@engine/math/aabb';
@@ -103,6 +103,7 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, trueFormOf, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import {
+  burstPieces,
   DEATH_FRAMES,
   DEATH_SFX,
   renderDeath,
@@ -1767,7 +1768,8 @@ export class World {
     else if (heroScroll) this.autoScroll(heroScroll);
     else if (lead) {
       const before = this.camera.x;
-      this.camera.follow(lead.body.x, lead.body.y);
+      // A hero may lead the camera from an eased anchor (CharacterDef.cameraX: Classic Sophia III).
+      this.camera.follow(lead.def.cameraX?.(lead) ?? lead.body.x, lead.body.y);
       // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
       // held where it was, never pulled back (the screen does not scroll left), and a locked
       // screen is left alone.
@@ -2969,6 +2971,7 @@ export class World {
       if (!(e instanceof Lift) || !e.alive) continue;
       for (const p of this.activePlayers()) e.carry(p.body, this);
     }
+    for (const p of this.activePlayers()) p.def.behaviour.afterLifts?.(p, this);
   }
 
   /* ---------- Death ---------- */
@@ -2988,6 +2991,19 @@ export class World {
       p.body.vy = -dt.vy;
       p.body.onGround = false;
       this.throwDeaths.set(p, { landed: null });
+    }
+    const burst = this.deathStyle === 'hop' ? p.def.deathBurst : undefined;
+    if (burst) {
+      // A hero's own bursting death (CharacterDef.deathBurst, Classic SMBC Samus SA-C32): its
+      // jingle in place of Mario's; a fall off the screen shows no pieces and ends sooner.
+      if (toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
+      p.body.vx = 0;
+      p.body.vy = 0;
+      if (this.activePlayers().length === 0) {
+        this.audio.setTempoScale(1);
+        this.audio.playJingle(burst.jingle);
+      } else this.audio.sfx('hit');
+      return;
     }
     if (this.deathSfx) {
       // A mini game's own death (WorldStart.deathStyle): its sound, and the music stops.
@@ -3016,7 +3032,10 @@ export class World {
     const thrown = this.throwDeaths.get(p);
     const dt = p.def.deathThrow;
     const hop = this.deathStyle === 'hop' && !(thrown && dt) ? p.def.deathHop : undefined;
-    if (thrown && dt) {
+    const burst = this.deathStyle === 'hop' ? p.def.deathBurst : undefined;
+    if (burst) {
+      // A bursting death (CharacterDef.deathBurst): she is gone; the pieces are drawn from t.
+    } else if (thrown && dt) {
       // A thrown body (CharacterDef.deathThrow, Classic SMBC Bill BI-C15).
       stepThrow(p, dt.gravity, dt.maxFall, this.map);
       if (thrown.landed === null && p.body.onGround) thrown.landed = t;
@@ -3038,8 +3057,11 @@ export class World {
         p.body.y += velToSub(p.body.vy);
       }
     }
-    const end =
-      thrown && dt
+    const end = burst
+      ? this.pitDeaths.has(p)
+        ? burst.pitFrames
+        : burst.frames
+      : thrown && dt
         ? thrown.landed !== null
           ? thrown.landed + dt.afterLand
           : dt.maxFrames
@@ -3779,7 +3801,7 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      const news = end ? ['YOUR QUEST IS OVER.'] : ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
@@ -4359,6 +4381,17 @@ export class World {
 
   private renderPlayer(r: Renderer, view: View, p: Player): void {
     if (p.hidden || p.out) return;
+    const burst = p.dead && this.deathStyle === 'hop' ? p.def.deathBurst : undefined;
+    if (burst) {
+      // A bursting death (CharacterDef.deathBurst): only the pieces, none after a pit.
+      if (this.pitDeaths.has(p)) return;
+      const t = this.deathTimers.get(p) ?? 0;
+      const s = p.def.sprite(p, view.frame, view.reduceFlashing);
+      const sheet = view.assets.sheet(burst.sheet, s.palette);
+      for (const piece of burstPieces(burst, p, t, view.reduceFlashing))
+        r.sprite(sheet, piece.frame, Math.round(piece.x) - 4 - view.camX, Math.round(piece.y) - 4);
+      return;
+    }
     if (p.dead && this.deathStyle !== 'hop') {
       const t = this.deathTimers.get(p) ?? 0;
       const draw = () => this.drawPlayer(r, view, p);
@@ -4398,4 +4431,19 @@ export class World {
       r.text(view.assets.sheet('font'), '2', toPx(p.body.x) - view.camX + 2, toPx(p.body.y) - s.offsetY - 10);
     }
   }
+}
+
+/** Widest castle line (characters): the screen's 32 less a margin each side. */
+const CASTLE_COLS = 28;
+
+/**
+ * The news after a castle that is not the last (GameTextMessages.ANOTHER_CASTLE). A Classic hero
+ * with a `rescueName` (the original's skin name, ScreenManager.addTxtTmrHandler) has it in place
+ * of "our princess", wrapped to fit; without one the two lines are today's.
+ */
+export function anotherCastle(rescueName?: string): string[] {
+  if (rescueName === undefined) return ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+  const first = `BUT ${fontText(rescueName)} IS IN`;
+  if (first.length <= CASTLE_COLS) return [first, 'ANOTHER CASTLE!'];
+  return wrapText(`${first} ANOTHER CASTLE!`, CASTLE_COLS);
 }
