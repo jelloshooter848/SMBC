@@ -479,6 +479,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     hitbox: (p) => (p.sliding > 0 ? { w: 12, h: profile.slide?.hitboxH ?? 15 } : { w: 12, h: 22 }),
     sprite,
     blockPowerUp: classicBlockPowerUp,
+    powerIcon: true,
     jumpSfx: () => 'jump-small',
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, response.look),
     starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
