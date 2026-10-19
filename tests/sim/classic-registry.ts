@@ -22,13 +22,16 @@ function restore(): void {
 /**
  * Snapshots the Classic registry before each test and puts it back after (whatever the test
  * registered or removed). With `hide`, each test starts with no Classic hero registered, as
- * before any hero slice (Classic-only extras stay).
+ * before any hero slice (Classic-only extras stay). With `hideExtras`, each test starts with no
+ * Classic-only extra registered (tests written with stand-in extras, or for an empty second row;
+ * each built extra has its own test file).
  */
-export function isolateClassicRegistry(opts: { hide?: boolean } = {}): void {
+export function isolateClassicRegistry(opts: { hide?: boolean; hideExtras?: boolean } = {}): void {
   beforeEach(() => {
     snapshot = { ...CLASSIC_CHARACTERS };
     extras = [...CLASSIC_EXTRAS];
     if (opts.hide) hideClassicHeroes();
+    if (opts.hideExtras) CLASSIC_EXTRAS.splice(0, CLASSIC_EXTRAS.length);
   });
   afterEach(restore);
 }

@@ -333,8 +333,13 @@ export const SCREW_CRUSHER: ProjectileSpec = {
   frameRate: 3,
 };
 
-/** Kinds that are buster shots (never counted as a weapon's projectile; MM-C16). */
-export const BUSTER_KINDS: ReadonlySet<string> = new Set(['mm-buster', 'mm-charge', 'mm-charge-full']);
+/** Kinds that are buster shots (never counted as a weapon's projectile; MM-C16), Bass's too (BA-17). */
+export const BUSTER_KINDS: ReadonlySet<string> = new Set([
+  'mm-buster',
+  'mm-charge',
+  'mm-charge-full',
+  'bass-buster',
+]);
 /** Kinds the caps leave out (MM-C19): Water Shield drops, Pharaoh shots and balloons, debris. */
 const CAP_EXEMPT = new Set(['water-drop', 'pharaoh-shot', 'pharaoh-balloon', 'arm-debris']);
 

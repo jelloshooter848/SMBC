@@ -27,6 +27,7 @@ export const SPRING_GREEN_BOOST: Readonly<Record<string, number>> = {
   mario: flash(2750),
   luigi: flash(2750),
   megaman: flash(3000),
+  bass: flash(3000),
   bill: flash(2150),
   link: flash(2750),
   ryu: flash(2750),
@@ -48,6 +49,7 @@ export const SPRING_RISE_GRAVITY: Readonly<Record<string, number>> = {
   samus: flashAccel(700),
   bill: flashAccel(1000),
   megaman: flashAccel(1500),
+  bass: flashAccel(1500),
   simon: flashAccel(1500),
   sophia: flashAccel(1050),
 };

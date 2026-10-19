@@ -200,6 +200,8 @@ export class Player {
   private slideX0 = 0;
   /** A distance slide turned round under a ceiling ends as soon as the ceiling clears (MM-C7). */
   private slideEndOnClear = false;
+  /** A dash jump's (or a dash off a ledge's) carried air speed (SlideProfile.keepSpeedInAir). */
+  dashCarry = false;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -317,6 +319,8 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
+    // A hero rooted by an attack on the ground cannot walk (CharacterBehaviour.rooted, SI-C4).
+    if (b.onGround && this.def.behaviour.rooted?.(this, input)) dir = 0;
 
     // A distance slide (slide.distance, Classic SMBC) has its own rules; false once it ends.
     const distanceSlide =
@@ -366,7 +370,7 @@ export class Player {
       this.sliding > 0 &&
       p.slide?.jumpOut === true &&
       b.onGround &&
-      !input.held('down') &&
+      (p.slide.jumpWithDown === true || !input.held('down')) &&
       !this.slideCeiling(map);
     const canJump =
       (this.sliding === 0 || slideJump) &&
@@ -377,7 +381,7 @@ export class Player {
     if (this.stun > 0 && !b.onGround) this.airJumpsLeft = 0;
     if (b.onGround) this.airJumpsLeft = p.airJumps ?? 0;
     if (canJump && input.bufferedJump(JUMP_BUFFER_FRAMES)) {
-      if (p.slide && input.held('down') && b.onGround) {
+      if (p.slide && input.held('down') && b.onGround && !slideJump) {
         input.consumeJumpBuffer();
         // No slide during a thrown weapon's stop or while the behaviour says no (Player.root).
         if (!rooted && (this.def.behaviour.canSlide?.(this) ?? true)) this.startSlide();
@@ -391,13 +395,20 @@ export class Player {
           this.clinging = false;
           this.clingLock = 12;
         }
+        // A dash jump (SlideProfile.jumpSpeed, Classic Bass BA-11).
+        const dash = this.sliding > 0 ? p.slide?.jumpSpeed : undefined;
         if (this.sliding > 0) {
           // A slide-jump: a normal jump at walking speed the way held (no slide speed kept).
           this.endSlide();
-          b.vx = dir * p.maxWalk;
+          b.vx = dir * (dash !== undefined && p.slide?.keepSpeedInAir ? p.slide.speed : p.maxWalk);
         }
         this.tier = pickJumpTier(p, b.vx);
         b.vy = -this.tier.initial;
+        this.dashCarry = false;
+        if (dash !== undefined) {
+          b.vy = -((floorJumper ? sw?.slideJump : undefined) ?? dash);
+          this.dashCarry = p.slide?.keepSpeedInAir === true;
+        }
         b.onGround = false;
         this.jumpReleased = false;
         this.cutting = false;
@@ -426,6 +437,10 @@ export class Player {
       b.vy = -this.tier.initial;
       this.jumping = true;
       this.launched = false;
+      // A fresh rise: the soft cut may come again, and a dash's speed ends (Classic Bass BA-12).
+      this.jumpReleased = false;
+      this.cutting = false;
+      this.dashCarry = false;
       if (p.airControl === 'none') {
         b.vx = dir * p.maxWalk;
         this.airCap = p.maxWalk;
@@ -468,6 +483,7 @@ export class Player {
       b.vy = 0;
       this.jumpReleased = false;
       this.cutting = false;
+      this.dashCarry = false;
     } else if (!this.clinging) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
       if (surface) {
@@ -541,6 +557,8 @@ export class Player {
       if (reverse || done) {
         this.endSlide();
         if (reverse || wall) b.vx = 0;
+        // Off a ledge the dash speed carries on in the air (SlideProfile.keepSpeedInAir).
+        else if (!b.onGround && s.keepSpeedInAir) this.dashCarry = true;
         return false;
       }
     }
@@ -573,6 +591,7 @@ export class Player {
   private tickHurtLock(): void {
     const l = this.hurtLock as HurtLock;
     const b = this.body;
+    this.dashCarry = false;
     l.t++;
     const done =
       (l.frames !== undefined && l.t > l.frames) ||
@@ -866,6 +885,11 @@ export class Player {
     // MovementProfile.airStop (Classic SMBC): full air control stops him when nothing is held.
     if (dir === 0 && p.airStop && control === 'full') b.vx = 0;
     if (control === 'none' || dir === 0) return;
+    // A dash's carried speed (SlideProfile.keepSpeedInAir).
+    if (this.dashCarry && control === 'full' && p.slide) {
+      b.vx = dir * p.slide.speed;
+      return;
+    }
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;
       return;
@@ -910,8 +934,10 @@ export class Player {
     this.jumping = this.profile.variableJump !== 'cut';
     this.launched = true;
     this.launchGravity = 0;
-    // Leaving a spring gives the air jumps back (Simon.checkState: lastOnSpring && !onSpring).
-    this.airJumpsLeft = this.profile.airJumps ?? 0;
+    // Leaving a spring gives the air jumps back (Simon.checkState: lastOnSpring && !onSpring),
+    // unless the profile keeps those he had (MovementProfile.springKeepsAirJumps).
+    if (!this.profile.springKeepsAirJumps) this.airJumpsLeft = this.profile.airJumps ?? 0;
+    this.dashCarry = false;
     this.sliding = 0;
     this.crouching = false;
     this.refitHitbox();

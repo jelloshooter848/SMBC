@@ -8,6 +8,7 @@ import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
+import { bassPalettes, bassDef } from './bass';
 import { samusPalettes, samusDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
 import { ryuPalettes, ryuDef } from './ryu';
@@ -95,6 +96,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,
+  // Classic SMBC's Bass (characters/bass/classic.ts).
+  bass: bassDef,
   samus: samusDef,
   simon: simonDef,
   ryu: ryuDef,
@@ -174,6 +177,7 @@ const defaults: Record<string, readonly string[]> = {
   ...enemyPalettes,
   ...linkPalettes,
   ...megamanPalettes,
+  ...bassPalettes,
   ...samusPalettes,
   ...simonPalettes,
   ...ryuPalettes,

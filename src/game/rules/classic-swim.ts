@@ -55,6 +55,9 @@ export const CLASSIC_SWIM: Readonly<Record<string, SwimProfile>> = {
   bill: floorJumper(0x04839, 0x0011c),
   // Water jump 400 (0x03555), water gravity 500 (0x0011C): apex 78 px.
   ryu: floorJumper(0x03439, 0x0011c),
+  // Bass (BA-15): floor jump and double jump 500 (0x042AB), dash jump 650 (0x056AB), water
+  // gravity 500 (0x0011C): apex about 123 px, 209 px from a dash.
+  bass: floorJumper(0x0418e, 0x0011c, { slideJump: 0x0558e }),
 };
 
 /** Ryu's wall hops under water keep their land speeds (SW-C4): 2.5 and 3.5833 px/f. */

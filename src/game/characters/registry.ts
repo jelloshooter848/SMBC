@@ -10,6 +10,7 @@ import { RYU } from './ryu';
 import { BILL } from './bill';
 import { SOPHIA } from './sophia';
 import { MEGAMAN_CLASSIC } from './megaman/classic';
+import { BASS_CLASSIC } from './bass/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -44,7 +45,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
-export const CLASSIC_EXTRAS: CharacterDef[] = [];
+export const CLASSIC_EXTRAS: CharacterDef[] = [BASS_CLASSIC];
 
 /** The def a World plays for roster hero `def` under `rules` (TG-17). */
 export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {

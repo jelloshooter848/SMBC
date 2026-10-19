@@ -75,6 +75,12 @@ export interface CharacterBehaviour {
    * MM-C6). Absent: a profile with a slide always may.
    */
   canSlide?(p: Player): boolean;
+  /**
+   * True while the hero cannot walk on the ground this frame (Classic Simon's whip and throw root
+   * him, SI-C4; Classic Bass while his buster button is held, BA-9): read by Player.update before
+   * movement, so vx is 0 that frame. The hook may turn the hero itself (Bass). Absent: never rooted.
+   */
+  rooted?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */
