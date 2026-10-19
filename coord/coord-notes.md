@@ -76,3 +76,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Follow-ups proposal DONE (wip design-followups 82fad175, docs/classic/FOLLOW_UPS_PROPOSAL.md). Finding: original Classic camera scrolls back left by default; ours locks -> asked owner. 4 owner questions pending.
 - Peach+Arthur designs DONE (wip design-peach-arthur 99ae434a): reports PE-1..27 (D-PE-1..13), AR-1..31 (D-AR-1..12); sheets sent to owner.
 - Yoshi design DONE (wip design-yoshi c5b0188e): YO-1..30, YM-1..30, decisions YM-D1..10, YO-D1..9. Sheets sent. All 3 design agents done; awaiting owner decisions.
+- #154 review: gameplay ACCEPT; blocker: merge main (v0.4.56) + CHANGELOG under Unreleased; 3-3 lift let-go fix. Sent to patch agent. v0.4.57 follows merge. TODO: held chain (#150/#151/#153) also needs main (v0.4.56) merged + CHANGELOG bullets moved to Unreleased.
