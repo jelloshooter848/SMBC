@@ -47,7 +47,7 @@ https://github.com/JayPavlina/super-mario-bros-crossover /tmp/<you>/smbc-orig` (
 
 ## How to work
 1. Work in your own git worktree. Create your branch from the base named in your brief.
-2. BACKUP: after every meaningful step, commit and `git push -u origin HEAD:<your wip branch>` (force-push
+2. BACKUP: after every meaningful step, commit (put `[skip ci]` in the message of commits that only go to a wip branch; never on PR-branch pushes) and `git push -u origin HEAD:<your wip branch>` (force-push
    to your own wip branch is fine). The container can restart at any time; the wip branch is the only copy.
    On network failure retry push up to 4 times (2s, 4s, 8s, 16s).
 3. As you go: `pnpm lint`, `pnpm typecheck`, targeted `pnpm vitest run <files>`. Use `set -o pipefail` when

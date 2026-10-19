@@ -69,3 +69,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Owner APPROVED VV/WoL designs (relayed to release session). Owner asked about gaps; answered.
 - Owner decisions: patch PR (claude/classic-patch on main, wip classic-wip-patch, 5208): Sophia SO-38 lifts + SO-39 camera, Samus SA-C32 death burst, per-hero castle text (rescueName, Classic only). NO Proto Shield. Music = future item. Thief/VV hidden blocks stay as original.
 - TODO later: extras (Bass/ProtoMan/BreakMan/Pit/DarkPit/VV/WoL) get rescueName values once patch merges into the held chain.
+- Release session: use [skip ci] on wip/notes pushes (Actions queue backed up). common.md updated.
