@@ -1038,6 +1038,9 @@ export class Game {
    * while the file's dev "All heroes" flag is on in dev mode (`freed` itself stays as it is).
    */
   heroLocked(def: CharacterDef): boolean {
+    // A Classic-only extra (TG-42) can be picked only while the roster lists it; it has no
+    // captive, so it is never added to `freed`.
+    if (CLASSIC_EXTRAS.includes(def)) return !this.roster.includes(def);
     if (this.devMode && this.devAllHeroes) return false;
     return this.campaign !== null && !this.freed.includes(def.id);
   }

@@ -213,6 +213,13 @@ export interface CharacterDef {
   rules?: 'classic';
 }
 
+/**
+ * The power states every Classic def uses (TG-21): small, the Mushroom tier stored as 'big' and
+ * the Flower tier as 'fire', the ids the dev select, saves, the co-op drop-in and the HUD know.
+ */
+export type ClassicPowerState = 'small' | 'big' | 'fire';
+export const CLASSIC_POWER_STATES: readonly ClassicPowerState[] = ['small', 'big', 'fire'];
+
 /** Hit points a fresh run of this character starts with (0 for power-up characters). */
 export function startHp(def: CharacterDef): number {
   return def.damage.kind === 'hp' ? (def.startHp ?? def.damage.max) : 0;

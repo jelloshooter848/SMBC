@@ -8,6 +8,14 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic rules groundwork (dev only for now): the dev Level select has a **Rules** row (Current / Classic SMBC), and
+  `?dev=1&rules=classic&level=1-1&char=<id>` starts a run under Classic SMBC rules. A **CLASSIC** tag shows at the top
+  right of the HUD and the intro card (**CLASSIC?** while a hero has no Classic version yet and plays as today). A change
+  of rules resets the carried power ("Rules changed. Power reset."). Campaign files, mini games and training rooms always
+  play the current rules.
+
 ## [0.4.55] - 2026-10-13
 
 ### Added
