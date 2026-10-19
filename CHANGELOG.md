@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Samus's missile now flies nose-first (it was drawn backwards), in the campaign and in Classic mode.
+- Other shots that flew tail-first now lead with their heads too: Samus's Power, Long and Ice Beams, Bill's machine-gun
+  and flame-thrower shots, Simon's dagger, Mega Man's Homing Knuckle and Hard Knuckle, and Link's sword beam in the
+  campaign.
+
 ## [0.4.56] - 2026-10-19
 
 ### Added
