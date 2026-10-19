@@ -30,8 +30,17 @@ export const WHIP_DAMAGE: Readonly<Record<string, number>> = { small: 200, big: 
 export const WHIP_REACH: Readonly<Record<string, number>> = { small: 36, big: 36, fire: 51 };
 /** The whip box starts this far ahead of his centre (px, 15 Flash px). */
 export const WHIP_NEAR = 7.5;
-/** The whip box's height above the feet (px): standing 24 to 17, crouching 15 to 8 (SI-C15). */
-export const WHIP_Y = { stand: [24, 17], crouch: [15, 8] } as const;
+/**
+ * The whip box's height above the feet (px). Simon.as HIT_BOX_VEC gives standing 24 to 17 and
+ * crouching 15 to 8 (Rectangle(15,-48,57,14) / (15,-30,57,14), y = top, y down, from the feet:
+ * Vine.as and LevelExit.as set `hRect.y = -height` for a box ending at the feet). But the original
+ * tests that box against each enemy's separate attack box `hRect2` (HitTester.as 84, 104), which
+ * lives in SmbcGraphics.swf, not in the source, and is taller than the body: against our 14 px
+ * Goomba, Buzzy Beetle and shell bodies the 17 px edge would pass over them. So, as the Ryu report
+ * does for his sword (RY-C25), the standing box reaches down to 13 px above the feet; the top
+ * edge, the crouch box and the reach stay the original's.
+ */
+export const WHIP_Y = { stand: [24, 13], crouch: [15, 8] } as const;
 /** Shot cap by power state (SI-C19): 1, Double, Triple. */
 export const SHOT_CAP: Readonly<Record<string, number>> = { small: 1, big: 2, fire: 3 };
 /** A thrown weapon's centre (SI-C20): px ahead of his centre, px above the feet (crouched 15). */

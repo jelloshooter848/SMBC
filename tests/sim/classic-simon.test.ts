@@ -16,6 +16,7 @@ import { Projectile } from '@game/entities/projectiles/projectile';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { parseTextMap } from '@game/level/textmap';
+import { simonFlameDef } from '@content/sprites/simon-flame';
 import { T } from '@game/level/tiles';
 import { runSim } from '@game/sim/headless';
 import { fontText } from '@game/hud/text';
@@ -238,7 +239,7 @@ describe('the whip (acceptance 5-7; SI-C4, SI-C14..SI-C17, SI-C27)', () => {
           expect(p.activeMelee.x).toBe(p.centerX + px(7.5));
           expect(p.activeMelee.x + p.activeMelee.w).toBe(p.centerX + px(reach));
           expect(p.activeMelee.y).toBe(p.feetY - px(24));
-          expect(p.activeMelee.h).toBe(px(7));
+          expect(p.activeMelee.h).toBe(px(11));
         }
       }
       expect(live).toEqual([14, 15, 16, 17, 18, 19, 20]);
@@ -248,37 +249,71 @@ describe('the whip (acceptance 5-7; SI-C4, SI-C14..SI-C17, SI-C27)', () => {
   });
 
   it('6. Leather: the first hit leaves a Goomba alive and frozen 24 frames, the second kills; Morning Star kills in one', () => {
-    // The standing lash is 17-24 px above his feet, over a Goomba's head (14 px): he crouches.
     const r = rig();
     const p = r.p;
     const g = new Goomba(p.centerX + px(22), p.feetY - px(14));
     r.world.spawn(g);
-    r.step(['down']);
-    tap(r, 'attack', 15, ['down']);
+    tap(r, 'attack', 15);
     expect(g.alive).toBe(true);
     expect(g.classicHp).toBe(50);
     expect(g.stopFrames).toBe(24);
     const gx = g.body.x;
     let still = 0;
     while (g.body.x === gx && still < 40) {
-      r.step(['down']);
+      r.step();
       still++;
     }
     expect(still).toBe(25); // 24 frames held, it moves on the 25th
     const big = rig('big');
     const g2 = new Goomba(big.p.centerX + px(22), big.p.feetY - px(14));
     big.world.spawn(g2);
-    big.step(['down']);
-    tap(big, 'attack', 15, ['down']);
+    tap(big, 'attack', 15);
     expect(g2.classicHp ?? 0).toBeLessThanOrEqual(0);
     // The second Leather hit kills.
     const r2 = rig();
     const g3 = new Goomba(r2.p.centerX + px(22), r2.p.feetY - px(14));
     r2.world.spawn(g3);
-    r2.step(['down']);
-    tap(r2, 'attack', 21, ['down']);
-    tap(r2, 'attack', 15, ['down']);
+    tap(r2, 'attack', 21);
+    tap(r2, 'attack', 15);
     expect(g3.classicHp ?? 0).toBeLessThanOrEqual(0);
+  });
+
+  it('a standing whip reaches a Koopa, a Koopa shell and a Buzzy Beetle on the same floor', () => {
+    for (const make of [
+      (x: number, y: number) => new Koopa(x, y, 'green'),
+      (x: number, y: number) => new Koopa(x, y, 'buzzy'),
+    ]) {
+      const r = rig('fire');
+      const k = make(r.p.centerX + px(22), r.p.feetY - px(24));
+      r.world.spawn(k);
+      k.body.y = r.p.feetY - k.body.h;
+      k.stopFrames = 1000;
+      tap(r, 'attack', 15);
+      // The Koopa takes the hit; the armoured Buzzy is reached but blocks it.
+      if (k.color === 'buzzy') expect(k.classicHp ?? 600).toBe(600);
+      else expect(k.classicHp).toBeLessThan(600);
+      expect(r.p.scratch[`hit${k.id}`]).toBe(1);
+    }
+  });
+
+  it('the Flame Whip has its own strike art, reaching 51 px', () => {
+    const r = rig('fire');
+    tap(r, 'attack', 15);
+    const s = SIMON_CLASSIC.sprite(r.p, 0, true);
+    expect([s.sheet, s.frame]).toEqual(['simon-flame', 'whip-flame']);
+    const rows = simonFlameDef.frames['whip-flame'] as string[];
+    const tip = Math.max(...rows.map((row) => row.replace(/\.+$/, '').length - 1));
+    // Hitbox at column offsetX (2), 12 wide: centre column 8.
+    expect(tip - 8).toBe(51);
+  });
+
+  it('no rooting on a throw press at the shot cap (nothing is thrown)', () => {
+    const r = rig();
+    tap(r, 'special', 22); // the throw is over, its Axe still flying
+    expect(shots(r).length).toBe(1);
+    const x = r.p.body.x;
+    r.step(['special', 'right']);
+    expect(r.p.body.x).toBe(x + px(1.25));
   });
 
   it('6. a hit-stunned Goomba still hurts him on contact', () => {

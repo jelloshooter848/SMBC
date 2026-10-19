@@ -228,6 +228,7 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const act = p.scratch._act ?? 0;
   const t = p.scratch._af ?? 0;
   let name: string;
+  let sheet = 'simon';
   if (p.dead) name = 'die';
   else if (p.anim === 'hurt' || p.hurtLock) name = 'hurt';
   else if (act === THROW) name = p.crouching ? 'crouch' : 'throw';
@@ -235,14 +236,18 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     // Whip hangs behind, waves, then strikes; the art closest to each reach.
     if (t < 7) name = 'whip-0';
     else if (t < WHIP_LIVE_FROM) name = 'whip-1';
-    else name = (p.scratch._ac ? 'crouch-' : '') + (p.powerState === 'small' ? 'whip-chain' : 'whip-star');
+    else if (p.powerState === 'fire') {
+      // The Flame Whip's own 64-wide strike, reaching its full 51 px (sprites/simon-flame.ts).
+      sheet = 'simon-flame';
+      name = p.scratch._ac ? 'crouch-whip-flame' : 'whip-flame';
+    } else name = (p.scratch._ac ? 'crouch-' : '') + (p.powerState === 'small' ? 'whip-chain' : 'whip-star');
   } else if (p.crouching) name = 'crouch';
   else if (p.anim === 'swim') name = `swim-${(frame >> 3) & 1}`;
   else if (!p.body.onGround) name = 'jump';
   else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${p.walkFrame}`;
   else name = 'idle';
   return {
-    sheet: 'simon',
+    sheet,
     palette,
     frame: name,
     flip: p.facing < 0,
@@ -278,14 +283,19 @@ function rooted(p: Player, input: InputFrame): boolean {
   const s = p.scratch;
   if (s._act) return (s._af ?? 0) + 1 < ACTION_FRAMES;
   if (input.pressed('attack')) return true;
-  if (input.pressed('special')) {
-    const w = specialWeapon(p);
-    return w.spec !== null && hasAmmo(p, 'hearts', w.cost);
-  }
+  // A throw roots him only if it starts (affordable, under the cap: startThrow's own test).
+  const starts = (w: ClassicSubWeapon) => {
+    const world = worlds.get(p);
+    return w.spec !== null && hasAmmo(p, 'hearts', w.cost) && (!world || shotsOut(p, world) < capOf(p));
+  };
+  if (input.pressed('special')) return starts(specialWeapon(p));
   if (input.pressed('select') && !fullKit(p) && p.powerState === 'fire')
-    return hasAmmo(p, 'hearts', weaponById(EXTRA_WEAPON).cost);
+    return starts(weaponById(EXTRA_WEAPON));
   return false;
 }
+
+/** The world each player last updated in (rooted runs in Player.update, which has none). */
+const worlds = new WeakMap<Player, World>();
 
 /** Remembers this frame's ground, air-jump and spring state, to see next frame's jumps. */
 function remember(p: Player): void {
@@ -335,6 +345,7 @@ export const SIMON_CLASSIC: CharacterDef = {
   behaviour: {
     update(p, input, world) {
       classicStartKit(p, START_KIT);
+      worlds.set(p, world);
       const s = p.scratch;
       const b = p.body;
       if (classicBusy(p)) {
