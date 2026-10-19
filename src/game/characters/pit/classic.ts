@@ -29,18 +29,26 @@ function identity(id: string, name: string, hudName: string, palette: string): C
   return { ...SAMUS, id, name, hudName, portrait: { sheet: 'samus', palette, frame: 'idle' } };
 }
 
-export const PIT_CLASSIC: CharacterDef = classicSamus({
-  base: identity('pit', 'Pit', 'PIT', 'pit'),
-  variant: PIT_VARIANT,
-  palette: 'pit',
-  guide: pitClassicGuide('Pit'),
-  jumpSfx: 'pit-jump',
-});
+export const PIT_CLASSIC: CharacterDef = {
+  ...classicSamus({
+    base: identity('pit', 'Pit', 'PIT', 'pit'),
+    variant: PIT_VARIANT,
+    palette: 'pit',
+    guide: pitClassicGuide('Pit'),
+    jumpSfx: 'pit-jump',
+  }),
+  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  rescueName: 'Palutena',
+};
 
-export const DARKPIT_CLASSIC: CharacterDef = classicSamus({
-  base: identity('darkpit', 'Dark Pit', 'D.PIT', 'darkpit'),
-  variant: PIT_VARIANT,
-  palette: 'darkpit',
-  guide: pitClassicGuide('Dark Pit'),
-  jumpSfx: 'pit-jump',
-});
+export const DARKPIT_CLASSIC: CharacterDef = {
+  ...classicSamus({
+    base: identity('darkpit', 'Dark Pit', 'D.PIT', 'darkpit'),
+    variant: PIT_VARIANT,
+    palette: 'darkpit',
+    guide: pitClassicGuide('Dark Pit'),
+    jumpSfx: 'pit-jump',
+  }),
+  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  rescueName: 'the Reaper',
+};

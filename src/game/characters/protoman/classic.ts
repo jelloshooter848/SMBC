@@ -29,15 +29,23 @@ function identity(id: string, name: string, hudName: string, palette: string): C
   return { ...MEGAMAN, id, name, hudName, portrait: { sheet: 'megaman', palette, frame: 'idle' } };
 }
 
-export const PROTOMAN_CLASSIC: CharacterDef = classicMegaMan({
-  ...PROTO_RULES,
-  base: identity('protoman', 'Proto Man', 'PROTO', 'protoman'),
-  palette: 'protoman',
-  pickSfx: 'protoman-whistle',
-});
+export const PROTOMAN_CLASSIC: CharacterDef = {
+  ...classicMegaMan({
+    ...PROTO_RULES,
+    base: identity('protoman', 'Proto Man', 'PROTO', 'protoman'),
+    palette: 'protoman',
+    pickSfx: 'protoman-whistle',
+  }),
+  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  rescueName: 'Roll',
+};
 
-export const BREAKMAN_CLASSIC: CharacterDef = classicMegaMan({
-  ...PROTO_RULES,
-  base: identity('breakman', 'Break Man', 'BREAK', 'breakman'),
-  palette: 'breakman',
-});
+export const BREAKMAN_CLASSIC: CharacterDef = {
+  ...classicMegaMan({
+    ...PROTO_RULES,
+    base: identity('breakman', 'Break Man', 'BREAK', 'breakman'),
+    palette: 'breakman',
+  }),
+  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  rescueName: 'Roll',
+};

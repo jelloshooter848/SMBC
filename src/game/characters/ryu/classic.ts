@@ -406,6 +406,8 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
 }
 
 export const RYU_CLASSIC: CharacterDef = {
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'Irene',
   ...RYU,
   rules: 'classic',
   movement: RYU_CLASSIC_PROFILE,
