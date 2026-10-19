@@ -144,7 +144,7 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     for (let i = 0; i < sel.chars.length && h.said.at(-1) !== 'Bass'; i++) h.tap('left');
     expect(h.said.at(-1)).toBe('Bass');
     h.tap('jump');
-    h.until(() => h.top().constructor.name === 'LevelScene', 600);
+    h.until(() => h.top()?.constructor.name === 'LevelScene', 600);
     expect((h.top() as LevelScene).world.player.def).toBe(BASS_CLASSIC);
     expect(h.game.state.character).toBe(BASS_CLASSIC);
   });
@@ -217,10 +217,10 @@ describe('jumping (BA-8, BA-12, BA-13)', () => {
   });
 
   it('a double jump at the apex reaches 101-103 px; a third press changes nothing', () => {
+    // The apex frame of a held jump; then jump held to it, let go, and pressed again the next frame.
     let at = -1;
-    const j = jump(150, (i, w) => {
+    jump(150, (i, w) => {
       if (at < 0 && i > 2 && w.player.body.vy >= 0) at = i;
-      // Jump is held from the take-off: let go at the apex, press again on the next frame.
       return [];
     });
     expect(at).toBeGreaterThan(0);

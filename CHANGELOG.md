@@ -36,6 +36,12 @@ under `## [Unreleased]`.
   Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
   buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
   (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
+- Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
+  only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
+  up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
+  Down + Jump at full height, and a jump out of the dash keeps its speed. The Fire Flower gives the Water Shield and
+  its energy bar, and Select swaps the shot and shield buttons at once. He cannot charge and has no Rush. New
+  original art.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
