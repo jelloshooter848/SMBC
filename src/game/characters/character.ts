@@ -279,6 +279,8 @@ export interface CharacterDef {
    * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
    */
   rules?: 'classic';
+  /** hero not in SMBC 3.1.21's final release; dev menu can toggle it */
+  notInOriginal?: true;
   /**
    * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
    * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame

@@ -75,7 +75,8 @@ describe('definition and roster (WL-2, WL-4, TG-41..43)', () => {
     expect(W.devKit?.()).toEqual({});
     expect(W.meter).toBeUndefined();
     expect(W.tools).toBeUndefined();
-    expect(CLASSIC_EXTRAS.at(-1)).toBe(W);
+    // Next after Vic Viper (later extras, Peach and Arthur, come after it).
+    expect(CLASSIC_EXTRAS[CLASSIC_EXTRAS.findIndex((c) => c.id === 'vicviper') + 1]).toBe(W);
     expect(CHARACTERS).not.toContain(W);
     expect(heroFor(W, 'classic')).toBe(W);
     expect(fontText(W.hudName)).toBe(W.hudName);
@@ -87,7 +88,8 @@ describe('definition and roster (WL-2, WL-4, TG-41..43)', () => {
   it('in Classic runs only, never under Current', () => {
     const h = makeGame({ dev: true });
     expect(h.game.rosterFor('current')).not.toContain(W);
-    expect(h.game.rosterFor('classic').at(-1)).toBe(W);
+    const roster = h.game.rosterFor('classic');
+    expect(roster[roster.findIndex((c) => c.id === 'vicviper') + 1]).toBe(W);
     expect(h.game.roster).not.toContain(W);
   });
 

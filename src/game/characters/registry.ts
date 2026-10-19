@@ -25,6 +25,7 @@ import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 import { VICVIPER_CLASSIC } from './vicviper/classic';
 import { WARRIORS_CLASSIC } from './warriors/classic';
+import { ARTHUR_CLASSIC } from './arthur/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
@@ -81,6 +82,8 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
   WARRIORS_CLASSIC,
+  // Sir Arthur (AR-2): after Peach once she lands (the order is fixed at integration).
+  ARTHUR_CLASSIC,
 ];
 
 /**

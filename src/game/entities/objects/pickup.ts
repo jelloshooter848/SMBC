@@ -25,7 +25,12 @@ export type PickupKind =
   | 'triple-ammo'
   | 'homing-ammo'
   /** Vic Viper's power capsule (Classic only; his own sheet): one step on his power bar. */
-  | 'power-capsule';
+  | 'power-capsule'
+  /** Sir Arthur's weapon pots (Classic only; his own sheet): touching one swaps his weapon (AR-21). */
+  | 'pot-lance'
+  | 'pot-dagger'
+  | 'pot-torch'
+  | 'pot-axe';
 
 /** A pickup kind's name, as a map's `pickup x y item=<kind>` gives it. */
 export function isPickupKind(v: unknown): v is PickupKind {
@@ -52,6 +57,10 @@ const FRAMES: Record<PickupKind, { frame: string; size: number; sheet?: string }
   'triple-ammo': { frame: 'ammo-triple', size: 16, sheet: 'sophia' },
   'homing-ammo': { frame: 'ammo-homing', size: 16, sheet: 'sophia' },
   'power-capsule': { frame: 'capsule-0', size: 16, sheet: 'vicviper' },
+  'pot-lance': { frame: 'pot-lance', size: 16, sheet: 'arthur-fx' },
+  'pot-dagger': { frame: 'pot-dagger', size: 16, sheet: 'arthur-fx' },
+  'pot-torch': { frame: 'pot-torch', size: 16, sheet: 'arthur-fx' },
+  'pot-axe': { frame: 'pot-axe', size: 16, sheet: 'arthur-fx' },
 };
 
 export const PICKUP_LIFETIME = 480;
