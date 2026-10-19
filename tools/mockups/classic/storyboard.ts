@@ -183,7 +183,16 @@ function item(s: Scene, frame: string, x: number, y: number, o: DrawOpts = {}): 
   s.spr('peach-items', frame, x, y, o);
 }
 /** Dots along a ballistic path: start (x, y), speeds in px/f, gravity in px/f², every `step` frames. */
-function path(s: Scene, x: number, y: number, vx: number, vy: number, g: number, frames: number, step = 3): void {
+function path(
+  s: Scene,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  g: number,
+  frames: number,
+  step = 3,
+): void {
   for (let f = 0; f <= frames; f += step) s.dot(x + vx * f, y + vy * f + (g * f * f) / 2);
 }
 
@@ -280,7 +289,8 @@ const PEACH_FRAMES: Board = [
   },
   {
     file: 'peach-07-lift-enemy',
-    caption: 'LIFT while standing on one picks it up over her head. Carrying: no run, jumps 57 / 67 px, float still works.',
+    caption:
+      'LIFT while standing on one picks it up over her head. Carrying: no run, jumps 57 / 67 px, float still works.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -331,9 +341,9 @@ const PEACH_FRAMES: Board = [
       peach(s, 'small-stand', 40);
       peach(s, 'stand', 104);
       peach(s, 'stand', 168, GROUND, { palette: 'peach-flower' });
-      s.text('SMALL', 28, 214);
-      s.text('MUSHROOM', 84, 226);
-      s.text('FLOWER', 152, 214);
+      s.text('SMALL', 28, 152);
+      s.text('MUSHROOM', 80, 152);
+      s.text('FLOWER', 152, 152);
     },
   },
   {
@@ -386,7 +396,12 @@ const PEACH_FRAMES: Board = [
 
 /* ---------------- Sir Arthur ---------------- */
 
-const ARTHUR_ICON: Record<string, string> = { lance: 'lance', dagger: 'dagger', torch: 'torch-0', axe: 'axe-0' };
+const ARTHUR_ICON: Record<string, string> = {
+  lance: 'lance',
+  dagger: 'dagger',
+  torch: 'torch-0',
+  axe: 'axe-0',
+};
 function arthurHud(s: Scene, weapon: string, power?: 'mushroom' | 'flower'): void {
   s.hud('ARTHUR', (sc) => {
     if (power) sc.spr('items', power === 'mushroom' ? 'mushroom' : 'flower-0', 104, 20);
@@ -458,7 +473,8 @@ const ARTHUR_FRAMES: Board = [
   },
   {
     file: 'arthur-05-lance',
-    caption: 'Lance (start weapon): 4 px/f straight, 300 damage (1 Goomba, 2 Koopa), 2 on screen, stopped by walls, breaks bricks.',
+    caption:
+      'Lance (start weapon): 4 px/f straight, 300 damage (1 Goomba, 2 Koopa), 2 on screen, stopped by walls, breaks bricks.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -553,7 +569,7 @@ const ARTHUR_FRAMES: Board = [
       s.ground();
       arthurHud(s, 'lance', 'flower');
       arthur(s, 'stand', 96, GROUND, { palette: 'arthur-gold' });
-      for (let y = 32; y < GROUND; y += 16) {
+      for (let y = 48; y < GROUND; y += 16) {
         fx(s, 'bolt', 40, y);
         fx(s, 'bolt', 152, y);
       }
