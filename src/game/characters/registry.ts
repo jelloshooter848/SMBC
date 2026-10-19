@@ -12,6 +12,7 @@ import { SOPHIA } from './sophia';
 import { MARIO_CLASSIC } from './mario/classic';
 import { LUIGI_CLASSIC } from './luigi/classic';
 import { LINK_CLASSIC } from './link/classic';
+import { MEGAMAN_CLASSIC } from './megaman/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -39,6 +40,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   mario: MARIO_CLASSIC,
   luigi: LUIGI_CLASSIC,
   link: LINK_CLASSIC,
+  megaman: MEGAMAN_CLASSIC,
 };
 
 /**
