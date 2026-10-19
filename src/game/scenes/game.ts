@@ -166,6 +166,11 @@ export class Game {
    */
   classicRun = false;
   /**
+   * The Classic run was started from developer mode (the dev Level select's Classic run, or
+   * `?mode=classic`): it never records the Classic 8-4 clear, so it never opens the Lost Levels.
+   */
+  classicDev = false;
+  /**
    * The rules chosen for this non-campaign run (Classic mode, TG-9 rules model). Run starters set
    * it: devStart's and newGame's `opts.rules`, or the Classic mode flow before it starts a run;
    * showTitle, playtest and playShared put it back to 'current'. Never read directly to decide
@@ -360,6 +365,8 @@ export class Game {
     // Classic mode: the clear is kept (the CLASSIC menu's Lost Levels entry opens) and the Lost
     // Levels follow, as a new quest.
     if (this.classicRun && !isLostLevel(from)) {
+      // A developer-started run counts for nothing: the title, as free play.
+      if (this.classicDev) return this.showTitle();
       recordClassicClear(from);
       this.showClassicNewQuest();
       return;
@@ -1140,6 +1147,7 @@ export class Game {
     this.campaign = null;
     this.runRules = opts.rules ?? 'current';
     this.classicRun = classic;
+    this.classicDev = classic;
     const rules = this.liveRules;
     const hero = heroFor(character, rules);
     this.state = newGameState(character, null, rules);
@@ -1227,7 +1235,7 @@ export class Game {
     character2: CharacterDef | null = null,
     opts: { rules?: Rules } = {},
   ): void {
-    this.startRun(character, levelId, character2, opts.rules, false);
+    this.startRun(character, levelId, character2, opts.rules, false, false);
   }
 
   /**
@@ -1239,7 +1247,7 @@ export class Game {
   classicGame(character: CharacterDef, levelId = '1-1'): void {
     this.pendingLevel = null;
     // One player: Classic mode has no co-op.
-    this.startRun(character, levelId, null, this.classicRules, true);
+    this.startRun(character, levelId, null, this.classicRules, true, false);
   }
 
   /**
@@ -1248,7 +1256,7 @@ export class Game {
    */
   devClassicGame(character: CharacterDef, levelId: string, rules: Rules): void {
     this.pendingLevel = null;
-    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true);
+    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, true);
   }
 
   /** The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). */
@@ -1262,11 +1270,13 @@ export class Game {
     character2: CharacterDef | null,
     rules: Rules | undefined,
     classic: boolean,
+    dev: boolean,
   ): void {
     this.tutorialRun = null;
     this.campaign = null;
     if (rules) this.runRules = rules;
     this.classicRun = classic;
+    this.classicDev = classic && dev;
     this.state = newGameState(character, character2, this.liveRules);
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -1279,6 +1289,7 @@ export class Game {
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     this.classicRun = false;
+    this.classicDev = false;
   }
 
   /**

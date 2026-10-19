@@ -426,6 +426,43 @@ describe('a Classic run', () => {
   });
 });
 
+describe('a dev-started Classic run never opens the Lost Levels', () => {
+  function beat84(h: H): void {
+    const l = enterLevel(h);
+    l.world.events.push({ type: 'exit', next: 'end' });
+    h.step();
+    const credits = h.top() as CreditsScene;
+    expect(credits).toBeInstanceOf(CreditsScene);
+    h.until(() => credits.touchLabels().jump === 'OK', 6000);
+    h.tap('jump');
+  }
+
+  it.each(['level select', 'url'])(
+    'started from the dev %s: 8-4 records nothing, the title follows',
+    (from) => {
+      const h = classic({ dev: true });
+      if (from === 'url') h.game.devClassicGame(MARIO, '8-4-end', 'classic');
+      else h.game.devStart('8-4-end', MARIO, 'small', false, undefined, { rules: 'classic', classic: true });
+      expect(h.game.classicRun).toBe(true);
+      expect(h.game.classicDev).toBe(true);
+      beat84(h);
+      expect(h.top()).toBeInstanceOf(TitleScene);
+      expect(loadProgress().cleared).toEqual([]);
+      expect(lostLevelsOpen()).toBe(false);
+    },
+  );
+
+  it('a title CLASSIC run after a dev one counts again', () => {
+    const h = classic({ dev: true });
+    h.game.devClassicGame(MARIO, '1-1', 'classic');
+    h.game.showTitle();
+    h.game.classicGame(MARIO, '8-4-end');
+    expect(h.game.classicDev).toBe(false);
+    beat84(h);
+    expect(lostLevelsOpen()).toBe(true);
+  });
+});
+
 describe('the Classic pause menu', () => {
   it('Continue, Options, Quit to title (and every dev row with dev mode on)', () => {
     const h = classic();
