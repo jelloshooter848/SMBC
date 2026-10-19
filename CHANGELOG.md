@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.56] - 2026-10-19
+
 ### Added
 
 - CLASSIC MODE: a new **Classic** entry on the title, after Start game, plays the original game: Super Mario Bros.
@@ -1299,7 +1301,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...HEAD
+[0.4.56]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...v0.4.55
 [0.4.54]: https://github.com/jelloshooter848/SMBC/compare/v0.4.53...v0.4.54
 [0.4.53]: https://github.com/jelloshooter848/SMBC/compare/v0.4.52...v0.4.53
