@@ -195,7 +195,7 @@ function startThrow(p: Player, a: ClassicArt, world: World): void {
   s._throwT = CLASSIC_THROW_FRAMES;
   s._throwArt = CLASSIC_ARTS.indexOf(a);
   s._throwMode = p.wall ? 3 : p.body.onGround ? 1 : 2;
-  if (s._throwMode !== 2) p.body.vx = 0;
+  if (s._throwMode === 1) p.body.vx = 0;
 }
 
 function endThrow(p: Player): void {
@@ -334,7 +334,6 @@ function update(p: Player, input: InputFrame, world: World): void {
   if ((s._throwT ?? 0) > 0) {
     s._throwT = (s._throwT ?? 0) - 1;
     if (s._throwT === SPAWN_AT) spawnThrow(p, input, world);
-    if ((s._throwMode ?? 1) !== 2) p.root = s._throwT ?? 0;
   }
 
   // Buttons (RY-C1): nothing during a slash or a throw; no slash during the Jump Slash.
@@ -346,10 +345,7 @@ function update(p: Player, input: InputFrame, world: World): void {
     else if (input.pressed('attack') && !s._jslash) {
       p.attackTimer = CLASSIC_SLASH_FRAMES;
       s._slashAir = b.onGround ? 0 : 1;
-      if (b.onGround) {
-        b.vx = 0;
-        p.root = CLASSIC_SLASH_FRAMES;
-      }
+      if (b.onGround) b.vx = 0;
       world.audio.sfx('sword');
     } else if (input.pressed('special')) useArt(p, classicMainArt(p), world);
     else if (input.pressed('select')) {
@@ -357,8 +353,12 @@ function update(p: Player, input: InputFrame, world: World): void {
       if (extra) useArt(p, extra, world);
     }
   }
-  // A ground slash holds him still (RY-C5).
-  if (p.attackTimer > 0 && !s._slashAir) p.root = p.attackTimer;
+  // A ground slash or throw holds him still, a wall throw holds him on the wall (RY-C5, RY-C14):
+  // the frames after this one that are still part of it.
+  let hold = 0;
+  if (p.attackTimer > 0 && !s._slashAir) hold = p.attackTimer - 1;
+  if ((s._throwT ?? 0) > 0 && s._throwMode !== 2) hold = Math.max(hold, (s._throwT ?? 0) - 1);
+  p.root = hold;
 
   // The published melee box: the Jump Slash's body, or the sword's live frames.
   const t = p.attackTimer;
