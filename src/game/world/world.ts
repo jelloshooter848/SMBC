@@ -102,7 +102,15 @@ import { sfx as SFX_LIB } from '@content/sfx/sfx';
 import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, trueFormOf, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
-import { DEATH_FRAMES, DEATH_SFX, renderDeath, startDeath, stepDeath, type DeathStyle } from './death-style';
+import {
+  DEATH_FRAMES,
+  DEATH_SFX,
+  renderDeath,
+  startDeath,
+  stepDeath,
+  stepThrow,
+  type DeathStyle,
+} from './death-style';
 import { Axe } from '../entities/objects/axe';
 import { CaveFire, Moblin } from '../entities/objects/moblin';
 import { YoshiEgg } from '../entities/objects/yoshi-egg';
@@ -572,6 +580,8 @@ export class World {
   private readonly deathTimers = new Map<Player, number>();
   /** Players whose CharacterDef.deathHop death began below the screen (a pit: no hop). */
   private readonly pitDeaths = new Set<Player>();
+  /** Thrown deaths (CharacterDef.deathThrow): the frame he landed (null while in the air). */
+  private readonly throwDeaths = new Map<Player, { landed: number | null }>();
   private readonly respawnTimers = new Map<Player, number>();
   /** Players still in a fall arrival's straight drop (FALL_IN_STEER_Y): no steering yet. */
   private readonly fallingIn = new Set<Player>();
@@ -2897,6 +2907,14 @@ export class World {
     p.star = 0;
     p.activeMelee = null;
     this.deathTimers.set(p, 0);
+    const dt = p.def.deathThrow;
+    if (dt && this.deathStyle === 'hop' && toPx(p.body.y) <= this.heightPx) {
+      // Thrown away from the hit (Classic SMBC Bill, BI-C15); a pit death keeps the shared timing.
+      p.body.vx = dt.dir(p) * dt.vx;
+      p.body.vy = -dt.vy;
+      p.body.onGround = false;
+      this.throwDeaths.set(p, { landed: null });
+    }
     if (this.deathSfx) {
       // A mini game's own death (WorldStart.deathStyle): its sound, and the music stops.
       startDeath(this.deathStyle, p);
@@ -2921,8 +2939,14 @@ export class World {
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
-    const hop = this.deathStyle === 'hop' ? p.def.deathHop : undefined;
-    if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
+    const thrown = this.throwDeaths.get(p);
+    const dt = p.def.deathThrow;
+    const hop = this.deathStyle === 'hop' && !(thrown && dt) ? p.def.deathHop : undefined;
+    if (thrown && dt) {
+      // A thrown body (CharacterDef.deathThrow, Classic SMBC Bill BI-C15).
+      stepThrow(p, dt.gravity, dt.maxFall, this.map);
+      if (thrown.landed === null && p.body.onGround) thrown.landed = t;
+    } else if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
     else if (hop) {
       // A hero's own death (CharacterDef.deathHop, Classic SMBC ML-C18): no hop after a pit.
       if (t === 1 && toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
@@ -2940,7 +2964,16 @@ export class World {
         p.body.y += velToSub(p.body.vy);
       }
     }
-    const end = hop ? (this.pitDeaths.has(p) ? hop.pitFrames : hop.frames) : DEATH_FRAMES[this.deathStyle];
+    const end =
+      thrown && dt
+        ? thrown.landed !== null
+          ? thrown.landed + dt.afterLand
+          : dt.maxFrames
+        : hop
+          ? this.pitDeaths.has(p)
+            ? hop.pitFrames
+            : hop.frames
+          : DEATH_FRAMES[this.deathStyle];
     if (t === end) {
       this.pitDeaths.delete(p);
       if (!this.coop) {
@@ -2978,6 +3011,7 @@ export class World {
     p.body.vx = 0;
     p.body.vy = 0;
     this.deathTimers.delete(p);
+    this.throwDeaths.delete(p);
     this.respawnTimers.set(p, COOP_RESPAWN_FRAMES);
     p.def.behaviour.onRespawn?.(p, this);
   }

@@ -46,6 +46,13 @@ under `## [Unreleased]`.
   bombs that hang in the air and lift her, the somersault after a running jump, and three shots at a time. Her head
   only bumps bricks; her shots break them. The Ice Beam, which freezes enemies into blocks to stand on, comes only with
   the developer full kit (Select switches Wave and Ice). She gets her own Classic guide page.
+- Classic rules: **Bill** plays as in the original. He walks at a steady pace that starts and stops at once, has the
+  original's fixed somersault jump, and lies flat only when he holds Down alone (Down with a direction walks with the
+  gun aimed down). Small he has the rifle; the Mushroom gives the Machine Gun (hold to keep firing); the Fire Flower adds
+  the Spread on ATTACK with the Machine Gun on SPECIAL, and SELECT swaps them. His slow bullets fly through ground and
+  pipes, open `?` blocks and break bricks from range, and burst on the first enemy they meet; standing shots fly over a
+  Goomba. Any hit freezes the game for a second and takes both guns. With the developer full kit SELECT also reaches
+  the Laser and the Flare. The CLASSIC tag now shows for Bill.
 
 ## [0.4.55] - 2026-10-13
 

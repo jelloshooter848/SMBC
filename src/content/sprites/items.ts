@@ -1745,6 +1745,44 @@ const laserBeam = [
   '........................',
 ];
 
+/* Classic Bill's laser segment, 12x6: a short white-hot dash with a blue rim, drawn turned a
+ * quarter for straight-up and straight-down shots. */
+const billLaser = [
+  '............',
+  '.eaaaaaaaae.',
+  'ea11111111ae',
+  'ea11111111ae',
+  '.eaaaaaaaae.',
+  '............',
+];
+
+/* Classic Bill's laser segment on a diagonal, 10x10: the dash running down to the right (drawn
+ * mirrored for the other diagonal). */
+const billLaserDiag = [
+  '.ee.......',
+  'eaae......',
+  'ea1ae.....',
+  '.ea1ae....',
+  '..ea1ae...',
+  '...ea1ae..',
+  '....ea1ae.',
+  '.....ea1ae',
+  '......eaae',
+  '.......ee.',
+];
+
+/* Classic Bill's shot exploding on a hit, 8x8: a small orange and white starburst. */
+const billBlast = [
+  '2..2..2.',
+  '.2.7.2..',
+  '..777...',
+  '27716772',
+  '..767...',
+  '.2.7.2..',
+  '2..2..2.',
+  '........',
+];
+
 /* Link's Fire spell (0.4.43), 16x8: a fireball flying left (drawn flipped for the right), a white-hot
  * head and an orange tail. Frame 1 flickers the tongues. */
 const spellFire0 = [
@@ -2031,6 +2069,9 @@ export const itemsDef: SpriteDef = {
     'spread-shot-0': spreadShot0,
     'spread-shot-1': spreadShot1,
     'laser-beam': laserBeam,
+    'bill-laser': billLaser,
+    'bill-laser-diag': billLaserDiag,
+    'bill-blast': billBlast,
     'flame-shot-0': flameShot0,
     'flame-shot-1': flameShot1,
     capsule,
