@@ -215,6 +215,8 @@ function roll(p: Player, chance: number, r: { chance(p: number): boolean }): Pic
 }
 
 export const SOPHIA_CLASSIC: CharacterDef = {
+  // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
+  rescueName: 'your frog',
   ...SOPHIA,
   rules: 'classic',
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },

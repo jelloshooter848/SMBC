@@ -43,6 +43,17 @@ export interface SpriteSpec {
 
 export type HurtResult = 'dead' | 'hurt' | 'ignored';
 
+/** One piece of a bursting death (CharacterDef.deathBurst). */
+export interface DeathPiece {
+  frame: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  gravity: number;
+  range: number;
+}
+
 /** Per-character hooks. The shared Player handles movement; these add attacks, power-ups and damage. */
 export interface CharacterBehaviour {
   /** Runs after movement each frame. Attacks, slides, weapon logic. */
@@ -301,6 +312,28 @@ export interface CharacterDef {
    * else is held, as today.
    */
   crouchNeedsNoDirection?: boolean;
+  /**
+   * Who the castle text says is in another castle (Classic SMBC: PM-19, PI-23, BA-M13): the
+   * original's default skin's third name (BmdInfo.as `namesArr[2]`, put in place of "our
+   * princess" by ScreenManager.addTxtTmrHandler). Absent: "OUR PRINCESS", as today.
+   */
+  rescueName?: string;
+  /**
+   * A death that bursts the body into pieces (Classic SMBC Samus, SA-C32; Samus.as
+   * initiateNormalDeath, SamusGuts.as): the hero vanishes and each piece starts `x`, `y` px from
+   * the body's centre and feet (y up), moves `vx`, `vy` px a frame with `gravity` px a frame²
+   * added before each move, and is gone `range` px out sideways. Pieces tumble through frames
+   * `<frame>-0` and `<frame>-1` of `sheet` (held on `-0` with Reduce flashing). `jingle` plays in
+   * place of the `death` jingle. The death ends after `frames`, or `pitFrames` for a fall off the
+   * screen (no pieces). Absent: today's hop.
+   */
+  deathBurst?: {
+    sheet: string;
+    pieces: readonly DeathPiece[];
+    jingle: string;
+    frames: number;
+    pitFrames: number;
+  };
   /**
    * A death that throws the body (Classic SMBC Bill, BI-C15): vx = `vx` in direction `dir(p)`,
    * vy = -`vy`, then each frame gravity (added before the move, as the original does) capped at
