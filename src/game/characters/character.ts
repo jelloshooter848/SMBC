@@ -247,6 +247,28 @@ export interface CharacterDef {
    * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
    */
   rules?: 'classic';
+  /**
+   * Down crouches only with no left/right and no up held (Classic SMBC Bill, BI-C3/BI-C8: Down plus a
+   * direction walks with the gun aimed down, and Up wins over Down). Absent: Down crouches whatever
+   * else is held, as today.
+   */
+  crouchNeedsNoDirection?: boolean;
+  /**
+   * A death that throws the body (Classic SMBC Bill, BI-C15): vx = `vx` in direction `dir(p)`,
+   * vy = -`vy`, then each frame gravity (added before the move, as the original does) capped at
+   * `maxFall`; the body lands on the ground and lies there. The death ends `afterLand` frames
+   * after landing, or at `maxFrames` if he never lands. A fall off the bottom of the screen keeps
+   * the shared pit death. Velocity units. Absent: today's hop.
+   */
+  deathThrow?: {
+    vx: number;
+    vy: number;
+    gravity: number;
+    maxFall: number;
+    afterLand: number;
+    maxFrames: number;
+    dir(p: Player): -1 | 1;
+  };
 }
 
 /**

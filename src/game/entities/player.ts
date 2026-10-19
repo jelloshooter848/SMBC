@@ -266,7 +266,12 @@ export class Player {
 
     // Crouching: only when tall enough and on the ground; can't walk while crouched.
     const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
-    const wantCrouch = input.held('down') && canCrouch && b.onGround && this.sliding === 0;
+    const wantCrouch =
+      input.held('down') &&
+      canCrouch &&
+      b.onGround &&
+      this.sliding === 0 &&
+      !(this.def.crouchNeedsNoDirection && (input.dirX !== 0 || input.held('up')));
     // Under a low ceiling (a crouch-slide under bricks, prone under a ledge) he stays down, and
     // crawls on until there is room to stand (0.4.43: never standing up inside tiles).
     const cramped = this.crouching && !wantCrouch && !this.roomToStand(map);

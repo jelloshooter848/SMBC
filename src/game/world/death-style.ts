@@ -146,6 +146,41 @@ export function stepDeath(style: DeathStyle, p: Player, t: number, map: TileMap,
   b.onGround = false;
 }
 
+/**
+ * One frame of a thrown death (CharacterDef.deathThrow, Classic SMBC Bill): gravity first (the
+ * original's order), capped at `maxFall`, then the move; a wall stops the sideways part, the first
+ * solid tile under the feet ends the fall (he lies there, vx 0), a ceiling stops the rise.
+ */
+export function stepThrow(p: Player, gravity: number, maxFall: number, map: TileMap): void {
+  const b = p.body;
+  if (b.onGround) return;
+  b.vy = Math.min(b.vy + gravity, maxFall);
+  if (b.vx !== 0) {
+    const nx = b.x + velToSub(b.vx);
+    const edge = b.vx > 0 ? nx + b.w - 1 : nx;
+    if (!solidColumn(map, edge, b.y, b.h)) b.x = nx;
+    else b.vx = 0;
+  }
+  const ny = b.y + velToSub(b.vy);
+  if (b.vy > 0) {
+    const feetRow = tileAt(ny + b.h - 1);
+    if (feetRow >= 0 && solidRow(map, b.x, b.w, feetRow)) {
+      b.y = tileToSub(feetRow) - b.h;
+      b.vy = 0;
+      b.vx = 0;
+      b.onGround = true;
+      return;
+    }
+  } else if (b.vy < 0) {
+    const headRow = tileAt(ny);
+    if (headRow >= 0 && solidRow(map, b.x, b.w, headRow)) {
+      b.vy = 0;
+      return;
+    }
+  }
+  b.y = ny;
+}
+
 function solidRow(map: TileMap, x: number, w: number, row: number): boolean {
   for (let c = tileAt(x); c <= tileAt(x + w - 1); c++) if (map.isSolid(c, row)) return true;
   return false;
