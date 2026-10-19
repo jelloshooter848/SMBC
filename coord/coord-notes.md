@@ -88,3 +88,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - Release schedule sent to release session (0.4.58 chain, .59 scroll, .60 Peach+Arthur, .61 Yoshi, .62 options I, .63 options II/skins, .64 survival+cheats, .65 spike top).
 - Arthur DONE af3b3f9c (classic-extras-arthur). Owner note: torch fire 60f→3 touches (design said 4; 73f would match). Yoshi + dev toggles launched (claude/classic-extras-yoshi, wip classic-wip-yoshi, 5214).
 - Scroll PR opened #156 (classic-scroll aa1f4a9e, base main). QA reviewer running (5215). Subscribed.
+- Peach DONE b59c4851. Peach agent integrating Peach+Arthur -> claude/classic-extras-3 (then merge updated classic-art). Owner Qs: Peach run apex 77.7 vs ~75; Arthur torch 60f vs 73f. #150 updated 3fc9e40b green; #156 green.
