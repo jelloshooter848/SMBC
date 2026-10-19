@@ -19,3 +19,7 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PR 1 opened: #146 (claude/classic-mode 055ecafe). Subscribed.
 - PR2 integrated: claude/classic-shared d886a1bf (base classic-mode). Reviewer running.
 - Heroes launched: ML (wip claude/classic-wip-ml, 5186, base shared-a), MM (wip claude/classic-wip-mm, 5187, base classic-shared), Bill (wip claude/classic-wip-bill, 5188, base classic-shared). Next: Link after ML; Samus, Simon, Ryu, Sophia.
+- PR1 #146 green; fix pending (tag clipped on phone + rules-toggle tests robust to registered defs) by S1 agent.
+- PR2 review done (no blockers), fixes pending by S2-b agent on claude/classic-shared.
+- ML DONE: claude/classic-heroes-ml 8f4f583c (base shared-a; needs merge w/ classic-shared; fireball classicBlocks flag + Bowser-5 pending S2-b). New profile fields rise/softCut/inertia/turnInAir/jumpBuffer/stompBounce/crouchJump.
+- Link launched: claude/classic-wip-link, 5189, base classic-shared + ML.
