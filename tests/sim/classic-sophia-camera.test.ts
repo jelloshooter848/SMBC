@@ -100,7 +100,7 @@ describe('SO-39: easing the camera through her turns', () => {
   it('only Classic Sophia sets cameraX', () => {
     expect(SOPHIA_CLASSIC.cameraX).toBe(sophiaCameraX);
     for (const def of [...Object.values(CHARACTERS), ...Object.values(CLASSIC_CHARACTERS)])
-      if (def !== SOPHIA_CLASSIC) expect(def.cameraX, def.id).toBeUndefined();
+      if (def && def !== SOPHIA_CLASSIC) expect(def.cameraX, def.id).toBeUndefined();
   });
 
   it('Current Sophia: the camera follows her box as before', () => {
