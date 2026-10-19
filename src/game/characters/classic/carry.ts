@@ -366,7 +366,6 @@ export class Sprout extends Entity {
     private life = 20,
   ) {
     super(x, y, 8, 4);
-    this.layer = 'back';
   }
   update(): void {
     if (--this.life <= 0) this.destroy();

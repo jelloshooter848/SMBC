@@ -164,7 +164,8 @@ export function peachSprite(p: Player, frame: number, reduce: boolean): SpriteSp
   if (lifting(p)) name = `${pre}lift`;
   else if (throwing(p)) name = `${pre}throw`;
   else if (p.floatT > 0) {
-    name = `${pre}float-${(frame >> 3) & 1}`;
+    // Floating: the skirt flutters (hands free) or the carry pose, with a 1 px bob (sprite only).
+    name = held ? `${pre}carry-jump` : `${pre}float-${(frame >> 3) & 1}`;
     bob = (frame >> 4) & 1;
   } else if (anim === 'climb') name = `${pre}climb-${(frame >> 3) & 1}`;
   else if (anim === 'crouch') name = small ? 'small-stand' : 'crouch';
