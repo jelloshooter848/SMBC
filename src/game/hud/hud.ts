@@ -52,10 +52,10 @@ export const POWER_ICON_P2 = { x: 144, y: 32 } as const;
 
 /**
  * A Classic SMBC hero's power icon (PS-C26): the Mushroom or the Fire Flower, nothing when small.
- * Only Classic defs (`rules: 'classic'`) show one; Current Mario keeps today's HUD.
+ * Only defs with `powerIcon` (Classic defs) show one; Current Mario keeps today's HUD.
  */
 export function powerIcon(p: Player | undefined): 'icon-mushroom' | 'icon-flower' | null {
-  if (!p || p.def.rules !== 'classic') return null;
+  if (!p || !p.def.powerIcon) return null;
   if (p.powerState === 'big') return 'icon-mushroom';
   if (p.powerState === 'fire') return 'icon-flower';
   return null;

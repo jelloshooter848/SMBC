@@ -19,6 +19,7 @@ import type { PickupKind } from '../../entities/objects/pickup';
  *   rules: 'classic',
  *   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
  *   blockPowerUp: classicBlockPowerUp,
+ *   powerIcon: true,
  *   drawLook: (p, frame, reduce) => classicLook(p, reduce, KIT.response.look),
  *   starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
  *   drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, LINK_DROPS, 'enemy') : null),

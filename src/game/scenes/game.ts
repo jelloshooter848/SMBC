@@ -424,8 +424,10 @@ export class Game {
             'YOUR QUEST IS OVER.',
             'WE PRESENT YOU A NEW QUEST.',
             '',
-            'PUSH BUTTON B',
-            'TO SELECT A WORLD',
+            // Classic mode names the ability, never a button letter; elsewhere the NES wording.
+            ...(this.classicRun
+              ? [fontText(`PRESS ${abilityHint(this, 'OK', 'attack')}`), 'TO GO ON']
+              : ['PUSH BUTTON B', 'TO SELECT A WORLD']),
           ]
         : ['THANK YOU!'];
     let then: () => void;

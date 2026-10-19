@@ -105,7 +105,7 @@ function strikeBlocks(p: Player, world: World, box: { x: number; y: number; w: n
       const key = ty * 4096 + tx;
       if (!block || block.kind === 'hidden' || seen.has(key)) continue;
       seen.add(key);
-      world.strikeBlock(tx, ty, p, true);
+      world.strikeBlock(tx, ty, p, true, { source: 'melee' });
       hit = true;
     }
   return hit;
