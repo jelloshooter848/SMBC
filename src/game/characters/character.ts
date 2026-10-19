@@ -292,6 +292,27 @@ export interface CharacterDef {
    * PM-18). Absent: the select's usual sound. Only Classic-only extras set it.
    */
   pickSfx?: string;
+  /**
+   * The name Toad thanks after the castle axe ("THANK YOU <name>!"), when not `name` (Classic
+   * Warriors of Light: WARRIOR, WL-M13). Absent: `name`.
+   */
+  thanksName?: string;
+  /**
+   * Hidden blocks are not there for this hero: the head passes through them and never reveals
+   * them (Classic Warriors of Light, BRICK_NONE: WL-20, Character.as:1464-1466). Absent: a hidden
+   * block stops a head moving up, as today.
+   */
+  passesHiddenBlocks?: boolean;
+  /**
+   * The select screen's portrait for this hero with carried kit `kit` (Classic Warriors of Light:
+   * the class remembered from the last life, WL-M3). Absent: `portrait`.
+   */
+  portraitFor?(kit: Readonly<Record<string, number>>): { sheet: string; palette: string; frame: string };
+  /**
+   * Kit keys a death (and picking the same hero again on the select screen) keeps outside the
+   * campaign (Classic Warriors of Light's class, WL-M3). Absent: a death wipes the whole kit.
+   */
+  keepOnDeath?: readonly string[];
 }
 
 /**
