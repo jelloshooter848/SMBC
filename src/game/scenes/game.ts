@@ -1218,7 +1218,8 @@ export class Game {
 
   /**
    * A non-campaign run from `levelId`. `opts.rules` sets the run's rules; left out, the run keeps
-   * runRules as it stands ('current' unless the Classic mode flow set it). Not a Classic run.
+   * runRules as it stands (rules-toggle.test.ts relies on it; showTitle resets them to 'current',
+   * and Classic paths pass theirs). Never a Classic run: it clears classicRun.
    */
   newGame(
     character: CharacterDef,

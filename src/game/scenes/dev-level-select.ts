@@ -2,6 +2,7 @@ import { MenuScene } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
 import { DEV_VILLAGE } from '../town/secret-house';
+import { stageTutorial } from '../tutorial/stage-tutorial';
 import type { Rules } from '../context';
 import { heroFor } from '../characters/registry';
 
@@ -35,8 +36,8 @@ export class DevLevelSelectScene extends MenuScene {
     this.setItems([
       {
         label: 'Level',
-        value: () => this.levels[this.levelIndex] ?? '-',
-        adjust: (d) => (this.levelIndex = cycle(this.levelIndex, d, this.levels.length)),
+        value: () => this.shown[this.levelIndex] ?? '-',
+        adjust: (d) => (this.levelIndex = cycle(this.levelIndex, d, this.shown.length)),
         hint: 'Left and right to choose',
       },
       {
@@ -72,14 +73,21 @@ export class DevLevelSelectScene extends MenuScene {
       {
         label: 'Mode',
         value: () => (this.classicRun ? 'Classic run' : 'Free play'),
-        adjust: () => (this.classicRun = !this.classicRun),
+        adjust: () => {
+          // The list changes (a Classic run hides the village and the stage tutorials): keep the
+          // level picked if it is still listed, else 1-1.
+          const was = this.shown[this.levelIndex];
+          this.classicRun = !this.classicRun;
+          const at = this.shown.indexOf(was ?? '');
+          this.levelIndex = at >= 0 ? at : Math.max(0, this.shown.indexOf('1-1'));
+        },
         hint: 'Classic run plays as Classic mode with the chosen rules: its lives and continues',
       },
       {
         label: 'Start',
         select: () =>
           game.devStart(
-            this.levels[this.levelIndex] ?? '1-1',
+            this.shown[this.levelIndex] ?? '1-1',
             this.character,
             this.power,
             this.fullKit,
@@ -90,6 +98,12 @@ export class DevLevelSelectScene extends MenuScene {
       },
       { label: 'Back', select: onBack },
     ]);
+  }
+
+  /** The levels listed: all, or without the campaign's village and stage tutorials (1-0) for a Classic run. */
+  private get shown(): string[] {
+    if (!this.classicRun) return this.levels;
+    return this.levels.filter((id) => id !== DEV_VILLAGE && !stageTutorial(id));
   }
 
   /** Who can be picked under the chosen rules (Game.rosterFor: the Classic extras too). */

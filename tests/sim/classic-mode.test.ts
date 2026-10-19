@@ -637,6 +637,49 @@ describe('one player only', () => {
   });
 });
 
+describe('newGame after a Classic run', () => {
+  it('is never a Classic run; from the title it plays Current', () => {
+    const h = classic();
+    h.game.classicGame(MARIO);
+    expect(h.game.liveRules).toBe('classic');
+    h.game.newGame(MARIO);
+    expect(h.game.classicRun).toBe(false);
+    h.game.classicGame(MARIO);
+    h.game.showTitle();
+    h.game.newGame(MARIO);
+    expect(h.game.classicRun).toBe(false);
+    expect(h.game.liveRules).toBe('current');
+  });
+});
+
+describe('dev Level select hides the campaign rooms for a Classic run', () => {
+  it('Mode = Classic run lists no village or 1-0; Free play lists them again', () => {
+    const h = makeGame({
+      deps: { settings: { ...defaultSettings(), dev: true }, listLevels: () => ['1-0', '1-1', '1-2'] },
+    });
+    const s = new DevLevelSelectScene(h.game, () => {});
+    h.game.scenes.push(s);
+    const level = items(s)[0] as MenuItem;
+    const mode = items(s).find((i) => i.label === 'Mode') as MenuItem;
+    const all = (): string[] => {
+      const seen: string[] = [];
+      for (let i = 0; i < 6; i++) {
+        seen.push(level.value?.() ?? '');
+        level.adjust?.(1);
+      }
+      return [...new Set(seen)];
+    };
+    expect(all()).toEqual(['1-0', '1-1', '1-2', 'village']);
+    for (let i = 0; i < 4 && level.value?.() !== '1-0'; i++) level.adjust?.(1);
+    expect(level.value?.()).toBe('1-0');
+    mode.adjust?.(1); // 1-0 is hidden: the row moves to 1-1
+    expect(level.value?.()).toBe('1-1');
+    expect(all().sort()).toEqual(['1-1', '1-2']);
+    mode.adjust?.(1);
+    expect(all()).toContain('village');
+  });
+});
+
 describe('dev Classic runs skip the campaign rooms', () => {
   it.each(['1-0', 'village'])('%s starts 1-1 instead', (id) => {
     const h = classic({ dev: true });
