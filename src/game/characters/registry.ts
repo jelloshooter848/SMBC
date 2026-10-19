@@ -40,9 +40,13 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [];
  */
 export { applyClassicLevelEdits } from '../rules/classic-water';
 
-/** The def a World plays for roster hero `def` under `rules` (TG-17). */
+/**
+ * The def a World plays for roster hero `def` under `rules` (TG-17). A def that is already a
+ * Classic one (an extra, or a test's stand-in) plays as itself.
+ */
 export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {
-  return rules === 'classic' ? (CLASSIC_CHARACTERS[def.id] ?? def) : def;
+  if (rules !== 'classic' || def.rules === 'classic') return def;
+  return CLASSIC_CHARACTERS[def.id] ?? def;
 }
 
 export function characterById(id: string): CharacterDef {
