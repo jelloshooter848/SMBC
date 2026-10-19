@@ -33,7 +33,7 @@ import { draw, file, makeGame, store, useStorage, type H } from './heroes-harnes
 import { isolateClassicRegistry } from './classic-registry';
 
 // Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts).
-isolateClassicRegistry();
+isolateClassicRegistry({ hideExtras: true });
 
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
 // campaign file is opened or written; deaths and continues go through character select as in

@@ -31,7 +31,7 @@ import { file, makeGame, useStorage } from './heroes-harness';
 import { hideClassicHeroes, isolateClassicRegistry } from './classic-registry';
 
 // Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts).
-isolateClassicRegistry();
+isolateClassicRegistry({ hideExtras: true });
 
 // The Classic rules plumbing (umbrella report TG-9..TG-43, Classic mode's rules model): with no
 // Classic defs yet every hero plays Current under Classic rules and the tag reads CLASSIC?. Where

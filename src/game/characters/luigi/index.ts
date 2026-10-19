@@ -11,7 +11,7 @@ import { LUIGI_PROFILE } from './profile';
 import { plumberGuide } from '../mario/guide';
 
 /** Luigi recolours Mario's sheet; the star flash cycles through the same loud palettes. */
-const LUIGI_PALETTES: PlumberPalettes = { normal: 'luigi', fire: 'luigi-fire', star: 'mario-star' };
+export const LUIGI_PALETTES: PlumberPalettes = { normal: 'luigi', fire: 'luigi-fire', star: 'mario-star' };
 
 export const LUIGI: CharacterDef = {
   id: 'luigi',

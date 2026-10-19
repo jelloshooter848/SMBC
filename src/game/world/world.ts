@@ -5,7 +5,8 @@ import { SCORE_MAX } from '../hud/hud';
 import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
-import { overlaps } from '@engine/math/aabb';
+import { overlaps, type AABB } from '@engine/math/aabb';
+import type { Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -110,6 +111,7 @@ import { Gull, ShieldJoe, TellyPort, Telly, Yoku } from '../entities/enemies/wil
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
 import { startHp, type CharacterDef } from '../characters/character';
+import { damp } from '../characters/profile';
 import { castlePages, REMARK_CASTLES } from '../story/script';
 import { endMoved, FINALE } from '../story/finale';
 import { CastleUnmask, walkStep } from './unmask';
@@ -298,6 +300,37 @@ const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
 function weaponStrikable(id: number): boolean {
   const block = tileDef(id).block;
   return !!block && !(block.kind === 'hidden' && block.content === 'teleporter');
+}
+
+/** The block a Classic frozen enemy carries (HP-C17): 16x16, left and bottom on its hitbox's. */
+function frozenBlock(e: Enemy): AABB {
+  const b = e.body;
+  return { x: b.x, y: b.y + b.h - px(16), w: px(16), h: px(16) };
+}
+
+/**
+ * Keeps a player's body out of a solid box that is not on the tile grid (a frozen enemy's block):
+ * lands on its top, bumps its underside, stops at its sides (as Spring.block does).
+ */
+function solidBox(b: Body, s: AABB): void {
+  if (!(b.x < s.x + s.w && b.x + b.w > s.x && b.y < s.y + s.h && b.y + b.h > s.y)) return;
+  if (b.vy >= 0 && b.prevBottom <= s.y + px(4)) {
+    b.y = s.y - b.h;
+    b.vy = 0;
+    b.onGround = true;
+  } else if (b.vy < 0 && b.y - velToSub(b.vy) >= s.y + s.h - px(4)) {
+    b.y = s.y + s.h;
+    b.vy = 0;
+    b.hitHead = true;
+  } else if (b.x + b.w / 2 < s.x + s.w / 2) {
+    b.x = s.x - b.w;
+    if (b.vx > 0) b.vx = 0;
+    b.hitWall = 1;
+  } else {
+    b.x = s.x + s.w;
+    if (b.vx < 0) b.vx = 0;
+    b.hitWall = -1;
+  }
 }
 
 /** A hero's attack in flight: a shot or thrown weapon a player owns (or a hero shot's own shot). */
@@ -537,6 +570,8 @@ export class World {
   /** Warp zones whose pipe the anchor smashed: their number and welcome text are gone. */
   private readonly smashedWarps = new Set<Zone>();
   private readonly deathTimers = new Map<Player, number>();
+  /** Players whose CharacterDef.deathHop death began below the screen (a pit: no hop). */
+  private readonly pitDeaths = new Set<Player>();
   private readonly respawnTimers = new Map<Player, number>();
   /** Players still in a fall arrival's straight drop (FALL_IN_STEER_Y): no steering yet. */
   private readonly fallingIn = new Set<Player>();
@@ -563,7 +598,7 @@ export class World {
    */
   remarkHook: ((level: string, hero: Player['def'], done: () => void) => boolean) | null = null;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number; stop?: number; page?: number; at?: number } | null = null;
+  bossClear: { t: number; stop?: number; page?: number; at?: number; coast?: number } | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
   /**
@@ -1506,7 +1541,7 @@ export class World {
    * Score a hit if it killed the enemy, by how it died (Enemy.as: takeDamage scores ATTACK,
    * hitCharacter with a star STAR, gBounceHit BELOW). Hit-point kills count once the last point goes.
    */
-  private scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
+  scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
     if (r === 'kill' || r === 'flip' || (r === 'hp' && !e.alive))
       this.addScore(e.scoreFor(kind), e.body.x, e.body.y);
   }
@@ -1629,6 +1664,10 @@ export class World {
       } else p.def.behaviour.update(p, input, this);
       // Springboards are solid: keep the player out of their box (landing on top starts a ride).
       for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
+      // Classic Ice (HP-C17, SA-C21): a frozen enemy carries a solid 16x16 block for players only
+      // (its left and bottom edges on the enemy's). Only Classic hits ever set `frozen`.
+      for (const e of this.entities)
+        if (e instanceof Enemy && e.alive && e.frozen > 0) solidBox(p.body, frozenBlock(e));
       if (p.body.x < this.camera.x) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
@@ -2691,6 +2730,9 @@ export class World {
     // No stomp during a Classic SMBC hit's push (PS-C12), nor under water for a hero whose
     // swim profile says so (SW-C7): plain contact.
     const stompBarred = p.hurtLock !== null || (p.inWater && p.profile.swim?.noStomp === true);
+    // CharacterDef.seaFloorSafe (ML-C25): a Blooper leaves a hero on the sea floor alone.
+    if (e instanceof Blooper && p.def.seaFloorSafe === true && pb.onGround && feet === px(this.heightPx - 32))
+      return;
     if (fromAbove && e.stompable && !stompBarred) {
       if (p.def.stomps) {
         // Landing on a still shell kicks it; it is not a stomp, so it neither scores nor advances
@@ -2753,7 +2795,7 @@ export class World {
       if (!pr.spec.pierce) pr.destroy();
       return;
     }
-    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected) return;
+    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected || pr.bursting > 0) return;
     // Mega Man's airship: Larry's wand blasts can be shot down (a few points; the shot goes on
     // only if it pierces).
     if (this.megamanShip)
@@ -2884,8 +2926,17 @@ export class World {
   private updateDeath(p: Player): void {
     const t = (this.deathTimers.get(p) ?? 0) + 1;
     this.deathTimers.set(p, t);
+    const hop = this.deathStyle === 'hop' ? p.def.deathHop : undefined;
     if (this.deathStyle !== 'hop') stepDeath(this.deathStyle, p, t, this.map, this.heightPx);
-    else {
+    else if (hop) {
+      // A hero's own death (CharacterDef.deathHop, Classic SMBC ML-C18): no hop after a pit.
+      if (t === 1 && toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
+      if (t === hop.freeze && !this.pitDeaths.has(p)) p.body.vy = -hop.vy;
+      if (t > hop.freeze && !this.pitDeaths.has(p)) {
+        p.body.vy = Math.min(p.body.vy + hop.gravity, hop.maxFall);
+        p.body.y += velToSub(p.body.vy);
+      }
+    } else {
       // A fall off the bottom of the screen (a pit, or through the lava, which is only scenery)
       // has no hop: the original's Character.initiatePitDeath only starts the die timer.
       if (t === 30 && toPx(p.body.y) <= this.heightPx) p.body.vy = -0x04000;
@@ -2894,7 +2945,9 @@ export class World {
         p.body.y += velToSub(p.body.vy);
       }
     }
-    if (t === DEATH_FRAMES[this.deathStyle]) {
+    const end = hop ? (this.pitDeaths.has(p) ? hop.pitFrames : hop.frames) : DEATH_FRAMES[this.deathStyle];
+    if (t === end) {
+      this.pitDeaths.delete(p);
       if (!this.coop) {
         this.events.push({ type: 'died', player: 0 });
         return;
@@ -3559,7 +3612,8 @@ export class World {
       p.anim = 'walk';
       if (c.t % 4 === 0) p.walkFrame = (p.walkFrame + 1) % 3;
       p.facing = 1;
-      walkStep(this, p, px(1));
+      const aw = p.def.axeWalk;
+      walkStep(this, p, aw ? velToSub(aw.speed) : px(1));
       // The screen follows the walk, so Toad (or the princess) comes into view.
       this.camera.follow(p.body.x);
       this.spawnPending();
@@ -3569,7 +3623,14 @@ export class World {
       if (reached || c.t >= 750) {
         c.stop = c.t;
         p.anim = 'idle';
+        if (aw) c.coast = aw.speed;
       }
+    } else if (c.coast) {
+      // CharacterDef.axeWalk (ML-C26): a quick slide to a stop after the walk.
+      const aw = p.def.axeWalk as NonNullable<CharacterDef['axeWalk']>;
+      c.coast = damp(c.coast, aw.stop);
+      if (c.coast < aw.snap) c.coast = 0;
+      else walkStep(this, p, velToSub(c.coast));
     }
     if (c.stop === undefined) return;
     // Then Toad's thanks and 1.5 s later the news (the original's ADD_TXT_TMR_DUR), which stays

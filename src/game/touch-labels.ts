@@ -74,7 +74,9 @@ export function levelTouchLabels(p: Player | undefined, world: World): TouchLabe
   // On Castlevania stairs JUMP does nothing (Player.stairWalk), whoever the hero.
   if (!canJump || p.stairs) out.jump = null;
   // Under water JUMP strokes, except for a seabed walker (Mega Man, Samus) who still jumps.
-  else if (p.inWater && p.profile.swim?.mode !== 'seabed') out.jump = 'SWIM';
+  // Classic SMBC's floor jumpers (SwimProfile.floorJumpOnly) jump too.
+  else if (p.inWater && p.profile.swim?.mode !== 'seabed' && !p.profile.swim?.floorJumpOnly)
+    out.jump = 'SWIM';
   // By someone to talk to, C is the TALK button (READ for the bird statue), 0.4.35.
   const verb = world.talkVerb?.(p);
   if (verb) out.special = verb;

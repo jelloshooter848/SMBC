@@ -198,7 +198,7 @@ export class CharacterSelectScene implements Scene {
         this.game.ctx.audio.sfx('select');
         onMap();
       } else if (ok && c) {
-        this.game.ctx.audio.sfx('coin');
+        this.game.ctx.audio.sfx(c.pickSfx ?? 'coin');
         // Campaign: the first pick of a hero on the file asks about training first.
         const pick = this.pick;
         if (pick.training !== false && needsTraining(this.game, c))
@@ -227,6 +227,7 @@ export class CharacterSelectScene implements Scene {
       const c = chars[this.index];
       const c2 = this.p2 ? (chars[this.index2] ?? null) : null;
       if (c) {
+        if (c.pickSfx) this.game.ctx.audio.sfx(c.pickSfx);
         if (this.start) this.start.begin(c);
         else this.game.newGame(c, '1-1', c2);
       }
