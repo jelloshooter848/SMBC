@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
 import { CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
-import { CharacterSelectScene } from '@game/scenes/character-select';
+import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { makeGame } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
