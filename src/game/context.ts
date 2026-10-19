@@ -28,6 +28,9 @@ export const DEFAULT_ASSIST: AssistOptions = {
   safetyFloor: false,
 };
 
+/** Which game's rules play: today's ('current') or the original SMBC's ('classic'). */
+export type Rules = 'current' | 'classic';
+
 /** Shared services every scene and the world can reach. */
 export interface GameContext {
   assets: AssetRegistry;
@@ -35,6 +38,13 @@ export interface GameContext {
   assist: AssistOptions;
   /** Reduced-flashing accessibility option (star palette cycling, etc.). */
   reduceFlashing: boolean;
+  /** The rules in play (left out: 'current'). */
+  rules?: Rules;
+}
+
+/** The rules in play: 'current' unless set. */
+export function rulesOf(ctx: { rules?: Rules }): Rules {
+  return ctx.rules ?? 'current';
 }
 
 /** Progress carried between levels. */

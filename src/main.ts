@@ -285,7 +285,10 @@ function boot(): void {
     const c1 =
       CHARACTERS.find((c) => c.id === params.get('char')) ?? (CHARACTERS[0] as (typeof CHARACTERS)[0]);
     const c2 = CHARACTERS.find((c) => c.id === params.get('char2')) ?? null;
-    game.newGame(c1, level, c2);
+    // `mode=classic` (dev mode only): a Classic mode run, as the dev Level select's Mode row.
+    if (settings.dev && params.get('mode') === 'classic')
+      game.devClassicStart(level, c1, c1.damage.kind === 'powerup' ? 'small' : 'full');
+    else game.newGame(c1, level, c2);
     if (params.get('kit') === 'full' && c1.devKit) {
       game.state.kit = c1.devKit();
       if (game.state.kit.maxHp) game.state.hp = game.state.kit.maxHp;

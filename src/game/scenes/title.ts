@@ -48,6 +48,7 @@ const STAMP_Y = 54;
 const MENU_X = 80;
 const MENU_Y = 96;
 const MENU_STEP = 12;
+const MENU_STEP_TIGHT = 10;
 /** The rift's centre on screen (where letters and heroes fly out from). */
 const RIFT_CX = 128;
 const RIFT_CY = 50;
@@ -132,6 +133,11 @@ export class TitleScene extends MenuScene {
     const game = this.game;
     const items: MenuItem[] = [
       { label: 'Start game', select: () => game.scenes.replace(new FileSelectScene(game)) },
+      {
+        label: 'Classic',
+        select: () => game.showClassicMenu(),
+        hint: 'The original game, as it was',
+      },
       { label: 'Custom levels', select: () => game.showCustomLevels() },
       {
         label: 'Options',
@@ -558,8 +564,10 @@ export class TitleScene extends MenuScene {
   }
 
   private menu(r: Renderer, dy: number): void {
+    // Five rows (with Dev mode) close up so the last stays clear of the credits below.
+    const stepY = this.items.length > 4 ? MENU_STEP_TIGHT : MENU_STEP;
     this.items.forEach((it, i) => {
-      const y = MENU_Y + i * MENU_STEP + dy;
+      const y = MENU_Y + i * stepY + dy;
       if (i === this.index && (this.t >> 4) % 2 === 0) this.text(r, '>', MENU_X - 12, y, undefined, true);
       this.text(r, it.label.toUpperCase(), MENU_X, y, it.label === 'Dev mode' ? 'grey' : undefined, true);
     });

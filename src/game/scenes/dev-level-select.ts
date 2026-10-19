@@ -13,6 +13,8 @@ export class DevLevelSelectScene extends MenuScene {
   private charIndex = 0;
   private powerIndex = 0;
   private fullKit = false;
+  /** Mode: free play (99 lives, straight back in after a death) or a Classic mode run. */
+  private classicRun = false;
 
   constructor(game: Game, onBack: () => void) {
     super(game, 'LEVEL SELECT', [], onBack);
@@ -48,10 +50,19 @@ export class DevLevelSelectScene extends MenuScene {
         hint: 'Full: all tools, ammo and magic',
       },
       {
+        label: 'Mode',
+        value: () => (this.classicRun ? 'Classic run' : 'Free play'),
+        adjust: () => (this.classicRun = !this.classicRun),
+        hint: 'Classic run plays as Classic mode: its rules, lives and continues',
+      },
+      {
         label: 'Start',
-        select: () =>
-          game.devStart(this.levels[this.levelIndex] ?? '1-1', this.character, this.power, this.fullKit),
-        hint: 'Starts with 99 lives',
+        select: () => {
+          const level = this.levels[this.levelIndex] ?? '1-1';
+          if (this.classicRun) game.devClassicStart(level, this.character, this.power, this.fullKit);
+          else game.devStart(level, this.character, this.power, this.fullKit);
+        },
+        hint: 'Free play starts with 99 lives',
       },
       { label: 'Back', select: onBack },
     ]);

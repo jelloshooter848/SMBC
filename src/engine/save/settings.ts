@@ -62,7 +62,16 @@ export interface Settings {
    * Optional, so files saved before it existed need no migration.
    */
   homeScreen?: HomeScreenFlags;
+  /**
+   * The rules a Classic mode run plays (title > CLASSIC > Options > Rules): 'classic' (the
+   * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
+   */
+  classicRules: ClassicRules;
 }
+
+/** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
+export type ClassicRules = 'classic' | 'current';
+export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'current'];
 
 export interface HomeScreenFlags {
   tipDone: boolean;
@@ -111,6 +120,7 @@ export function defaultSettings(): Settings {
     dev: false,
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
+    classicRules: 'classic',
   };
 }
 
@@ -154,6 +164,7 @@ export function loadSettings(): Settings {
   // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
+  if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

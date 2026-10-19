@@ -3,7 +3,7 @@ import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
-import type { GameContext, GameState } from '../context';
+import type { GameContext, GameState, Rules } from '../context';
 import { newGameState } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
@@ -89,6 +89,7 @@ import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
+import { ClassicMenuScene, recordClassicClear } from './original-game';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -157,6 +158,16 @@ export class Game {
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
   campaign: { slot: SaveSlot } | null = null;
+  /**
+   * A Classic mode run (title > CLASSIC, or the dev Level select's Mode: Classic run): the
+   * original game's flow, with no campaign file (`campaign` stays null). Every other start clears it.
+   */
+  classicRun = false;
+  /**
+   * The rules the run plays: a Classic mode run's are settings.classicRules (set by its start);
+   * 'current' for every other start.
+   */
+  runRules: Rules = 'current';
 
   /**
    * The map pages the rules read for this run (content/worldmap rulePages): the campaign's, whose
@@ -309,6 +320,13 @@ export class Game {
    * (and for a campaign level on no map page) the title.
    */
   private afterCredits(from: string): void {
+    // Classic mode: the clear is kept (the CLASSIC menu's Lost Levels entry opens) and the Lost
+    // Levels follow, as a new quest.
+    if (this.classicRun && !isLostLevel(from)) {
+      recordClassicClear(from);
+      this.showClassicNewQuest();
+      return;
+    }
     if (this.campaign) {
       const s = this.state;
       s.checkpoint = null;
@@ -415,6 +433,7 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.endClassicRun();
     this.backupDue = null;
     this.celebrate.clear();
     this.pendingReveal = [];
@@ -1064,9 +1083,34 @@ export class Game {
    * level's world seed (tests); otherwise LevelScene picks it (GameDeps.freshSeeds).
    */
   devStart(levelId: string, character: CharacterDef, power: string, fullKit = false, seed?: number): void {
+    this.devRun(levelId, character, power, fullKit, seed, false);
+  }
+
+  /**
+   * The dev Level select's Mode: Classic run: a Classic mode run (its rules, the original's
+   * lives, death and continue flow) from any level, character, power and kit.
+   */
+  devClassicStart(
+    levelId: string,
+    character: CharacterDef,
+    power: string,
+    fullKit = false,
+    seed?: number,
+  ): void {
+    this.devRun(levelId, character, power, fullKit, seed, true);
+  }
+
+  private devRun(
+    levelId: string,
+    character: CharacterDef,
+    power: string,
+    fullKit: boolean,
+    seed: number | undefined,
+    classic: boolean,
+  ): void {
     this.tutorialRun = null;
     this.state = newGameState(character);
-    this.state.lives = 99;
+    if (!classic) this.state.lives = 99;
     if (fullKit && character.devKit) this.state.kit = character.devKit();
     if (character.damage.kind === 'powerup') this.state.powerState = power;
     else {
@@ -1075,8 +1119,10 @@ export class Game {
     }
     this.playtestDone = null;
     this.pendingLevel = null;
-    this.quickRespawn = true;
+    this.quickRespawn = !classic;
     this.campaign = null;
+    if (classic) this.beginClassicRun();
+    else this.endClassicRun();
     this.backupDue = null;
     if (levelId === DEV_VILLAGE) {
       this.deps.ctx.audio.stopMusic();
@@ -1119,6 +1165,7 @@ export class Game {
     this.playtestDone = done;
     this.quickRespawn = true;
     this.campaign = null;
+    this.endClassicRun();
     this.backupDue = null;
     this.startLevel(level, { mode: 'stand' });
   }
@@ -1131,20 +1178,89 @@ export class Game {
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    this.endClassicRun();
     this.backupDue = null;
     this.startLevel(level, { mode: 'stand' });
   }
 
   newGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
+    this.startRun(character, levelId, character2, false);
+  }
+
+  /**
+   * Classic mode (title > CLASSIC): a new game of `levelId` (SMB 1-1, or the Lost Levels' 1-1)
+   * with no campaign file, playing settings.classicRules. The original's flow from there:
+   * character select after every death and continue, warps through character select, and after
+   * SMB 8-4 the ending, the credits and the Lost Levels.
+   */
+  classicGame(character: CharacterDef, levelId = '1-1', character2: CharacterDef | null = null): void {
+    this.pendingLevel = null;
+    this.startRun(character, levelId, character2, true);
+  }
+
+  private startRun(
+    character: CharacterDef,
+    levelId: string,
+    character2: CharacterDef | null,
+    classic: boolean,
+  ): void {
     this.tutorialRun = null;
     this.state = newGameState(character, character2);
     this.playtestDone = null;
     this.quickRespawn = false;
     this.campaign = null;
+    if (classic) this.beginClassicRun();
+    else this.endClassicRun();
     this.backupDue = null;
     const id = this.pendingLevel ?? levelId;
     this.pendingLevel = null;
     this.goToLevel(id, { mode: 'stand' });
+  }
+
+  /** A Classic mode run begins: its rules are settings.classicRules ('classic' without settings). */
+  private beginClassicRun(): void {
+    this.classicRun = true;
+    // The integrator wires this to the rules API (the one place that decides the live rules).
+    this.runRules = this.deps.settings?.classicRules ?? 'classic';
+  }
+
+  /** Any Classic mode run is over (the title, and every other start). */
+  private endClassicRun(): void {
+    this.classicRun = false;
+    this.runRules = 'current';
+  }
+
+  /** The title's CLASSIC entry: Super Mario Bros., The Lost Levels (once open), Options, Back. */
+  showClassicMenu(): void {
+    this.endClassicRun();
+    this.scenes.replace(new ClassicMenuScene(this));
+  }
+
+  /**
+   * Classic mode: the select screen with every hero, then a new game of `levelId`. Back goes to
+   * `back` (the CLASSIC menu; the title after the SMB ending).
+   */
+  classicSelect(levelId: string, back: () => void): void {
+    this.scenes.replace(
+      new CharacterSelectScene(this, null, {
+        begin: (c, c2) => this.classicGame(c, levelId, c2),
+        back,
+      }),
+    );
+  }
+
+  /**
+   * Classic mode, SMB beaten (after the credits): the Lost Levels are open, and follow as a new
+   * quest: OK goes on to their select screen, then their World 1.
+   */
+  private showClassicNewQuest(): void {
+    const lines = ['THE LOST LEVELS', 'ARE OPEN!', '', 'WE PRESENT YOU', 'A NEW QUEST.'];
+    const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
+    this.deps.announcer?.say(`${lines.filter(Boolean).join(' ')} ${ok}.`);
+    this.scenes.clear();
+    this.scenes.push(
+      new MessageScene(this, [...lines, '', ok], () => this.classicSelect('ll-1-1', () => this.showTitle())),
+    );
   }
 
   /**
@@ -1161,6 +1277,7 @@ export class Game {
     this.pendingLevel = null;
     this.quickRespawn = false;
     this.campaign = { slot };
+    this.endClassicRun();
     this.backupDue = null;
     this.campaignSave = save;
     this.pendingReveal = save.pendingReveal.slice();

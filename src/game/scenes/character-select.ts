@@ -40,6 +40,18 @@ export interface HeroPick {
   training?: boolean;
 }
 
+/**
+ * A new game's select screen (no HeroPick) started somewhere other than the custom levels: Classic
+ * mode's (title > CLASSIC). `begin` starts the run with the picked heroes; `back` leaves.
+ */
+export interface NewGamePick {
+  begin: (c: CharacterDef, c2: CharacterDef | null) => void;
+  back: () => void;
+}
+
+/** The second row of heroes (heroes past the first row's) sits this far below the first. */
+export const SECOND_ROW_DY = 40;
+
 export class CharacterSelectScene implements Scene {
   private index = 0;
   private index2 = 1;
@@ -50,18 +62,51 @@ export class CharacterSelectScene implements Scene {
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
+    private readonly start: NewGamePick | null = null,
   ) {}
+
+  /**
+   * The heroes to pick from: the game's roster when it has one (extra heroes follow the usual
+   * ones), else the registry's.
+   */
+  get chars(): readonly CharacterDef[] {
+    return (this.game as { roster?: readonly CharacterDef[] }).roster ?? this.game.deps.characters;
+  }
+
+  /**
+   * How many heroes the first row holds: the usual ones (the registry's); any extra heroes after
+   * them go on a second row, as in the original's two-row grid.
+   */
+  get firstRow(): number {
+    const chars = this.chars;
+    const base = this.game.deps.characters;
+    let n = 0;
+    while (n < chars.length && n < base.length && chars[n] === base[n]) n++;
+    return n === 0 ? chars.length : n;
+  }
+
+  /** Where hero `i` stands: its slot's centre x and its feet y. */
+  slot(i: number): { x: number; y: number } {
+    const n = this.chars.length;
+    const first = this.firstRow;
+    const row = i < first ? 0 : 1;
+    const len = row === 0 ? first : n - first;
+    const k = row === 0 ? i : i - first;
+    const spacing = Math.min(64, 224 / Math.max(1, len));
+    const x0 = 128 - ((len - 1) * spacing) / 2;
+    return { x: Math.round(x0 + k * spacing), y: 120 + row * SECOND_ROW_DY };
+  }
 
   /** Hero `i` is a brainwashed captive on this campaign file: drawn as a silhouette, skipped. */
   private locked(i: number): boolean {
-    const c = this.game.deps.characters[i];
+    const c = this.chars[i];
     return !c || this.game.heroLocked(c);
   }
 
   /** An unlocked index: `i` itself, else the first hero (Mario), else the first unlocked one. */
   private unlocked(i: number): number {
     if (!this.locked(i)) return i;
-    const chars = this.game.deps.characters;
+    const chars = this.chars;
     const first = chars.indexOf(this.game.firstHero);
     if (first >= 0 && !this.locked(first)) return first;
     return Math.max(
@@ -78,7 +123,7 @@ export class CharacterSelectScene implements Scene {
 
   enter(): void {
     const pick = this.pick;
-    const chars = this.game.deps.characters;
+    const chars = this.chars;
     if (pick) {
       // A locked current hero (it should not happen) falls back to Mario.
       this.index = this.unlocked(
@@ -113,7 +158,7 @@ export class CharacterSelectScene implements Scene {
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     this.t++;
-    const chars = this.game.deps.characters;
+    const chars = this.chars;
     const n = chars.length;
     // Left/right step to the next hero that is not locked (wrapping); with every other hero
     // locked the cursor stays put.
@@ -181,10 +226,17 @@ export class CharacterSelectScene implements Scene {
     }
     if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
       const c = chars[this.index];
-      if (c) this.game.newGame(c, '1-1', this.p2 ? (chars[this.index2] ?? null) : null);
+      const c2 = this.p2 ? (chars[this.index2] ?? null) : null;
+      if (c) {
+        if (this.start) this.start.begin(c, c2);
+        else this.game.newGame(c, '1-1', c2);
+      }
       return;
     }
-    if (input.pressed('select') || input.pressed('attack')) this.game.showTitle();
+    if (input.pressed('select') || input.pressed('attack')) {
+      if (this.start) this.start.back();
+      else this.game.showTitle();
+    }
   }
 
   render(r: Renderer): void {
@@ -201,11 +253,14 @@ export class CharacterSelectScene implements Scene {
       const line = `${find} ${find === 1 ? 'HERO' : 'HEROES'} TO FIND`;
       r.text(font, line, 128 - line.length * 4, 52);
     }
-    const chars = this.game.deps.characters;
-    const spacing = Math.min(64, 224 / Math.max(1, chars.length));
-    const x0 = 128 - ((chars.length - 1) * spacing) / 2;
+    const chars = this.chars;
+    const first = this.firstRow;
+    // A second row of heroes moves the lines under the heroes down by its height.
+    const below = first < chars.length ? SECOND_ROW_DY : 0;
     chars.forEach((c, i) => {
-      const x = Math.round(x0 + i * spacing);
+      const { x, y: feet } = this.slot(i);
+      const row = i < first ? first : chars.length - first;
+      const spacing = Math.min(64, 224 / Math.max(1, row));
       const locked = this.locked(i);
       const sheet = assets.sheet(
         c.portrait.sheet,
@@ -225,41 +280,45 @@ export class CharacterSelectScene implements Scene {
           [0, -1],
           [0, 1],
         ] as const)
-          r.sprite(rim, c.portrait.frame, left + dx, 120 - h + dy);
-        r.text(font, '???', x - 12, 128);
+          r.sprite(rim, c.portrait.frame, left + dx, feet - h + dy);
+        r.text(font, '???', x - 12, feet + 8);
       }
-      r.sprite(sheet, c.portrait.frame, left, 120 - h);
+      r.sprite(sheet, c.portrait.frame, left, feet - h);
       // With a full roster the heroes stand close together, so the cursor becomes an underline.
       const tight = spacing < 40;
       if (i === this.index) {
         // While the cursor is on RETURN TO MAP the hero stays named but unmarked.
         if (!this.onMapRow) {
-          if (tight) r.rect(x - 8, 122, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
-          else r.text(font, '>', x - 20, 112 - h / 2);
+          if (tight) r.rect(x - 8, feet + 2, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
+          else r.text(font, '>', x - 20, feet - 8 - h / 2);
         }
-        r.text(font, c.name.toUpperCase(), 128 - (c.name.length * 8) / 2, 144);
+        r.text(font, c.name.toUpperCase(), 128 - (c.name.length * 8) / 2, 144 + below);
       }
       if (this.p2 && i === this.index2)
-        r.text(font, '2', tight ? x - 4 : x + 12, tight ? 120 - h - 10 : 112 - h / 2);
+        r.text(font, '2', tight ? x - 4 : x + 12, tight ? feet - h - 10 : feet - 8 - h / 2);
     });
+    // With a second row the lines below close up a little so everything fits the screen.
+    const low = below ? below - 2 : 0;
     if (this.pick) {
       // The original's CharacterSelect shows the lives left (numLives / livesTxt).
-      r.text(font, `×  ${this.game.state.lives}`, 108, 158);
+      r.text(font, `×  ${this.game.state.lives}`, 108, 158 + low);
     } else if (this.p2) {
       const c2 = chars[this.index2];
-      if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158);
+      if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158 + low);
     } else if ((this.t >> 6) % 2 === 1) {
       const join = fontText(`P2 ${abilityHint(this.game, 'MENU', 'start', 1)} TO JOIN`);
-      r.text(font, join, 128 - join.length * 4, 158);
+      r.text(font, join, 128 - join.length * 4, 158 + low);
     }
     // Named by ability (OK), with the real key or pad button when not on touch.
     const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
-    if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, 184);
+    const goY = below ? 210 : 184;
+    if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, goY);
     if (this.pick?.onMap) {
       const label = 'RETURN TO MAP';
       const x = 128 - label.length * 4;
-      r.text(font, label, x, 204);
-      if (this.onMapRow) r.text(font, '>', x - 12, 204);
+      const y = below ? 224 : 204;
+      r.text(font, label, x, y);
+      if (this.onMapRow) r.text(font, '>', x - 12, y);
     }
   }
 }

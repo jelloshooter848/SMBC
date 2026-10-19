@@ -32,6 +32,19 @@ export class PauseScene extends MenuScene {
   private rebuild(): void {
     const game = this.game;
     const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
+    // A Classic mode run: the original's short pause (and dev mode's entry while it is on).
+    if (game.classicRun && !game.playtestDone) {
+      items.push(...this.reserveItem());
+      items.push({
+        label: 'Options',
+        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
+      });
+      if (this.showDev)
+        items.push({ label: 'Dev mode', select: () => game.scenes.push(new DevMenuScene(game, true)) });
+      items.push({ label: 'Quit to title', select: () => game.showTitle() });
+      this.setItems(items);
+      return;
+    }
     // A stage tutorial (1-0): its last three tips, read again (0.4.43).
     if (game.tutorialRun) items.push(...lastTipsItem(game, this.world));
     // The hero's own guide (and player two's in co-op).
@@ -53,18 +66,7 @@ export class PauseScene extends MenuScene {
           hint: `Practise ${c.name}'s moves in a training stage`,
         });
       });
-    // Stored items (E-tanks) are used from here, like the original weapon menu.
-    const p = world?.player;
-    const reserve = p?.def.reserve;
-    const label = p && reserve ? reserve.label(p) : null;
-    if (world && p && reserve && label) {
-      items.push({
-        label,
-        select: () => {
-          if (reserve.use(p, world)) game.scenes.pop();
-        },
-      });
-    }
+    items.push(...this.reserveItem());
     // The on-screen pad can be forced on or off right here (saved and applied at once). On touch
     // the row skips Off, which would leave no touch control to turn it back on.
     const s = game.deps.settings;
@@ -122,6 +124,23 @@ export class PauseScene extends MenuScene {
         select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()),
       });
     this.setItems(items);
+  }
+
+  /** Stored items (E-tanks) are used from here, like the original weapon menu. */
+  private reserveItem(): MenuItem[] {
+    const world = this.world;
+    const p = world?.player;
+    const reserve = p?.def.reserve;
+    const label = p && reserve ? reserve.label(p) : null;
+    if (!world || !p || !reserve || !label) return [];
+    return [
+      {
+        label,
+        select: () => {
+          if (reserve.use(p, world)) this.game.scenes.pop();
+        },
+      },
+    ];
   }
 
   /** Dev mode's full menu (level select, dev mode off) stays out of campaign play. */
