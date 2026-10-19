@@ -10,6 +10,7 @@ import { RYU } from './ryu';
 import { BILL } from './bill';
 import { SOPHIA } from './sophia';
 import { BILL_CLASSIC } from './bill/classic';
+import { RYU_CLASSIC } from './ryu/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -43,6 +44,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   samus: SAMUS_CLASSIC,
   bill: BILL_CLASSIC,
   simon: SIMON_CLASSIC,
+  ryu: RYU_CLASSIC,
 };
 
 /**

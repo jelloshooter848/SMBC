@@ -59,6 +59,13 @@ under `## [Unreleased]`.
   Whip, with one, two or three throws at a time. Special throws the Axe (1 heart); with the Fire Flower, Select throws
   a Cross that flies out and comes back to be caught (2 hearts). His head only bumps bricks, and any hit makes him
   small again. In developer mode `&kit=full` adds the Dagger, Holy Water and Stopwatch, picked with Select.
+- Classic Ryu (Classic rules): a steady walk that starts and stops at once, one fixed jump height, and he stops to
+  slash. He grabs walls and stays on without holding: climb up and down, jump away for a small hop, or hop up and over
+  at the top; he also hangs on the sides of lifts. The Mushroom gives a longer sword (he does not grow), the Fire Flower
+  the Scroll (up to 200 ninpo) and a Windmill Shuriken that swings back to him. He starts with 25 ninpo and a
+  Shuriken, one on screen at a time; thrown arts fly through walls and break bricks, the sword breaks bricks, and his
+  head only bumps them. A hit takes the sword and the Flower but keeps the Scroll and the ninpo. The developer full kit
+  adds the Fire Wheel, the Fire Dragon Ball and the Jump Slash. He gets his own Classic guide page.
 
 ## [0.4.55] - 2026-10-13
 

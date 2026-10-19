@@ -141,7 +141,7 @@ export interface MovementProfile {
   /**
    * In the air (with any air control but 'none'), no direction held (or both) sets vx to 0 at
    * once, as a held one sets it straight to `maxWalk` with `instantAccel`: "stops dead" (Classic
-   * Simon SI-C6, Samus SA-C3, Mega Man MM-C4, Link LK-C5, Ryu). Absent: vx is kept (today).
+   * Simon SI-C6, Samus SA-C3, Ryu RY-C4, Mega Man MM-C4, Link LK-C5). Absent: vx is kept (today).
    */
   airStop?: true | undefined;
   /**
@@ -162,6 +162,36 @@ export interface MovementProfile {
    * ends on leaving the ground.
    */
   crouchJump?: boolean | undefined;
+  /**
+   * Classic SMBC Ryu's wall climb (RY-C10..RY-C16; Player.wall): he grabs a wall in the air while
+   * pressing toward it, stays on with no input, climbs, throws, and leaves by the hop table. The
+   * Current cling (`Player.clinging`, the wall kick) is not used. Absent: none.
+   */
+  wallClimb?: WallClimbProfile | undefined;
+}
+
+/**
+ * A wall climb (MovementProfile.wallClimb). Probes are px from the hitbox; speeds in 1/4096 px/f.
+ * The hop speeds are the original's (gravity added before the move): Player takes one frame of
+ * the gravity it falls with (land or water) off them, so the arcs match frame for frame.
+ */
+export interface WallClimbProfile {
+  /** Climbing speed up and down (CLIMB_SPEED). */
+  speed: number;
+  /** The upper probe: px below the top of the hitbox (CLIMB_TOP_OFS). */
+  topProbe: number;
+  /** The lower probe: px above the feet (CLIMB_BOT_OFS). */
+  bottomProbe: number;
+  /** The lower probe may hang this many px below the bottom of the wall (raised onto it on the grab). */
+  bottomSlack: number;
+  /** No wall at this many px above the hitbox top: he is at the top of the wall (CLIMB_TOP_JUMP_OFS). */
+  topJump: number;
+  /** Away + Jump: the low hop's take-off speed. */
+  hopLow: number;
+  /** Jump at the top of the wall (or on a lift): the high hop's take-off speed. */
+  hopHigh: number;
+  /** After a high hop, frames during which the same wall edge (or any lift) cannot be grabbed. */
+  regrab: number;
 }
 
 /**

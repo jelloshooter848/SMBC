@@ -72,7 +72,7 @@ export interface CharacterBehaviour {
   canJump?(p: Player): boolean;
   /**
    * True while the hero cannot walk on the ground this frame: read by Player.update (tier path)
-   * before the walk, only while on the ground, so vx is 0 that frame and the facing does not turn.
+   * before the walk, only while on the ground, next to Player.root (a stop counted in frames), so vx is 0 that frame and the facing does not turn.
    * Classic Samus crouched or holding Down (SA-C4), a Classic Pit aiming up (PI-9), Classic Simon
    * rooted by his whip or a throw (SI-C4). Absent: the shared rules only (a `crouches` def's crouch).
    */
