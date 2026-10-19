@@ -646,9 +646,11 @@ export class LevelScene implements Scene {
 
   /**
    * CLASSIC (or CLASSIC?) at the top right while this World plays Classic rules (TG-31): after
-   * the HUD and the F1 overlay, so it shows under the pause menu and in every screenshot.
+   * the HUD and the F1 overlay, so it shows in every screenshot of play. Not while a menu
+   * (pause, options...) is over the level: the tag would show through or past its panel.
    */
   private drawRulesTag(r: Renderer): void {
+    if (this.game.scenes.top !== this) return;
     const w = this.world;
     drawRulesTag(
       r,

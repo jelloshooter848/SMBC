@@ -125,6 +125,11 @@ export class CharacterSelectScene implements Scene {
     return mine === c ? c.portraitFor(second ? s.kit2 : s.kit) : c.portrait;
   }
 
+  /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
+  private rowsHint(): string {
+    return this.firstRow < this.chars.length ? ' up and down for the other row,' : '';
+  }
+
   /** " 7 heroes still to be found." in campaign play while any are locked, else nothing. */
   private toFind(): string {
     const n = this.game.heroesToFind;
@@ -145,7 +150,7 @@ export class CharacterSelectScene implements Scene {
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       const name = chars[this.index]?.name ?? pick.current.name;
       this.game.deps.announcer?.say(
-        `${who} your hero. ${name}. Left and right to choose, OK to confirm.` +
+        `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
           this.toFind(),
       );
@@ -154,7 +159,7 @@ export class CharacterSelectScene implements Scene {
     this.index = this.unlocked(this.index);
     this.index2 = this.unlocked(this.index2);
     this.game.deps.announcer?.say(
-      `Select your hero. Left and right to choose, OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
+      `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
         this.toFind(),
     );
   }
@@ -182,6 +187,43 @@ export class CharacterSelectScene implements Scene {
       if (c) this.game.deps.announcer?.say(c.name);
       return to;
     };
+    // Two rows (the Classic extras): Up / Down go to the other row's nearest unlocked hero by
+    // column; Up on the first row or Down on the second bumps (Down there is left to RETURN TO
+    // MAP when the pick has it). One row: null, nothing changes (today's select).
+    const rows = this.firstRow < n;
+    const rowMove = (idx: number, f: InputFrame): number | null => {
+      if (!rows) return null;
+      const up = f.pressed('up');
+      const down = f.pressed('down');
+      if (up === down) return null;
+      const first = this.firstRow;
+      const row = idx < first ? 0 : 1;
+      const to = up ? 0 : 1;
+      if (to === row) {
+        if (down && this.pick?.onMap) return null;
+        this.game.ctx.audio.sfx('bump');
+        return idx;
+      }
+      const x = this.slot(idx).x;
+      let best = -1;
+      let bd = Infinity;
+      for (let k = to === 0 ? 0 : first; k < (to === 0 ? first : n); k++) {
+        if (this.locked(k)) continue;
+        const d = Math.abs(this.slot(k).x - x);
+        if (d < bd) {
+          bd = d;
+          best = k;
+        }
+      }
+      if (best < 0) {
+        this.game.ctx.audio.sfx('bump');
+        return idx;
+      }
+      this.game.ctx.audio.sfx('select');
+      const c = chars[best];
+      if (c) this.game.deps.announcer?.say(`${c.name}, ${to === 0 ? 'first' : 'second'} row`);
+      return best;
+    };
     if (this.pick) {
       // Player 2's pick also takes player 1's input, so one device (a phone's touch buttons
       // drive player 1 only) can set up both heroes; player 2's own device works too.
@@ -194,7 +236,10 @@ export class CharacterSelectScene implements Scene {
         this.onMapRow = false;
       }
       const onMap = this.pick.onMap;
-      if (onMap && !this.onMapRow && pressed('down')) {
+      const vert = this.onMapRow ? undefined : frames.find((f) => f.pressed('up') !== f.pressed('down'));
+      const rowTo = vert && !steer ? rowMove(this.index, vert) : null;
+      if (rowTo !== null) this.index = rowTo;
+      else if (onMap && !this.onMapRow && pressed('down')) {
         this.onMapRow = true;
         this.game.ctx.audio.sfx('select');
         this.game.deps.announcer?.say('Return to map');
@@ -222,7 +267,7 @@ export class CharacterSelectScene implements Scene {
       }
       return;
     }
-    this.index = move(this.index, input);
+    this.index = rowMove(this.index, input) ?? move(this.index, input);
     const f2 = inputs[1];
     // Classic mode is one player (no join).
     if (f2 && !this.start) {
@@ -231,7 +276,7 @@ export class CharacterSelectScene implements Scene {
         this.game.ctx.audio.sfx('1up');
         this.game.deps.announcer?.say('Player two joined.');
       } else if (this.p2) {
-        this.index2 = move(this.index2, f2);
+        this.index2 = rowMove(this.index2, f2) ?? move(this.index2, f2);
         if (f2.pressed('select')) this.p2 = false;
       }
     }

@@ -365,7 +365,7 @@ describe('Spread, swap and touch (BI-C1, BI-C22, BI-C31; check 7)', () => {
     w.hurtPlayer(p, 1);
     expect(p.powerState).toBe('small');
     expect(attackGun(p)).toBe('rifle');
-    expect(BILL_CLASSIC.touchLabels?.(p, w)).toEqual({ attack: 'SHOOT', special: '-', select: '-' });
+    expect(BILL_CLASSIC.touchLabels?.(p, w)).toEqual({ attack: 'SHOOT', special: null, select: null });
     p.transition = null;
     p.invuln = 0;
     w.powerUp(p, 'mushroom');

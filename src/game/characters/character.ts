@@ -161,6 +161,11 @@ export interface MeterInfo {
   colour: string;
   /** One-letter HUD label. */
   label: string;
+  /**
+   * A dark box behind the label and bar, so they read over castle ceilings (Classic Mega Man's
+   * weapon energy). Absent: drawn straight over the level (Current meters).
+   */
+  backing?: boolean;
 }
 
 /**

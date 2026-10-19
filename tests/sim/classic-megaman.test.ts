@@ -332,7 +332,7 @@ describe('the Mega Buster (MM-C19)', () => {
     expect(shots(w, 'mm-buster').length).toBe(3);
   });
 
-  it('armour bounces it back, harmless', () => {
+  it('MM-C26: armour bounces it back, harmless', () => {
     const w = mmWorld();
     settle(w);
     const b = new Koopa(tile(6), tile(12) - px(8), 'buzzy');
