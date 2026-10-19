@@ -71,3 +71,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - TODO later: extras (Bass/ProtoMan/BreakMan/Pit/DarkPit/VV/WoL) get rescueName values once patch merges into the held chain.
 - Release session: use [skip ci] on wip/notes pushes (Actions queue backed up). common.md updated.
 - v0.4.56 RELEASED (#152). PR7 art opened #153 (classic-art 5a08077c, base extras-2), held. Patch builder still running.
+- #153 fixes 3816f6b8 (arrows head-first, key icon). Patch opened #154 (classic-patch b8c3d1df on main). Extras rescue names: Bass Dr. Wily; Proto/Break Roll; Pit Palutena; Dark Pit the Reaper; VV/WoL none -> add to held chain after #154 merges.
