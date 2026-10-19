@@ -40,6 +40,13 @@ under `## [Unreleased]`.
   in mid-air, no early jump presses, speed that builds and runs down smoothly (Luigi is slow to start and slides far), a
   small stomp bounce, the crouch-jump, the original fireball (slower, lower bounces, bursts on ceilings), a Mushroom
   while big gives fire, and their own death hop and walk to Toad. Both get their own Classic guide page.
+- Classic Samus (Classic rules): power states instead of energy (small with a short beam, the Mushroom's Long Beam and
+  four missiles, the Flower's Wave Beam, Screw Attack and room for 99 missiles; any hit makes her small, missiles stay),
+  one steady walking speed that stops at once, a tall floaty jump that ends softly when you let go, a crouch that stays
+  until you aim up, jump or walk (standing shots fly over small enemies), the morph ball from a crouch or in mid-air,
+  bombs that hang in the air and lift her, the somersault after a running jump, and three shots at a time. Her head
+  only bumps bricks; her shots break them. The Ice Beam, which freezes enemies into blocks to stand on, comes only with
+  the developer full kit (Select switches Wave and Ice). She gets her own Classic guide page.
 
 ## [0.4.55] - 2026-10-13
 
