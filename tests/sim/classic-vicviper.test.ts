@@ -171,13 +171,26 @@ describe('flight and auto-scroll (VV-5..VV-12)', () => {
     expect(b.y).toBe(0);
   });
 
-  it('squashed against a wall by the left edge, it dies (VV-M12)', () => {
+  it('pinned against a wall by the left edge, it is pushed out, not killed (VV-M12, as the original)', () => {
+    // Sitting still at floor height in 1-1 (a Star for the Goombas): the first pipes come; the
+    // ship ends up over them.
+    const r = rig();
+    r.p.star = 100000;
+    hold(r, 700);
+    expect(r.p.dead).toBe(false);
+    expect(r.world.camera.x).toBeGreaterThan(px(28 * 16));
+    // A wall the full height of the screen: shoved through it.
     const wall: Record<number, string> = {};
     for (let y = 0; y < 13; y++) wall[y] = `${'.'.repeat(14)}#`;
-    const r = rig(flatLevel(wall, 60));
-    hold(r, 30, ['up']);
-    r.until(() => r.p.dead, ['right'], 1200);
-    expect(r.p.dead).toBe(true);
+    const w = rig(flatLevel(wall, 60));
+    hold(w, 30, ['up']);
+    hold(w, 600);
+    expect(w.p.dead).toBe(false);
+    expect(w.p.body.x).toBeGreaterThan(px(15 * 16) - 1);
+  });
+
+  it('a map auto-scroll still squashes everyone else (no eject without the flag)', () => {
+    expect(MARIO.autoScroll).toBeUndefined();
   });
 
   it('a hero with no auto-scroll keeps the following camera (Current Mario on 1-1)', () => {

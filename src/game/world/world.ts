@@ -1803,7 +1803,11 @@ export class World {
       const blocked = this.solidRows(p);
       p.body.x = this.camera.x;
       if (p.body.vx < 0) p.body.vx = 0;
-      if (this.squashed(p, blocked)) this.kill(p);
+      if (!this.squashed(p, blocked)) continue;
+      // A hero whose own scroll pins it (CharacterDef.autoScroll.pinned 'eject': Vic Viper, as
+      // the original's hit test pushes the ship out of the ground it was shoved into) is put free.
+      if (p.def.autoScroll?.pinned === 'eject' && this.eject(p)) continue;
+      this.kill(p);
     }
   }
 
@@ -4097,6 +4101,29 @@ export class World {
     if (y === b.y || this.overlapsSolid({ x: b.x, y, w: b.w, h: b.h })) return;
     b.y = y;
     if (b.vy < 0) b.vy = 0;
+  }
+
+  /**
+   * A body pinned against a wall by the scroll's left edge moved to the nearest free place: up or
+   * down (the nearer, up first, at most two tiles), else just past the wall. False if none.
+   */
+  private eject(p: Player): boolean {
+    const b = p.body;
+    const at = (x: number, y: number) => ({ x, y, w: b.w, h: b.h });
+    for (let d = 1; d <= 32; d++)
+      for (const dy of [-d, d]) {
+        const y = b.y + px(dy);
+        if (y >= this.camera.y && !this.overlapsSolid(at(b.x, y))) {
+          b.y = y;
+          return true;
+        }
+      }
+    for (let x = b.x; x < this.camera.right - b.w; x += px(1))
+      if (!this.overlapsSolid(at(x, b.y))) {
+        b.x = x;
+        return true;
+      }
+    return false;
   }
 
   /** Whether a box overlaps a solid tile. */

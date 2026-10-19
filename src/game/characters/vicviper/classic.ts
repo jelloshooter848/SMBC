@@ -37,8 +37,8 @@ import { fire, keepEscort, recordTrail, SHIELD_HP } from './classic-weapons';
  *   code never runs for it).
  * - Auto-scroll (VV-9..VV-12, CharacterDef.autoScroll): the screen moves right at 0.833 px/f and
  *   carries the ship; left adds the scroll speed back (VV-7, VV-M13: kept as coded).
- * - Edges (VV-M11, VV-M12): held 3 px inside the right edge and below the screen top; squashed
- *   against a wall by the left edge, it dies (the World's auto-scroll push).
+ * - Edges (VV-M11, VV-M12): held 3 px inside the right edge and below the screen top; pinned
+ *   against a wall by the left edge, it is pushed out (up, down or past it), as in the original.
  * - Bullet (VV-14, VV-15), no stomp (VV-26), no head bump and hidden blocks stay hidden (VV-25),
  *   mid-air pipes (VV-27), no vines (VV-M16), springs are solid (VV-30).
  * - The Gradius power bar (VV-20..VV-22, VV-M1..VV-M9): capsules move the light, POWER (Jump or
@@ -275,7 +275,9 @@ export const VICVIPER_CLASSIC: CharacterDef = {
   passesHiddenBlocks: true,
   flies: true,
   pipesAirborne: true,
-  autoScroll: { speed: AUTO_SCROLL },
+  // VV-M12: the original never kills a pinned ship (Level.scrollScreen carries it with no hit
+  // test, then groundHT pushes it out of the ground), so the ship is put free instead.
+  autoScroll: { speed: AUTO_SCROLL, pinned: 'eject' },
   hitbox: () => VIC_HITBOX,
   sprite: vicSprite,
   blockPowerUp: classicBlockPowerUp,

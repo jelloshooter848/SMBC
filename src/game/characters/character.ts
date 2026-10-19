@@ -298,7 +298,14 @@ export interface CharacterDef {
    * with this field carried along by the same amount. It stops at the camera's end; it holds
    * whenever the world stands still (pipes, clears, freezes). Absent: the camera follows.
    */
-  autoScroll?: { speed: number };
+  autoScroll?: {
+    speed: number;
+    /**
+     * Pushed into a wall by the screen's left edge: 'eject' puts the hero free (up, down, or past
+     * the wall) instead of the squash death. Absent: squashed, as on an auto-scroll map.
+     */
+    pinned?: 'eject';
+  };
   /**
    * Flies with no gravity (Vic Viper, VV-5): dropped in from the top of an area, it is steered at
    * once instead of after the fall-in (it never lands). Absent: today's fall-in.
