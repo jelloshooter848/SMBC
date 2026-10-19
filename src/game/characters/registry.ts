@@ -9,6 +9,7 @@ import { SIMON } from './simon';
 import { RYU } from './ryu';
 import { BILL } from './bill';
 import { SOPHIA } from './sophia';
+import { MEGAMAN_CLASSIC } from './megaman/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -33,7 +34,9 @@ export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, S
  * This file is the only one outside the classic modules allowed to import them (TG-39). Empty
  * until the hero slices land: a hero with no entry plays Current under Classic rules (TG-20).
  */
-export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {};
+export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
+  megaman: MEGAMAN_CLASSIC,
+};
 
 /**
  * Classic-only heroes (TG-41), in select order (Bass, Proto Man, Pit, Vic Viper, Warriors of
