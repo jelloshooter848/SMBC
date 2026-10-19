@@ -142,7 +142,7 @@ export interface RapidFire {
 /** Options of a Classic Mega Man variant. Everything optional falls back to Mega Man's. */
 export interface ClassicMegaManOptions {
   /** The roster def it plays for (id, name, hudName, portrait, music; TG-18), or a Classic-only hero's. */
-  base: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'music'>;
+  base: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'portraitArt' | 'music'>;
   profile?: MovementProfile;
   response?: ClassicHitResponse;
   drops?: ClassicDropTable;
@@ -615,6 +615,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     name: base.name,
     hudName: base.hudName,
     portrait: base.portrait,
+    ...(base.portraitArt ? { portraitArt: base.portraitArt } : {}),
     ...(base.music !== undefined ? { music: base.music } : {}),
     rules: 'classic',
     movement: profile,

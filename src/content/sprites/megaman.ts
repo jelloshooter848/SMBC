@@ -41,17 +41,7 @@ export const megamanPalettes: Record<string, string[]> = {
   // gloves and boots, an ashen face, and red where the eye whites and the muzzle glint are, so
   // every frame glares.
   'megaman-dark': [NES.black, SHADOW_PURPLE, SHADOW_INDIGO, NES.lightGray, NES.redBright, NES.red],
-  // Classic-only extras (protoman-build report PM-16): Proto Man in pale grey with a bright red
-  // helmet, gloves and boots; Break Man, his masked look, in dark grey and deep red. Their charge
-  // cycles brighten the body as Mega Man's does but keep the red.
-  protoman: [NES.black, NES.lightGray, NES.redBright, NES.skin, NES.white, NES.yellow],
-  'protoman-charge-0': [NES.black, NES.lightGray, NES.redBright, NES.skin, NES.white, NES.cyan],
-  'protoman-charge-1': [NES.black, NES.skyLight, NES.redBright, NES.skin, NES.white, NES.yellow],
-  'protoman-charge-2': [NES.black, NES.yellowLight, NES.redBright, NES.skin, NES.white, NES.white],
-  breakman: [NES.black, NES.darkGray, NES.redDark, NES.skin, NES.white, NES.yellow],
-  'breakman-charge-0': [NES.black, NES.darkGray, NES.redDark, NES.skin, NES.white, NES.cyan],
-  'breakman-charge-1': [NES.black, NES.gray, NES.redDark, NES.skin, NES.white, NES.yellow],
-  'breakman-charge-2': [NES.black, NES.yellowLight, NES.redDark, NES.skin, NES.white, NES.white],
+  // Proto Man and Break Man's palettes live with their own sheet (protoman.ts).
 };
 
 /* ---------- composition helpers ---------- */
@@ -397,3 +387,23 @@ export const megamanDef: SpriteDef = {
     ...bareFrames,
   },
 };
+
+/**
+ * His body parts, for the Classic-only heroes built on his frame (Proto Man and Break Man,
+ * protoman.ts): the same torso, cannon, legs and climbing poses under their own head.
+ */
+export const MEGAMAN_PARTS = {
+  torso,
+  torsoShoot,
+  cannon,
+  legsStand,
+  legsWalk0,
+  legsWalk1,
+  legsWalk2,
+  legsJump,
+  legsLadder,
+  deathOrb,
+  teleport0,
+  climb0,
+  climbTop,
+} as const;

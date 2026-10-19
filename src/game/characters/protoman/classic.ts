@@ -26,12 +26,21 @@ const PROTO_RULES: Partial<ClassicMegaManOptions> = {
 
 /** The roster identity (id, names, portrait): no Current def exists, so Mega Man's with these. */
 function identity(id: string, name: string, hudName: string, palette: string): CharacterDef {
-  return { ...MEGAMAN, id, name, hudName, portrait: { sheet: 'megaman', palette, frame: 'idle' } };
+  return {
+    ...MEGAMAN,
+    id,
+    name,
+    hudName,
+    portrait: { sheet: 'megaman', palette, frame: 'idle' },
+    // His own art (sprites/protoman.ts) on the select screen and the intro card.
+    portraitArt: { sheet: 'protoman', palette, frame: 'idle' },
+  };
 }
 
 export const PROTOMAN_CLASSIC: CharacterDef = classicMegaMan({
   ...PROTO_RULES,
   base: identity('protoman', 'Proto Man', 'PROTO', 'protoman'),
+  sheet: 'protoman',
   palette: 'protoman',
   pickSfx: 'protoman-whistle',
 });
@@ -39,5 +48,6 @@ export const PROTOMAN_CLASSIC: CharacterDef = classicMegaMan({
 export const BREAKMAN_CLASSIC: CharacterDef = classicMegaMan({
   ...PROTO_RULES,
   base: identity('breakman', 'Break Man', 'BREAK', 'breakman'),
+  sheet: 'protoman',
   palette: 'breakman',
 });
