@@ -58,3 +58,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PR5 opened #150 (classic-extras a084354d, base heroes-2). PR6 (extras-2) must re-merge classic-extras a084354d before opening.
 - #149 #150 green. PR6 QA done (no blockers); fixes sent to VV agent (clamp below HUD, warriors doc, guide demo, HUD overdraw, switch walk, cure label, merge extras a084354d). Owner notes: VV bullets reveal hidden blocks; mushroom runs off; Thief weak.
 - PR6 opened #151 (extras-2 7080372a, base classic-extras). ALL PRs OPEN: #147->#148->#149->#150->#151. Remaining: watch CI, retarget as merges happen; propose follow-ups (FU) and wishlist when done.
+- Release session ACCEPTED #149. Pending nits for next heroes-2 push: sophia/classic-guide.ts:10 wording ('Jump height doesn't depend on speed. Hold for higher.'); bill Flare pierce 5->6.
