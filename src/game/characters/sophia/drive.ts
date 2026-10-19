@@ -171,13 +171,13 @@ export function becomeUpright(p: Player, st: SophiaState): void {
 const lastMap = new WeakMap<Player, TileMap>();
 
 /** Inputs read relative to her surface (SO-6): along it, away from it ("up"), into it ("down"). */
-interface Controls {
+export interface Controls {
   along: -1 | 0 | 1;
   both: boolean;
   away: boolean;
   into: boolean;
 }
-function controls(s: Surface, input: InputFrame): Controls {
+export function controls(s: Surface, input: InputFrame): Controls {
   const l = input.held('left');
   const r = input.held('right');
   const u = input.held('up');
@@ -221,7 +221,7 @@ function clampAlong(v: number, cap: number): number {
 }
 
 /** The hover bar's timers (SO-35): drain while thrusting, refill while not. */
-function tickHoverBar(p: Player, st: SophiaState): void {
+export function tickHoverBar(p: Player, st: SophiaState): void {
   if (!hasHover(p)) return;
   if (st.hovering) {
     st.fillT = 0;
@@ -634,7 +634,7 @@ function rightHerself(b: Body, st: SophiaState, map: TileMap, grounded: boolean)
 }
 
 /** Start a turn: the centres are subpixels, `dir` the heading on the new surface. */
-function startTurn(
+export function startTurn(
   p: Player,
   st: SophiaState,
   frames: number,

@@ -73,7 +73,9 @@ export function drawCastleHud(r: Renderer, assets: AssetRegistry, s: CastleHudSt
   r.rect(BOX.x, BOX.y, BOX.w, BOX.h, ENEMY_COLOR);
   r.rect(BOX.x + 1, BOX.y + 1, BOX.w - 2, BOX.h - 2, '#000');
   const items = assets.sheet('items');
-  if (s.sub && items.frames.has(s.sub)) r.sprite(items, s.sub, BOX.x + 6, BOX.y + 6);
+  // The dagger's frame is the thrown shot's, stored pointing left (Projectile.render mirrors it when
+  // thrown right); the box shows it pointing right, as it always has.
+  if (s.sub && items.frames.has(s.sub)) r.sprite(items, s.sub, BOX.x + 6, BOX.y + 6, s.sub === 'dagger');
   // The hearts, then the lives.
   if (items.frames.has('heart-small')) r.sprite(items, 'heart-small', COUNT_X, PLAYER_Y);
   else r.rect(COUNT_X, PLAYER_Y, 8, 8, ENEMY_COLOR);

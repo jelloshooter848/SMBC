@@ -166,4 +166,24 @@ describe('Classic camera scrolls back left (SMBC 3.1.21 default)', () => {
     for (let i = 0; i < 1000; i++) c.followBack(px(63 * 16), true);
     expect(c.x).toBe(px(40 * 16 - SCREEN_W));
   });
+
+  it("follows a hero's eased camera anchor (CharacterDef.cameraX: Classic Sophia III's turns)", () => {
+    const lagged = {
+      ...MARIO,
+      rules: 'classic' as const,
+      cameraX: (p: World['player']) => p.body.x - px(40),
+    };
+    const level = cageLevel();
+    const w = runSim({
+      level,
+      character: lagged,
+      script: { steps: [] },
+      maxFrames: 0,
+      rules: 'classic',
+    }).world;
+    hold(w, ['right'], 200);
+    const p = w.player;
+    expect(w.camera.scrollBack).toBe(true);
+    expect(w.camera.x).toBe(p.body.x - px(40) + (p.centerX - p.body.x) - SCROLL_BACK_CENTER);
+  });
 });
