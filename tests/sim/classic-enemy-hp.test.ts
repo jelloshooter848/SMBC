@@ -423,3 +423,30 @@ describe('melee damage hook (TG-24)', () => {
     expect(g2.alive).toBe(false);
   });
 });
+
+describe('re-hits and zero-damage hits (HP-C20, HP-C16)', () => {
+  it('Ryu Windmill (pierce 6, re-hits after leaving): 2 passes kill a Bullet Bill', () => {
+    const w = classicWorld(classicStub(RYU));
+    const bb = place(w, new BulletBill(tile(10), tile(12) + px(2), -1));
+    bb.body.vx = 0;
+    const spec = shotSpec({ amount: 300, pierce: true, classicHit: { pierce: 6 }, rehitAfter: 15 });
+    const s = new Projectile(bb.body.x - px(12), bb.body.y + px(2), 1, spec, w.player);
+    w.spawn(s);
+    step(w, 12);
+    expect(bb.classicHp).toBe(100);
+    // Past it, it comes back the other way.
+    s.body.vx = -s.body.vx;
+    step(w, 12);
+    expect(bb.alive).toBe(false);
+  });
+
+  it("Link's boomerang (0 damage) stops a Goomba but does nothing to Bowser", () => {
+    const w = classicWorld(classicStub(LINK));
+    const g = place(w, new Goomba(tile(20), tile(12)));
+    expect(g.hit(weapon(w, 'boomerang', 0, { pierce: 10, stopFrames: 180 }), w)).toBe('stun');
+    expect(g.classicHp).toBe(250);
+    const b = place(w, new Bowser(30, 10, 'fire'));
+    expect(b.hit(weapon(w, 'boomerang', 0, { pierce: 10, stopFrames: 180 }), w)).toBe('immune');
+    expect(b.stopFrames).toBe(0);
+  });
+});

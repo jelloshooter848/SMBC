@@ -192,6 +192,11 @@ export interface CharacterDef {
    */
   meleeStrikesBlocks?: boolean;
   /**
+   * False while the head touches blocks as plain ground: no bump, no break (Classic BR-C3's
+   * BRICK_NONE: Samus in the morph ball, Ryu clinging to a wall). Absent: the head bumps.
+   */
+  headBumps?(p: Player): boolean;
+  /**
    * No blinking while invulnerable after a hit (Player.visible): the hero shows it its own way
    * (Sophia III's hull flashes through palettes).
    */

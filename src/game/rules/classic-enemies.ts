@@ -136,9 +136,11 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
     if (src.blockedSfx) world.audio.sfx(src.blockedSfx);
     return 'blocked';
   }
-  e.classicHp -= classicDamage(src);
+  const dmg = classicDamage(src);
+  e.classicHp -= dmg;
   // Hit effects (HP-C16): a new stop replaces a running one only if it leaves more time.
-  if (src.stopFrames && !resistsStop(e)) e.stopFrames = Math.max(e.stopFrames, src.stopFrames);
+  const stops = !!src.stopFrames && !resistsStop(e);
+  if (stops) e.stopFrames = Math.max(e.stopFrames, src.stopFrames ?? 0);
   if (src.flashFrames) e.flashFrames = Math.max(e.flashFrames, src.flashFrames);
   if (src.blinkFrames) e.blinkFrames = Math.max(e.blinkFrames, src.blinkFrames);
   if (src.invulnFrames) e.invulnFrames = src.invulnFrames;
@@ -147,6 +149,8 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
     e.classicKill(src, world);
     return 'kill';
   }
+  // A hit with no damage (Link's boomerang) only stops what it can stop.
+  if (dmg <= 0) return stops ? 'stun' : 'immune';
   // HP-C6: Koopas and Buzzy Beetles change state with HP (no points either way).
   if (e instanceof Koopa && e.classicDamaged(e.classicHp) === 'shell') return 'shell';
   e.classicHpHit(src, world);

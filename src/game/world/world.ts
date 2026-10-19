@@ -2210,6 +2210,8 @@ export class World {
   /* ---------- Blocks & tiles ---------- */
 
   private hitBlock(tx: number, ty: number, p: Player): void {
+    // A head that touches blocks as plain ground (Classic: Samus in the ball, Ryu on a wall).
+    if (p.def.headBumps?.(p) === false) return;
     this.strikeBlock(tx, ty, p, p.def.canBreakBricks(p));
   }
 
@@ -2718,6 +2720,7 @@ export class World {
           return;
         }
       }
+    if (pr.spec.rehitAfter !== undefined) pr.releaseHits(this.enemies, this.frame);
     for (const e of this.enemies) {
       if (pr.hitIds.has(e.id) || !overlaps(pr.body, e.body)) continue;
       const src: DamageSource = {
@@ -2738,6 +2741,7 @@ export class World {
         return;
       }
       pr.hitIds.add(e.id);
+      if (pr.spec.rehitAfter !== undefined) pr.hitAt.set(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
       if (r === 'hp') this.audio.sfx('hurt-enemy');
       else if (r === 'stun') this.audio.sfx('hurt-enemy');

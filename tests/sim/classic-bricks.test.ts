@@ -292,3 +292,15 @@ describe('drops from blocks (BR-C18)', () => {
     expect(calls).toEqual([]);
   });
 });
+
+describe('heads that touch blocks as ground (BR-C3 BRICK_NONE)', () => {
+  it('a def whose headBumps is false leaves the block alone', () => {
+    const def = classicStub(SAMUS, { canBreakBricks: () => false, headBumps: () => false });
+    const w = classicWorld(def, testLevel({ 9: '..?' }));
+    const coins = w.state.coins;
+    const hit = (w as unknown as { hitBlock(tx: number, ty: number, p: unknown): void }).hitBlock.bind(w);
+    hit(2, 9, w.player);
+    expect(w.state.coins).toBe(coins);
+    expect(w.map.get(2, 9)).toBe(T.Q_COIN);
+  });
+});

@@ -84,6 +84,12 @@ export interface ProjectileSpec {
    * Specs that leave it out keep the flags above, so Current shots are unchanged.
    */
   classicBlocks?: ClassicBlocks;
+  /**
+   * Classic rules (HP-C20, Ryu's Windmill Shuriken): an enemy it has hit can be hit again once the
+   * shot has left it and this many frames have passed since that hit. Without it each enemy is
+   * hit once.
+   */
+  rehitAfter?: number;
 }
 
 /** A Classic shot's tile rules (BR-C2, BR-C9, BR-C16). */
@@ -255,6 +261,8 @@ export class Projectile extends Entity {
   readonly carried: Entity[] = [];
   /** Coins a fetching boomerang carries. */
   carriedCoins = 0;
+  /** Classic: the frame each enemy was last hit (ProjectileSpec.rehitAfter). */
+  readonly hitAt = new Map<number, number>();
   /** Classic: deflected by armour (onBlocked 'deflect'); it hits nothing more. */
   deflected = false;
   /** Classic: block tiles ("x,y") the shot is touching now, each struck once per contact. */
@@ -384,6 +392,21 @@ export class Projectile extends Entity {
     const camL = world.camera.x - px(16);
     const camR = world.camera.right + px(16);
     if (b.x + b.w < camL || b.x > camR || this.isBelowLevel()) this.end(world);
+  }
+
+  /**
+   * Classic re-hits (ProjectileSpec.rehitAfter): enemies the shot no longer touches, hit at least
+   * that long ago, can be hit again.
+   */
+  releaseHits(enemies: readonly Entity[], frame: number): void {
+    const after = this.spec.rehitAfter ?? Infinity;
+    for (const id of this.hitIds) {
+      const e = enemies.find((x) => x.id === id);
+      if (e && overlaps(e.body, this.body)) continue;
+      if (frame - (this.hitAt.get(id) ?? -Infinity) < after) continue;
+      this.hitIds.delete(id);
+      this.hitAt.delete(id);
+    }
   }
 
   /** Gone: what it carries goes to its owner first (World.deliverFetch). */
