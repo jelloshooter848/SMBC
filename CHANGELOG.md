@@ -121,6 +121,13 @@ under `## [Unreleased]`.
 - Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
   the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
   while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
+- Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
+  Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
+  a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch
+  that stops every enemy), lifts the enemy she stands on (she rides most enemies instead of stomping them; spiny ones
+  hurt) or lifts the brick under her feet; THROW throws it, and a thrown enemy knocks out whatever it hits. Down with
+  Attack sets it down. Stay crouched to charge a super jump. The Fire Flower's white dress plucks twice as fast and her
+  vegetables fly through what they defeat. A hit drops what she carries. Her own art, guide page and float sound.
 
 ## [0.4.55] - 2026-10-13
 
