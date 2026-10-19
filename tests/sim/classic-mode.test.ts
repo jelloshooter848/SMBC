@@ -30,6 +30,10 @@ import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { WorldMapScene } from '@game/scenes/world-map';
 import type { Renderer } from '@engine/gfx/renderer';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
+import { isolateClassicRegistry } from './classic-registry';
+
+// Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts).
+isolateClassicRegistry();
 
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
 // campaign file is opened or written; deaths and continues go through character select as in

@@ -42,6 +42,11 @@ import type { Player } from '@game/entities/player';
 import { World } from '@game/world/world';
 import { AssetRegistry as Assets } from '@engine/assets/registry';
 import { DEFAULT_ASSIST, newGameState } from '@game/context';
+import { isolateClassicRegistry } from './classic-registry';
+
+// Independent of which hero slices have landed: no registered Classic hero def replaces this
+// file's stand-ins (tests/sim/classic-registry.ts).
+isolateClassicRegistry({ hide: true });
 
 // Classic SMBC power states (2026-10-07-classic-power-states.md, PS-C1..PS-C27; TG-21, TG-28,
 // TG-29), driven with stand-in Classic defs (characters/classic/test-def.ts) until the hero

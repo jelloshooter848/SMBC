@@ -14,7 +14,7 @@ import { LUIGI_CLASSIC } from './luigi/classic';
 import { LINK_CLASSIC } from './link/classic';
 import { MEGAMAN_CLASSIC } from './megaman/classic';
 import { installClassicRules } from '../rules/hooks';
-import { classicHit } from '../rules/classic-enemies';
+import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 
@@ -23,6 +23,7 @@ import { applyClassicLevelEdits } from '../rules/classic-water';
 // to import classic modules.
 installClassicRules({
   enemyHit: classicHit,
+  enemySpawned: classicEnemySpawned,
   strikeBlock: classicStrikeBlock,
   levelEdits: applyClassicLevelEdits,
 });
