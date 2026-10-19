@@ -13,3 +13,6 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - S2-a (power+swim, claude/classic-wip-shared-a, 5184) and S2-b (enemyHP+bricks, claude/classic-wip-shared-b, 5185) launched on base classic-core.
 - Known env issue: title.test PRE-RELEASE fails with 8-char short sha in container; check in CI.
 - Owner: OK 8-4 -> Lost Levels new-run flow; OK keep E-tank row. "Keep working on new characters, release at end of docket" -> plan PR 6: Vic Viper + WoL built with recommended design defaults (confirm), after PR5. Build after S2 lands (needs classic power model).
+- S1 integrated: claude/classic-mode (b3b6d71a + final fixes pending). QA passed, owner shown screenshots. Next: open PR 1.
+- S2-a DONE: claude/classic-shared-a 0fce9b81. Helpers in characters/classic/power.ts (classicOnHurt/OnPowerUp/Busy/StartKit/Respawn/Drop), classic-swim.ts, classic-water.ts, test-def.ts. Conflict expected in World.strikeBlock w/ S2-b (blockDrop calls).
+- Owner: no co-op in Classic; Lost Levels only after (non-dev) Classic clear; dev rows in classic pause.
