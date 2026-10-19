@@ -217,7 +217,7 @@ export const SWORD_BEAM: ProjectileSpec = {
   speed: 0x03000,
   w: 16,
   h: 8,
-  frames: ['sword-beam'],
+  frames: ['sword-beam-left'],
   frameRate: 1,
 };
 
