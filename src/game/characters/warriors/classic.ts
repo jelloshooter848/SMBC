@@ -287,8 +287,13 @@ function poseOf(p: Player, frame: number): string {
     case ACT.cast:
       return 'cast';
   }
+  // The guide page's demo poses (no World there): attackTimer and the shared walk cycle.
+  if (p.anim === 'attack') return 'swing-1';
   if (!p.body.onGround) return p.jumping ? 'jump' : 'fall';
-  if (p.anim === 'walk' || p.anim === 'skid') return `walk-${Math.floor((p.scratch[K.walk] ?? 0) / 6) & 3}`;
+  if (p.anim === 'walk' || p.anim === 'skid') {
+    const w = p.scratch[K.walk];
+    return `walk-${w === undefined ? p.walkFrame : Math.floor(w / 6) & 3}`;
+  }
   return 'stand';
 }
 
