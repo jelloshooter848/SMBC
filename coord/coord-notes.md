@@ -31,3 +31,5 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - #147 green (ac0b52db); test-robustness fix requested (shared tests using real heroes as unbuilt) -> will re-run CI.
 - Link DONE 9f63c4d0 (wip-link, includes ML+shared). Link agent now integrating PR3 -> claude/classic-heroes-1 (ML+Link+MM).
 - Sophia launched (wip-sophia, 5198). Running: Samus 5195, Simon 5196, Ryu 5197.
+- Simon DONE 843c0441 (wip-simon). Judgment call: standing whip box extended down to 13px above feet (original enemy attack boxes in missing SWF) so it hits Goombas -> tell owner. airStop duplicated across Link/MM/Simon -> unify at PR4 integration.
+- Release session ACCEPTED #147 (nits 2,4,5 being folded into the PR2 test-fix push).
