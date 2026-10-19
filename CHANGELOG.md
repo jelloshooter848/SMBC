@@ -39,6 +39,12 @@ under `## [Unreleased]`.
   in mid-air, no early jump presses, speed that builds and runs down smoothly (Luigi is slow to start and slides far), a
   small stomp bounce, the crouch-jump, the original fireball (slower, lower bounces, bursts on ceilings), a Mushroom
   while big gives fire, and their own death hop and walk to Toad. Both get their own Classic guide page.
+- Classic Link (Classic rules): no hearts or magic, the Mushroom and Fire Flower instead (the Blue Ring and a stronger
+  sword, then the Red Ring's beam, the Magic Sword and Magic Boomerang; any hit takes them, he keeps his bombs). He starts
+  and stops at once, also in mid-air, and a tap of jump is a short hop. Stabs root him for a moment and break bricks;
+  Up or Down with Attack stabs up or down, and in mid-air Up or Down thrusts (the down-thrust bounces off enemies and
+  blocks). The boomerang flies eight ways, stops enemies and brings back items; bombs never hurt him, three at a time.
+  His own Classic guide page. In developer mode the full kit adds the Bow, and Tools picks boomerang, bombs or arrows.
 
 ## [0.4.55] - 2026-10-13
 
