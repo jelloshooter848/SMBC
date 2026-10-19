@@ -4,6 +4,7 @@
 // Starts its own Vite dev server on <port> (default 5183), opens storyboard.html in headless Chromium,
 // writes one 768x720 PNG per frame plus vicviper-sheet.png and warriors-sheet.png. Never write the
 // output into the repo (CI rejects binary files).
+/* global window, Buffer */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createRequire } from 'node:module';

@@ -213,7 +213,9 @@ const staff = [
   '0aaaaaaaaaa1110',
   '00000000000000.',
 ];
-const sparkle = ['..2..', '.222.', '22122', '.222.', '..2..'].map((r) => r.replace(/2/g, '8').replace(/1/g, '6'));
+const sparkle = ['..2..', '.222.', '22122', '.222.', '..2..'].map((r) =>
+  r.replace(/2/g, '8').replace(/1/g, '6'),
+);
 
 /* ---------- frames ---------- */
 
@@ -266,12 +268,24 @@ function lower(job: Job, pose: 'stand' | 'walk0' | 'walk1' | 'jump'): [readonly 
 }
 
 function jobFrames(job: Job): Record<string, string[]> {
-  const torso = robed(job) ? torsoArms.map((r, i) => (i === 6 ? r.replace(/5/g, job === 'bmage' ? '5' : '1') : r)) : torsoArms;
-  const bare = robed(job) ? torsoBare.map((r, i) => (i === 6 ? r.replace(/5/g, job === 'bmage' ? '5' : '1') : r)) : torsoBare;
+  const torso = robed(job)
+    ? torsoArms.map((r, i) => (i === 6 ? r.replace(/5/g, job === 'bmage' ? '5' : '1') : r))
+    : torsoArms;
+  const bare = robed(job)
+    ? torsoBare.map((r, i) => (i === 6 ? r.replace(/5/g, job === 'bmage' ? '5' : '1') : r))
+    : torsoBare;
   const stand = compose(W, H, ...lower(job, 'stand'), [torso, 0, 14], headAt(job, 13));
   const walk0 = compose(W, H, ...lower(job, 'walk0'), [torso, 0, 14], headAt(job, 13));
   const walk1 = compose(W, H, ...lower(job, 'walk1'), [torso, 0, 15], headAt(job, 14));
-  const jump = compose(W, H, ...lower(job, 'jump'), [bare, 0, 13], headAt(job, 12), [armUp, 11, 8], [armUp, 1, 10]);
+  const jump = compose(
+    W,
+    H,
+    ...lower(job, 'jump'),
+    [bare, 0, 13],
+    headAt(job, 12),
+    [armUp, 11, 8],
+    [armUp, 1, 10],
+  );
   const crouch = compose(
     W,
     H,

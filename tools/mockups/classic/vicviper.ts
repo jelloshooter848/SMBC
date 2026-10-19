@@ -125,7 +125,15 @@ const flameSpeed = [
 /* ---------- shots ---------- */
 
 // Bullet, 10x7 box (VV-14); the visible pellet is 8x3 in the middle.
-const bullet = cell(10, 7, ['..........', '..........', '.08777770.', '.87777778.', '.08777770.', '..........', '..........']);
+const bullet = cell(10, 7, [
+  '..........',
+  '..........',
+  '.08777770.',
+  '.87777778.',
+  '.08777770.',
+  '..........',
+  '..........',
+]);
 const bulletBack = bullet.map((r) => r.split('').reverse().join(''));
 // Laser bolt, 16x6 (VV-M7).
 const laser = cell(16, 6, [
@@ -187,23 +195,20 @@ const option1 = cell(12, 8, [
 
 /* ---------- Shield pieces, 13x13 (VV-M9) ---------- */
 
-const shieldTop = cell(13, 13, [
-  '.............',
-  '...444.......',
-  '..45554......',
-  '..455554.....',
-  '...4555544...',
-  '....45555544.',
-  '.....4555554.',
-  '......455554.',
-  '.......45554.',
-  '........4554.',
-  '.........444.',
-  '.............',
-  '.............',
-]);
+// Each piece is a round energy cell: a bright core inside a blue rim, flattened on the side facing the ship.
+const shieldTop = Array.from({ length: 13 }, (_, y) =>
+  Array.from({ length: 13 }, (_, x) => {
+    const d = Math.hypot(x - 6, (y - 6) * 1.15);
+    if (d > 6.2 || x < 2) return '.';
+    if (d > 5) return '0';
+    if (d > 3.2) return '4';
+    return d > 1.5 ? '5' : '1';
+  }).join(''),
+);
 const shieldBot = [...shieldTop].reverse();
-const shieldTopHurt = shieldTop.map((r, y) => (y % 2 === 0 ? r.replace(/5/g, '.') : r.replace(/5/g, '4')));
+const shieldTopHurt = shieldTop.map((r, y) =>
+  r.replace(/[15]/g, (_c, x: number) => ((x + y) % 2 ? '.' : '4')),
+);
 const shieldBotHurt = [...shieldTopHurt].reverse();
 
 /* ---------- Power capsule, 16x16 (VV-M3) ---------- */
@@ -241,7 +246,12 @@ const ring = (r0: number, r1: number, core: number): string[] =>
       return '.';
     }).join(''),
   );
-const boom = [ring(4, 6, 2), ring(7, 9, 3), ring(9, 12, 1), ring(10, 12.5, 0).map((r, y) => (y % 2 ? r : r.replace(/7/g, '.')))];
+const boom = [
+  ring(4, 6, 2),
+  ring(7, 9, 3),
+  ring(9, 12, 1),
+  ring(10, 12.5, 0).map((r, y) => (y % 2 ? r : r.replace(/7/g, '.'))),
+];
 
 /* ---------- Portrait 16x16 (HUD / select screen) ---------- */
 

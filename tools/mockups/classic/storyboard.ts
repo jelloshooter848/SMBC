@@ -119,8 +119,8 @@ class Scene {
   }
   scenery(): void {
     this.decor('hill-big', 0, GROUND);
-    this.decor('cloud-1', 64, 56);
-    this.decor('cloud-2', 168, 40);
+    this.decor('cloud-1', 56, 88);
+    this.decor('cloud-2', 176, 72);
     this.decor('bush-2', 184, GROUND);
   }
   text(str: string, x: number, y: number, palette = 'font'): void {
@@ -183,7 +183,12 @@ function vicHud(s: Scene, bar: Bar): void {
     sc.text(name, 132, 26, 'font-gold');
   });
 }
-function ship(s: Scene, x: number, y: number, o: { pose?: string; pal?: string; speed?: boolean; f?: number } = {}): void {
+function ship(
+  s: Scene,
+  x: number,
+  y: number,
+  o: { pose?: string; pal?: string; speed?: boolean; f?: number } = {},
+): void {
   const f = o.f ?? 0;
   const flame = o.speed ? `flame-speed-${f % 4}` : `flame-${f % 4}`;
   const fw = o.speed ? 12 : 8;
@@ -194,7 +199,8 @@ function ship(s: Scene, x: number, y: number, o: { pose?: string; pal?: string; 
 const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] = [
   {
     file: 'vic-01-idle',
-    caption: 'Idle: hovers in place, no gravity. The screen scrolls right by itself (0.833 px/f) and carries the ship.',
+    caption:
+      'Idle: hovers in place, no gravity. The screen scrolls right by itself (0.833 px/f) and carries the ship.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -207,7 +213,8 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-02-fly',
-    caption: 'Fly right (the "run"): fixed 1.667 px/f in 8 directions, no acceleration; jet flame at the tail.',
+    caption:
+      'Fly right (the "run"): fixed 1.667 px/f in 8 directions, no acceleration; jet flame at the tail.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -221,7 +228,8 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-03-up',
-    caption: 'Fly up (no jump exists): the ship pitches nose-up. Flying into a block from below does nothing (no head bump).',
+    caption:
+      'Fly up (no jump exists): the ship pitches nose-up. Flying into a block from below does nothing (no head bump).',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -235,7 +243,8 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-04-shoot',
-    caption: 'SHOOT: one bullet per press, 5 px/f, flies through ground and pipes, breaks the first brick it meets and is spent.',
+    caption:
+      'SHOOT: one bullet per press, 5 px/f, flies through ground and pipes, breaks the first brick it meets and is spent.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -280,7 +289,8 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-07-flower',
-    caption: 'Fire Flower state: gold trim (cosmetic). Every later power-up block gives a red power capsule instead of a Flower.',
+    caption:
+      'Fire Flower state: gold trim (cosmetic). Every later power-up block gives a red power capsule instead of a Flower.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -292,7 +302,8 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-08-bar',
-    caption: 'Power bar (HUD row 3): each capsule moves the light one slot right. Here 2 capsules: MISSILE is lit.',
+    caption:
+      'Power bar (HUD row 3): each capsule moves the light one slot right. Here 2 capsules: MISSILE is lit.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -304,7 +315,8 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-09-kit',
-    caption: 'POWER spends the lit slot. Speed Up x2 (long flame), 2 Options trailing, ground Missile running along the floor.',
+    caption:
+      'POWER spends the lit slot. Speed Up x2 (long flame), 2 Options trailing, ground Missile running along the floor.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -321,23 +333,25 @@ const VIC_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'vic-10-laser-shield',
-    caption: 'Laser (pierces, keeps flying, 2 on screen) and the front Shield (4 hits per piece; dims when worn).',
+    caption:
+      'Laser (pierces, keeps flying, 2 on screen) and the front Shield (4 hits per piece; dims when worn).',
     draw: (s) => {
       s.scenery();
       s.ground();
       s.stand('enemies', 'koopa-0', 208, GROUND);
-      s.spr('enemies', 'bullet', 168, 108, { flip: true });
+      s.spr('enemies', 'bullet', 200, 108);
       vicHud(s, { selected: 0, maxed: [4, 6] });
       ship(s, 72, 112, { pal: 'vicviper-flower', speed: true, f: 0 });
-      s.spr('vic', 'shield-top', 104, 106);
-      s.spr('vic', 'shield-bot-hurt', 104, 120);
+      s.spr('vic', 'shield-top', 103, 99);
+      s.spr('vic', 'shield-bot-hurt', 103, 117);
       s.spr('vic', 'laser', 124, 117);
-      s.spr('vic', 'laser', 176, 117);
+      s.spr('vic', 'laser', 164, 117);
     },
   },
   {
     file: 'vic-11-pipe',
-    caption: 'Down over a pipe enters it even in mid-air; auto-scroll pauses in the pipe and resumes after the exit.',
+    caption:
+      'Down over a pipe enters it even in mid-air; auto-scroll pauses in the pipe and resumes after the exit.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -367,11 +381,23 @@ const JOB = (j: string): JobInfo => WARRIOR_JOBS.find((x) => x.job === j) as Job
 function warHud(s: Scene, job: string, opts: { power?: 'mushroom' | 'flower'; cure?: number } = {}): void {
   s.hud('WARRIOR', (sc) => {
     const info = JOB(job);
-    sc.text(info.name + (job === 'wmage' && opts.cure !== undefined ? ` C${opts.cure}` : ''), 24, 26, 'font-gold');
+    sc.text(
+      info.name + (job === 'wmage' && opts.cure !== undefined ? ` C${opts.cure}` : ''),
+      24,
+      26,
+      'font-gold',
+    );
     if (opts.power) sc.spr('items', opts.power === 'mushroom' ? 'mushroom' : 'flower-0', 104, 20);
   });
 }
-function hero(s: Scene, job: string, pose: string, x: number, bottom = GROUND, o: { flower?: boolean; alpha?: number } = {}): void {
+function hero(
+  s: Scene,
+  job: string,
+  pose: string,
+  x: number,
+  bottom = GROUND,
+  o: { flower?: boolean; alpha?: number } = {},
+): void {
   const info = JOB(job);
   s.stand('war', `${job}-${pose}`, x, bottom, {
     palette: o.flower ? info.flower : info.palette,
@@ -382,20 +408,22 @@ function hero(s: Scene, job: string, pose: string, x: number, bottom = GROUND, o
 const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] = [
   {
     file: 'war-01-party',
-    caption: 'One hero, four jobs: Fighter, Thief, Black Mage, White Mage. Same body, size and movement for all.',
+    caption:
+      'One hero, four jobs: Fighter, Thief, Black Mage, White Mage. Same body, size and movement for all.',
     draw: (s) => {
       s.scenery();
       s.ground();
       warHud(s, 'fighter');
       WARRIOR_JOBS.forEach((j, i) => {
-        hero(s, j.job, 'stand', 40 + i * 48);
-        s.text(j.name, 32 + i * 48 - (j.name.length > 6 ? 4 : 0), 216);
+        hero(s, j.job, 'stand', 32 + i * 56);
+        s.text(j.name, 40 + i * 56 - j.name.length * 4, i % 2 ? 226 : 214);
       });
     },
   },
   {
     file: 'war-02-walk',
-    caption: 'Walk: instant 1.667 px/f, no run, full air control. Stands still (rooted) while acting on the ground.',
+    caption:
+      'Walk: instant 1.667 px/f, no run, full air control. Stands still (rooted) while acting on the ground.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -407,24 +435,26 @@ const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'war-03-jump',
-    caption: 'JUMP: one fixed arc, 68 px high, 53 frames; no variable height. Hitting a block from below does nothing.',
+    caption:
+      'JUMP: one fixed arc, 68 px high, 53 frames; no variable height. Hitting a block from below does nothing.',
     draw: (s) => {
       s.scenery();
       s.ground();
-      s.tile('brick', 7, 7);
-      s.tile('question-0', 8, 7);
-      s.tile('brick', 9, 7);
+      s.tile('brick', 6, 6);
+      s.tile('question-0', 7, 6);
+      s.tile('brick', 8, 6);
       warHud(s, 'fighter');
       for (let f = 0; f <= 53; f += 3) {
         const y = 5.0556 * f - 0.0972 * f * f;
         s.dot(64 + f * 1.667 + 8, GROUND - 14 - y);
       }
-      hero(s, 'fighter', 'jump', 100, GROUND - 66);
+      hero(s, 'fighter', 'jump', 107, GROUND - 66);
     },
   },
   {
     file: 'war-04-fighter-swing',
-    caption: 'Fighter ATTACK: sword swing, 30 frames, 300 damage: one hit per Goomba, two per Koopa. Breaks bricks.',
+    caption:
+      'Fighter ATTACK: sword swing, 30 frames, 300 damage: one hit per Goomba, two per Koopa. Breaks bricks.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -436,7 +466,8 @@ const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'war-05-thief',
-    caption: 'Thief ATTACK: quick dagger swing, only 50 damage (5 per Goomba). Swings and spells are how blocks are opened.',
+    caption:
+      'Thief ATTACK: quick dagger swing, only 50 damage (5 per Goomba). Swings and spells are how blocks are opened.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -453,7 +484,8 @@ const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'war-06-windup',
-    caption: 'Black Mage: every spell has a 30-frame wind-up (hands glow), then an 18-frame cast pose. Rooted on the ground.',
+    caption:
+      'Black Mage: every spell has a 30-frame wind-up (hands glow), then an 18-frame cast pose. Rooted on the ground.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -464,7 +496,8 @@ const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'war-07-fire',
-    caption: 'Black Mage ATTACK = Fire: 3.75 px/f, 400 damage, passes through pipes, walls and enemies, breaks bricks.',
+    caption:
+      'Black Mage ATTACK = Fire: 3.75 px/f, 400 damage, passes through pipes, walls and enemies, breaks bricks.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -514,7 +547,8 @@ const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'war-11-cure',
-    caption: 'White Mage Down + ATTACK = Cure (new design): while small, uses the one charge (C1 to C0) to regain the Mushroom.',
+    caption:
+      'White Mage Down + ATTACK = Cure (new design): while small, uses the one charge (C1 to C0) to regain the Mushroom.',
     draw: (s) => {
       s.scenery();
       s.ground();
@@ -526,20 +560,22 @@ const WAR_FRAMES: { file: string; caption: string; draw: (s: Scene) => void }[] 
   },
   {
     file: 'war-12-power-states',
-    caption: 'Power states: small and Mushroom look the same (HUD icon only; no size change). Fire Flower = new outfit per job.',
+    caption:
+      'Power states: small and Mushroom look the same (HUD icon only; no size change). Fire Flower = new outfit per job.',
     draw: (s) => {
       s.scenery();
       s.ground();
       warHud(s, 'fighter', { power: 'flower' });
       WARRIOR_JOBS.forEach((j, i) => {
-        hero(s, j.job, 'stand', 40 + i * 48, GROUND, { flower: true });
-        s.text(j.flowerName.slice(0, 7), 28 + i * 48, 216);
+        hero(s, j.job, 'stand', 32 + i * 56, GROUND, { flower: true });
+        s.text(j.flowerName, 40 + i * 56 - j.flowerName.length * 4, i % 2 ? 226 : 214);
       });
     },
   },
   {
     file: 'war-13-class-switch',
-    caption: 'Class switch (new design, uses the disabled code): hold a direction + SPECIAL. Up Fighter, Right B.Mage, Down Thief, Left W.Mage.',
+    caption:
+      'Class switch (new design, uses the disabled code): hold a direction + SPECIAL. Up Fighter, Right B.Mage, Down Thief, Left W.Mage.',
     draw: (s) => {
       s.scenery();
       s.ground();
