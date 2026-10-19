@@ -42,3 +42,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - #147 green c21a0f28, waiting merge. PR3 integrated: claude/classic-heroes-1 c4120da9; QA reviewer running (5201).
 - Sophia DONE d4005110 (id sophia in CLASSIC_CHARACTERS; owner call: keep nose-first fall in Classic as safety net). Added to PR4 integration.
 - PM+Pit DONE 290a3281 (wip-pm-pit): 4 slots PROTOMAN,BREAKMAN,PIT,DARKPIT; hideExtras test helper. Owner calls for PR5: Proto Shield (PM-M1), castle names, music, Proto Man palette w/ Flower (uses MM weapon palettes).
+- PR6 builders launched: Vic Viper (wip-vicviper 5202), Warriors (wip-warriors 5203), base shared+pm-pit, recommended design defaults.
