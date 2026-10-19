@@ -256,6 +256,22 @@ describe('a Classic run', () => {
     expect(saveFiles()).toEqual(before);
   });
 
+  it.each(['2-1', '3-1', '4-2', '7-3', '8-4'])(
+    '%s plays as the original: no campaign look, decor, partners or airship',
+    (id) => {
+      const h = classic();
+      h.game.classicGame(MARIO, id);
+      const l = enterLevel(h);
+      const raw = getLevel(l.level.id);
+      expect(l.level).toBe(raw);
+      expect(l.world.level.theme).toBe(raw.theme);
+      expect(l.world.storyMode).toBe(false);
+      expect(l.world.entities.some((e) => e.kind === 'anchor-drop')).toBe(false);
+      noCampaignEntities(l);
+      expect(h.game.airship).toBeNull();
+    },
+  );
+
   it('plays Current rules when Options says so', () => {
     const h = classic({ classicRules: 'current' });
     h.game.classicGame(MARIO);
