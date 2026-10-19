@@ -1173,6 +1173,9 @@ const missile = [
   '....0b0.........',
 ];
 
+/* The same missile pointing straight up, 8x16 (Classic SMBC's upward missile, SA-C18). */
+const missileUp = vflip(transpose(missile));
+
 /* Morph bomb: a small grey sphere whose gold core blinks white. */
 const morphBomb0 = [
   '........',
@@ -1980,6 +1983,7 @@ export const itemsDef: SpriteDef = {
     'wave-beam-0': waveBeam0,
     'wave-beam-1': waveBeam1,
     missile,
+    'missile-up': missileUp,
     'morph-bomb-0': morphBomb0,
     'morph-bomb-1': morphBomb1,
     'energy-orb-small': energyOrbSmall,

@@ -117,7 +117,9 @@ export const CLASSIC_HIT_RESPONSES: Readonly<Record<string, ClassicHitResponse>>
     kind: 'push',
     vx: 0x01400,
     from: 'source',
-    vy: 0x02155,
+    // DAMAGE_BOOST_VY 250 (2.0833 px/f) less one frame of her gravity, for our move-then-gravity
+    // order (SA-C6, SA-C15).
+    vy: 0x01fc7,
     vyOnGroundOnly: true,
     lock: { frames: 15 },
     invuln: CLASSIC_PUSH_INVULN,

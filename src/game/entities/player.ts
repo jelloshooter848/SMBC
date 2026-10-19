@@ -308,6 +308,9 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
+    // A hero's own reason to stand still (Classic Samus crouched or holding Down; Classic Pit
+    // aiming up on the ground): CharacterBehaviour.holdsStill, absent for every Current def.
+    if (this.def.behaviour.holdsStill?.(this, input)) dir = 0;
 
     if (this.stun > 0) {
       this.stun--;
@@ -411,7 +414,7 @@ export class Player {
     // is applied after the move. Applying gravity first shaved a frame off every jump (standing
     // apex 62 px instead of the 4 tiles SMB1 clears).
     if (!b.onGround && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
-    if (p.softCut !== undefined && !b.onGround) this.softCutStep(input, p.softCut);
+    if (p.softCut !== undefined && !b.onGround && !this.launched) this.softCutStep(input, p.softCut);
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
     const holding =
       (p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0) || this.launched;
@@ -984,6 +987,8 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
+    // MovementProfile.airStop (Classic SMBC): full air control stops him when nothing is held.
+    if (dir === 0 && p.airStop && control === 'full') b.vx = 0;
     if (control === 'none' || dir === 0) return;
     if (p.instantAccel) {
       b.vx = dir * p.maxWalk;

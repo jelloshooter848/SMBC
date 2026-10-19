@@ -70,6 +70,12 @@ export interface CharacterBehaviour {
   blocks?(p: Player, projectile: Projectile): boolean;
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
+  /**
+   * True while left and right must not walk this frame (read by Player.update's tier path before
+   * the walk): Classic Samus crouched or holding Down on the ground (SA-C4), a Classic Pit aiming up
+   * on the ground (PI-9). Absent: the shared rules only (a `crouches` def's crouch).
+   */
+  holdsStill?(p: Player, input: InputFrame): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */

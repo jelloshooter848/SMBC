@@ -156,6 +156,11 @@ export interface MovementProfile {
    * ends on leaving the ground.
    */
   crouchJump?: boolean | undefined;
+  /**
+   * With `airControl: 'full'`, no direction held in the air sets vx to 0 (Mega Man MM-C4, SI-C6,
+   * LK-C5, Samus SA-C3). Absent: vx is kept (today's airMove).
+   */
+  airStop?: true | undefined;
 }
 
 /**

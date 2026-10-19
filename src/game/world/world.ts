@@ -5,7 +5,8 @@ import { SCORE_MAX } from '../hud/hud';
 import { fontText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
-import { overlaps } from '@engine/math/aabb';
+import { overlaps, type AABB } from '@engine/math/aabb';
+import type { Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -299,6 +300,37 @@ const RUBBLE: readonly PieceFrame[] = ['crypt:rubble-0', 'crypt:rubble-1'];
 function weaponStrikable(id: number): boolean {
   const block = tileDef(id).block;
   return !!block && !(block.kind === 'hidden' && block.content === 'teleporter');
+}
+
+/** The block a Classic frozen enemy carries (HP-C17): 16x16, left and bottom on its hitbox's. */
+function frozenBlock(e: Enemy): AABB {
+  const b = e.body;
+  return { x: b.x, y: b.y + b.h - px(16), w: px(16), h: px(16) };
+}
+
+/**
+ * Keeps a player's body out of a solid box that is not on the tile grid (a frozen enemy's block):
+ * lands on its top, bumps its underside, stops at its sides (as Spring.block does).
+ */
+function solidBox(b: Body, s: AABB): void {
+  if (!(b.x < s.x + s.w && b.x + b.w > s.x && b.y < s.y + s.h && b.y + b.h > s.y)) return;
+  if (b.vy >= 0 && b.prevBottom <= s.y + px(4)) {
+    b.y = s.y - b.h;
+    b.vy = 0;
+    b.onGround = true;
+  } else if (b.vy < 0 && b.y - velToSub(b.vy) >= s.y + s.h - px(4)) {
+    b.y = s.y + s.h;
+    b.vy = 0;
+    b.hitHead = true;
+  } else if (b.x + b.w / 2 < s.x + s.w / 2) {
+    b.x = s.x - b.w;
+    if (b.vx > 0) b.vx = 0;
+    b.hitWall = 1;
+  } else {
+    b.x = s.x + s.w;
+    if (b.vx < 0) b.vx = 0;
+    b.hitWall = -1;
+  }
 }
 
 /** A hero's attack in flight: a shot or thrown weapon a player owns (or a hero shot's own shot). */
@@ -1497,7 +1529,7 @@ export class World {
    * Score a hit if it killed the enemy, by how it died (Enemy.as: takeDamage scores ATTACK,
    * hitCharacter with a star STAR, gBounceHit BELOW). Hit-point kills count once the last point goes.
    */
-  private scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
+  scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
     if (r === 'kill' || r === 'flip' || (r === 'hp' && !e.alive))
       this.addScore(e.scoreFor(kind), e.body.x, e.body.y);
   }
@@ -1620,6 +1652,10 @@ export class World {
       } else p.def.behaviour.update(p, input, this);
       // Springboards are solid: keep the player out of their box (landing on top starts a ride).
       for (const e of this.entities) if (e instanceof Spring && e.alive) e.block(p);
+      // Classic Ice (HP-C17, SA-C21): a frozen enemy carries a solid 16x16 block for players only
+      // (its left and bottom edges on the enemy's). Only Classic hits ever set `frozen`.
+      for (const e of this.entities)
+        if (e instanceof Enemy && e.alive && e.frozen > 0) solidBox(p.body, frozenBlock(e));
       if (p.body.x < this.camera.x) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
@@ -2744,7 +2780,7 @@ export class World {
       if (!pr.spec.pierce) pr.destroy();
       return;
     }
-    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected) return;
+    if (!pr.spec.hitsEnemies || pr.owner !== p || pr.deflected || pr.bursting > 0) return;
     // Mega Man's airship: Larry's wand blasts can be shot down (a few points; the shot goes on
     // only if it pierces).
     if (this.megamanShip)

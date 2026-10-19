@@ -15,6 +15,7 @@ import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { MARIO_CLASSIC } from './mario/classic';
 import { LUIGI_CLASSIC } from './luigi/classic';
+import { SAMUS_CLASSIC } from './samus/classic';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -37,6 +38,7 @@ export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, S
 export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   mario: MARIO_CLASSIC,
   luigi: LUIGI_CLASSIC,
+  samus: SAMUS_CLASSIC,
 };
 
 /**

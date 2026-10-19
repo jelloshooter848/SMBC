@@ -194,6 +194,25 @@ const jump = shooting(legsJump);
 // Standing with the cannon pointing straight up past the helmet.
 const aimUp = compose(W, H, [head, -1, 4], [torsoShoot, -1, 14], [legsStand, -1, 25], [cannonUp, 12, 4]);
 
+// Crouch (Classic SMBC, SA-C4), the body in the bottom 15 rows: helmet, shoulder pads and knees
+// folded under; `crouch-shoot` holds the cannon level at helmet height (the crouched muzzle).
+const legsCrouch = [
+  '..0222111122220.',
+  '.02221100112220.',
+  '.0222100.022210.',
+  '022222000222220.',
+  '0000000.0000000.',
+];
+const crouch = compose(W, H, [head, 0, 17], [torso.slice(0, 4), 0, 24], [legsCrouch, 0, 27]);
+const crouchShoot = compose(
+  W,
+  H,
+  [head, -2, 17],
+  [torsoShoot.slice(0, 4), -2, 24],
+  [legsCrouch, -1, 27],
+  [cannonFwd, 11, 18],
+);
+
 // Knockback: head thrown back, cannon arm flung up and out, legs splayed.
 const hurt = compose(
   W,
@@ -329,6 +348,8 @@ export const samusDef: SpriteDef = {
     'walk-shoot-2': walkShoot2,
     jump,
     'aim-up': aimUp,
+    crouch,
+    'crouch-shoot': crouchShoot,
     hurt,
     die,
     'spin-0': spinFrame(spin0),
