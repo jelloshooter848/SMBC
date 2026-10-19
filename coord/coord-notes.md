@@ -57,3 +57,4 @@ If restarted: briefs are in briefs/ (also pushed to origin claude/classic-wip-co
 - PR6 integrated: claude/classic-extras-2 9e94f0ff (on extras 016cc6e5; needs re-merge of PR5 final). Pinned ship now ejects (matches original). PR6 QA running (5206).
 - PR5 opened #150 (classic-extras a084354d, base heroes-2). PR6 (extras-2) must re-merge classic-extras a084354d before opening.
 - #149 #150 green. PR6 QA done (no blockers); fixes sent to VV agent (clamp below HUD, warriors doc, guide demo, HUD overdraw, switch walk, cure label, merge extras a084354d). Owner notes: VV bullets reveal hidden blocks; mushroom runs off; Thief weak.
+- PR6 opened #151 (extras-2 7080372a, base classic-extras). ALL PRs OPEN: #147->#148->#149->#150->#151. Remaining: watch CI, retarget as merges happen; propose follow-ups (FU) and wishlist when done.
