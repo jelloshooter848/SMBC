@@ -169,8 +169,9 @@ export interface MovementProfile {
    * of jump in a jump arms it, and from then on upward speed is damped every frame (before
    * gravity and the move) until the hero starts to fall; a later release does nothing. Mario 0.79433
    * (52057), Mega Man 0.7943, Link and Samus 0.8577 (56210). On the rise path the release must
-   * also be above `RiseJump.minLine`. Absent: the tier path's `variableJump` rules (and on the
-   * rise path, no damping at all: Luigi's factor 1).
+   * also be above `RiseJump.minLine`; on the tier path never during a spring or Rush launch.
+   * Absent: the tier path's `variableJump` rules (and on the rise path, no damping at all: Luigi's
+   * factor 1).
    */
   softCut?: number | undefined;
   /**
@@ -186,6 +187,12 @@ export interface MovementProfile {
    * keep the take-off direction (ML-C5, SI-C2). Absent: facing follows vx (today).
    */
   turnInAir?: false | undefined;
+  /**
+   * In the air (with any air control but 'none'), no direction held (or both) sets vx to 0 at
+   * once, as a held one sets it straight to `maxWalk` with `instantAccel`: "stops dead" (Classic
+   * Simon SI-C6, Samus SA-C3, Ryu RY-C4, Mega Man MM-C4, Link LK-C5). Absent: vx is kept (today).
+   */
+  airStop?: true | undefined;
   /**
    * false: no jump buffer. A jump (or stroke) starts only on the frame jump goes down while the
    * hero can jump; a press just before landing is lost and holding through a landing does not
@@ -205,11 +212,6 @@ export interface MovementProfile {
    */
   crouchJump?: boolean | undefined;
   /**
-   * With `airControl: 'full'`, no direction held in the air sets vx to 0 (Mega Man MM-C4, SI-C6,
-   * LK-C5, Samus SA-C3). Absent: vx is kept (today's airMove).
-   */
-  airStop?: true | undefined;
-  /**
    * A step nudge (Mega Man MM-C2): pressing a direction on the ground while not already moving that
    * way moves the body `px` that way at once and holds vx at 0 for `frames` frames (the step pose);
    * then a held direction walks as usual. Absent: none.
@@ -220,6 +222,36 @@ export interface MovementProfile {
    * (Classic Bass BA-12: a spring landing is not a landing). Absent: a launch refills them.
    */
   springKeepsAirJumps?: true | undefined;
+  /**
+   * Classic SMBC Ryu's wall climb (RY-C10..RY-C16; Player.wall): he grabs a wall in the air while
+   * pressing toward it, stays on with no input, climbs, throws, and leaves by the hop table. The
+   * Current cling (`Player.clinging`, the wall kick) is not used. Absent: none.
+   */
+  wallClimb?: WallClimbProfile | undefined;
+}
+
+/**
+ * A wall climb (MovementProfile.wallClimb). Probes are px from the hitbox; speeds in 1/4096 px/f.
+ * The hop speeds are the original's (gravity added before the move): Player takes one frame of
+ * the gravity it falls with (land or water) off them, so the arcs match frame for frame.
+ */
+export interface WallClimbProfile {
+  /** Climbing speed up and down (CLIMB_SPEED). */
+  speed: number;
+  /** The upper probe: px below the top of the hitbox (CLIMB_TOP_OFS). */
+  topProbe: number;
+  /** The lower probe: px above the feet (CLIMB_BOT_OFS). */
+  bottomProbe: number;
+  /** The lower probe may hang this many px below the bottom of the wall (raised onto it on the grab). */
+  bottomSlack: number;
+  /** No wall at this many px above the hitbox top: he is at the top of the wall (CLIMB_TOP_JUMP_OFS). */
+  topJump: number;
+  /** Away + Jump: the low hop's take-off speed. */
+  hopLow: number;
+  /** Jump at the top of the wall (or on a lift): the high hop's take-off speed. */
+  hopHigh: number;
+  /** After a high hop, frames during which the same wall edge (or any lift) cannot be grabbed. */
+  regrab: number;
 }
 
 /**

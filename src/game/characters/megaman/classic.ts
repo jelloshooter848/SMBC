@@ -625,6 +625,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     hitbox: (p) => (p.sliding > 0 ? { w: 12, h: profile.slide?.hitboxH ?? 15 } : { w: 12, h: 22 }),
     sprite,
     blockPowerUp: classicBlockPowerUp,
+    powerIcon: true,
     jumpSfx: () => 'jump-small',
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, response.look),
     starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
@@ -655,12 +656,12 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       canSlide: (p) => !p.scratch._carry && !p.scratch._bbRoot,
       ...(rapid
         ? {
-            rooted(p: Player, input: InputFrame): boolean {
-              // BA-9: before the move; Left / Right turn him at once.
+            rooted(p: Player, input: InputFrame): boolean | 'canJump' {
+              // BA-9: before the move; Left / Right turn him at once; Jump still jumps.
               const on = p.sliding === 0 && rapidHeld(p, input);
               p.scratch._bbRoot = on ? 1 : 0;
               if (on && input.dirX !== 0) p.facing = input.dirX;
-              return on;
+              return on ? 'canJump' : false;
             },
           }
         : {}),

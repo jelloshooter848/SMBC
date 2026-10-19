@@ -37,6 +37,12 @@ export interface ProjectileSpec {
    * original's PR_PASSTHROUGH_DEFEAT: Mega Man's full charge shot).
    */
   pierceDefeat?: boolean;
+  /**
+   * Classic rules (Ryu's Fire Wheel and Dragon Ball, RY-C29): goes on only through an enemy the
+   * hit killed; anything else it hits (hurt, shelled, stunned) stops it. Absent: `pierce` and
+   * `pierceDefeat` decide.
+   */
+  pierceKillsOnly?: boolean;
   /** Initial vertical speed (velocity units); callers can override per shot. */
   vy?: number;
   /** Falls under gravity and dies on landing (no bounce). */
@@ -301,6 +307,11 @@ export class Projectile extends Entity {
   }
   /** Frames left of a held burst (ProjectileSpec.burstHold); 0 while it flies. */
   bursting = 0;
+  /**
+   * Classic: frames it is held still (Simon's Stopwatch on enemy projectiles, SI-C25): World.update
+   * skips its update meanwhile; it still touches players. Never set under Current.
+   */
+  stopFrames = 0;
   private angle = 0;
   private readonly originY: number;
   private readonly originX: number;
@@ -417,7 +428,8 @@ export class Projectile extends Entity {
       // Free flight: tiles are ignored, but gravity still applies when the spec asks for it.
       if (this.spec.gravity) {
         b.vy += this.spec.gravity;
-        if (b.vy > 0x04000) b.vy = 0x04000;
+        const maxFall = this.spec.maxFall ?? 0x04000;
+        if (b.vy > maxFall) b.vy = maxFall;
       }
       b.x += velToSub(b.vx);
       b.y += velToSub(b.vy);

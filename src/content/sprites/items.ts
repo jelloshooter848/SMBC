@@ -1754,6 +1754,39 @@ const iconFireWheel = [
   '.777777.',
   '7..77..7',
 ];
+/* Fire Dragon Ball (Classic Ryu, RY-C30): a red orb with a white-hot core and a ragged dark tail,
+ * so it reads apart from the orange Fire Wheel. 12x12, two flicker frames. */
+const dragonBall0 = [
+  '....8888....',
+  '..88222288..',
+  '.8227777228.',
+  '.8277117728.',
+  '827711117728',
+  '827711117728',
+  '827711117728',
+  '827771177728',
+  '.8277777728.',
+  '.8822222288.',
+  '..888..888..',
+  '...8....8...',
+];
+const dragonBall1 = [
+  '....8888....',
+  '..88222288..',
+  '.8227777228.',
+  '.8277777728.',
+  '827771177728',
+  '827711117728',
+  '827711117728',
+  '827711117728',
+  '.8277117728.',
+  '.8822222288.',
+  '..8.888.88..',
+  '..8...8..8..',
+];
+/** Its HUD icon: the Fire Wheel icon in the dragon's reds. */
+const iconDragonBall = (): string[] => swapColors(iconFireWheel, { '7': '2', '5': '8' });
+
 const iconSlash = [
   '......1b',
   '.....1bb',
@@ -1825,6 +1858,44 @@ const laserBeam = [
   '........................',
   '........................',
   '........................',
+];
+
+/* Classic Bill's laser segment, 12x6: a short white-hot dash with a blue rim, drawn turned a
+ * quarter for straight-up and straight-down shots. */
+const billLaser = [
+  '............',
+  '.eaaaaaaaae.',
+  'ea11111111ae',
+  'ea11111111ae',
+  '.eaaaaaaaae.',
+  '............',
+];
+
+/* Classic Bill's laser segment on a diagonal, 10x10: the dash running down to the right (drawn
+ * mirrored for the other diagonal). */
+const billLaserDiag = [
+  '.ee.......',
+  'eaae......',
+  'ea1ae.....',
+  '.ea1ae....',
+  '..ea1ae...',
+  '...ea1ae..',
+  '....ea1ae.',
+  '.....ea1ae',
+  '......eaae',
+  '.......ee.',
+];
+
+/* Classic Bill's shot exploding on a hit, 8x8: a small orange and white starburst. */
+const billBlast = [
+  '2..2..2.',
+  '.2.7.2..',
+  '..777...',
+  '27716772',
+  '..767...',
+  '.2.7.2..',
+  '2..2..2.',
+  '........',
 ];
 
 /* Link's Fire spell (0.4.43), 16x8: a fireball flying left (drawn flipped for the right), a white-hot
@@ -1963,6 +2034,27 @@ const iconFlameGun = [
   '....7...',
 ];
 
+/* Classic SMBC Link's arrow (dev full kit), 16x5, flying right: a brown shaft, a grey head and
+ * white fletching. */
+const arrow = [
+  '1.1...........0.',
+  '.1.1..........b0',
+  '1111999999999bb1',
+  '.1.1..........b0',
+  '1.1...........0.',
+];
+/* The arrow's HUD icon, 8x8, pointing up-right. */
+const iconArrow = [
+  '.....bb.',
+  '......b.',
+  '.....9.b',
+  '....9...',
+  '...9....',
+  '1.9.....',
+  '.1......',
+  '1.1.....',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -2031,6 +2123,17 @@ export const itemsDef: SpriteDef = {
     'heart-small': heartSmall,
     'icon-boomerang': iconBoomerang,
     'icon-bomb': iconBomb,
+    // Classic SMBC Link: the beam flying up or down, the Magic Boomerang (blue), the arrow.
+    'sword-beam-down': transpose(swordBeam),
+    'sword-beam-up': vflip(transpose(swordBeam)),
+    'magic-boomerang-0': swapColors(vflip(transpose(boomerangSide)), { '3': 'a', '7': 'e' }),
+    'magic-boomerang-1': swapColors(vflip(boomerangCorner), { '3': 'a', '7': 'e' }),
+    'magic-boomerang-2': swapColors(boomerangSide, { '3': 'a', '7': 'e' }),
+    'magic-boomerang-3': swapColors(boomerangCorner, { '3': 'a', '7': 'e' }),
+    arrow,
+    'arrow-up': vflip(transpose(arrow)),
+    'arrow-down': transpose(arrow),
+    'icon-arrow': iconArrow,
     'icon-jump': iconJump,
     'icon-shield': iconShield,
     'icon-fire': iconFire,
@@ -2111,6 +2214,9 @@ export const itemsDef: SpriteDef = {
     'windmill-3': windmill3,
     'fire-wheel-0': fireWheel0,
     'fire-wheel-1': fireWheel1,
+    'dragon-ball-0': dragonBall0,
+    'dragon-ball-1': dragonBall1,
+    'icon-dragon-ball': iconDragonBall(),
     'ninpo-small': ninpoSmall,
     'ninpo-large': ninpoLarge,
     'icon-star': iconStar,
@@ -2122,6 +2228,9 @@ export const itemsDef: SpriteDef = {
     'spread-shot-0': spreadShot0,
     'spread-shot-1': spreadShot1,
     'laser-beam': laserBeam,
+    'bill-laser': billLaser,
+    'bill-laser-diag': billLaserDiag,
+    'bill-blast': billBlast,
     'flame-shot-0': flameShot0,
     'flame-shot-1': flameShot1,
     capsule,

@@ -11,7 +11,8 @@ import { megamanPalettes, megamanDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
-import { ryuPalettes, ryuDef } from './ryu';
+import { simonFlameDef } from './simon-flame';
+import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
 import { billPalettes, billDef } from './bill';
 import { mapPalettes, mapDef } from './map';
 import { stationPalettes, stationDef } from './station';
@@ -101,7 +102,9 @@ export const SPRITES: Record<string, SpriteDef> = {
   samus: samusDef,
   'samus-classic': samusClassicDef,
   simon: simonDef,
+  'simon-flame': simonFlameDef,
   ryu: ryuDef,
+  'ryu-wave': ryuWaveDef,
   bill: billDef,
   map: mapDef,
   // Walls and doors are drawn for the north edge; the top-down kit adds rotated west twins.

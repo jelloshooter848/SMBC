@@ -181,9 +181,8 @@ export class Player {
   private airCap: number;
   private sinceGround = 0;
   /*
-   * Classic SMBC movement and jump state (MovementProfile.rise / softCut / inertia / step /
-   * slide.distance; Player.root).
-   * Unused, and left at these values, for every Current profile.
+   * Classic SMBC movement state (MovementProfile.rise / softCut / inertia / step / slide.distance;
+   * Player.root). Unused, and left at these values, for every Current profile.
    */
   /** Feet height (subpixels) at the last jump's take-off, until landing; null when not in a jump. */
   riseY0: number | null = null;
@@ -195,12 +194,19 @@ export class Player {
   jumpReleased = false;
   /** The soft cut is damping upward speed (MovementProfile.softCut). */
   cutting = false;
+  /** In a crouch-jump (MovementProfile.crouchJump): crouch pose and hitbox until landing. */
+  crouchJump = false;
+  /** InertiaProfile: the acceleration set on the last ground frame, and the speed cap now. */
+  private inertiaAx = 0;
+  private inertiaCap = 0;
   /** Frames left of a step nudge's stop (MovementProfile.step); the step pose shows meanwhile. */
   stepT = 0;
   /**
-   * Frames left of a thrown weapon's stop (Classic Mega Man's rooting, MM-C24), set by the hero's
-   * behaviour: on the ground no walking (vx 0) and no slide start. With `rootFreeze` the body also
-   * hangs still in the air (no gravity, no move: Hard Knuckle fired in the air, MM-C25).
+   * Frames left of a weapon's stop, set by a Classic hero's behaviour (Classic Mega Man's rooting
+   * MM-C24, Ryu's slash and throw RY-C5): on the ground no walking (vx 0) and no slide start; on a
+   * wall (MovementProfile.wallClimb) no climbing or hopping. With `rootFreeze` the body also hangs
+   * still in the air (no gravity, no move: Hard Knuckle fired in the air, MM-C25). Always 0 for
+   * Current heroes.
    */
   root = 0;
   rootFreeze = false;
@@ -210,11 +216,13 @@ export class Player {
   private slideEndOnClear = false;
   /** A dash jump's (or a dash off a ledge's) carried air speed (SlideProfile.keepSpeedInAir). */
   dashCarry = false;
-  /** In a crouch-jump (MovementProfile.crouchJump): crouch pose and hitbox until landing. */
-  crouchJump = false;
-  /** InertiaProfile: the acceleration set on the last ground frame, and the speed cap now. */
-  private inertiaAx = 0;
-  private inertiaCap = 0;
+  /**
+   * On a wall (MovementProfile.wallClimb, Classic Ryu RY-C10..RY-C16): the side the wall is on, and
+   * `lift` when it is the side of a lift (the hero's behaviour holds him there; no climbing).
+   */
+  wall: { dir: -1 | 1; lift: boolean } | null = null;
+  /** After a high wall hop: the wall edge (column `tx`, side `dir`), or any lift, not grabbed for `t` frames. */
+  wallLock: { tx: number; dir: -1 | 1; lift: boolean; t: number } | null = null;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -299,23 +307,29 @@ export class Player {
     if (this.clingLock > 0) this.clingLock--;
     if (this.vineLock > 0) this.vineLock--;
     if (this.stairLock && --this.stairLock.t <= 0) this.stairLock = null;
+    if (this.wallLock && --this.wallLock.t <= 0) this.wallLock = null;
     if (this.frozen || this.dead) return;
     if (this.hurtLock) this.tickHurtLock();
+    // A hit, a vine or stairs take him off a wall (RY-C13).
+    if (this.wall && (this.hurtLock || this.stun > 0 || this.vine || this.stairs)) this.wall = null;
     if (this.vine) return this.climb(input, map, audio);
     if (this.stairs) return this.stairWalk(input);
     if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
+    if (this.wall) return this.wallUpdate(input, map, audio, onHeadBump);
     if (this.profile.rise) return this.riseUpdate(input, map, audio, onHeadBump);
     let p = this.profile;
     const b = this.body;
     let dir = input.dirX;
-    // A thrown weapon's stop (Player.root; only Classic behaviours set it).
+    const startAir = !b.onGround;
+    // Rooted on the ground (Classic only; the one place it is decided): a weapon's stop counted in
+    // frames (Player.root: Mega Man, Ryu; `rootFreeze` also hangs him in the air), or the hero's
+    // own condition this frame (CharacterBehaviour.rooted: Link's stab, which also stops jumps;
+    // Simon's whip and throws, Samus's crouch, Pit's aim-up).
     let rooted = false;
     if (this.root > 0) {
       this.root--;
-      if (b.onGround) {
-        rooted = true;
-        dir = 0;
-      } else if (this.rootFreeze) {
+      if (b.onGround) rooted = true;
+      else if (this.rootFreeze) {
         b.vx = 0;
         b.vy = 0;
         this.fallSpeed = 0;
@@ -323,6 +337,11 @@ export class Player {
         return;
       }
     } else this.rootFreeze = false;
+    const heroRooted = b.onGround ? (this.def.behaviour.rooted?.(this, input) ?? false) : false;
+    if (heroRooted) rooted = true;
+    // `rooted: true` also takes the jump (Link's stab); `'canJump'` keeps it.
+    const stabRooted = heroRooted === true;
+    if (rooted) dir = 0;
     const wantRun = p.canRun && (input.held('attack') || input.held('run')) && !this.inWater;
     if (wantRun) this.runTimer = p.runTimerFrames;
     else if (this.runTimer > 0) this.runTimer--;
@@ -331,7 +350,12 @@ export class Player {
 
     // Crouching: only when tall enough and on the ground; can't walk while crouched.
     const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
-    const wantCrouch = input.held('down') && canCrouch && b.onGround && this.sliding === 0;
+    const wantCrouch =
+      input.held('down') &&
+      canCrouch &&
+      b.onGround &&
+      this.sliding === 0 &&
+      !(this.def.crouchNeedsNoDirection && (input.dirX !== 0 || input.held('up')));
     // Under a low ceiling (a crouch-slide under bricks, prone under a ledge) he stays down, and
     // crawls on until there is room to stand (0.4.43: never standing up inside tiles).
     const cramped = this.crouching && !wantCrouch && !this.roomToStand(map);
@@ -340,9 +364,6 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
-    // A hero rooted on the ground cannot walk (CharacterBehaviour.rooted: Classic Simon's attacks,
-    // Bass's held buster, Samus crouched, Pit aiming up), absent for every Current def.
-    if (b.onGround && this.def.behaviour.rooted?.(this, input)) dir = 0;
 
     // A distance slide (slide.distance, Classic SMBC) has its own rules; false once it ends.
     const distanceSlide =
@@ -399,6 +420,7 @@ export class Player {
     const canJump =
       (this.sliding === 0 || slideJump) &&
       !this.hurtLock &&
+      !stabRooted &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     // A hit's knock back takes the air jumps until he lands (the original turns his input off).
@@ -408,7 +430,7 @@ export class Player {
       if (p.slide && input.held('down') && b.onGround && !slideJump) {
         input.consumeJumpBuffer();
         // No slide during a thrown weapon's stop or while the behaviour says no (Player.root).
-        if (!rooted && (this.def.behaviour.canSlide?.(this) ?? true)) this.startSlide();
+        if (!rooted && !stabRooted && (this.def.behaviour.canSlide?.(this) ?? true)) this.startSlide();
       } else {
         input.consumeJumpBuffer();
         const wallJump = this.clinging;
@@ -502,6 +524,12 @@ export class Player {
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
     if (gapSpeed && !b.onGround) this.crossSmallGap(map);
+    // MovementProfile.wallClimb (Classic Ryu RY-C10): airborne last frame and this one, pressing
+    // into a wall beside a probe.
+    if (p.wallClimb && startAir && !b.onGround && this.grabWall(map, dir, audio)) {
+      this.updateAnim(dir);
+      return;
+    }
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
@@ -749,6 +777,169 @@ export class Player {
       if (Math.abs(b.vx) > p.maxWalk && dir !== 0) b.vx = damp(b.vx, k.runToWalk);
       if (Math.abs(b.vx) <= p.maxWalk) this.inertiaCap = p.maxWalk;
     }
+  }
+
+  /** The tile column beside the body on side `dir`. */
+  private wallColumn(dir: -1 | 1): number {
+    const b = this.body;
+    return dir > 0 ? tileAt(b.x + b.w) : tileAt(b.x - 1);
+  }
+
+  /**
+   * Which of the wall climb's probes have wall beside them in column `tx`: `up` (the upper probe),
+   * `low` (the lower probe) and `slack` (wall within `bottomSlack` px above the lower probe).
+   */
+  private wallProbes(map: TileMap, tx: number): { up: boolean; low: boolean; slack: boolean } {
+    const w = this.profile.wallClimb as NonNullable<MovementProfile['wallClimb']>;
+    const b = this.body;
+    const lowY = b.y + b.h - px(w.bottomProbe);
+    return {
+      up: map.isSolid(tx, tileAt(b.y + px(w.topProbe))),
+      low: map.isSolid(tx, tileAt(lowY)),
+      slack: map.isSolid(tx, tileAt(lowY - px(w.bottomSlack))),
+    };
+  }
+
+  /** The grab (RY-C10). True when he took hold of the wall this frame. */
+  private grabWall(map: TileMap, dir: -1 | 0 | 1, audio: AudioSink): boolean {
+    const w = this.profile.wallClimb as NonNullable<MovementProfile['wallClimb']>;
+    const b = this.body;
+    if (dir === 0 || b.hitWall !== dir || this.stun > 0 || this.hurtLock || this.sliding > 0) return false;
+    const tx = this.wallColumn(dir);
+    const lock = this.wallLock;
+    if (lock && !lock.lift && lock.tx === tx && lock.dir === dir) return false;
+    const pr = this.wallProbes(map, tx);
+    if (!pr.up && !pr.low && !pr.slack) return false;
+    if (!pr.low && pr.slack) {
+      // The lower probe hangs below the wall's bottom edge: up until it is level with it.
+      const lowY = b.y + b.h - px(w.bottomProbe);
+      const bottom = tileToSub(tileAt(lowY - px(w.bottomSlack)) + 1);
+      moveY(b, map, bottom - lowY);
+    }
+    this.holdWall(dir);
+    audio.sfx(this.def.jumpSfx(this));
+    return true;
+  }
+
+  /** Takes hold of a wall on side `dir` (a tile wall, or a lift's side: `lift`). */
+  holdWall(dir: -1 | 1, lift = false): void {
+    const b = this.body;
+    this.wall = { dir, lift };
+    b.vx = 0;
+    b.vy = 0;
+    this.fallSpeed = 0;
+    this.facing = dir;
+    this.jumping = false;
+    this.launched = false;
+    this.anim = 'climb';
+  }
+
+  /**
+   * On a wall (MovementProfile.wallClimb, RY-C11..RY-C16): stays on with no input, Up and Down
+   * climb while a probe has wall beside it, and Jump leaves by the hop table. On a lift's side
+   * (`wall.lift`) there is no climbing and any jump but Down + Jump is the high hop; the
+   * behaviour keeps him on the lift.
+   */
+  private wallUpdate(
+    input: InputFrame,
+    map: TileMap,
+    audio: AudioSink,
+    onHeadBump?: (tx: number, ty: number) => void,
+  ): void {
+    const p = this.profile;
+    const w = p.wallClimb as NonNullable<MovementProfile['wallClimb']>;
+    const b = this.body;
+    const wall = this.wall as NonNullable<Player['wall']>;
+    const held = this.root > 0;
+    if (held) this.root--;
+    b.vx = 0;
+    b.vy = 0;
+    this.fallSpeed = 0;
+    this.facing = wall.dir;
+    this.crouching = false;
+    this.sinceGround = 0;
+    const tx = this.wallColumn(wall.dir);
+    const dir = input.dirX;
+    if (!held && this.jumpPressed(input)) {
+      input.consumeJumpBuffer();
+      if (input.held('down')) {
+        this.wall = null;
+        this.updateAnim(dir);
+        return;
+      }
+      const away = dir === -wall.dir;
+      const top = wall.lift || !map.isSolid(tx, tileAt(b.y - px(w.topJump)));
+      if (away && !wall.lift) return this.wallHop(w.hopLow, -wall.dir as -1 | 1, map, audio, onHeadBump);
+      if (top) {
+        this.wallLock = { tx, dir: wall.dir, lift: wall.lift, t: w.regrab };
+        return this.wallHop(w.hopHigh, dir, map, audio, onHeadBump);
+      }
+      // Jump alone in the middle of a wall does nothing (RY-C12).
+    }
+    if (!wall.lift) {
+      if (!held) {
+        const pr = this.wallProbes(map, tx);
+        const up = input.held('up');
+        const down = input.held('down');
+        if (up && !down && pr.up) moveY(b, map, -velToSub(w.speed));
+        else if (down && !up && pr.low) {
+          moveY(b, map, velToSub(w.speed));
+          if (b.onGround) {
+            // Climbed down onto the floor: he stands (RY-C13).
+            this.wall = null;
+            b.vy = 0;
+            this.updateAnim(0);
+            return;
+          }
+        }
+        if (up !== down && ++this.walkTick >= 8) {
+          this.walkTick = 0;
+          this.walkFrame = (this.walkFrame + 1) & 1;
+        }
+      }
+      // The wall beside him went (a brick broke, RY-C16): he holds on while a probe still has
+      // wall beside it, else he falls.
+      const pr = this.wallProbes(map, tx);
+      if (!pr.up && !pr.low && !pr.slack) this.wall = null;
+    }
+    b.onGround = false;
+    this.anim = this.wall ? 'climb' : 'jump';
+  }
+
+  /**
+   * A hop off a wall (RY-C12): `speed` less one frame of the gravity he falls with (water or
+   * land, SW-C4), vx `vxDir` at walking speed, then this frame's move as a take-off's.
+   */
+  private wallHop(
+    speed: number,
+    vxDir: -1 | 0 | 1,
+    map: TileMap,
+    audio: AudioSink,
+    onHeadBump?: (tx: number, ty: number) => void,
+  ): void {
+    const p = this.profile;
+    const b = this.body;
+    const sw = p.swim;
+    const water = this.inWater && sw?.floorJumpOnly === true && sw !== undefined;
+    const g = water ? sw.gravity : pickJumpTier(p, 0).fallGravity;
+    this.wall = null;
+    b.vy = -(speed - g);
+    b.vx = vxDir * p.maxWalk;
+    if (vxDir !== 0) this.facing = vxDir;
+    b.onGround = false;
+    this.jumping = true;
+    this.jumpReleased = false;
+    this.cutting = false;
+    audio.sfx(this.def.jumpSfx(this));
+    moveX(b, map, velToSub(b.vx));
+    this.fallSpeed = b.vy;
+    moveY(b, map, velToSub(b.vy), onHeadBump ? { onHeadBump } : {});
+    if (!b.onGround) {
+      b.vy += g;
+      const cap = water ? sw.sinkMax : p.maxFall;
+      if (b.vy > cap) b.vy = cap;
+    } else b.vy = 0;
+    this.updateAnim(vxDir);
   }
 
   /** The tier path's soft cut (MovementProfile.softCut): before gravity and the move. */
@@ -1137,9 +1328,12 @@ export class Player {
     const p = this.profile;
     const b = this.body;
     const control = this.inWater ? (p.swim?.airControl ?? p.airControl) : p.airControl;
-    // MovementProfile.airStop (Classic SMBC): full air control stops him when nothing is held.
-    if (dir === 0 && p.airStop && control === 'full') b.vx = 0;
-    if (control === 'none' || dir === 0) return;
+    if (control === 'none') return;
+    if (dir === 0) {
+      // MovementProfile.airStop (Classic Samus, Simon, Mega Man...): letting go stops him dead.
+      if (p.airStop) b.vx = 0;
+      return;
+    }
     // A dash's carried speed (SlideProfile.keepSpeedInAir).
     if (this.dashCarry && control === 'full' && p.slide) {
       b.vx = dir * p.slide.speed;
