@@ -181,6 +181,7 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
     canBreakBricks: (p) => p.powerState !== 'small',
     sprite: (p, frame, reduceFlashing) => plumberSprite(p, frame, reduceFlashing, parts.palettes),
     blockPowerUp: classicBlockPowerUp,
+    powerIcon: true,
     behaviour: plumberClassicBehaviour(kit),
     touchLabels: plumberTouchLabels,
     guide: parts.guide,

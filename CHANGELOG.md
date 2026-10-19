@@ -29,6 +29,13 @@ under `## [Unreleased]`.
   kicked shell beating Bowser. Bricks get 125 hit points against shots and blasts, melee breaks them in one hit, any
   weapon opens a `?` or hidden block from any side, and shots can fly through ground and pipes while still striking
   blocks. Flickers stay solid with Reduce flashing on. Current play is unchanged.
+- Classic rules: **Mega Man** plays as in the original. No health bar: he starts small, the Mushroom gives the charge
+  shot (two levels) and the Fire Flower gives Metal Blade on Special, aimed eight ways, with its own energy bar; one hit
+  takes both away. Buster shots fly through walls and pipes and break bricks. He takes a small first step, his jump
+  eases off when you let go, and he can jump out of a slide, slide under low ceilings and over one-tile holes. A tap of
+  Select calls Rush free from the top of the screen for a high bounce; holding Select swaps the shoot and weapon
+  buttons. Weapon energy drops refill the bar while the game stands still. In developer mode the full kit
+  (`&kit=full`) gives all nine of the original's Robot Master weapons, picked with a Select tap.
 - Classic rules shared systems for power states and swimming (ready for the Classic heroes): small / Mushroom / Fire
   Flower for every hero with Lose Everything, each hero's original hit response (freeze or push, then 65 % opacity or a
   flicker; Reduce flashing draws 65 % instead), ammo-only drops, a 12-second Star, and a Mushroom or Fire Flower icon in
@@ -66,6 +73,12 @@ under `## [Unreleased]`.
   Shuriken, one on screen at a time; thrown arts fly through walls and break bricks, the sword breaks bricks, and his
   head only bumps them. A hit takes the sword and the Flower but keeps the Scroll and the ninpo. The developer full kit
   adds the Fire Wheel, the Fire Dragon Ball and the Jump Slash. He gets his own Classic guide page.
+- Classic Link (Classic rules): no hearts or magic, the Mushroom and Fire Flower instead (the Blue Ring and a stronger
+  sword, then the Red Ring's beam, the Magic Sword and Magic Boomerang; any hit takes them, he keeps his bombs). He starts
+  and stops at once, also in mid-air, and a tap of jump is a short hop. Stabs root him for a moment and break bricks;
+  Up or Down with Attack stabs up or down, and in mid-air Up or Down thrusts (the down-thrust bounces off enemies and
+  blocks). The boomerang flies eight ways, stops enemies and brings back items; bombs never hurt him, three at a time.
+  His own Classic guide page. In developer mode the full kit adds the Bow, and Tools picks boomerang, bombs or arrows.
 
 ## [0.4.55] - 2026-10-13
 

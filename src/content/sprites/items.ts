@@ -1060,6 +1060,88 @@ const iconBuster = [
   '...eeeee',
   '........',
 ];
+/* Classic Mega Man's Robot Master weapons (characters/megaman/classic-weapons.ts): HUD icons, a
+ * Water Shield drop and a spinning Screw Crusher. Drawn here from scratch. */
+const iconSuperArm = [
+  '.000000.',
+  '09939990',
+  '09939990',
+  '03333330',
+  '09993990',
+  '09993990',
+  '03333330',
+  '.000000.',
+];
+const iconPharaoh = [
+  '..5555..',
+  '.566665.',
+  '56611665',
+  '56611665',
+  '56666665',
+  '56666665',
+  '.566665.',
+  '..5555..',
+];
+const iconKick = [
+  '........',
+  '...222..',
+  '...2222.',
+  '7..2222.',
+  '.7.22222',
+  '7.222222',
+  '..000000',
+  '........',
+];
+const iconMagma = [
+  '7......7',
+  '.7....7.',
+  '..7557..',
+  '.755557.',
+  '.755557.',
+  '..7557..',
+  '.7....7.',
+  '7......7',
+];
+const iconWaterShield = [
+  '..a..a..',
+  '.a....a.',
+  'a......a',
+  '...ee...',
+  '...ee...',
+  'a......a',
+  '.a....a.',
+  '..a..a..',
+];
+const iconScrew = [
+  '...bb...',
+  '..bbbb..',
+  '.b1bbbb.',
+  'bbbbbbbb',
+  '.bbbbbb.',
+  '..bbbb..',
+  '...bb...',
+  '........',
+];
+const waterDrop = [
+  '...00...',
+  '..0aa0..',
+  '.0a1aa0.',
+  '0aa1aaa0',
+  '0aaaaee0',
+  '0aaaaee0',
+  '.0aeee0.',
+  '..0000..',
+];
+const screw0 = [
+  '..0000..',
+  '.0bbbb0.',
+  '0b1bbbb0',
+  '0bbbbbb0',
+  '.0bbbb0.',
+  '..0bb0..',
+  '...00...',
+  '........',
+];
 const iconSaw = [
   '...bb...',
   '.b.bb.b.',
@@ -1952,6 +2034,27 @@ const iconFlameGun = [
   '....7...',
 ];
 
+/* Classic SMBC Link's arrow (dev full kit), 16x5, flying right: a brown shaft, a grey head and
+ * white fletching. */
+const arrow = [
+  '1.1...........0.',
+  '.1.1..........b0',
+  '1111999999999bb1',
+  '.1.1..........b0',
+  '1.1...........0.',
+];
+/* The arrow's HUD icon, 8x8, pointing up-right. */
+const iconArrow = [
+  '.....bb.',
+  '......b.',
+  '.....9.b',
+  '....9...',
+  '...9....',
+  '1.9.....',
+  '.1......',
+  '1.1.....',
+];
+
 export const itemsDef: SpriteDef = {
   palette: 'items',
   frames: {
@@ -2020,6 +2123,17 @@ export const itemsDef: SpriteDef = {
     'heart-small': heartSmall,
     'icon-boomerang': iconBoomerang,
     'icon-bomb': iconBomb,
+    // Classic SMBC Link: the beam flying up or down, the Magic Boomerang (blue), the arrow.
+    'sword-beam-down': transpose(swordBeam),
+    'sword-beam-up': vflip(transpose(swordBeam)),
+    'magic-boomerang-0': swapColors(vflip(transpose(boomerangSide)), { '3': 'a', '7': 'e' }),
+    'magic-boomerang-1': swapColors(vflip(boomerangCorner), { '3': 'a', '7': 'e' }),
+    'magic-boomerang-2': swapColors(boomerangSide, { '3': 'a', '7': 'e' }),
+    'magic-boomerang-3': swapColors(boomerangCorner, { '3': 'a', '7': 'e' }),
+    arrow,
+    'arrow-up': vflip(transpose(arrow)),
+    'arrow-down': transpose(arrow),
+    'icon-arrow': iconArrow,
     'icon-jump': iconJump,
     'icon-shield': iconShield,
     'icon-fire': iconFire,
@@ -2047,6 +2161,15 @@ export const itemsDef: SpriteDef = {
     'icon-knuckle': iconKnuckle,
     'icon-bolt': iconBolt,
     'icon-rush': iconRush,
+    'icon-super-arm': iconSuperArm,
+    'icon-pharaoh': iconPharaoh,
+    'icon-kick': iconKick,
+    'icon-magma': iconMagma,
+    'icon-water-shield': iconWaterShield,
+    'icon-screw': iconScrew,
+    'water-drop': waterDrop,
+    'screw-0': screw0,
+    'screw-1': flipH(screw0),
     'beam-0': beam0,
     'beam-1': beam1,
     'ice-beam-0': iceBeam(beam0),

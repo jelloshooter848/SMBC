@@ -68,6 +68,13 @@ export interface CharacterBehaviour {
   onPickup?(p: Player, kind: PickupKind, world: World): boolean;
   /** An enemy projectile is about to hit the player; return true to block it (shields). */
   blocks?(p: Player, projectile: Projectile): boolean;
+  /**
+   * True while the hero is rooted to the spot (Classic Link's ground stab and throw, LK-C6): on
+   * the ground Left/Right neither move nor turn him and he cannot jump. Read by Player.update
+   * (tier path) before the walk step, with this frame's input, so an attack pressed now roots
+   * him from this frame. Absent: never rooted.
+   */
+  rooted?(p: Player, input: InputFrame): boolean;
   /** False while the character cannot jump at all (morph ball). */
   canJump?(p: Player): boolean;
   /**
@@ -77,6 +84,11 @@ export interface CharacterBehaviour {
    * rooted by his whip or a throw (SI-C4). Absent: the shared rules only (a `crouches` def's crouch).
    */
   holdsStill?(p: Player, input: InputFrame): boolean;
+  /**
+   * False while Down + Jump must not start a slide (Classic Mega Man carrying a Super Arm brick,
+   * MM-C6). Absent: a profile with a slide always may.
+   */
+  canSlide?(p: Player): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */

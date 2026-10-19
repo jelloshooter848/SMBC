@@ -181,7 +181,8 @@ export class Player {
   private airCap: number;
   private sinceGround = 0;
   /*
-   * Classic SMBC jump state (MovementProfile.rise / softCut / inertia; unused otherwise).
+   * Classic SMBC movement state (MovementProfile.rise / softCut / inertia / step / slide.distance;
+   * Player.root). Unused, and left at these values, for every Current profile.
    */
   /** Feet height (subpixels) at the last jump's take-off, until landing; null when not in a jump. */
   riseY0: number | null = null;
@@ -198,12 +199,21 @@ export class Player {
   /** InertiaProfile: the acceleration set on the last ground frame, and the speed cap now. */
   private inertiaAx = 0;
   private inertiaCap = 0;
+  /** Frames left of a step nudge's stop (MovementProfile.step); the step pose shows meanwhile. */
+  stepT = 0;
   /**
    * Frames left of a weapon's stop, set by a Classic hero's behaviour (Classic Mega Man's rooting
-   * MM-C24, Ryu's slash and throw RY-C5): on the ground no walking (vx 0); on a wall
-   * (MovementProfile.wallClimb) no climbing or hopping. Always 0 for Current heroes.
+   * MM-C24, Ryu's slash and throw RY-C5): on the ground no walking (vx 0) and no slide start; on a
+   * wall (MovementProfile.wallClimb) no climbing or hopping. With `rootFreeze` the body also hangs
+   * still in the air (no gravity, no move: Hard Knuckle fired in the air, MM-C25). Always 0 for
+   * Current heroes.
    */
   root = 0;
+  rootFreeze = false;
+  /** Where a distance slide started (subpixels; MovementProfile slide.distance). */
+  private slideX0 = 0;
+  /** A distance slide turned round under a ceiling ends as soon as the ceiling clears (MM-C7). */
+  private slideEndOnClear = false;
   /**
    * On a wall (MovementProfile.wallClimb, Classic Ryu RY-C10..RY-C16): the side the wall is on, and
    * `lift` when it is the side of a lift (the hero's behaviour holds him there; no climbing).
@@ -310,11 +320,23 @@ export class Player {
     let dir = input.dirX;
     const startAir = !b.onGround;
     // Standing still on the ground (Classic only; the one place it is decided): a weapon's stop
-    // counted in frames (Player.root: Mega Man, Ryu), or the hero's own condition this frame
-    // (CharacterBehaviour.holdsStill: Samus's crouch, Pit's aim-up, Simon's whip and throws).
-    const rootedNow = this.root > 0;
-    if (rootedNow) this.root--;
-    if (b.onGround && (rootedNow || this.def.behaviour.holdsStill?.(this, input))) dir = 0;
+    // counted in frames (Player.root: Mega Man, Ryu; `rootFreeze` also hangs him in the air), or
+    // the hero's own condition this frame (CharacterBehaviour.holdsStill: Samus's crouch, Pit's
+    // aim-up, Simon's whip and throws).
+    let rooted = false;
+    if (this.root > 0) {
+      this.root--;
+      if (b.onGround) rooted = true;
+      else if (this.rootFreeze) {
+        b.vx = 0;
+        b.vy = 0;
+        this.fallSpeed = 0;
+        this.updateAnim(0);
+        return;
+      }
+    } else this.rootFreeze = false;
+    if (b.onGround && this.def.behaviour.holdsStill?.(this, input)) rooted = true;
+    if (rooted) dir = 0;
     const wantRun = p.canRun && (input.held('attack') || input.held('run')) && !this.inWater;
     if (wantRun) this.runTimer = p.runTimerFrames;
     else if (this.runTimer > 0) this.runTimer--;
@@ -337,10 +359,18 @@ export class Player {
       this.refitHitbox();
     }
     if (this.crouching && !cramped) dir = 0;
+    // CharacterBehaviour.rooted (Classic Link's ground stab): no walking, turning or jumping.
+    const stabRooted = b.onGround && this.def.behaviour.rooted?.(this, input) === true;
+    if (stabRooted) dir = 0;
 
+    // A distance slide (slide.distance, Classic SMBC) has its own rules; false once it ends.
+    const distanceSlide =
+      this.stun === 0 && this.sliding > 0 && p.slide?.distance !== undefined && this.classicSlide(map, dir);
     if (this.stun > 0) {
       this.stun--;
       if (b.onGround) this.sinceGround = 0;
+    } else if (distanceSlide) {
+      this.sinceGround = 0;
     } else if (this.sliding > 0) {
       this.sliding--;
       b.vx = this.facing * (p.slide?.speed ?? 0);
@@ -356,9 +386,10 @@ export class Player {
     } else if (b.onGround) {
       this.sinceGround = 0;
       if (p.inertia) this.inertiaStep(input, this.crouching && !cramped);
-      else this.groundMove(dir, running);
+      else if (!(p.step && this.stepNudge(input, map, dir, p.step))) this.groundMove(dir, running);
     } else {
       this.sinceGround++;
+      this.stepT = 0;
       if (p.inertia) this.inertiaStep(input, false);
       else this.airMove(dir);
     }
@@ -377,9 +408,17 @@ export class Player {
       this.waterTier = false;
     }
 
+    // Jumping out of a slide (slide.jumpOut, Classic SMBC MM-C9): Down up and no ceiling above.
+    const slideJump =
+      this.sliding > 0 &&
+      p.slide?.jumpOut === true &&
+      b.onGround &&
+      !input.held('down') &&
+      !this.slideCeiling(map);
     const canJump =
-      this.sliding === 0 &&
+      (this.sliding === 0 || slideJump) &&
       !this.hurtLock &&
+      !stabRooted &&
       (this.def.behaviour.canJump?.(this) ?? true) &&
       (b.onGround || this.clinging || (this.sinceGround <= p.coyoteFrames && !this.jumping && b.vy >= 0));
     // A hit's knock back takes the air jumps until he lands (the original turns his input off).
@@ -388,7 +427,8 @@ export class Player {
     if (canJump && this.jumpPressed(input)) {
       if (p.slide && input.held('down') && b.onGround) {
         input.consumeJumpBuffer();
-        this.startSlide();
+        // No slide during a thrown weapon's stop or while the behaviour says no (Player.root).
+        if (!rooted && !stabRooted && (this.def.behaviour.canSlide?.(this) ?? true)) this.startSlide();
       } else {
         input.consumeJumpBuffer();
         const wallJump = this.clinging;
@@ -398,6 +438,11 @@ export class Player {
           this.facing = -this.facing as -1 | 1;
           this.clinging = false;
           this.clingLock = 12;
+        }
+        if (this.sliding > 0) {
+          // A slide-jump: a normal jump at walking speed the way held (no slide speed kept).
+          this.endSlide();
+          b.vx = dir * p.maxWalk;
         }
         this.tier = pickJumpTier(p, b.vx);
         b.vy = -this.tier.initial;
@@ -457,7 +502,10 @@ export class Player {
     }
 
     const wasOnGround = b.onGround;
-    const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
+    const gapSpeed =
+      wasOnGround &&
+      ((p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx) ||
+        (this.sliding > 0 && p.slide?.crossGaps === true));
     moveX(b, map, velToSub(b.vx));
     this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
@@ -892,6 +940,80 @@ export class Player {
     else this.cutting = false;
   }
 
+  /**
+   * A step nudge (MovementProfile.step, Classic Mega Man MM-C2). True while it holds the walk this
+   * frame: the press frame (moved `px` at once) and the `frames` frames after.
+   */
+  private stepNudge(
+    input: InputFrame,
+    map: TileMap,
+    dir: -1 | 0 | 1,
+    step: { px: number; frames: number },
+  ): boolean {
+    const b = this.body;
+    if (this.stepT > 0) {
+      this.stepT--;
+      b.vx = 0;
+      return true;
+    }
+    if (dir === 0 || !input.pressed(dir > 0 ? 'right' : 'left') || b.vx * dir > 0) return false;
+    moveX(b, map, dir * px(step.px));
+    b.vx = 0;
+    this.facing = dir;
+    this.stepT = step.frames;
+    return true;
+  }
+
+  /**
+   * One frame of a distance slide (slide.distance, Classic Mega Man MM-C5..MM-C7), before the move.
+   * Sets vx and returns true while it goes on; ends it and returns false otherwise (the walk or
+   * fall code then runs this frame).
+   */
+  private classicSlide(map: TileMap, dir: -1 | 0 | 1): boolean {
+    const s = this.profile.slide as NonNullable<MovementProfile['slide']>;
+    const b = this.body;
+    const ceiling = s.ceilingHold === true && this.slideCeiling(map);
+    if (ceiling) {
+      if (dir !== 0 && dir === -this.facing) {
+        this.facing = dir;
+        this.slideEndOnClear = true;
+      }
+    } else {
+      const reverse = s.reverseCancel === true && dir !== 0 && dir === -this.facing;
+      const wall = b.hitWall !== 0 && b.hitWall === this.facing;
+      const done =
+        this.slideEndOnClear || !b.onGround || wall || Math.abs(b.x - this.slideX0) >= px(s.distance ?? 0);
+      if (reverse || done) {
+        this.endSlide();
+        if (reverse || wall) b.vx = 0;
+        return false;
+      }
+    }
+    b.vx = this.facing * s.speed;
+    return true;
+  }
+
+  /**
+   * A low ceiling over a slide (MM-C7): a solid tile overlapping the band from 30 px to 5 px above
+   * the feet (15 px above a 15 px slide body's top, down to 5 px above its bottom) and the body's
+   * columns, its centre within 25 px of the body's centre.
+   */
+  slideCeiling(map: TileMap): boolean {
+    const b = this.body;
+    const bottom = b.y + b.h;
+    const cx = b.x + (b.w >> 1);
+    const cy = bottom - (b.h >> 1);
+    const near = px(25);
+    for (let ty = tileAt(bottom - px(30)); ty <= tileAt(bottom - px(5) - 1); ty++)
+      for (let tx = tileAt(b.x); tx <= tileAt(b.x + b.w - 1); tx++) {
+        if (!map.isSolid(tx, ty)) continue;
+        const tcx = tileToSub(tx) + px(8);
+        const tcy = tileToSub(ty) + px(8);
+        if (Math.abs(tcx - cx) <= near && Math.abs(tcy - cy) <= near) return true;
+      }
+    return false;
+  }
+
   /** HurtLock's end conditions, checked before this frame's move (see HurtLock). */
   private tickHurtLock(): void {
     const l = this.hurtLock as HurtLock;
@@ -1143,6 +1265,13 @@ export class Player {
     const bottom = b.y + b.h;
     b.h = px(s.hitboxH);
     b.y = bottom - b.h;
+    if (s.distance !== undefined) {
+      // A distance slide starts moving on this frame (Player.classicSlide).
+      this.slideX0 = b.x;
+      this.slideEndOnClear = false;
+      this.stepT = 0;
+      b.vx = this.facing * s.speed;
+    }
   }
 
   private endSlide(): void {

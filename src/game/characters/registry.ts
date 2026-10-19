@@ -11,6 +11,8 @@ import { BILL } from './bill';
 import { SOPHIA } from './sophia';
 import { BILL_CLASSIC } from './bill/classic';
 import { RYU_CLASSIC } from './ryu/classic';
+import { LINK_CLASSIC } from './link/classic';
+import { MEGAMAN_CLASSIC } from './megaman/classic';
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -46,6 +48,8 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   bill: BILL_CLASSIC,
   simon: SIMON_CLASSIC,
   ryu: RYU_CLASSIC,
+  link: LINK_CLASSIC,
+  megaman: MEGAMAN_CLASSIC,
 };
 
 /**

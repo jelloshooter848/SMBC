@@ -6,8 +6,8 @@ import { FIREBALL, type ProjectileSpec } from '../../entities/projectiles/projec
  * GRAVITY 1350, BOUNCE_AMT 270. On flat ground it bounces 12.4 px high every 23 frames. Wall and
  * ceiling hits burst it. `amount` is the original's DamageValue.MARIO_FIRE_BALL (1000): the
  * Classic enemy-HP rules read it in original units (Bowser takes 5 in every form, armour stops it).
- * It never strikes bricks or ? blocks (doesntHitBricks; the Classic bricks rules' `classicBlocks`
- * flag, `{ ground: 'collide', afterBlock: 'end', strikesBlocks: false }`, goes here once they land).
+ * It never strikes bricks or ? blocks (doesntHitBricks): `classicBlocks` makes every block plain
+ * ground to it (BR-C2).
  */
 export const FIREBALL_CLASSIC: ProjectileSpec = {
   ...FIREBALL,
@@ -18,6 +18,7 @@ export const FIREBALL_CLASSIC: ProjectileSpec = {
   maxFall: 0x02800, // 2.5 px/f
   bounceVy: -0x02400, // 2.25 px/f up off the top of the ground
   burstOnCeiling: true,
+  classicBlocks: { ground: 'collide', afterBlock: 'end', strikesBlocks: false },
 };
 
 /** Throw pose length (MarioBase: 75 ms; Current 8 frames). Cosmetic. */
