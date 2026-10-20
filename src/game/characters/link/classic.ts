@@ -259,7 +259,8 @@ function startsAction(p: Player, input: InputFrame): boolean {
 
 function fireShot(p: Player, world: World, dir: ShotDir, arrow: boolean): void {
   world.spawn(LinkShot.fire(p, dir, arrow));
-  world.audio.sfx(arrow ? 'kick' : 'sword-beam');
+  // His own arrow sound (G-074; SFX_LINK_SHOOT_ARROW).
+  world.audio.sfx(arrow ? 'link-arrow' : 'sword-beam');
 }
 
 /** The Red Ring beam, if it is free (LK-C28). */
@@ -296,7 +297,8 @@ function placeBomb(p: Player, world: World): boolean {
   spendAmmo(p, 'bombs', 1);
   const at = bombSpot(p, world);
   world.spawn(new LinkBomb(at.cx, at.bottom, p));
-  world.audio.sfx('kick');
+  // Setting the bomb down (G-074; SFX_LINK_SET_BOMB).
+  world.audio.sfx('link-bomb-set');
   startAction(p, THROW);
   return true;
 }
@@ -561,6 +563,8 @@ export const LINK_CLASSIC: CharacterDef = {
   blockPowerUp: classicBlockPowerUp,
   powerIcon: true,
   jumpSfx: LINK.jumpSfx,
+  // His own death sound (G-065; Link.as 1400): the spin's falling chime.
+  deathSound: 'link-death',
   // LK-C11: springs unchanged (spring.ts keys its numbers by hero id). LK-C44: every count and
   // timer is per player (scratch, bombsOut, countProjectiles by owner); bombs never hurt players.
 

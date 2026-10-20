@@ -101,7 +101,7 @@ import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicMenuScene, recordClassicClear } from './original-game';
-import { heroSet, musicFor, setSong, SMB_SET } from './original-music';
+import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
 export interface GameDeps {
@@ -403,9 +403,13 @@ export class Game {
    */
   selectLeft(classic: boolean): void {
     if (!classic || this.campaign !== null) return;
-    const song = setSong(heroSet(this.state.character.id), 'choose');
+    const id = this.state.character.id;
+    const song = setSong(heroSet(id), 'choose');
     if (song) this.deps.ctx.audio.playJingle(song);
     else this.deps.ctx.audio.stopMusic();
+    // Mega Man and Bass teleport out as they are chosen (G-070; MegaMan.as 157).
+    const sfx = CHOOSE_SFX[id];
+    if (sfx) this.deps.ctx.audio.sfx(sfx);
   }
 
   /**

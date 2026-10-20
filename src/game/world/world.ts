@@ -3010,7 +3010,7 @@ export class World {
           };
           const res = e.hit(src, this);
           this.scoreKill(e, src.kind, res);
-          if (res === 'hp') this.audio.sfx('hurt-enemy');
+          if (res === 'hp') this.audio.sfx(src.hitSfx ?? 'hurt-enemy');
           if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
         }
       }
@@ -3231,8 +3231,7 @@ export class World {
       pr.hitIds.add(e.id);
       if (pr.spec.rehitAfter !== undefined) pr.markHit(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
-      if (r === 'hp') this.audio.sfx('hurt-enemy');
-      else if (r === 'stun') this.audio.sfx('hurt-enemy');
+      if (r === 'hp' || r === 'stun') this.audio.sfx(src.hitSfx ?? 'hurt-enemy');
       // A shot that pierces what it defeats goes on only past a kill.
       const through =
         pr.spec.pierce ||
@@ -3379,7 +3378,11 @@ export class World {
     }
     if (this.activePlayers().length === 0) {
       this.audio.setTempoScale(1);
-      this.audio.playJingle('death');
+      const own = p.def.deathSound;
+      if (own) {
+        this.audio.stopMusic();
+        this.audio.sfx(own);
+      } else this.audio.playJingle('death');
     } else this.audio.sfx('hit');
   }
 

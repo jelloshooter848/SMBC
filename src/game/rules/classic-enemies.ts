@@ -9,6 +9,7 @@ import { Bowser } from '../entities/enemies/bowser';
 import { Cheep } from '../entities/enemies/cheep';
 import type { World } from '../world/world';
 import { attackMult } from '../characters/classic/options';
+import { heroSound } from '../characters/classic/sounds';
 
 /**
  * Classic SMBC enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24):
@@ -195,6 +196,9 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
   if (e.classicHp <= 0) {
     e.stopFrames = 0;
     e.classicKill(src, world);
+    // The hero's own kill sound (G-072), where it has one.
+    const kill = heroSound(attackerDef(src), 'kill');
+    if (kill) world.audio.sfx(kill);
     return 'kill';
   }
   // A hit with no damage (Link's boomerang) only stops what it can stop.
@@ -202,5 +206,8 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
   // HP-C6: Koopas and Buzzy Beetles change state with HP (no points either way).
   if (e instanceof Koopa && e.classicDamaged(e.classicHp) === 'shell') return 'shell';
   e.classicHpHit(src, world);
+  // The World plays the hit's sound: the hero's own (G-072), else the shared one.
+  const hitSfx = src.hitSfx ?? heroSound(attackerDef(src), 'hit');
+  if (hitSfx) src.hitSfx = hitSfx;
   return 'hp';
 }

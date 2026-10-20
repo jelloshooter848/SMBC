@@ -481,6 +481,12 @@ export interface CharacterDef {
     pitFrames: number;
   };
   /**
+   * The hero's own death sound (Classic defs, G-065; Link.as 1400, MegaManBase.as 2561, Bill.as
+   * 982, Sophia.as 2238): played in place of the `death` jingle, the music stopping. Absent: the
+   * `death` jingle (which Classic mode's music sets turn into Simon's and Ryu's death music).
+   */
+  deathSound?: string;
+  /**
    * A death that throws the body (Classic SMBC Bill, BI-C15): vx = `vx` in direction `dir(p)`,
    * vy = -`vy`, then each frame gravity (added before the move, as the original does) capped at
    * `maxFall`; the body lands on the ground and lies there. The death ends `afterLand` frames

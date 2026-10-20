@@ -60,6 +60,11 @@ export interface ClassicHitProps {
   /** Sound played when armour blocks this hit (`armour`, `bump`; none when absent; HP-C14). */
   blockedSfx?: string;
   /**
+   * Sound the World plays when this hit takes hit points (`hurt-enemy` when absent): the Classic
+   * enemy door names the hero's own (G-072, characters/classic/sounds.ts).
+   */
+  hitSfx?: string;
+  /**
    * The player behind the hit when `owner` does not lead to one (the World's default melee
    * source): Classic damage units follow this player's def. Current never reads it.
    */

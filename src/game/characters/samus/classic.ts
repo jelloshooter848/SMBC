@@ -75,8 +75,14 @@ export interface ClassicSamusVariant {
   morphBall: boolean;
   /** PI-15: sideways shots on the ground, standing or walking: px above the feet. */
   standShotHeight: number;
-  /** Every beam's sound (PI-22). */
+  /** Every beam's sound (PI-22); Samus's own suit sounds (`suitSounds`) name each beam's. */
   beamSfx: string;
+  /**
+   * Samus's own suit sounds (G-070, G-074; Samus.as 517, SoundNames.as 213-214): her landing, the
+   * morph ball, the Screw Attack, each beam's sound and the bomb being set. False (Pit): none of
+   * them, and `beamSfx` for every beam.
+   */
+  suitSounds: boolean;
   /**
    * Art only: the look of each beam and missile it fires (Pit's arrows, PI-21), a copy of the spec
    * with its sheet and frames swapped and every number kept; `up` when fired straight up. Absent:
@@ -98,7 +104,16 @@ export const SAMUS_VARIANT: ClassicSamusVariant = {
   morphBall: true,
   standShotHeight: MUZZLE.stand,
   beamSfx: 'buster',
+  suitSounds: true,
 };
+
+/** Each beam's own sound (G-074): the short and long beams, the Ice Beam and the Wave Beam. */
+function beamSound(spec: ProjectileSpec): string {
+  if (spec === LONG_BEAM_CLASSIC) return 'samus-long-beam';
+  if (spec === ICE_BEAM_CLASSIC) return 'samus-ice-beam';
+  if (spec === WAVE_BEAM_CLASSIC) return 'samus-wave-beam';
+  return 'samus-beam';
+}
 
 /**
  * SA-C3, SA-C6, SA-C7: instant 1.25 px/f walking (WALK_SPEED 185 clamped by vxMax 150) on the
@@ -295,8 +310,9 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
 
 function fireBeam(p: Player, world: World, v: ClassicSamusVariant): void {
   if (shotsOut(p, world) >= CLASSIC_MAX_SHOTS) return;
-  spawnShot(p, world, beamSpec(p, v), v);
-  world.audio.sfx(v.beamSfx);
+  const spec = beamSpec(p, v);
+  spawnShot(p, world, spec, v);
+  world.audio.sfx(v.suitSounds ? beamSound(spec) : v.beamSfx);
 }
 
 function fireMissile(p: Player, world: World, v: ClassicSamusVariant): void {
@@ -312,7 +328,7 @@ function layBomb(p: Player, world: World): void {
   if (out >= CLASSIC_MAX_BOMBS) return;
   // SA-C27: centred on her centre x, 6 px above her feet, hanging there.
   world.spawn(new ClassicBomb(p.centerX, p.feetY - px(6), p));
-  world.audio.sfx('kick');
+  world.audio.sfx('samus-bomb-set');
 }
 
 /**
@@ -335,7 +351,7 @@ function updateFlip(p: Player, input: InputFrame): void {
   }
   if (!flipping(p) && p.feetY < line && b.vy < 0) {
     s(p)._flip = 1;
-    // The Screw Attack sound plays once per jump (none exists yet: SA hints, sounds).
+    // The Screw Attack sound plays once per jump (trackJump plays it: G-070).
     if (p.powerState === 'fire') s(p)._screwSnd = 1;
   }
 }
@@ -356,11 +372,21 @@ function trackJump(p: Player, input: InputFrame, world: World, v: ClassicSamusVa
       if (!clear(world, b.x, b.y, b.w, b.h)) b.y = (tileAt(b.y) + 1) * px(16);
     }
   }
+  if (s(p)._screwSnd === 1) {
+    s(p)._screwSnd = 2;
+    if (v.suitSounds) world.audio.sfx('screw-attack');
+  }
   if (b.onGround) {
+    // Her landing (G-070; Samus.as 517): back on the ground after a frame in the air.
+    if (s(p)._air && v.suitSounds && !inBall(p)) world.audio.sfx('samus-land');
+    delete s(p)._air;
     s(p)._g = 1;
     s(p)._feet = p.feetY;
     delete s(p)._takeoff;
-  } else delete s(p)._g;
+  } else {
+    delete s(p)._g;
+    s(p)._air = 1;
+  }
 }
 
 /**
@@ -584,9 +610,11 @@ export function classicSamus(
           }
           if (!b.onGround || b.vx !== 0 || !crouchPose(p)) delete s(p)._still;
         } else if (input.pressed('down')) {
-          if (crouchPose(p) && v.morphBall) enterBall(p);
-          else if (!b.onGround && !crouchPose(p) && v.morphBall) enterBall(p);
-          else if (b.onGround && !input.held('up') && !crouchPose(p)) {
+          if ((crouchPose(p) || !b.onGround) && v.morphBall) {
+            enterBall(p);
+            // Curling into the morph ball (G-070, SoundNames.as SFX_SAMUS_MORPH_BALL).
+            if (v.suitSounds) world.audio.sfx('morph-ball');
+          } else if (b.onGround && !input.held('up') && !crouchPose(p)) {
             setCrouch(p, true);
             b.vx = 0;
           }
