@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+### Fixed
+
+- Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
+  clear raises the flag at once, with no time tally (and no fireworks), as in the original.
+
 ## [0.4.61] - 2026-10-20
 
 ### Added

@@ -675,6 +675,8 @@ export class LevelScene implements Scene {
       ...(this.level.bonus ? { area: this.level.name } : {}),
       outline: LIGHT_SKIES.has(this.world.level.theme),
       keyHolder: this.world.keyHolder,
+      // Classic's Infinite Time cheat: no TIME on the HUD (the campaign's assist keeps it).
+      noTime: this.world.cheats.infiniteTime,
     });
     // The Bowser bar while his fight is on (0.4.47, campaign: world/boss-bar.ts).
     drawBowserBar(

@@ -3773,7 +3773,9 @@ export class World {
     // StatManager.touchFlag keeps the HUD time (timeLeftBeatLevel); when the tally ends,
     // timeScoreConverterTmrLsr sets off that many fireworks if its last digit is 1, 3 or 6.
     const digit = (this.time ?? 0) % 10;
-    const fireworks = digit === 1 || digit === 3 || digit === 6 ? digit : 0;
+    // Infinite Time (Classic cheat): StatManager.convertTimeToScore raises the flag at once, with
+    // no tally and no fireworks.
+    const fireworks = !this.cheats.infiniteTime && (digit === 1 || digit === 3 || digit === 6) ? digit : 0;
     this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p, fireworks };
     this.time ??= 0;
   }
@@ -3885,7 +3887,7 @@ export class World {
         // 30 fps (GameSettings.FRAME_RATE_LOCKED), 3.1.21 measures about 30 units a second.
         // Deliberately faster here (owner feedback: a full clock took over 13 s): TALLY_PER_FRAME
         // units a frame (400 in about 3.3 s), and JUMP finishes it at once for the same points.
-        if (this.time && this.time > 0) {
+        if (this.time && this.time > 0 && !this.cheats.infiniteTime) {
           if (inputs.some((f) => f.pressed('jump'))) {
             this.addScore(this.time * TIME_POINTS);
             this.time = 0;
