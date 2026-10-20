@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: a **skin picker** on the select screen. A hero with other looks shows SKIN (with
+  its key) and SKIN changes the look, read out as "Proto Man, skin Break Man"; each hero's choice is
+  remembered, and the HUD name, the art, the How to play page and the castle's rescue name follow
+  it. The Random slot and Survival respect it. Break Man is now Proto Man's second skin and Dark
+  Pit Pit's (they play exactly alike), so each hero has one slot.
+- Classic mode: Mega Man's gameplay variants from the original, each with its own slot and our own
+  art built from his redrawn sheet: **Rock** (no charge, no slide), **Cut Man** (shots pass through
+  enemies and bricks, his head breaks bricks, two shots at a time), **Fire Man** (stronger shots,
+  firebars pass through him, two shots, double knockback), **Ice Man** (a full charge freezes, a
+  weaker buster), **Francesca** with her Doropie look (no slide) and **Rokko Chan** (a dash and dash
+  jump instead of the slide, no charge). The select screen gains a third row for them.
+
 ## [0.4.61] - 2026-10-20
 
 ### Added
