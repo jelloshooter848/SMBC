@@ -23,7 +23,9 @@ export type PickupKind =
   | 'capsule'
   /** Sophia III's missile ammo (her own sheet). */
   | 'triple-ammo'
-  | 'homing-ammo';
+  | 'homing-ammo'
+  /** Vic Viper's power capsule (Classic only; his own sheet): one step on his power bar. */
+  | 'power-capsule';
 
 /** A pickup kind's name, as a map's `pickup x y item=<kind>` gives it. */
 export function isPickupKind(v: unknown): v is PickupKind {
@@ -49,6 +51,7 @@ const FRAMES: Record<PickupKind, { frame: string; size: number; sheet?: string }
   capsule: { frame: 'capsule', size: 16 },
   'triple-ammo': { frame: 'ammo-triple', size: 16, sheet: 'sophia' },
   'homing-ammo': { frame: 'ammo-homing', size: 16, sheet: 'sophia' },
+  'power-capsule': { frame: 'capsule-0', size: 16, sheet: 'vicviper' },
 };
 
 export const PICKUP_LIFETIME = 480;

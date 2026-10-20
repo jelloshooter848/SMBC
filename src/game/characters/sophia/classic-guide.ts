@@ -7,7 +7,7 @@ export const SOPHIA_CLASSIC_GUIDE: CharacterGuide = {
     { action: 'left/right', does: 'Drive. No run. She keeps her speed in the air.' },
     {
       action: 'jump',
-      does: 'A short squat, then a fixed jump. Hold for higher. In the air with the hover: hover.',
+      does: "A short squat, then a jump. Jump height doesn't depend on speed. Hold for higher. In the air with the hover: hover.",
     },
     {
       action: 'attack',

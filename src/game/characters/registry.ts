@@ -19,6 +19,12 @@ import { SIMON_CLASSIC } from './simon/classic';
 import { RYU_CLASSIC } from './ryu/classic';
 import { BILL_CLASSIC } from './bill/classic';
 import { SOPHIA_CLASSIC } from './sophia/classic';
+// Classic-only extras, in select order.
+import { BASS_CLASSIC } from './bass/classic';
+import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
+import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
+import { VICVIPER_CLASSIC } from './vicviper/classic';
+import { WARRIORS_CLASSIC } from './warriors/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
@@ -67,7 +73,15 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
-export const CLASSIC_EXTRAS: CharacterDef[] = [];
+export const CLASSIC_EXTRAS: CharacterDef[] = [
+  BASS_CLASSIC,
+  PROTOMAN_CLASSIC,
+  BREAKMAN_CLASSIC,
+  PIT_CLASSIC,
+  DARKPIT_CLASSIC,
+  VICVIPER_CLASSIC,
+  WARRIORS_CLASSIC,
+];
 
 /**
  * The def a World plays for roster hero `def` under `rules` (TG-17). A def that is already a

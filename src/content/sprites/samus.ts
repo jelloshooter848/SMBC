@@ -20,6 +20,7 @@ export const samusPalettes: Record<string, string[]> = {
   'samus-star-1': [NES.black, NES.cyan, NES.blueMid, NES.pink, NES.white, NES.white],
   'samus-star-2': [NES.black, NES.pink, NES.magenta, NES.greenLight, NES.white, NES.cyan],
   'samus-star-3': [NES.black, NES.white, NES.lightGray, NES.greenLight, NES.white, NES.yellow],
+  // Pit and Dark Pit's palettes live with their own sheet (pit.ts).
 };
 
 /* ---------- composition helpers ---------- */

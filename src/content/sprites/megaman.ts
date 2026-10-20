@@ -41,6 +41,7 @@ export const megamanPalettes: Record<string, string[]> = {
   // gloves and boots, an ashen face, and red where the eye whites and the muzzle glint are, so
   // every frame glares.
   'megaman-dark': [NES.black, SHADOW_PURPLE, SHADOW_INDIGO, NES.lightGray, NES.redBright, NES.red],
+  // Proto Man and Break Man's palettes live with their own sheet (protoman.ts).
 };
 
 /* ---------- composition helpers ---------- */
@@ -386,3 +387,23 @@ export const megamanDef: SpriteDef = {
     ...bareFrames,
   },
 };
+
+/**
+ * His body parts, for the Classic-only heroes built on his frame (Proto Man and Break Man,
+ * protoman.ts): the same torso, cannon, legs and climbing poses under their own head.
+ */
+export const MEGAMAN_PARTS = {
+  torso,
+  torsoShoot,
+  cannon,
+  legsStand,
+  legsWalk0,
+  legsWalk1,
+  legsWalk2,
+  legsJump,
+  legsLadder,
+  deathOrb,
+  teleport0,
+  climb0,
+  climbTop,
+} as const;

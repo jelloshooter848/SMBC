@@ -214,6 +214,12 @@ export interface CharacterDef {
   music?: string;
   /** Frame used on the character select / intro card. */
   portrait: { sheet: string; palette: string; frame: string };
+  /**
+   * A Classic-only extra drawn on its own sheet (Pit's, Proto Man's) whose `portrait` still names
+   * the hero it is built on: the frame the character select and the intro card show instead.
+   * Absent: `portrait` (shownPortrait).
+   */
+  portraitArt?: { sheet: string; palette: string; frame: string };
   /** What (if anything) a killed enemy drops for this character (`killer`: the player who got it). */
   drop?(rng: Rng, enemy: Enemy, killer?: Player): PickupKind | null;
   /**
@@ -237,6 +243,8 @@ export interface CharacterDef {
   meter?(p: Player): MeterInfo | null;
   /** Fully stocked kit for the developer level select. */
   devKit?(): Record<string, number>;
+  /** The kit the How to play page's live demo uses (Classic Vic Viper: none). Absent: `devKit`. */
+  guideKit?(): Record<string, number>;
   /**
    * Reserve energy tanks drawn as small boxes above the EN number (Samus, NES Metroid style):
    * `full` of `total` hold energy, `bar` is the number shown. Null with no tanks.
@@ -319,6 +327,67 @@ export interface CharacterDef {
    */
   seaFloorSafe?: boolean;
   /**
+   * The sound the character select plays when this hero is picked (Classic Proto Man's whistle,
+   * PM-18). Absent: the select's usual sound. Only Classic-only extras set it.
+   */
+  pickSfx?: string;
+  /**
+   * The screen scrolls right by itself while this hero is in the level (Classic Vic Viper, VV-9..
+   * VV-12): `speed` (velocity units) a frame, the camera ignoring the players, and each player
+   * with this field carried along by the same amount. It stops at the camera's end; it holds
+   * whenever the world stands still (pipes, clears, freezes). Absent: the camera follows.
+   */
+  autoScroll?: {
+    speed: number;
+    /**
+     * Pushed into a wall by the screen's left edge: 'eject' moves the hero to the nearest free
+     * place (up or down by up to two tiles, else just past the wall) and only squashes it when there
+     * is none. Absent: squashed, as on an auto-scroll map.
+     */
+    pinned?: 'eject';
+  };
+  /**
+   * Flies with no gravity (Vic Viper, VV-5): dropped in from the top of an area, it is steered at
+   * once instead of after the fall-in (it never lands). Absent: today's fall-in.
+   */
+  flies?: boolean;
+  /** Enters pipes in mid-air too (Vic Viper's canEnterPipesUngrounded, VV-27). Absent: on the ground only. */
+  pipesAirborne?: boolean;
+  /**
+   * A Gradius-style power bar on the HUD's third row (Vic Viper, VV-20): the slots' short labels
+   * (blank when maxed: `available` false), the lit one (1-based; 0 for none) and its full name.
+   * Null hides it. Absent: nothing.
+   */
+  powerBar?(
+    p: Player,
+  ): { slots: { label: string; available: boolean }[]; selected: number; name: string } | null;
+  /**
+   * How a power-up of `kind` struck from a block by this hero is drawn (Vic Viper's Fire Flower is
+   * a power capsule, VV-M3). Null or absent: the item's own art.
+   */
+  powerUpArt?(kind: PowerUpKind): { sheet: string; frames: readonly string[] } | null;
+  /**
+   * The name Toad thanks after the castle axe ("THANK YOU <name>!"), when not `name` (Classic
+   * Warriors of Light: WARRIOR, WL-M13). Absent: `name`.
+   */
+  thanksName?: string;
+  /**
+   * Hidden blocks are not there for this hero: the head passes through them and never reveals
+   * them (Classic Warriors of Light, BRICK_NONE: WL-20, Character.as:1464-1466). Absent: a hidden
+   * block stops a head moving up, as today.
+   */
+  passesHiddenBlocks?: boolean;
+  /**
+   * The select screen's portrait for this hero with carried kit `kit` (Classic Warriors of Light:
+   * the class remembered from the last life, WL-M3). Absent: `portrait`.
+   */
+  portraitFor?(kit: Readonly<Record<string, number>>): { sheet: string; palette: string; frame: string };
+  /**
+   * Kit keys a death (and picking the same hero again on the select screen) keeps outside the
+   * campaign (Classic Warriors of Light's class, WL-M3). Absent: a death wipes the whole kit.
+   */
+  keepOnDeath?: readonly string[];
+  /**
    * Down crouches only with no left/right and no up held (Classic SMBC Bill, BI-C3/BI-C8: Down plus a
    * direction walks with the gun aimed down, and Up wins over Down). Absent: Down crouches whatever
    * else is held, as today.
@@ -392,4 +461,9 @@ export const CLASSIC_POWER_STATES: readonly ClassicPowerState[] = ['small', 'big
 /** Hit points a fresh run of this character starts with (0 for power-up characters). */
 export function startHp(def: CharacterDef): number {
   return def.damage.kind === 'hp' ? (def.startHp ?? def.damage.max) : 0;
+}
+
+/** The frame the character select and the intro card draw for this hero (`portraitArt`, else `portrait`). */
+export function shownPortrait(def: CharacterDef): CharacterDef['portrait'] {
+  return def.portraitArt ?? def.portrait;
 }

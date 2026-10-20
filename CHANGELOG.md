@@ -8,15 +8,52 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
+  only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
+  up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
+  Down + Jump at full height, and a jump out of the dash keeps its speed. The Fire Flower gives the Water Shield and
+  its energy bar, and Select swaps the shot and shield buttons at once. He cannot charge and has no Rush. New
+  original art.
+- Classic mode: **Proto Man** and **Break Man** join the select screen's second row (Classic mode and developer Classic
+  runs only). They play as Classic Mega Man, but charge the buster from the start, fire two buster shots at a time
+  until they take a Mushroom, are knocked back twice as far by a hit, and shoot a little lower. Proto Man whistles
+  when picked.
+- Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
+  crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
+  crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
+- Classic mode: **Vic Viper**, the starfighter cut from the original, joins the second row. The screen scrolls right by
+  itself and carries the ship; it flies freely in eight directions with no gravity, shoots straight ahead through
+  walls (breaking bricks and bumping blocks), enters pipes in mid-air, and cannot stomp or bump blocks from below.
+  Pinned against a wall by the scrolling screen, the ship is pushed free (up, down or past the wall); only with no room
+  anywhere is it crushed. Power capsules (from power-up blocks after the
+  Mushroom, and from defeated enemies) light a Gradius-style power bar on the HUD; POWER takes the lit power-up:
+  Speed Up, a ground Missile that breaks armour, Double, Laser, up to four Options and a front Shield. The Mushroom
+  turns the trim blue. Current play is unchanged.
+- Classic mode: the **Warriors of Light** close the second row, the original game's unfinished party of four classes,
+  finished here with new art. The **Fighter** swings a strong sword, the **Thief** a weak dagger, the **Black Mage**
+  casts Fire, Ice (down) and a full-height Bolt (up) after a short wind-up, through walls and bricks, and the **White
+  Mage** swings a staff and, when small, casts **Cure** (down) once a level to bring back the Mushroom. Change class at
+  any time with CLASS (Special) and a direction: up Fighter, right Black Mage, down Thief, left White Mage; the class
+  is announced, shown on the HUD and kept when you lose a life. They walk and stop at once, jump one fixed height, stand
+  still while attacking, cannot stomp, and blocks do nothing when hit from below. The Fire Flower gives every class a
+  new outfit.
+- Classic mode: the castle's "another castle" line names each Classic-only hero's own rescue: Dr. Wily for Bass,
+  Roll for Proto Man and Break Man, Palutena for Pit and the Reaper for Dark Pit.
+  Vic Viper and the Warriors of Light keep the usual line.
+
 ### Changed
 
 - Classic rules: the camera now scrolls back left, as the original game does, keeping your hero in the middle of the
   screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
-  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself and stops just past the axe; after the axe it follows your hero on to Toad. Auto-scrolling
-  stages and one-screen rooms keep their own camera, and the campaign's camera is unchanged.
+  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself and stops just
+  past the axe; after the axe it follows your hero on to Toad. Auto-scrolling stages and one-screen rooms keep their
+  own camera, and the campaign's camera is unchanged.
 - Classic rules: an area you leave by a pipe, vine or pit is kept as you left it, as in the original: back from a bonus
   room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
-  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
+  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
+  the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
 
 ## [0.4.57] - 2026-10-19
 
@@ -116,6 +153,13 @@ under `## [Unreleased]`.
   cannon but not the Triple Missile), missile ammo drops only once she has missiles, and a hit that takes every power
   but keeps the missiles. No Jason in Classic: SELECT swaps the missiles when she has both. The Lost Levels castles
   (and the water of 3-2 and 6-2) get the original's wider shafts for her, as the other levels already do.
+- Classic mode's extra heroes get their own art: Pit and Dark Pit are now young winged angels with a laurel wreath,
+  tunic, sandals and a bow (their shots fly as arrows), and Proto Man and Break Man wear a visor, a striped helmet and a
+  flowing scarf that stays in every weapon suit; both show on the select screen. Bass's face is a paler tan, apart from
+  his orange helmet. Nothing about how they play changes.
+- Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
+  the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
+  while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
 
 ## [0.4.55] - 2026-10-13
 

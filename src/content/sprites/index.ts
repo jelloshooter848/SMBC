@@ -8,7 +8,10 @@ import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
+import { bassPalettes, bassDef } from './bass';
+import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
+import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { simonPalettes, simonDef } from './simon';
 import { simonFlameDef } from './simon-flame';
 import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
@@ -21,6 +24,7 @@ import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
+import { vicviperPalettes, vicviperDef } from './vicviper';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
 import { npcsPalettes, npcsDef } from './npcs';
@@ -65,6 +69,7 @@ import {
 import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
+import { warriorsDef, warriorsFxDef, warriorsPalettes } from './warriors';
 import { HERO_FX, mapShadeFx } from './palette-fx';
 
 /** `rows` cropped to its drawn pixels (no transparent border). */
@@ -96,8 +101,19 @@ export const SPRITES: Record<string, SpriteDef> = {
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,
+  // Classic SMBC's Bass (characters/bass/classic.ts).
+  bass: bassDef,
+  // Classic SMBC's Proto Man and Break Man (characters/protoman/classic.ts).
+  protoman: protomanDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
+  pit: pitDef,
+  'pit-shots': pitShotsDef,
+  'darkpit-shots': darkpitShotsDef,
+  // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
+  warriors: warriorsDef,
+  'warriors-fx': warriorsFxDef,
   simon: simonDef,
   'simon-flame': simonFlameDef,
   ryu: ryuDef,
@@ -117,6 +133,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'title-logo': titleLogoDef,
   'title-rift': titleRiftDef,
   sophia: sophiaSheet,
+  // Vic Viper, a Classic-only hero (characters/vicviper/classic.ts).
+  vicviper: vicviperDef,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
@@ -178,7 +196,12 @@ const defaults: Record<string, readonly string[]> = {
   ...enemyPalettes,
   ...linkPalettes,
   ...megamanPalettes,
+  ...bassPalettes,
+  ...protomanPalettes,
   ...samusPalettes,
+  ...pitPalettes,
+  ...pitShotPalettes,
+  ...warriorsPalettes,
   ...simonPalettes,
   ...ryuPalettes,
   ...billPalettes,
@@ -194,6 +217,7 @@ const defaults: Record<string, readonly string[]> = {
   ...contraPalettes,
   ...titleLogoPalettes,
   ...sophiaPalettes,
+  ...vicviperPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
   ...npcsPalettes,
@@ -257,6 +281,13 @@ for (let i = 0; i < 4; i++) {
   fallback(`bill-star-${i}`, 'bill');
 }
 for (let i = 0; i < 3; i++) fallback(`megaman-charge-${i}`, 'megaman');
+// Classic Proto Man and Break Man flash Mega Man's Star colours (PM-16).
+for (let i = 0; i < 4; i++) {
+  fallback(`protoman-star-${i}`, `megaman-star-${i}`);
+  fallback(`breakman-star-${i}`, `megaman-star-${i}`);
+}
+// Their own sheet asks for `<sheet>-rush` with Rush out (megaman/classic.ts): Mega Man's.
+fallback('protoman-rush', 'megaman-rush');
 fallback('mario-fire', 'mario');
 fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');

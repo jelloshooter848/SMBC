@@ -8,6 +8,12 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { GameState } from '../context';
 import type { Player } from '../entities/player';
 
+/**
+ * The bottom of the HUD's three text rows (name, score, the third row's icon / bar / tool), in
+ * screen px. Classic Vic Viper and the Warriors' Bolt keep out of the rows above it.
+ */
+export const HUD_BOTTOM = 32;
+
 /** The original's StatManager.SCORE_MAX. */
 export const SCORE_MAX = 9999999;
 
@@ -64,6 +70,11 @@ export function powerIcon(p: Player | undefined): 'icon-mushroom' | 'icon-flower
 /** Where the carried key's icon goes (8x8, hud/hud.ts): player 1's, then player 2's. */
 export const KEY_ICON_P1 = { x: 132, y: 24 } as const;
 export const KEY_ICON_P2 = { x: 196, y: 24 } as const;
+/**
+ * Player 2's key after a seven-letter name at 144 (Classic Warriors of Light's WARRIOR, whose R ends
+ * at x 199), so its last letter shows. Every shorter name keeps KEY_ICON_P2.
+ */
+export const KEY_ICON_P2_LONG = { x: 204, y: 24 } as const;
 
 /** TIME's x when the WORLD column holds a place's name on two rows (BOWSER'S CASTLE). */
 export const TIME_X_PLACE = 216;
@@ -109,7 +120,9 @@ export function drawHud(
   };
   // The hero being played (players[i].def: the def for the World's rules, TG-19), else the
   // state's (the intro card has no players yet). Under Current both are the same def.
-  const name = (players[0]?.def ?? state.character).hudName.slice(0, 6).padEnd(6);
+  // Up to 7 letters, the score's width under it (Classic Warriors of Light's WARRIOR, WL-M13);
+  // every other hero's name has 6 or fewer.
+  const name = (players[0]?.def ?? state.character).hudName.slice(0, 7).padEnd(6);
   const place = shownPlace(state.world, state.stage)?.shown;
   text(name, 24, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
@@ -146,7 +159,8 @@ export function drawHud(
   }
   drawHeroStats(r, assets, state, players, text);
   if (opts.keyHolder === 0 || opts.keyHolder === 1) {
-    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : KEY_ICON_P2;
+    const long = (players[1]?.def.hudName.slice(0, 7).length ?? 0) >= 7;
+    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : long ? KEY_ICON_P2_LONG : KEY_ICON_P2;
     r.sprite(assets.sheet('keys'), 'key-icon', at.x, at.y);
   }
   // Blink the timer label when low.
@@ -212,6 +226,10 @@ export function drawHeroStats(
     const iw = sheet.frames?.get(ammo.icon)?.w ?? 8;
     text(`×${pad(ammo.count, ammo.count > 99 ? 3 : 2)}`, 97 + iw, 24);
   }
+  // A Gradius-style power bar (CharacterDef.powerBar: Vic Viper, VV-20), after the power icon.
+  const bar = player ? def.powerBar?.(player) : null;
+  // The lit slot's name only while player two's HUD is not shown: theirs takes that place.
+  if (bar) drawPowerBar(r, bar, text, !(players[1] && state.character2));
   // Tool belt (icon + ammo) under the coin counter and a secondary meter under the hearts.
   if (player) {
     const tools = def.tools?.(player);
@@ -228,7 +246,11 @@ export function drawHeroStats(
       }
     }
     const extra = def.hudExtra?.(player);
-    if (extra) text(extra, dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : 24, 24);
+    // A Classic hero with a power icon in that corner (PS-C26) writes after it (the Warriors of
+    // Light's class, WL-M13).
+    const ex =
+      dmg.kind === 'hp' && dmg.hudStyle === 'number' ? 64 : def.powerIcon ? POWER_ICON_P1.x + 12 : 24;
+    if (extra) text(extra, ex, 24);
     const m = def.meter?.(player);
     if (m && dmg.kind === 'hp' && dmg.hudStyle === 'bar') {
       // Weapon energy: a second vertical bar beside the health bar.
@@ -254,6 +276,33 @@ export function drawHeroStats(
   drawPlayerTwoStats(r, state, players, text, assets);
 }
 
+/**
+ * Where the power bar's cells start (third HUD row, after the power icon), and the lit slot's name
+ * (after the bar on the same row; six letters at most, ending at x 187, 8 px clear of the rules
+ * tag's outline at 195).
+ */
+export const POWER_BAR = { x: 34, y: 24, cellW: 17, cellH: 8, nameX: 139, nameY: 24 } as const;
+
+/**
+ * The power bar (VV-20): one 16 x 8 cell a slot (1 px apart), its short label in it (blank once maxed), the
+ * lit cell in orange; the lit slot's name after the bar.
+ */
+function drawPowerBar(
+  r: Renderer,
+  bar: NonNullable<ReturnType<NonNullable<Player['def']['powerBar']>>>,
+  text: (str: string, x: number, y: number) => void,
+  showName: boolean,
+): void {
+  const { x, y, cellW, cellH, nameX, nameY } = POWER_BAR;
+  bar.slots.forEach((s, i) => {
+    const cx = x + i * cellW;
+    const lit = bar.selected === i + 1;
+    r.rect(cx, y, cellW - 1, cellH, lit ? '#e45c10' : '#0000bc');
+    if (s.available) text(s.label, cx + (s.label.length === 1 ? 5 : 1), y);
+  });
+  if (showName && bar.selected > 0 && bar.name) text(bar.name, nameX, nameY);
+}
+
 /** Player two: name under WORLD, hearts or a short bar at the right edge (`text`: the caller's). */
 export function drawPlayerTwoStats(
   r: Renderer,
@@ -265,7 +314,7 @@ export function drawPlayerTwoStats(
   const p2 = players[1];
   if (p2 && state.character2) {
     const d2 = p2.def.damage;
-    text(p2.def.hudName.slice(0, 6), 144, 24);
+    text(p2.def.hudName.slice(0, 7), 144, 24);
     const icon = powerIcon(p2);
     if (icon && assets) r.sprite(assets.sheet('items'), icon, POWER_ICON_P2.x, POWER_ICON_P2.y);
     if (d2.kind === 'hp' && d2.hudStyle === 'hearts') {

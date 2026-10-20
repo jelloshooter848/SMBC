@@ -56,6 +56,8 @@ export interface SwimProfile {
    * player is out of the water there). Absent: the hero's land values.
    */
   surface?: { gravity: number; fallMax: number } | undefined;
+  /** Classic SMBC: a dash jump's take-off under water (SlideProfile.jumpSpeed; Bass BA-15). */
+  slideJump?: number | undefined;
 }
 
 /**
@@ -86,6 +88,22 @@ export interface SlideProfile {
   jumpOut?: boolean | undefined;
   /** A slide carries the hero over one-tile gaps (Player.crossSmallGap, MM-C8); walking drops in. */
   crossGaps?: boolean | undefined;
+  /**
+   * With `jumpOut`, a jump out of the slide is allowed with Down still held (Classic Bass's dash
+   * jump, BA-11). Absent: Down must be up (MM-C9).
+   */
+  jumpWithDown?: true | undefined;
+  /**
+   * A jump out of the slide is a dash jump: this take-off speed (positive; on land; under water
+   * `SwimProfile.slideJump`) instead of the jump tier's, keeping the slide speed the way held
+   * (BA-11). Absent: a normal jump at walking speed (MM-C9).
+   */
+  jumpSpeed?: number | undefined;
+  /**
+   * After a dash jump, or a slide that runs off a ledge, the air speed is `speed` (a held direction
+   * sets vx = ±speed, none 0) until landing or an air jump (BA-11). Needs `airControl: 'full'`.
+   */
+  keepSpeedInAir?: true | undefined;
 }
 
 export interface MovementProfile {
@@ -199,6 +217,11 @@ export interface MovementProfile {
    * then a held direction walks as usual. Absent: none.
    */
   step?: { px: number; frames: number } | undefined;
+  /**
+   * A spring launch keeps the air jumps he had when he landed on it, instead of giving them back
+   * (Classic Bass BA-12: a spring landing is not a landing). Absent: a launch refills them.
+   */
+  springKeepsAirJumps?: true | undefined;
   /**
    * Classic SMBC Ryu's wall climb (RY-C10..RY-C16; Player.wall): he grabs a wall in the air while
    * pressing toward it, stays on with no input, climbs, throws, and leaves by the hop table. The

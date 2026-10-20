@@ -9,6 +9,7 @@ import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { drawRulesTag } from '../hud/rules-tag';
 import { rulesOf } from '../context';
 import { heroFor } from '../characters/registry';
+import { shownPortrait } from '../characters/character';
 
 /** The black "WORLD 1-1  × 3" card shown before a level, under the HUD row. */
 export class IntroScene implements Scene {
@@ -44,10 +45,10 @@ export class IntroScene implements Scene {
     if (place) r.text(font, place, (256 - place.length * 8) >> 1, 80);
     else
       r.text(font, `WORLD ${worldLabel(s.world)}-${shownStage(s.world, s.stage, s.campaignOrder)}`, 88, 80);
-    const c = s.character;
-    const sheet = assets.sheet(c.portrait.sheet, c.portrait.palette);
-    const f = sheet.frames.get(c.portrait.frame);
-    r.sprite(sheet, c.portrait.frame, 96, 112 - (f?.h ?? 16) + 16);
+    const c = shownPortrait(s.character);
+    const sheet = assets.sheet(c.sheet, c.palette);
+    const f = sheet.frames.get(c.frame);
+    r.sprite(sheet, c.frame, 96, 112 - (f?.h ?? 16) + 16);
     r.text(font, `×  ${s.lives}`, 120, 120);
     // The Classic rules tag, as the level will show it (TG-32).
     const rules = rulesOf(this.game.ctx);
