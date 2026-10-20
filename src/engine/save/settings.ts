@@ -295,11 +295,31 @@ export function loadSettings(): Settings {
   return s;
 }
 
+/**
+ * Slots older saves kept skin choices under that are now looks of another slot's hero: the choice
+ * moves to that hero (Proto Man's Break Man and Francesca's Doropie to Mega Man, Pit's Dark Pit to
+ * Samus), so the look is kept.
+ */
+const OLD_SKIN_SLOTS: Readonly<Record<string, string>> = {
+  protoman: 'megaman',
+  francesca: 'megaman',
+  pit: 'samus',
+};
+
 /** Settings.classicSkins as stored: its string entries (hero id to skin id), or undefined. */
 export function normaliseSkins(v: unknown): Record<string, string> | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
   const out: Record<string, string> = {};
   for (const [k, id] of Object.entries(v as Record<string, unknown>)) if (typeof id === 'string') out[k] = id;
+  for (const [old, host] of Object.entries(OLD_SKIN_SLOTS)) {
+    const id = out[old];
+    if (id === undefined) continue;
+    delete out[old];
+    // A real skin choice (not the old slot's own look) moves over, unless the host already wears
+    // a skin of its own choosing.
+    const held = out[host];
+    if (id !== old && (held === undefined || held === host)) out[host] = id;
+  }
   return Object.keys(out).length ? out : undefined;
 }
 

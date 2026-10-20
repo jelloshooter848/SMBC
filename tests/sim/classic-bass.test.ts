@@ -136,11 +136,9 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel).toBeInstanceOf(CharacterSelectScene);
-    expect(sel.firstRow).toBe(CHARACTERS.length);
-    expect(sel.chars[CHARACTERS.length]).toBe(BASS_CLASSIC);
-    // The original's grid: the usual heroes fill its first row, Bass starts the second.
-    expect(sel.slot(CHARACTERS.length).y).toBeGreaterThan(sel.slot(0).y);
-    expect(sel.slot(CHARACTERS.length).x).toBe(sel.slot(0).x);
+    // The original's grid: Bass is the seventh slot, on its second row (after Mega Man).
+    expect(sel.chars[6]).toBe(BASS_CLASSIC);
+    expect(sel.slot(6).y).toBeGreaterThan(sel.slot(0).y);
     expect(h.game.heroLocked(BASS_CLASSIC)).toBe(false);
     h.idle(12);
     // Classic mode's select says the hero, then its game (the original's name box).

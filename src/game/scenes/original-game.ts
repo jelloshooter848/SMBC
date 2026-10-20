@@ -13,6 +13,7 @@ import { CheatsScene } from './cheats-menu';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
+  EXPANSION_ROW,
   GAME_MODE_ROW,
   MORE_SETTINGS_ROWS,
   WEAPON_ROWS,
@@ -287,6 +288,7 @@ export class ClassicOptionsScene extends MenuScene {
         hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
       },
       optionItem(game, GAME_MODE_ROW, () => this.build()),
+      optionItem(game, EXPANSION_ROW, () => this.build()),
       {
         label: 'More settings',
         value: state(MORE_SETTINGS_ROWS),
