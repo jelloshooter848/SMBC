@@ -371,8 +371,9 @@ export const billSmbcDef: SpriteDef = {
   palette: 'bill',
   frames: {
     idle: body([torsoLevel, -7, -18], stand(-6)),
-    // The select screen's and the intro card's portrait: the stand, cropped.
-    portrait: trimmed(body([torsoLevel, -7, -18], stand(-6))),
+    // The select screen's and the intro card's portrait: standing with the rifle carried at the
+    // hip, cropped (17 wide, clear of the card's lives count).
+    portrait: trimmed(body([torsoCarry, -8, -18], stand(-6))),
     shoot: body([torsoLevel, -7, -17], stand(-6), [flash, 15.5, -24]),
     'aim-up': body([torsoUp, -6, -28], stand(-6)),
     'aim-diag-up': body([torsoDiagUp, -5, -19], stand(-6)),

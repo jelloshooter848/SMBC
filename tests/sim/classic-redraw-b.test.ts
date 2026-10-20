@@ -81,6 +81,8 @@ const RYU_SIZES: Size[] = [
   ['cling-throw', 21, 31],
   ['hurt', 16, 22],
   ['die', 16, 22],
+  ['climb-0', 15, 31], // climbPoleStart
+  ['climb-1', 15, 29], // climbPole-2
 ];
 const BILL_SIZES: Size[] = [
   ['idle', 23, 34], // torso normal 23x15 over legs stand 12x19
@@ -344,6 +346,19 @@ describe('the Classic heroes play on the new sheets', () => {
           }
     }
     expect([...new Set(bad)]).toEqual([]);
+    // On a vine or the flagpole each of them shows a climb pose of his own, two of them in turn.
+    for (const def of [MEGAMAN_CLASSIC, RYU_CLASSIC, BILL_CLASSIC]) {
+      for (const air of [false, true]) {
+        const r = new Rig(def, flatLevel(), 'classic', 'small');
+        r.settle();
+        const p = r.p as unknown as { anim: string };
+        p.anim = 'climb';
+        r.p.body.onGround = !air;
+        const seen = new Set<string>();
+        for (let f = 0; f < 32; f++) seen.add(def.sprite(r.p, f, false).frame);
+        expect([...seen].sort(), def.id).toEqual(['climb-0', 'climb-1']);
+      }
+    }
   });
 
   it('the select screen and the intro card show the Classic art, cropped to the stand', () => {
@@ -353,6 +368,8 @@ describe('the Classic heroes play on the new sheets', () => {
       const rows = frame(art?.sheet ?? '', art?.frame ?? '');
       const b = drawnBox(rows);
       expect([b.x, b.y, b.w, b.h]).toEqual([0, 0, rows[0]?.length, rows.length]);
+      // The intro card draws it at x 96 and the lives count at x 120: a gap of at least 1 px.
+      expect(b.w, def.id).toBeLessThanOrEqual(23);
     }
   });
 

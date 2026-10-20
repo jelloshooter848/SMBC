@@ -7,7 +7,7 @@ import { anchored, trimmed, type SmbcCanvas, type SmbcLayer } from './smbc-ancho
  * 1 suit, 2 suit shade and mask, 3 skin, 4 wraps and scarf, 5 blade). New art drawn by hand to the
  * measured per-frame sizes and feet anchors (RyuMc, NES px): stand 17x32, run 20-22x31 (four poses), fall
  * 17x31, flip 20x16 / 16x22, slash 18x31 then 26x29 with the 14x7 sword layer, crouch 17x24,
- * crouch slash 18x23 then 25x23, throw 26x29, wall cling 15x31 (throw 21x31), jump slash 22x23 /
+ * crouch slash 18x23 then 25x23, pole climb 15x31 / 15x29, throw 26x29, wall cling 15x31 (throw 21x31), jump slash 22x23 /
  * 24x25, hurt and die 16x22. Poses on the ground stand on the canvas's bottom edge.
  */
 
@@ -375,6 +375,48 @@ const hurtBody = [
   '.0220.......0220',
 ].map((r) => r.replace(' ', '2'));
 
+/* ---------- the pole and vine climb ---------- */
+
+// Side on to the vine or pole ahead of him: the front arm up gripping it, knees drawn up to it.
+const torsoPole = [
+  '..00000000110',
+  '.021111111110',
+  '.02011111100.',
+  '.0201111110..',
+  '.0202111110..',
+  '.0402111110..',
+  '.0404444440..',
+  '..02211110...',
+  '...0211110...',
+];
+// Reaching down (12 rows) and drawn up (10 rows), the boots braced on the vine.
+const legsPole0 = [
+  '....02111110...',
+  '....021111110..',
+  '.....000011110.',
+  '.........01110.',
+  '........02110..',
+  '.......0210....',
+  '.......0440....',
+  '.......0440....',
+  '.......04440...',
+  '........04440..',
+  '.........02220.',
+  '.........00000.',
+];
+const legsPole1 = [
+  '....02111110...',
+  '....0211111100.',
+  '.....000001110.',
+  '..........0440.',
+  '.........04440.',
+  '........04440..',
+  '.......04440...',
+  '.......0220....',
+  '.......02220...',
+  '.......00000...',
+];
+
 /* ---------- the sheet ---------- */
 
 const C = RYU_SMBC_CANVAS;
@@ -486,6 +528,29 @@ export const ryuSmbcDef: SpriteDef = {
     'cling-throw': at(
       ...pose(-7.5, -31, [scarfDown, 0, 9], [head, 2, 0], [torsoReach, -2, 10], [legsCling, 0, 19]),
       [['000000', '444220', '000000'], 7.5, -21],
+    ),
+    // Climbing a vine or the flagpole (climbPoleStart 15x31, climbPole-2 15x29), at 115 ms.
+    'climb-0': at(
+      ...pose(
+        -7.5,
+        -31,
+        [armUp, 10, 0],
+        [scarfDown, 0, 9],
+        [head, 2, 1],
+        [torsoPole, 0, 10],
+        [legsPole0, 0, 19],
+      ),
+    ),
+    'climb-1': at(
+      ...pose(
+        -7.5,
+        -29,
+        [armUp, 10, 0],
+        [scarfDown, 0, 9],
+        [head, 2, 1],
+        [torsoPole, 0, 10],
+        [legsPole1, 0, 19],
+      ),
     ),
     hurt: at([hurtBody, -7.5, -12], [headHurt, -5.5, -22]),
     die: at([hurtBody, -7.5, -12], [headHurt, -5.5, -22]),

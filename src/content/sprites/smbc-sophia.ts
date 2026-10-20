@@ -188,8 +188,9 @@ export const sophiaSmbcDef: SpriteDef = {
   palette: 'sophia',
   frames: {
     idle,
-    // The select screen's and the intro card's portrait: the tank, cropped.
-    portrait: trimmed(idle),
+    // The select screen's and the intro card's portrait: the tank three-quarter on, cropped (narrow
+    // enough to clear the card's lives count).
+    portrait: trimmed(tank([hullThreeQuarter, -7, -18], [wheel(1), -9, -8], [wheel(0), 1, -8])),
     'drive-0': idle,
     'drive-1': tankPose({ k: 1, bob: 1 }),
     'drive-2': tankPose({ k: 2 }),

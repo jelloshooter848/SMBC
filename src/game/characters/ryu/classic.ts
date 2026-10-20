@@ -428,6 +428,8 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   else if (p.scratch._jslash) name = `jslash-${(frame >> 1) & 3}`;
   else if ((p.scratch._throwT ?? 0) > 0) name = p.wall ? 'cling-throw' : 'throw';
   else if (p.wall) name = 'cling';
+  // On a vine or the flagpole: the pole climb (climbPoleStart / climbPole-2), 115 ms a pose.
+  else if (p.anim === 'climb') name = `climb-${Math.floor(frame / RYU_CLIMB_TICKS) & 1}`;
   else if (t > 0 && t <= LIVE_FROM && t >= LIVE_TO && p.powerState !== 'small') {
     // The Sword Extension's wave on the hit frames (RY-C25); Reduce flashing holds its shimmer.
     const shimmer = reduceFlashing ? 0 : (frame >> 1) & 1;
@@ -449,6 +451,9 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     ...canvasOffsets(RYU_SMBC_CANVAS, box.w, box.h),
   };
 }
+
+/** The pole climb's 115 ms per pose (ANIM_VERY_SLOW): 6.9 game frames. */
+const RYU_CLIMB_TICKS = 6.9;
 
 /** The idle's 130 ms per frame (ANIM_SLOWEST, Ryu.as): 7.8 game frames. */
 const RYU_BREATH_TICKS = 7.8;
