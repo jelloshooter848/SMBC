@@ -93,6 +93,7 @@ import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicMenuScene, recordClassicClear } from './original-game';
+import { applyRevivalBoost, Survival } from '../survival';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -180,6 +181,11 @@ export class Game {
    * it. Its rules are runRules (Classic mode: settings.classicRules; dev: the Rules row).
    */
   classicRun = false;
+  /**
+   * Classic mode's Survival (Options > Game mode): which heroes have fallen and whether the next
+   * select may revive (survival.ts). Null in every other run, the campaign's included.
+   */
+  survival: Survival | null = null;
   /**
    * The Classic run was started from developer mode (the dev Level select's Classic run, or
    * `?mode=classic`): it never records the Classic 8-4 clear, so it never opens the Lost Levels.
@@ -351,10 +357,14 @@ export class Game {
    * CampaignModes): 'select' shows the select screen, 'keep' goes on with the hero playing,
    * 'random' picks one (randomHero) with no select screen. `first` is the run's first choice.
    * All heroes (the default): always 'select'. Single hero: 'select' once, then 'keep'. Single
-   * random: always 'random'. Survival adds its mode and its branch here.
+   * random: always 'random'. Survival: always 'select' (ScreenManager.createLevel shows
+   * CharacterSelect in every mode but the two single ones), which opens in revive mode when
+   * revival is allowed (survival.ts).
    */
   classicHeroChoice(first: boolean): 'select' | 'keep' | 'random' {
     switch (this.deps.settings?.classic.gameMode ?? 'all') {
+      case 'survival':
+        return 'select';
       case 'single':
         return first ? 'select' : 'keep';
       case 'single-random':
@@ -368,8 +378,10 @@ export class Game {
    * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
    * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
    */
-  randomHero(): CharacterDef {
-    const heroes = this.roster.filter((c) => !this.heroLocked(c));
+  randomHero(among?: readonly CharacterDef[]): CharacterDef {
+    // Survival: never a fallen hero (CharacterSelectBox: only standing heroes are selectable);
+    // revive mode passes its own list (`among`).
+    const heroes = among ?? this.roster.filter((c) => !this.heroLocked(c) && !this.survival?.isFallen(c.id));
     return this.pickRng.pick(heroes.length ? heroes : this.roster);
   }
 
@@ -377,6 +389,58 @@ export class Game {
   private classicStartLives(): void {
     const lives = this.classicOptions?.lives;
     if (lives !== undefined) this.state.lives = lives;
+  }
+
+  /** Options > Game mode is Survival (read for a Classic run only). */
+  private get survivalMode(): boolean {
+    return this.deps.settings?.classic.gameMode === 'survival';
+  }
+
+  /** A new Survival for this run: every hero of its roster (not hidden or locked) fallen. */
+  private newSurvival(): Survival {
+    return new Survival(() => this.roster.filter((c) => !this.heroLocked(c)).map((c) => c.id));
+  }
+
+  /**
+   * The lives the pre-level card shows: the lives left, or 1 in Survival (InformativeBlackScreen:
+   * numLives = 1 when the campaign mode is SURVIVAL), where each hero has one life.
+   */
+  get cardLives(): number {
+    return this.survival ? 1 : this.state.lives;
+  }
+
+  /**
+   * A death in Survival (StatManager.playerDie): the playing hero falls and no life is lost.
+   * False (nothing done) in any other run, or with infinite lives, where the original plays the
+   * death as in any other mode.
+   */
+  survivalFall(): boolean {
+    if (!this.survival || this.deps.ctx.assist.infiniteLives) return false;
+    this.survival.fall(this.state.character.id);
+    return true;
+  }
+
+  /**
+   * Revive mode's OK on hero `c` (CharacterSelectBox.reviveCharacter): one life is paid
+   * (StatManager.loseLife; nothing with infinite lives), then a fallen hero stands again with
+   * nothing, and a standing one is strengthened (two power-ups and its ammo when it next plays).
+   */
+  reviveHero(c: CharacterDef): 'revived' | 'strengthened' {
+    const sv = this.survival;
+    if (!sv) return 'revived';
+    if (!this.deps.ctx.assist.infiniteLives) this.state.lives = Math.max(0, this.state.lives - 1);
+    return sv.revive(c.id);
+  }
+
+  /**
+   * Hero `c` stands and a revive can no longer strengthen it (StatManager.charIsFullyUpgraded under
+   * Classic power-ups: it has the Mushroom and the Fire Flower): a strengthening waits for it, or
+   * it is the hero playing and has the Fire Flower.
+   */
+  fullyUpgraded(c: CharacterDef): boolean {
+    if (this.survival?.isFallen(c.id)) return false;
+    if (this.survival?.boosted(c.id)) return true;
+    return c === this.state.character && this.state.powerState === 'fire';
   }
 
   /**
@@ -1063,9 +1127,12 @@ export class Game {
    * Keeping the hero keeps its power (a different one starts from its default); in co-op player
    * two picks next.
    */
-  warpToLevel(levelId: string, start: LevelStart): void {
+  warpToLevel(levelId: string, start: LevelStart, pipe = true): void {
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
+    // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
+    // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
+    if (pipe && this.survival) this.survival.reviveAllowed = true;
     // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
     if (this.classicRun) {
       const choice = this.classicHeroChoice(false);
@@ -1106,9 +1173,12 @@ export class Game {
    * 1951-1956, 3470-3486) loads the next LevelID through ScreenManager.loadNewLevel, which sets
    * newLev (581-588), and createLevel shows CharacterSelect for it (290-318). The pick is the
    * warp's (warpToLevel): the same hero keeps its power. Every other run goes straight on.
+   * `cleared` is the level just beaten: in Survival a castle allows revival
+   * (EventManager.beatLevel → StatManager.beatLevelHandler).
    */
-  levelExitTo(levelId: string): void {
-    if (this.classicRun && this.campaign === null) return this.warpToLevel(levelId, { mode: 'stand' });
+  levelExitTo(levelId: string, cleared?: { world: number; stage: number }): void {
+    if (cleared) this.survival?.levelCleared(cleared.world, cleared.stage);
+    if (this.classicRun && this.campaign === null) return this.warpToLevel(levelId, { mode: 'stand' }, false);
     this.goToLevel(levelId, { mode: 'stand' });
   }
 
@@ -1413,8 +1483,17 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
+    const paid = classic && this.survival ? this.state.lives : null;
     this.state = newGameState(character, character2, this.liveRules);
     if (classic) this.classicStartLives();
+    if (paid !== null) this.state.lives = paid;
+    else if (classic && this.survivalMode) {
+      // A dev Classic run in Survival has had no select: its hero starts standing.
+      this.survival = this.newSurvival();
+      this.survival.revive(character.id);
+      this.survival.reviveAllowed = false;
+    }
     this.playtestDone = null;
     this.quickRespawn = false;
     this.backupDue = null;
@@ -1427,6 +1506,7 @@ export class Game {
   private endClassicRun(): void {
     this.classicRun = false;
     this.classicDev = false;
+    this.survival = null;
   }
 
   /**
@@ -1462,6 +1542,15 @@ export class Game {
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // Game mode Single random: no select screen at all (CampaignModes.SINGLE_RANDOM).
     if (this.classicHeroChoice(true) === 'random') return this.classicGame(this.randomHero(), levelId);
+    // Survival: a new game (StatManager.startNewGameHandler): every hero fallen, revival allowed,
+    // and the starting lives to revive with, so the first select opens in revive mode.
+    this.survival = null;
+    if (this.survivalMode) {
+      this.classicRun = true;
+      this.state = newGameState(this.firstHero, null, this.liveRules);
+      this.classicStartLives();
+      this.survival = this.newSurvival();
+    }
     this.scenes.replace(
       new CharacterSelectScene(this, null, {
         begin: (c) => this.classicGame(c, levelId),
@@ -1663,7 +1752,15 @@ export class Game {
     } else if (run) run.entered(level.id, start, this.state);
     else boardAirship(this, level.id, start);
     this.clearToRoundBase();
-    this.scenes.push(this.levelScene(level, start));
+    const scene = this.levelScene(level, start);
+    // Survival: a hero strengthened at the select gets its power-ups and ammo as it starts.
+    const id = this.state.character.id;
+    if (this.survival?.takeBoost(id))
+      scene.afterFirstUpdate = () => {
+        const p = scene.world.players[0];
+        if (p) applyRevivalBoost(p, scene.world, id);
+      };
+    this.scenes.push(scene);
   }
 
   /**
@@ -1854,6 +1951,8 @@ export class Game {
     const old = this.state;
     this.state = newGameState(old.character, old.character2, this.liveRules);
     if (this.classicRun) this.classicStartLives();
+    // Survival (resetAllStats, continueAfterDyingHandler): every hero fallen again, revival allowed.
+    this.survival?.reset();
     this.state.warped = old.warped;
     const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
     if (id === null) {

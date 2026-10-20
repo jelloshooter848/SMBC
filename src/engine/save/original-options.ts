@@ -59,10 +59,11 @@ export type ClassicGoombas = (typeof CLASSIC_GOOMBAS)[number];
 /**
  * Game Mode (CampaignModes): All Characters (a pick before every level and life, the default),
  * Single Character (one pick for the whole run), Single Random (a random hero each level and
- * life, no select screen). Survival lands separately: it adds its id here and its branch in
- * Game.classicPickFlow (the one place the select flow is decided).
+ * life, no select screen), Survival (each hero one life, revived with lives: game/survival.ts).
+ * Game.classicHeroChoice is the one place the select flow is decided. Survival comes last so the
+ * other modes keep their places in the row (the original's menu lists it second).
  */
-export const CLASSIC_GAME_MODES = ['all', 'single', 'single-random'] as const;
+export const CLASSIC_GAME_MODES = ['all', 'single', 'single-random', 'survival'] as const;
 export type ClassicGameMode = (typeof CLASSIC_GAME_MODES)[number];
 
 /* ---------- Customize Weapons (CustomizeWeaponsMenu) ---------- */
