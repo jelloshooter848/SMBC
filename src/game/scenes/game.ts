@@ -160,10 +160,10 @@ function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Reco
   return out;
 }
 
-/** Orchestrates scenes and carries GameState between levels. */
-
 /** Classic mode's random hero draw's seed when play is repeatable (tests: no freshSeeds). */
 const RANDOM_PICK_SEED = 0x5eed1;
+
+/** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
   /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
@@ -391,10 +391,6 @@ export class Game {
   }
 
   /**
-   * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
-   * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
-   */
-  /**
    * Game mode Single random's pick, said with the next lives card ("Sophia III. World 1-1. 3
    * lives."), as no select screen names it. Cleared once said.
    */
@@ -407,6 +403,10 @@ export class Game {
     return c;
   }
 
+  /**
+   * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
+   * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
+   */
   randomHero(among?: readonly CharacterDef[]): CharacterDef {
     // Survival: never a fallen hero (CharacterSelectBox: only standing heroes are selectable);
     // revive mode passes its own list (`among`).
