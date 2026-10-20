@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode comes first: the title menu is now **Classic**, **Chapter 1**, Custom levels and
+  Options, with Classic highlighted. The story campaign is **Chapter 1**, coming in 1.0: its row
+  (and a resume link, `#save=`) shows a **CHAPTER 1 COMING SOON!** card, read out and closed with
+  OK, instead of the file select. Every save file, save code and resume link is kept as it is
+  (a resume link stays in the address for later), and developer mode opens Chapter 1 as before.
+- The title no longer shows "CHAPTER 1" under the logo, the PRE-RELEASE footer or the count of
+  freed heroes; every hero now stands on the title's ground in colour.
+- The release downloads are now `smbc-remix-vX.Y.Z.zip` and `smbc-remix-vX.Y.Z-offline.zip`.
+- The README, the download's README.txt, the roadmap and the release notes describe the new plan:
+  0.5.0 the Classic remake, 0.6 to 0.9 new heroes, 1.0 Chapter 1.
+
+### Fixed
+
+- Phones and tablets: the first tap on a text card's OK button no longer does nothing. The
+  touch buttons of a card, a story page, Toad's map pages, a tip that holds the game and the
+  Home Screen guide now appear only once the card takes a press (it ignores presses for its
+  first half second, so a press meant for the level can't skip it).
+
 ## [0.4.64] - 2026-10-20
 
 ### Added

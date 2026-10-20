@@ -15,9 +15,12 @@ anyone can find again.
 | A save-file or settings format change that needs a migration                                                                                          | minor: `0.MINOR.0`   | 0.2.0 → 0.3.0 |
 | Fixes, and changes players don't see: dev-mode tools, docs, build and release tooling, optional save fields that older saves load without a migration | patch: `0.x.PATCH`   | 0.2.0 → 0.2.1 |
 | A build for testers before a release                                                                                                                  | pre-release: `-rc.N` | 0.3.0-rc.1    |
-| The owner calls the game complete                                                                                                                     | `1.0.0`              |               |
+| Chapter 1, the story campaign, opens for everyone (docs/ROADMAP.md "The plan")                                                                        | `1.0.0`              |               |
 
-After 1.0.0 the usual SemVer rules apply (major for breaking changes such as dropping old saves).
+The plan (owner, 2026-10-20): **0.5.0** is the Classic remake, **0.6.0 to 0.9.x** add new heroes through the
+Expansion heroes option, and **1.0.0** opens Chapter 1. Until then the campaign shows "CHAPTER 1 COMING SOON!"
+outside dev mode (`Game.campaignOpen`, `src/game/scenes/chapter1-gate.ts`); its save files, codes and links are
+kept untouched. After 1.0.0 the usual SemVer rules apply (major for breaking changes such as dropping old saves).
 
 ## The changelog
 
@@ -66,19 +69,21 @@ pnpm -s release:check --tag v0.2.0 --notes
 4. The **Release** workflow (`.github/workflows/release.yml`) runs on the tag: it checks the tag
    against `package.json` and the changelog, runs lint, typecheck and tests, builds with
    `RELEASE_TAG`, deploys GitHub Pages, and creates (or updates) the GitHub Release with the
-   changelog section as notes and two zips attached: `smbc-vX.Y.Z.zip` (the site) and
-   `smbc-vX.Y.Z-offline.zip` (the download, below). If any check fails nothing is
+   changelog section as notes and two zips attached: `smbc-remix-vX.Y.Z.zip` (the site) and
+   `smbc-remix-vX.Y.Z-offline.zip` (the download, below). Releases before 0.5.0 named them
+   `smbc-vX.Y.Z.zip` and `smbc-vX.Y.Z-offline.zip`. If any check fails nothing is
    deployed: fix it on `main`, delete the tag (`git push --delete origin vX.Y.Z`,
    `git tag -d vX.Y.Z`) and tag again.
 
 Tags are public and permanent in practice: never move a tag that has been released; release a
 patch instead.
 
-The zip is the exact site that was deployed. It is built for the `/SMBC/` path, so serve it from
-a folder of that name (for example `mkdir SMBC && unzip smbc-v0.2.0.zip -d SMBC && npx serve .`
-then open `/SMBC/`).
+The zip is the exact site that was deployed. It is built for the repository's path (`/SMBC/`,
+`/SMBC-Remix/` after the rename), so serve it from a folder of that name (for example
+`mkdir SMBC-Remix && unzip smbc-remix-v0.5.0.zip -d SMBC-Remix && npx serve .` then open
+`/SMBC-Remix/`).
 
-### The download: `smbc-vX.Y.Z-offline.zip`
+### The download: `smbc-remix-vX.Y.Z-offline.zip`
 
 For players who want the game on their disk (PC, Mac or Linux): unzip, double-click
 `index.html`, and play offline with nothing to install and no server. Tested in Chrome; it
@@ -105,6 +110,37 @@ public site, `SITE_URL` in `src/engine/site.ts`, never on its file:// address.
 `tests/tools/offline.test.ts` builds it and checks it is one file with no outside script, style
 or link. Play-test it from disk before a release by opening `dist-offline/index.html` in a
 browser (no `pnpm preview`): the title, the save note, a level, and a reload keeping the save.
+
+### Renaming the repository (SMBC to SMBC-Remix, with 0.5.0)
+
+The owner renames the repository on GitHub (Settings → General → Repository name: `SMBC-Remix`).
+GitHub redirects the repository's own links (clones, issues, releases), but **not** its Pages
+site: `https://jelloshooter848.github.io/SMBC/` would stop working, and with it every shared
+link, resume link (`#save=`) and installed Home Screen app. So, right after the rename:
+
+1. **Redeploy the site** at its new address: Actions → Release → Run workflow with the newest tag
+   (the build takes `VITE_BASE` from the repository name, so it lands on `/SMBC-Remix/`).
+2. **Keep the old address working:** create a new public repository named `SMBC`, copy the
+   files of `tools/pages-redirect/` (`index.html`, `404.html`, `redirect.js`, `sw.js`) to its
+   root, and turn on Pages for it (Settings → Pages → Deploy from a branch, `main`, `/`). Every
+   address under `/SMBC/` then opens the game at `/SMBC-Remix/` with its query and hash
+   (`tests/tools/pages-redirect.test.ts`). Its `sw.js` retires the old address's service worker,
+   so an old install stops serving the old build and moves on too.
+3. **Point the links at the new address** in one pull request: `SITE_URL` in
+   `src/engine/site.ts` (links the download shares), the play link in `README.md`, the two links
+   at the bottom of `tools/offline/README.txt`, the release steps above, the CHANGELOG footers
+   (`compare/` links), and the tests that name the old address (`git grep -n
+"jelloshooter848.github.io/SMBC/\|jelloshooter848/SMBC"`). Until then they keep working through
+   the redirect.
+4. **Check it:** open an old resume link (`…/SMBC/#save=…`) and see the game ask LOAD THIS SAVE?
+   on the new address (in dev mode until Chapter 1 opens; otherwise its COMING SOON card); a save
+   made on the old address is still there (both addresses share the origin
+   `jelloshooter848.github.io`, and the browser keeps saves per origin).
+
+Installed apps: an Android or desktop install keeps the old address as its start page, so it now
+opens through the redirect (in a browser tab); installing again from the new address gives the
+app back. On iPhone the Home Screen app keeps its own saves: carry them over with Options → Save
+files → COPY CODE / PASTE CODE before installing it again.
 
 ### One-time setup: let tags deploy
 

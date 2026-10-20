@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Super Mario Bros. Crossover: REMIX has moved</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href="https://jelloshooter848.github.io/SMBC-Remix/" />
+    <!-- Without script: the new address (the hash cannot be carried this way). -->
+    <noscript
+      ><meta http-equiv="refresh" content="0; url=https://jelloshooter848.github.io/SMBC-Remix/"
+    /></noscript>
+    <script src="redirect.js"></script>
+    <style>
+      body {
+        background: #000;
+        color: #fcfcfc;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        margin: 0;
+        padding: 32px 16px;
+        text-align: center;
+      }
+      a {
+        color: #fcbcb0;
+      }
+    </style>
+  </head>
+  <body>
+    <p>SMBC REMIX has moved to a new address.</p>
+    <p><a id="go" href="https://jelloshooter848.github.io/SMBC-Remix/">Open the game</a></p>
+    <p>Your saves are kept.</p>
+    <script>
+      // The link carries the hash too (a resume link's save code), for a browser that stopped the jump.
+      var go = document.getElementById('go');
+      if (go && window.smbcRedirectTarget) go.href = window.smbcRedirectTarget(location.href);
+    </script>
+  </body>
+</html>
