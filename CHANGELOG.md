@@ -8,6 +8,10 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic Peach's last castle: Mario waits where the princess would, and greets her.
+
 ### Fixed
 
 - Classic Yoshi mount: enemies hit the rider and Yoshi on the pair's whole body, not on the
