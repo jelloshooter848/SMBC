@@ -180,12 +180,8 @@ export class PassphraseScene implements Scene {
     }
     this.checking = true;
     const entry = this.entry;
-    let ok = false;
-    try {
-      ok = await passphraseOpens(this.lock, entry);
-    } catch {
-      ok = false; // no WebCrypto (an insecure page): nothing opens
-    }
+    // No WebCrypto (an insecure page): nothing opens.
+    const ok = await passphraseOpens(this.lock, entry).catch(() => false);
     this.checking = false;
     if (this.game.scenes.top !== this) return;
     if (ok) {
