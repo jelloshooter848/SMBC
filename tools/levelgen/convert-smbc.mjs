@@ -316,15 +316,15 @@ const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Cl
  * Items no tile holds: the block is a coin brick, `?` block or hidden coin block (`E` / `?` /
  * `2`) and a `block-item` spawn puts the item in it (World.blockItems). The Hudson Bee (G-023;
  * Hard only, pickups/HudsonBee.as) in any block; Super Mario Bros. Special's Atom, Hammer and Wing
- * (G-022; ground/Brick.as 420-434), and its one Exploding Rabbit power-up (fullyPowerup: the
- * hero's top power, as the Top Secret Area's flower block gives it).
+ * (G-022; ground/Brick.as 420-434), and its one Exploding Rabbit power-up (`rabbit`;
+ * Character.fullyPowerup: the hero's top power at once).
  */
 const BLOCK_ITEMS = {
   HudsonBee: 'bee',
   Atom: 'atom',
   Hammer: 'hammer',
   Wing: 'wing',
-  ExplodingRabbit: 'flower',
+  ExplodingRabbit: 'rabbit',
 };
 /**
  * A Clock in a brick or hidden block (Special's Easy and Hard layers, a few Lost Levels ones):
@@ -367,8 +367,9 @@ const ENTITIES = {
   enemyWingedKoopaGreen: 'koopa-para-green',
   enemyWingedKoopaHorizontalGreen: 'koopa-para-green-h',
   bowserAxe: 'axe',
-  // Super Mario Bros. Special's enemies (G-021): Normal in Special, Hard in SMB1 and The Lost
-  // Levels (their HideOnDifficulties).
+  // Super Mario Bros. Special's enemies (G-021). Their HideOnDifficulties: in Special a few on
+  // Easy and Normal and most on Hard only (e.g. 37 Icicles on Normal, 155 on Hard); in SMB1 and
+  // The Lost Levels on Hard only.
   enemyIcicle: 'icicle',
   enemyCrab: 'crab',
   enemyFly: 'fly',
@@ -963,7 +964,10 @@ function convertArea(level, area, id, levels, profile) {
 
   // How the player arrives decides the start mode.
   const pipeExit = [...vertEnds.values()][0];
-  if (area.type === 'pipeBonus') {
+  // Special's bonus rooms are closed above (no ceiling gap to drop through, unlike SMB1's and The
+  // Lost Levels'): the hero starts at the room's playerStart (Level.as), and a pipe in comes out
+  // of its matching pipe end (linkAreas).
+  if (area.type === 'pipeBonus' && !SPECIAL) {
     header.start = `${start?.x ?? 1},0`;
     header.startMode = 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
@@ -1035,7 +1039,17 @@ function convertLevel(levelId, allLevels, profile = BASE) {
       }
       if (!t.vineStart) {
         // No vineStart there (Special 4-1 and 4-3): the original has no vine to climb on
-        // arrival (Level.as: vineToClimb is null), so the hero starts as the area starts.
+        // arrival (Level.as: vineToClimb is null), so the hero is put at the area's playerStart.
+        if (t.start) {
+          const below = tokensAt(t.area, t.start.x, t.start.y + 1).some((k) => {
+            const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
+            return ch && ch !== '$' && ch !== 'w';
+          });
+          // Standing there (ground under it), else dropping in down its column.
+          const exit = below ? 'stand' : 'fall';
+          c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${t.start.x} ${t.start.y} exit=${exit}`);
+          continue;
+        }
         const [sx, sy] = t.builder.header.start.split(',');
         const exit = { 'pipe-exit': 'up', fall: 'fall' }[t.builder.header.startMode] ?? 'none';
         c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${sx} ${sy} exit=${exit}`);
@@ -1066,14 +1080,23 @@ function convertLevel(levelId, allLevels, profile = BASE) {
         console.warn(`${c.id}: pipe at ${p.x},${p.y} to unknown area ${dest}`);
         continue;
       }
-      if (t.area.type === 'pipeBonus') {
+      if (t.area.type === 'pipeBonus' && !SPECIAL) {
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 1} 0 exit=none`);
       } else if (p.number !== undefined && t.vertEnds.has(String(p.number))) {
         const e = t.vertEnds.get(String(p.number));
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
       } else {
+        // Into a Special bonus room with no matching pipe end: at its playerStart, standing there
+        // (ground under it) or dropping in down its column (SMB1-style rooms' gap in the ceiling).
+        const ground =
+          t.start &&
+          tokensAt(t.area, t.start.x, t.start.y + 1).some((k) => {
+            const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
+            return ch && ch !== '$' && ch !== 'w';
+          });
+        const exit = SPECIAL && t.area.type === 'pipeBonus' ? (ground ? 'stand' : 'fall') : 'none';
         c.builder.zone(
-          `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=none`,
+          `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=${exit}`,
         );
       }
     }

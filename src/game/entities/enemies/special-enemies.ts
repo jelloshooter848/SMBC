@@ -7,8 +7,9 @@ import type { View } from '../entity';
 
 /*
  * Super Mario Bros. Special's enemies (G-021): Icicle, Crab, Fly, Barrel and FireEnemy
- * (com/smbc/enemies/*.as). Normal in the Special map set; on Hard in SMB1 and The Lost Levels
- * (their HideOnDifficulties layers). Their art is our own (content/sprites/special-enemies.ts).
+ * (com/smbc/enemies/*.as). The level data's HideOnDifficulties put a few of them on Easy and
+ * Normal in the Special map set and most on Hard only, and in SMB1 and The Lost Levels on Hard
+ * only (their layers). Their art is our own (content/sprites/special.ts).
  *
  * The original's speeds are Flash px/s at twice our scale: `flashVel` and `flashGrav` turn them
  * into our velocity units (1/4096 px per frame at 60 frames a second).

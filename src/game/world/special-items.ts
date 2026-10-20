@@ -5,7 +5,8 @@ import { overlaps } from '@engine/math/aabb';
 import { Enemy } from '../entities/enemies/enemy';
 import { Firebar } from '../entities/enemies/firebar';
 import { Podoboo } from '../entities/enemies/podoboo';
-import type { PowerUp } from '../entities/objects/powerup';
+import { isWorldItem, type PowerUp } from '../entities/objects/powerup';
+import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import type { Player } from '../entities/player';
 import type { World } from './world';
 
@@ -30,12 +31,13 @@ export const SPECIAL_ITEM_SAID = {
   atom: 'Atom: every enemy on screen is defeated.',
   hammer: 'Hammer: for ten seconds it swings over you and strikes any enemy it touches.',
   wing: 'Wing: for ten seconds you swim through the air.',
+  rabbit: 'Full power: you are powered up all the way.',
 } as const;
 
 export type SpecialItem = keyof typeof SPECIAL_ITEM_SAID;
 
 export function isSpecialItem(kind: string): kind is SpecialItem {
-  return kind === 'atom' || kind === 'hammer' || kind === 'wing';
+  return kind === 'atom' || kind === 'hammer' || kind === 'wing' || kind === 'rabbit';
 }
 
 /** Player `p` takes Special item `e` (Character.hitPickup's ATOM, HAMMER and WING cases). */
@@ -55,8 +57,39 @@ export function takeSpecialItem(world: World, p: Player, e: PowerUp & { item: Sp
     case 'wing':
       world.wingSwim(WING_FRAMES);
       break;
+    case 'rabbit':
+      fullPowerUp(world, p);
+      break;
   }
 }
+
+/**
+ * Character.fullyPowerup (the ExplodingRabbitPowerup, P_UP_SCORE_VAL): with Classic power-ups,
+ * the Mushroom if the hero lacks it, then the Fire Flower if he lacks it, both at once with no
+ * animation (hitRandomUpgrade(charNum, false)), through the hero's own power-up code. Under
+ * Current rules, the hero's own next two upgrades. Their own points and sounds are not played
+ * (the item's 1000 are).
+ */
+export function fullPowerUp(world: World, p: Player): void {
+  const quiet = Object.create(world, {
+    audio: { value: NULL_AUDIO },
+    addScore: { value: () => {} },
+    events: { value: [] },
+  }) as World;
+  for (let i = 0; i < FULL_POWER_STEPS; i++) {
+    const kind = world.rules === 'current' ? p.def.blockPowerUp(p) : 'flower';
+    if (isWorldItem(kind)) continue;
+    if (world.rules === 'current') quiet.powerUp(p, kind);
+    else p.def.behaviour.onPowerUp(p, kind, quiet);
+  }
+  if (p.transition) {
+    p.transition = null;
+    p.refitHitbox();
+  }
+}
+
+/** fullyPowerup's two steps: the Mushroom, then the Fire Flower. */
+export const FULL_POWER_STEPS = 2;
 
 /**
  * Level.killAllEnemiesOnScreen (the Atom): every enemy on screen is defeated, each scoring as if

@@ -46,7 +46,7 @@ decor-castle 233 12
 checkpoint 127 12
 exit 229 next=sp-7-4
 cheeps 15 149
-pipe 173 7 down -> sp-7-3-bonus 1 0 exit=none
+pipe 173 7 down -> sp-7-3-bonus 1 3 exit=fall
 
 [decor]
 tree-small 7 12

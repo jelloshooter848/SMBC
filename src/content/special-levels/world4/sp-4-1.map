@@ -46,7 +46,7 @@ decor-castle 232 12
 [zones]
 checkpoint 101 12
 exit 228 next=sp-4-2-start
-vine 66 5 -> sp-4-1-sky 2 10 exit=up
+vine 66 5 -> sp-4-1-sky 2 10 exit=stand
 
 [decor]
 cloud-2 11 3

@@ -45,7 +45,7 @@ decor-castle 265 12
 [zones]
 checkpoint 136 12
 exit 261 next=sp-1-2-start
-pipe 112 11 down -> sp-1-1-bonus 1 0 exit=none
+pipe 112 11 down -> sp-1-1-bonus 1 3 exit=fall
 
 [decor]
 hill-big 0 12

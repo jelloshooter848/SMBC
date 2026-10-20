@@ -12,10 +12,21 @@ import type { World } from '../../world/world';
  * Special, G-022; world/special-items.ts) stay on theirs too (all handled in World.collisions).
  */
 export type PowerUpKind =
-  'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock' | 'bee' | 'atom' | 'hammer' | 'wing';
+  | 'mushroom'
+  | '1up'
+  | 'flower'
+  | 'star'
+  | 'poison'
+  | 'clock'
+  | 'bee'
+  | 'atom'
+  | 'hammer'
+  | 'wing'
+  /** Special's one full power-up (the original's ExplodingRabbitPowerup: fullyPowerup). */
+  | 'rabbit';
 
 /** Items the World takes itself: never a hero's own power-up (CharacterBehaviour.onPowerUp). */
-export type WorldItem = 'poison' | 'clock' | 'bee' | 'atom' | 'hammer' | 'wing';
+export type WorldItem = 'poison' | 'clock' | 'bee' | 'atom' | 'hammer' | 'wing' | 'rabbit';
 /** A power-up a hero takes as its own. */
 export type HeroPowerUp = Exclude<PowerUpKind, WorldItem>;
 const WORLD_ITEMS: ReadonlySet<PowerUpKind> = new Set<WorldItem>([
@@ -25,13 +36,14 @@ const WORLD_ITEMS: ReadonlySet<PowerUpKind> = new Set<WorldItem>([
   'atom',
   'hammer',
   'wing',
+  'rabbit',
 ]);
 export function isWorldItem(kind: PowerUpKind): kind is WorldItem {
   return WORLD_ITEMS.has(kind);
 }
 
 /** Items that stay on their block once out (plain Pickups in the original: defyGrav, vy = 0). */
-const STAYS: ReadonlySet<PowerUpKind> = new Set(['flower', 'clock', 'bee', 'atom', 'hammer', 'wing']);
+const STAYS: ReadonlySet<PowerUpKind> = new Set(['flower', 'clock', 'bee', 'atom', 'hammer', 'wing', 'rabbit']);
 
 /** The kinds that are the original's Mushroom (red, ST_GREEN and ST_POISON), with its gBounceHit. */
 const MUSHROOMS: ReadonlySet<PowerUpKind> = new Set(['mushroom', '1up', 'poison']);
@@ -145,6 +157,8 @@ export class PowerUp extends Entity {
     // them on their first frame.
     const moderate = view.reduceFlashing ? 0 : Math.floor(view.frame / 4) & 1;
     if (this.item === 'atom') frame = `atom-${moderate}`;
+    // The full power-up: drawn as the Fire Flower (the original's art is its maker's logo).
+    if (this.item === 'rabbit') frame = `flower-${view.reduceFlashing ? 0 : (view.frame >> 3) & 1}`;
     if (this.item === 'wing') frame = `wing-${moderate}`;
     r.sprite(sheet, frame, this.screenX(view), this.screenY());
   }

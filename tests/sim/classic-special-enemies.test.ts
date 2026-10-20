@@ -15,6 +15,9 @@ import { CLASSIC_HP, armourOf, classicMaxHp, isArmoured } from '@game/rules/clas
 import { allHammerBros } from '@game/rules/classic-cheats';
 import { T } from '@game/level/tiles';
 import { HammerWeapon, SPECIAL_ITEM_SAID, WING_FRAMES, HAMMER_FRAMES } from '@game/world/special-items';
+import { WATER_MODE_TOP } from '@game/world/world';
+import { runSim } from '@game/sim/headless';
+import { SAMUS } from '@game/characters/samus';
 import type { EntitySpawn } from '@game/level/schema';
 import type { World } from '@game/world/world';
 import type { Renderer } from '@engine/gfx/renderer';
@@ -346,7 +349,8 @@ describe('G-022: the items', () => {
     p.body.x = w.player.body.x;
     p.body.y = w.player.body.y;
     step(w);
-    expect(w.waterTop).toBeLessThan(0);
+    // The swimming line two tiles below the top, as in the original's water levels.
+    expect(w.waterTop).toBe(WATER_MODE_TOP);
     expect(w.wingFrames).toBe(WING_FRAMES - 1);
     step(w, 30);
     expect(w.player.inWater).toBe(true);
@@ -369,5 +373,42 @@ describe('G-022: the items', () => {
     const atom = new PowerUp(3, 12, 'atom');
     expect(new Set([0, 4, 8, 12].map((f) => frames(false, atom, f)[0])).size).toBe(2);
     expect(new Set([0, 4, 8, 12].map((f) => frames(true, atom, f)[0])).size).toBe(1);
+  });
+
+  it('Wing: the hero cannot swim off the top of the screen (exitWater two tiles below it)', () => {
+    let minY = Infinity;
+    runSim({
+      level: testLevel(),
+      character: MARIO,
+      rules: 'classic',
+      script: { steps: [] },
+      maxFrames: 400,
+      // Stroke after stroke: JUMP pressed every 8 frames.
+      controller: (_w, f) => (f % 8 < 4 ? ['jump'] : []),
+      until: (w, f) => {
+        if (f === 0) w.wingSwim(WING_FRAMES);
+        minY = Math.min(minY, w.player.body.y);
+        return false;
+      },
+    });
+    expect(minY).toBeLessThan(px(12 * 16)); // it swam up
+    expect(minY).toBeGreaterThan(-px(16)); // but never off the top
+  });
+
+  it('the full power-up (fullyPowerup): small Mario and small Samus get their top power at once', () => {
+    for (const def of [MARIO, SAMUS]) {
+      const w = classicWorld(heroFor(def, 'classic'));
+      const p = w.player;
+      expect(p.powerState, def.id).toBe('small');
+      const it = new PowerUp(2, 12, 'rabbit');
+      w.spawn(it);
+      for (let i = 0; i < 40; i++) it.update(w);
+      it.body.x = p.body.x;
+      it.body.y = p.body.y;
+      step(w);
+      expect(it.alive).toBe(false);
+      expect(p.powerState, def.id).toBe('fire');
+      expect(w.events.some((e) => e.type === 'say' && e.text === SPECIAL_ITEM_SAID.rabbit)).toBe(true);
+    }
   });
 });

@@ -38,7 +38,7 @@ decor-castle-big 187 12
 checkpoint 116 12
 exit 185 next=sp-5-4
 cheeps 12 153
-pipe 176 12 down -> sp-5-3-bonus 1 0 exit=none
+pipe 176 12 down -> sp-5-3-bonus 1 3 exit=fall
 
 [decor]
 cloud-2 9 3

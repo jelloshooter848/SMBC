@@ -5,8 +5,8 @@ stage: 1
 theme: underground
 music: underground
 time: inherit
-start: 2,0
-startMode: fall
+start: 2,5
+startMode: pipe-exit
 camera: scroll
 parent: sp-7-1
 

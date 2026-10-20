@@ -182,9 +182,12 @@ describe('G-020: the Special set loads and every area converts', () => {
     expect(getLevel('sp-8-1').theme).toBe('mushroom');
   });
 
-  it('the vines to the coin heavens with no vine to climb arrive as those areas start (4-1, 4-3)', () => {
-    const vine = getLevel('sp-4-1').zones.find((z) => z.kind === 'vine');
-    expect(vine).toMatchObject({ target: { level: 'sp-4-1-sky', exitDir: 'up' } });
+  it('the vines to areas with no vine to climb arrive at their playerStart (Level.as; 4-1, 4-3)', () => {
+    const vine = (id: string) => getLevel(id).zones.find((z) => z.kind === 'vine');
+    expect(vine('sp-4-1')).toMatchObject({ target: { level: 'sp-4-1-sky', x: 2, y: 10, exitDir: 'stand' } });
+    expect(vine('sp-4-3')).toMatchObject({
+      target: { level: 'sp-4-3-bonus', x: 5, y: 12, exitDir: 'stand' },
+    });
   });
 
   it("Extra Checkpoints knows Special's locked halfway points", () => {

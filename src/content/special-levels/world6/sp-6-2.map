@@ -58,7 +58,7 @@ decor-castle 188 12
 [zones]
 checkpoint 85 12
 exit 184 next=sp-6-3
-pipe 17 10 down -> sp-6-2-bonus 1 0 exit=none
+pipe 17 10 down -> sp-6-2-bonus 1 3 exit=fall
 pipe 56 11 down -> sp-6-2-water 2 1 exit=none
 pipe 98 4 down -> sp-6-2-exit 1 2 exit=none
 pipe 174 5 down -> sp-6-2-water2 2 1 exit=none

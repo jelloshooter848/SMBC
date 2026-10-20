@@ -528,7 +528,7 @@ function parseZone(line: string): Zone {
         throw new Error('expected "vine x y -> level x y [exit=up|fall|none]"');
       const exit = parseProps(rest).exit;
       const target: Extract<Zone, { kind: 'vine' }>['target'] = { level, x: Number(tx), y: Number(ty) };
-      if (exit === 'up' || exit === 'fall' || exit === 'none') target.exitDir = exit;
+      if (exit === 'up' || exit === 'fall' || exit === 'stand' || exit === 'none') target.exitDir = exit;
       return { kind: 'vine', x: Number(xs), y: Number(ys), target };
     }
     case 'teleport': {

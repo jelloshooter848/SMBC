@@ -191,11 +191,11 @@
 + koopa-red 61 12
 + koopa-red 118 12
 + koopa-red 155 12
--zone pipe 27 4 down -> sp-7-1-bonus 2 0 exit=none
--zone pipe 103 9 down -> sp-7-1-bonus 2 0 exit=none
+-zone pipe 27 4 down -> sp-7-1-bonus 2 10 exit=up
+-zone pipe 103 9 down -> sp-7-1-bonus 2 5 exit=up
 -zone pipe 202 10 down -> sp-7-1 27 3 exit=up
 +zone cheeps 169 24
-+zone pipe 111 11 down -> sp-7-1-bonus 2 0 exit=none
++zone pipe 111 11 down -> sp-7-1-bonus 2 5 exit=up
 +zone pipe 202 13 down -> sp-7-1 113 8 exit=up
 
 [layer horz]

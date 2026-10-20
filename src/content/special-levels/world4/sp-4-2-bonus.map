@@ -5,7 +5,7 @@ stage: 2
 theme: underground
 music: underground
 time: inherit
-start: 1,0
+start: 1,3
 startMode: fall
 camera: scroll
 parent: sp-4-2
@@ -30,7 +30,7 @@ B..........BBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBBBBBB BBBBBBBBBBBB
 
 [entities]
 block-item 6 9 item=clock
-block-item 50 7 item=flower
+block-item 50 7 item=rabbit
 block-item 87 9 item=clock
 
 [zones]

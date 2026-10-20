@@ -32,6 +32,7 @@
 16 9 []
 -zone pipe 16 8 down -> sp-4-3 203 12 exit=up
 +zone pipe 16 9 down -> sp-4-3 203 12 exit=up
+start 2 8 pipe-exit
 
 [layer easy vert]
 8 8 .

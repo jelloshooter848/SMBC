@@ -39,7 +39,8 @@ under `## [Unreleased]`.
 - Classic mode: Special's **new enemies**, with our own art: Icicles that drop when you come near
   or bump their brick, Crabs that get angry and faster when hit, hopping Flies, rolling armoured
   Barrels and living Flames that only a Star or the Hammer can put out. None of them can be
-  stomped. They are on Normal in Special, and on Hard in Super Mario Bros. and The Lost Levels.
+  stomped. Special has a few of them on Easy and Normal and many more on Hard; Super Mario Bros.
+  and The Lost Levels have them on Hard only.
 - Classic mode: Special's **new items**, in blocks: the **Atom** defeats every enemy on screen, the
   **Hammer** swings over and in front of you for ten seconds and defeats any enemy it touches, and
   the **Wing** lets you swim through the air for ten seconds. Each is worth 1000 points and says

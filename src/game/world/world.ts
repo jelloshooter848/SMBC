@@ -416,8 +416,13 @@ const ENEMY_REMOVAL_PX = 6 * 16;
  */
 const BOUNCY_PIT_VY = 0x08555;
 const BOUNCY_PIT_CHEEP_VY = 0x04a00;
-/** Water Mode (Classic cheat): the swimming line above the top of any map. */
-const WATER_MODE_TOP = px(-1024);
+/**
+ * Water Mode (Classic cheat) and Special's Wing (Level.forceWaterLevel): the swimming line two
+ * tiles below the screen top, as in every water level of the original (Character: exitWater once
+ * `hTop <= GLOB_STG_TOP + TILE_SIZE*2`), so the hero cannot swim off the top of the screen. The
+ * same line our water maps get from their wave row 2 (row * 16 + 8).
+ */
+export const WATER_MODE_TOP = px(2 * 16 + 8);
 /**
  * The vine you arrive on in a sky area (Vine.growFromStgBot): it grows from the screen bottom
  * (GLOB_STG_BOT) until its top is 5 tiles up, at riseSpeed 60 Flash px/s (0.5 px a frame).
@@ -2460,7 +2465,7 @@ export class World {
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(
     target: { level: string; x: number; y: number },
-    mode: 'climb' | 'fall' | 'spin' | 'up' | 'none',
+    mode: 'climb' | 'fall' | 'spin' | 'up' | 'stand' | 'none',
     chain = false,
   ): void {
     if (this.leaving) return;
@@ -2889,6 +2894,7 @@ export class World {
         break;
       case 'bee':
       case 'atom':
+      case 'rabbit':
       case 'hammer':
       case 'wing':
         // The Hudson Bee rises out like any item (Brick.normalItemExitBrickStart, G-023), and

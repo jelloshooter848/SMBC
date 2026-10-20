@@ -331,7 +331,11 @@ export type PipeDir = 'down' | 'up' | 'left' | 'right';
  * beamed down by a teleport pad (`beam`), flipped through a trick wall's spinning panel
  * (`spin`), or placed.
  */
-export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam' | 'spin';
+/**
+ * How a transfer arrives. `stand`: on the target spot, standing (a Special vine into an area with
+ * no vine to climb arrives at its playerStart, G-020).
+ */
+export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam' | 'spin' | 'stand';
 
 export type Zone =
   | {
@@ -362,7 +366,7 @@ export type Zone =
        * no vine to climb on (Special 4-1 and 4-3's coin heavens: `up` out of a pipe, `fall`, or
        * `none` to stand); left out, he climbs up an arrival vine.
        */
-      target: { level: string; x: number; y: number; exitDir?: 'up' | 'fall' | 'none' };
+      target: { level: string; x: number; y: number; exitDir?: 'up' | 'fall' | 'stand' | 'none' };
     }
   /**
    * A teleport pad lying in tile (x, y) (on the floor of the tile below): a player who stands on
