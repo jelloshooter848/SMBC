@@ -177,16 +177,17 @@ describe('air states', () => {
     const r = rig(RYU_CLASSIC);
     const seen = record(r, 30, ['jump']);
     expect(seen.slice(0, 10)).toEqual([
-      'ryu:jump',
-      'ryu:jump',
-      'ryu:spin-1',
-      'ryu:spin-1',
-      'ryu:spin-2',
-      'ryu:spin-2',
-      'ryu:spin-3',
-      'ryu:spin-3',
-      'ryu:spin-0',
-      'ryu:spin-0',
+      // R1: all on his Classic sheet
+      'ryu-classic:jump',
+      'ryu-classic:jump',
+      'ryu-classic:spin-1',
+      'ryu-classic:spin-1',
+      'ryu-classic:spin-2',
+      'ryu-classic:spin-2',
+      'ryu-classic:spin-3',
+      'ryu-classic:spin-3',
+      'ryu-classic:spin-0',
+      'ryu-classic:spin-0',
     ]);
     expect(seen[23]).not.toBe('ryu-classic:fall');
     expect(seen[24]).toBe('ryu-classic:fall');
