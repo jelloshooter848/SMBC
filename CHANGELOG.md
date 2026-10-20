@@ -31,6 +31,32 @@ under `## [Unreleased]`.
   from Classic mode's options lists the Classic select's heroes as Classic mode plays them.
 - Classic mode's pause has the original's **Cheats** row: turn your unlocked cheats on or off mid-run;
   Invincible and the other assist-like cheats apply at once, and Water Mode floods the level at once.
+
+### Changed
+
+- Classic mode's Princess Peach is now the original's Luigi look: she plays exactly as Luigi (his moves, jump,
+  fireballs, springs and Bowser's hit points) with only her own look; her vegetables, float and riding are gone
+  from Classic. A run or save as Peach plays on as Luigi in her look.
+- Classic Pit and Dark Pit, Samus's looks, now play Samus's music set and her hurt, hit and item sounds.
+- Classic Pit and Dark Pit now die as Samus does (they are her looks in the original): her six-piece burst, in
+  their colours, and her death jingle.
+- Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
+  own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
+- Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
+  Controls screen asks for another (as the original does); a spare key of another action moves over.
+- Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
+  JUMP, ATTACK or START press (on touch, SKIP) now skips it. It is the one written exception to "text never moves on by itself"
+  (docs/ACCESSIBILITY.md).
+
+### Fixed
+
+- With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
+  rules) is held steady: the hero stays drawn, see-through, instead of blinking.
+
+## [0.4.65] - 2026-10-20
+
+### Added
+
 - Classic mode: **every map set is open from the start**. The CLASSIC menu offers Super Mario
   Bros. and The Lost Levels right away, and each line says whether that set has been beaten and
   on which difficulty. Old Classic SMB clears count as beaten on Normal.
@@ -79,19 +105,6 @@ under `## [Unreleased]`.
 
 ### Changed
 
-- Classic mode's Princess Peach is now the original's Luigi look: she plays exactly as Luigi (his moves, jump,
-  fireballs, springs and Bowser's hit points) with only her own look; her vegetables, float and riding are gone
-  from Classic. A run or save as Peach plays on as Luigi in her look.
-- Classic Pit and Dark Pit, Samus's looks, now play Samus's music set and her hurt, hit and item sounds.
-- Classic Pit and Dark Pit now die as Samus does (they are her looks in the original): her six-piece burst, in
-  their colours, and her death jingle.
-- Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
-  own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
-- Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
-  Controls screen asks for another (as the original does); a spare key of another action moves over.
-- Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
-  JUMP, ATTACK or START press (on touch, SKIP) now skips it. It is the one written exception to "text never moves on by itself"
-  (docs/ACCESSIBILITY.md).
 - Classic mode: **The Lost Levels run straight on from World 1 to World D**, as in the original.
   8-4 is an ordinary castle with Toad and goes on to World 9 whatever warps were used; 9-4 goes on
   to World A; D-4 says "YOUR QUEST IS OVER." and rolls the credits. The campaign and free play
@@ -154,11 +167,6 @@ under `## [Unreleased]`.
   first half second, so a press meant for the level can't skip it).
 - Phones and tablets: a thumb still held on a button when a card opens (JUMP, say) no longer
   skips the card when its OK appears under it; lift and tap again.
-
-### Fixed
-
-- With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
-  rules) is held steady: the hero stays drawn, see-through, instead of blinking.
 
 ## [0.4.64] - 2026-10-20
 
@@ -1701,7 +1709,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.65...HEAD
+[0.4.65]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...v0.4.65
 [0.4.64]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...v0.4.64
 [0.4.63]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...v0.4.63
 [0.4.62]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...v0.4.62
