@@ -238,3 +238,24 @@ describe('G-053 the small-crouch looks', () => {
     expect(hp(PEACH_CLASSIC)).toBe(hp(LUIGI_CLASSIC));
   });
 });
+
+describe('#179: looks ride Yoshi as their heroes', () => {
+  it("a look's mount Special is its hero's: Bass's looks fire his buster, Fire SMB3 Mario and Luigi throw fireballs", async () => {
+    const { mountSpecial } = await import('@game/characters/classic/yoshi-mount');
+    const { WILY_CLASSIC, SKULLMAN_CLASSIC } = await import('@game/characters/bass/classic-looks');
+    const at = (def: CharacterDef, power: string) => {
+      const p = world(def).player;
+      p.powerState = power;
+      return mountSpecial(def, p);
+    };
+    for (const d of [WILY_CLASSIC, SKULLMAN_CLASSIC, QUICKMAN_CLASSIC]) {
+      expect(at(d, 'small'), d.id).toBe(at(BASS_CLASSIC, 'small'));
+      expect(at(d, 'small'), d.id).toBe('attack');
+      expect(at(d, 'fire'), d.id).toBe('own');
+    }
+    for (const d of [MARIO3_CLASSIC, LUIGI3_CLASSIC]) {
+      expect(at(d, 'fire'), d.id).toBe('attack');
+      expect(at(d, 'small'), d.id).toBe('none');
+    }
+  });
+});
