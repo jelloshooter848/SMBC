@@ -12,7 +12,15 @@ import {
 } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
-import { CLASSIC_EXTRAS, heroFor, skinHost, skinsOf } from '../characters/registry';
+import {
+  CLASSIC_EXTRAS,
+  CLASSIC_SLOTS,
+  EXPANSION_HEROES,
+  heroFor,
+  isSkin,
+  skinHost,
+  skinsOf,
+} from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
@@ -230,6 +238,11 @@ export class Game {
    * select starts on it again. Reset with each Classic mode run.
    */
   pickedRandom = false;
+  /**
+   * The level the next select screen is for (Classic mode's select stands the hero on its ground):
+   * set by the new game's select, a warp's and a death's. Null: none known (the overworld's).
+   */
+  selectLevel: string | null = null;
   /** Classic mode's random hero picks (the Random slot, Single random): seeded per run. */
   private pickRng = new Rng(RANDOM_PICK_SEED);
 
@@ -440,24 +453,57 @@ export class Game {
   }
 
   /**
-   * The select screen's heroes (FU-8): the roster with every hero's other skins folded into its
-   * slot (registry CLASSIC_SKINS: Break Man into Proto Man's, Dark Pit into Pit's). A skin whose
-   * slot hero is not on the roster keeps a slot of its own.
+   * The select screen's slots: in a Classic-rules run, the original's eleven heroes in its order
+   * (registry CLASSIC_SLOTS), then, with Options > Expansion heroes on, the heroes the original
+   * never had; every other look is a skin on one of them. Any other run (the campaign, Current
+   * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
     const roster = this.roster;
-    const slots = roster.filter((c) => {
-      const host = skinHost(c);
-      return host === c || !roster.includes(host);
-    });
-    // Nothing folded (the campaign, Current rules): the roster itself.
-    return slots.length === roster.length ? roster : slots;
+    if (this.liveRules !== 'classic' || this.campaign !== null) return roster;
+    const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
+    const slots: CharacterDef[] = [];
+    for (const id of ids) {
+      const def = roster.find((c) => c.id === id && !isSkin(c));
+      if (def) slots.push(def);
+    }
+    // A hero the lists do not name (a test's stand-in extra) keeps a slot of its own, after them.
+    for (const c of roster)
+      if (!slots.includes(c) && !isSkin(c) && !ids.includes(c.id) && !EXPANSION_HEROES.includes(c.id))
+        slots.push(c);
+    return slots.length ? slots : roster;
+  }
+
+  /** Options > Expansion heroes is on (the heroes the original never had are offered). */
+  get expansionHeroes(): boolean {
+    return this.deps.settings?.classic.expansion === 'on';
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
   slotOf(c: CharacterDef): CharacterDef {
     const host = skinHost(c);
     return host !== c && this.roster.includes(host) ? host : c;
+  }
+
+  /**
+   * A hero from an old save or a run begun before the slots changed (a skin that had its own slot:
+   * Peach, Pit, Proto Man, the Mega Man variants): its slot's hero, with the skin remembered as
+   * that slot's look, so the run goes on looking and playing as it did. A hero with no slot now is
+   * swapped for the first slot's; any other hero is itself.
+   */
+  restoreSlotHero(c: CharacterDef): CharacterDef {
+    const host = this.slotOf(c);
+    // A hero the select does not offer now (an Expansion hero from a link or save while Options >
+    // Expansion heroes is off): the first slot's hero, Mario, in his chosen look, so Survival has a
+    // hero standing and the select shows who plays.
+    const slots = this.heroSlots;
+    if (!slots.includes(host)) {
+      const first = slots.find((d) => !this.heroLocked(d)) ?? slots[0];
+      return first ? this.skinFor(first) : c;
+    }
+    if (host === c) return c;
+    if (this.deps.settings && this.deps.settings.classicSkins?.[host.id] !== c.id) this.setSkin(host, c);
+    return c;
   }
 
   /** Slot hero `c` in its chosen look (Settings.classicSkins; its own when none is chosen). */
@@ -1285,6 +1331,7 @@ export class Game {
   warpToLevel(levelId: string, start: LevelStart, pipe = true): void {
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
+    this.selectLevel = levelId;
     // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
     // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
     if (pipe && this.survival) this.survival.reviveAllowed = true;
@@ -1777,6 +1824,9 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
+    // a hero the select does not offer now plays as its first slot's hero.
+    if (classic) character = this.restoreSlotHero(character);
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
     this.state = newGameState(character, character2, this.liveRules);
@@ -1854,6 +1904,7 @@ export class Game {
     this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     this.pickedRandom = false;
+    this.selectLevel = levelId;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // Game mode Single random: no select screen at all (CampaignModes.SINGLE_RANDOM).
     if (this.classicHeroChoice(true) === 'random') return this.classicGame(this.singleRandomHero(), levelId);
@@ -2153,6 +2204,7 @@ export class Game {
    * coins and the checkpoint are kept. Dev-mode starts respawn straight away.
    */
   respawn(levelId: string, start: LevelStart, player = 0): void {
+    this.selectLevel = levelId;
     if (this.quickRespawn) {
       this.goToLevel(levelId, start);
       return;

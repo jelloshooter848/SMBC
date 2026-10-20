@@ -318,6 +318,10 @@ describe('deaths and the end of the run', () => {
     expect(s.chars[s.cursor]).toBe(LUIGI);
     expect(h.said.at(-1)).toMatch(/ Standing: Luigi\.$/);
     expect(draw(s).texts.map((t) => t.str)).toContain('1 OF 9 HEROES STANDING');
+    // On the sky it is outlined (four outline strokes, the shadow and the text), as are the lives.
+    const texts = draw(s).texts.map((t) => t.str);
+    expect(texts.filter((t) => t === '1 OF 9 HEROES STANDING')).toHaveLength(6);
+    expect(texts.filter((t) => t.startsWith('×'))).toHaveLength(6);
   });
 
   it('the pre-level card shows one life (InformativeBlackScreen: numLives = 1 in Survival)', () => {

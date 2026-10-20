@@ -45,10 +45,21 @@ describe('G-010: each Classic def declares its level flags', () => {
   const defs = new Set<CharacterDef>([
     ...(Object.values(CLASSIC_CHARACTERS) as CharacterDef[]),
     ...CLASSIC_EXTRAS,
-    ...Object.values(CLASSIC_SKINS).flat(),
+    // A skin list starts with its slot's hero as the Current def (the World plays heroFor's).
+    ...Object.values(CLASSIC_SKINS)
+      .flat()
+      .map((d) => heroFor(d, 'classic')),
   ]);
   it('every Classic def (heroes, extras, looks) has levelFlags', () => {
     for (const d of defs) expect(d.levelFlags, d.id).toBeDefined();
+  });
+
+  it("every look has its host's flags in the original (MegaMan.as, Samus.as, Luigi's MarioBase)", () => {
+    const f = (d: CharacterDef) => layerFlags([heroFor(d, 'classic')]).sort();
+    const host = { megaman: ['badswimmer', 'horz'], samus: ['badswimmer', 'horz'], luigi: [] as string[] };
+    for (const [slot, list] of Object.entries(CLASSIC_SKINS))
+      for (const d of list)
+        if (slot in host) expect(f(d), `${slot}: ${d.id}`).toEqual(host[slot as keyof typeof host]);
   });
 
   it("the original's flags (Character.as and each hero's file)", () => {
