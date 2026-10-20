@@ -101,6 +101,7 @@ import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicMenuScene, recordClassicClear } from './original-game';
+import { heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
 export interface GameDeps {
@@ -355,6 +356,56 @@ export class Game {
       enumerable: true,
       configurable: true,
     });
+    // Classic mode's music sets (G-060): every song asked for goes through classicMusic, which
+    // leaves it alone outside a Classic mode run.
+    deps.ctx.audio.setMusicMap?.((id) => this.classicMusic(id));
+  }
+
+  /** Options > Music set's Random roll for each level scene (G-066): one per area, as it loads. */
+  private readonly musicRolls = new WeakMap<LevelScene, 'character' | 'map'>();
+
+  /**
+   * The song Classic mode plays for `id` (G-060, original-music.ts musicFor): the playing hero's
+   * set's, or the SMB set's, for the area being played. Unchanged outside a Classic mode run or
+   * with a campaign file open (the campaign's music is never touched).
+   */
+  classicMusic(id: string): string | null {
+    if (!this.classicRun || this.campaign !== null) return id;
+    const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const choice = this.deps.settings?.classic.musicSet ?? 'character';
+    let set: 'character' | 'map' = choice === 'map' ? 'map' : 'character';
+    if (choice === 'random') {
+      // MusicSets.RANDOM: Character or Map at random (GameSettings.getMusicSet), once per area.
+      const rolled = scene ? this.musicRolls.get(scene) : undefined;
+      set = rolled ?? (Math.random() < 0.5 ? 'map' : 'character');
+      if (scene && !rolled) this.musicRolls.set(scene, set);
+    }
+    return musicFor(id, {
+      hero: scene?.world.player.def.id ?? this.state.character.id,
+      level: scene?.level ?? null,
+      boss: scene?.bossMusic ?? false,
+      set,
+    });
+  }
+
+  /**
+   * A select screen opened (CharacterSelectScene.enter): Classic mode's has the SMB set's select
+   * music (G-061; the original's always comes from the map skin, SMB's here).
+   */
+  selectEntered(classic: boolean): void {
+    if (classic && this.campaign === null) this.deps.ctx.audio.playMusic(SMB_SET.select);
+  }
+
+  /**
+   * A select screen closed (CharacterSelectScene.exit): in Classic mode the chosen hero's choose
+   * jingle plays over the WORLD card (G-062; CharacterSelect.as 191); Proto Man whistles instead
+   * (his pick sound), so his set has none. Anywhere else nothing.
+   */
+  selectLeft(classic: boolean): void {
+    if (!classic || this.campaign !== null) return;
+    const song = setSong(heroSet(this.state.character.id), 'choose');
+    if (song) this.deps.ctx.audio.playJingle(song);
+    else this.deps.ctx.audio.stopMusic();
   }
 
   /**

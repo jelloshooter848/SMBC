@@ -86,6 +86,8 @@ describe('settings: Settings.classic', () => {
       piranhas: 'some',
       goombas: 'off',
       gameMode: 'all',
+      // 0.5.0 (G-066): Music set, the original's Character.
+      musicSet: 'character',
       weapons: {
         bass: 'water-shield',
         billFirst: 'mg',

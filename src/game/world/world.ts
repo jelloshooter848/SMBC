@@ -2627,8 +2627,11 @@ export class World {
     }
   }
 
-  /** Scroll-back camera: a live Bowser within 2 tiles of the screen (Level.as bowser.onScreen). */
-  private bowserOnScreen(): boolean {
+  /**
+   * Scroll-back camera, and Classic mode's boss music (LevelScene): a live Bowser within 2 tiles
+   * of the screen (Level.as bowser.onScreen).
+   */
+  bowserOnScreen(): boolean {
     for (const e of this.entities)
       if (
         e instanceof Bowser &&

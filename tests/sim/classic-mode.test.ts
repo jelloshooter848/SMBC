@@ -216,6 +216,8 @@ describe('the title and the CLASSIC menu', () => {
       'Game mode',
       'More settings',
       'Weapons',
+      // 0.5.0 (G-066).
+      'Music set',
       'Cheats',
       'All options',
       'Back',

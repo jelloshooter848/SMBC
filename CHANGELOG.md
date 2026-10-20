@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: **each hero's own music** (G-060), our own songs in the mood of the hero's game:
+  Link, Mega Man (and Bass and Proto Man), Samus, Simon, Ryu, Bill and Sophia III each have their
+  overworld, underground, water, castle, boss, coin heaven and more, reusing the campaign's hero
+  tunes plus new choose, level-clear and death pieces. A type a hero has no song for plays the
+  Super Mario Bros. one. The campaign's music is unchanged.
+- Classic options: **Music set** (Character, the original's default; Map: the Super Mario Bros.
+  music for everyone; Random: either one for each area) (G-066).
+- Classic mode: the select screen has its own music, and the chosen hero's jingle plays over the
+  WORLD card (Proto Man whistles instead) (G-061, G-062). The walk-in areas before x-2 play a short
+  transition tune and coin heaven the Star tune (G-063); Bowser coming on screen switches to the boss
+  tune, the final boss's in worlds 8 and D (G-064).
+
 ## [0.4.64] - 2026-10-20
 
 ### Added

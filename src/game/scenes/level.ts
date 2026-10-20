@@ -129,6 +129,11 @@ export class LevelScene implements Scene {
   readonly debug = new DebugOverlay();
   private lastDebugToggle = { f1: false, f2: false };
   private started = false;
+  /**
+   * Classic mode (G-064): Bowser has been on screen in this area, so its castle tune is now the
+   * boss's (Game.classicMusic). Set once; a new area starts without it.
+   */
+  bossMusic = false;
   /** This level was an arena round's stage and its exit ended the round (arena/stage-round.ts). */
   private roundOver = false;
   /** Back from scenes pushed over the level: the press that closed them must not jump. */
@@ -240,6 +245,18 @@ export class LevelScene implements Scene {
     this.game.ctx.audio.playMusic(music);
   }
 
+  /**
+   * Classic mode's boss trigger (G-064; Level.as 2799-2808): Bowser on screen switches the
+   * castle's music to the boss tune (the final boss's in worlds 8 and D), unless a Star's tune is
+   * playing (the boss tune follows when it ends). Never outside a Classic mode run.
+   */
+  private bossMusicCheck(): void {
+    if (this.bossMusic || !this.game.classicRun || this.game.campaign !== null) return;
+    if (!this.world.bowserOnScreen()) return;
+    this.bossMusic = true;
+    if (!this.world.players.some((p) => p.star > 0)) this.game.ctx.audio.playMusic(this.world.music);
+  }
+
   /** Play on after scenes pushed over the level (a captive's unlock flow): music back on. */
   resume(): void {
     this.game.ctx.audio.stopMusic();
@@ -294,6 +311,7 @@ export class LevelScene implements Scene {
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     this.world.update(inputs);
+    this.bossMusicCheck();
     if (this.afterFirstUpdate) {
       const f = this.afterFirstUpdate;
       this.afterFirstUpdate = null;

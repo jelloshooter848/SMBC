@@ -537,6 +537,7 @@ export class CharacterSelectScene implements Scene {
   }
 
   exit(): void {
+    this.game.selectLeft(this.hasRandom);
     this.unbindPointer?.();
     this.unbindPointer = null;
   }
@@ -614,6 +615,7 @@ export class CharacterSelectScene implements Scene {
   }
 
   enter(): void {
+    this.game.selectEntered(this.hasRandom);
     this.bindPointer();
     const news = this.takeCheatNews();
     const pick = this.pick;

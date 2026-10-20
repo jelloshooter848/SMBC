@@ -66,6 +66,10 @@ const NAMES: Record<string, string> = {
   single: 'Single hero',
   'single-random': 'Single random',
   survival: 'Survival',
+  // Music set
+  character: 'Character',
+  map: 'Map',
+  random: 'Random',
   // Weapons (the original's names)
   'super-arm': 'Super Arm',
   'metal-blade': 'Metal Blade',
@@ -164,6 +168,16 @@ export const GAME_MODE_ROW = row(
   'Game mode',
   'All heroes: choose before every level and life. Survival: each hero has one life; spend lives to revive heroes at the start and after each castle. Single hero: choose once. Single random: the game picks your hero every level and life',
   (v) => GAME_MODE_NAMES[v] ?? v,
+) as AnyRow;
+
+/**
+ * The Music set row (SoundOptions.as MUSIC_SET; G-066): whose music plays. Classic mode only, under
+ * either rules.
+ */
+export const MUSIC_SET_ROW = row(
+  'musicSet',
+  'Music set',
+  "Character: each hero's own music. Map: the Super Mario Bros. music for everyone. Random: either one, picked for each area",
 ) as AnyRow;
 
 function weaponRow<K extends keyof ClassicWeapons>(key: K, label: string, hint: string): OptionRow<string> {
