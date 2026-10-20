@@ -23,6 +23,7 @@ import {
 import { BILL } from './index';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
 import { BillShot, billShotsOut, CLASSIC_GUNS, clearBillShots, type ClassicGunId } from './classic-weapons';
+import { weaponOf } from '../classic/options';
 
 /**
  * Classic SMBC Bill (bug-reports/2026-10-07-bill-classic-smbc-rules.md, BI-C1..BI-C32): the
@@ -72,14 +73,17 @@ const MG_BURST = 6;
 /* ---------- weapons by state (BI-C1, BI-C2) ---------- */
 
 const fullKit = (p: Player): boolean => !!p.scratch.classicAll;
+/** Customize Weapons > Bill gun 1 and gun 2 (FU-7c): CLASSIC_FIRST_GUN and CLASSIC_SECOND_GUN by default. */
+const firstGun = (p: Player): ClassicBillWeapon => weaponOf(p, 'billFirst');
+const secondGun = (p: Player): ClassicBillWeapon => weaponOf(p, 'billSecond');
 
 /** The gun Attack fires now. */
 export function attackGun(p: Player): ClassicGunId {
   if (p.powerState === 'fire') {
     if (fullKit(p)) return CLASSIC_KIT_CYCLE[toolIndex(p, kitTools(p))] ?? CLASSIC_SECOND_GUN;
-    return p.scratch.swap ? CLASSIC_FIRST_GUN : CLASSIC_SECOND_GUN;
+    return p.scratch.swap ? firstGun(p) : secondGun(p);
   }
-  if (p.powerState === 'big') return CLASSIC_FIRST_GUN;
+  if (p.powerState === 'big') return firstGun(p);
   return 'rifle';
 }
 
@@ -87,7 +91,7 @@ export function attackGun(p: Player): ClassicGunId {
 export function specialGun(p: Player): ClassicGunId | null {
   if (p.powerState !== 'fire') return null;
   if (fullKit(p)) return 'mg';
-  return p.scratch.swap ? CLASSIC_SECOND_GUN : CLASSIC_FIRST_GUN;
+  return p.scratch.swap ? secondGun(p) : firstGun(p);
 }
 
 /** The dev full kit's belt (TG-44): only while it is carried and Bill has the Flower. */

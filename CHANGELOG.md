@@ -17,6 +17,10 @@ under `## [Unreleased]`.
 - Classic mode: a Random slot (?) at the end of the select screen, and Options > Game mode:
   All heroes (choose before every level and life, as before), Single hero (choose once) or
   Single random (the game picks a hero for every level and life).
+- Classic mode Options > Weapons (Customize Weapons, as in the original): each hero's power-up
+  weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
+  extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
+  choice; the original's weapons are the default.
 
 ## [0.4.60] - 2026-10-20
 

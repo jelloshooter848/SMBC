@@ -26,6 +26,7 @@ import {
   HOMING_DROP,
   HOMING_MAX,
   HOMING_REPEAT,
+  HOMING_START,
   HOVER_CELLS,
   HURT_INVULN,
   HURT_PUSH_SLOW,
@@ -41,6 +42,7 @@ import {
 } from './profile';
 import { FLOOR, SOUNDS, sophiaState, type SophiaState } from './state';
 import { CannonShot, HomingMissile, nearestHomingTarget, SOPHIA_SHEET, TripleMissile } from './weapons';
+import { weaponOf } from '../classic/options';
 import { CANNON_CLASSIC, HOMING_CLASSIC, TRIPLE_CLASSIC } from './classic-weapons';
 import { SOPHIA_CLASSIC_GUIDE } from './classic-guide';
 import { sophiaCameraX } from './classic-camera';
@@ -120,6 +122,13 @@ const KIT: ClassicPowerKit = {
   },
   gainFire(p) {
     if (p.scratch.hasTriple || p.scratch.hasHoming) return;
+    // Customize Weapons > Sophia (FU-7c): the Triple Missile (the original's default) or the
+    // Homing Missile; her ammo, drops and HUD follow the missile she owns (selectedMissile).
+    if (weaponOf(p, 'sophia') === 'homing') {
+      p.scratch.hasHoming = 1;
+      p.scratch.homing = Math.max(p.scratch.homing ?? 0, HOMING_START);
+      return;
+    }
     p.scratch.hasTriple = 1;
     p.scratch.triple = Math.max(p.scratch.triple ?? 0, TRIPLE_START);
   },

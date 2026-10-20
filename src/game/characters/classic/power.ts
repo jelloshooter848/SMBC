@@ -179,10 +179,12 @@ export const CLASSIC_HIT_RESPONSES: Readonly<Record<string, ClassicHitResponse>>
 
 /** An ammo counter with its cap (a number, or one that depends on the kit). */
 export interface ClassicAmmo {
-  key: string;
+  /** The counter's scratch key, or the key for this player (a Customize Weapons choice). */
+  key: string | ((p: Player) => string);
   max: number | ((p: Player) => number);
 }
 const maxOf = (a: ClassicAmmo, p: Player) => (typeof a.max === 'number' ? a.max : a.max(p));
+const keyOf = (a: ClassicAmmo, p: Player) => (typeof a.key === 'string' ? a.key : a.key(p));
 
 /**
  * One hero's power-state row (PS-C5, PS-C6, PS-C8). Upgrades that come and go with the state are
@@ -202,7 +204,7 @@ export interface ClassicPowerKit {
   /** A hit took the Mushroom (always, Lose Everything). Ammo counts stay. */
   loseBig?(p: Player, world: World): void;
   /** The repeat Fire Flower bonus (PS-C6), capped at the ammo's maximum. Absent: points only. */
-  repeat?: ClassicAmmo & { add: number };
+  repeat?: ClassicAmmo & { add: number | ((p: Player) => number) };
 }
 
 /**
@@ -232,7 +234,9 @@ export function classicOnPowerUp(
         else kit.gainBig?.(p, world);
       } else if (kit.repeat) {
         const r = kit.repeat;
-        p.scratch[r.key] = Math.min((p.scratch[r.key] ?? 0) + r.add, maxOf(r, p));
+        const k = keyOf(r, p);
+        const add = typeof r.add === 'number' ? r.add : r.add(p);
+        p.scratch[k] = Math.min((p.scratch[k] ?? 0) + add, maxOf(r, p));
       }
       break;
     }
@@ -417,6 +421,8 @@ export const CLASSIC_PICKUP_GIVES: Partial<Record<PickupKind, number>> = {
   'weapon-large': 40,
   'ninpo-small': 5,
   'ninpo-large': 10,
+  // Link's arrows with the Bow (ARROW_AMMO_VALUE).
+  'arrow-pack': 2,
 };
 
 /**
@@ -432,7 +438,10 @@ export function classicPickup(
 ): true {
   const a = ammo[kind];
   const add = CLASSIC_PICKUP_GIVES[kind];
-  if (a && add !== undefined) p.scratch[a.key] = Math.min((p.scratch[a.key] ?? 0) + add, maxOf(a, p));
+  if (a && add !== undefined) {
+    const k = keyOf(a, p);
+    p.scratch[k] = Math.min((p.scratch[k] ?? 0) + add, maxOf(a, p));
+  }
   world.audio.sfx('pickup');
   return true;
 }
