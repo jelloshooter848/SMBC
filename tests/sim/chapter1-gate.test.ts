@@ -141,7 +141,7 @@ describe('G-100: Chapter 1 shows "COMING SOON!" outside dev mode', () => {
     expect(card).toBeInstanceOf(CardScene);
     expect((card as CardScene).lines).toEqual(CHAPTER1_GATE_CARD);
     expect(h.said.at(-1)).toBe(
-      'CHAPTER 1 COMING SOON! PLAY CLASSIC IN THE MEANTIME YOUR SAVE FILES ARE KEPT. OK to continue.',
+      'CHAPTER 1 COMING SOON! PLAY CLASSIC FOR NOW. YOUR SAVE FILES ARE KEPT. OK to continue.',
     );
     expect(h.sfx).toHaveBeenCalledWith('bump');
     const text = drawn(h);

@@ -16,7 +16,7 @@ export const CHAPTER1_GATE_CARD: readonly string[] = [
   'CHAPTER 1',
   'COMING SOON!',
   '',
-  'PLAY CLASSIC IN THE MEANTIME',
+  'PLAY CLASSIC FOR NOW.',
   'YOUR SAVE FILES ARE KEPT.',
 ];
 
