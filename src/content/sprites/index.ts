@@ -9,7 +9,9 @@ import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
+import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
+import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { simonPalettes, simonDef } from './simon';
 import { simonFlameDef } from './simon-flame';
 import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
@@ -101,8 +103,14 @@ export const SPRITES: Record<string, SpriteDef> = {
   megaman: megamanDef,
   // Classic SMBC's Bass (characters/bass/classic.ts).
   bass: bassDef,
+  // Classic SMBC's Proto Man and Break Man (characters/protoman/classic.ts).
+  protoman: protomanDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
+  pit: pitDef,
+  'pit-shots': pitShotsDef,
+  'darkpit-shots': darkpitShotsDef,
   // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
   warriors: warriorsDef,
   'warriors-fx': warriorsFxDef,
@@ -189,7 +197,10 @@ const defaults: Record<string, readonly string[]> = {
   ...linkPalettes,
   ...megamanPalettes,
   ...bassPalettes,
+  ...protomanPalettes,
   ...samusPalettes,
+  ...pitPalettes,
+  ...pitShotPalettes,
   ...warriorsPalettes,
   ...simonPalettes,
   ...ryuPalettes,
@@ -275,6 +286,8 @@ for (let i = 0; i < 4; i++) {
   fallback(`protoman-star-${i}`, `megaman-star-${i}`);
   fallback(`breakman-star-${i}`, `megaman-star-${i}`);
 }
+// Their own sheet asks for `<sheet>-rush` with Rush out (megaman/classic.ts): Mega Man's.
+fallback('protoman-rush', 'megaman-rush');
 fallback('mario-fire', 'mario');
 fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');

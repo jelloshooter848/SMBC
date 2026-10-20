@@ -14,19 +14,25 @@ import { flipH } from '@engine/gfx/pixelart';
  *   0 outline   1 light armour (suit)   2 dark armour (helmet, gloves, boots)   3 skin   4 white
  *   5 fins, gem and muzzle glow
  */
+/**
+ * His face: a pale tan, apart from the helmet's orange at 1x (NES.skin, #fca044, all but matched
+ * it).
+ */
+const BASS_SKIN = NES.tan;
+
 export const bassPalettes: Record<string, string[]> = {
-  bass: [NES.black, NES.darkGray, NES.orange, NES.skin, NES.white, NES.yellow],
+  bass: [NES.black, NES.darkGray, NES.orange, BASS_SKIN, NES.white, NES.yellow],
   // The Water Shield suit, worn while he holds the Flower (BA-33).
-  'bass-water': [NES.black, NES.skyLight, NES.blueMid, NES.skin, NES.white, NES.white],
+  'bass-water': [NES.black, NES.skyLight, NES.blueMid, BASS_SKIN, NES.white, NES.white],
   // The full kit's Magma Bazooka charge (dev only): the suit brightens toward gold.
-  'bass-charge-0': [NES.black, NES.darkGray, NES.orange, NES.skin, NES.white, NES.cyan],
-  'bass-charge-1': [NES.black, NES.gray, NES.yellow, NES.skin, NES.white, NES.white],
-  'bass-charge-2': [NES.black, NES.yellowLight, NES.yellow, NES.skin, NES.white, NES.white],
+  'bass-charge-0': [NES.black, NES.darkGray, NES.orange, BASS_SKIN, NES.white, NES.cyan],
+  'bass-charge-1': [NES.black, NES.gray, NES.yellow, BASS_SKIN, NES.white, NES.white],
+  'bass-charge-2': [NES.black, NES.yellowLight, NES.yellow, BASS_SKIN, NES.white, NES.white],
   // Star power (BA-33): the same cycle as Mega Man's rows.
   'bass-star-0': [NES.black, NES.yellow, NES.orange, NES.white, NES.white, NES.yellowLight],
-  'bass-star-1': [NES.black, NES.pink, NES.magenta, NES.skin, NES.white, NES.cyan],
+  'bass-star-1': [NES.black, NES.pink, NES.magenta, BASS_SKIN, NES.white, NES.cyan],
   'bass-star-2': [NES.black, NES.greenLight, NES.green, NES.yellowLight, NES.white, NES.white],
-  'bass-star-3': [NES.black, NES.white, NES.lightGray, NES.skin, NES.white, NES.yellow],
+  'bass-star-3': [NES.black, NES.white, NES.lightGray, BASS_SKIN, NES.white, NES.yellow],
 };
 
 /* ---------- composition ---------- */

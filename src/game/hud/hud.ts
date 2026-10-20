@@ -70,6 +70,11 @@ export function powerIcon(p: Player | undefined): 'icon-mushroom' | 'icon-flower
 /** Where the carried key's icon goes (8x8, hud/hud.ts): player 1's, then player 2's. */
 export const KEY_ICON_P1 = { x: 132, y: 24 } as const;
 export const KEY_ICON_P2 = { x: 196, y: 24 } as const;
+/**
+ * Player 2's key after a seven-letter name at 144 (Classic Warriors of Light's WARRIOR, whose R ends
+ * at x 199), so its last letter shows. Every shorter name keeps KEY_ICON_P2.
+ */
+export const KEY_ICON_P2_LONG = { x: 204, y: 24 } as const;
 
 /** TIME's x when the WORLD column holds a place's name on two rows (BOWSER'S CASTLE). */
 export const TIME_X_PLACE = 216;
@@ -154,7 +159,8 @@ export function drawHud(
   }
   drawHeroStats(r, assets, state, players, text);
   if (opts.keyHolder === 0 || opts.keyHolder === 1) {
-    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : KEY_ICON_P2;
+    const long = (players[1]?.def.hudName.slice(0, 7).length ?? 0) >= 7;
+    const at = opts.keyHolder === 0 ? KEY_ICON_P1 : long ? KEY_ICON_P2_LONG : KEY_ICON_P2;
     r.sprite(assets.sheet('keys'), 'key-icon', at.x, at.y);
   }
   // Blink the timer label when low.
@@ -222,7 +228,8 @@ export function drawHeroStats(
   }
   // A Gradius-style power bar (CharacterDef.powerBar: Vic Viper, VV-20), after the power icon.
   const bar = player ? def.powerBar?.(player) : null;
-  if (bar) drawPowerBar(r, bar, text);
+  // The lit slot's name only while player two's HUD is not shown: theirs takes that place.
+  if (bar) drawPowerBar(r, bar, text, !(players[1] && state.character2));
   // Tool belt (icon + ammo) under the coin counter and a secondary meter under the hearts.
   if (player) {
     const tools = def.tools?.(player);
@@ -271,9 +278,10 @@ export function drawHeroStats(
 
 /**
  * Where the power bar's cells start (third HUD row, after the power icon), and the lit slot's name
- * (after the bar on the same row; seven letters end at x 196, where the rules tag's row starts).
+ * (after the bar on the same row; six letters at most, ending at x 187, 8 px clear of the rules
+ * tag's outline at 195).
  */
-export const POWER_BAR = { x: 34, y: 24, cellW: 17, cellH: 8, nameX: 140, nameY: 24 } as const;
+export const POWER_BAR = { x: 34, y: 24, cellW: 17, cellH: 8, nameX: 139, nameY: 24 } as const;
 
 /**
  * The power bar (VV-20): one 16 x 8 cell a slot (1 px apart), its short label in it (blank once maxed), the
@@ -283,6 +291,7 @@ function drawPowerBar(
   r: Renderer,
   bar: NonNullable<ReturnType<NonNullable<Player['def']['powerBar']>>>,
   text: (str: string, x: number, y: number) => void,
+  showName: boolean,
 ): void {
   const { x, y, cellW, cellH, nameX, nameY } = POWER_BAR;
   bar.slots.forEach((s, i) => {
@@ -291,7 +300,7 @@ function drawPowerBar(
     r.rect(cx, y, cellW - 1, cellH, lit ? '#e45c10' : '#0000bc');
     if (s.available) text(s.label, cx + (s.label.length === 1 ? 5 : 1), y);
   });
-  if (bar.selected > 0 && bar.name) text(bar.name, nameX, nameY);
+  if (showName && bar.selected > 0 && bar.name) text(bar.name, nameX, nameY);
 }
 
 /** Player two: name under WORLD, hearts or a short bar at the right edge (`text`: the caller's). */

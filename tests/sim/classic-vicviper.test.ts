@@ -585,7 +585,7 @@ describe('the power bar (VV-20, VV-21, VV-M1, VV-M2)', () => {
     );
     const cells = rects.filter((c) => c.y === POWER_BAR.y);
     expect(cells.map((c) => c.x)).toEqual([0, 1, 2, 3, 4, 5].map((i) => POWER_BAR.x + i * POWER_BAR.cellW));
-    expect(words.some((w) => w.s === 'MISSILE' && w.x === POWER_BAR.nameX)).toBe(true);
+    expect(words.some((w) => w.s === 'MISSL' && w.x === POWER_BAR.nameX)).toBe(true);
     for (const s of VIC_BAR) expect(fontText(s.name)).toBe(s.name);
   });
 

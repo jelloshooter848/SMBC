@@ -1,7 +1,7 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
-import type { CharacterDef } from '../characters/character';
+import { shownPortrait, type CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
@@ -118,11 +118,11 @@ export class CharacterSelectScene implements Scene {
    * (CharacterDef.portraitFor: the Warriors of Light's remembered class), else `portrait`.
    */
   private portraitOf(c: CharacterDef): CharacterDef['portrait'] {
-    if (!c.portraitFor) return c.portrait;
+    if (!c.portraitFor) return shownPortrait(c);
     const s = this.game.state;
     const second = this.pick?.player === 1 && s.character2 !== null;
     const mine = second ? s.character2 : s.character;
-    return mine === c ? c.portraitFor(second ? s.kit2 : s.kit) : c.portrait;
+    return mine === c ? c.portraitFor(second ? s.kit2 : s.kit) : shownPortrait(c);
   }
 
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */

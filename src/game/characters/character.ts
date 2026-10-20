@@ -214,6 +214,12 @@ export interface CharacterDef {
   music?: string;
   /** Frame used on the character select / intro card. */
   portrait: { sheet: string; palette: string; frame: string };
+  /**
+   * A Classic-only extra drawn on its own sheet (Pit's, Proto Man's) whose `portrait` still names
+   * the hero it is built on: the frame the character select and the intro card show instead.
+   * Absent: `portrait` (shownPortrait).
+   */
+  portraitArt?: { sheet: string; palette: string; frame: string };
   /** What (if anything) a killed enemy drops for this character (`killer`: the player who got it). */
   drop?(rng: Rng, enemy: Enemy, killer?: Player): PickupKind | null;
   /**
@@ -449,4 +455,9 @@ export const CLASSIC_POWER_STATES: readonly ClassicPowerState[] = ['small', 'big
 /** Hit points a fresh run of this character starts with (0 for power-up characters). */
 export function startHp(def: CharacterDef): number {
   return def.damage.kind === 'hp' ? (def.startHp ?? def.damage.max) : 0;
+}
+
+/** The frame the character select and the intro card draw for this hero (`portraitArt`, else `portrait`). */
+export function shownPortrait(def: CharacterDef): CharacterDef['portrait'] {
+  return def.portraitArt ?? def.portrait;
 }
