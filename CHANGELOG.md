@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.64] - 2026-10-20
+
 ### Added
 
 - Classic mode's select screen in the original's layout (our own art): the HUD on top with the
@@ -1547,7 +1549,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...HEAD
+[0.4.64]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...v0.4.64
 [0.4.63]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...v0.4.63
 [0.4.62]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...v0.4.62
 [0.4.61]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...v0.4.61
