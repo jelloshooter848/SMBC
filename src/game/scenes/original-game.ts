@@ -3,6 +3,7 @@ import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
+import { ClassicHeroesScene } from './classic-heroes-menu';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
@@ -168,6 +169,12 @@ export class ClassicOptionsScene extends MenuScene {
         value: state(WEAPON_ROWS),
         select: menu('CUSTOMIZE WEAPONS', 'Customize weapons', WEAPON_ROWS),
         hint: "Each hero's weapons, with Classic SMBC rules",
+      },
+      {
+        label: 'Disable heroes',
+        value: () => String(game.deps.settings?.classicHeroesOff?.length ? 'Some off' : 'All on'),
+        select: () => game.scenes.push(new ClassicHeroesScene(game, () => this.back())),
+        hint: 'Leave heroes out of the select and Random',
       },
       {
         label: 'Cheats',

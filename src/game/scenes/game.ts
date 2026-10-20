@@ -436,7 +436,13 @@ export class Game {
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
-    return this.slotsFor(this.liveRules);
+    const slots = this.slotsFor(this.liveRules);
+    // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
+    // always keeping at least one (GeneralOptions.as: the last hero cannot be disabled).
+    if (!this.classicRun || this.campaign !== null) return slots;
+    const off = this.deps.settings?.classicHeroesOff ?? [];
+    const on = slots.filter((c) => !off.includes(c.id));
+    return on.length ? on : slots;
   }
 
   /**

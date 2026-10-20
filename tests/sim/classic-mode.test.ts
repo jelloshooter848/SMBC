@@ -216,6 +216,8 @@ describe('the title and the CLASSIC menu', () => {
       'Expansion heroes',
       'More settings',
       'Weapons',
+      // G-032 (0.5.0): the original's Disable characters.
+      'Disable heroes',
       'Cheats',
       'All options',
       'Back',

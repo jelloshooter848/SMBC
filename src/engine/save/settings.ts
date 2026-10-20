@@ -87,6 +87,12 @@ export interface Settings {
    */
   classicSkins?: Record<string, string>;
   /**
+   * Classic mode's Disable characters (G-032; GeneralOptions.as 23, 47-53): the select-slot hero
+   * ids left out of the select, the Random slot and Single random. At least one hero always
+   * stays (Game.heroSlots). Optional, so older files need no migration.
+   */
+  classicHeroesOff?: string[];
+  /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
    * into older files (every field defaults to the original's: all off, most locked).
@@ -280,6 +286,11 @@ export function loadSettings(): Settings {
   const skins = normaliseSkins(stored.classicSkins);
   if (skins) s.classicSkins = skins;
   else delete s.classicSkins;
+  const off = Array.isArray(stored.classicHeroesOff)
+    ? (stored.classicHeroesOff as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (off.length) s.classicHeroesOff = off;
+  else delete s.classicHeroesOff;
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;
