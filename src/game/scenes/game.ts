@@ -16,7 +16,7 @@ import {
 } from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
-import { IntroScene } from './intro';
+import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
 import { freshSeed, startTime } from '../world/world';
 import { Rng } from '@engine/rng';
@@ -2010,7 +2010,14 @@ export class Game {
     const tutorial = levelTutorial(level);
     if (!tutorial) this.endTutorial();
     const time = tutorial ? null : startTime(level, this.state, start);
-    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
+    // A Classic run's card is skipped by a press and stays 2500 ms in Single Character (G-090).
+    const intro = this.classicRun
+      ? {
+          skippable: true,
+          frames: this.deps.settings?.classic.gameMode === 'single' ? INTRO_FRAMES_SINGLE : INTRO_FRAMES,
+        }
+      : {};
+    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time, intro));
   }
 
   /**

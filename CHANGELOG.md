@@ -6,6 +6,12 @@ All notable changes to this project are documented in this file. The format foll
 [docs/RELEASING.md](docs/RELEASING.md). Every pull request with a user-facing change adds a line
 under `## [Unreleased]`.
 
+### Changed
+
+- Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
+  JUMP, ATTACK or START press now skips it. It is the one written exception to "text never moves on by itself"
+  (docs/ACCESSIBILITY.md).
+
 ## [Unreleased]
 
 ### Added
