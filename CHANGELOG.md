@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.61] - 2026-10-20
+
 ### Added
 
 - Classic mode Options: More settings, as in the original: Lives (1, 3, 5, 7, 10), When hit
@@ -1465,7 +1467,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...HEAD
+[0.4.61]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...v0.4.61
 [0.4.60]: https://github.com/jelloshooter848/SMBC/compare/v0.4.59...v0.4.60
 [0.4.59]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...v0.4.59
 [0.4.58]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...v0.4.58
