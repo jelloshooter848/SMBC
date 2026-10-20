@@ -34,6 +34,7 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Release builds: the dev-mode passphrase may be 6 to 32 characters (it was 8 to 32).
 - Classic mode's castle text follows the original for every look: Toad thanks the look by its own short name
   (THANK YOU ZELDA!, THANK YOU DR. WILY!, Sophia III's THANK YOU JASON!), and each look names its own captive in
   another castle.

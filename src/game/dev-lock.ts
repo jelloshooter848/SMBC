@@ -13,7 +13,7 @@ import type { Settings } from '@engine/save/settings';
  *   until the passphrase is entered (settings.devUnlock remembers which build's lock was opened).
  * - The prompt (scenes/passphrase.ts) offers A-Z, 0-9 and '-', up to 32 of them: an entry is
  *   hashed in capitals (`normalizePassphrase`), as the workflow does, which also refuses a secret
- *   the prompt couldn't type (8 to 32 of those characters).
+ *   the prompt couldn't type (6 to 32 of those characters).
  */
 
 /** The fixed salt in front of the passphrase (the same in release.yml's hash step). */

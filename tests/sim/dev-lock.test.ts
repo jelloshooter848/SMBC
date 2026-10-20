@@ -132,8 +132,8 @@ describe('the lock for a build', () => {
       });
       return { code: r.status, out: r.stdout.toString(), err: r.stderr.toString() };
     };
-    // Valid: 8 to 32 of A-Z, 0-9 and '-', any case (upper-cased before hashing).
-    for (const ok of ['abcd-123', 'Open-Sesame-42', 'A'.repeat(32)]) {
+    // Valid: 6 to 32 of A-Z, 0-9 and '-', any case (upper-cased before hashing).
+    for (const ok of ['abc-12', 'abcd-123', 'Open-Sesame-42', 'A'.repeat(32)]) {
       const r = run(ok);
       expect(r.code, ok).toBe(0);
       expect(r.out).toBe(`DEV_MODE_HASH=${await hashPassphrase(ok)}\n`);
@@ -150,7 +150,7 @@ describe('the lock for a build', () => {
     const bad = {
       'an inner space (padded)': '  OPEN SESAME\n',
       'only spaces': '   \n',
-      'too short': 'ABC-123',
+      'too short': 'ABC-1',
       'too long': 'A'.repeat(33),
       'a space': 'OPEN SESAME',
       'an underscore': 'OPEN_SESAME',
@@ -159,7 +159,7 @@ describe('the lock for a build', () => {
       const r = run(secret);
       expect(r.code, why).toBe(1);
       expect(r.out, why).toBe('');
-      expect(r.err, why).toMatch(/8 to 32 characters of A-Z, 0-9 and "-"/);
+      expect(r.err, why).toMatch(/6 to 32 characters of A-Z, 0-9 and "-"/);
       expect(r.err, why).not.toContain(secret);
     }
   });

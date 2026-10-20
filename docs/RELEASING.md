@@ -118,7 +118,7 @@ builds (`pnpm dev`, CI, branches) keep dev mode open as before. Set the passphra
 
 1. On GitHub: the repository's **Settings → Secrets and variables → Actions → New repository
    secret**.
-2. Name: `DEV_MODE_PASSPHRASE`. Secret: the passphrase. **The rule: 8 to 32 characters, only
+2. Name: `DEV_MODE_PASSPHRASE`. Secret: the passphrase. **The rule: 6 to 32 characters, only
    A-Z, 0-9 and `-`, case-insensitive** (no spaces, no other symbols): that is all the game's
    prompt can type. A secret that breaks the rule fails the release at the "Dev-mode lock" step
    (exit 1, without showing the secret), so the owner can never be locked out by it.
