@@ -14,4 +14,3 @@ export function openChapter1(game: Game): void {
   if (s) s.dev = true;
   else (game.deps as { settings?: Settings }).settings = { dev: true } as Settings;
 }
-

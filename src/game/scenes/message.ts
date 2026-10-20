@@ -31,8 +31,12 @@ export class MessageScene implements Scene {
     private readonly keys: readonly Action[] = ['start', 'jump'],
   ) {}
 
-  /** One OK button: A if it continues the message, else B, else Start. */
+  /**
+   * One OK button: A if it continues the message, else B, else Start. None during the guard:
+   * a button on screen that ignores the tap read as "the first tap doesn't work" on phones (0.5.0).
+   */
   touchLabels(): TouchLabels {
+    if (this.t < CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS; // the next frame's press counts
     const key = (['jump', 'attack', 'start'] as const).find((k) => this.keys.includes(k));
     return key ? { ...NO_TOUCH_BUTTONS, [key]: 'OK' } : NO_TOUCH_BUTTONS;
   }
@@ -119,9 +123,11 @@ export class CardScene implements Scene {
 
   /**
    * B goes on (the card's "PUSH BUTTON B"); Start does too, but one button is enough. A when it
-   * goes on too. With skip keys, B reads BACK when it is one of them.
+   * goes on too. With skip keys, B reads BACK when it is one of them. No buttons during the guard
+   * (0.5.0, the phone "first tap ignored" bug): OK shows when a tap on it works, with the prompt.
    */
   touchLabels(): TouchLabels {
+    if (this.t < CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS; // the next frame's press counts
     const ok = { ...NO_TOUCH_BUTTONS, [this.keys.includes('jump') ? 'jump' : 'attack']: 'OK' };
     return this.skipKeys.includes('attack') ? { ...ok, attack: 'BACK' } : ok;
   }

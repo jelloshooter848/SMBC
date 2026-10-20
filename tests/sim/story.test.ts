@@ -3,6 +3,7 @@ import { getLevel } from '@content/levels';
 import { LevelScene } from '@game/scenes/level';
 import { WorldMapScene } from '@game/scenes/world-map';
 import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
+import { NO_INPUT } from '@engine/input/input-manager';
 import type { Settings } from '@engine/save/settings';
 import { loadSave, migrateSave, newSave, saveKey } from '@game/save/save-files';
 import { playStoryCards } from '@game/story/cards';
@@ -144,8 +145,8 @@ describe('playStoryCards', () => {
     const l = level(h);
     let done = 0;
     playStoryCards(h.game, l.world, PAGES, () => done++);
+    h.idle(32); // (0.5.0: the buttons show once the guard is over (a tap then works))
     expect(card(h).touchLabels().attack).toBe('BACK');
-    h.idle(32);
     h.tap('attack');
     expect(h.top()).toBe(l);
     expect(done).toBe(1);
@@ -187,6 +188,7 @@ describe('playStoryCards', () => {
     const h = makeGame();
     const c = new CardScene(h.game, ['A'], () => {}, null, { panel: true });
     expect(c.translucent).toBe(false);
+    for (let i = 0; i <= CARD_GUARD_FRAMES; i++) c.update(NO_INPUT, [NO_INPUT]); // (0.5.0: the buttons show once the guard is over (a tap then works))
     expect(c.touchLabels().attack).toBe('OK');
   });
 });

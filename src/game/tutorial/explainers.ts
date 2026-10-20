@@ -205,7 +205,9 @@ export class ExplainerBox {
 
   /** The touch buttons while one holds the game (OK and MENU only), else null. */
   heldTouchLabels(): TouchLabels | null {
-    return this.frozen ? { ...NO_TOUCH_BUTTONS, jump: 'OK', start: 'MENU' } : null;
+    if (!this.frozen) return null;
+    // OK shows once the hold's lock is over (a tap on it works then), as the box's OK prompt does.
+    return { ...NO_TOUCH_BUTTONS, jump: this.game.tips.unlocked ? 'OK' : null, start: 'MENU' };
   }
 
   /** The box while an explainer holds: under the HUD, or at the bottom when the hero is up high. */
