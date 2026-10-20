@@ -70,7 +70,12 @@ describe('G-008 the Classic resume slot', () => {
     h.game.state.score = 777;
     h.game.levelExitTo('1-2');
     expect(h.top()?.constructor.name).toBe('CharacterSelectScene');
-    expect(loadClassicResume()).toMatchObject({ levelId: expect.stringMatching(/^1-2/), world: 1, stage: 2, score: 777 });
+    expect(loadClassicResume()).toMatchObject({
+      levelId: expect.stringMatching(/^1-2/),
+      world: 1,
+      stage: 2,
+      score: 777,
+    });
     h.game.showTitle();
     expect(h.game.resumeClassic()).toBe(true);
     h.until(() => inLevel(h), 600);
