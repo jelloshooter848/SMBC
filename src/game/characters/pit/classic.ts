@@ -33,6 +33,11 @@ const ARROW_FRAMES: Readonly<Record<string, string>> = {
   'ice-beam-1': 'ice-arrow-1',
   'wave-beam-0': 'light-arrow-0',
   'wave-beam-1': 'light-arrow-1',
+  // Classic Samus's beams in the original's look (F2).
+  'classic-beam-0': 'arrow-0',
+  'classic-beam-1': 'arrow-1',
+  'wave-varia-0': 'light-arrow-0',
+  'wave-varia-1': 'light-arrow-1',
   missile: 'heavy-arrow',
   'missile-up': 'heavy-arrow-up',
 };

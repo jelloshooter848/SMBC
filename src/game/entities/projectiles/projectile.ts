@@ -35,6 +35,11 @@ export interface ProjectileSpec {
    * burst frame stored pointing left (Samus's beams). Absent: the Flash is drawn as stored.
    */
   burstMirrors?: boolean;
+  /**
+   * Draw offset of the art from the body's top-left, in px (Classic SMBC's 4 x 5 beam drawn in an
+   * 8 x 8 cell: -2, -1). Absent: drawn at the body's top-left, as today.
+   */
+  drawOffset?: { x: number; y: number };
   /** Keeps going after hitting an enemy (each enemy is hit once). */
   pierce?: boolean;
   /**
@@ -553,8 +558,8 @@ export class Projectile extends Entity {
     r.sprite(
       view.assets.sheet(this.spec.sheet),
       f,
-      toPx(this.body.x) - view.camX,
-      toPx(this.body.y),
+      toPx(this.body.x) + (this.spec.drawOffset?.x ?? 0) - view.camX,
+      toPx(this.body.y) + (this.spec.drawOffset?.y ?? 0),
       this.facing > 0,
     );
   }

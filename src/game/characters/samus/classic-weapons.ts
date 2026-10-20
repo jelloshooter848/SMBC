@@ -43,10 +43,20 @@ const beamBase = {
   classicBlocks: COLLIDE,
 } as const;
 
-/** The Long Beam (Mushroom): 150, until off screen. Kind `samus-shot` for the shared cap. */
+/**
+ * The Long Beam (Mushroom): 150, until off screen. Kind `samus-shot` for the shared cap. F2: the
+ * original's beam (SamusShotMc `normal`), a 4 x 5 bolt (HRect 4 x 5) in red, orange and a green
+ * core with a 7 x 8 burst (`normalEnd`), drawn in an 8 x 8 cell around its body.
+ */
 export const LONG_BEAM_CLASSIC: ProjectileSpec = {
   ...POWER_BEAM,
   ...beamBase,
+  w: 4,
+  h: 5,
+  frames: ['classic-beam-0', 'classic-beam-1'],
+  burstFrame: 'classic-beam-burst',
+  burstMirrors: false,
+  drawOffset: { x: -2, y: -1 },
   kind: 'samus-shot',
   amount: 150,
   lifetime: null,
@@ -69,7 +79,11 @@ export const WAVE_BEAM_CLASSIC: ProjectileSpec = {
   lifetime: null,
   classicBlocks: PASS,
   wave: { amplitude: 15, period: (2 * Math.PI) / (25 / 60), vertical: true },
-  burstFrame: 'wave-beam-1',
+  // F2: the original's `wave`, 8 x 8 with a black outline, bursting as `waveEnd`; it comes only
+  // with the Flower, whose Varia palette row turns the orange pink.
+  sheet: 'smbc-shots',
+  frames: ['wave-varia-0', 'wave-varia-1'],
+  burstFrame: 'wave-varia-burst',
   classicHit: SHOT_HIT,
 };
 
@@ -89,6 +103,12 @@ export const ICE_BEAM_CLASSIC: ProjectileSpec = {
 /** A missile (SA-C18): 400, pierces armour, ends in its explosion at once (no held burst). */
 export const MISSILE_CLASSIC: ProjectileSpec = {
   ...MISSILE,
+  // F2: the original's `missile`, 11 x 8 (HRect 10 x 7.5), its fins cyan.
+  w: 10,
+  h: 8,
+  sheet: 'smbc-shots',
+  frames: ['missile'],
+  burstFrame: 'missile-burst',
   kind: 'samus-shot',
   amount: 400,
   speed: SPEED,
@@ -103,7 +123,7 @@ export const MISSILE_CLASSIC: ProjectileSpec = {
 export const MISSILE_UP_CLASSIC: ProjectileSpec = {
   ...MISSILE_CLASSIC,
   w: 8,
-  h: 16,
+  h: 10,
   frames: ['missile-up'],
 };
 
