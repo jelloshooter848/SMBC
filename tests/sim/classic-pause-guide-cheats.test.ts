@@ -99,8 +99,8 @@ describe('G-093 the Classic guide', () => {
     const h = classic();
     pausedRun(h, LINK);
     pick(h, 'Guide');
-    const g = h.top() as GuideScene & { def: { rules?: string; id: string } };
-    expect(g).toBeInstanceOf(GuideScene);
+    expect(h.top()).toBeInstanceOf(GuideScene);
+    const g = h.top() as unknown as { def: { rules?: string; id: string } };
     expect(g.def.id).toBe('link');
     expect(g.def.rules).toBe('classic');
   });
