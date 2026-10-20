@@ -25,13 +25,14 @@ export const NES_FIXES = [
 ];
 
 /** Applies the fixes for map `id` to a MapBuilder; returns how many cells changed. */
-export function applyNesFixes(id, builder) {
+export function applyNesFixes(id, builder, quiet = false) {
   let n = 0;
   for (const f of NES_FIXES) {
     if (f.id !== id) continue;
     const had = builder.rows[f.y]?.[f.x];
     if (had !== f.from) {
-      console.warn(`${id}: NES fix at ${f.x},${f.y} expected '${f.from}' but found '${had}'; left alone`);
+      if (!quiet)
+        console.warn(`${id}: NES fix at ${f.x},${f.y} expected '${f.from}' but found '${had}'; left alone`);
       continue;
     }
     builder.set(f.x, f.y, f.to);

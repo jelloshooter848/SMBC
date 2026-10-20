@@ -293,6 +293,8 @@ function tick(p: Player, key: string): void {
 }
 
 export const ARTHUR_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Not in 3.1.21: helped like Simon (a fixed jump arc). level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true },
   id: 'arthur',
   name: 'Arthur',
   hudName: 'ARTHUR',

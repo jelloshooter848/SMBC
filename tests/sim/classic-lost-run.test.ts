@@ -190,7 +190,12 @@ describe('G-003/G-004: every map set from the start; the title after the credits
     const h = classic();
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(items(menu).map((i) => i.label)).toEqual([...MAP_SETS.map((m) => m.label), 'Options', 'Back']);
+    expect(items(menu).map((i) => i.label)).toEqual([
+      ...MAP_SETS.map((m) => m.label),
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     expect(MAP_SETS.map((m) => m.id)).toEqual(['smb', 'lost']);
     for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
     h.idle(8);

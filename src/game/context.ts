@@ -2,7 +2,7 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import { startHp, type CharacterDef } from './characters/character';
 import { heroFor } from './characters/registry';
-import { CLASSIC_CHEAT_IDS, type ClassicCheatId } from '@engine/save/settings';
+import { CLASSIC_CHEAT_IDS, type ClassicCheatId, type MapDifficulty } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
@@ -110,6 +110,11 @@ export interface GameContext {
    * once, in its constructor (World.classic); absent there means the original's values.
    */
   classic?: ClassicSettings;
+  /**
+   * Classic mode's Map Difficulty for the run (G-006): present only in a Classic run with Classic
+   * rules (Game.classicMapDifficulty); absent (Normal) everywhere else. A World reads it once.
+   */
+  mapDifficulty?: MapDifficulty;
   /**
    * Classic SMBC's Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-1, a dev-only
    * toggle): 'on' lets the first power-up block of each allowed area hatch him, 'ride' also starts

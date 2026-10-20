@@ -536,6 +536,8 @@ export function linkDeath(p: Player, frame: number, reduce: boolean): { frame: s
 }
 
 export const LINK_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Link.as:348-349. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, vert: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Princess Zelda',
   id: LINK.id,

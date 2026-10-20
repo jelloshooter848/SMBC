@@ -508,6 +508,8 @@ export function classicSamus(
   }
 
   const def: CharacterDef = {
+    // The original's level flags (G-010): Samus.as:316 (Pit, her look, too). level/layers.ts lays its pieces by them.
+    levelFlags: { horz: true },
     ...base,
     rules: 'classic',
     movement: SAMUS_CLASSIC_PROFILE,

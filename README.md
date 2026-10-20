@@ -316,6 +316,9 @@ sound) by `tools/levelgen/convert-smbc.mjs`; download its `assets/documents/leve
 into `tools/levelgen/source/` (gitignored) and run
 `node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4`
 (one world per output folder).
+Classic mode also plays the original's versions of each level for the other map difficulties and
+for heroes with level flags; `node tools/levelgen/regen.mjs --layers tools/levelgen/source` writes
+them as `src/content/level-layers/**/*.layers` without touching any map.
 The Lost Levels come from `levelDataLostLevels.xml` with `--prefix=ll-` into
 `src/content/levels/lost/worldN/` (worlds A–D are 10–13). They bring their own looks: orange
 and red giant-mushroom land (`mushroom`, `mushroom-red`), sky levels on cloud ledges (`clouds`,

@@ -346,6 +346,8 @@ function remember(p: Player): void {
 }
 
 export const SIMON_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Simon.as:289,310. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, poorBowser: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'your friend',
   ...SIMON,

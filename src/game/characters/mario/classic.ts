@@ -254,6 +254,8 @@ function classicSheet(spec: SpriteSpec): SpriteSpec {
 }
 
 export const MARIO_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): MarioBase.as:207. level/layers.ts lays its pieces by them.
+  levelFlags: { goodSwimmer: true },
   ...plumberClassic({
     base: MARIO,
     constants: MARIO_CONSTANTS,

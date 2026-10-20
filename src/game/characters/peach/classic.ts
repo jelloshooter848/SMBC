@@ -187,6 +187,8 @@ function peachTouchLabels(p: Player): ReturnType<NonNullable<CharacterDef['touch
 }
 
 export const PEACH_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): a Luigi look in the original (MarioBase.as:207). level/layers.ts lays its pieces by them.
+  levelFlags: { goodSwimmer: true },
   id: 'peach',
   name: 'Peach',
   hudName: 'PEACH',

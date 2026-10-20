@@ -2,6 +2,7 @@ import { MenuScene, type MenuItem } from './menu';
 import { AssistOptionsScene, OptionsScene } from './options';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
+import { LevelSelectScene } from './level-select-cheat';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -40,6 +41,13 @@ export class PauseScene extends MenuScene {
         label: 'Options',
         select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
       });
+      // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
+      if (game.deps.settings?.classicCheats.levelSelect)
+        items.push({
+          label: 'Level select',
+          select: () => game.scenes.push(new LevelSelectScene(game, () => game.scenes.pop(), true)),
+          hint: 'Go to any level, keeping your lives and score',
+        });
       items.push(...this.devItems());
       // Developer mode: every cheat, at once (owner decision; Classic mode's Cheats page).
       if (game.devMode)
