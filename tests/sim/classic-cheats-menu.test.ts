@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { px } from '@engine/math/units';
 import {
   CLASSIC_CHEAT_IDS,
   defaultSettings,
@@ -210,7 +211,9 @@ describe('the Cheats page', () => {
     d.tap('jump');
     expect(d.settings.classicCheats.on.waterMode).toBe(true);
     expect(world.cheats.waterMode).toBe(true);
-    expect(world.waterTop).toBeLessThan(0);
+    // The swimming line two tiles below the screen top, as in the original's water levels (QA,
+    // 0.5.0 batch 4: the hero can no longer swim off the top).
+    expect(world.waterTop).toBe(px(2 * 16 + 8));
     // Still locked outside developer mode: a toggle in dev mode never unlocks it.
     expect(d.settings.classicCheats.unlocked.waterMode).toBe(false);
   });
