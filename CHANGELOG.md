@@ -8,38 +8,16 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
-## [0.4.61] - 2026-10-20
+## [0.4.62] - 2026-10-20
 
 ### Added
 
-- Classic mode Options: More settings, as in the original: Lives (1, 3, 5, 7, 10), When hit
-  (Lose everything, Previous state, Instant death), Attack, Item drops, Piranhas (Some or All
-  pipes, green or red), Goombas (Buzzy Beetle or Spiny) and Enemy speed. Every row starts at the
-  original's value; a changed row is marked, and Restore originals puts them back.
-- Classic mode: a Random slot (?) at the end of the select screen, and Options > Game mode:
-  All heroes (choose before every level and life, as before), Single hero (choose once) or
-  Single random (the game picks a hero for every level and life).
-- Classic mode Options > Weapons (Customize Weapons, as in the original): each hero's power-up
-  weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
-  extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
-  choice; the original's weapons are the default.
 - Classic mode Options > Game mode: **Survival**, as in the original. Every hero has one life
   and starts fallen; at the start, after each castle and after a warp pipe, the select screen
   opens in revive mode, where OK spends a life to revive a fallen hero or power up a standing
   one (two power-ups and some ammo), and DONE goes on to pick. A death makes that hero fall
   without costing a life, and the run ends when every hero has fallen. Fallen heroes are drawn
   grey and named on the select screen; the card before a level shows one life.
-- Classic Peach's last castle: Mario waits where the princess would, and greets her.
-- Classic mode: the original's **Cheats** (CLASSIC > Options > Cheats): All Ground Is Bricks, All Hammer Bros, All
-  Weapons Pierce, Always Break Bricks, Bouncy Pits, Classic Scroll (no scrolling back left), Everyone Can Stomp, Evil
-  Hammer Bros, Extra Checkpoints, Infinite Ammo, Infinite Lives, Infinite Time, Invincible and Water Mode. All are off
-  by default and most start locked behind the original's goals (beat any level, beat a castle, beat a game, defeat
-  enough enemies, Hammer Bros or Cheep Cheeps, stomp enemies, break bricks, collect ammo); a locked cheat's row tells
-  its goal and count, and the original's secret code unlocks them all. Unlocks are told on the select screen after a
-  clear, or on a card at once mid-level. They play only in a Classic mode run with Classic rules, never in the
-  campaign. Developer mode opens every cheat from the Classic pause menu.
-- Classic mode's new enemy **Spike Top** (its own art): a Goomba-sized crawler with an armoured, spiked shell that
-  cannot be stomped: Options > More settings > Goombas: Spike Top.
 
 ### Changed
 
@@ -57,6 +35,33 @@ under `## [Unreleased]`.
 - Classic Mario and Luigi's few poses that were off the original's size are re-cut.
 - Classic Mario grows at the original speed.
 - Classic Samus's upward missile is drawn at its 8 x 10 size.
+
+## [0.4.61] - 2026-10-20
+
+### Added
+
+- Classic mode Options: More settings, as in the original: Lives (1, 3, 5, 7, 10), When hit
+  (Lose everything, Previous state, Instant death), Attack, Item drops, Piranhas (Some or All
+  pipes, green or red), Goombas (Buzzy Beetle or Spiny) and Enemy speed. Every row starts at the
+  original's value; a changed row is marked, and Restore originals puts them back.
+- Classic mode: a Random slot (?) at the end of the select screen, and Options > Game mode:
+  All heroes (choose before every level and life, as before), Single hero (choose once) or
+  Single random (the game picks a hero for every level and life).
+- Classic mode Options > Weapons (Customize Weapons, as in the original): each hero's power-up
+  weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
+  extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
+  choice; the original's weapons are the default.
+- Classic Peach's last castle: Mario waits where the princess would, and greets her.
+- Classic mode: the original's **Cheats** (CLASSIC > Options > Cheats): All Ground Is Bricks, All Hammer Bros, All
+  Weapons Pierce, Always Break Bricks, Bouncy Pits, Classic Scroll (no scrolling back left), Everyone Can Stomp, Evil
+  Hammer Bros, Extra Checkpoints, Infinite Ammo, Infinite Lives, Infinite Time, Invincible and Water Mode. All are off
+  by default and most start locked behind the original's goals (beat any level, beat a castle, beat a game, defeat
+  enough enemies, Hammer Bros or Cheep Cheeps, stomp enemies, break bricks, collect ammo); a locked cheat's row tells
+  its goal and count, and the original's secret code unlocks them all. Unlocks are told on the select screen after a
+  clear, or on a card at once mid-level. They play only in a Classic mode run with Classic rules, never in the
+  campaign. Developer mode opens every cheat from the Classic pause menu.
+- Classic mode's new enemy **Spike Top** (its own art): a Goomba-sized crawler with an armoured, spiked shell that
+  cannot be stomped: Options > More settings > Goombas: Spike Top.
 
 ### Fixed
 
@@ -1490,7 +1495,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...HEAD
+[0.4.62]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...v0.4.62
 [0.4.61]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...v0.4.61
 [0.4.60]: https://github.com/jelloshooter848/SMBC/compare/v0.4.59...v0.4.60
 [0.4.59]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...v0.4.59
