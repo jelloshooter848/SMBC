@@ -178,7 +178,7 @@ export class ClassicMenuScene extends MenuScene {
             },
           }
         : {}),
-      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}. Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}, left or right to change`,
+      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}. Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}, left or right to change${own}`,
     }));
     items.push(
       {

@@ -217,9 +217,11 @@ describe('Classic Sophia III IDs', () => {
     expect(classicMaxHp(b, r.world)).toBe(CLASSIC_HP['bowser-fire']);
   });
 
-  it('SO-49: no other hero gets level flags', () => {
+  // G-010 (0.5.0 gap list) gives every Classic def the original's level flags; SO-49 now reads:
+  // no other hero is wide, and no Current def has flags.
+  it('SO-49: no other hero is wide (G-010: every Classic def has its own flags)', () => {
     for (const d of Object.values(CLASSIC_CHARACTERS))
-      if (d && d.id !== 'sophia') expect(d.levelFlags, d.id).toBeUndefined();
+      if (d && d.id !== 'sophia') expect(d.levelFlags?.wide, d.id).toBeUndefined();
     for (const d of CHARACTERS) expect(d.levelFlags, d.id).toBeUndefined();
   });
 

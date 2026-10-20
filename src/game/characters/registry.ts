@@ -56,11 +56,11 @@ installClassicRules({
   levelEdits: (map, id, defs, spawns, options, world) => {
     // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas) and its
     // level-edit cheats (rules/classic-cheats.ts).
-    // An area with layers (level/layers.ts, G-010/G-011) already has the original's stepping
-    // stones and wide shafts, laid by the heroes' level flags: the hand-made tables are for any
-    // area without them.
+    // An area with layers (level/layers.ts, G-010) already has the original's wide shafts, laid by
+    // the heroes' level flags: the hand-made wide table is for any area without them. The floor
+    // jumpers' stepping stones (2-2, 7-2) are the layers' own cells, as hard blocks: kept.
     const layered = !!world?.level.layers?.length;
-    const water = !layered && applyClassicLevelEdits(map, id, defs);
+    const water = applyClassicLevelEdits(map, id, defs);
     const wide = !layered && applyWideVariants(map, id, defs, spawns);
     const opts = applyOptionSpawns(map, spawns, options);
     const cheats = world && spawns ? applyCheatEdits(map, id, spawns, world) : false;
