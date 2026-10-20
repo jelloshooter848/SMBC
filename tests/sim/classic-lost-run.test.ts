@@ -124,6 +124,17 @@ describe('G-001/G-002: the Lost Levels run straight on from 1-1 to D-4', () => {
     expect(loadProgress().lost.beaten).toBe(0);
   });
 
+  it('8-4: the castle card is read out, its news and its OK prompt, with no button letter', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, 'll-8-4-end3');
+    enterLevel(h);
+    const before = h.said.length;
+    takeAxe(h, 125);
+    const said = h.said.slice(before).find((t) => t.startsWith('THANK YOU MARIO!'));
+    expect(said).toBe('THANK YOU MARIO! BUT OUR PRINCESS IS IN ANOTHER CASTLE! OK to continue.');
+    expect(said).not.toMatch(/\b(press|push)\s+[abc]\b|button [abc]/i);
+  });
+
   it("9-4's flag goes on to World A (10-1)", () => {
     const h = classic();
     h.game.classicGame(MARIO, 'll-9-4');

@@ -1916,7 +1916,9 @@ export class World {
           ? p.body.y > this.waterTop - px(8)
           : p.body.y + (p.body.h >> 1) >= this.waterTop;
       p.aboveWater = !p.inWater && this.waterTop !== Infinity;
-      p.pitPull = p.inWater && p.profile.swim?.pitPull ? this.pitPullOn(p) : null;
+      // PitVacuum.updateStats pulls whether or not the hero is under water (G-013): only the area
+      // (one that starts under water) and the hero (SwimProfile.pitPull) decide.
+      p.pitPull = p.profile.swim?.pitPull ? this.pitPullOn(p) : null;
       this.grabVines(p, input);
       this.grabStairs(p, input);
       const spring = this.springUnder(p);
