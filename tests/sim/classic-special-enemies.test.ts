@@ -11,14 +11,15 @@ import { LINK } from '@game/characters/link';
 import { heroFor } from '@game/characters/registry';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Barrel, Crab, FireEnemy, Fly, Icicle, SPECIAL_SCORES } from '@game/entities/enemies/special-enemies';
-import { PowerUp } from '@game/entities/objects/powerup';
+import { PowerUp, isWorldItem } from '@game/entities/objects/powerup';
 import { ENEMY_SCORES } from '@game/rules/score';
 import { CLASSIC_HP, armourOf, classicMaxHp, isArmoured } from '@game/rules/classic-enemies';
 import { allHammerBros } from '@game/rules/classic-cheats';
 import { T } from '@game/level/tiles';
 import { HammerWeapon, SPECIAL_ITEM_SAID, WING_FRAMES, HAMMER_FRAMES } from '@game/world/special-items';
 import { WATER_MODE_TOP } from '@game/world/world';
-import { fullPowerUp } from '@game/world/special-items';
+import { FULL_POWER_MAX_STEPS, fullPowerUp } from '@game/world/special-items';
+import { CHARACTERS } from '@game/characters/registry';
 import { AMMO_PICKUPS } from '@game/cheats';
 import { defaultClassicSettings } from '@engine/save/original-options';
 import { SIMON } from '@game/characters/simon';
@@ -470,6 +471,30 @@ describe('G-022: the items', () => {
       // The steps' own points are not scored (the item's 1000 are, by takeSpecialItem).
       expect(w.state.score, state).toBe(score);
     }
+  });
+
+  it('under Current rules the full power-up upgrades each hero until no upgrade is left (Character.as 1735-1741)', () => {
+    const state = (p: World['player']) =>
+      `${p.powerState} ${p.hp} ${JSON.stringify(p.scratch, Object.keys(p.scratch).sort())}`;
+    const most: Record<string, number> = {};
+    for (const def of Object.values(CHARACTERS)) {
+      const w = classicWorld(def, testLevel(), 'current');
+      const p = w.player;
+      let steps = 0;
+      const own = w.powerUp.bind(w);
+      w.powerUp = (q, k) => (steps++, own(q, k));
+      fullPowerUp(w, p);
+      expect(steps, def.id).toBeLessThan(FULL_POWER_MAX_STEPS);
+      most[def.id] = steps;
+      // Fully upgraded: one more of his power-block upgrades changes nothing.
+      const before = state(p);
+      const kind = p.def.blockPowerUp(p);
+      if (!isWorldItem(kind)) own(p, kind);
+      p.transition = null;
+      expect(state(p), def.id).toBe(before);
+    }
+    // More than the two steps it used to stop at, for the heroes with longer upgrade paths.
+    expect(Math.max(...Object.values(most))).toBeGreaterThan(2);
   });
 
   it('the full power-up fills every ammo to its maximum (setAllAmmoToMax), on the real hero', () => {

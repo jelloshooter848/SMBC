@@ -71,7 +71,7 @@ export function takeSpecialItem(world: World, p: Player, e: PowerUp & { item: Sp
  *   if he lacks it (`if (!upgradeIsActive(...)) hitRandomUpgrade(charNum, false)`), so a hero
  *   already in the Fire Flower state gets no upgrade and no repeat-Flower bonus.
  * - Under Current rules (the original's other mode, addAllPowerups): the hero's own next upgrades
- *   from a power block, FULL_POWER_STEPS of them.
+ *   from a power block, one after another until he is fully upgraded (Character.as 1735-1741).
  * - Then setAllAmmoToMax: every ammo pickup the hero uses, given until its counter is full
  *   (through the hero's own pickup code, which caps each counter at its maximum).
  *
@@ -80,32 +80,43 @@ export function takeSpecialItem(world: World, p: Player, e: PowerUp & { item: Sp
  */
 export function fullPowerUp(world: World, p: Player): void {
   quietly(world, () => {
-    const steps =
-      world.rules === 'current'
-        ? FULL_POWER_STEPS
-        : p.powerState === 'small'
-          ? 2
-          : p.powerState === 'fire'
-            ? 0
-            : 1;
-    for (let i = 0; i < steps; i++) {
-      const kind = world.rules === 'current' ? p.def.blockPowerUp(p) : 'flower';
-      if (isWorldItem(kind)) continue;
-      if (world.rules === 'current') world.powerUp(p, kind);
-      else p.def.behaviour.onPowerUp(p, kind, world);
+    if (world.rules === 'current') {
+      // addAllPowerups: `while (!charIsFullyUpgraded) hitRandomUpgrade`, here until a step no
+      // longer changes the hero (his next upgrade gives nothing new).
+      for (let i = 0; i < FULL_POWER_MAX_STEPS; i++) {
+        const kind = p.def.blockPowerUp(p);
+        if (isWorldItem(kind)) break;
+        const before = upgradeState(p);
+        world.powerUp(p, kind);
+        settle(p);
+        if (upgradeState(p) === before) break;
+      }
+    } else {
+      const steps = p.powerState === 'small' ? 2 : p.powerState === 'fire' ? 0 : 1;
+      for (let i = 0; i < steps; i++) p.def.behaviour.onPowerUp(p, 'flower', world);
     }
-    if (p.transition) {
-      p.transition = null;
-      p.refitHitbox();
-    }
+    settle(p);
     // setAllAmmoToMax: each counter fills whatever its size (the largest gives 5 at a time).
     for (const kind of AMMO_PICKUPS)
       for (let i = 0; i < MAX_AMMO_GIVES; i++) p.def.behaviour.onPickup?.(p, kind, world);
   });
 }
 
-/** fullyPowerup under Current rules: two of the hero's own upgrades. */
-export const FULL_POWER_STEPS = 2;
+/** A safe cap on fullyPowerup's Current loop (the longest path, Simon's to 99 hearts, takes ~20). */
+export const FULL_POWER_MAX_STEPS = 64;
+
+/** What an upgrade can change on `p`: his power state and his own counters and flags. */
+function upgradeState(p: Player): string {
+  const keys = Object.keys(p.scratch).sort();
+  return `${p.powerState} ${p.hp} ${keys.map((k) => `${k}=${String(p.scratch[k])}`).join(',')}`;
+}
+
+/** Ends a power-up's grow animation at once (fullyPowerup shows none). */
+function settle(p: Player): void {
+  if (!p.transition) return;
+  p.transition = null;
+  p.refitHitbox();
+}
 /** Pickups given per ammo kind to fill it (every counter's maximum within 5 x this). */
 const MAX_AMMO_GIVES = 60;
 
