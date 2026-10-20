@@ -12,6 +12,7 @@ import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
+import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
 import { simonPalettes, simonDef } from './simon';
 import { simonFlameDef } from './simon-flame';
 import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
@@ -70,6 +71,7 @@ import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
 import { warriorsDef, warriorsFxDef, warriorsPalettes } from './warriors';
+import { arthurDef, arthurFxDef, arthurGoldFxDef, arthurPalettes } from './arthur';
 import { HERO_FX, mapShadeFx } from './palette-fx';
 
 /** `rows` cropped to its drawn pixels (no transparent border). */
@@ -114,6 +116,13 @@ export const SPRITES: Record<string, SpriteDef> = {
   // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
   warriors: warriorsDef,
   'warriors-fx': warriorsFxDef,
+  // Princess Peach, a Classic-only hero (PE-24, PE-25), and her plucks.
+  peach: peachDef,
+  'peach-items': peachItemsDef,
+  // Sir Arthur, a Classic-only hero (AR-29), his weapons and their Gold armour look.
+  arthur: arthurDef,
+  'arthur-fx': arthurFxDef,
+  'arthur-gold-fx': arthurGoldFxDef,
   simon: simonDef,
   'simon-flame': simonFlameDef,
   ryu: ryuDef,
@@ -202,6 +211,9 @@ const defaults: Record<string, readonly string[]> = {
   ...pitPalettes,
   ...pitShotPalettes,
   ...warriorsPalettes,
+  ...peachPalettes,
+  ...peachItemPalettes,
+  ...arthurPalettes,
   ...simonPalettes,
   ...ryuPalettes,
   ...billPalettes,

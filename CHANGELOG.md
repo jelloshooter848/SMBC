@@ -8,6 +8,24 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
+  Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
+  a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch
+  that stops every enemy), lifts the enemy she stands on (she rides most enemies instead of stomping them; spiny ones
+  hurt) or lifts the brick under her feet; THROW throws it, and a thrown enemy knocks out whatever it hits. Down with
+  Attack sets it down. Stay crouched to charge a super jump. The Fire Flower's white dress plucks twice as fast and her
+  vegetables fly through what they defeat. A hit drops what she carries. Her own art, guide page and float sound.
+- Classic mode: **Sir Arthur** joins the second row, a knight who was never in the original game, with new art. He
+  starts in his boxers; the Mushroom is his **steel armour** and the Fire Flower **gold armour**, and one hit bursts all
+  of it off (in boxers a hit leaves a heap of bones). He walks slowly, his jump keeps the direction he takes off in, and
+  he gets one more jump in the air, in the direction held. THROW sends his weapon (he stops for a moment on the ground;
+  in the air, down and THROW throws straight down): the **lance**, then whatever a weapon pot holds (one defeated enemy
+  in eight drops one): a fast **dagger**, a **torch** whose fire burns through armour, or an **axe** that arcs through
+  walls. Gold armour makes every weapon stronger and armour-piercing, and adds **MAGIC** (Special): lightning on both
+  sides after a short wind-up. The HUD names the weapon he holds, and a new weapon is announced.
+
 ## [0.4.58] - 2026-10-20
 
 ### Added

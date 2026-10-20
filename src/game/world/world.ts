@@ -696,6 +696,11 @@ export class World {
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0, pierced: 0 };
+  /**
+   * The enemy each player stands on (CharacterDef.standsOnEnemies, Classic Peach's riding) and
+   * where it was when last ridden. Empty unless a def sets standsOnEnemies.
+   */
+  private readonly rides = new Map<Player, { e: Enemy; x: number }>();
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
@@ -1846,6 +1851,7 @@ export class World {
       e.update(this);
     }
     this.resolveLifts();
+    this.rideEnemies();
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -2977,6 +2983,9 @@ export class World {
     // No stomp during a Classic SMBC hit's push (PS-C12), nor under water for a hero whose
     // swim profile says so (SW-C7): plain contact.
     const stompBarred = p.hurtLock !== null || (p.inWater && p.profile.swim?.noStomp === true);
+    // CharacterDef.standsOnEnemies (Classic Peach, PE-11): landing on it, or riding it, is no
+    // stomp and no hurt (World.rideEnemies keeps her on top).
+    if (!stompBarred && p.def.standsOnEnemies?.(p, e) && (fromAbove || this.rides.get(p)?.e === e)) return;
     // CharacterDef.seaFloorSafe (ML-C25): a Blooper leaves a hero on the sea floor alone.
     if (e instanceof Blooper && p.def.seaFloorSafe === true && pb.onGround && feet === px(this.heightPx - 32))
       return;
@@ -3133,6 +3142,49 @@ export class World {
   }
 
   /* ---------- Lifts ---------- */
+
+  /** The enemy `p` stands on now (CharacterDef.standsOnEnemies), or null. */
+  ridingEnemy(p: Player): Enemy | null {
+    const r = this.rides.get(p);
+    return r && r.e.alive && this.entities.includes(r.e) ? r.e : null;
+  }
+
+  /**
+   * Enemies as moving floors (CharacterDef.standsOnEnemies; Classic Peach's riding, PE-11), after
+   * the enemies moved, like Lift.carry: a hero falling onto one (or still on the one ridden last
+   * frame) is put on its top, grounded, and moved by its step. Only defs that set the field ride.
+   */
+  private rideEnemies(): void {
+    for (const p of this.activePlayers()) {
+      const stands = p.def.standsOnEnemies;
+      const was = this.rides.get(p);
+      this.rides.delete(p);
+      if (!stands || p.vine || p.stairs || p.frozen) continue;
+      const pb = p.body;
+      if (pb.vy < 0) continue;
+      const feet = pb.y + pb.h;
+      for (const e of this.enemies) {
+        const eb = e.body;
+        if (pb.x >= eb.x + eb.w || pb.x + pb.w <= eb.x || !stands(p, e)) continue;
+        const riding = was?.e === e;
+        const onTop = riding
+          ? feet >= eb.y - px(4) && feet <= eb.y + px(12)
+          : pb.prevBottom <= eb.y + px(4) && feet >= eb.y && feet <= eb.y + px(12);
+        if (!onTop) continue;
+        pb.y = eb.y - pb.h;
+        pb.vy = 0;
+        pb.onGround = true;
+        const dx = riding && was ? eb.x - was.x : 0;
+        if (dx !== 0) {
+          const wall = pb.hitWall;
+          moveX(pb, this.playerMap(p), dx);
+          if (pb.hitWall === 0) pb.hitWall = wall;
+        }
+        this.rides.set(p, { e, x: eb.x });
+        break;
+      }
+    }
+  }
 
   private resolveLifts(): void {
     for (const e of this.entities) {
