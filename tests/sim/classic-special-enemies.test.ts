@@ -18,6 +18,7 @@ import { HammerWeapon, SPECIAL_ITEM_SAID, WING_FRAMES, HAMMER_FRAMES } from '@ga
 import { WATER_MODE_TOP } from '@game/world/world';
 import { fullPowerUp } from '@game/world/special-items';
 import { AMMO_PICKUPS } from '@game/cheats';
+import { defaultClassicSettings } from '@engine/save/original-options';
 import { SIMON } from '@game/characters/simon';
 import { RYU } from '@game/characters/ryu';
 import { SOPHIA } from '@game/characters/sophia';
@@ -460,5 +461,26 @@ describe('G-022: the items', () => {
         def.id,
       ).toBe(true);
     }
+  });
+
+  it("the full power-up fills Link's arrows too when his weapon is the Bow (Link.AMMO_ARR: bombs and bow)", () => {
+    const classic = defaultClassicSettings();
+    classic.weapons.link = 'bow';
+    const w = runSim({
+      level: testLevel(),
+      character: heroFor(LINK, 'classic'),
+      rules: 'classic',
+      classic,
+      script: { steps: [] },
+      maxFrames: 0,
+    }).world;
+    const p = w.player;
+    fullPowerUp(w, p);
+    const arrows = p.scratch.arrows ?? 0;
+    expect(arrows).toBeGreaterThan(5);
+    // Full: one more arrow pack adds nothing.
+    p.def.behaviour.onPickup?.(p, 'arrow-pack', w);
+    expect(p.scratch.arrows).toBe(arrows);
+    expect(AMMO_PICKUPS.has('arrow-pack')).toBe(true);
   });
 });

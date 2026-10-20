@@ -15,11 +15,14 @@ import type { PickupKind } from './entities/objects/pickup';
 
 /**
  * The pickups the Infinite Ammo goal counts (Character.hitPickup: PickupInfo.AMMO_DCT): Link's
- * bombs, Mega Man's weapon energy, Ryu's ninpo, Samus's missiles, Sophia III's two missile types
- * and Simon's hearts. Health, energy, E-tanks and the extra heroes' pickups are not ammo.
+ * bombs and arrows (LINK_ARROW_AMMO, with the Bow), Mega Man's weapon energy, Ryu's ninpo,
+ * Samus's missiles, Sophia III's two missile types and Simon's hearts. Health, energy, E-tanks
+ * and the extra heroes' pickups are not ammo. The full power-up fills each of these
+ * (world/special-items.ts, setAllAmmoToMax).
  */
 export const AMMO_PICKUPS: ReadonlySet<PickupKind> = new Set<PickupKind>([
   'bomb',
+  'arrow-pack',
   'weapon-small',
   'weapon-large',
   'ninpo-small',
