@@ -44,9 +44,11 @@ under `## [Unreleased]`.
   they read on a phone, and it grows open as the original's boxes do. Every box has the
   original's size and place: the grid panel 185 x 70, the name box 158 wide and only as tall as
   its lines (a hero's own look has two), the skin menu's cells each hero's own preview size
-  (Mega Man's 35 x 35, Samus's 32 x 40) in a box fitted to them, and the HUD's face inset with
-  its text after it. Our one short prompt sits under the name box ("OK (Z) LOOKS"; the key is
-  left out when it would not fit). Survival's lines and the lives are outlined too. Each cell and
+  (Mega Man's 35 x 35, Samus's 32 x 40) from the left of a box fitted to them, and the HUD's face
+  inset with its text after it. A Classic run's HUD keeps those columns in its levels and intro
+  cards too, so nothing moves when the level starts (the campaign's HUD is unchanged). Our one
+  short prompt sits on the ground under the hero, clear of every hero's head ("OK (Z) LOOKS";
+  the key is left out when it would not fit). Survival's lines and the lives are outlined too. Each cell and
   the HUD's framed box show the look's face: our own close-up for every hero, skin and Expansion
   hero.
 - Classic mode's select stands the hero at the centre on the next level's own sky, scenery and
