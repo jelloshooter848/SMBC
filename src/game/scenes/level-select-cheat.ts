@@ -1,3 +1,4 @@
+import type { MapDifficulty } from '@engine/save/settings';
 import { MenuScene } from './menu';
 import { LevelScene } from './level';
 import type { Game } from './game';
@@ -35,10 +36,13 @@ export class LevelSelectScene extends MenuScene {
   private set: MapSet;
   private world = 1;
   private level = 1;
+  /** The page's Map difficulty, from the settings; saved by Go only. */
+  private difficulty: MapDifficulty;
 
   constructor(game: Game, onBack: () => void, translucent = false) {
     super(game, 'LEVEL SELECT', [], onBack, translucent);
     this.set = MAP_SETS[0] as MapSet;
+    this.difficulty = game.deps.settings?.classicMapDifficulty ?? 'normal';
     // From a level (the pause menu): its map set, world and level (LevelSelectMenu.as:35-46).
     const here = game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
     const id = here?.world.level.id;
@@ -72,7 +76,14 @@ export class LevelSelectScene extends MenuScene {
         },
         hint: 'Which game',
       },
-      mapDifficultyItem(this.game, () => this.classic),
+      // Kept on this page until Go, which saves it (LevelSelectMenu: changeMapDifficulty on
+      // GO_TO_WORLD only); Back leaves the CLASSIC menu's as it was.
+      mapDifficultyItem(this.game, () => this.classic, {
+        get: () => this.difficulty,
+        set: (d) => {
+          this.difficulty = d;
+        },
+      }),
       {
         label: 'World',
         value: () => worldName(this.world),
@@ -100,7 +111,7 @@ export class LevelSelectScene extends MenuScene {
   private go(): void {
     const game = this.game;
     const target = levelSelectTarget(game, this.set, this.world, this.level);
-    const difficulty = this.classic ? (game.deps.settings?.classicMapDifficulty ?? 'normal') : 'normal';
+    const difficulty = this.classic ? this.difficulty : 'normal';
     game.classicLevelSelect(target, difficulty);
   }
 

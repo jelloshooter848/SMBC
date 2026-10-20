@@ -144,22 +144,37 @@ export const CURRENT_RULES_NORMAL = 'Current rules: always Normal';
  * phone), saved and read out. While `classic()` is false (Current rules) it shows Normal, says
  * why and does not change.
  */
-export function mapDifficultyItem(game: Game, classic: () => boolean): MenuItem {
-  const s = game.deps.settings;
-  const value = () => (classic() ? (s?.classicMapDifficulty ?? 'normal') : 'normal');
+export function mapDifficultyItem(
+  game: Game,
+  classic: () => boolean,
+  store: { get(): MapDifficulty; set(d: MapDifficulty): void } = settingsDifficulty(game),
+): MenuItem {
+  const value = () => (classic() ? store.get() : 'normal');
   return {
     label: 'Map difficulty',
     value: () => DIFFICULTY_NAMES[value()],
     adjust: (d) => {
-      if (!s || !classic()) return;
+      if (!classic()) return;
       const all = MAP_DIFFICULTIES;
-      s.classicMapDifficulty = all[(all.indexOf(value()) + d + all.length) % all.length] as MapDifficulty;
-      game.deps.applySettings?.();
+      store.set(all[(all.indexOf(value()) + d + all.length) % all.length] as MapDifficulty);
     },
     get hint() {
       return classic()
         ? 'Easy, Normal or Hard: each plays the original version of every level'
         : 'Classic rules only: with Current rules every level plays as Normal';
+    },
+  };
+}
+
+/** The CLASSIC menu's Map difficulty: settings.classicMapDifficulty, saved at once. */
+function settingsDifficulty(game: Game): { get(): MapDifficulty; set(d: MapDifficulty): void } {
+  return {
+    get: () => game.deps.settings?.classicMapDifficulty ?? 'normal',
+    set: (d) => {
+      const s = game.deps.settings;
+      if (!s) return;
+      s.classicMapDifficulty = d;
+      game.deps.applySettings?.();
     },
   };
 }

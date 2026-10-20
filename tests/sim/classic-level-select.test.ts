@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadProgress, recordBeat, saveProgress } from '@engine/save/progress';
-import { defaultSettings, type Settings } from '@engine/save/settings';
+import { CLASSIC_CHEAT_IDS, defaultSettings, type Settings } from '@engine/save/settings';
 import type { CharacterDef } from '@game/characters/character';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -11,7 +11,7 @@ import { LevelSelectScene, levelSelectTarget, worldName } from '@game/scenes/lev
 import type { MenuItem } from '@game/scenes/menu';
 import { MAP_SETS, recordClassicBeat, type ClassicMenuScene } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
-import { unlockAll } from '@game/cheats';
+import { allUnlocked, unlockAll } from '@game/cheats';
 import { makeGame, useStorage, type H } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
@@ -161,6 +161,44 @@ describe('G-007: the Level Select cheat', () => {
     const c = defaultSettings().classicCheats;
     unlockAll(c);
     expect(c.levelSelect).toBe(true);
+  });
+
+  it('a save that entered the code before it existed gets Enter code back, and the code opens it', () => {
+    // Every rule cheat unlocked by the code, from before the Level Select cheat (Cheats.allUnlocked
+    // counts all 17 locks, its own too).
+    const c = defaultSettings().classicCheats;
+    for (const id of CLASSIC_CHEAT_IDS) c.unlocked[id] = true;
+    expect(c.levelSelect).toBe(false);
+    expect(allUnlocked(c)).toBe(false);
+    const h = classic({ classicCheats: c });
+    h.game.scenes.push(new CheatsScene(h.game, () => h.game.scenes.pop(), { all: false }));
+    expect(labels(h.top())).toContain('Enter code');
+    unlockAll(c);
+    expect(allUnlocked(c)).toBe(true);
+  });
+
+  it("its Map difficulty is saved by Go only; Back leaves the CLASSIC menu's as it was", () => {
+    const open = () => {
+      const h = classic({ classicMapDifficulty: 'normal' });
+      S(h).classicCheats.levelSelect = true;
+      h.game.showClassicMenu();
+      h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
+      h.idle(8);
+      h.tap('down');
+      h.tap('right'); // Hard, on this page only
+      h.tap('up'); // back to the top, for pick
+      return h;
+    };
+    const back = open();
+    expect(items(back.top())[1]?.value?.()).toBe('Hard');
+    expect(S(back).classicMapDifficulty).toBe('normal');
+    pick(back, 'Back');
+    expect(S(back).classicMapDifficulty).toBe('normal');
+    const go = open();
+    expect(S(go).classicMapDifficulty).toBe('normal');
+    pick(go, 'Go');
+    expect(S(go).classicMapDifficulty).toBe('hard');
+    expect(go.game.classicDifficulty).toBe('hard');
   });
 
   it('its page: Map set, Difficulty, World (A-D too), Level, Go, Back; Go starts a run there on that difficulty', () => {

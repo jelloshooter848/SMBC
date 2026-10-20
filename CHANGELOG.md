@@ -22,10 +22,10 @@ under `## [Unreleased]`.
   water levels of both games, and Simon and Ryu get extra blocks before Bowser. The campaign maps
   are unchanged.
 - Classic mode: **Map Difficulty Easy, Normal or Hard**, a new row of the CLASSIC menu under the
-  map sets (with Classic rules; Current rules always play Normal). Each difficulty plays the original's own version of every level
-  (other enemies and blocks), and Easy and Hard give the castles their checkpoints. Lakitu comes
-  back sooner and throws more Spinies on Hard, and more flying Cheep Cheeps leap at once. A beaten
-  set remembers the difficulty it was beaten on.
+  map sets (with Classic rules; Current rules always play Normal). Each difficulty plays the
+  original's own version of every level (other enemies and blocks), and Easy and Hard give the
+  castles their checkpoints. Lakitu comes back sooner and throws more Spinies on Hard, and more
+  flying Cheep Cheeps leap at once. A beaten set remembers the difficulty it was beaten on.
 - Classic mode: the **Hudson Bee**, a hidden item worth 8000 points, on Hard.
 - Classic mode: the **Level Select cheat**. Beat every map set on Hard (or enter the cheat code) to
   unlock it. It is on the Cheats page and the pause menu, and lets you pick a map set, a difficulty,
