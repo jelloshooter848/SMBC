@@ -268,7 +268,7 @@ export class CharacterSelectScene implements Scene {
         );
         if (!sv.allFallen) {
           this.box = { kind: 'news' };
-          this.game.deps.announcer?.say(`You can now revive and strengthen heroes. ${this.okWord()} to go on.`);
+          this.game.deps.announcer?.say(`You can now revive and strengthen heroes. OK to go on.`);
         } else this.sayRevive();
         return;
       }
@@ -302,11 +302,6 @@ export class CharacterSelectScene implements Scene {
     );
   }
 
-  /** The word for OK (the jump ability) as the player's input names it. */
-  private okWord(): string {
-    return abilityHint(this.game, 'OK', 'jump');
-  }
-
   /** "2 lives left" (CharacterSelectBox: "2 lives remaining"). */
   private livesLeft(): string {
     const n = this.game.state.lives;
@@ -335,15 +330,10 @@ export class CharacterSelectScene implements Scene {
   /** Revive mode's spoken instructions. */
   private sayRevive(): void {
     const leave = this.reviveLeave();
-    const how =
-      leave === 'DONE'
-        ? ` ${abilityHint(this.game, 'DONE', 'attack')} when finished.`
-        : leave === 'BACK'
-          ? ` ${abilityHint(this.game, 'BACK', 'attack')} to leave.`
-          : '';
+    const how = leave === 'DONE' ? ' DONE when finished.' : leave === 'BACK' ? ' BACK to leave.' : '';
     this.game.deps.announcer?.say(
       `Revive your heroes: each costs one life. ${this.livesLeft()}. ${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}. ` +
-        `Left and right to choose,${this.rowsHint()} ${this.okWord()} to revive.${how}` +
+        `Left and right to choose,${this.rowsHint()} OK to revive.${how}` +
         this.fallenNote(),
     );
   }
@@ -355,7 +345,8 @@ export class CharacterSelectScene implements Scene {
     this.index = this.unlocked(this.index);
     const name = this.slotName(this.index);
     this.game.deps.announcer?.say(
-      `Choose your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` + this.fallenNote(),
+      `Choose your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
+        this.fallenNote(),
     );
   }
 
@@ -366,7 +357,9 @@ export class CharacterSelectScene implements Scene {
     const how = this.game.reviveHero(c);
     // SN_REVIVE_CHARACTER is the power-up sound.
     this.game.ctx.audio.sfx('powerup');
-    this.game.deps.announcer?.say(`${c.name} ${how === 'revived' ? 'revived' : 'powered up'}. ${this.livesLeft()}.`);
+    this.game.deps.announcer?.say(
+      `${c.name} ${how === 'revived' ? 'revived' : 'powered up'}. ${this.livesLeft()}.`,
+    );
     if (this.game.state.lives < MIN_LIVES_FOR_REVIVAL || this.pickable().length === 0) {
       this.endRevive();
       return;
@@ -404,7 +397,9 @@ export class CharacterSelectScene implements Scene {
     this.index = rowMove(this.index, input) ?? move(this.index, input);
     if (this.index !== was) {
       // Say what OK would do there (the name was just said).
-      this.game.deps.announcer?.say(`${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}`);
+      this.game.deps.announcer?.say(
+        `${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}`,
+      );
     }
     if (this.t > 10 && (input.pressed('jump') || input.pressed('start'))) {
       this.revive();
@@ -417,7 +412,7 @@ export class CharacterSelectScene implements Scene {
       this.box = { kind: 'finished', yes: false };
       this.game.ctx.audio.sfx('select');
       this.game.deps.announcer?.say(
-        `Are you finished reviving and strengthening heroes? No. Up and down to choose, ${this.okWord()} to answer.`,
+        `Are you finished reviving and strengthening heroes? No. Up and down to choose, OK to answer.`,
       );
     } else if (leave === 'BACK' && this.start) {
       // Every hero still fallen: the run has not begun, so BACK leaves as on any new game's select.
@@ -429,7 +424,8 @@ export class CharacterSelectScene implements Scene {
   /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
   touchLabels(): TouchLabels {
     if (this.box) return menuTouchLabels(false);
-    if (this._reviving) return { jump: 'OK', attack: this.reviveLeave(), special: null, start: null, select: null };
+    if (this._reviving)
+      return { jump: 'OK', attack: this.reviveLeave(), special: null, start: null, select: null };
     if (this.pick?.onMap) return { jump: 'OK', attack: 'MAP', special: null, start: null, select: null };
     const back = !this.pick || !!this.pick.onCancel;
     return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };

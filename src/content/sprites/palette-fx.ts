@@ -16,14 +16,7 @@ import { hexToRgb, type Palette, type PaletteFx } from '@engine/gfx/palette';
  * Map pages add `shade-<theme>` / `shade-<theme>-glow` (mapShadeFx): a hidden hero's faint
  * silhouette on the world map, in the page's own ground shade.
  */
-export type HeroFx =
-  | 'silhouette'
-  | 'rim'
-  | 'tell'
-  | 'brainwashed'
-  | 'brainwashed-glow'
-  | 'frozen'
-  | 'fallen';
+export type HeroFx = 'silhouette' | 'rim' | 'tell' | 'brainwashed' | 'brainwashed-glow' | 'frozen' | 'fallen';
 
 /** The palette name for `palette` recoloured by `fx` ('luigi' → 'luigi~silhouette'). */
 export function fxPalette(palette: string, fx: HeroFx): string {

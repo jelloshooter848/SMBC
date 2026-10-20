@@ -21,6 +21,12 @@ under `## [Unreleased]`.
   weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
   extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
   choice; the original's weapons are the default.
+- Classic mode Options > Game mode: **Survival**, as in the original. Every hero has one life
+  and starts fallen; at the start, after each castle and after a warp pipe, the select screen
+  opens in revive mode, where OK spends a life to revive a fallen hero or power up a standing
+  one (two power-ups and some ammo), and DONE goes on to pick. A death makes that hero fall
+  without costing a life, and the run ends when every hero has fallen. Fallen heroes are drawn
+  grey and named on the select screen; the card before a level shows one life.
 
 ## [0.4.60] - 2026-10-20
 

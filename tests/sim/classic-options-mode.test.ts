@@ -218,6 +218,9 @@ describe('the Game mode row (CLASSIC > Options)', () => {
     expect(h.said.at(-1)).toMatch(/^Game mode: Single hero\..*Changed from the original: All heroes/);
     h.tap('right');
     expect(h.settings.classic.gameMode).toBe('single-random');
+    // Survival (v0.4.63, tests/sim/classic-survival.test.ts) ends the row.
+    h.tap('right');
+    expect(h.settings.classic.gameMode).toBe('survival');
     h.tap('right');
     expect(h.settings.classic.gameMode).toBe('all');
     expect(row().label).toBe('Game mode');
