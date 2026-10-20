@@ -50,7 +50,8 @@ export class IntroScene implements Scene {
     const sheet = assets.sheet(c.sheet, c.palette);
     const f = sheet.frames.get(c.frame);
     r.sprite(sheet, c.frame, 96, 112 - (f?.h ?? 16) + 16);
-    r.text(font, `×  ${s.lives}`, 120, 120);
+    // Classic Survival shows 1: each hero has one life (Game.cardLives).
+    r.text(font, `×  ${this.game.cardLives}`, 120, 120);
     // The Classic rules tag, as the level will show it (TG-32).
     const rules = rulesOf(this.game.ctx);
     const heroes = [s.character, ...(s.character2 ? [s.character2] : [])].map((d) => heroFor(d, rules));

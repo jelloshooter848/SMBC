@@ -11,6 +11,8 @@ import type { TouchLabels } from '@engine/input/touch';
 import type { Action } from '@engine/input/actions';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { askTraining, needsTraining } from '../tutorial/training';
+import { MIN_LIVES_FOR_REVIVAL, type Survival } from '../survival';
+import { menuTouchLabels } from '../touch-labels';
 
 /**
  * One player picks a hero mid-run: entering a level from the world map, after a death with lives
@@ -62,6 +64,14 @@ export interface NewGamePick {
 /** The second row of heroes (heroes past the first row's) sits this far below the first. */
 export const SECOND_ROW_DY = 40;
 
+/** Classic Survival's box over the select: the revive news, or the "finished?" question. */
+type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; yes: boolean };
+
+/** The revive news (MessageBoxMessages.YOU_CAN_NOW_REVIVE), as the lines the box draws. */
+export const REVIVE_NEWS = ['YOU CAN NOW REVIVE', 'AND STRENGTHEN HEROES.'];
+/** The question before leaving revive mode (MessageBoxMessages.CANCEL_REVIVE). */
+export const REVIVE_DONE_QUESTION = ['ARE YOU FINISHED', 'REVIVING AND', 'STRENGTHENING HEROES?'];
+
 export class CharacterSelectScene implements Scene {
   private index = 0;
   private index2 = 1;
@@ -69,6 +79,17 @@ export class CharacterSelectScene implements Scene {
   private t = 0;
   /** The cursor is on RETURN TO MAP rather than the hero row. */
   private onMapRow = false;
+  /**
+   * Classic Survival's revive mode (CharacterSelectBox MODE_REVIVE): OK spends a life to revive
+   * the hero under the cursor (or strengthen a standing one); DONE goes on to pick a hero.
+   */
+  private _reviving = false;
+  /** Classic Survival's box over the select, while it is up (it waits for a press). */
+  private box: SurvivalBox | null = null;
+  /** The boxes still to show after this one (the cheat news, then the revive news). */
+  private boxQueue: SurvivalBox[] = [];
+  /** The cheat news read out with its box (revive mode shows it in a box of its own). */
+  private cheatSaid = '';
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
@@ -90,6 +111,54 @@ export class CharacterSelectScene implements Scene {
     let n = 0;
     while (n < chars.length && n < base.length && chars[n] === base[n]) n++;
     return n === 0 ? chars.length : n;
+  }
+
+  /** Classic Survival's state for this select (Game.survival), else null. */
+  get survival(): Survival | null {
+    return this.hasRandom ? this.game.survival : null;
+  }
+
+  /** In revive mode (Classic Survival). */
+  get reviving(): boolean {
+    return this._reviving;
+  }
+
+  /** The box over the select ('news' or 'finished'), else null. */
+  get boxShown(): SurvivalBox['kind'] | null {
+    return this.box?.kind ?? null;
+  }
+
+  /** The slot under the cursor. */
+  get cursor(): number {
+    return this.index;
+  }
+
+  /** Hero `i` has fallen (Classic Survival). */
+  fallen(i: number): boolean {
+    const c = this.chars[i];
+    return !this.isRandom(i) && !!c && this.survival?.isFallen(c.id) === true;
+  }
+
+  /**
+   * Classic Survival: slot `i` cannot be picked in the mode shown (CharacterSelectBox.changeMode):
+   * picking a hero, the fallen; reviving, the standing heroes already fully strengthened. The
+   * Random slot always can.
+   */
+  private unpickable(i: number): boolean {
+    if (!this.survival || this.isRandom(i)) return false;
+    const c = this.chars[i];
+    if (!c) return true;
+    return this._reviving ? this.game.fullyUpgraded(c) : this.fallen(i);
+  }
+
+  /** The cursor passes over slot `i`: a locked captive, or one Survival's mode leaves out. */
+  private skipped(i: number): boolean {
+    return this.locked(i) || this.unpickable(i);
+  }
+
+  /** The heroes OK can take now (Survival's Random slot picks among them). */
+  private pickable(): CharacterDef[] {
+    return this.chars.filter((_, i) => !this.skipped(i));
   }
 
   /** Classic mode's Random slot is shown: it is slot `chars.length`, after the last hero. */
@@ -143,21 +212,22 @@ export class CharacterSelectScene implements Scene {
   /** The hero OK on slot `i` gives: its own, or for the Random slot a random one. */
   private heroAt(i: number): CharacterDef | undefined {
     if (!this.isRandom(i)) return this.chars[i];
-    const c = this.game.randomHero();
+    // Revive mode's Random revives a random hero among those it can (getRandomCharInd).
+    const c = this._reviving ? this.game.randomHero(this.pickable()) : this.game.randomHero();
     this.game.deps.announcer?.say(`Random: ${c.name}.`);
     return c;
   }
 
   /** An unlocked index: `i` itself, else the first hero (Mario), else the first unlocked one. */
   private unlocked(i: number): number {
-    if (!this.locked(i)) return i;
+    if (!this.skipped(i)) return i;
     const chars = this.chars;
     const first = chars.indexOf(this.game.firstHero);
-    if (first >= 0 && !this.locked(first)) return first;
-    return Math.max(
-      0,
-      chars.findIndex((_, k) => !this.locked(k)),
-    );
+    if (first >= 0 && !this.skipped(first)) return first;
+    const k = chars.findIndex((_, j) => !this.skipped(j));
+    // Survival with no hero to take: the Random slot.
+    if (k < 0 && this.survival) return chars.length;
+    return Math.max(0, k);
   }
 
   /**
@@ -205,6 +275,32 @@ export class CharacterSelectScene implements Scene {
     const news = this.takeCheatNews();
     const pick = this.pick;
     const chars = this.chars;
+    const sv = this.survival;
+    if (sv) {
+      // CharacterSelectBox.initiate: revival allowed and a life to pay with opens revive mode
+      // (none to revive or strengthen: the select instead); the select uses the allowance up
+      // (characterSelectStartHandler). Unless every hero has fallen, the news comes first.
+      this._reviving = sv.reviveAllowed && this.game.state.lives >= MIN_LIVES_FOR_REVIVAL;
+      sv.reviveAllowed = false;
+      if (this._reviving && this.pickable().length === 0) this._reviving = false;
+      if (this._reviving) {
+        const current = (pick?.current ?? this.game.state.character).id;
+        this.index = this.unlocked(
+          Math.max(
+            0,
+            chars.findIndex((c) => c.id === current),
+          ),
+        );
+        // Cheats unlocked by the clear come first (Cheats.unlockCheat's boxes), then the revive news
+        // unless every hero has fallen; each waits for OK, then revive mode is read out.
+        this.cheatSaid = news.trim();
+        const boxes: SurvivalBox[] = [];
+        if (news) boxes.push({ kind: 'cheats' });
+        if (!sv.allFallen) boxes.push({ kind: 'news' });
+        this.showBox(boxes);
+        return;
+      }
+    }
     if (pick) {
       // A locked current hero (it should not happen) falls back to Mario.
       this.index = this.unlocked(
@@ -221,6 +317,7 @@ export class CharacterSelectScene implements Scene {
         `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
           this.toFind() +
+          this.fallenNote() +
           news,
       );
       return;
@@ -230,12 +327,156 @@ export class CharacterSelectScene implements Scene {
     this.game.deps.announcer?.say(
       `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
         this.toFind() +
+        this.fallenNote() +
         news,
     );
   }
 
+  /** "2 lives left" (CharacterSelectBox: "2 lives remaining"). */
+  private livesLeft(): string {
+    const n = this.game.state.lives;
+    return `${n} ${n === 1 ? 'life' : 'lives'} left`;
+  }
+
+  /**
+   * Survival: which heroes are lost, by the shorter list: " Fallen: Mario, Link." or
+   * " Standing: Luigi." (" Every hero has fallen." with none standing); nothing while none has
+   * fallen.
+   */
+  private fallenNote(): string {
+    if (!this.survival) return '';
+    const heroes = this.chars.filter((_, i) => !this.locked(i));
+    const fallen = heroes.filter((c) => this.survival?.isFallen(c.id));
+    const standing = heroes.filter((c) => !fallen.includes(c));
+    if (!fallen.length) return '';
+    if (!standing.length) return ' Every hero has fallen.';
+    const names = (l: CharacterDef[]) => l.map((c) => c.name).join(', ');
+    return fallen.length <= standing.length ? ` Fallen: ${names(fallen)}.` : ` Standing: ${names(standing)}.`;
+  }
+
+  /** What OK does to slot `i` in revive mode (CharacterSelectBox.changeNameBoxText). */
+  private reviveAction(i: number): string {
+    if (this.isRandom(i)) return 'Revive or power up';
+    return this.fallen(i) ? 'Revive' : 'Power up';
+  }
+
+  /** DONE (attack) in revive mode: the question; BACK at a new game's select with every hero fallen. */
+  private reviveLeave(): string | null {
+    if (!this.survival?.allFallen) return 'DONE';
+    return this.start ? 'BACK' : null;
+  }
+
+  /** Revive mode's spoken instructions. */
+  private sayRevive(): void {
+    const leave = this.reviveLeave();
+    const how = leave === 'DONE' ? ' DONE when finished.' : leave === 'BACK' ? ' BACK to leave.' : '';
+    this.game.deps.announcer?.say(
+      `Revive your heroes: each costs one life. ${this.livesLeft()}. ${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}. ` +
+        `Left and right to choose,${this.rowsHint()} OK to revive.${how}` +
+        this.fallenNote(),
+    );
+  }
+
+  /** Revive mode ends (out of lives, none left to revive, or DONE): on to the select. */
+  private endRevive(): void {
+    this._reviving = false;
+    this.box = null;
+    this.index = this.unlocked(this.index);
+    const name = this.slotName(this.index);
+    this.game.deps.announcer?.say(
+      `Choose your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
+        this.fallenNote(),
+    );
+  }
+
+  /** OK in revive mode: CharacterSelectBox.reviveCharacter for the slot under the cursor. */
+  private revive(): void {
+    const c = this.heroAt(this.index);
+    if (!c) return;
+    const how = this.game.reviveHero(c);
+    // SN_REVIVE_CHARACTER is the power-up sound.
+    this.game.ctx.audio.sfx('powerup');
+    this.game.deps.announcer?.say(
+      `${c.name} ${how === 'revived' ? 'revived' : 'powered up'}. ${this.livesLeft()}.`,
+    );
+    if (this.game.state.lives < MIN_LIVES_FOR_REVIVAL || this.pickable().length === 0) {
+      this.endRevive();
+      return;
+    }
+    // The cursor stays (a revived hero can still be strengthened), or moves on from one now full.
+    if (this.skipped(this.index)) this.index = this.unlocked(this.index);
+  }
+
+  /** Shows the first of `boxes` (the rest queued) and reads it out; none: revive mode is read out. */
+  private showBox(boxes: SurvivalBox[]): void {
+    const [box, ...rest] = boxes;
+    this.box = box ?? null;
+    this.boxQueue = rest;
+    if (!box) this.sayRevive();
+    else if (box.kind === 'cheats') this.game.deps.announcer?.say(`${this.cheatSaid} OK to go on.`);
+    else if (box.kind === 'news')
+      this.game.deps.announcer?.say('You can now revive and strengthen heroes. OK to go on.');
+  }
+
+  /** The box's input: the news closes on OK; the question toggles with the arrows, OK answers. */
+  private updateBox(box: SurvivalBox, pressed: (a: Action) => boolean): void {
+    if (this.t <= 10) return;
+    if (
+      box.kind === 'finished' &&
+      (pressed('up') || pressed('down') || pressed('left') || pressed('right'))
+    ) {
+      box.yes = !box.yes;
+      this.game.ctx.audio.sfx('select');
+      this.game.deps.announcer?.say(box.yes ? 'Yes' : 'No');
+      return;
+    }
+    if (!(pressed('jump') || pressed('start'))) return;
+    this.game.ctx.audio.sfx('select');
+    this.box = null;
+    if (box.kind === 'finished' && box.yes) this.endRevive();
+    else if (box.kind === 'finished') this.sayRevive();
+    else this.showBox(this.boxQueue);
+  }
+
+  /** Revive mode's input (one player: Classic mode has no co-op). */
+  private updateRevive(
+    input: InputFrame,
+    move: (idx: number, f: InputFrame) => number,
+    rowMove: (idx: number, f: InputFrame) => number | null,
+  ): void {
+    const was = this.index;
+    this.index = rowMove(this.index, input) ?? move(this.index, input);
+    if (this.index !== was) {
+      // Say what OK would do there (the name was just said).
+      this.game.deps.announcer?.say(
+        `${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}`,
+      );
+    }
+    if (this.t > 10 && (input.pressed('jump') || input.pressed('start'))) {
+      this.revive();
+      return;
+    }
+    if (!input.pressed('attack') && !input.pressed('select')) return;
+    const leave = this.reviveLeave();
+    if (leave === 'DONE') {
+      // pressAtkBtn: "Are you finished reviving and strengthening characters?" NO / YES.
+      this.box = { kind: 'finished', yes: false };
+      this.game.ctx.audio.sfx('select');
+      this.game.deps.announcer?.say(
+        `Are you finished reviving and strengthening heroes? No. Up and down to choose, OK to answer.`,
+      );
+    } else if (leave === 'BACK' && this.start) {
+      // Every hero still fallen: the run has not begun, so BACK leaves as on any new game's select.
+      this.game.ctx.audio.sfx('select');
+      this.start.back();
+    } else this.game.ctx.audio.sfx('bump');
+  }
+
   /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
   touchLabels(): TouchLabels {
+    if (this.box) return menuTouchLabels(false);
+    if (this._reviving)
+      return { jump: 'OK', attack: this.reviveLeave(), special: null, start: null, select: null };
     if (this.pick?.onMap) return { jump: 'OK', attack: 'MAP', special: null, start: null, select: null };
     const back = !this.pick || !!this.pick.onCancel;
     return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };
@@ -251,7 +492,7 @@ export class CharacterSelectScene implements Scene {
       const d = f.pressed('left') ? n - 1 : f.pressed('right') ? 1 : 0;
       if (!d) return idx;
       let to = (idx + d) % n;
-      while (to !== idx && this.locked(to)) to = (to + d) % n;
+      while (to !== idx && this.skipped(to)) to = (to + d) % n;
       this.game.ctx.audio.sfx(to === idx ? 'bump' : 'select');
       const name = this.slotName(to);
       if (name) this.game.deps.announcer?.say(name);
@@ -278,7 +519,7 @@ export class CharacterSelectScene implements Scene {
       let best = -1;
       let bd = Infinity;
       for (let k = to === 0 ? 0 : first; k < (to === 0 ? first : n); k++) {
-        if (this.locked(k)) continue;
+        if (this.skipped(k)) continue;
         const d = Math.abs(this.slot(k).x - x);
         if (d < bd) {
           bd = d;
@@ -294,6 +535,14 @@ export class CharacterSelectScene implements Scene {
       if (name) this.game.deps.announcer?.say(`${name}, ${to === 0 ? 'first' : 'second'} row`);
       return best;
     };
+    if (this.box) {
+      this.updateBox(this.box, (a) => inputs.some((f) => f.pressed(a)));
+      return;
+    }
+    if (this._reviving) {
+      this.updateRevive(input, move, rowMove);
+      return;
+    }
     if (this.pick) {
       // Player 2's pick also takes player 1's input, so one device (a phone's touch buttons
       // drive player 1 only) can set up both heroes; player 2's own device works too.
@@ -372,17 +621,25 @@ export class CharacterSelectScene implements Scene {
     r.clear('#000');
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
-    const heading =
-      this.pick && this.game.state.character2
+    const heading = this._reviving
+      ? 'REVIVE YOUR HEROES'
+      : this.pick && this.game.state.character2
         ? `P${this.pick.player + 1} SELECT YOUR HERO`
         : 'SELECT YOUR HERO';
     r.text(font, heading, 128 - heading.length * 4, 32);
     const find = this.game.heroesToFind;
+    const sv = this.survival;
     if (find > 0) {
       const line = `${find} ${find === 1 ? 'HERO' : 'HEROES'} TO FIND`;
       r.text(font, line, 128 - line.length * 4, 52);
+    } else if (sv) {
+      // Survival: how many heroes still stand; the fallen are drawn grey.
+      const n = this.chars.filter((_, i) => !this.locked(i)).length;
+      const line = `${sv.standing().length} OF ${n} HEROES STANDING`;
+      // The cheat news takes this place on the select (revive mode shows it in its own box).
+      if (this._reviving || !this.cheatNews.length) r.text(font, line, 128 - line.length * 4, 52);
     }
-    this.renderCheatNews(r, font);
+    if (!this._reviving) this.renderCheatNews(r, font);
     const chars = this.chars;
     const first = this.firstRowSlots;
     const total = this.total;
@@ -394,7 +651,9 @@ export class CharacterSelectScene implements Scene {
       const spacing = spacingOf(i);
       const locked = this.locked(i);
       const pt = this.portraitOf(c);
-      const sheet = assets.sheet(pt.sheet, locked ? fxPalette(pt.palette, 'silhouette') : pt.palette);
+      // Survival's fallen heroes are greyed (CharacterSelectBox.markPortraitFallen: desaturate).
+      const fx = locked ? 'silhouette' : this.fallen(i) ? 'fallen' : null;
+      const sheet = assets.sheet(pt.sheet, fx ? fxPalette(pt.palette, fx) : pt.palette);
       const f = sheet.frames.get(pt.frame);
       const h = f?.h ?? 32;
       // Centred on its slot (a 16 px hero at x - 8; Sophia III's tank is wider).
@@ -447,7 +706,8 @@ export class CharacterSelectScene implements Scene {
     }
     // With a second row the lines below close up a little so everything fits the screen.
     const low = below ? below - 2 : 0;
-    if (this.pick) {
+    if (this._reviving) this.renderRevive(r, low);
+    else if (this.pick || sv) {
       // The original's CharacterSelect shows the lives left (numLives / livesTxt).
       r.text(font, `×  ${this.game.state.lives}`, 108, 158 + low);
     } else if (this.p2) {
@@ -460,13 +720,69 @@ export class CharacterSelectScene implements Scene {
     // Named by ability (OK), with the real key or pad button when not on touch.
     const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
     const goY = below ? 210 : 184;
-    if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, goY);
+    if (!this._reviving && (this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, goY);
     if (this.pick?.onMap) {
       const label = 'RETURN TO MAP';
       const x = 128 - label.length * 4;
       const y = below ? 224 : 204;
       r.text(font, label, x, y);
       if (this.onMapRow) r.text(font, '>', x - 12, y);
+    }
+  }
+
+  /**
+   * Revive mode's lines (CharacterSelectBox.changeNameBoxText): what OK does under the cursor,
+   * then the two steady prompts (no blinking here, whatever Reduce flashing says).
+   */
+  private renderRevive(r: Renderer, low: number): void {
+    const font = this.game.ctx.assets.sheet('font');
+    // The lives left, under the count of heroes standing ("2 lives remaining").
+    const n = this.game.state.lives;
+    const lives = `${n} ${n === 1 ? 'LIFE' : 'LIVES'} LEFT`;
+    r.text(font, lives, 128 - lives.length * 4, 66);
+    const action = this.reviveAction(this.index).toUpperCase();
+    r.text(font, action, 128 - action.length * 4, 158 + low);
+    const goY = 170 + low;
+    // What OK does under the cursor: a standing hero is powered up instead.
+    const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+    const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`);
+    r.text(font, ok, 128 - ok.length * 4, goY);
+    const leave = this.reviveLeave();
+    if (leave) {
+      const line = fontText(
+        `${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`,
+      );
+      r.text(font, line, 128 - line.length * 4, goY + 12);
+    }
+    if (this.box) this.renderBox(r, this.box);
+  }
+
+  /** Survival's box (the revive news, or the "finished?" question with NO and YES). */
+  private renderBox(r: Renderer, box: SurvivalBox): void {
+    const font = this.game.ctx.assets.sheet('font');
+    const lines =
+      box.kind === 'cheats'
+        ? [
+            this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!',
+            ...this.cheatNews.map((n) => n.toUpperCase()),
+          ]
+        : box.kind === 'news'
+          ? REVIVE_NEWS
+          : REVIVE_DONE_QUESTION;
+    const rows = lines.length + 2;
+    const h = rows * 12 + 12;
+    const y = 120 - (h >> 1);
+    r.rect(16, y, 224, h, '#fcfcfc');
+    r.rect(18, y + 2, 220, h - 4, '#000000');
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + 8 + i * 12));
+    const last = y + 8 + (lines.length + 1) * 12;
+    if (box.kind !== 'finished') {
+      const ok = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
+      r.text(font, ok, 128 - ok.length * 4, last);
+    } else {
+      r.text(font, 'NO', 84, last);
+      r.text(font, 'YES', 148, last);
+      r.text(font, '>', box.yes ? 136 : 72, last);
     }
   }
 

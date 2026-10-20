@@ -11,10 +11,12 @@ import { hexToRgb, type Palette, type PaletteFx } from '@engine/gfx/palette';
  *   glow a little lighter, for the captive's slow pulse);
  * - `frozen`: an icy blue ramp by brightness (Classic SMBC's Ice Beam freeze, SA-C21/HP-C17;
  *   Enemy.drawPalette).
+ * - `fallen`: grey by brightness, as the original's CharacterSelectBox.desaturate (a fallen hero in
+ *   Classic mode's Survival).
  * Map pages add `shade-<theme>` / `shade-<theme>-glow` (mapShadeFx): a hidden hero's faint
  * silhouette on the world map, in the page's own ground shade.
  */
-export type HeroFx = 'silhouette' | 'rim' | 'tell' | 'brainwashed' | 'brainwashed-glow' | 'frozen';
+export type HeroFx = 'silhouette' | 'rim' | 'tell' | 'brainwashed' | 'brainwashed-glow' | 'frozen' | 'fallen';
 
 /** The palette name for `palette` recoloured by `fx` ('luigi' → 'luigi~silhouette'). */
 export function fxPalette(palette: string, fx: HeroFx): string {
@@ -34,6 +36,17 @@ const ice: PaletteFx = (pal: Palette) =>
     return `#${hex(24 + 200 * t)}${hex(72 + 180 * t)}${hex(160 + 95 * t)}`;
   });
 
+/**
+ * The original's desaturate (CharacterSelectBox.as 463-473): each channel becomes
+ * 0.3 r + 0.59 g + 0.11 b - 10.
+ */
+const grey: PaletteFx = (pal: Palette) =>
+  pal.map((c) => {
+    const [r, g, b] = hexToRgb(c);
+    const v = hex(0.3 * r + 0.59 * g + 0.11 * b - 10);
+    return `#${v}${v}${v}`;
+  });
+
 /** A purple ramp by brightness: black stays a deep violet, white becomes a pale lilac. */
 function purple(boost: number): PaletteFx {
   return (pal: Palette) =>
@@ -51,6 +64,7 @@ export const HERO_FX: Record<HeroFx, PaletteFx> = {
   brainwashed: purple(0),
   'brainwashed-glow': purple(0.25),
   frozen: (pal) => ice(pal),
+  fallen: (pal) => grey(pal),
 };
 
 /** The trance's lilac the map shade's shimmer leans toward. */

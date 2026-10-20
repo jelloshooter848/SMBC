@@ -139,6 +139,11 @@ export class LevelScene implements Scene {
    * that goes up off the screen passes behind the HUD.
    */
   underHud: ((r: Renderer) => void) | null = null;
+  /**
+   * Called once, right after the world's first update (so the heroes' own first-frame set-up has
+   * run): Classic Survival's strengthening (Game.startLevel). Null: nothing.
+   */
+  afterFirstUpdate: (() => void) | null = null;
   /** The stage tutorial played here (1-0 and its pipe room), else null. */
   readonly tutorial: TutorialDirector | null;
   /** The one-time pickup and item explainers (0.4.46, campaign only). */
@@ -289,6 +294,11 @@ export class LevelScene implements Scene {
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     this.world.update(inputs);
+    if (this.afterFirstUpdate) {
+      const f = this.afterFirstUpdate;
+      this.afterFirstUpdate = null;
+      f();
+    }
     this.syncState();
     this.tutorial?.update();
     for (const ev of this.world.events.splice(0)) {
@@ -485,15 +495,19 @@ export class LevelScene implements Scene {
           this.tutorial.respawn();
           break;
         }
+        // Classic mode's Survival: the hero falls instead, and no life is lost (Game.survivalFall).
+        const fell = game.survivalFall();
         // The World's assists: Classic mode's Infinite Lives cheat folds in there (cheatAssist).
-        if (!this.world.assist.infiniteLives) s.lives--;
+        if (!fell && !this.world.assist.infiniteLives) s.lives--;
         // Campaign: the lost life is saved at once, so quitting now keeps the count.
         if (game.campaign && s.lives > 0) game.autosave();
         // Respawn at the checkpoint if one was reached, else at the start of the main level.
         const cp = s.checkpoint;
         const mainLevel = cp?.level ?? this.level.parent ?? this.level.id;
-        if (s.lives <= 0) {
-          s.lives = 0;
+        // Survival's run ends only when every hero has fallen, whatever the lives
+        // (EventManager.checkGameOver), infinite lives included.
+        if (game.survivalRun ? game.survival?.allFallen === true : s.lives <= 0) {
+          if (!game.survivalRun) s.lives = 0;
           game.gameOver(mainLevel, ev.player ?? 0);
           return;
         }
@@ -526,7 +540,8 @@ export class LevelScene implements Scene {
     // Otherwise on to the next level; a castle's "another castle" news is shown in the
     // level, next to Toad (World.castleText).
     else if (game.campaign) game.levelCleared(this.level.id);
-    else if (game.classicRun) game.levelExitTo(next);
+    // The cleared level goes along: in Survival a castle brings revival back (Game.levelExitTo).
+    else if (game.classicRun) game.levelExitTo(next, this.level);
     else game.goToLevel(next, { mode: 'stand' });
   }
 

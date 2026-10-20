@@ -212,6 +212,9 @@ describe('the Game mode row (CLASSIC > Options)', () => {
     h.idle(8);
     h.tap('down');
     expect(h.said.at(-1)).toMatch(/^Game mode: All heroes\. All heroes: choose before every level and life/);
+    // Survival (v0.4.63, tests/sim/classic-survival.test.ts) comes second, as in the original's menu.
+    h.tap('right');
+    expect(h.settings.classic.gameMode).toBe('survival');
     h.tap('right');
     expect(h.settings.classic.gameMode).toBe('single');
     expect(row().label).toBe('Game mode*');
