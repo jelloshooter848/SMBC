@@ -11,6 +11,7 @@ import type { CharacterDef } from '@game/characters/character';
 import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
 import { SIMON } from '@game/characters/simon';
+import { SAMUS } from '@game/characters/samus';
 import { CLASSIC_HERO_SOUNDS, heroSound, pickupSound } from '@game/characters/classic/sounds';
 import { Bowser } from '@game/entities/enemies/bowser';
 import { CharacterSelectScene } from '@game/scenes/character-select';
@@ -344,5 +345,29 @@ describe('G-070 to G-074: the heroes’ own sounds', () => {
     h.until(() => w.player.body.onGround, 120);
     h.idle(2);
     expect(h.sounds).toContain('mm-land');
+  });
+
+  it('Samus lands, curls into the morph ball and spins the Screw Attack with her own sounds (G-070)', () => {
+    const h = audioGame();
+    h.game.devClassicGame(SAMUS, '1-1', 'classic');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    h.idle(10);
+    h.sounds.length = 0;
+    // A running jump with the Flower: the somersault brings the Screw Attack; then the landing.
+    w.player.powerState = 'fire';
+    for (let i = 0; i < 8; i++) h.step(['right']);
+    for (let i = 0; i < 30; i++) h.step(['right', 'jump']);
+    h.until(() => w.player.body.onGround, 200);
+    h.idle(2);
+    expect(h.sounds).toContain('screw-attack');
+    expect(h.sounds.filter((s) => s === 'screw-attack')).toHaveLength(1);
+    expect(h.sounds).toContain('samus-land');
+    // Down crouches, Down again curls up.
+    h.tap('down');
+    h.idle(4);
+    h.tap('down');
+    h.idle(2);
+    expect(h.sounds).toContain('morph-ball');
   });
 });

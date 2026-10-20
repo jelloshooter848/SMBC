@@ -21,6 +21,13 @@ under `## [Unreleased]`.
   WORLD card (Proto Man whistles instead) (G-061, G-062). The walk-in areas before x-2 play a short
   transition tune and coin heaven the Star tune (G-063); Bowser coming on screen switches to the boss
   tune, the final boss's in worlds 8 and D (G-064).
+- Classic mode: **the heroes' own sounds**, all ours. Link, Mega Man, Bass, Bill and Sophia III die to
+  their own sound, Simon and Ryu to their own death music (G-065). Mega Man and Bill land with a
+  sound, Mega Man teleports out when chosen, and Samus lands, curls into the morph ball and spins
+  the Screw Attack with hers (G-070). Link, Mega Man, Samus, Simon, Ryu and Bill have their own
+  hurt sounds (G-071), hit and defeat sounds (G-072) and pickup sounds (G-073). Link's arrows and
+  bombs, each of Samus's beams and her bombs, Simon's sub-weapons, Ryu's arts, Mega Man's Metal
+  Blade and Bill's rifle, machine gun and flame gun no longer borrow other heroes' sounds (G-074).
 
 ## [0.4.64] - 2026-10-20
 
