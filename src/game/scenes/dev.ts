@@ -5,6 +5,7 @@ import { DevBonusGamesScene } from '../bonus/dev';
 import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 import type { MenuItem } from './menu';
+import type { InputFrame } from '@engine/input/input-manager';
 import { CLASSIC_EXTRAS } from '../characters/registry';
 
 /**
@@ -53,7 +54,26 @@ export class DevMenuScene extends MenuScene {
       { label: 'Back', select: () => game.scenes.pop() },
     ]);
   }
+
+  /**
+   * START (Enter, Escape, a pad's Start) on a toggle row leaves the menu as BACK does, never
+   * flipping the toggle: Escape is START, and leaving must not change a setting. JUMP and
+   * left / right still flip it.
+   */
+  override update(input: InputFrame): void {
+    const it = this.items[this.index];
+    if (this.t + 1 >= 6 && it && TOGGLE_ROWS.has(it) && input.pressed('start') && this.onBack) {
+      this.t++;
+      this.game.ctx.audio.sfx('select');
+      this.onBack();
+      return;
+    }
+    super.update(input);
+  }
 }
+
+/** The rows classicToggleRows made (DevMenuScene.update: START never flips them). */
+const TOGGLE_ROWS = new WeakSet<MenuItem>();
 
 /** A toggle row's label room beside an ON / OFF value (MenuScene: 24 columns less 4). */
 const TOGGLE_COLS = 20;
@@ -119,5 +139,6 @@ export function classicToggleRows(game: Game): MenuItem[] {
       hint: 'Classic mode hero not in the original game. Off hides it from the hero select',
     });
   }
+  for (const r of rows) TOGGLE_ROWS.add(r);
   return rows;
 }

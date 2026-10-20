@@ -18,6 +18,7 @@ under `## [Unreleased]`.
   the saddle (Arthur, Peach, Samus and the Warriors end their moves at the flagpole).
 - Classic Yoshi: a Lakitu he eats (playable or ridden) leaves his cloud drifting away instead
   of vanishing with him.
+- Dev menu: leaving with Escape (START) on a Classic toggle row no longer flips that toggle.
 
 ## [0.4.60] - 2026-10-20
 
