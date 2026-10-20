@@ -36,6 +36,7 @@ import {
   type H,
 } from './heroes-harness';
 import { skipOpening } from './story-seen';
+import { openChapter1 } from './chapter1-open';
 
 // Freeing the heroes (0.5.0): a campaign file starts with Mario only; the others are brainwashed
 // captives to find. Luigi waits in the 1-1 bonus room; talking to him starts his mini game. The
@@ -166,8 +167,10 @@ describe('save files lock heroes in campaign play', () => {
 describe('the story intro', () => {
   it('a NEW file opens straight on the World 1 map, on 1-0, where Toad tells the story', () => {
     const h = makeGame();
+    openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
     h.game.showTitle();
     h.idle(8);
+    h.tap('down');
     h.tap('start');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     h.idle(8);
@@ -184,8 +187,10 @@ describe('the story intro', () => {
   it('an existing file opens straight on its map', () => {
     const h = makeGame();
     file({ cleared: ['1-0'] });
+    openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
     h.game.showTitle();
     h.idle(8);
+    h.tap('down');
     h.tap('start');
     h.idle(8);
     h.tap('jump');

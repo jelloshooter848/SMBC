@@ -147,12 +147,12 @@ function exitOf(id: string): string {
 }
 
 describe('the title and the CLASSIC menu', () => {
-  it('CLASSIC comes right after Start game, with a hint free of level numbers', () => {
+  it('CLASSIC comes first (0.5.0, G-112), then Chapter 1, with a hint free of level numbers', () => {
     const h = classic();
     h.game.showTitle();
     const title = h.top() as TitleScene;
-    expect(labels(title).slice(0, 4)).toEqual(['Start game', 'Classic', 'Custom levels', 'Options']);
-    const it = items(title)[1] as MenuItem;
+    expect(labels(title).slice(0, 4)).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options']);
+    const it = items(title)[0] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
     // Without dev mode: four rows where main's three were (x 80, from y 96, 12 px apart).
@@ -161,7 +161,7 @@ describe('the title and the CLASSIC menu', () => {
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     const last = (str: string) => four.filter((t) => t.str === str).at(-1);
-    ['START GAME', 'CLASSIC', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
+    ['CLASSIC', 'CHAPTER 1', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
       expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
     );
     // Five rows with Dev mode: the usual 12 px step, every row above the credits.
@@ -176,17 +176,23 @@ describe('the title and the CLASSIC menu', () => {
     // (shadows draw 1 px right and down)
     const ys = [...new Set(rows.filter((r) => r.x === 64).map((r) => r.y))].sort((a, b) => a - b);
     for (let i = 1; i < ys.length; i++) expect((ys[i] as number) - (ys[i - 1] as number)).toBe(12);
-    // Clear of CHAPTER 1 above.
+    // Clear of the logo above (where CHAPTER 1 stood before 0.5.0).
     expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);
   });
 
   it('the menu: Super Mario Bros., The Lost Levels, Options, Back; each line is announced', () => {
     const h = classic();
     const menu = toClassicMenu(h);
-    expect(labels(menu)).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
+    expect(labels(menu)).toEqual([
+      'Super Mario Bros.',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of ['The Lost Levels', 'Options', 'Back', 'Super Mario Bros.']) {
+    for (const l of ['The Lost Levels', 'Map difficulty', 'Options', 'Back', 'Super Mario Bros.']) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -198,7 +204,13 @@ describe('the title and the CLASSIC menu', () => {
 
   it('The Lost Levels are offered from the start (G-003, D3)', () => {
     const h = classic();
-    expect(labels(toClassicMenu(h))).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
+    expect(labels(toClassicMenu(h))).toEqual([
+      'Super Mario Bros.',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     pick(h, 'The Lost Levels');
     choose(h, MARIO);
     const l = enterLevel(h);
@@ -664,13 +676,13 @@ describe('dev Level select: Mode', () => {
 });
 
 describe('the campaign is unaffected', () => {
-  it('Start game still opens the file select; a file plays Current, never as a Classic run', () => {
-    const h = classic();
+  it('Chapter 1 (dev mode, 0.5.0) still opens the file select; a file plays Current, never as a Classic run', () => {
+    const h = classic({ dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.classicRun).toBe(true);
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
-    pick(h, 'Start game');
+    pick(h, 'Chapter 1');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     file();
     h.game.openFile(1);

@@ -9,7 +9,7 @@ import { BASS_CLASSIC_PROFILE, classicBass } from './classic';
  * jumps higher, can't double jump or dash"; MegaManBase.setStats 808-831): walkSpeed ×1.3, no
  * slide (dash), no double jump and so the high jump (JUMP_PWR_HIGH_JUMP: Mega Man's 650 px/s,
  * 0x05355), no dash jump. The rest is Bass. In the original he also sees the per-hero helper
- * pieces (Bass.as 100-109: usesHorzObjs, usesVertObjs); those layers come with the level build
+ * pieces (Bass.as 100-109: usesHorzObjs, usesVertObjs): his levelFlags below, read by the level build
  * (G-010). Our own art (sprites/hero-looks.ts: Bass's suit under a boomerang-crested helmet).
  */
 const QUICK_WALK = 1.3;
@@ -41,6 +41,8 @@ export const QUICKMAN_CLASSIC: CharacterDef = {
     'colour',
   ),
   lookOf: 'bass',
+  // Bass.as 100-109: the Quick Man looks use the helper pieces (usesHorzObjs, usesVertObjs).
+  levelFlags: { horz: true, vert: true },
   guide: { ...BASS_CLASSIC_GUIDE, tagline: 'Quick Man: faster and a higher jump; no double jump or dash' },
   rescueName: 'Dr. Wily',
 };

@@ -175,7 +175,7 @@ export function tongueTick(p: Player, world: World, form: 'hero' | 'mount'): voi
   for (const e of world.entities) {
     if (!e.alive || !overlaps(tip, e.body)) continue;
     if (e instanceof PowerUp) {
-      if (e.item === 'poison' || e.item === 'clock') continue;
+      if (e.item === 'poison' || e.item === 'clock' || e.item === 'bee') continue;
       e.destroy();
       world.powerUp(p, e.item);
       return retract(p);

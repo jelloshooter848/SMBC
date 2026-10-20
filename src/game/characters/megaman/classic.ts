@@ -726,6 +726,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   }
 
   const def: CharacterDef = {
+    // The original's level flags (G-010): MegaMan.as:136-137 (his looks and variants too). level/layers.ts lays its pieces by them.
+    levelFlags: { horz: true },
     id: base.id,
     name: base.name,
     hudName: base.hudName,

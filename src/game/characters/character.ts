@@ -69,7 +69,7 @@ export interface CharacterBehaviour {
   /** Runs after movement each frame. Attacks, slides, weapon logic. */
   update(p: Player, input: InputFrame, world: World): void;
   /** A helpful item was collected (a poison mushroom is handled by the world, never here). */
-  onPowerUp(p: Player, kind: Exclude<PowerUpKind, 'poison' | 'clock'>, world: World): void;
+  onPowerUp(p: Player, kind: Exclude<PowerUpKind, 'poison' | 'clock' | 'bee'>, world: World): void;
   /** The player ran into an enemy without stomping. Return damage to deal instead of getting hurt, or null. */
   contactDamage(p: Player, enemy: Enemy, world: World): DamageSource | null;
   /**
@@ -511,8 +511,9 @@ export interface CharacterDef {
   };
   /**
    * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
-   * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
-   * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.
+   * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. Every Classic def
+   * declares them (G-010); a Classic World lays each area's layers by them (level/layers.ts:
+   * helper pieces, stepping stones, wide shafts, Bowser blocks). No Current def sets it.
    */
   levelFlags?: {
     horz?: boolean;

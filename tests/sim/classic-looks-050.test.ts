@@ -259,3 +259,28 @@ describe('#179: looks ride Yoshi as their heroes', () => {
     }
   });
 });
+
+describe('G-010 level flags of the looks', () => {
+  it("each look has its hero's level flags (Quick Man: the original's helper pieces)", async () => {
+    const bl = await import('@game/characters/bass/classic-looks');
+    const { PEACH_CLASSIC } = await import('@game/characters/peach/classic');
+    const { LUIGI_CLASSIC } = await import('@game/characters/luigi/classic');
+    for (const z of [ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC, ZELDA_GB_CLASSIC])
+      expect(z.levelFlags, z.id).toEqual(LINK_CLASSIC.levelFlags);
+    expect(HAGGLEMAN_CLASSIC.levelFlags).toEqual(RYU_CLASSIC.levelFlags);
+    expect(MARIO3_CLASSIC.levelFlags).toEqual(MARIO_CLASSIC.levelFlags);
+    expect(LUIGI3_CLASSIC.levelFlags).toEqual(LUIGI_CLASSIC.levelFlags);
+    expect(PEACH_CLASSIC.levelFlags).toEqual(LUIGI_CLASSIC.levelFlags);
+    expect(BASS_CLASSIC.levelFlags).toEqual({});
+    for (const d of [
+      bl.WILY_CLASSIC,
+      bl.MRX_CLASSIC,
+      bl.COSSACK_CLASSIC,
+      bl.GEMINI_CLASSIC,
+      bl.SKULLMAN_CLASSIC,
+    ])
+      expect(d.levelFlags, d.id).toEqual({});
+    // Bass.as 100-109: the Quick Man looks use the helper pieces.
+    expect(QUICKMAN_CLASSIC.levelFlags).toEqual({ horz: true, vert: true });
+  });
+});

@@ -31,8 +31,9 @@ const ROW_H = 40;
 const BOTTOM_Y = 176;
 
 /**
- * Title → "Start game": three save files. A used file shows its hero(es), world reached, levels
- * cleared, lives and score (and a star once the game was beaten); an empty one says NEW GAME.
+ * Title → "Chapter 1" (dev mode until 1.0, chapter1-gate.ts): three save files. A used file shows
+ * its hero(es), world reached, levels cleared, lives and score (and a star once the game was
+ * beaten); an empty one says NEW GAME.
  * Picking an empty file creates a one-player file with Mario and opens World 1's map (the hero
  * is picked on entering a level); a used file opens its map, two-player files from older builds
  * included. The bottom row erases a file (pick it, then confirm YES / NO).

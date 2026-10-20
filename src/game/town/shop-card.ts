@@ -102,6 +102,8 @@ export class ShopCardScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
+    // None during the guard (0.5.0, the phone first-tap bug: buttons show from the frame a press counts).
+    if (this.done || this.t < SHOP_CARD_GUARD) return NO_TOUCH_BUTTONS;
     if (this.mode === 'say') return { ...NO_TOUCH_BUTTONS, jump: 'OK' };
     return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'BACK' };
   }

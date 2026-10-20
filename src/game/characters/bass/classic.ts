@@ -62,7 +62,7 @@ export function classicBass(
   palette: string,
   orbs: 'colour' | 'white' = 'white',
 ): CharacterDef {
-  return classicMegaMan({
+  const def = classicMegaMan({
     base,
     profile,
     sheet: palette,
@@ -87,6 +87,9 @@ export function classicBass(
     // G-054: white orbs, colour only for Dr. Wily and Quick Man (BASS_COLOR_PARTICLE_SKIN_NUM 3, 4, 7, 8).
     orbs,
   });
+  // The original's level flags (G-010), after the Mega Man factory's (which has his `horz`):
+  // Bass.as:102-103 gives him and his looks no helper pieces (his Quick Man look has them).
+  return { ...def, levelFlags: {} };
 }
 
 export const BASS_CLASSIC: CharacterDef = {

@@ -30,6 +30,11 @@ export type BlockContent =
   | 'path'
   /** A key box (0.4.52, objects/keys.ts): the key rises out of it, and it is spent. */
   | 'key'
+  /**
+   * The Hudson Bee (G-023; pickups/HudsonBee.as): 8000 points. No tile holds it: a `block-item`
+   * spawn puts it (or a lone Clock) in the map's block there (World.blockItems).
+   */
+  | 'bee'
   | 'none';
 
 export interface TileDef {

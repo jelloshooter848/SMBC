@@ -5,6 +5,7 @@ import { ENEMY_SCORES } from '../../rules/score';
 import { Spiny } from './spiny';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
+import type { MapDifficulty } from '../../level/schema';
 
 /*
  * Numbers from com/smbc/enemies/Lakitu.as and com/smbc/level/LakituSpawner.as (NORMAL difficulty).
@@ -29,10 +30,16 @@ const FOLLOW_DELAY = 48;
 /** `hideTmrDur` 1500 ms, then `throwTmrDur` 250 ms in the hide pose, then a throw. */
 const HIDE_FRAMES = 90;
 const THROW_FRAMES = 15;
-/** `maxSpinyDifficulty` on NORMAL: this Lakitu's own Spinies alive at once (`SPINEY_DCT`). */
-const MAX_SPINIES = 4;
-/** `LakituSpawner.spawnDelTmrDur` = 40 × 397 ms (40 TIME units) = 15.88 s on NORMAL. */
-const RESPAWN_FRAMES = 953;
+/**
+ * `maxSpinyDifficulty` (Lakitu.as:246-258): this Lakitu's own Spinies alive at once
+ * (`SPINEY_DCT`), by map difficulty (G-006; always Normal under Current rules).
+ */
+export const MAX_SPINIES: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 4, hard: 6 };
+/**
+ * `LakituSpawner.spawnDelTmrDur` (LakituSpawner.as:28-41): 48, 40 or 16 × 397 ms (TIME units) on
+ * Easy, Normal and Hard: 19.06 s, 15.88 s, 6.35 s.
+ */
+export const RESPAWN_FRAMES: Readonly<Record<MapDifficulty, number>> = { easy: 1143, normal: 953, hard: 381 };
 
 /**
  * Lakitu: rides a cloud along the top of the screen, swinging back and forth over the player,
@@ -127,10 +134,10 @@ export class Lakitu extends Enemy {
     this.spinies = this.spinies.filter((e) => e.alive);
     if (this.hideTimer > 0 && --this.hideTimer === 0) this.throwTimer = THROW_FRAMES;
     else if (this.throwTimer > 0 && --this.throwTimer === 0) {
-      if (this.spinies.length < MAX_SPINIES) this.throwSpiny(world);
+      if (this.spinies.length < MAX_SPINIES[world.mapDifficulty]) this.throwSpiny(world);
       else this.waiting = true;
     }
-    if (this.waiting && this.spinies.length < MAX_SPINIES) this.throwSpiny(world);
+    if (this.waiting && this.spinies.length < MAX_SPINIES[world.mapDifficulty]) this.throwSpiny(world);
     this.currentFrame = this.throwTimer > 0 || this.waiting ? 'lakitu-1' : 'lakitu-0';
   }
 
@@ -199,7 +206,7 @@ export class LakituZone extends Entity {
       return;
     }
     if (!inZone || alive) return;
-    if (this.spawnedFirst) this.respawn = RESPAWN_FRAMES;
+    if (this.spawnedFirst) this.respawn = RESPAWN_FRAMES[world.mapDifficulty];
     else this.send(world);
   }
 

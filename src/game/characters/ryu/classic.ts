@@ -478,6 +478,8 @@ const RYU_CLIMB_TICKS = 6.9;
 const RYU_BREATH_TICKS = 7.8;
 
 export const RYU_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Ryu.as:297,316-317. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, vert: true, poorBowser: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Irene',
   ...RYU,

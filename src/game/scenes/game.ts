@@ -1,8 +1,16 @@
+import { OPEN_DEV_LOCK, type DevLock } from '../dev-lock';
+import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
-import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
+import {
+  allSetsBeaten,
+  loadProgress,
+  lostLettersOpen,
+  recordLostGameBeaten,
+  saveProgress,
+} from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
 import {
@@ -36,6 +44,7 @@ import {
   type ClassicCheatId,
   type ClassicCheatStat,
   type ClassicDevToggles,
+  type MapDifficulty,
   type Settings,
 } from '@engine/save/settings';
 import { addCheatStat, cheatInfo, unlockedLines, unlockEarned, type CheatEvent } from '../cheats';
@@ -115,7 +124,7 @@ import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
-import { ClassicMenuScene, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
+import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -142,6 +151,11 @@ export interface GameDeps {
   lastInput?: () => LastInput;
   /** Play the title's rift intro on the session's first title (main.ts; off in the headless sims). */
   titleIntro?: boolean;
+  /**
+   * The dev-mode lock (game/dev-lock.ts; main.ts builds it from the build's defines). Absent: open,
+   * as in local builds and the headless sims.
+   */
+  devLock?: DevLock;
   /**
    * A fresh world seed for every level visit (main.ts), so no two visits play out the same
    * (swimming Cheep Cheeps, leaping ones, timers). Off, every world keeps its level's fixed seed
@@ -205,6 +219,15 @@ export class Game {
    * it. Its rules are runRules (Classic mode: settings.classicRules; dev: the Rules row).
    */
   classicRun = false;
+  /**
+   * The Classic run's Map Difficulty (G-006): set as the run starts (the CLASSIC menu's Map
+   * difficulty row, settings.classicMapDifficulty, or the Level Select cheat's row), Normal for
+   * a dev run. GameContext.mapDifficulty is a live view of it while a Classic run plays Classic
+   * rules.
+   */
+  classicDifficulty: MapDifficulty = 'normal';
+  /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
+  private levelSelectUnlocked = false;
   /**
    * Classic mode's Survival (Options > Game mode): which heroes have fallen and whether the next
    * select may revive (survival.ts). Null in every other run, the campaign's included.
@@ -366,6 +389,12 @@ export class Game {
     // ctx.classic likewise: Classic mode's options, only while a Classic run plays Classic rules.
     Object.defineProperty(deps.ctx, 'classic', {
       get: () => this.classicOptions,
+      enumerable: true,
+      configurable: true,
+    });
+    // ctx.mapDifficulty: the Classic run's Map Difficulty (G-006), only while it plays Classic rules.
+    Object.defineProperty(deps.ctx, 'mapDifficulty', {
+      get: () => (this.classicRun && this.liveRules === 'classic' ? this.classicDifficulty : undefined),
       enumerable: true,
       configurable: true,
     });
@@ -830,7 +859,23 @@ export class Game {
       // A developer-started run counts for nothing: the title, as free play.
       if (this.classicDev) return this.showTitle();
       const set = mapSetOf(from).id;
-      recordClassicBeat(set);
+      // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
+      recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
+      // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
+      const cheats = this.deps.settings?.classicCheats;
+      if (
+        cheats &&
+        !cheats.levelSelect &&
+        allSetsBeaten(
+          loadProgress(),
+          'hard',
+          MAP_SETS.map((m) => m.id),
+        )
+      ) {
+        cheats.levelSelect = true;
+        this.levelSelectUnlocked = true;
+        saveSettings(this.deps.settings as Settings);
+      }
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
       // All Ground Is Bricks, The Lost Levels All Hammer Bros for now (the original's goal for it
       // is the Special set, which brings its own beat event, G-020).
@@ -1257,6 +1302,12 @@ export class Game {
     const code = this.saveLink;
     if (code === null) return false;
     this.saveLink = null;
+    // 0.5.0 (G-101): the campaign is closed outside dev mode. The card says so, and the link stays
+    // in the address (nothing is loaded or cleared), so it still works once Chapter 1 is out.
+    if (!this.campaignOpen) {
+      showChapter1Gate(this, CHAPTER1_LINK_CARD);
+      return true;
+    }
     this.scenes.push(
       new LoadCodeScene(this, readSaveCode(code, 1), {
         done: (slot) => {
@@ -1607,6 +1658,19 @@ export class Game {
     return this.deps.settings?.dev ?? false;
   }
 
+  /** The dev-mode lock: open unless a release build gave one (0.5.0). */
+  get devLock(): DevLock {
+    return this.deps.devLock ?? OPEN_DEV_LOCK;
+  }
+
+  /**
+   * Whether the story campaign (Chapter 1) can be opened from the title or a resume link: only
+   * with dev mode on until Chapter 1 ships (0.5.0, G-100; scenes/chapter1-gate.ts).
+   */
+  get campaignOpen(): boolean {
+    return this.devMode;
+  }
+
   /** The map rules' `unlockAll`: the file's "Unlock all" flag, only while dev mode is on. */
   get mapUnlockAll(): boolean {
     return this.devMode && this.devUnlockAll;
@@ -1664,6 +1728,7 @@ export class Game {
     this.runRules = opts.rules ?? 'current';
     this.classicRun = classic;
     this.classicDev = classic;
+    this.classicDifficulty = 'normal';
     const rules = this.liveRules;
     const hero = heroFor(character, rules);
     this.state = newGameState(character, null, rules);
@@ -1938,6 +2003,31 @@ export class Game {
     this.goToLevel(id, { mode: 'stand' });
   }
 
+  /**
+   * The Level Select cheat's Go (G-007; LevelSelectMenu GO_TO_WORLD): `levelId` on `difficulty`.
+   * In a Classic run (its pause menu) the run goes on there, with its lives and score; from the
+   * menus a new Classic run starts there (the select screen first).
+   */
+  classicLevelSelect(levelId: string, difficulty: MapDifficulty): void {
+    // Go keeps the chosen difficulty (GameSettings.changeMapDifficulty).
+    const settings = this.deps.settings;
+    if (settings && settings.classicMapDifficulty !== difficulty) {
+      settings.classicMapDifficulty = difficulty;
+      this.deps.applySettings?.();
+    }
+    if (
+      this.classicRun &&
+      this.campaign === null &&
+      this.scenes.find((s) => s instanceof LevelScene) !== undefined
+    ) {
+      this.classicDifficulty = difficulty;
+      this.state.checkpoint = null;
+      this.goToLevel(levelId, { mode: 'stand' });
+      return;
+    }
+    this.classicSelect(levelId, () => this.showClassicMenu(), difficulty);
+  }
+
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     this.classicRun = false;
@@ -2055,10 +2145,11 @@ export class Game {
    * Classic mode: the select screen with every hero, then a new game of `levelId`. Back goes to
    * `back` (the CLASSIC menu; the title after the SMB ending).
    */
-  classicSelect(levelId: string, back: () => void): void {
+  classicSelect(levelId: string, back: () => void, difficulty?: MapDifficulty): void {
     // The run's rules are set before the pick, so the roster (Game.roster) offers the Classic
     // extras on the very first select.
     this.campaign = null;
+    this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
     // applies before the run itself starts (heroSlots, G-032).
@@ -2117,6 +2208,20 @@ export class Game {
    */
   private showClassicUnlocks(): void {
     const id = this.cheatUnlocks.shift();
+    if (!id && this.levelSelectUnlocked) {
+      // The Level Select cheat (G-007): its own card, last (MessageBoxMessages UNLOCKED_CHEAT_).
+      this.levelSelectUnlocked = false;
+      const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
+      this.deps.ctx.audio.sfx('1up');
+      this.deps.announcer?.say(`You unlocked the Level Select cheat! ${ok}.`);
+      this.scenes.clear();
+      this.scenes.push(
+        new MessageScene(this, ['YOU UNLOCKED', 'LEVEL SELECT', 'CHEAT!', '', ok], () =>
+          this.showClassicUnlocks(),
+        ),
+      );
+      return;
+    }
     if (!id) return this.showTitle();
     const lines = unlockedLines(id);
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
@@ -2345,7 +2450,11 @@ export class Game {
   levelScene(level: LevelData, start: LevelStart): LevelScene {
     const played = this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level;
     const heroes = [this.state.character.id, ...(this.state.character2 ? [this.state.character2.id] : [])];
-    const scene = new LevelScene(this, heroVariant(played, heroes, this.campaign !== null), start);
+    const scene = new LevelScene(
+      this,
+      heroVariant(played, heroes, this.campaign !== null, this.liveRules === 'classic'),
+      start,
+    );
     // The secret house during a village visit: the blocks already opened stay used.
     if (this.town && level.id === SECRET_HOUSE_LEVEL) layUsedBlocks(scene.world, this.town.used);
     return scene;

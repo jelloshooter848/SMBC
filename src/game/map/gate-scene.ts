@@ -127,6 +127,15 @@ export class GateScene {
     return this.phase === 'page' ? (this.gate.bowser[this.page] ?? null) : null;
   }
 
+  /**
+   * One of Bowser's pages takes OK or SKIP now (its guard is over): the map's touch buttons show
+   * only then (0.5.0, the phone "first tap" bug). Not during the misfire: a key or pad press can
+   * still hurry it on, but buttons shown there would blink off for the first page's guard.
+   */
+  get ready(): boolean {
+    return this.phase === 'page' && this.t >= CARD_GUARD_FRAMES;
+  }
+
   /** The cutaway is over the map (opening, open or closing). */
   get cutaway(): boolean {
     return (

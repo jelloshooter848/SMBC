@@ -62,6 +62,20 @@ under `## [Unreleased]`.
   sub-weapons, Ryu's arts, Mega Man's Metal Blade and Bill's rifle, machine gun and flame gun no
   longer borrow other heroes' sounds (G-074). The music and the hit and death sounds play in
   Classic mode under either rules.
+- Classic mode: **each level is built for the hero playing it**, as in the original. Heroes with a
+  shorter reach (Link, Samus, Simon, Mega Man, Bill, Ryu, Sophia III and others) get the extra
+  lifts, blocks and steps the original lays for them, heroes who swim badly get stepping stones in
+  water levels of both games, and Simon and Ryu get extra blocks before Bowser. The campaign maps
+  are unchanged.
+- Classic mode: **Map Difficulty Easy, Normal or Hard**, a new row of the CLASSIC menu under the
+  map sets (with Classic rules; Current rules always play Normal). Each difficulty plays the
+  original's own version of every level (other enemies and blocks), and Easy and Hard give the
+  castles their checkpoints. Lakitu comes back sooner and throws more Spinies on Hard, and more
+  flying Cheep Cheeps leap at once. A beaten set remembers the difficulty it was beaten on.
+- Classic mode: the **Hudson Bee**, a hidden item worth 8000 points, on Hard.
+- Classic mode: the **Level Select cheat**. Beat every map set on Hard (or enter the cheat code) to
+  unlock it. It is on the Cheats page and the pause menu, and lets you pick a map set, a difficulty,
+  a world (A to D too) and a level.
 
 ### Changed
 
@@ -114,6 +128,32 @@ under `## [Unreleased]`.
   Mega Man"; a hero's own look once: "Mega Man, Mega Man"), also when SKIN changes the look; the
   skin menu reads the look's own game ("Break Man, Mega Man, Mega Man 3"). Down in a one-row skin
   menu no longer moves the cursor.
+- Classic mode comes first: the title menu is now **Classic**, **Chapter 1**, Custom levels and
+  Options, with Classic highlighted. The story campaign is **Chapter 1**, coming in 1.0: its row
+  (and a resume link, `#save=`) shows a **CHAPTER 1 COMING SOON!** card, read out and closed with
+  OK, instead of the file select. Every save file, save code and resume link is kept as it is
+  (a resume link stays in the address for later), and developer mode opens Chapter 1 as before.
+- The title no longer shows "CHAPTER 1" under the logo, the PRE-RELEASE footer or the count of
+  freed heroes; every hero now stands on the title's ground in colour.
+- The release downloads are now `smbc-remix-vX.Y.Z.zip` and `smbc-remix-vX.Y.Z-offline.zip`.
+- The README, the download's README.txt, the roadmap and the release notes describe the new plan:
+  0.5.0 the Classic remake, 0.6 to 0.9 new heroes, 1.0 Chapter 1.
+- Developer mode is for the game's developer on the released site: the title's code there asks
+  for a passphrase ("Wrong passphrase" when it isn't right), `?dev=1` does nothing, and a dev mode
+  left on from an earlier version is turned off. Local and development builds are unchanged.
+- Outside developer mode, a `?level=` link opens no campaign content: an SMB or Lost Levels level
+  starts a Classic mode run there, a custom level plays as before, and anything else opens the
+  title.
+
+### Fixed
+
+- Phones and tablets: the first tap on a text card's OK button no longer does nothing. The
+  touch buttons of a card, a story page, Toad's map pages and Bowser's gate pages, a tip that
+  holds the game, BACK UP YOUR GAME?, LOAD THIS SAVE?, the shop's BUY? card, the bonus items'
+  note and the Home Screen guide now appear only once the card takes a press (it ignores presses for its
+  first half second, so a press meant for the level can't skip it).
+- Phones and tablets: a thumb still held on a button when a card opens (JUMP, say) no longer
+  skips the card when its OK appears under it; lift and tap again.
 
 ### Fixed
 

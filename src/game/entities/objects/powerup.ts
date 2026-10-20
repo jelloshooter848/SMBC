@@ -7,9 +7,13 @@ import type { World } from '../../world/world';
 
 /**
  * `poison` (Lost Levels) slides like a mushroom but hurts on touch; `clock` (Lost Levels) stays
- * on its block like a flower and adds time (both handled in World.collisions).
+ * on its block like a flower and adds time; `bee` (the Hudson Bee, Classic Hard layers, G-023)
+ * stays on its block and is worth 8000 points (all handled in World.collisions).
  */
-export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock';
+export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock' | 'bee';
+
+/** Items that stay on their block once out (plain Pickups in the original: defyGrav, vy = 0). */
+const STAYS: ReadonlySet<PowerUpKind> = new Set(['flower', 'clock', 'bee']);
 
 /** The kinds that are the original's Mushroom (red, ST_GREEN and ST_POISON), with its gBounceHit. */
 const MUSHROOMS: ReadonlySet<PowerUpKind> = new Set(['mushroom', '1up', 'poison']);
@@ -53,7 +57,7 @@ export class PowerUp extends Entity {
     p.layer = 'main';
     p.body.x = cx - (p.body.w >> 1);
     p.body.y = feet - p.body.h;
-    p.body.vx = item === 'flower' || item === 'clock' ? 0 : 0x01000;
+    p.body.vx = STAYS.has(item) ? 0 : 0x01000;
     p.body.vy = -HOP_VY;
     p.bounced = true;
     return p;
@@ -89,14 +93,15 @@ export class PowerUp extends Entity {
       if (this.emerging === 0) {
         b.y = this.targetY;
         this.layer = 'main';
-        if (this.item !== 'flower' && this.item !== 'clock') b.vx = 0x01000;
+        if (!STAYS.has(this.item)) b.vx = 0x01000;
         if (this.item === 'star') b.vy = -0x04000;
       }
       return;
     }
     // The original's Clock (pickups/Clock.as) is a plain Pickup: it rises out of the block and
     // stays there (defyGrav, vy = 0 in Pickup.exitBrickEnd), like the flower.
-    if (this.item === 'flower' || this.item === 'clock') return;
+    // The Hudson Bee likewise (pickups/HudsonBee.as).
+    if (STAYS.has(this.item)) return;
     moveX(b, world.map, velToSub(b.vx));
     if (b.hitWall !== 0) b.vx = -b.hitWall * 0x01000;
     this.fall(world, this.item === 'star' ? 0x00300 : this.bounced ? BUMP_POP_GRAVITY : undefined);
@@ -117,6 +122,7 @@ export class PowerUp extends Entity {
     if (this.item === 'flower') frame = `flower-${(view.frame >> 3) & 1}`;
     if (this.item === 'star') frame = `star-${(view.frame >> 2) & 3}`;
     if (this.item === 'poison') frame = 'poison-mushroom';
+    if (this.item === 'bee') frame = `bee-${(view.frame >> 3) & 1}`;
     r.sprite(sheet, frame, this.screenX(view), this.screenY());
   }
 }

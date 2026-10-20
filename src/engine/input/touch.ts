@@ -15,6 +15,8 @@ import {
   clampCentre,
   followCentre,
   hitButton,
+  releaseHidden,
+  slideHeld,
   readTouchFacts,
   SMALL_BUTTON,
   buttonShape,
@@ -216,8 +218,8 @@ export class TouchSource implements InputSource {
   setLabels(labels: TouchLabels): void {
     const hidden = this.labeler.apply(labels);
     if (!hidden.length) return;
-    for (const p of this.pointers.values())
-      if (p.kind === 'btn' && p.action && hidden.includes(p.action)) p.action = null;
+    // A held button that hides is let go until the finger lifts (touch-logic releaseHidden).
+    for (const p of this.pointers.values()) if (p.kind === 'btn') releaseHidden(p, hidden);
     this.update();
   }
 
@@ -308,9 +310,7 @@ export class TouchSource implements InputSource {
     if (!p) return;
     if (p.kind === 'dpad') this.moveDpad(e.clientX, e.clientY);
     else if (p.slide) {
-      const next = hitButton(e.clientX, e.clientY, this.faceTargets());
-      if (next === p.action) return;
-      p.action = next;
+      if (!slideHeld(p, hitButton(e.clientX, e.clientY, this.faceTargets()))) return;
     } else return;
     this.update();
   }

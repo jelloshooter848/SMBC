@@ -2,6 +2,7 @@ import { MenuScene, type MenuItem } from './menu';
 import { AssistOptionsScene, OptionsScene } from './options';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
+import { LevelSelectScene } from './level-select-cheat';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -42,6 +43,13 @@ export class PauseScene extends MenuScene {
         label: 'Options',
         select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true, true)),
       });
+      // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
+      if (game.deps.settings?.classicCheats.levelSelect)
+        items.push({
+          label: 'Level select',
+          select: () => game.scenes.push(new LevelSelectScene(game, () => game.scenes.pop(), true)),
+          hint: 'Go to any level, keeping your lives and score',
+        });
       items.push(...this.devItems());
       // The cheats mid-run (G-031: the original's Pause > Options > Cheats): the unlocked ones,
       // with Classic rules (the only rules cheats play under). Invincible and the assist-like

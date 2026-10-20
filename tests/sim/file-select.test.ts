@@ -19,6 +19,7 @@ import { listSaves, loadSave, newSave, SAVE_VERSION, writeSave } from '@game/sav
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import { skipOpening } from './story-seen';
+import { openChapter1 } from './chapter1-open';
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -66,8 +67,10 @@ const top = (g: Game) => g.scenes.top;
 
 /** Title → Start game → file select. */
 function toFileSelect(h: ReturnType<typeof makeGame>): FileSelectScene {
+  openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
   h.game.showTitle();
   h.idle(8);
+  h.tap('down');
   h.tap('start');
   const fs = top(h.game) as FileSelectScene;
   expect(fs).toBeInstanceOf(FileSelectScene);

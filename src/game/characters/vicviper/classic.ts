@@ -275,6 +275,8 @@ function holdOnScreen(p: Player, world: World): void {
 }
 
 export const VICVIPER_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): not in 3.1.21: a ship needs no helper pieces. level/layers.ts lays its pieces by them.
+  levelFlags: {},
   id: 'vicviper',
   name: 'Vic Viper',
   // VV-M24: VIC_VIPER is too wide beside the coins.

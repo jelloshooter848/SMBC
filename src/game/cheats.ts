@@ -260,10 +260,16 @@ export function unlockEarned(c: ClassicCheatsSettings, ev: CheatEvent = {}): Cla
 /** The Enter code row's code (CheatMenu.CORRECT_INPUT): unlocks every cheat. */
 export function unlockAll(c: ClassicCheatsSettings): void {
   for (const id of CLASSIC_CHEAT_IDS) c.unlocked[id] = true;
+  c.levelSelect = true;
 }
 
+/**
+ * Whether every cheat is unlocked (Cheats.allUnlocked: all 17 locks, the Level Select's too), so
+ * the Enter code row goes. A save that entered the code before the Level Select cheat existed has
+ * the 14 rule cheats but not it: the row comes back, and the code unlocks it.
+ */
 export function allUnlocked(c: ClassicCheatsSettings): boolean {
-  return CLASSIC_CHEAT_IDS.every((id) => c.unlocked[id]);
+  return CLASSIC_CHEAT_IDS.every((id) => c.unlocked[id]) && c.levelSelect === true;
 }
 
 /** One more of `stat` (capped as StatManager.checkDefaultStatMaxMin, at 999999). */

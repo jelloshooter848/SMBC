@@ -29,6 +29,11 @@ const isRelease =
   git(`describe --exact-match --tags --match ${releaseTag} HEAD`) === releaseTag;
 const sha = git('rev-parse --short HEAD');
 const appVersion = isRelease ? pkg.version : sha ? `${pkg.version}-dev.${sha}` : `${pkg.version}-dev`;
+// The dev-mode lock (src/game/dev-lock.ts): only the passphrase's salted SHA-256, which the
+// release workflow derives from its DEV_MODE_PASSPHRASE secret; never the passphrase itself.
+const devLockHash = /^[0-9a-f]{64}$/.test(process.env.DEV_MODE_HASH ?? '')
+  ? (process.env.DEV_MODE_HASH as string)
+  : '';
 
 /**
  * Level files use the `.map` extension, which Vite's dev server treats as a source map: any URL whose
@@ -88,7 +93,11 @@ export default defineConfig(({ mode }) => {
           })
         : pwaPlugin({ version: appVersion }),
     ],
-    define: { __APP_VERSION__: JSON.stringify(appVersion) },
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+      __RELEASE_BUILD__: JSON.stringify(isRelease),
+      __DEV_LOCK_HASH__: JSON.stringify(devLockHash),
+    },
     resolve: {
       alias: {
         '@engine': fileURLToPath(new URL('./src/engine', import.meta.url)),

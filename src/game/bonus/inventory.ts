@@ -71,7 +71,9 @@ export class InventoryScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
-    if (this.note) return { ...NO_TOUCH_BUTTONS, jump: 'OK' };
+    // None while presses are ignored (the opening frames, a new note's first ones) (0.5.0, the phone first-tap bug: buttons show from the frame a press counts).
+    if (this.t < 5) return NO_TOUCH_BUTTONS;
+    if (this.note) return this.t - this.note.t < 9 ? NO_TOUCH_BUTTONS : { ...NO_TOUCH_BUTTONS, jump: 'OK' };
     return { ...NO_TOUCH_BUTTONS, jump: this.items.length ? 'USE' : null, attack: 'BACK' };
   }
 

@@ -1,4 +1,4 @@
-import { parseTextMap } from '@game/level/textmap';
+import { parseLayers, parseTextMap } from '@game/level/textmap';
 import type { LevelData } from '@game/level/schema';
 
 const sources = import.meta.glob(['./world*/*.map', './lost/world*/*.map'], {
@@ -6,6 +6,21 @@ const sources = import.meta.glob(['./world*/*.map', './lost/world*/*.map'], {
   import: 'default',
   eager: true,
 }) as Record<string, string>;
+
+/**
+ * Each area's `.layers` file (src/content/level-layers/, same paths; written by
+ * tools/levelgen/regen.mjs --layers): the original's pieces for the other map difficulties and
+ * for heroes with level flags, laid in Classic play only (level/layers.ts). The .map files never
+ * change for them.
+ */
+const layerSources = import.meta.glob(
+  ['../level-layers/world*/*.layers', '../level-layers/lost/world*/*.layers'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+) as Record<string, string>;
 
 const cache = new Map<string, LevelData>();
 
@@ -16,6 +31,9 @@ export function getLevel(id: string): LevelData {
   const path = Object.keys(sources).find((p) => p.endsWith(`/${id}.map`));
   if (!path) throw new Error(`unknown level "${id}"`);
   const level = parseTextMap(sources[path] as string, id);
+  const layers = layerSources[path.replace(/^\.\//, '../level-layers/').replace(/\.map$/, '.layers')];
+  if (layers !== undefined)
+    level.layers = [...(level.layers ?? []), ...parseLayers(layers, level.width, level.height)];
   cache.set(id, level);
   return level;
 }
