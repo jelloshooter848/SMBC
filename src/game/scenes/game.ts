@@ -991,6 +991,19 @@ export class Game {
   }
 
   /**
+   * A cleared level's exit to the next level outside the campaign (the flagpole or castle's
+   * `next`, the crystal ball's, the Moblin's). A Classic mode run goes through character select
+   * first, as the original's default All Characters mode does: Level.completeLevel (Level.as
+   * 1951-1956, 3470-3486) loads the next LevelID through ScreenManager.loadNewLevel, which sets
+   * newLev (581-588), and createLevel shows CharacterSelect for it (290-318). The pick is the
+   * warp's (warpToLevel): the same hero keeps its power. Every other run goes straight on.
+   */
+  levelExitTo(levelId: string): void {
+    if (this.classicRun && this.campaign === null) return this.warpToLevel(levelId, { mode: 'stand' });
+    this.goToLevel(levelId, { mode: 'stand' });
+  }
+
+  /**
    * The area a level restarts in without a checkpoint: its first area (Level.reloadLevel loads
    * area a, or b when a is an intro). Only Lost Levels 9-1 has a normal first area before its
    * main one: the converter names it `<main>-start` (convert-smbc.mjs entryId).
@@ -1253,8 +1266,9 @@ export class Game {
   /**
    * Classic mode (title > CLASSIC): a new game of `levelId` (SMB 1-1, or the Lost Levels' 1-1)
    * with no campaign file, playing settings.classicRules. The original's flow from there:
-   * character select after every death and continue, warps through character select, and after
-   * SMB 8-4 the ending, the credits and the Lost Levels.
+   * character select before every new level (each clear: levelExitTo), after every death and
+   * continue, warps through character select, and after SMB 8-4 the ending, the credits and the
+   * Lost Levels.
    */
   classicGame(character: CharacterDef, levelId = '1-1'): void {
     this.pendingLevel = null;
