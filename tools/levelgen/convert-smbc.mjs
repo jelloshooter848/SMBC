@@ -1,6 +1,7 @@
 // Converts level data from the original Super Mario Bros. Crossover source
 // (assets/documents/levelDataSmb.xml, MIT licensed, not committed here) into this project's
-// .map format. Only the "normal" difficulty layer is converted.
+// .map format. A map holds the "normal" difficulty as the original builds it for Mario (no level
+// flags); `--layers` writes everything else (below).
 //
 //   node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4
 //   node tools/levelgen/convert-smbc.mjs --prefix=ll- tools/levelgen/source/levelDataLostLevels.xml src/content/levels/lost/world1 1-1 1-2 1-3 1-4
@@ -14,17 +15,34 @@
 // named difficulties. Crossover-only enemies and helpers are skipped and listed. Last, the few
 // one-tile slips in the original data that the owner set to match the NES are applied
 // (nes-fixes.mjs, SMB1 maps only).
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+//
+// `--layers` writes, instead of the maps, each area's `<id>.layers` file: what the original builds
+// for the other map difficulties (Easy, Hard) and for heroes with level flags (charHorz, charVert,
+// BadSwimmer, WideCharacter, poorBowserFighter), as layers over the map (see areaLayers). It never
+// touches a .map file, so the maps (and every hand edit in them) stay byte for byte as they are.
+//
+//   node tools/levelgen/convert-smbc.mjs --layers tools/levelgen/source/levelDataSmb.xml src/content/levels/world1 1-1 1-2 1-3 1-4
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { MapBuilder } from './lib.mjs';
 import { applyNesFixes } from './nes-fixes.mjs';
 
 const args = process.argv.slice(2);
 const PREFIX = (args.find((a) => a.startsWith('--prefix='))?.slice(9) ?? '').trim();
+const LAYERS = args.includes('--layers');
 const [xmlPath, outDir, ...ids] = args.filter((a) => !a.startsWith('--'));
 if (!xmlPath || !outDir || !ids.length) {
-  console.error('usage: convert-smbc.mjs [--prefix=ll-] <levelData.xml> <outDir> <levelId>...');
+  console.error('usage: convert-smbc.mjs [--prefix=ll-] [--layers] <levelData.xml> <outDir> <levelId>...');
   process.exit(2);
+}
+if (LAYERS) {
+  // Every profile is built: say each warning once.
+  const said = new Set();
+  const warn = console.warn;
+  console.warn = (...a) => {
+    const s = a.join(' ');
+    if (!said.has(s)) warn((said.add(s), s));
+  };
 }
 /** Lost Levels (prefixed) runs: 8-4 ends the game, World 9 and each of A-D (10-13) stand alone. */
 const LOST = PREFIX !== '';
@@ -50,7 +68,7 @@ function parseLevels(text) {
   return out;
 }
 
-/** Tokens of one cell that are visible on normal difficulty. */
+/** Every token of one cell (each difficulty's and each hero's: `visible` picks a profile's). */
 function parseCell(cell) {
   cell = cell.trim().replace(/\]$/, '');
   if (cell === '' || cell === '0') return [];
@@ -63,23 +81,91 @@ function parseCell(cell) {
       if (eq < 0) params[p] = true;
       else params[p.slice(0, eq)] = p.slice(eq + 1);
     }
-    if (String(params.HideOnDifficulties ?? '').includes('normal')) continue;
     toks.push({ name, params });
   }
   return toks;
 }
 
-/**
- * Pieces the original shows only to heroes who need help (it builds each level per character in
- * `Level.as`): `charHorz` / `charVert` = Show for heroes with limited horizontal or vertical
- * reach, `BadSwimmer` = Show for poor swimmers, `WideCharacter` = Show for wide heroes, and
- * anything marked `poorBowserFighter`. A `Hide` value means "present for everyone else", so a
- * classic hero keeps those. Our maps are built for the classic hero.
+/*
+ * Profiles: who the original builds a level for (Level.as buildLevel, 757-787). A profile is a map
+ * difficulty (`easy`, `normal`, `hard`: GameSettings.mapDifficulty) and the playing hero's level
+ * flags (Character.as): `horz` / `vert` (usesHorzObjs / usesVertObjs: limited reach),
+ * `badswimmer` (not isGoodSwimmer), `wide` (isWideCharacter) and `poorbowser`
+ * (poorBowserFighter). The base profile, Normal with no flags, is Mario's: a .map file holds it,
+ * and only it; `--layers` writes the rest as layers over it.
  */
-function helperOnly(params) {
-  for (const k of ['charHorz', 'charVert', 'BadSwimmer', 'WideCharacter'])
-    if (params[k] === 'Show') return true;
-  return params.poorBowserFighter !== undefined;
+const FLAGS = ['horz', 'vert', 'badswimmer', 'wide', 'poorbowser'];
+const BASE = { d: 'normal', flags: [] };
+const profileKey = (p) => [p.d, ...p.flags].join(' ');
+
+/**
+ * Whether a token is built for profile `p`, as Level.as decides: HideOnDifficulties names the
+ * difficulties it is left out on; determineHelperVisibility (675-693) shows `charHorz` /
+ * `charVert` = Show pieces only to heroes with that flag (Show on both: either flag) and drops
+ * `=Hide` pieces for them; getPropertyVisibility does the same for `BadSwimmer` (shown when the
+ * hero is not a good swimmer) and `WideCharacter`; a `poorBowserFighter` piece is only for those
+ * heroes (Simon and Ryu).
+ */
+function visible(params, p) {
+  const has = (f) => p.flags.includes(f);
+  if (String(params.HideOnDifficulties ?? '').includes(p.d)) return false;
+  const h = params.charHorz;
+  const v = params.charVert;
+  if (h === 'Hide' && has('horz')) return false;
+  if (v === 'Hide' && has('vert')) return false;
+  if (h === 'Show' && v === 'Show') {
+    if (!has('horz') && !has('vert')) return false;
+  } else if (v === 'Show') {
+    if (!has('vert')) return false;
+  } else if (h === 'Show' && !has('horz')) return false;
+  const prop = (val, show) => !((val === 'Hide' && show) || (val === 'Show' && !show));
+  if (!prop(params.BadSwimmer, has('badswimmer'))) return false;
+  if (!prop(params.WideCharacter, has('wide'))) return false;
+  if (params.poorBowserFighter !== undefined && !has('poorbowser')) return false;
+  return true;
+}
+
+/** A tag that keeps a piece for some heroes only (the base profile's skip log lists them). */
+const helperTag = (params) =>
+  ['charHorz', 'charVert', 'BadSwimmer', 'WideCharacter'].some((k) => params[k] === 'Show') ||
+  params.poorBowserFighter !== undefined;
+
+const built = new Map(); // profile key -> Map(level id -> the level built for that profile)
+/**
+ * `levels` as the original builds them for profile `p`: each cell's visible tokens only (a level
+ * is built the first time it is asked for).
+ */
+function levelsFor(levels, p) {
+  const key = profileKey(p);
+  let cache = built.get(key);
+  if (!cache) built.set(key, (cache = new Map()));
+  return {
+    has: (id) => levels.has(id),
+    get: (id) => {
+      if (!levels.has(id)) return undefined;
+      if (!cache.has(id)) cache.set(id, buildFor(levels.get(id), p));
+      return cache.get(id);
+    },
+  };
+}
+
+/** One level as the original builds it for profile `p`. */
+function buildFor(level, p) {
+  const areas = level.areas.map((a) => {
+    const helpers = new Map();
+    const grid = a.grid.map((row) =>
+      row.map((toks) =>
+        toks.filter((t) => {
+          if (visible(t.params, p)) return true;
+          const shown = !String(t.params.HideOnDifficulties ?? '').includes(p.d);
+          if (shown && helperTag(t.params)) helpers.set(t.name, (helpers.get(t.name) ?? 0) + 1);
+          return false;
+        }),
+      ),
+    );
+    return { ...a, grid, helpers };
+  });
+  return { ...level, areas };
 }
 
 const tokensAt = (area, x, y) => area.grid[y]?.[x] ?? [];
@@ -190,9 +276,11 @@ const ITEM_BRICK = {
   Vine: 'V',
   PoisonMushroom: '5',
   Clock: 'E',
+  // Hard only (G-023): the Hudson Bee, 8000 points (pickups/HudsonBee.as).
+  HudsonBee: 'I',
 };
 const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: 'Q' };
-const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2' };
+const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2', HudsonBee: 'J' };
 const MARKERS = {
   enemyGoomba: 'g',
   enemyKoopaGreen: 'k',
@@ -435,7 +523,7 @@ function tileChar(tok, area, world) {
 
 /* ---------- one area ---------- */
 
-function convertArea(level, area, id, levels) {
+function convertArea(level, area, id, levels, profile) {
   const levelId = level.id;
   const [world, stage] = levelId.split('-').map(Number);
   const isMain = area.id === level.attrs.MAIN_AREA;
@@ -453,6 +541,8 @@ function convertArea(level, area, id, levels) {
   const b = new MapBuilder(area.width, header);
   const skipped = new Map();
   const skip = (name) => skipped.set(name, (skipped.get(name) ?? 0) + 1);
+  // Crossover pieces only built for other heroes (see visible).
+  for (const [name, n] of area.helpers ?? []) skipped.set(`${name}(helper)`, n);
 
   let start = null;
   let levelExit = null;
@@ -482,11 +572,6 @@ function convertArea(level, area, id, levels) {
       const cellMarkers = [];
       for (const tok of tokensAt(area, x, y)) {
         const { name, params } = tok;
-        if (helperOnly(params)) {
-          // Crossover pieces only shown for heroes with special needs (see helperOnly).
-          skip(`${name}(helper)`);
-          continue;
-        }
         const ch = tileChar(tok, area, world);
         if (ch) {
           // Water and lava are a background layer: they never cover a tile (9-1's flag ball).
@@ -494,9 +579,9 @@ function convertArea(level, area, id, levels) {
           // Two `?` blocks on one cell (Lost Levels 9-1, 24,9 on normal: a Clock block and a
           // coin block; Level.as builds one ItemBlock per token): `Q` is that pair.
           if (ch === '?' && b.rows[y][x] === 'Q') continue;
-          if (ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?'))
-            console.warn(`${id}: Clock block at ${x},${y} without a coin block: becomes Q`);
-          b.set(x, y, ch);
+          // A Clock block on its own (Easy and Hard layers): `e`, used once the Clock is out.
+          const solo = ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?');
+          b.set(x, y, solo ? 'e' : ch);
           if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
         }
@@ -641,7 +726,8 @@ function convertArea(level, area, id, levels) {
             // start on normal difficulty in the original (Level.as shouldStartAtCheckPoint).
             // The row is kept: the respawn puts the feet on the bottom of the midpoint's cell
             // (Level.as hwPnt = currentY + TILE_SIZE, lines 1068-1072); ll-5-3's is on row 9.
-            if (level.attrs.LOCKED_CP !== 'True') b.zone(`checkpoint ${x} ${y}`);
+            // Easy and Hard open them (Level.as:1454: mapDifficulty HARD or EASY).
+            if (level.attrs.LOCKED_CP !== 'True' || profile.d !== 'normal') b.zone(`checkpoint ${x} ${y}`);
             break;
           case 'levelExit':
             levelExit = { x, y };
@@ -817,7 +903,10 @@ function convertArea(level, area, id, levels) {
 
 /* ---------- links between areas ---------- */
 
-function convertLevel(level, levels) {
+/** Every area of level `levelId`, built for `profile` (default: the base profile). */
+function convertLevel(levelId, allLevels, profile = BASE) {
+  const levels = levelsFor(allLevels, profile);
+  const level = levels.get(levelId);
   const used = new Map();
   const ids = level.areas.map((a) => {
     if (a.id === level.attrs.MAIN_AREA) return pid(level.id);
@@ -827,7 +916,7 @@ function convertLevel(level, levels) {
     used.set(suffix, n);
     return pid(`${level.id}-${suffix}${n > 1 ? n : ''}`);
   });
-  const converted = level.areas.map((a, i) => convertArea(level, a, ids[i], levels));
+  const converted = level.areas.map((a, i) => convertArea(level, a, ids[i], levels, profile));
   const byAreaId = new Map(level.areas.map((a, i) => [a.id, converted[i]]));
   for (const c of converted) {
     for (const v of c.vines) {
@@ -882,6 +971,266 @@ function convertLevel(level, levels) {
   return converted;
 }
 
+/* ---------- layers (--layers) ---------- */
+
+const MARKER_CHARS = new Set(Object.keys(MARKER_TYPES));
+const entityLine = (e) =>
+  `${e.type} ${e.x} ${e.y}${
+    e.props
+      ? ' ' +
+        Object.entries(e.props)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(' ')
+      : ''
+  }`;
+/** An entity line's `type x y` (what a layer's `- type x y` takes out). */
+const entityKey = (line) => line.split(' ').slice(0, 3).join(' ');
+
+/** A built area as rows of tile chars (markers become spawns, as parseTextMap reads them). */
+function stateOf(b) {
+  const rows = b.rows.map((r) => [...r]);
+  const ents = b.entities.map(entityLine);
+  for (let y = 0; y < rows.length; y++)
+    for (let x = 0; x < rows[y].length; x++) {
+      const ch = rows[y][x];
+      if (!MARKER_CHARS.has(ch)) continue;
+      ents.push(`${MARKER_TYPES[ch]} ${x} ${y}`);
+      rows[y][x] = '.';
+    }
+  const start = `${b.header.start.replace(',', ' ')} ${b.header.startMode}`;
+  return { rows, ents, zones: [...b.zones], decor: [...b.decor], header: JSON.stringify(b.header), start };
+}
+
+/** `s` with layer `l` laid: its cells set, its spawns and zones taken out, then added. */
+function applyLayer(s, l) {
+  const rows = s.rows.map((r) => [...r]);
+  for (const c of l.cells) rows[c.y][c.x] = c.ch;
+  const gone = new Set(l.removes);
+  const out = new Set(l.zonesOut);
+  return {
+    ...s,
+    rows,
+    ents: s.ents.filter((e) => !gone.has(entityKey(e))).concat(l.adds),
+    zones: s.zones.filter((z) => !out.has(z)).concat(l.zonesIn),
+    start: l.start ?? s.start,
+  };
+}
+
+/** Lines of `a` and `b` grouped by `key`, for the keys whose lines differ. */
+function changedKeys(a, b, key) {
+  const group = (list) => {
+    const m = new Map();
+    for (const l of list) m.set(key(l), [...(m.get(key(l)) ?? []), l]);
+    return m;
+  };
+  const ga = group(a);
+  const gb = group(b);
+  const out = [];
+  for (const k of new Set([...ga.keys(), ...gb.keys()])) {
+    const la = (ga.get(k) ?? []).slice().sort().join('\n');
+    const lb = (gb.get(k) ?? []).slice().sort().join('\n');
+    if (la !== lb) out.push({ key: k, had: ga.has(k), lines: gb.get(k) ?? [] });
+  }
+  return out;
+}
+
+/** The layer that turns `from` into `to` (null when they are the same). */
+function diffLayer(from, to, d, flags) {
+  const cells = [];
+  for (let y = 0; y < to.rows.length; y++)
+    for (let x = 0; x < to.rows[y].length; x++)
+      if (from.rows[y][x] !== to.rows[y][x]) cells.push({ x, y, ch: to.rows[y][x] });
+  const removes = [];
+  const adds = [];
+  for (const c of changedKeys(from.ents, to.ents, entityKey)) {
+    if (c.had) removes.push(c.key);
+    adds.push(...c.lines);
+  }
+  const zonesOut = [];
+  const zonesIn = [];
+  for (const c of changedKeys(from.zones, to.zones, (z) => z)) {
+    if (c.had) zonesOut.push(c.key);
+    zonesIn.push(...c.lines);
+  }
+  const start = from.start === to.start ? null : to.start;
+  if (!cells.length && !removes.length && !adds.length && !zonesOut.length && !zonesIn.length && !start)
+    return null;
+  return { d, flags, cells, removes, adds, zonesOut, zonesIn, start };
+}
+
+/** Every non-empty subset of FLAGS, smallest first (then in FLAGS order). */
+const SUBSETS = (() => {
+  const out = [];
+  for (let m = 1; m < 1 << FLAGS.length; m++) out.push(FLAGS.filter((_, i) => m & (1 << i)));
+  const rank = (s) => s.map((f) => FLAGS.indexOf(f));
+  return out.sort((a, b) => a.length - b.length || String(rank(a)).localeCompare(String(rank(b))));
+})();
+
+/**
+ * Area states of level `levelId` for every profile, by profile key then area id. The NES fixes
+ * are applied to each (quietly: a profile that changes a fixed cell keeps its own tile).
+ */
+function profileStates(levelId, levels) {
+  const out = new Map();
+  for (const d of ['easy', 'normal', 'hard'])
+    for (const flags of [[], ...SUBSETS]) {
+      const p = { d, flags };
+      const areas = new Map();
+      for (const c of convertLevel(levelId, levels, p)) {
+        applyNesFixes(c.id, c.builder, true);
+        areas.set(c.id, stateOf(c.builder));
+      }
+      out.set(profileKey(p), areas);
+    }
+  return out;
+}
+
+/**
+ * One area's layers over its base (Normal, no flags), in the order Classic play lays them
+ * (level/layers.ts): for each flag set S (none first, then smallest first), a layer for any
+ * difficulty and then one for Easy and one for Hard; a profile lays every layer whose flags it
+ * has and whose difficulty is its own or any. Each is the difference between what the original
+ * builds for (difficulty, S) and what the earlier layers already lay for it, so every profile's
+ * result is exactly the original's.
+ */
+function areaLayers(areaId, states) {
+  const base = states.get(profileKey(BASE)).get(areaId);
+  const layers = [];
+  const compose = (d, flags) =>
+    layers
+      .filter((l) => (l.d === null || l.d === d) && l.flags.every((f) => flags.includes(f)))
+      .reduce(applyLayer, base);
+  const warned = new Set();
+  for (const flags of [[], ...SUBSETS])
+    for (const d of flags.length ? [null, 'easy', 'hard'] : ['easy', 'hard']) {
+      const target = states.get(profileKey({ d: d ?? 'normal', flags })).get(areaId);
+      const l = diffLayer(compose(d ?? 'normal', flags), target, d, flags);
+      if (l) layers.push(l);
+      // A layer holds tiles, spawns and zones; the header and decor stay the map's.
+      const th = JSON.parse(target.header);
+      const bh = JSON.parse(base.header);
+      const keys = Object.keys(th).filter((k) => th[k] !== bh[k] && k !== 'start' && k !== 'startMode');
+      const decor = target.decor.filter((x) => !base.decor.includes(x));
+      for (const [what, diff] of [
+        ['header', keys.map((k) => `${k}: ${bh[k]} -> ${th[k]}`).join(', ')],
+        ['decor', decor.join(', ')],
+      ])
+        if (diff && !warned.has(what)) {
+          warned.add(what);
+          console.warn(
+            `${areaId}: ${what} differs for ${profileKey({ d: d ?? 'normal', flags })} (${diff}); kept`,
+          );
+        }
+    }
+  return layers;
+}
+
+/** Tile rows and spawn keys of a committed map (to check the layers lay over its base). */
+function readMap(file) {
+  let text;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  const rows = [];
+  const ents = new Set();
+  let section = '';
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/;;.*$/, '').trim();
+    if (!line) continue;
+    const sec = /^\[(.+)\]$/.exec(line);
+    if (sec) {
+      section = sec[1];
+      continue;
+    }
+    if (section === 'tiles') rows.push([...line.replace(/\s+/g, '')]);
+    else if (section === 'entities') ents.add(entityKey(line));
+  }
+  rows.forEach((r, y) =>
+    r.forEach((ch, x) => {
+      if (!MARKER_CHARS.has(ch)) return;
+      ents.add(`${MARKER_TYPES[ch]} ${x} ${y}`);
+      r[x] = '.';
+    }),
+  );
+  return { rows, ents };
+}
+
+const layerHeader = (l) => ['layer', ...(l.d ? [l.d] : []), ...l.flags].join(' ');
+
+function layersText(areaId, layers) {
+  const source = xmlPath.replace(/^.*[\\/]/, '');
+  const out = [
+    `;; ${areaId}: the original's pieces for the other map difficulties and for heroes with level flags`,
+    `;; (generated by tools/levelgen/convert-smbc.mjs --layers from ${source}; do not edit by hand).`,
+    ';; Classic play lays, in order, each layer whose flags the hero has and whose difficulty is the',
+    ";; run's or any (level/layers.ts). The .map file holds Normal for a hero with no flags.",
+  ];
+  for (const l of layers) {
+    out.push('', `[${layerHeader(l)}]`);
+    // Runs of changed cells per row (only changed cells: the map's own edits stay).
+    const byRow = new Map();
+    for (const c of l.cells) byRow.set(c.y, [...(byRow.get(c.y) ?? []), c]);
+    for (const [y, cells] of [...byRow].sort((a, b) => a[0] - b[0])) {
+      let run = null;
+      for (const c of cells.sort((a, b) => a.x - b.x)) {
+        if (run && c.x === run.x + run.chars.length) run.chars += c.ch;
+        else {
+          if (run) out.push(`${run.x} ${y} ${run.chars}`);
+          run = { x: c.x, chars: c.ch };
+        }
+      }
+      if (run) out.push(`${run.x} ${y} ${run.chars}`);
+    }
+    for (const k of l.removes) out.push(`- ${k}`);
+    for (const a of l.adds) out.push(`+ ${a}`);
+    for (const z of l.zonesOut) out.push(`-zone ${z}`);
+    for (const z of l.zonesIn) out.push(`+zone ${z}`);
+    if (l.start) out.push(`start ${l.start}`);
+  }
+  return out.join('\n') + '\n';
+}
+
+/** Writes `<area>.layers` beside each area's map (removing a stale one); never touches a .map. */
+function writeLayers(levelId, levels) {
+  const states = profileStates(levelId, levels);
+  for (const areaId of states.get(profileKey(BASE)).keys()) {
+    const layers = areaLayers(areaId, states);
+    const file = join(outDir, `${areaId}.layers`);
+    if (!layers.length) {
+      rmSync(file, { force: true });
+      console.log(`${areaId}: no layers`);
+      continue;
+    }
+    writeFileSync(file, layersText(areaId, layers));
+    // The layers lay over the committed map: report the cells and spawns where it is not the
+    // original's base (its own hand edits), which a layer would overwrite or miss.
+    const map = readMap(join(outDir, `${areaId}.map`));
+    const base = states.get(profileKey(BASE)).get(areaId);
+    let cells = 0;
+    let spawns = 0;
+    if (map) {
+      const added = new Set();
+      for (const l of layers) {
+        for (const c of l.cells) if (map.rows[c.y]?.[c.x] !== base.rows[c.y][c.x]) cells++;
+        for (const k of l.removes) if (!map.ents.has(k) && !added.has(k)) spawns++;
+        for (const a of l.adds) added.add(entityKey(a));
+      }
+    }
+    const lines = layers.reduce((n, l) => n + l.cells.length + l.adds.length + l.removes.length, 0);
+    console.log(
+      `${areaId}: ${layers.length} layers (${layers
+        .map(layerHeader)
+        .map((h) => h.slice(6))
+        .join('; ')}), ${lines} changes` +
+        (map ? '' : '; no map to check') +
+        (cells ? `; ${cells} cells over the map's own edits` : '') +
+        (spawns ? `; ${spawns} removals miss` : ''),
+    );
+  }
+}
+
 /* ---------- run ---------- */
 
 const levels = parseLevels(readFileSync(xmlPath, 'utf8'));
@@ -892,7 +1241,11 @@ for (const id of ids) {
     console.error(`no level ${id}`);
     process.exit(1);
   }
-  for (const c of convertLevel(level, levels)) {
+  if (LAYERS) {
+    writeLayers(id, levels);
+    continue;
+  }
+  for (const c of convertLevel(id, levels)) {
     // One-tile slips in the original data, set to match the NES (nes-fixes.mjs).
     const fixed = applyNesFixes(c.id, c.builder);
     const text = c.builder.toString();

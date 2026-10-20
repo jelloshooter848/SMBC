@@ -4,14 +4,17 @@ import type {
   CampaignLook,
   Decor,
   EntitySpawn,
+  LayerFlag,
   LevelData,
+  LevelLayer,
   LevelVariant,
+  MapDifficulty,
   PipeDir,
   Theme,
   TransferMode,
   Zone,
 } from './schema';
-import { CAMERA_MODES, isTheme, themeMusic, type CameraMode } from './schema';
+import { CAMERA_MODES, LAYER_FLAGS, MAP_DIFFICULTIES, isTheme, themeMusic, type CameraMode } from './schema';
 import { DEFAULT_AUTO_SCROLL } from '../world/camera';
 import { DEFAULT_LEGEND, T } from './tiles';
 import { entryItem, heroItems as heroItemList } from '../items/catalog';
@@ -80,6 +83,11 @@ function parseProps(parts: string[]): Props {
  *                         player is that hero, in campaign play only; `[variant <hero> classic]` in
  *                         all play (level/variants.ts heroVariant); `music <song>`: the level's
  *                         music while that hero plays it
+ *   [layer [easy|hard] [horz] [vert] [badswimmer] [wide] [poorbowser]]
+ *                         the original's pieces for a map difficulty and/or heroes with those
+ *                         level flags (G-006, G-010): a variant's lines plus `+zone <zone>`,
+ *                         `-zone <zone>` and `start x y mode`; Classic play only, laid in order
+ *                         (level/layers.ts). An area's `.layers` file holds only these sections.
  *   [hero-items]          `x y hero=item ...`: what the power block at x y gives each hero in the
  *                         campaign (docs/POWERUPS.md 3.2; `grow`: their grow item; a hero not
  *                         named gets their default power). The tile must be a power block (M, P,
@@ -95,7 +103,8 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
   const lookDecor: Decor[] = [];
   let hasLookDecor = false;
   const variants: LevelVariant[] = [];
-  /** Each variant run's source line, for the bounds check once the width is known. */
+  const layers: LevelLayer[] = [];
+  /** Each variant or layer run's source line, for the bounds check once the width is known. */
   const runLines: { run: LevelVariant['tiles'][number]; line: number }[] = [];
   const heroItems: { entry: HeroItemEntry; line: number }[] = [];
   let section:
@@ -107,6 +116,7 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     | 'decor'
     | 'campaign-decor'
     | 'variant'
+    | 'layer'
     | 'hero-items' = 'header';
 
   const lines = src.split(/\r?\n/);
@@ -124,6 +134,16 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
       if (variant[2]) v.classic = true;
       variants.push(v);
       section = 'variant';
+      return;
+    }
+    const layer = /^\[layer((?:\s+[\w-]+)*)\]$/.exec(trimmed);
+    if (layer) {
+      try {
+        layers.push(layerHead(layer[1] ?? ''));
+      } catch (e) {
+        throw new MapParseError((e as Error).message, lineNo);
+      }
+      section = 'layer';
       return;
     }
     const sec = /^\[([\w-]+)\]$/.exec(trimmed);
@@ -201,43 +221,12 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
             v.music = parts[1];
             break;
           }
-          if (parts[0] === '+' || parts[0] === '-') {
-            // `+ type x y [key=val]`: a spawn added; `- type x y`: the map's spawn there taken out.
-            const [sign, type, xs, ys, ...rest] = parts;
-            if (!type || !/^\d+$/.test(xs ?? '') || !/^\d+$/.test(ys ?? '') || (sign === '-' && rest.length))
-              throw new Error('expected "+ type x y [key=val]" or "- type x y"');
-            const e: EntitySpawn = { type, x: Number(xs), y: Number(ys) };
-            if (sign === '-') (v.remove ??= []).push(e);
-            else {
-              if (rest.length) e.props = parseProps(rest);
-              (v.add ??= []).push(e);
-            }
-            break;
-          }
-          const [xs, ys, chars, rep, ...more] = parts;
-          if (
-            !/^\d+$/.test(xs ?? '') ||
-            !/^\d+$/.test(ys ?? '') ||
-            !chars ||
-            (rep !== undefined && !/^\*[1-9]\d*$/.test(rep)) ||
-            more.length
-          )
-            throw new Error('expected "x y tiles [*rows]"');
-          const x0 = Number(xs);
-          // `*N`: the same run on N rows, from y down.
-          for (let y = Number(ys); y < Number(ys) + (rep ? Number(rep.slice(1)) : 1); y++) {
-            // A marker in a run (a spring's `s`) adds that spawn on open air, as in [tiles].
-            const ids = [...chars].map((ch, i) => {
-              const t = legend[ch];
-              if (t === undefined) throw new Error(`"${ch}" is not a tile`);
-              if (typeof t === 'number') return t;
-              (v.add ??= []).push({ type: t.slice(1), x: x0 + i, y });
-              return T.AIR;
-            });
-            const run = { x: x0, y, tiles: ids };
-            v.tiles.push(run);
-            runLines.push({ run, line: lineNo });
-          }
+          for (const run of parsePieceLine(trimmed, legend, v, false)) runLines.push({ run, line: lineNo });
+          break;
+        }
+        case 'layer': {
+          const l = layers.at(-1) as LevelLayer;
+          for (const run of parsePieceLine(trimmed, legend, l, true)) runLines.push({ run, line: lineNo });
           break;
         }
       }
@@ -349,6 +338,7 @@ export function parseTextMap(src: string, idHint = 'level'): LevelData {
     level.campaignLook = look;
   }
   if (variants.length) level.variants = variants;
+  if (layers.length) level.layers = layers;
   if (heroItems.length) level.heroItems = heroItems.map((h) => h.entry);
   return level;
 }
@@ -377,6 +367,126 @@ function parseHeroItems(line: string): HeroItemEntry {
     items[hero] = item;
   }
   return { x: Number(xs), y: Number(ys), items };
+}
+
+/** A `[layer ...]` header's words: at most one map difficulty, then level flags. */
+function layerHead(words: string): LevelLayer {
+  const l: LevelLayer = { flags: [], tiles: [] };
+  for (const w of words.trim().split(/\s+/).filter(Boolean)) {
+    if ((MAP_DIFFICULTIES as readonly string[]).includes(w)) {
+      if (l.difficulty) throw new Error(`a layer names one map difficulty, not "${l.difficulty}" and "${w}"`);
+      l.difficulty = w as MapDifficulty;
+    } else if ((LAYER_FLAGS as readonly string[]).includes(w)) l.flags.push(w as LayerFlag);
+    else throw new Error(`unknown layer word "${w}" (${[...MAP_DIFFICULTIES, ...LAYER_FLAGS].join(', ')})`);
+  }
+  return l;
+}
+
+type Pieces = {
+  tiles: { x: number; y: number; tiles: number[] }[];
+  add?: EntitySpawn[];
+  remove?: { type: string; x: number; y: number }[];
+  addZones?: Zone[];
+  removeZones?: Zone[];
+  start?: LevelLayer['start'];
+};
+
+const START_MODES = ['stand', 'fall', 'pipe-exit', 'climb', 'autowalk', 'spin', 'beam'];
+
+/**
+ * One line of a `[variant]` or `[layer]` section: `+ type x y [key=val]` (a spawn added),
+ * `- type x y` (the spawns there taken out), `x y tiles [*N]` (a run), and in a layer
+ * `+zone <zone>` / `-zone <zone>`. Returns the runs it added (for the bounds check).
+ */
+function parsePieceLine(
+  trimmed: string,
+  legend: Record<string, number | string>,
+  v: Pieces,
+  zones: boolean,
+): Pieces['tiles'] {
+  const parts = trimmed.split(/\s+/);
+  if (zones && (parts[0] === '+zone' || parts[0] === '-zone')) {
+    const z = parseZone(trimmed.slice(5).trim());
+    if (parts[0] === '+zone') (v.addZones ??= []).push(z);
+    else (v.removeZones ??= []).push(z);
+    return [];
+  }
+  if (zones && parts[0] === 'start') {
+    // `start x y mode`: the area's start for this layer.
+    const [, xs, ys, mode] = parts;
+    if (!/^\d+$/.test(xs ?? '') || !/^\d+$/.test(ys ?? '') || !START_MODES.includes(mode ?? '') || parts.length > 4)
+      throw new Error(`expected "start x y mode" (${START_MODES.join(', ')})`);
+    v.start = { x: Number(xs), y: Number(ys), mode: mode as LevelData['startMode'] };
+    return [];
+  }
+  if (parts[0] === '+' || parts[0] === '-') {
+    // `+ type x y [key=val]`: a spawn added; `- type x y`: the map's spawn there taken out.
+    const [sign, type, xs, ys, ...rest] = parts;
+    if (!type || !/^\d+$/.test(xs ?? '') || !/^\d+$/.test(ys ?? '') || (sign === '-' && rest.length))
+      throw new Error('expected "+ type x y [key=val]" or "- type x y"');
+    const e: EntitySpawn = { type, x: Number(xs), y: Number(ys) };
+    if (sign === '-') (v.remove ??= []).push(e);
+    else {
+      if (rest.length) e.props = parseProps(rest);
+      (v.add ??= []).push(e);
+    }
+    return [];
+  }
+  const [xs, ys, chars, rep, ...more] = parts;
+  if (
+    !/^\d+$/.test(xs ?? '') ||
+    !/^\d+$/.test(ys ?? '') ||
+    !chars ||
+    (rep !== undefined && !/^\*[1-9]\d*$/.test(rep)) ||
+    more.length
+  )
+    throw new Error('expected "x y tiles [*rows]"');
+  const x0 = Number(xs);
+  const runs: Pieces['tiles'] = [];
+  // `*N`: the same run on N rows, from y down.
+  for (let y = Number(ys); y < Number(ys) + (rep ? Number(rep.slice(1)) : 1); y++) {
+    // A marker in a run (a spring's `s`) adds that spawn on open air, as in [tiles].
+    const ids = [...chars].map((ch, i) => {
+      const t = legend[ch];
+      if (t === undefined) throw new Error(`"${ch}" is not a tile`);
+      if (typeof t === 'number') return t;
+      (v.add ??= []).push({ type: t.slice(1), x: x0 + i, y });
+      return T.AIR;
+    });
+    const run = { x: x0, y, tiles: ids };
+    v.tiles.push(run);
+    runs.push(run);
+  }
+  return runs;
+}
+
+/**
+ * An area's `.layers` file (tools/levelgen/convert-smbc.mjs --layers): `[layer ...]` sections
+ * only, as in a map. `width` / `height`: the map's, for the bounds check.
+ */
+export function parseLayers(src: string, width: number, height: number = LEVEL_ROWS): LevelLayer[] {
+  const layers: LevelLayer[] = [];
+  src.split(/\r?\n/).forEach((raw, i) => {
+    const lineNo = i + 1;
+    const c = raw.indexOf(';;');
+    const trimmed = (c >= 0 ? raw.slice(0, c) : raw).trim();
+    if (!trimmed) return;
+    try {
+      const head = /^\[layer((?:\s+[\w-]+)*)\]$/.exec(trimmed);
+      if (head) {
+        layers.push(layerHead(head[1] ?? ''));
+        return;
+      }
+      const l = layers.at(-1);
+      if (!l) throw new Error('expected a [layer ...] section first');
+      for (const run of parsePieceLine(trimmed, DEFAULT_LEGEND, l, true))
+        if (run.y >= height || run.x + run.tiles.length > width)
+          throw new Error(`layer run at ${run.x},${run.y} reaches outside the level`);
+    } catch (e) {
+      throw new MapParseError((e as Error).message, lineNo);
+    }
+  });
+  return layers;
 }
 
 /** A whole number ≥ 0 from a header or id part, else `d`. */
@@ -628,6 +738,17 @@ function tileIdByName(name: string): number | undefined {
 }
 
 /** Serialize back to the text format (used by the editor and round-trip tests). */
+/** `type x y key=val ...`, as a map line. */
+const spawnLine = (e: EntitySpawn): string =>
+  `${e.type} ${e.x} ${e.y}${
+    e.props
+      ? ' ' +
+        Object.entries(e.props)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(' ')
+      : ''
+  }`;
+
 export function serializeTextMap(level: LevelData): string {
   const rev = new Map<number | string, string>();
   for (const [ch, v] of Object.entries(DEFAULT_LEGEND)) if (!rev.has(v)) rev.set(v, ch);
@@ -716,6 +837,15 @@ export function serializeTextMap(level: LevelData): string {
         }`,
       );
     for (const e of v.remove ?? []) out.push(`- ${e.type} ${e.x} ${e.y}`);
+  }
+  for (const l of level.layers ?? []) {
+    out.push('', `[${['layer', ...(l.difficulty ? [l.difficulty] : []), ...l.flags].join(' ')}]`);
+    for (const r of l.tiles) out.push(`${r.x} ${r.y} ${r.tiles.map((t) => rev.get(t) ?? '.').join('')}`);
+    for (const e of l.remove ?? []) out.push(`- ${e.type} ${e.x} ${e.y}`);
+    for (const e of l.add ?? []) out.push(`+ ${spawnLine(e)}`);
+    for (const z of l.removeZones ?? []) out.push(`-zone ${serializeZone(z)}`);
+    for (const z of l.addZones ?? []) out.push(`+zone ${serializeZone(z)}`);
+    if (l.start) out.push(`start ${l.start.x} ${l.start.y} ${l.start.mode}`);
   }
   return out.join('\n') + '\n';
 }

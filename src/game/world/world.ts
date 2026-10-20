@@ -10,7 +10,7 @@ import { moveX, type Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import type { EntitySpawn, HeroItemEntry, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
+import type { EntitySpawn, HeroItemEntry, LevelData, MapDifficulty, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
 import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';
@@ -88,6 +88,7 @@ import {
 import type { ClassicCheatStat } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
 import { heroFor } from '../characters/registry';
+import { layeredLevel, layerFlags } from '../level/layers';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
@@ -788,14 +789,32 @@ export class World {
    */
   private trickSpin: { wall: TrickWall; dir: 'out' | 'in'; t: number } | null = null;
 
+  /**
+   * The area being played. Under Classic rules, as the original builds it for the run's map
+   * difficulty and the heroes' level flags (G-006, G-010-G-012: level/layers.ts); else the
+   * level as given.
+   */
+  readonly level: LevelData;
+  /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
+  readonly mapDifficulty: MapDifficulty;
+
   constructor(
-    readonly level: LevelData,
+    level: LevelData,
     readonly ctx: GameContext,
     readonly state: GameState,
     start: WorldStart = {},
   ) {
     this.audio = ctx.audio;
     this.rules = start.rules ?? rulesOf(ctx);
+    this.mapDifficulty = this.rules === 'classic' ? (ctx.mapDifficulty ?? 'normal') : 'normal';
+    if (this.rules === 'classic') {
+      const heroes = [state.character, ...(state.character2 ? [state.character2] : [])];
+      level = layeredLevel(level, {
+        difficulty: this.mapDifficulty,
+        flags: layerFlags(heroes.map((d) => heroFor(d, 'classic'))),
+      });
+    }
+    this.level = level;
     // Classic mode's Infinite Lives, Infinite Time and Invincible cheats are the assists' own
     // (cheatAssist); a Current World has the context's assists as they are.
     this.assist = this.rules === 'classic' ? cheatAssist(ctx.assist, () => this.cheats) : ctx.assist;

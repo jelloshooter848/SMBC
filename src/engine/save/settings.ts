@@ -2,6 +2,11 @@ import type { PaletteMode } from '../gfx/palette';
 import type { PlayerBindings } from '../input/bindings';
 import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
+import type { BeatDifficulty } from './progress';
+
+/** Classic mode's map difficulties (data/MapDifficulty.as), as the beat status names them. */
+export type MapDifficulty = BeatDifficulty;
+export const MAP_DIFFICULTIES: readonly MapDifficulty[] = ['easy', 'normal', 'hard'];
 import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
 
 export type TouchMode = 'auto' | 'on' | 'off';
@@ -68,6 +73,12 @@ export interface Settings {
    * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
    */
   classicRules: ClassicRules;
+  /**
+   * Classic mode's Map Difficulty (G-006; the original's New Game row, data/MapDifficulty.as):
+   * Easy, Normal (the default) or Hard. A Classic run is built for it (level/layers.ts) and its
+   * beat status records it. Files saved before it get Normal.
+   */
+  classicMapDifficulty: MapDifficulty;
   /**
    * Classic mode's options (title > CLASSIC > Options: Game Mode, More Settings, Customize
    * Weapons; save/original-options.ts), every one defaulting to the original's. Files saved
@@ -211,6 +222,7 @@ export function defaultSettings(): Settings {
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
+    classicMapDifficulty: 'normal',
     classicCheats: defaultClassicCheats(),
     classic: defaultClassicSettings(),
     classicDev: { yoshiMount: false, heroesOff: [] },
@@ -258,6 +270,7 @@ export function loadSettings(): Settings {
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
+  if (!MAP_DIFFICULTIES.includes(s.classicMapDifficulty)) s.classicMapDifficulty = 'normal';
   for (const k of CLASSIC_CHEAT_STATS) {
     const n = s.classicCheats.stats[k];
     s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
