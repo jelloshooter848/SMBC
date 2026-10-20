@@ -8,6 +8,17 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode's Link, Samus and Simon are redrawn at the original 3.1.21's sizes: Link a small
+  15 x 16 adventurer (no shield until the Mushroom), Samus a full 33 px suit with her arm cannon,
+  crouch, somersault and morph ball, Simon with four walk poses, the whip hanging, waving and
+  striking (leather, chain, the long Flame Whip), and his own crouch, climb and death. Link's
+  death spins, greys and sparkles. The select screen and the intro card show the new art.
+- Classic Mario and Luigi's few poses that were off the original's size are re-cut.
+- Classic Mario grows at the original speed.
+- Classic Samus's upward missile is drawn at its 8 x 10 size.
+
 ## [0.4.60] - 2026-10-20
 
 ### Added
@@ -67,17 +78,6 @@ under `## [Unreleased]`.
   room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
   the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
   the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
-
-### Changed
-
-- Classic mode's Link, Samus and Simon are redrawn at the original 3.1.21's sizes: Link a small
-  15 x 16 adventurer (no shield until the Mushroom), Samus a full 33 px suit with her arm cannon,
-  crouch, somersault and morph ball, Simon with four walk poses, the whip hanging, waving and
-  striking (leather, chain, the long Flame Whip), and his own crouch, climb and death. Link's
-  death spins, greys and sparkles. The select screen and the intro card show the new art.
-- Classic Mario and Luigi's few poses that were off the original's size are re-cut.
-- Classic Mario grows at the original speed.
-- Classic Samus's upward missile is drawn at its 8 x 10 size.
 
 ## [0.4.58] - 2026-10-20
 
