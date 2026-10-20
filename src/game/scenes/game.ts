@@ -17,6 +17,13 @@ import {
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
+import {
+  clearClassicResume,
+  loadClassicResume,
+  resumeOf,
+  saveClassicResume,
+  type ClassicResume,
+} from '../run-resume';
 import { LevelScene, type LevelStart } from './level';
 import { freshSeed, startTime } from '../world/world';
 import { Rng } from '@engine/rng';
@@ -675,6 +682,8 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
+    // G-008: a Classic run that reaches the credits is over; its resume slot goes.
+    if (this.classicRun && !this.classicDev) clearClassicResume();
     if (from.startsWith('ll-')) return this.showLostEnding(from);
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
@@ -1813,6 +1822,74 @@ export class Game {
   }
 
   /** The title's CLASSIC entry: Super Mario Bros., The Lost Levels (once open), Options, Back. */
+  /** G-008: writes the resume slot for the WORLD card of `levelId`. */
+  private keepResume(levelId: string): void {
+    const sv = this.survival;
+    const survival = sv
+      ? {
+          fallen: this.heroSlots.map((c) => c.id).filter((id) => sv.isFallen(id)),
+          reviveAllowed: sv.reviveAllowed,
+        }
+      : undefined;
+    saveClassicResume(resumeOf(levelId, this.state, this.liveRules, survival));
+  }
+
+  /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
+  classicResume(): ClassicResume | null {
+    const r = loadClassicResume();
+    if (!r) return null;
+    const hero = this.rosterFor(r.rules).find((c) => c.id === r.hero);
+    try {
+      this.deps.getLevel(r.levelId);
+    } catch {
+      return null;
+    }
+    return hero ? r : null;
+  }
+
+  /**
+   * CLASSIC > Continue (G-008): the run in the resume slot goes on from the WORLD card of the
+   * level it was in, with its lives, score, coins, hero, power and kit, under its own rules.
+   */
+  resumeClassic(): boolean {
+    const r = this.classicResume();
+    const hero = r ? this.rosterFor(r.rules).find((c) => c.id === r.hero) : undefined;
+    if (!r || !hero) return false;
+    this.tutorialRun = null;
+    this.campaign = null;
+    this.runRules = r.rules;
+    this.classicRun = true;
+    this.classicDev = false;
+    this.pickedRandom = false;
+    this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
+    this.state = newGameState(hero, null, this.liveRules);
+    const s = this.state;
+    s.score = r.score;
+    s.coins = r.coins;
+    s.lives = r.lives;
+    s.world = r.world;
+    s.stage = r.stage;
+    s.powerState = r.powerState;
+    s.hp = r.hp;
+    s.kit = { ...r.kit };
+    s.warped = r.warped;
+    s.checkpoint = r.checkpoint;
+    this.survival = null;
+    if (r.survival && this.survivalMode) {
+      const sv = this.newSurvival();
+      for (const c of this.heroSlots) if (!r.survival.fallen.includes(c.id)) sv.revive(c.id);
+      sv.reviveAllowed = r.survival.reviveAllowed;
+      this.survival = sv;
+    }
+    this.playtestDone = null;
+    this.quickRespawn = false;
+    this.backupDue = null;
+    this.pendingLevel = null;
+    this.deps.announcer?.say('Continue.');
+    this.goToLevel(r.levelId, { mode: 'stand' });
+    return true;
+  }
+
   showClassicMenu(): void {
     this.endClassicRun();
     this.runRules = 'current';
@@ -2014,6 +2091,8 @@ export class Game {
       this.startLevel(level, start);
       return;
     }
+    // G-008: a Classic mode run keeps its resume slot at each WORLD card (never a dev run).
+    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
     this.deps.announcer?.say(
@@ -2229,6 +2308,8 @@ export class Game {
    */
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
+    // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
+    if (this.classicRun && !this.classicDev) clearClassicResume();
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

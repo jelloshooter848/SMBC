@@ -3,7 +3,7 @@ import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
-import { ClassicHeroesScene } from './classic-heroes-menu';
+import { ClassicHeroesScene } from './disable-heroes';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
@@ -15,6 +15,7 @@ import {
   rowsOriginal,
 } from './original-options';
 import type { Game } from './game';
+import { worldLabel } from '../hud/world-label';
 import type { Renderer } from '@engine/gfx/renderer';
 
 /**
@@ -79,13 +80,20 @@ export class ClassicMenuScene extends MenuScene {
     const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
-    const items: MenuItem[] = [
-      {
-        label: 'Super Mario Bros.',
-        select: () => game.classicSelect('1-1', back),
-        hint: `The original game with every hero${own}`,
-      },
-    ];
+    const items: MenuItem[] = [];
+    // G-008: the run kept in the resume slot, from the level it was in.
+    const kept = game.classicResume();
+    if (kept)
+      items.push({
+        label: 'Continue',
+        select: () => void game.resumeClassic(),
+        hint: `Your last run, from the start of ${kept.levelId.startsWith('ll-') ? 'Lost Levels ' : ''}World ${worldLabel(kept.world)}-${kept.stage} with ${kept.lives} ${kept.lives === 1 ? 'life' : 'lives'}`,
+      });
+    items.push({
+      label: 'Super Mario Bros.',
+      select: () => game.classicSelect('1-1', back),
+      hint: `The original game with every hero${own}`,
+    });
     if (lostLevelsOpen())
       items.push({
         label: 'The Lost Levels',

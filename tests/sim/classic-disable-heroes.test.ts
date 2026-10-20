@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, loadSettings, SETTINGS_KEY, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
-import { ClassicHeroesScene } from '@game/scenes/classic-heroes-menu';
+import { ClassicHeroesScene } from '@game/scenes/disable-heroes';
 import type { MenuItem } from '@game/scenes/menu';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 

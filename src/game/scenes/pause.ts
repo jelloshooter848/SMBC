@@ -74,7 +74,12 @@ export class PauseScene extends MenuScene {
           hint: 'Every original cheat, in developer mode',
         });
       if (game.stageRound) items.push(this.giveUp());
-      items.push({ label: 'Quit to title', select: () => game.showTitle() });
+      items.push({
+        label: 'Quit to title',
+        select: () => game.showTitle(),
+        // G-008: the run's resume slot holds this level's start (not in developer runs).
+        ...(game.classicDev ? {} : { hint: 'Classic mode > Continue picks the run up from this level' }),
+      });
       this.setItems(items);
       return;
     }

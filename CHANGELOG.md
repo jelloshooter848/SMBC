@@ -23,6 +23,8 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode keeps your run: each level's start is saved, and CLASSIC > **Continue** picks the run up there
+  with its lives, score, coins, hero and power (Survival's fallen heroes too). A game over or the credits end it.
 - Classic mode Options > **Disable heroes** (the original's Disable characters): a hero turned off leaves the
   select, the Random slot and Single random; one hero always stays on.
 - Classic mode cheats **Classic Samus** (Special or Tools switches between beam and missiles, her suit

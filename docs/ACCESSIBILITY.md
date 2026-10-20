@@ -12,7 +12,7 @@ here as an exception, with the owner decision behind it.
 - **Every scene can be skipped.**
 - **Reduce flashing** (Options > Video) is respected everywhere: blinks are held steady or slowed, and flashes are
   dimmed. This holds under both Classic rules and Current rules.
-- **No level numbers in hints.**
+- **No level numbers in hints** (the story's hint lines name places, never level numbers).
 - **Remapping** never leaves two actions on one key: a key already bound to another action is refused, and the
   options screen asks for another key (G-091).
 
