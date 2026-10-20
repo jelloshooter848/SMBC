@@ -272,20 +272,20 @@ const air = [
 // tucked to the knees, the boots folded under.
 const curl = [
   '................',
-  '................',
   '.....111111.....',
   '...1111111111...',
   '..211111111111..',
   '.2211444444411..',
   '.2.443333330330.',
   '...4333333333333',
+  '...443333333333.',
   '..3311111113333.',
   '.33111111113333.',
   '.3111111155555..',
   '.21111115555555.',
   '..2111155555555.',
   '...2222.555555..',
-  '................',
+  '....222.55555...',
   '................',
 ];
 
@@ -352,8 +352,8 @@ const back = [
 
 // Arms raised (14 x 16): both hands up over the cap (holding a prize at a castle).
 const raise = [
-  '..33......33....',
-  '..33.1111.33....',
+  '33..........33..',
+  '.33..1111..33...',
   '..3111111113....',
   '..3111111111....',
   '.231444444413...',
@@ -457,9 +457,9 @@ export const LINK_CLASSIC_BODIES: Record<string, readonly string[]> = {
   'down-thrust-1': stabDown,
   throw: stab,
   jump: air,
-  'roll-0': rotateCW(curl),
-  'roll-1': rotateCW(rotateCW(curl)),
-  'roll-2': rotateCW(rotateCW(rotateCW(curl))),
+  'roll-0': curl,
+  'roll-1': rotateCW(curl),
+  'roll-2': rotateCW(rotateCW(curl)),
   'climb-0': climbA,
   'climb-1': climbB,
   'raise-arms': raise,

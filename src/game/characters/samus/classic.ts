@@ -1,4 +1,4 @@
-import { px, tileAt } from '@engine/math/units';
+import { px, tileAt, toPx } from '@engine/math/units';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { CharacterDef, CharacterGuide, SpriteSpec } from '../character';
 import { CLASSIC_POWER_STATES } from '../character';
@@ -45,6 +45,7 @@ import {
 } from './classic-weapons';
 import { ClassicBomb } from './classic-bomb';
 import { samusClassicGuide } from './classic-guide';
+import { SAMUS_CLASSIC_FRAMES, SAMUS_CLASSIC_ORIGIN } from '@content/sprites/samus-classic';
 
 /**
  * Classic SMBC Samus (2026-10-07-samus-classic-smbc-rules.md, SA-C1..SA-C34), from Samus.as,
@@ -136,8 +137,6 @@ const CROUCH_H = 15;
 const BALL_H = 12;
 
 const s = (p: Player) => p.scratch;
-/** Frames on the `samus-classic` sheet. */
-const CLASSIC_FRAME = /^(crouch|air|up-air|up-walk)/;
 export const inBall = (p: Player): boolean => (p.scratch._ball ?? 0) > 0;
 /** The crouch pose shows (a guide demo's `crouching` too). */
 export const crouchPose = (p: Player): boolean => (p.scratch._crouch ?? 0) > 0 || p.crouching;
@@ -277,6 +276,9 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
   // SA-C14: the shooting pose (it blocks the somersault, SA-C8).
   const still = (b.onGround && b.vx === 0) || (!b.onGround && up);
   p.attackTimer = still ? SHOOT_POSE_STILL : SHOOT_POSE_MOVING;
+  // R1: a shot fired aiming up shows the up-shooting frames (upStandShoot, upWalkShoot, upJumpShoot).
+  if (up) s(p)._upShot = 1;
+  else delete s(p)._upShot;
   endFlip(p);
   return pr;
 }
@@ -351,6 +353,39 @@ function trackJump(p: Player, input: InputFrame, world: World, v: ClassicSamusVa
   } else delete s(p)._g;
 }
 
+/**
+ * R1: Samus's own poses, all on `samus-classic` at the original 3.1.21's sizes (SamusMc: stand
+ * 22x33, aim up 16x39, jump 20x27, somersault 21x17 / 16x25, crouch 23x25, ball 14x15, climb
+ * 18x33), each frame's feet on her body's floor and her centre on the cell's ORIGIN column.
+ */
+function ownPose(p: Player, frame: number, shooting: boolean): Omit<SpriteSpec, 'palette' | 'flip'> {
+  const b = p.body;
+  let name: string;
+  if (p.dead) name = 'die';
+  else if (p.hurtLock || p.anim === 'hurt') name = 'hurt';
+  else if (inBall(p)) name = `ball-${(b.x >> 11) & 3}`;
+  else if (crouchPose(p)) name = shooting ? 'crouch-shoot' : 'crouch';
+  else if (p.anim === 'climb') name = `climb-${(frame >> 3) & 1}`;
+  else if ((s(p)._aimUp ?? 0) > 0) {
+    // The original's upJump / upWalk / upStand, and their shooting frames.
+    const shot = shooting && s(p)._upShot ? '-shoot' : '';
+    if (!b.onGround) name = `up-air${shot}`;
+    else if (b.vx !== 0) name = `up-walk${shot}-${p.walkFrame % 3}`;
+    else name = `aim-up${shot}`;
+  } else if (!b.onGround) {
+    if (flipping(p)) name = `spin-${Math.floor(frame / SAMUS_FLIP_TICKS) & 3}`;
+    else name = shooting ? 'air-shoot' : 'air';
+  } else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame % 3}` : `walk-${p.walkFrame % 3}`;
+  else name = shooting ? 'shoot' : 'idle';
+  const h = SAMUS_CLASSIC_FRAMES[name]?.length ?? 32;
+  return {
+    sheet: 'samus-classic',
+    frame: name,
+    offsetX: SAMUS_CLASSIC_ORIGIN - (toPx(b.w) >> 1),
+    offsetY: h - toPx(b.h),
+  };
+}
+
 /** Builds a Classic Samus def (PI-1): `variant` for Pit's rule changes, `palette` its look. */
 export function classicSamus(
   opts: {
@@ -405,6 +440,7 @@ export function classicSamus(
     else if (screwAttack(p) && !reduceFlashing) palette = `samus-star-${(frame >> 1) & 3}`;
     const b = p.body;
     const shooting = p.attackTimer > 0;
+    if (own) return { ...ownPose(p, frame, shooting), palette, flip: p.facing < 0 };
     let name: string;
     let offsetY = 8;
     if (p.dead) name = 'die';
@@ -415,20 +451,12 @@ export function classicSamus(
     } else if (crouchPose(p)) {
       name = shooting && !v.crouchWalk ? 'crouch-shoot' : 'crouch';
       offsetY = 32 - CROUCH_H;
-    } else if ((s(p)._aimUp ?? 0) > 0) {
-      // F2 (Samus herself): the original's `upJump` in the air and `upWalk` cycle walking.
-      if (own && !b.onGround) name = 'up-air';
-      else if (own && b.vx !== 0) name = `up-walk-${p.walkFrame % 3}`;
-      else name = 'aim-up';
-    } else if (!b.onGround) {
-      if (flipping(p)) name = `spin-${(own ? Math.floor(frame / SAMUS_FLIP_TICKS) : frame >> 2) & 3}`;
-      // F2: her knees-up `jump`, and `jumpShoot` while the shooting pose lasts.
-      else if (own) name = shooting ? 'air-shoot' : 'air';
-      else name = 'jump';
-    } else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
+    } else if ((s(p)._aimUp ?? 0) > 0) name = 'aim-up';
+    else if (!b.onGround) name = flipping(p) ? `spin-${(frame >> 2) & 3}` : 'jump';
+    else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
     else name = shooting ? 'shoot' : 'idle';
-    const sheet = opts.sheet ?? (CLASSIC_FRAME.test(name) ? 'samus-classic' : 'samus');
-    return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
+    // A variant (Pit, PI-21) on its own sheet with every frame, at today's scale.
+    return { sheet: opts.sheet ?? 'samus', palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
   }
 
   const def: CharacterDef = {
@@ -630,6 +658,8 @@ const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
 export const SAMUS_CLASSIC: CharacterDef = {
   ...classicSamus(),
   deathBurst: SAMUS_DEATH,
+  // R1: the select screen and the intro card show her Classic art.
+  portraitArt: { sheet: 'samus-classic', palette: 'samus', frame: 'idle' },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'the hatchling',
 };
