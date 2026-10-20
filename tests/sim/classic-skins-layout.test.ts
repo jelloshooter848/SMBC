@@ -126,9 +126,10 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     expect(h.game.state.character).toBe(BREAKMAN_CLASSIC);
   });
 
-  it('a hero with one look (Mario): OK picks at once', () => {
+  // G-053 (0.5.0): Mario has a second look now; Simon has one.
+  it('a hero with one look (Simon): OK picks at once', () => {
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'mario');
+    cursorTo(h, sel, 'simon');
     expect(h.game.skinsFor(sel.chars[sel.cursor] as CharacterDef)).toHaveLength(1);
     h.tap('jump');
     expect(sel.pickerOpen).toBe(false);

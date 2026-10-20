@@ -218,6 +218,17 @@ export interface CharacterDef {
   stomps: boolean;
   /** Can duck with down (Mario when big, Link). */
   crouches: boolean;
+  /**
+   * Ducks when small too (Classic mode's looks with a small crouch frame, G-053; MarioBase.as
+   * canCrouch: hasSmallCrouchFrame). Absent: only a hero taller than 16 px ducks, as today.
+   */
+  smallCrouch?: true;
+  /**
+   * A look's own hero (Classic mode's skins, G-050..G-053): the hero id the original's rules
+   * name it by where they name a hero (Cheep leaps aimed at Mario and Luigi, Bowser's hit points
+   * against them). Absent: the def's own id.
+   */
+  lookOf?: string;
   canBreakBricks(p: Player): boolean;
   hitbox(p: Player): { w: number; h: number };
   sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec;

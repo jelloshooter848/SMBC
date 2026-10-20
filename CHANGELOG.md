@@ -23,6 +23,11 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode's new looks, each a skin with the original's rules and our own art: **Princess Zelda** on
+  Link (NES, SNES and Game Boy looks: a weaker sword, 400-damage arrows that go on through what they defeat),
+  **Quick Man** on Bass (faster, the high jump, no double jump or dash), **Haggle Man** on Ryu (his sword hits
+  sooner), and Mario's and Luigi's **Super Mario Bros. 3** looks, in which small Mario and Luigi can duck and
+  crouch-jump.
 - Classic mode keeps your run: each level's start is saved, and CLASSIC > **Continue** picks the run up there
   with its lives, score, coins, hero and power (Survival's fallen heroes too). A game over or the credits end it.
 - Classic mode Options > **Disable heroes** (the original's Disable characters): a hero turned off leaves the

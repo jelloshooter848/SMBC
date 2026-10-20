@@ -380,7 +380,8 @@ export class Player {
     this.skidding = false;
 
     // Crouching: only when tall enough and on the ground; can't walk while crouched.
-    const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+    const canCrouch =
+      this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching || this.def.smallCrouch === true);
     const wantCrouch =
       input.held('down') &&
       canCrouch &&
@@ -650,7 +651,9 @@ export class Player {
     // horizontal step once (`justCrouched`); under a low ceiling he stays down.
     let skipStep = false;
     if (b.onGround && !this.crouchJump) {
-      const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+      const canCrouch =
+        this.def.crouches &&
+        (this.def.hitbox(this).h > 16 || this.crouching || this.def.smallCrouch === true);
       const want = input.held('down') && canCrouch;
       const cramped = this.crouching && !want && !this.roomToStand(map);
       if (want !== this.crouching && !cramped) {

@@ -143,7 +143,8 @@ export class Spring extends Entity {
     b.onGround = true;
     b.y = this.body.y - b.h;
     if (this.t > PRESS_FRAMES) {
-      const id = p.def.id;
+      // A Classic look springs as its own hero (CharacterDef.lookOf).
+      const id = p.def.lookOf ?? p.def.id;
       const vy = !this.boost
         ? SPRING_PLAIN
         : this.green

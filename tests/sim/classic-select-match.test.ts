@@ -284,7 +284,8 @@ describe('the original\u2019s rows, box and faces', () => {
     const box = rects(sel).filter((x) => x.w === NAME_BOX.w && x.h === NAME_BOX.h);
     expect(box.length).toBeGreaterThan(0);
     const t = draw(sel).texts.map((x) => x.str);
-    expect(t.some((x) => x.includes('TO PICK'))).toBe(true);
+    // G-053 (0.5.0): Mario has a second look, so his prompt offers LOOKS.
+    expect(t.some((x) => x.includes('TO PICK') || x.includes('LOOKS'))).toBe(true);
   });
 
   it('its prompt always fits inside the rivets, dropping a long key name', () => {

@@ -110,6 +110,14 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   ),
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
+  // 0.5.0's looks (G-050..G-053): skins on Mario's, Luigi's, Link's, Bass's and Ryu's slots.
+  ...[
+    ...(CLASSIC_SKIN_LISTS.mario ?? []),
+    ...(CLASSIC_SKIN_LISTS.link ?? []),
+    ...(CLASSIC_SKIN_LISTS.ryu ?? []),
+    ...(CLASSIC_SKIN_LISTS.bass ?? []),
+  ].filter((d) => d.rules === 'classic' && d.id !== 'bass'),
+  ...(CLASSIC_SKIN_LISTS.luigi ?? []).filter((d) => d.rules === 'classic' && d.id !== 'peach'),
   VICVIPER_CLASSIC,
   WARRIORS_CLASSIC,
   PEACH_CLASSIC,

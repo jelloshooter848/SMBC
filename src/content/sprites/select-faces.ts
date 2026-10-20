@@ -647,6 +647,21 @@ const yoshi = [
   '.00000666666666666666666',
 ];
 
+/*
+ * 0.5.0's looks (G-050..G-053), each face redrawn in its own colours from one of ours: Mario's
+ * and Luigi's Super Mario Bros. 3 looks (black hair, dark blue straps), Princess Zelda's three
+ * from the princess face (brown hair and a red jewel; gold hair and a white gown; Game Boy
+ * greens), Quick Man from Bass's helmet in red with its gold crest, Haggle Man from Ryu's hood in
+ * red.
+ */
+const mario3 = recolour(mario, { c: '0', 9: 'a' });
+const luigi3 = recolour(luigi, { c: '0', 9: 'a', 6: '7' });
+const zeldaNes = recolour(peach, { l: 'b', 8: '4' });
+const zeldaSnes = recolour(peach, { l: 'd', d: 'f', i: '1', 8: 'j' });
+const zeldaGb = recolour(peach, { 0: '7', l: '7', d: '6', 8: '7', i: '6', 2: 'l', 3: '6', 4: '6', 1: 'l' });
+const quickman = recolour(bass, { h: '4' });
+const haggleman = recolour(ryu, { a: '5', 9: '4', 4: 'd' });
+
 /** The faces by select-slot hero id (a frame each on the `select-faces` sheet). */
 export const SELECT_FACE_IDS = [
   'mario',
@@ -675,6 +690,13 @@ export const SELECT_FACE_IDS = [
   'warriors',
   'arthur',
   'yoshi',
+  'mario3',
+  'luigi3',
+  'zelda-nes',
+  'zelda-snes',
+  'zelda-gb',
+  'quickman',
+  'haggleman',
 ];
 
 export const selectFacesDef: SpriteDef = {
@@ -706,5 +728,12 @@ export const selectFacesDef: SpriteDef = {
     warriors,
     arthur,
     yoshi,
+    mario3,
+    luigi3,
+    'zelda-nes': zeldaNes,
+    'zelda-snes': zeldaSnes,
+    'zelda-gb': zeldaGb,
+    quickman,
+    haggleman,
   },
 };

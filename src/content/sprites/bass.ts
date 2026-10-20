@@ -208,17 +208,17 @@ const H = 32;
 const standing = (legs: readonly string[], hd: readonly string[] = head, ly = 26): string[] =>
   compose(W, H, [hd, 0, HEAD_Y], [torso, 0, 18], [legs, 0, ly]);
 /** The cannon forward (24 wide). */
-const shooting = (legs: readonly string[], dy = 0): string[] =>
-  compose(24, H, [head, 0, HEAD_Y + dy], [torsoShoot, 0, 18 + dy], [legs, 0, 26 + dy], [cannon, 12, 18 + dy]);
+const shooting = (legs: readonly string[], dy = 0, hd: readonly string[] = head): string[] =>
+  compose(24, H, [hd, 0, HEAD_Y + dy], [torsoShoot, 0, 18 + dy], [legs, 0, 26 + dy], [cannon, 12, 18 + dy]);
 /** Straight up (16 wide, arm over the head). */
-const shootingUp = (legs: readonly string[]): string[] =>
-  compose(W, H, [head, 0, HEAD_Y], [torsoShoot, 0, 18], [legs, 0, 26], [cannonUp, 10, 2]);
+const shootingUp = (legs: readonly string[], hd: readonly string[] = head): string[] =>
+  compose(W, H, [hd, 0, HEAD_Y], [torsoShoot, 0, 18], [legs, 0, 26], [cannonUp, 10, 2]);
 /** Up or down at an angle (24 wide). */
-const shootingDiag = (legs: readonly string[], down: boolean): string[] =>
+const shootingDiag = (legs: readonly string[], down: boolean, hd: readonly string[] = head): string[] =>
   compose(
     24,
     H,
-    [head, 0, HEAD_Y],
+    [hd, 0, HEAD_Y],
     [torsoShoot, 0, 18],
     [legs, 0, 26],
     down ? [flipV(cannonDiag), 11, 18] : [cannonDiag, 11, 11],
@@ -279,60 +279,72 @@ const busterShot = [
   '...00...',
 ];
 
-export const bassDef: SpriteDef = {
-  palette: 'bass',
-  frames: {
-    idle: standing(legsStand),
-    'idle-blink': standing(legsStand, headBlink),
-    step: standing(legsStep),
-    'walk-0': standing(legsWalk0),
-    'walk-1': compose(W, H, [head, 0, HEAD_Y - 1], [torso, 0, 17], [legsWalk1, 0, 25]),
-    'walk-2': standing(legsWalk2),
-    jump: standing(legsJump),
-    shoot: shooting(legsStand),
-    'shoot-up': shootingUp(legsStand),
-    'shoot-diag-up': shootingDiag(legsStand, false),
-    'shoot-diag-down': shootingDiag(legsStand, true),
-    'walk-shoot-0': shooting(legsWalk0),
-    'walk-shoot-1': shooting(legsWalk1, -1),
-    'walk-shoot-2': shooting(legsWalk2),
-    'jump-shoot': shooting(legsJump),
-    'jump-shoot-up': shootingUp(legsJump),
-    'jump-shoot-diag-up': shootingDiag(legsJump, false),
-    'jump-shoot-diag-down': shootingDiag(legsJump, true),
-    // Upright and leaning into the dash, filling the 22 px hitbox (BA-3, BA-32).
-    dash: compose(
-      24,
-      H,
-      [head, 5, HEAD_Y + 1],
-      [torso, 3, 18],
-      [legsDash, 1, 25],
-      [['000', '...', '00.'], 0, 20],
-    ),
-    hurt: compose(
-      W,
-      H,
-      [head, -1, HEAD_Y + 1],
-      [
+/**
+ * His sheet, under head `hd` (and its blink): Bass's own, and Classic mode's Quick Man look on his
+ * slot (G-051, hero-looks.ts), which wears its own helmet over the same suit.
+ */
+export function bassSheet(
+  palette: string,
+  hd: readonly string[] = head,
+  blink: readonly string[] = headBlink,
+): SpriteDef {
+  return {
+    palette,
+    frames: {
+      idle: standing(legsStand, hd),
+      'idle-blink': standing(legsStand, blink),
+      step: standing(legsStep, hd),
+      'walk-0': standing(legsWalk0, hd),
+      'walk-1': compose(W, H, [hd, 0, HEAD_Y - 1], [torso, 0, 17], [legsWalk1, 0, 25]),
+      'walk-2': standing(legsWalk2, hd),
+      jump: standing(legsJump, hd),
+      shoot: shooting(legsStand, 0, hd),
+      'shoot-up': shootingUp(legsStand, hd),
+      'shoot-diag-up': shootingDiag(legsStand, false, hd),
+      'shoot-diag-down': shootingDiag(legsStand, true, hd),
+      'walk-shoot-0': shooting(legsWalk0, 0, hd),
+      'walk-shoot-1': shooting(legsWalk1, -1, hd),
+      'walk-shoot-2': shooting(legsWalk2, 0, hd),
+      'jump-shoot': shooting(legsJump, 0, hd),
+      'jump-shoot-up': shootingUp(legsJump, hd),
+      'jump-shoot-diag-up': shootingDiag(legsJump, false, hd),
+      'jump-shoot-diag-down': shootingDiag(legsJump, true, hd),
+      // Upright and leaning into the dash, filling the 22 px hitbox (BA-3, BA-32).
+      dash: compose(
+        24,
+        H,
+        [hd, 5, HEAD_Y + 1],
+        [torso, 3, 18],
+        [legsDash, 1, 25],
+        [['000', '...', '00.'], 0, 20],
+      ),
+      hurt: compose(
+        W,
+        H,
+        [hd, -1, HEAD_Y + 1],
         [
-          '...01111110.....',
-          '..0111551110....',
-          '.0101155110100..',
-          '.0201111110200..',
-          '.0001111110000..',
-          '...02222220.....',
-          '...00222220.....',
+          [
+            '...01111110.....',
+            '..0111551110....',
+            '.0101155110100..',
+            '.0201111110200..',
+            '.0001111110000..',
+            '...02222220.....',
+            '...00222220.....',
+          ],
+          0,
+          19,
         ],
-        0,
-        19,
-      ],
-      [legsWalk0, 0, 26],
-      [['.0.', '020', '020'], 1, 16],
-      [['.0.', '020', '020'], 12, 16],
-    ),
-    'climb-0': climb0,
-    'climb-1': flipH(climb0),
-    'death-orb': deathOrb,
-    'bass-buster': busterShot,
-  },
-};
+        [legsWalk0, 0, 26],
+        [['.0.', '020', '020'], 1, 16],
+        [['.0.', '020', '020'], 12, 16],
+      ),
+      'climb-0': climb0,
+      'climb-1': flipH(climb0),
+      'death-orb': deathOrb,
+      'bass-buster': busterShot,
+    },
+  };
+}
+
+export const bassDef: SpriteDef = bassSheet('bass');

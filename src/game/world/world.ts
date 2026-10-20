@@ -2505,7 +2505,8 @@ export class World {
       if (e.alive && ((e instanceof Cheep && e.flying) || (e instanceof HammerBro && e.spawner === 'cheep')))
         flying++;
     if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < 3) {
-      const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
+      const leadId = lead.def.lookOf ?? lead.def.id;
+      const marioType = leadId === 'mario' || leadId === 'luigi';
       const target = {
         centerX: lead.centerX,
         vx: lead.body.vx,
