@@ -447,12 +447,18 @@ describe('G-022: the items', () => {
       const p = w.player;
       fullPowerUp(w, p);
       const counters = () =>
-        Object.fromEntries(Object.entries(p.scratch).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
+        Object.fromEntries(Object.entries(p.scratch).filter(([, v]) => typeof v === 'number')) as Record<
+          string,
+          number
+        >;
       const after = counters();
       // Another of every ammo pickup adds nothing: each counter is at its maximum.
       for (const kind of AMMO_PICKUPS) p.def.behaviour.onPickup?.(p, kind, w);
       expect(counters(), def.id).toEqual(after);
-      expect(Object.values(after).some((v) => v > 0), def.id).toBe(true);
+      expect(
+        Object.values(after).some((v) => v > 0),
+        def.id,
+      ).toBe(true);
     }
   });
 });
