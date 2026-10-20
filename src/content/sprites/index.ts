@@ -5,6 +5,7 @@ import { fontPalettes, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
+import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { linkClassicDef, linkClassicPalettes } from './link-classic';
@@ -103,6 +104,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   items: itemsDef,
   decor: decorDef,
   mario: marioDef,
+  // Classic SMBC Mario and Luigi's re-cut frames at the original's sizes (R1).
+  'mario-classic': marioClassicDef,
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,

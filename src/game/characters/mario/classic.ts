@@ -27,6 +27,7 @@ import { plumberClassicGuide } from './classic-guide';
 import { CLASSIC_HURT } from '../classic/anim';
 import type { Player } from '../../entities/player';
 import type { SpriteSpec } from '../character';
+import { marioClassicDef } from '@content/sprites/mario-classic';
 
 /**
  * Classic SMBC Mario and Luigi (2026-10-07-mario-luigi-classic-smbc-rules.md, ML-C1..ML-C28).
@@ -185,7 +186,7 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
     // ML-C24: big and fire heads break bricks, small heads bump them; the fireball never touches them.
     canBreakBricks: (p) => p.powerState !== 'small',
     sprite: (p, frame, reduceFlashing) =>
-      classicGrowFrame(p, plumberSprite(p, frame, reduceFlashing, parts.palettes)),
+      classicSheet(classicGrowFrame(p, plumberSprite(p, frame, reduceFlashing, parts.palettes))),
     // F2: the original's HRect, 13 x 15 small or crouched, 13 x 28 big.
     hurtbox: (p) => ({
       w: CLASSIC_HURT.mario.w,
@@ -243,6 +244,13 @@ function classicGrowFrame(p: Player, spec: SpriteSpec): SpriteSpec {
   const step = seq[Math.min(seq.length - 1, at)] as string;
   const [frame, offsetY] = GROW_POSE[step] as [string, number];
   return { ...spec, frame, offsetY };
+}
+
+/** R1: the poses re-cut at the original's sizes are drawn from `mario-classic` (sprites/mario-classic.ts). */
+function classicSheet(spec: SpriteSpec): SpriteSpec {
+  return spec.sheet === 'mario' && spec.frame in marioClassicDef.frames
+    ? { ...spec, sheet: 'mario-classic' }
+    : spec;
 }
 
 export const MARIO_CLASSIC: CharacterDef = {

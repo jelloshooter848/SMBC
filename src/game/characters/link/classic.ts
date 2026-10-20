@@ -509,8 +509,8 @@ export const LINK_CLASSIC: CharacterDef = {
   id: LINK.id,
   name: LINK.name,
   hudName: LINK.hudName,
-  portrait: LINK.portrait,
   // R1: the select screen and the intro card show his Classic art.
+  portrait: LINK.portrait,
   portraitArt: { sheet: 'link-classic', palette: 'link', frame: 'idle' },
   ...(LINK.music !== undefined ? { music: LINK.music } : {}),
   rules: 'classic',

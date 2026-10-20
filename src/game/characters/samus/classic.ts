@@ -658,8 +658,9 @@ const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
 export const SAMUS_CLASSIC: CharacterDef = {
   ...classicSamus(),
   deathBurst: SAMUS_DEATH,
-  // R1: the select screen and the intro card show her Classic art.
-  portraitArt: { sheet: 'samus-classic', palette: 'samus', frame: 'idle' },
+  // R1: the select screen and the intro card show her Classic art (her own `portrait`: Pit's
+  // `portraitArt` is the variant's, and `portrait` still names Samus there).
+  portrait: { sheet: 'samus-classic', palette: 'samus', frame: 'idle' },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'the hatchling',
 };
