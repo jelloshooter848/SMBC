@@ -24,6 +24,12 @@ import { IntroScene } from '@game/scenes/intro';
 import type { Game } from '@game/scenes/game';
 import { CHEAT_GOALS, cheatInfo } from '@game/cheats';
 import { LevelScene } from '@game/scenes/level';
+import { px } from '@engine/math/units';
+import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
+import { edible, mouthOf } from '@game/characters/classic/yoshi-tongue';
+import { SpikeTop } from '@game/entities/enemies/spike-top';
+import { Spiny } from '@game/entities/enemies/spiny';
+import { Rig, flatLevel } from './classic-plumber-harness';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // Classic patch 3 (owner-approved review findings of #164-#167): one describe per item.
@@ -272,5 +278,30 @@ describe('5. Cheat counts are saved per area / per clear, not per kill', () => {
     h.game.cheatTally('enemiesDefeated');
     h.game.showTitle();
     expect(savedStat()).toBe(2);
+  });
+});
+
+describe("6. Yoshi's tongue vs Spike Top: inedible, like a Spiny", () => {
+  it('the edible table gives null for a Spike Top, for the hero and the mount', () => {
+    const st = new SpikeTop(0, 0);
+    expect(edible(st, 'hero')).toBeNull();
+    expect(edible(st, 'mount')).toBeNull();
+    expect(edible(new Spiny(0, 0, false), 'hero')).toBeNull();
+  });
+
+  it("the playable Yoshi's tongue bounces off a Spike Top: it stays alive, the mouth stays empty", () => {
+    const r = new Rig(YOSHI_CLASSIC, flatLevel(), 'classic', 'small');
+    r.settle();
+    const st = new SpikeTop(0, 0);
+    const b = r.p.body;
+    st.body.x = b.x + b.w + px(16);
+    st.body.y = r.p.body.y;
+    st.body.vx = 0;
+    st.activated = true;
+    r.world.spawn(st);
+    r.step(['attack']);
+    for (let i = 0; i < 12; i++) r.step([]);
+    expect(mouthOf(r.p)).toBeNull();
+    expect(st.alive).toBe(true);
   });
 });
