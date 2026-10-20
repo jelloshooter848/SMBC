@@ -8,8 +8,24 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: **every map set is open from the start**. The CLASSIC menu offers Super Mario
+  Bros. and The Lost Levels right away, and each line says whether that set has been beaten and
+  on which difficulty. Old Classic SMB clears count as beaten on Normal.
+- Classic mode: a **TIME UP** card when the clock runs out, as in the original. It is read out and
+  waits for OK, then the death goes on as usual.
+- Classic mode: in water areas the **pits pull Mario and Luigi in** (down and toward the pit's
+  middle), as in the original. Other heroes and the campaign are not pulled.
+
 ### Changed
 
+- Classic mode: **The Lost Levels run straight on from World 1 to World D**, as in the original.
+  8-4 is an ordinary castle with Toad and goes on to World 9 whatever warps were used; 9-4 goes on
+  to World A; D-4 says "YOUR QUEST IS OVER." and rolls the credits. The campaign and free play
+  keep their own Lost Levels endings.
+- Classic mode: after the credits, any cheats the win unlocked are shown one card at a time, then
+  the game returns to the title (the Lost Levels no longer follow straight on from SMB).
 - Classic mode comes first: the title menu is now **Classic**, **Chapter 1**, Custom levels and
   Options, with Classic highlighted. The story campaign is **Chapter 1**, coming in 1.0: its row
   (and a resume link, `#save=`) shows a **CHAPTER 1 COMING SOON!** card, read out and closed with
