@@ -315,12 +315,13 @@ describe('shots: the original sizes and colours', () => {
   it('the palette is the original red rim, orange, green core, Varia pink and missile cyan', () => {
     expect(PALETTES.default['smbc-shots']).toEqual([
       '#000000',
-      '#d82800',
-      '#fc9838',
-      '#009400',
       '#fcfcfc',
+      '#d82800',
+      '#009400',
+      '#000000',
       '#fcc4d8',
       '#00e8d8',
+      '#fc9838',
     ]);
   });
 

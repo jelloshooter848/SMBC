@@ -6,28 +6,30 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * pixels, drawn here from the measured numbers only):
  *
  * - Samus's beam: a 4 x 5 bolt (drawn in an 8 x 8 cell around a 4 x 5 body, see
- *   ProjectileSpec.drawOffset), red rim, orange, green core; its burst 7 x 8. Its frames go on the
- *   `items` sheet (smbcBeamItemFrames).
- * - The Wave Beam: an 8 x 8 ring with a black outline (`wave-*`), the same colours; with the
- *   Flower, the only state that has it, Varia turns the orange pink (`wave-varia-*`).
- * - A missile: 11 x 8 with cyan fins (the original's missile-mode colour), and the same turned up.
+ *   ProjectileSpec.drawOffset), red rim, orange, green core, a white glint at its head; its burst
+ *   7 x 8. Its frames go on the `items` sheet (smbcBeamItemFrames), whose palette's nearest red,
+ *   orange and green stand in for the original's.
+ * - The Wave Beam: an 8 x 8 ring with a black outline, the same colours; with the Flower, the
+ *   only state that has it, Varia turns the orange pink (`wave-varia-*`).
+ * - A missile: 11 x 8, a white and red nose, an orange body, cyan fins (the original's
+ *   missile-mode colour), and the same turned up.
  * - Mario and Luigi's Fire Flower ball: 8 x 8, filling its cell, 4 spin frames, and a 16 x 16
  *   burst (`fireball-burst`, drawn by Flash 4 px up and left of the 8 x 8 ball).
  *
  * Stored pointing LEFT like every shot (Projectile.render mirrors one flying right).
  *
- * Palette roles: 0 outline   1 red rim   2 orange   3 green core   4 white   5 pink (Varia's
- * orange)   6 cyan (missile fins).
+ * Palette roles (laid out like the `items` sheet's where they share a use): 0 outline   1 white
+ * 2 red   3 green core   5 pink (Varia's orange)   6 cyan (missile fins)   7 orange.
  */
 
-/** The original's measured shot colours (SamusShot and MarioFireBall default rows). */
+/** The original's measured shot colours (SamusShot and MarioFireBall default palette rows). */
 const RIM_RED = '#d82800';
 const SHOT_ORANGE = '#fc9838';
 const CORE_GREEN = '#009400';
 const VARIA_PINK = '#fcc4d8';
 
 export const smbcShotPalettes: Record<string, string[]> = {
-  'smbc-shots': [NES.black, RIM_RED, SHOT_ORANGE, CORE_GREEN, NES.white, VARIA_PINK, NES.cyan],
+  'smbc-shots': [NES.black, NES.white, RIM_RED, CORE_GREEN, NES.black, VARIA_PINK, NES.cyan, SHOT_ORANGE],
 };
 
 const rotateCW = (rows: readonly string[]): string[] => {
@@ -37,62 +39,82 @@ const rotateCW = (rows: readonly string[]): string[] => {
   );
 };
 /** Varia: the orange becomes pink. */
-const varia = (rows: readonly string[]): string[] => rows.map((r) => r.replace(/2/g, '5'));
+const varia = (rows: readonly string[]): string[] => rows.map((r) => r.replace(/7/g, '5'));
 const transpose = (rows: readonly string[]): string[] =>
   Array.from({ length: (rows[0] as string).length }, (_, x) => rows.map((r) => r[x] as string).join(''));
 
-// The beam: a 4 x 5 bolt in rows 1-5, columns 2-5 of the cell; the core pulses.
+// The beam in the `items` sheet's roles (2 red, 7 orange, 4 green, 1 white, 5 gold): a 4 x 5 bolt
+// in rows 1-5, columns 2-5 of the cell, a white glint at the head (left) and a gold one behind.
 const beam0 = [
   '........',
-  '...11...',
-  '..1221..',
-  '..1331..',
-  '..1221..',
-  '...11...',
+  '...22...',
+  '..1772..',
+  '..1442..',
+  '..2775..',
+  '...22...',
   '........',
   '........',
 ];
 const beam1 = [
   '........',
-  '...11...',
-  '..1231..',
-  '..1331..',
-  '..1321..',
-  '...11...',
+  '...22...',
+  '..1742..',
+  '..1442..',
+  '..2475..',
+  '...22...',
   '........',
   '........',
 ];
-// Its burst where it ends: 7 x 8 sparks around the core.
-const beamBurst = [
-  '...1....',
-  '.1.2.1..',
-  '..232...',
-  '1233321.',
-  '..232...',
-  '.1.2.1..',
-  '...1....',
-  '...1....',
+// Its burst where it ends: 7 x 8 sparks around the core (items roles).
+const beamBurstItems = [
+  '...2....',
+  '.2.7.2..',
+  '..747...',
+  '2744472.',
+  '..747...',
+  '.2.7.2..',
+  '...2....',
+  '...2....',
+];
+
+/** Classic Samus's beam frames for the `items` sheet. */
+export const smbcBeamItemFrames: Record<string, string[]> = {
+  'classic-beam-0': beam0,
+  'classic-beam-1': beam1,
+  'classic-beam-burst': beamBurstItems,
+};
+
+// The Wave Beam's burst (this sheet's roles).
+const burst = [
+  '...2....',
+  '.2.7.2..',
+  '..737...',
+  '2733372.',
+  '..737...',
+  '.2.7.2..',
+  '...2....',
+  '...2....',
 ];
 
 // The Wave Beam: an 8 x 8 ring with a black outline; the two frames swap the inner colours.
 const wave0 = [
   '..0000..',
-  '.011110.',
-  '01222210',
-  '01233210',
-  '01233210',
-  '01222210',
-  '.011110.',
+  '.022220.',
+  '02777720',
+  '02733720',
+  '02733720',
+  '02777720',
+  '.022220.',
   '..0000..',
 ];
 const wave1 = [
   '..0000..',
-  '.022220.',
-  '02111120',
-  '02133120',
-  '02133120',
-  '02111120',
-  '.022220.',
+  '.077770.',
+  '07222270',
+  '07233270',
+  '07233270',
+  '07222270',
+  '.077770.',
   '..0000..',
 ];
 
@@ -100,10 +122,10 @@ const wave1 = [
 const missile = [
   '.......00..',
   '..00000660.',
-  '.044222220.',
-  '04422222220',
-  '01122222220',
-  '.011222220.',
+  '.012777770.',
+  '01227777770',
+  '02227777770',
+  '.022777770.',
   '..00000660.',
   '.......00..',
 ];
@@ -111,61 +133,47 @@ const missile = [
 // The Fire Flower ball, 8 x 8, filling its cell: a white heart, orange, a red rim; the bright
 // spot turns a quarter each frame.
 const fireball0 = [
-  '..1111..',
-  '.144221.',
-  '14442221',
-  '12442221',
-  '12224221',
-  '12222221',
-  '.122221.',
-  '..1111..',
+  '..2222..',
+  '.211772.',
+  '21117772',
+  '27117772',
+  '27771772',
+  '27777772',
+  '.277772.',
+  '..2222..',
 ];
 const fireball1 = rotateCW(fireball0);
 const fireball2 = rotateCW(fireball1);
 const fireball3 = rotateCW(fireball2);
 // Its burst, 16 x 16 (the largest of the original's 8 -> 12 x 14 -> 16 x 16 frames).
 const fireballBurst = [
-  '.......11.......',
-  '...1...22...1...',
-  '....1..22..1....',
-  '.....12442 1....',
-  '......2442......',
-  '..1..244442..1..',
-  '...2244444422...',
-  '1224444444444221',
-  '1224444444444221',
-  '...2244444422...',
-  '..1..244442..1..',
-  '......2442......',
-  '.....12442 1....',
-  '....1..22..1....',
-  '...1...22...1...',
-  '.......11.......',
-].map((r) => r.replace(/ /g, '.'));
-
-/** Our roles 1-3 (red rim, orange, green core) as the `items` sheet's red, orange and green. */
-const toItems = (rows: readonly string[]): string[] =>
-  rows.map((r) => r.replace(/[123]/g, (c) => ({ '1': '2', '2': '7', '3': '4' })[c] as string));
-
-/**
- * The beam's frames for the `items` sheet (Classic Samus's beam specs keep that sheet; its
- * palette's nearest red, orange and green stand in for the original's).
- */
-export const smbcBeamItemFrames: Record<string, string[]> = {
-  'classic-beam-0': toItems(beam0),
-  'classic-beam-1': toItems(beam1),
-  'classic-beam-burst': toItems(beamBurst),
-};
+  '.......22.......',
+  '...2...77...2...',
+  '....2..77..2....',
+  '.....27117.2....',
+  '......7117......',
+  '..2..711117..2..',
+  '...7711111177...',
+  '2771111111111772',
+  '2771111111111772',
+  '...7711111177...',
+  '..2..711117..2..',
+  '......7117......',
+  '.....27117.2....',
+  '....2..77..2....',
+  '...2...77...2...',
+  '.......22.......',
+];
 
 export const smbcShotsDef: SpriteDef = {
   palette: 'smbc-shots',
   frames: {
     'wave-0': wave0,
     'wave-1': wave1,
-    'wave-burst': beamBurst,
+    'wave-burst': burst,
     'wave-varia-0': varia(wave0),
     'wave-varia-1': varia(wave1),
-    'wave-varia-burst': varia(beamBurst),
+    'wave-varia-burst': varia(burst),
     missile,
     'missile-up': transpose(missile),
     // Its explosion (the Flash drawn 4 px up and left of the missile).
