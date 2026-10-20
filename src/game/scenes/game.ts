@@ -541,7 +541,7 @@ export class Game {
     const slots = this.slotsFor(this.liveRules);
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
     // always keeping at least one (GeneralOptions.as: the last hero cannot be disabled).
-    if (!this.classicRun || this.campaign !== null) return slots;
+    if (!(this.classicRun || this.classicFlow) || this.campaign !== null) return slots;
     const off = this.deps.settings?.classicHeroesOff ?? [];
     const on = slots.filter((c) => !off.includes(c.id));
     return on.length ? on : slots;
@@ -566,6 +566,12 @@ export class Game {
         slots.push(c);
     return slots.length ? slots : roster;
   }
+
+  /**
+   * Classic mode's menu flow is under way (classicSelect onward, until the run ends): its select
+   * and Random slot leave out the disabled heroes before classicRun is set (G-032).
+   */
+  private classicFlow = false;
 
   /** Options > Expansion heroes is on (the heroes the original never had are offered). */
   get expansionHeroes(): boolean {
@@ -1923,6 +1929,7 @@ export class Game {
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     this.classicRun = false;
+    this.classicFlow = false;
     this.classicDev = false;
     this.survival = null;
   }
@@ -2024,6 +2031,9 @@ export class Game {
     // extras on the very first select.
     this.campaign = null;
     this.runRules = this.classicRules;
+    // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
+    // applies before the run itself starts (heroSlots, G-032).
+    this.classicFlow = true;
     this.pickedRandom = false;
     this.selectLevel = levelId;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);

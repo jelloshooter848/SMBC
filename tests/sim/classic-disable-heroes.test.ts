@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, loadSettings, SETTINGS_KEY, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
+import { CharacterSelectScene } from '@game/scenes/character-select';
 import { ClassicHeroesScene } from '@game/scenes/disable-heroes';
 import type { MenuItem } from '@game/scenes/menu';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
@@ -55,6 +56,31 @@ describe('G-032 Disable heroes', () => {
     expect(slots).not.toContain('link');
     expect(slots).toContain('mario');
     for (let i = 0; i < 60; i++) expect(['bass', 'link', 'ryu']).not.toContain(h.game.randomHero().id);
+  });
+
+  it('the first select from the CLASSIC menu leaves them out, and its Random slot never picks them', () => {
+    const h = classic({ classicHeroesOff: ['bass', 'link', 'ryu'] });
+    h.game.showClassicMenu();
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    const sel = h.top() as CharacterSelectScene;
+    expect(sel).toBeInstanceOf(CharacterSelectScene);
+    const ids = sel.chars.map((c) => c.id);
+    expect(ids).not.toContain('bass');
+    expect(ids).not.toContain('link');
+    expect(ids).toContain('mario');
+    for (let i = 0; i < 60; i++) expect(['bass', 'link', 'ryu']).not.toContain(h.game.randomHero().id);
+  });
+
+  it('Single random from the CLASSIC menu never draws them', () => {
+    const picks = new Set<string>();
+    for (let k = 0; k < 12; k++) {
+      const off = ['mario', 'luigi', 'link', 'samus', 'simon', 'megaman', 'bill', 'sophia'];
+      const h = classic({ classicHeroesOff: off });
+      h.settings.classic.gameMode = 'single-random';
+      h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+      picks.add(h.game.state.character.id);
+    }
+    for (const id of picks) expect(['bass', 'ryu']).toContain(id);
   });
 
   it('the campaign and the title never read it', () => {
