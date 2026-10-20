@@ -550,6 +550,7 @@ export class Game {
     // always keeping at least one (GeneralOptions.as: the last hero cannot be disabled).
     if (!(this.classicRun || this.classicFlow) || this.campaign !== null) return slots;
     const off = this.deps.settings?.classicHeroesOff ?? [];
+    if (off.length === 0) return slots;
     const on = slots.filter((c) => !off.includes(c.id));
     return on.length ? on : slots;
   }
