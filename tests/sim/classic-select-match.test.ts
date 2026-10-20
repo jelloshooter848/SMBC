@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
 import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
-import type { CharacterSelectScene } from '@game/scenes/character-select';
-import { lookName } from '@game/scenes/character-select';
+import { CharacterSelectScene, lookName } from '@game/scenes/character-select';
 import { MEGAMAN } from '@game/characters/megaman';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import {
   DEFAULT_SELECT_THEME,
+  NAME_BOX,
+  ORIGINAL_GRID,
   SKIN_GRID,
   SELECT_THEMES,
   cursorColour,
@@ -153,5 +155,104 @@ describe("the next level's sky and ground", () => {
     expect(theme()).toBe(h.game.deps.getLevel('1-1').theme ?? 'overworld');
     h.game.selectLevel = '1-2';
     expect(theme()).toBe(h.game.deps.getLevel('1-2').theme);
+  });
+});
+
+/** Every rectangle a render draws (the harness records only text and sprites). */
+function rects(sel: CharacterSelectScene): { x: number; y: number; w: number; h: number }[] {
+  const out: { x: number; y: number; w: number; h: number }[] = [];
+  const r: Renderer = Object.assign(new NullRenderer(), {
+    rect(x: number, y: number, w: number, h: number): void {
+      out.push({ x, y, w, h });
+    },
+  });
+  sel.render(r);
+  return out;
+}
+
+describe('the original roster, Expansion heroes and old saves', () => {
+  it("the select is the original's eleven heroes and Random, in its order, two rows of six", () => {
+    const { sel } = classicSelect();
+    expect(sel.chars.map((c) => c.id)).toEqual([
+      'mario',
+      'luigi',
+      'link',
+      'samus',
+      'simon',
+      'megaman',
+      'bass',
+      'bill',
+      'ryu',
+      'sophia',
+    ]);
+    expect(sel.grid).toBe(ORIGINAL_GRID);
+    expect(sel.grid.cols).toBe(6);
+    expect(sel.rows).toBe(2);
+    for (let i = 0; i <= sel.chars.length; i++) {
+      const c = gridCell(i, sel.grid);
+      expect(c.x).toBeGreaterThanOrEqual(0);
+      expect(c.x + sel.grid.cell).toBeLessThanOrEqual(256);
+    }
+  });
+
+  it('Expansion heroes on adds the heroes the original never had, after it', () => {
+    const settings = defaultSettings();
+    const { h, sel } = classicSelect(settings);
+    for (const id of ['vicviper', 'warriors', 'arthur', 'yoshi'])
+      expect(sel.chars.some((c) => c.id === id)).toBe(false);
+    settings.classic.expansion = 'on';
+    h.game.classicSelect('1-1', () => {});
+    const on = h.top() as CharacterSelectScene;
+    expect(on.chars.slice(10).map((c) => c.id)).toEqual(['vicviper', 'warriors', 'arthur', 'yoshi']);
+    // Still no variant: they are skins in every case.
+    for (const d of h.game.skinsFor(MEGAMAN).slice(1)) expect(on.chars).not.toContain(d);
+  });
+
+  it('an old save or link naming a look that had its own slot plays on, as that look', () => {
+    const settings = defaultSettings();
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    h.game.classicGame(BREAKMAN_CLASSIC, '1-1');
+    expect(h.game.state.character).toBe(BREAKMAN_CLASSIC);
+    expect(settings.classicSkins).toEqual({ megaman: 'breakman' });
+    expect(h.game.skinFor(MEGAMAN)).toBe(BREAKMAN_CLASSIC);
+    const pick = new CharacterSelectScene(h.game, {
+      player: 0,
+      current: BREAKMAN_CLASSIC,
+      onPick: () => {},
+      random: true,
+    });
+    pick.enter();
+    expect(pick.chars[pick.cursor]).toBe(MEGAMAN);
+    expect(pick.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN 3']);
+  });
+});
+
+describe("the select's backdrop and its name box", () => {
+  it("it draws the next level's scenery over its sky, and none underground", () => {
+    const { h, sel } = classicSelect();
+    const scenery = () =>
+      draw(sel).sprites.filter((s) => s.frame.startsWith('hill') || s.frame.startsWith('bush'));
+    expect(scenery().length).toBeGreaterThan(0);
+    h.game.selectLevel = '1-2';
+    expect(scenery()).toEqual([]);
+  });
+
+  it('the name box grows open, at once with Reduce flashing', () => {
+    const { h, sel } = classicSelect();
+    const boxW = () =>
+      Math.max(
+        0,
+        ...rects(sel)
+          .filter((x) => x.y > 90 && x.h >= 8)
+          .map((x) => x.w),
+      );
+    h.game.ctx.reduceFlashing = true;
+    h.tap('right');
+    expect(boxW()).toBe(NAME_BOX.w);
+    h.game.ctx.reduceFlashing = false;
+    h.tap('right');
+    expect(boxW()).toBeLessThan(NAME_BOX.w);
+    h.idle(10);
+    expect(boxW()).toBe(NAME_BOX.w);
   });
 });

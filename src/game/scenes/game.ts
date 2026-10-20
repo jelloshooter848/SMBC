@@ -1762,6 +1762,8 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look.
+    if (classic) this.restoreSlotHero(character);
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
     this.state = newGameState(character, character2, this.liveRules);

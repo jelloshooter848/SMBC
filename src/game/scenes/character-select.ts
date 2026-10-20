@@ -15,6 +15,7 @@ import { MIN_LIVES_FOR_REVIVAL, type Survival } from '../survival';
 import { menuTouchLabels } from '../touch-labels';
 import { drawSelectHud } from '../hud/select-hud';
 import { SKY } from '../world/tile-render';
+import { decorPalette } from '../entities/objects/decoration';
 import {
   NAME_BOX,
   ORIGINAL_GRID,
@@ -96,6 +97,8 @@ export const ROW_MAX = 11;
 /** Survival's box: its line height and its padding (CharacterSelectScene.boxRect). */
 const BOX_LINE = 10;
 const BOX_PAD = 6;
+/** Frames the name box takes to grow open (MessageBox.resizeBox; instant with Reduce flashing). */
+const BOX_GROW = 6;
 
 /**
  * Look `look` of slot hero `host` as said: the look's name, then the hero's ("Break Man, Proto
@@ -137,6 +140,10 @@ export class CharacterSelectScene implements Scene {
    */
   private picker: { slot: number; host: CharacterDef; list: readonly CharacterDef[]; at: number } | null =
     null;
+  /** The frame the name box last started growing from (its lines changed). */
+  private boxT = 0;
+  /** The look the name box grew for (a new one grows again). */
+  private boxFor = '';
   /** Taps and clicks on the canvas (Classic mode's cells), screen px, handled in update. */
   private readonly taps: { x: number; y: number }[] = [];
   /** A tap on the cell under the cursor confirms it this frame (as OK). */
@@ -1243,11 +1250,23 @@ export class CharacterSelectScene implements Scene {
     }
     const lines = this.nameBoxLines();
     const boxH = 12 + lines.length * 10;
-    drawPanel(r, NAME_BOX.x, by, NAME_BOX.w, boxH, th);
+    // A new look (or hero) grows its box again.
+    const key = lines.join('|');
+    if (key !== this.boxFor) {
+      this.boxFor = key;
+      this.boxT = this.t;
+    }
+    // The box grows open (MessageBox.resizeBox): three frames wide, then tall, then its lines;
+    // instant with Reduce flashing.
+    const grow = this.game.ctx.reduceFlashing ? 1 : Math.min(1, (this.t - this.boxT) / BOX_GROW);
+    const w = Math.round(NAME_BOX.w * Math.min(1, grow * 2));
+    const hNow = grow < 0.5 ? 8 : Math.round(8 + (boxH - 8) * ((grow - 0.5) / 0.5));
+    drawPanel(r, 128 - (w >> 1), by + ((boxH - hNow) >> 1), w, hNow, th);
     // The hero's name in the menu font; the look's name and the game in the selected tint.
-    lines.forEach((l, k) =>
-      this.outlined(r, l, by + 7 + k * 10, l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name'),
-    );
+    if (grow >= 1)
+      lines.forEach((l, k) =>
+        this.outlined(r, l, by + 7 + k * 10, l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name'),
+      );
     // The prompts, named by ability (with the real key when not on touch).
     const py = by + boxH + 4;
     const sv = this.survival;
@@ -1320,10 +1339,24 @@ export class CharacterSelectScene implements Scene {
     }
   }
 
-  /** The current level's ground, and the hero (or look) standing on it, left of the prompts. */
+  /**
+   * The next level's scenery and ground, and the hero (or look) standing on it. The original's
+   * select is a real level (9-1a: clouds, a hill and bushes over two rows of ground) themed by the
+   * level ahead; ours draws the same pieces from that theme's sheets.
+   */
   private renderClassicGround(r: Renderer, shown: CharacterDef | null): void {
     const assets = this.game.ctx.assets;
-    const tiles = assets.sheet('tiles', `tiles-${this.groundTheme()}`);
+    const theme = this.groundTheme();
+    const tiles = assets.sheet('tiles', `tiles-${theme}`);
+    // Its scenery: only where the theme has it (underground and castle levels are bare).
+    const decor = assets.sheet('decor', decorPalette(theme));
+    if (decor.frames.get('hill-big') && (SKY[theme] ?? '#000000') !== '#000000') {
+      r.sprite(decor, 'cloud-1', 24, 150);
+      r.sprite(decor, 'cloud-2', 196, 156);
+      r.sprite(decor, 'hill-big', 164, 176);
+      r.sprite(decor, 'bush-1', 40, 192);
+      r.sprite(decor, 'bush-1', 208, 192);
+    }
     for (let x = 0; x < 256; x += 16) {
       r.sprite(tiles, 'ground', x, 208);
       r.sprite(tiles, 'ground', x, 224);
