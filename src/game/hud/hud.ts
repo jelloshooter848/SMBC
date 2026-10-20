@@ -110,9 +110,12 @@ export function drawHud(
 ): void {
   const font = assets.sheet('font');
   const covered = opts.covered;
-  /** A HUD text; outlined in black when a sprite is under it (or always, on a light sky). */
-  const text = (str: string, x: number, y: number): void => {
-    if (opts.outline || covered?.(x, y, str.length * 8, 8)) {
+  /**
+   * A HUD text; outlined in black when a sprite is under it (or always, on a light sky, or with
+   * `outlined`: a Classic hero's counters, which sit in the sky where the white clouds pass).
+   */
+  const text = (str: string, x: number, y: number, outlined = false): void => {
+    if (outlined || opts.outline || covered?.(x, y, str.length * 8, 8)) {
       const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
       for (const [dx, dy] of OUTLINE) r.text(dark, str, x + dx, y + dy);
     }
@@ -179,7 +182,7 @@ export function drawHeroStats(
   assets: AssetRegistry,
   state: GameState,
   players: Player[],
-  text: (str: string, x: number, y: number) => void,
+  text: (str: string, x: number, y: number, outlined?: boolean) => void,
 ): void {
   const player = players[0] ?? null;
   const def = player?.def ?? state.character;
@@ -228,7 +231,8 @@ export function drawHeroStats(
     const sheet = assets.sheet(ammo.sheet ?? 'items');
     r.sprite(sheet, ammo.icon, 96, 24);
     const iw = sheet.frames?.get(ammo.icon)?.w ?? 8;
-    text(`×${pad(ammo.count, ammo.count > 99 ? 3 : 2)}`, 97 + iw, 24);
+    // hudAmmo is a Classic def's (TG-22): always outlined, so it reads over a white cloud.
+    text(`×${pad(ammo.count, ammo.count > 99 ? 3 : 2)}`, 97 + iw, 24, true);
   }
   // A Gradius-style power bar (CharacterDef.powerBar: Vic Viper, VV-20), after the power icon.
   const bar = player ? def.powerBar?.(player) : null;
@@ -246,7 +250,8 @@ export function drawHeroStats(
         r.sprite(sheet, t.icon, 96, 24);
         // The count after the icon (8 px on the items sheet; a hero's own icon may be wider).
         const iw = sheet.frames?.get(t.icon)?.w ?? 8;
-        if (t.count !== null) text(`×${pad(t.count, 2)}`, 97 + iw, 24);
+        // A Classic def's belt (the dev full kit) is outlined as its hudAmmo is.
+        if (t.count !== null) text(`×${pad(t.count, 2)}`, 97 + iw, 24, def.rules === 'classic');
       }
     }
     const extra = def.hudExtra?.(player);

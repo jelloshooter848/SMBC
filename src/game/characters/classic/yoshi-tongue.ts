@@ -1,6 +1,6 @@
-import { px, tileAt, toPx } from '@engine/math/units';
+import { px, tileAt, toPx, velToSub } from '@engine/math/units';
 import { overlaps, type AABB } from '@engine/math/aabb';
-import type { Renderer } from '@engine/gfx/renderer';
+import { clipped, type Renderer } from '@engine/gfx/renderer';
 import { Entity, type View } from '../../entities/entity';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
@@ -197,6 +197,7 @@ function catchEnemy(p: Player, e: Enemy, world: World, what: Exclude<Edible, nul
   const score = e.scoreFor('stomp');
   const shell = e instanceof Koopa ? e.color : null;
   e.destroy();
+  if (e instanceof Lakitu) world.spawn(new LakituCloud(e, p, world));
   if (what === 'swallow') {
     world.addScore(score, e.body.x, e.body.y);
     world.audio.sfx('yoshi-swallow');
@@ -210,6 +211,51 @@ function catchEnemy(p: Player, e: Enemy, world: World, what: Exclude<Edible, nul
     shell,
     at: world.frame,
   });
+}
+
+/** An eaten Lakitu's cloud drifts off at his exit speed (0.83 px/f), rising 0.125 px/f. */
+const CLOUD_DRIFT_VX = 0x00d55;
+const CLOUD_DRIFT_VY = -0x00200;
+/** The cloud's rows in the Lakitu frames (the 16 x 24 cell's bottom 10 rows). */
+const CLOUD_TOP = 14;
+const CLOUD_ROWS = 10;
+
+/**
+ * An eaten Lakitu's empty cloud (patch-2 item 4): it drifts away from the Yoshi who ate him,
+ * slowly up, and is gone once off the screen, rather than vanishing with him. Drawn from his own
+ * frame cut to the cloud rows, so no new art. Touches nothing.
+ */
+export class LakituCloud extends Entity {
+  readonly kind = 'lakitu-cloud';
+  private readonly sheetName: string;
+  private readonly pal: string;
+  constructor(lakitu: Lakitu, eater: Player, world: World) {
+    const b = lakitu.body;
+    super(b.x, b.y, toPx(b.w), toPx(b.h));
+    this.spriteOffsetX = lakitu.spriteOffsetX;
+    this.spriteOffsetY = lakitu.spriteOffsetY;
+    this.sheetName = lakitu.sheet;
+    this.pal = lakitu.palette({ theme: world.level.theme } as View);
+    this.facing = lakitu.facing;
+    this.layer = 'front';
+    this.despawnMargin = null;
+    const dir = b.x + (b.w >> 1) >= eater.centerX ? 1 : -1;
+    this.body.vx = dir * CLOUD_DRIFT_VX;
+    this.body.vy = CLOUD_DRIFT_VY;
+  }
+  update(world: World): void {
+    const b = this.body;
+    b.x += velToSub(b.vx);
+    b.y += velToSub(b.vy);
+    if (b.x + b.w < world.camera.x - px(16) || b.x > world.camera.right + px(16) || b.y + b.h < -px(32))
+      this.destroy();
+  }
+  render(r: Renderer, view: View): void {
+    const x = this.screenX(view);
+    const y = this.screenY();
+    const sheet = view.assets.sheet(this.sheetName, this.pal);
+    clipped(r, x, y + CLOUD_TOP, 16, CLOUD_ROWS, () => r.sprite(sheet, 'lakitu-0', x, y, this.facing > 0));
+  }
 }
 
 /**

@@ -192,6 +192,15 @@ export const PEACH_CLASSIC: CharacterDef = {
   hudName: 'PEACH',
   // The original's Peach skins (Luigi skins 8 and 10) name the Subcon (BmdInfo.as:758, :766, namesArr[2]).
   rescueName: 'the Subcon',
+  // The last castle (patch-2 item 9, owner idea): big Mario waits in the princess's place and
+  // greets her after the usual "THANK YOU PEACH!".
+  endingGreeter: {
+    sheet: 'mario',
+    palette: 'mario',
+    frame: 'big-idle',
+    h: 32,
+    news: ['THIS TIME YOU SAVED ME!', 'YOUR QUEST IS OVER.'],
+  },
   rules: 'classic',
   notInOriginal: true,
   movement: PEACH_CLASSIC_PROFILE,
