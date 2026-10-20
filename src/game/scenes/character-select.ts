@@ -1215,6 +1215,9 @@ export class CharacterSelectScene implements Scene {
   private renderClassic(r: Renderer): void {
     // The next level's sky (the original's select is a level themed like the one ahead).
     r.clear(SKY[this.groundTheme()] ?? '#000000');
+    // The level behind: its scenery, ground and the hero standing there, under the boxes (not while
+    // Survival's box takes the name box's place over them: boxRect).
+    if (!this.box) this.renderClassicGround(r, this.shownHero());
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
@@ -1236,7 +1239,6 @@ export class CharacterSelectScene implements Scene {
       // The skin menu takes the select box's place (CharacterSelectBox opens CharacterSkinMenu
       // instead of itself), so no cell shows behind or under it.
       this.renderPicker(r);
-      this.renderClassicGround(r, shown);
       return;
     }
     // The portrait grid: each hero's face, our standing art doubled (the original's close-ups).
@@ -1340,7 +1342,6 @@ export class CharacterSelectScene implements Scene {
         centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py);
       }
     }
-    this.renderClassicGround(r, shown);
     if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
   }
 
@@ -1392,8 +1393,8 @@ export class CharacterSelectScene implements Scene {
     // Its scenery: only where the theme has it (underground and castle levels are bare).
     const decor = assets.sheet('decor', decorPalette(theme));
     if (decor.frames.get('hill-big') && (SKY[theme] ?? '#000000') !== '#000000') {
-      r.sprite(decor, 'cloud-1', 24, 150);
-      r.sprite(decor, 'cloud-2', 196, 156);
+      r.sprite(decor, 'cloud-1', 16, 180);
+      r.sprite(decor, 'cloud-2', 92, 186);
       r.sprite(decor, 'hill-big', 164, 176);
       r.sprite(decor, 'bush-1', 40, 192);
       r.sprite(decor, 'bush-1', 208, 192);

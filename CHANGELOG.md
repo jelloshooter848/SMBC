@@ -16,8 +16,8 @@ under `## [Unreleased]`.
 ### Changed
 
 - Classic mode's select screen is now the original's: its eleven heroes in its order (Mario,
-  Luigi, Link, Samus, Simon, then Mega Man, Bass, Bill, Ryu, Sophia III) and the Random "?",
-  two rows of six cells. Every other look is a skin on one of their slots, each with its own
+  Luigi, Link, Samus, Simon, then Mega Man, Bass, Bill, Ryu, Sophia III and the Random "?"),
+  five cells over six, as the original lays them out without its map-skin cell. Every other look is a skin on one of their slots, each with its own
   rules, as in the original: Mega Man wears Rock, Proto Man, Break Man, Cut Man, Fire Man, Ice
   Man, Francesca, Doropie and Rokko Chan; Samus wears Pit and Dark Pit; Luigi wears Princess
   Peach. A save or a link naming a look that had its own slot plays on as that look.
@@ -26,7 +26,9 @@ under `## [Unreleased]`.
   still with Reduce flashing). The name box shows the hero in white and the look's name and its
   game in pale pink, all outlined so they read on a phone, and it grows open as the original's
   boxes do. A hero's own look has two lines, as in the original, and the box follows the skin
-  menu's cursor. Each cell and the HUD's framed box show the hero's face.
+  menu's cursor; it has the original's size, with our one prompt in its bottom row. Each cell
+  and the HUD's framed box show the hero's face: our own close-up for each of the ten heroes,
+  the look's head for the others.
 - Classic mode's select stands the hero at the centre on the next level's own sky, scenery and
   ground (1-1: blue sky, a hill and bushes over brick; 1-2: black and underground rock), as the
   original's select level does. The skin menu takes the grid's place while it is open.
