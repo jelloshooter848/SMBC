@@ -1,4 +1,11 @@
-import { loadProgress, saveProgress } from '@engine/save/progress';
+import {
+  loadProgress,
+  recordBeat,
+  saveProgress,
+  type BeatDifficulty,
+  type BeatStatus,
+  type MapSetId,
+} from '@engine/save/progress';
 import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
@@ -21,22 +28,86 @@ import type { Renderer } from '@engine/gfx/renderer';
  * never a campaign save file).
  */
 
-/** The level whose clear opens the Lost Levels: SMB's last castle. */
-export const SMB_LAST_CASTLE = '8-4';
-
-/**
- * Whether the CLASSIC menu offers The Lost Levels: SMB beaten in a Classic mode run (the global
- * progress store's cleared list). A campaign file's clear does not count (owner decision).
- */
-export function lostLevelsOpen(): boolean {
-  return loadProgress().cleared.includes(SMB_LAST_CASTLE);
+/** A Classic mode map set (data/MapPack.as; NewGameOptionsMenu's Map Set row). */
+export interface MapSet {
+  id: MapSetId;
+  /** The CLASSIC menu's line. */
+  label: string;
+  /** Its first level (a new game starts here). */
+  start: string;
+  /** Its last world: that world's castle ends the game (LevelData.worldCount). */
+  lastWorld: number;
+  /** What the menu's hint says about it. */
+  about: string;
+  /** Whether a level id (main or area) belongs to this set. */
+  owns(levelId: string): boolean;
 }
 
-/** A Classic mode run beat `levelId` (SMB 8-4): kept in the global progress store. */
-export function recordClassicClear(levelId: string): void {
+/**
+ * Classic mode's map sets, in the original's order (MapPack: Smb, Special, LostLevels), every one
+ * open from the start (G-003, owner decision D3). The Special set goes between the two when it is
+ * built (G-020): one more entry here, with its own id prefix.
+ */
+export const MAP_SETS: readonly MapSet[] = [
+  {
+    id: 'smb',
+    label: 'Super Mario Bros.',
+    start: '1-1',
+    lastWorld: 8,
+    about: 'The original game with every hero',
+    owns: (id) => /^\d+-\d+/.test(id),
+  },
+  // G-020 (Super Mario Bros. Special) goes here: { id: 'special', label: 'Special', ... }.
+  {
+    id: 'lost',
+    label: 'The Lost Levels',
+    start: 'll-1-1',
+    // Worlds 9 and A-D are 10 to 13 (levelDataLostLevels.xml; LevelData.worldCount).
+    lastWorld: 13,
+    about: 'The harder second quest, thirteen worlds long',
+    owns: (id) => id.startsWith('ll-'),
+  },
+];
+
+/** The map set a level belongs to (SMB for anything else, as custom levels end like SMB). */
+export function mapSetOf(levelId: string): MapSet {
+  return MAP_SETS.find((m) => m.id !== 'smb' && m.owns(levelId)) ?? (MAP_SETS[0] as MapSet);
+}
+
+/**
+ * Where a Classic mode run goes from castle `levelId`'s `next=end` (G-001/G-002): every castle
+ * but the set's last world's is an ordinary one, and play goes on to the next world's first level
+ * (Level.as 3472-3486: X-4 goes to (X+1)-1, whatever warps were taken). Null at the set's last
+ * castle (the end of the game) and for anything that is not a castle of a set's world.
+ */
+export function classicNextWorld(levelId: string): string | null {
+  const set = mapSetOf(levelId);
+  const m = /^(?:[a-z]+-)?(\d+)-4$/.exec(levelId);
+  if (!m || !set.owns(levelId)) return null;
+  const world = Number(m[1]);
+  if (world >= set.lastWorld) return null;
+  return `${set.start.replace(/\d+-\d+$/, '')}${world + 1}-1`;
+}
+
+/** The beat status a map set's menu hint ends with (G-005), or nothing while unbeaten. */
+export function beatHint(status: BeatStatus): string {
+  return status === 'none' ? '' : `. Beaten on ${status.charAt(0).toUpperCase()}${status.slice(1)}`;
+}
+
+/**
+ * A Classic mode run beat map set `set` (StatManager.beatGameHandler: setBeatGameStatus):
+ * kept in the global progress store, never a campaign save file. Every run is on Normal until
+ * Map Difficulty comes (G-006).
+ */
+export function recordClassicBeat(set: MapSetId, difficulty: BeatDifficulty = 'normal'): void {
   const p = loadProgress();
-  if (p.cleared.includes(levelId)) return;
-  saveProgress({ ...p, cleared: [...p.cleared, levelId] });
+  const next = recordBeat(p, set, difficulty);
+  if (next !== p) saveProgress(next);
+}
+
+/** Map set `set`'s beat status (G-005). */
+export function classicBeatStatus(set: MapSetId): BeatStatus {
+  return loadProgress().classicBeat?.[set] ?? 'none';
 }
 
 /** A menu line as MenuScene reads it (label, value and hint), without a doubled full stop. */
@@ -64,7 +135,7 @@ export function classicOptionsOn(game: Game): boolean {
   return c.gameMode !== defaultClassicSettings().gameMode;
 }
 
-/** The CLASSIC menu: Super Mario Bros., The Lost Levels (once open), Options, Back. */
+/** The CLASSIC menu: each map set (MAP_SETS), Options, Back. */
 export class ClassicMenuScene extends MenuScene {
   constructor(game: Game) {
     super(game, 'CLASSIC', [], () => game.showTitle());
@@ -77,19 +148,12 @@ export class ClassicMenuScene extends MenuScene {
     const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
-    const items: MenuItem[] = [
-      {
-        label: 'Super Mario Bros.',
-        select: () => game.classicSelect('1-1', back),
-        hint: `The original game with every hero${own}`,
-      },
-    ];
-    if (lostLevelsOpen())
-      items.push({
-        label: 'The Lost Levels',
-        select: () => game.classicSelect('ll-1-1', back),
-        hint: `The harder second quest${own}`,
-      });
+    // Every map set from the start (G-003, D3), each with its beat status (G-005).
+    const items: MenuItem[] = MAP_SETS.map((set) => ({
+      label: set.label,
+      select: () => game.classicSelect(set.start, back),
+      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
+    }));
     items.push(
       {
         label: 'Options',

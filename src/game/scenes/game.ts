@@ -100,7 +100,7 @@ import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
-import { ClassicMenuScene, recordClassicClear } from './original-game';
+import { ClassicMenuScene, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { applyRevivalBoost, Survival } from '../survival';
 
 export interface GameDeps {
@@ -196,7 +196,7 @@ export class Game {
   survival: Survival | null = null;
   /**
    * The Classic run was started from developer mode (the dev Level select's Classic run, or
-   * `?mode=classic`): it never records the Classic 8-4 clear, so it never opens the Lost Levels.
+   * `?mode=classic`): it never records a beat status (G-005) and its wins unlock nothing.
    */
   classicDev = false;
   /**
@@ -624,7 +624,8 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    if (from.startsWith('ll-')) return this.showLostEnding(from);
+    // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
+    if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
     const world = below instanceof LevelScene ? below.world : null;
     const head = world ? world.castleText.splice(0) : [];
@@ -644,15 +645,18 @@ export class Game {
    * (and for a campaign level on no map page) the title.
    */
   private afterCredits(from: string): void {
-    // Classic mode: the clear is kept (the CLASSIC menu's Lost Levels entry opens) and the Lost
-    // Levels follow, as a new quest.
-    if (this.classicRun && !isLostLevel(from)) {
+    // Classic mode (G-004, G-005, owner decision D3): the map set's beat status is kept, the
+    // cheats it unlocks are told, then the title (ScreenManager.restartGameTmrHandler ->
+    // StatManager.beatGameHandler's unlock boxes -> restartGame).
+    if (this.classicRun) {
       // A developer-started run counts for nothing: the title, as free play.
       if (this.classicDev) return this.showTitle();
-      recordClassicClear(from);
-      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler).
-      this.cheatEvent({ beat: 'smb' });
-      this.showClassicNewQuest();
+      const set = mapSetOf(from).id;
+      recordClassicBeat(set);
+      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler). The
+      // Special set's goal (All Hammer Bros) comes with that set (G-020).
+      if (set === 'smb' || set === 'lost') this.cheatEvent({ beat: set });
+      this.showClassicUnlocks();
       return;
     }
     if (this.campaign) {
@@ -690,8 +694,6 @@ export class Game {
   private showLostEnding(from: string): void {
     const s = this.state;
     const campaign = this.campaign !== null;
-    // Classic mode: The Lost Levels beaten (beatGameHandler), for the cheats' goals.
-    if (from === 'll-8-4' && this.classicRun) this.cheatEvent({ beat: 'lost' });
     if (campaign) {
       s.checkpoint = null;
       s.time = null;
@@ -710,10 +712,8 @@ export class Game {
             'YOUR QUEST IS OVER.',
             'WE PRESENT YOU A NEW QUEST.',
             '',
-            // Classic mode names the ability, never a button letter; elsewhere the NES wording.
-            ...(this.classicRun
-              ? [fontText(`PRESS ${abilityHint(this, 'OK', 'attack')}`), 'TO GO ON']
-              : ['PUSH BUTTON B', 'TO SELECT A WORLD']),
+            'PUSH BUTTON B',
+            'TO SELECT A WORLD',
           ]
         : ['THANK YOU!'];
     let then: () => void;
@@ -1298,6 +1298,18 @@ export class Game {
   }
 
   /**
+   * How a Classic mode run treats level `levelId`'s castle marked `next=end` (World.classicEnd,
+   * G-001/G-002): an ordinary castle on to the next world's first area, or, at its map set's last
+   * world (SMB 8-4, Lost Levels D-4), the end of the game (`next` null). Null outside a Classic
+   * mode run, where the Lost Levels' castles keep the NES rules (showLostEnding).
+   */
+  classicCastle(levelId: string): { next: string | null } | null {
+    if (!this.classicRun || this.campaign !== null) return null;
+    const next = classicNextWorld(levelId);
+    return { next: next ? this.firstArea(next) : null };
+  }
+
+  /**
    * The area a level restarts in without a checkpoint: its first area (Level.reloadLevel loads
    * area a, or b when a is an intro). Only Lost Levels 9-1 has a normal first area before its
    * main one: the converter names it `<main>-start` (convert-smbc.mjs entryId).
@@ -1758,7 +1770,7 @@ export class Game {
     }
   }
 
-  /** The title's CLASSIC entry: Super Mario Bros., The Lost Levels (once open), Options, Back. */
+  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
   showClassicMenu(): void {
     this.endClassicRun();
     this.runRules = 'current';
@@ -1797,17 +1809,40 @@ export class Game {
   }
 
   /**
-   * Classic mode, SMB beaten (after the credits): the Lost Levels are open, and follow as a new
-   * quest: OK goes on to their select screen, then their World 1.
+   * Classic mode (G-030): the TIME UP card after a death by the clock (InformativeBlackScreen's
+   * TIME UP, ScreenManager.showTimeUpScreen), on black over the level; read out, and gone on with
+   * OK, never by itself (the original's 2.5 s), then `then` (the death goes on).
    */
-  private showClassicNewQuest(): void {
-    const lines = ['THE LOST LEVELS', 'ARE OPEN!', '', 'WE PRESENT YOU', 'A NEW QUEST.'];
+  showTimeUp(then: () => void): void {
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
-    this.deps.announcer?.say(`${lines.filter(Boolean).join(' ')} ${ok}.`);
-    this.scenes.clear();
+    this.deps.announcer?.say(`Time up! ${ok}.`);
     this.scenes.push(
-      new MessageScene(this, [...lines, '', ok], () => this.classicSelect('ll-1-1', () => this.showTitle())),
+      new MessageScene(
+        this,
+        ['TIME UP', '', ok],
+        () => {
+          this.scenes.pop();
+          then();
+        },
+        ['start', 'attack', 'jump'],
+      ),
     );
+  }
+
+  /**
+   * Classic mode, a map set beaten (after the credits): each cheat the game unlocked has its card
+   * (StatManager.beatGameHandler: Cheats.unlockCheat's boxes, MessageBoxMessages.UNLOCKED_CHEAT_*),
+   * read out and gone on with OK, then the title (G-004, D3).
+   */
+  private showClassicUnlocks(): void {
+    const id = this.cheatUnlocks.shift();
+    if (!id) return this.showTitle();
+    const lines = unlockedLines(id);
+    const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
+    this.deps.ctx.audio.sfx('1up');
+    this.deps.announcer?.say(`You unlocked the ${cheatInfo(id).name} cheat! ${ok}.`);
+    this.scenes.clear();
+    this.scenes.push(new MessageScene(this, [...lines, '', ok], () => this.showClassicUnlocks()));
   }
 
   /**
