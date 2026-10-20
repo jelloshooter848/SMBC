@@ -53,6 +53,16 @@ const CLASSIC_RULES_Y = 64;
 
 const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
 
+/**
+ * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
+ * Current rules only Game mode applies (More settings and Weapons are Classic rules only).
+ */
+export function classicOptionsOn(game: Game): boolean {
+  const c = game.deps.settings?.classic ?? defaultClassicSettings();
+  if ((game.deps.settings?.classicRules ?? 'classic') === 'classic') return !isOriginalClassic(c);
+  return c.gameMode !== defaultClassicSettings().gameMode;
+}
+
 /** The CLASSIC menu: Super Mario Bros., The Lost Levels (once open), Options, Back. */
 export class ClassicMenuScene extends MenuScene {
   constructor(game: Game) {
@@ -65,9 +75,7 @@ export class ClassicMenuScene extends MenuScene {
     const game = this.game;
     const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
-    const own = isOriginalClassic(game.deps.settings?.classic ?? defaultClassicSettings())
-      ? ''
-      : '. Your own Classic options are on';
+    const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     const items: MenuItem[] = [
       {
         label: 'Super Mario Bros.',

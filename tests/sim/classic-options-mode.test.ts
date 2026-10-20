@@ -229,3 +229,31 @@ describe('the Game mode row (CLASSIC > Options)', () => {
     expect(items(menu)[0]?.hint).toMatch(/Your own Classic options are on$/);
   });
 });
+
+describe('review fixes', () => {
+  it('Single random names the picked hero with the lives card, at the start and after a death', () => {
+    const h = classic({ gameMode: 'single-random', lives: 10 });
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    expect(h.said.at(-1)).toBe(`${h.game.state.character.name}. World 1-1. 10 lives.`);
+    die(h);
+    expect(h.said.at(-1)).toBe(`${h.game.state.character.name}. World 1-1. 9 lives.`);
+    // All heroes: the card is as before (the select screen named the hero).
+    const a = classic();
+    select(a);
+    a.tap('jump');
+    expect(a.said.at(-1)).toBe('World 1-1. 3 lives.');
+  });
+
+  it('the CLASSIC menu hint counts only options that apply: with Current rules, Game mode only', () => {
+    const hint = (over: Partial<ClassicSettings>, rules: 'classic' | 'current') => {
+      const h = classic(over);
+      h.settings.classicRules = rules;
+      h.game.showClassicMenu();
+      return items(h.top())[0]?.hint ?? '';
+    };
+    expect(hint({ lives: 7 }, 'classic')).toMatch(/Your own Classic options are on$/);
+    expect(hint({ lives: 7 }, 'current')).not.toMatch(/Your own/);
+    expect(hint({ gameMode: 'single' }, 'current')).toMatch(/Your own Classic options are on$/);
+    expect(hint({}, 'classic')).not.toMatch(/Your own/);
+  });
+});
