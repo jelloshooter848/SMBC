@@ -182,11 +182,14 @@ describe('G-020: the Special set loads and every area converts', () => {
     expect(getLevel('sp-8-1').theme).toBe('mushroom');
   });
 
-  it('the vines to areas with no vine to climb arrive at their playerStart (Level.as; 4-1, 4-3)', () => {
+  it('a numbered vine arrives like a pipe, out of that pipe end (Vine.as globPipeExInt; 4-1, 4-3)', () => {
     const vine = (id: string) => getLevel(id).zones.find((z) => z.kind === 'vine');
-    expect(vine('sp-4-1')).toMatchObject({ target: { level: 'sp-4-1-sky', x: 2, y: 10, exitDir: 'stand' } });
-    expect(vine('sp-4-3')).toMatchObject({
-      target: { level: 'sp-4-3-bonus', x: 5, y: 12, exitDir: 'stand' },
+    expect(vine('sp-4-1')).toMatchObject({ target: { level: 'sp-4-1-sky', x: 2, y: 10, exitDir: 'up' } });
+    expect(vine('sp-4-3')).toMatchObject({ target: { level: 'sp-4-3-bonus', x: 2, y: 7, exitDir: 'up' } });
+    // Heroes with the vert pieces get the room one row lower: its pipe end too (the layer).
+    const vert = layeredLevel(getLevel('sp-4-3'), { difficulty: 'normal', flags: ['vert'] });
+    expect(vert.zones.find((z) => z.kind === 'vine')).toMatchObject({
+      target: { x: 2, y: 8, exitDir: 'up' },
     });
   });
 

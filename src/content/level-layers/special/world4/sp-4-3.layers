@@ -328,3 +328,7 @@
 40 8 .
 164 13 #
 172 13 #
+
+[layer vert]
+-zone vine 183 4 -> sp-4-3-bonus 2 7 exit=up
++zone vine 183 4 -> sp-4-3-bonus 2 8 exit=up

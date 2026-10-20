@@ -16,6 +16,11 @@ import { allHammerBros } from '@game/rules/classic-cheats';
 import { T } from '@game/level/tiles';
 import { HammerWeapon, SPECIAL_ITEM_SAID, WING_FRAMES, HAMMER_FRAMES } from '@game/world/special-items';
 import { WATER_MODE_TOP } from '@game/world/world';
+import { fullPowerUp } from '@game/world/special-items';
+import { AMMO_PICKUPS } from '@game/cheats';
+import { SIMON } from '@game/characters/simon';
+import { RYU } from '@game/characters/ryu';
+import { SOPHIA } from '@game/characters/sophia';
 import { runSim } from '@game/sim/headless';
 import { SAMUS } from '@game/characters/samus';
 import type { EntitySpawn } from '@game/level/schema';
@@ -409,6 +414,45 @@ describe('G-022: the items', () => {
       expect(it.alive).toBe(false);
       expect(p.powerState, def.id).toBe('fire');
       expect(w.events.some((e) => e.type === 'say' && e.text === SPECIAL_ITEM_SAID.rabbit)).toBe(true);
+    }
+  });
+
+  it('the full power-up gives only the missing steps: small two, big one, Fire Flower none (no repeat bonus)', () => {
+    for (const [state, calls] of [
+      ['small', 2],
+      ['big', 1],
+      ['fire', 0],
+    ] as const) {
+      const w = classicWorld(heroFor(MARIO, 'classic'));
+      const p = w.player;
+      p.powerState = state;
+      const seen: string[] = [];
+      const own = p.def.behaviour.onPowerUp.bind(p.def.behaviour);
+      p.def = {
+        ...p.def,
+        behaviour: { ...p.def.behaviour, onPowerUp: (q, k, ww) => (seen.push(k), own(q, k, ww)) },
+      };
+      const score = w.state.score;
+      fullPowerUp(w, p);
+      expect(seen, state).toHaveLength(calls);
+      expect(p.powerState, state).toBe('fire');
+      // The steps' own points are not scored (the item's 1000 are, by takeSpecialItem).
+      expect(w.state.score, state).toBe(score);
+    }
+  });
+
+  it('the full power-up fills every ammo to its maximum (setAllAmmoToMax), on the real hero', () => {
+    for (const def of [LINK, SAMUS, SIMON, RYU, SOPHIA]) {
+      const w = classicWorld(heroFor(def, 'classic'));
+      const p = w.player;
+      fullPowerUp(w, p);
+      const counters = () =>
+        Object.fromEntries(Object.entries(p.scratch).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
+      const after = counters();
+      // Another of every ammo pickup adds nothing: each counter is at its maximum.
+      for (const kind of AMMO_PICKUPS) p.def.behaviour.onPickup?.(p, kind, w);
+      expect(counters(), def.id).toEqual(after);
+      expect(Object.values(after).some((v) => v > 0), def.id).toBe(true);
     }
   });
 });

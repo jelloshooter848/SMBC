@@ -685,7 +685,7 @@ function convertArea(level, area, id, levels, profile) {
             b.set(x, y, name === 'brick' ? 'E' : name === 'itemBlock' ? '?' : '2');
             b.entity('block-item', x, y, { item });
           }
-          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
+          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest, number: params.number });
           continue;
         }
         if (MARKERS[name]) {
@@ -828,7 +828,11 @@ function convertArea(level, area, id, levels, profile) {
             break;
           }
           case 'playerStart':
-            start = { x, y };
+            // Level.as puts the hero's middle on the cell's middle, plus half a tile with
+            // shiftRight: in Special's bonus rooms that is the line between this column and the
+            // next, and on Hard those rooms' floors have holes in every other column (this one).
+            // Our arrivals centre the hero in a column, so a shifted start there is the next one.
+            start = { x: SPECIAL && area.type === 'pipeBonus' && params.shiftRight ? x + 1 : x, y };
             break;
           case 'halfwayPoint':
             // LOCKED_CP levels (castles, SMB1 World 8, Lost Levels 7-4 to 8-4) have no halfway
@@ -1037,19 +1041,16 @@ function convertLevel(levelId, allLevels, profile = BASE) {
         console.warn(`${c.id}: vine at ${v.x},${v.y} to unknown area ${v.dest}`);
         continue;
       }
+      // A vine with a `number` (Special 4-1 and 4-3: Vine.as globPipeExInt) arrives like a pipe:
+      // the hero rises out of the target's pipe end with that number (Character.checkVinePosition
+      // -> levelTransfer(dest, vineExInt)), whichever the profile builds (charVert pieces).
+      if (v.number !== undefined && t.vertEnds.has(String(v.number))) {
+        const e = t.vertEnds.get(String(v.number));
+        c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
+        continue;
+      }
       if (!t.vineStart) {
-        // No vineStart there (Special 4-1 and 4-3): the original has no vine to climb on
-        // arrival (Level.as: vineToClimb is null), so the hero is put at the area's playerStart.
-        if (t.start) {
-          const below = tokensAt(t.area, t.start.x, t.start.y + 1).some((k) => {
-            const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
-            return ch && ch !== '$' && ch !== 'w';
-          });
-          // Standing there (ground under it), else dropping in down its column.
-          const exit = below ? 'stand' : 'fall';
-          c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${t.start.x} ${t.start.y} exit=${exit}`);
-          continue;
-        }
+        // No vine to climb there and no pipe end: the hero starts as the area starts.
         const [sx, sy] = t.builder.header.start.split(',');
         const exit = { 'pipe-exit': 'up', fall: 'fall' }[t.builder.header.startMode] ?? 'none';
         c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${sx} ${sy} exit=${exit}`);
@@ -1094,7 +1095,7 @@ function convertLevel(levelId, allLevels, profile = BASE) {
             const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
             return ch && ch !== '$' && ch !== 'w';
           });
-        const exit = SPECIAL && t.area.type === 'pipeBonus' ? (ground ? 'stand' : 'fall') : 'none';
+        const exit = SPECIAL && t.area.type === 'pipeBonus' && !ground ? 'fall' : 'none';
         c.builder.zone(
           `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=${exit}`,
         );

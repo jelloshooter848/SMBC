@@ -456,11 +456,7 @@ export class LevelScene implements Scene {
           mode:
             exitDir === 'up'
               ? 'pipe-exit'
-              : exitDir === 'climb' ||
-                  exitDir === 'fall' ||
-                  exitDir === 'beam' ||
-                  exitDir === 'spin' ||
-                  exitDir === 'stand'
+              : exitDir === 'climb' || exitDir === 'fall' || exitDir === 'beam' || exitDir === 'spin'
                 ? exitDir
                 : target.startMode,
         };

@@ -2484,7 +2484,7 @@ export class World {
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(
     target: { level: string; x: number; y: number },
-    mode: 'climb' | 'fall' | 'spin' | 'up' | 'stand' | 'none',
+    mode: 'climb' | 'fall' | 'spin' | 'up' | 'none',
     chain = false,
   ): void {
     if (this.leaving) return;

@@ -7,6 +7,7 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Podoboo } from '../entities/enemies/podoboo';
 import { isWorldItem, type PowerUp } from '../entities/objects/powerup';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
+import { AMMO_PICKUPS } from '../cheats';
 import type { Player } from '../entities/player';
 import type { World } from './world';
 
@@ -64,32 +65,66 @@ export function takeSpecialItem(world: World, p: Player, e: PowerUp & { item: Sp
 }
 
 /**
- * Character.fullyPowerup (the ExplodingRabbitPowerup, P_UP_SCORE_VAL): with Classic power-ups,
- * the Mushroom if the hero lacks it, then the Fire Flower if he lacks it, both at once with no
- * animation (hitRandomUpgrade(charNum, false)), through the hero's own power-up code. Under
- * Current rules, the hero's own next two upgrades. Their own points and sounds are not played
- * (the item's 1000 are).
+ * Character.fullyPowerup (the ExplodingRabbitPowerup), on the real World and the real hero:
+ *
+ * - With Classic power-ups (Classic rules): the Mushroom if the hero lacks it, then the Fire Flower
+ *   if he lacks it (`if (!upgradeIsActive(...)) hitRandomUpgrade(charNum, false)`), so a hero
+ *   already in the Fire Flower state gets no upgrade and no repeat-Flower bonus.
+ * - Under Current rules (the original's other mode, addAllPowerups): the hero's own next upgrades
+ *   from a power block, FULL_POWER_STEPS of them.
+ * - Then setAllAmmoToMax: every ammo pickup the hero uses, given until its counter is full
+ *   (through the hero's own pickup code, which caps each counter at its maximum).
+ *
+ * All at once, with no animation (showAnimation false); the steps' own points and sounds are not
+ * played (the item's 1000 points and power-up sound are).
  */
 export function fullPowerUp(world: World, p: Player): void {
-  const quiet = Object.create(world, {
-    audio: { value: NULL_AUDIO },
-    addScore: { value: () => {} },
-    events: { value: [] },
-  }) as World;
-  for (let i = 0; i < FULL_POWER_STEPS; i++) {
-    const kind = world.rules === 'current' ? p.def.blockPowerUp(p) : 'flower';
-    if (isWorldItem(kind)) continue;
-    if (world.rules === 'current') quiet.powerUp(p, kind);
-    else p.def.behaviour.onPowerUp(p, kind, quiet);
-  }
-  if (p.transition) {
-    p.transition = null;
-    p.refitHitbox();
-  }
+  quietly(world, () => {
+    const steps =
+      world.rules === 'current'
+        ? FULL_POWER_STEPS
+        : p.powerState === 'small'
+          ? 2
+          : p.powerState === 'fire'
+            ? 0
+            : 1;
+    for (let i = 0; i < steps; i++) {
+      const kind = world.rules === 'current' ? p.def.blockPowerUp(p) : 'flower';
+      if (isWorldItem(kind)) continue;
+      if (world.rules === 'current') world.powerUp(p, kind);
+      else p.def.behaviour.onPowerUp(p, kind, world);
+    }
+    if (p.transition) {
+      p.transition = null;
+      p.refitHitbox();
+    }
+    // setAllAmmoToMax: each counter fills whatever its size (the largest gives 5 at a time).
+    for (const kind of AMMO_PICKUPS)
+      for (let i = 0; i < MAX_AMMO_GIVES; i++) p.def.behaviour.onPickup?.(p, kind, world);
+  });
 }
 
-/** fullyPowerup's two steps: the Mushroom, then the Fire Flower. */
+/** fullyPowerup under Current rules: two of the hero's own upgrades. */
 export const FULL_POWER_STEPS = 2;
+/** Pickups given per ammo kind to fill it (every counter's maximum within 5 x this). */
+const MAX_AMMO_GIVES = 60;
+
+/** Runs `fn` on `world` with its points and sounds silenced (restored after). */
+function quietly(world: World, fn: () => void): void {
+  const w = world as unknown as { audio: World['audio']; addScore: World['addScore'] };
+  const audio = w.audio;
+  const own = Object.prototype.hasOwnProperty.call(w, 'addScore');
+  const addScore = w.addScore;
+  w.audio = NULL_AUDIO;
+  w.addScore = () => {};
+  try {
+    fn();
+  } finally {
+    w.audio = audio;
+    if (own) w.addScore = addScore;
+    else delete (w as { addScore?: unknown }).addScore;
+  }
+}
 
 /**
  * Level.killAllEnemiesOnScreen (the Atom): every enemy on screen is defeated, each scoring as if

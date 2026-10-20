@@ -47,7 +47,7 @@ decor-castle-big 232 12
 [zones]
 checkpoint 94 8
 exit 230 next=sp-4-4
-vine 183 4 -> sp-4-3-bonus 5 12 exit=stand
+vine 183 4 -> sp-4-3-bonus 2 7 exit=up
 
 [decor]
 cloud-1 7 3
