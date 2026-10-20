@@ -82,6 +82,40 @@ describe('G-008 the Classic resume slot', () => {
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-2/);
   });
 
+  it('#179: a run as an Expansion hero with Expansion heroes off goes on as Mario in his look', () => {
+    const slot = () =>
+      store.set(
+        CLASSIC_RESUME_KEY,
+        JSON.stringify({
+          v: 1,
+          levelId: '1-2',
+          rules: 'classic',
+          hero: 'yoshi',
+          score: 50,
+          coins: 1,
+          lives: 3,
+          world: 1,
+          stage: 2,
+          powerState: 'small',
+          hp: 0,
+          kit: {},
+          warped: false,
+          checkpoint: null,
+        }),
+      );
+    slot();
+    const off = classic();
+    expect(off.game.resumeClassic()).toBe(true);
+    expect(off.game.state.character.id).toBe('mario');
+    expect(off.game.state.score).toBe(50);
+    // The WORLD card rewrote the slot as Mario's: the saved Yoshi run again.
+    slot();
+    const on = classic();
+    on.settings.classic = { ...on.settings.classic, expansion: 'on' };
+    expect(on.game.resumeClassic()).toBe(true);
+    expect(on.game.state.character.id).toBe('yoshi');
+  });
+
   it('a game over clears it', () => {
     const h = classic();
     h.game.classicGame(MARIO);
