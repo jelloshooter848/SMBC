@@ -2,7 +2,7 @@ import { gainCoins } from '../items/wallet';
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
 import { HUD_BOTTOM, SCORE_MAX } from '../hud/hud';
-import { fontText } from '../hud/text';
+import { fontText, wrapText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, clipped, translucent, type Renderer } from '@engine/gfx/renderer';
 import { overlaps, type AABB } from '@engine/math/aabb';
@@ -103,6 +103,7 @@ import { Firebar } from '../entities/enemies/firebar';
 import { Bowser, trueFormOf, type BowserAttack } from '../entities/enemies/bowser';
 import { BowserFire } from './bowser-fire';
 import {
+  burstPieces,
   DEATH_FRAMES,
   DEATH_SFX,
   renderDeath,
@@ -645,6 +646,11 @@ export class World {
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0, pierced: 0 };
+  /**
+   * The enemy each player stands on (CharacterDef.standsOnEnemies, Classic Peach's riding) and
+   * where it was when last ridden. Empty unless a def sets standsOnEnemies.
+   */
+  private readonly rides = new Map<Player, { e: Enemy; x: number }>();
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
@@ -1726,6 +1732,7 @@ export class World {
       e.update(this);
     }
     this.resolveLifts();
+    this.rideEnemies();
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -1770,7 +1777,8 @@ export class World {
     else if (heroScroll) this.autoScroll(heroScroll);
     else if (lead) {
       const before = this.camera.x;
-      this.camera.follow(lead.body.x, lead.body.y);
+      // A hero may lead the camera from an eased anchor (CharacterDef.cameraX: Classic Sophia III).
+      this.camera.follow(lead.def.cameraX?.(lead) ?? lead.body.x, lead.body.y);
       // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
       // held where it was, never pulled back (the screen does not scroll left), and a locked
       // screen is left alone.
@@ -2810,6 +2818,9 @@ export class World {
     // No stomp during a Classic SMBC hit's push (PS-C12), nor under water for a hero whose
     // swim profile says so (SW-C7): plain contact.
     const stompBarred = p.hurtLock !== null || (p.inWater && p.profile.swim?.noStomp === true);
+    // CharacterDef.standsOnEnemies (Classic Peach, PE-11): landing on it, or riding it, is no
+    // stomp and no hurt (World.rideEnemies keeps her on top).
+    if (!stompBarred && p.def.standsOnEnemies?.(p, e) && (fromAbove || this.rides.get(p)?.e === e)) return;
     // CharacterDef.seaFloorSafe (ML-C25): a Blooper leaves a hero on the sea floor alone.
     if (e instanceof Blooper && p.def.seaFloorSafe === true && pb.onGround && feet === px(this.heightPx - 32))
       return;
@@ -2976,11 +2987,55 @@ export class World {
 
   /* ---------- Lifts ---------- */
 
+  /** The enemy `p` stands on now (CharacterDef.standsOnEnemies), or null. */
+  ridingEnemy(p: Player): Enemy | null {
+    const r = this.rides.get(p);
+    return r && r.e.alive && this.entities.includes(r.e) ? r.e : null;
+  }
+
+  /**
+   * Enemies as moving floors (CharacterDef.standsOnEnemies; Classic Peach's riding, PE-11), after
+   * the enemies moved, like Lift.carry: a hero falling onto one (or still on the one ridden last
+   * frame) is put on its top, grounded, and moved by its step. Only defs that set the field ride.
+   */
+  private rideEnemies(): void {
+    for (const p of this.activePlayers()) {
+      const stands = p.def.standsOnEnemies;
+      const was = this.rides.get(p);
+      this.rides.delete(p);
+      if (!stands || p.vine || p.stairs || p.frozen) continue;
+      const pb = p.body;
+      if (pb.vy < 0) continue;
+      const feet = pb.y + pb.h;
+      for (const e of this.enemies) {
+        const eb = e.body;
+        if (pb.x >= eb.x + eb.w || pb.x + pb.w <= eb.x || !stands(p, e)) continue;
+        const riding = was?.e === e;
+        const onTop = riding
+          ? feet >= eb.y - px(4) && feet <= eb.y + px(12)
+          : pb.prevBottom <= eb.y + px(4) && feet >= eb.y && feet <= eb.y + px(12);
+        if (!onTop) continue;
+        pb.y = eb.y - pb.h;
+        pb.vy = 0;
+        pb.onGround = true;
+        const dx = riding && was ? eb.x - was.x : 0;
+        if (dx !== 0) {
+          const wall = pb.hitWall;
+          moveX(pb, this.playerMap(p), dx);
+          if (pb.hitWall === 0) pb.hitWall = wall;
+        }
+        this.rides.set(p, { e, x: eb.x });
+        break;
+      }
+    }
+  }
+
   private resolveLifts(): void {
     for (const e of this.entities) {
       if (!(e instanceof Lift) || !e.alive) continue;
       for (const p of this.activePlayers()) e.carry(p.body, this);
     }
+    for (const p of this.activePlayers()) p.def.behaviour.afterLifts?.(p, this);
   }
 
   /* ---------- Death ---------- */
@@ -3000,6 +3055,19 @@ export class World {
       p.body.vy = -dt.vy;
       p.body.onGround = false;
       this.throwDeaths.set(p, { landed: null });
+    }
+    const burst = this.deathStyle === 'hop' ? p.def.deathBurst : undefined;
+    if (burst) {
+      // A hero's own bursting death (CharacterDef.deathBurst, Classic SMBC Samus SA-C32): its
+      // jingle in place of Mario's; a fall off the screen shows no pieces and ends sooner.
+      if (toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
+      p.body.vx = 0;
+      p.body.vy = 0;
+      if (this.activePlayers().length === 0) {
+        this.audio.setTempoScale(1);
+        this.audio.playJingle(burst.jingle);
+      } else this.audio.sfx('hit');
+      return;
     }
     if (this.deathSfx) {
       // A mini game's own death (WorldStart.deathStyle): its sound, and the music stops.
@@ -3028,7 +3096,10 @@ export class World {
     const thrown = this.throwDeaths.get(p);
     const dt = p.def.deathThrow;
     const hop = this.deathStyle === 'hop' && !(thrown && dt) ? p.def.deathHop : undefined;
-    if (thrown && dt) {
+    const burst = this.deathStyle === 'hop' ? p.def.deathBurst : undefined;
+    if (burst) {
+      // A bursting death (CharacterDef.deathBurst): she is gone; the pieces are drawn from t.
+    } else if (thrown && dt) {
       // A thrown body (CharacterDef.deathThrow, Classic SMBC Bill BI-C15).
       stepThrow(p, dt.gravity, dt.maxFall, this.map);
       if (thrown.landed === null && p.body.onGround) thrown.landed = t;
@@ -3050,8 +3121,11 @@ export class World {
         p.body.y += velToSub(p.body.vy);
       }
     }
-    const end =
-      thrown && dt
+    const end = burst
+      ? this.pitDeaths.has(p)
+        ? burst.pitFrames
+        : burst.frames
+      : thrown && dt
         ? thrown.landed !== null
           ? thrown.landed + dt.afterLand
           : dt.maxFrames
@@ -3791,7 +3865,7 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      const news = end ? ['YOUR QUEST IS OVER.'] : ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
@@ -4371,6 +4445,17 @@ export class World {
 
   private renderPlayer(r: Renderer, view: View, p: Player): void {
     if (p.hidden || p.out) return;
+    const burst = p.dead && this.deathStyle === 'hop' ? p.def.deathBurst : undefined;
+    if (burst) {
+      // A bursting death (CharacterDef.deathBurst): only the pieces, none after a pit.
+      if (this.pitDeaths.has(p)) return;
+      const t = this.deathTimers.get(p) ?? 0;
+      const s = p.def.sprite(p, view.frame, view.reduceFlashing);
+      const sheet = view.assets.sheet(burst.sheet, s.palette);
+      for (const piece of burstPieces(burst, p, t, view.reduceFlashing))
+        r.sprite(sheet, piece.frame, Math.round(piece.x) - 4 - view.camX, Math.round(piece.y) - 4);
+      return;
+    }
     if (p.dead && this.deathStyle !== 'hop') {
       const t = this.deathTimers.get(p) ?? 0;
       const draw = () => this.drawPlayer(r, view, p);
@@ -4439,4 +4524,19 @@ export class World {
       r.text(view.assets.sheet('font'), '2', toPx(p.body.x) - view.camX + 2, toPx(p.body.y) - s.offsetY - 10);
     }
   }
+}
+
+/** Widest castle line (characters): the screen's 32 less a margin each side. */
+const CASTLE_COLS = 28;
+
+/**
+ * The news after a castle that is not the last (GameTextMessages.ANOTHER_CASTLE). A Classic hero
+ * with a `rescueName` (the original's skin name, ScreenManager.addTxtTmrHandler) has it in place
+ * of "our princess", wrapped to fit; without one the two lines are today's.
+ */
+export function anotherCastle(rescueName?: string): string[] {
+  if (rescueName === undefined) return ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+  const first = `BUT ${fontText(rescueName)} IS IN`;
+  if (first.length <= CASTLE_COLS) return [first, 'ANOTHER CASTLE!'];
+  return wrapText(`${first} ANOTHER CASTLE!`, CASTLE_COLS);
 }

@@ -51,6 +51,17 @@ export interface SpriteSpec {
 
 export type HurtResult = 'dead' | 'hurt' | 'ignored';
 
+/** One piece of a bursting death (CharacterDef.deathBurst). */
+export interface DeathPiece {
+  frame: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  gravity: number;
+  range: number;
+}
+
 /** Per-character hooks. The shared Player handles movement; these add attacks, power-ups and damage. */
 export interface CharacterBehaviour {
   /** Runs after movement each frame. Attacks, slides, weapon logic. */
@@ -110,6 +121,12 @@ export interface CharacterBehaviour {
     audio: AudioSink,
     onHeadBump?: (tx: number, ty: number) => void,
   ): boolean;
+  /**
+   * Runs for each active player after the lifts moved and carried their riders
+   * (World.resolveLifts): a hero who holds a lift other than by standing on it follows it here
+   * (Classic SMBC Sophia III on a lift's side or underside, SO-38). Absent: nothing.
+   */
+  afterLifts?(p: Player, world: World): void;
   /** False to leave this vine (or ladder, chain) alone: a tank never grabs a ladder. */
   canGrabVine?(p: Player, art: VineArt, world: World): boolean;
   /**
@@ -236,6 +253,11 @@ export interface CharacterDef {
   devKit?(): Record<string, number>;
   /** The kit the How to play page's live demo uses (Classic Vic Viper: none). Absent: `devKit`. */
   guideKit?(): Record<string, number>;
+  /**
+   * The power state the How to play page's live demo shows (Classic Peach: 'big', her own dress
+   * rather than the Flower's white one). Absent: 'fire' for a power-up hero, as today.
+   */
+  guidePower?: string;
   /**
    * Reserve energy tanks drawn as small boxes above the EN number (Samus, NES Metroid style):
    * `full` of `total` hold energy, `bar` is the number shown. Null with no tanks.
@@ -392,6 +414,34 @@ export interface CharacterDef {
    */
   crouchNeedsNoDirection?: boolean;
   /**
+   * Who the castle text says is in another castle (Classic SMBC: PM-19, PI-23, BA-M13): the
+   * original's default skin's third name (BmdInfo.as `namesArr[2]`, put in place of "our
+   * princess" by ScreenManager.addTxtTmrHandler). Absent: "OUR PRINCESS", as today.
+   */
+  rescueName?: string;
+  /**
+   * The x (subpixels) the camera follows for this hero in place of `body.x`, asked once a frame
+   * while the hero leads (Classic SMBC Sophia III, SO-39: a corner turn's jump in her anchor is
+   * eased, Sophia.as screenScrollPosOffset). Absent: `body.x`, as today.
+   */
+  cameraX?(p: Player): number;
+  /**
+   * A death that bursts the body into pieces (Classic SMBC Samus, SA-C32; Samus.as
+   * initiateNormalDeath, SamusGuts.as): the hero vanishes and each piece starts `x`, `y` px from
+   * the body's centre and feet (y up), moves `vx`, `vy` px a frame with `gravity` px a frame²
+   * added before each move, and is gone `range` px out sideways. Pieces tumble through frames
+   * `<frame>-0` and `<frame>-1` of `sheet` (held on `-0` with Reduce flashing). `jingle` plays in
+   * place of the `death` jingle. The death ends after `frames`, or `pitFrames` for a fall off the
+   * screen (no pieces). Absent: today's hop.
+   */
+  deathBurst?: {
+    sheet: string;
+    pieces: readonly DeathPiece[];
+    jingle: string;
+    frames: number;
+    pitFrames: number;
+  };
+  /**
    * A death that throws the body (Classic SMBC Bill, BI-C15): vx = `vx` in direction `dir(p)`,
    * vy = -`vy`, then each frame gravity (added before the move, as the original does) capped at
    * `maxFall`; the body lands on the ground and lies there. The death ends `afterLand` frames
@@ -407,6 +457,12 @@ export interface CharacterDef {
     maxFrames: number;
     dir(p: Player): -1 | 1;
   };
+  /**
+   * Landing on enemy `e` from above stands on it as on a moving floor (Classic Peach's riding,
+   * PE-11): no stomp and no hurt; the enemy's movement carries the hero (World.rideEnemies), who
+   * can walk, jump and lift from there. Contact from the side or below is as usual. Absent: never.
+   */
+  standsOnEnemies?(p: Player, e: Enemy): boolean;
   /**
    * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
    * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level

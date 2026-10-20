@@ -141,6 +141,8 @@ export class Flash extends Entity {
     life = 8,
     readonly offsetX = 0,
     readonly offsetY = 0,
+    /** Drawn mirrored (a shot's burst, flying right). */
+    readonly flipX = false,
   ) {
     super(x, y, 1, 1);
     this.life = life;
@@ -155,6 +157,7 @@ export class Flash extends Entity {
       this.frame,
       toPx(this.body.x) - view.camX + this.offsetX,
       toPx(this.body.y) + this.offsetY,
+      this.flipX,
     );
   }
 }

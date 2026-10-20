@@ -25,6 +25,8 @@ describe('How to play lists the Classic extras', () => {
       'darkpit',
       'vicviper',
       'warriors',
+      'peach',
+      'arthur',
       'yoshi',
     ]);
     const h = makeGame({ dev: true });

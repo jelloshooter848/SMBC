@@ -25,6 +25,8 @@ import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
 import { VICVIPER_CLASSIC } from './vicviper/classic';
 import { WARRIORS_CLASSIC } from './warriors/classic';
+import { PEACH_CLASSIC } from './peach/classic';
+import { ARTHUR_CLASSIC } from './arthur/classic';
 import { YOSHI_CLASSIC } from './yoshi/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
@@ -74,7 +76,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
 
 /**
  * Classic-only heroes (TG-41), in select order (Bass, Proto Man, Pit, Vic Viper, Warriors of
- * Light, ..., Yoshi), only the built ones; each has `rules: 'classic'`. Only Game.roster lists them
+ * Light, Peach, Arthur, ..., Yoshi), only the built ones; each has `rules: 'classic'`. Only Game.roster lists them
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
@@ -86,6 +88,10 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
   WARRIORS_CLASSIC,
+  PEACH_CLASSIC,
+  // Sir Arthur (AR-2): after Peach.
+  ARTHUR_CLASSIC,
+  // Yoshi (YO-2): last.
   YOSHI_CLASSIC,
 ];
 

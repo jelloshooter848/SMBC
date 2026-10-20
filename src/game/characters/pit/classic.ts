@@ -78,20 +78,28 @@ function identity(id: string, name: string, hudName: string, palette: string): C
   };
 }
 
-export const PIT_CLASSIC: CharacterDef = classicSamus({
-  base: identity('pit', 'Pit', 'PIT', 'pit'),
-  variant: { ...PIT_VARIANT, shotLook: arrows('pit-shots') },
-  palette: 'pit',
-  sheet: 'pit',
-  guide: pitClassicGuide('Pit'),
-  jumpSfx: 'pit-jump',
-});
+export const PIT_CLASSIC: CharacterDef = {
+  ...classicSamus({
+    base: identity('pit', 'Pit', 'PIT', 'pit'),
+    variant: { ...PIT_VARIANT, shotLook: arrows('pit-shots') },
+    palette: 'pit',
+    sheet: 'pit',
+    guide: pitClassicGuide('Pit'),
+    jumpSfx: 'pit-jump',
+  }),
+  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  rescueName: 'Palutena',
+};
 
-export const DARKPIT_CLASSIC: CharacterDef = classicSamus({
-  base: identity('darkpit', 'Dark Pit', 'D.PIT', 'darkpit'),
-  variant: { ...PIT_VARIANT, shotLook: arrows('darkpit-shots') },
-  palette: 'darkpit',
-  sheet: 'pit',
-  guide: pitClassicGuide('Dark Pit'),
-  jumpSfx: 'pit-jump',
-});
+export const DARKPIT_CLASSIC: CharacterDef = {
+  ...classicSamus({
+    base: identity('darkpit', 'Dark Pit', 'D.PIT', 'darkpit'),
+    variant: { ...PIT_VARIANT, shotLook: arrows('darkpit-shots') },
+    palette: 'darkpit',
+    sheet: 'pit',
+    guide: pitClassicGuide('Dark Pit'),
+    jumpSfx: 'pit-jump',
+  }),
+  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  rescueName: 'the Reaper',
+};

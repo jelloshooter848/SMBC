@@ -365,11 +365,80 @@ export const samusDef: SpriteDef = {
   },
 };
 
+/*
+ * Classic SMBC Samus's death (SA-C32, SamusGuts.as): the suit bursts into six 8x8 pieces, each
+ * drawn here from the parts above: the helmet's two halves (top), the shoulder pads (middle; the
+ * right one keeps a stub of the cannon) and the boots (bottom). Pieces 1-3 fly right, 4-6 left.
+ * Each tumbles through two frames: as drawn, then a quarter turn.
+ */
+const helmetRight = [
+  '00000...',
+  '1441100.',
+  '11111110',
+  '00000110',
+  '33333010',
+  '33333010',
+  '00000110',
+  '1112220.',
+];
+const helmetLeft = [
+  '...00000',
+  '.0011411',
+  '01111111',
+  '01110000',
+  '01110433',
+  '01110333',
+  '01110000',
+  '.0221111',
+];
+const padRight = [
+  '.000000.',
+  '02222000',
+  '02222224',
+  '02222225',
+  '02222224',
+  '.0222000',
+  '.0110...',
+  '..00....',
+];
+const padLeft = [
+  '.000000.',
+  '02222220',
+  '02222220',
+  '02222220',
+  '.0222220',
+  '..022220',
+  '...0110.',
+  '....00..',
+];
+const bootRight = [
+  '..0110..',
+  '..0110..',
+  '.02210..',
+  '.02210..',
+  '022210..',
+  '022220..',
+  '000000..',
+  '........',
+];
+const bootLeft = bootRight.map((r) => r.split('').reverse().join(''));
+const GUTS = [helmetRight, padRight, bootRight, helmetLeft, padLeft, bootLeft];
+
 /**
- * Classic SMBC Samus's extra frames (SA-C4: `crouch`, `crouch-shoot`), a sheet of their own
- * (`samus-classic`, the same palettes) so the Current sheet keeps its documented frame set.
+ * Classic SMBC Samus's extra frames (SA-C4: `crouch`, `crouch-shoot`; SA-C32: `guts-<1..6>-<0|1>`),
+ * a sheet of their own (`samus-classic`, the same palettes) so the Current sheet keeps its
+ * documented frame set.
  */
 export const samusClassicDef: SpriteDef = {
   palette: 'samus',
-  frames: { crouch, 'crouch-shoot': crouchShoot },
+  frames: {
+    crouch,
+    'crouch-shoot': crouchShoot,
+    ...Object.fromEntries(
+      GUTS.flatMap((g, i) => [
+        [`guts-${i + 1}-0`, g],
+        [`guts-${i + 1}-1`, rotateCW(g)],
+      ]),
+    ),
+  },
 };

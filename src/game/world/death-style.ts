@@ -2,6 +2,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import type { View } from '../entities/entity';
 import type { Player } from '../entities/player';
+import type { CharacterDef } from '../characters/character';
 import type { TileMap } from './tilemap';
 
 /*
@@ -269,4 +270,33 @@ export function renderDeath(
   for (const piece of piecePositions(p, t))
     r.rect(piece.x - view.camX, piece.y, PIECE_SIZE, PIECE_SIZE, piece.colour);
   return true;
+}
+
+/**
+ * A bursting death's pieces (CharacterDef.deathBurst, Classic SMBC Samus) at frame t: centre
+ * (px, world) and frame name of each piece still out. Gravity is added before each move
+ * (AnimatedObject.gravityPull, then updateLoc), so after t frames a piece has fallen
+ * vy·t + g·t(t+1)/2; it tumbles every 2 frames (ANIM_FAST_TMR, 30 a second).
+ */
+export function burstPieces(
+  burst: NonNullable<CharacterDef['deathBurst']>,
+  p: Player,
+  t: number,
+  reduceFlashing: boolean,
+): { x: number; y: number; frame: string }[] {
+  const b = p.body;
+  const cx = toPx(b.x + (b.w >> 1));
+  const feet = toPx(b.y + b.h);
+  const step = reduceFlashing ? 0 : (t >> 1) & 1;
+  const out: { x: number; y: number; frame: string }[] = [];
+  for (const piece of burst.pieces) {
+    const dx = piece.vx * t;
+    if (Math.abs(dx) > piece.range) continue;
+    out.push({
+      x: cx + piece.x + dx,
+      y: feet - piece.y + piece.vy * t + (piece.gravity * t * (t + 1)) / 2,
+      frame: `${piece.frame}-${step}`,
+    });
+  }
+  return out;
 }

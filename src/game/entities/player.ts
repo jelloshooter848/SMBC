@@ -234,6 +234,10 @@ export class Player {
    * ground pound drop (YO-9), set and cleared by his behaviour. Always 0 for every other hero.
    */
   fallCap = 0;
+  /** Frames left of a float (MovementProfile.float, Classic Peach PE-6); 0 when not floating. */
+  floatT = 0;
+  /** The float was used in this airborne spell (readied again on landing). */
+  floatUsed = false;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -323,7 +327,10 @@ export class Player {
     if (this.hurtLock) this.tickHurtLock();
     // A hit, a vine or stairs take him off a wall (RY-C13).
     if (this.wall && (this.hurtLock || this.stun > 0 || this.vine || this.stairs)) this.wall = null;
-    if (this.vine) return this.climb(input, map, audio);
+    if (this.vine) {
+      this.floatT = 0;
+      return this.climb(input, map, audio);
+    }
     if (this.stairs) return this.stairWalk(input);
     if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
     if (this.wall) return this.wallUpdate(input, map, audio, onHeadBump);
@@ -611,7 +618,11 @@ export class Player {
     const locked = this.stun > 0 || this.hurtLock !== null;
     if (this.stun > 0) this.stun--;
     const input = locked ? NO_INPUT : rawInput;
-    const dir = input.dirX;
+    // Rooted on the ground (CharacterBehaviour.rooted; on this path only Classic Peach's lift,
+    // PE-10): no walking or turning (vx 0), and `true` also takes the jump.
+    const rooted = b.onGround && !locked ? (this.def.behaviour.rooted?.(this, rawInput) ?? false) : false;
+    if (rooted) b.vx = 0;
+    const dir = rooted ? 0 : input.dirX;
     this.skidding = false;
     // Anything that stood him up (a power-up, a vine) ends a crouch-jump.
     if (!this.crouching) this.crouchJump = false;
@@ -637,6 +648,7 @@ export class Player {
       this.cutting = false;
       this.riseY0 = null;
       this.crouchJump = false;
+      this.floatT = 0;
       if (b.onGround) this.sinceGround = 0;
       if (p.inertia && !skipStep) this.inertiaStep(input, this.crouching);
       else if (!p.inertia) {
@@ -647,10 +659,12 @@ export class Player {
     }
 
     // Take-off (ML-C8): a press on the ground (no buffer when `jumpBuffer` is false).
-    const canJump = b.onGround && !locked && (this.def.behaviour.canJump?.(this) ?? true);
+    const canJump = b.onGround && !locked && rooted !== true && (this.def.behaviour.canJump?.(this) ?? true);
     if (b.onGround) {
       this.sinceGround = 0;
       this.airJumpsLeft = 0;
+      this.floatT = 0;
+      this.floatUsed = false;
     } else this.sinceGround++;
     if (canJump && this.jumpPressed(input)) {
       input.consumeJumpBuffer();
@@ -703,17 +717,34 @@ export class Player {
           if (p.softCut !== undefined) b.vy = damp(b.vy, p.softCut);
         } else this.cutting = false;
       }
+      // The float (PE-6): Jump let go (or a hit) ends it; it starts falling with Jump held since
+      // the take-off, or pressed again while falling.
+      if (p.float) {
+        if (this.floatT > 0) {
+          if (locked || !input.held('jump')) this.floatT = 0;
+        } else if (
+          !this.floatUsed &&
+          !locked &&
+          !this.rising &&
+          b.vy >= 0 &&
+          input.held('jump') &&
+          ((y0 !== null && !this.jumpReleased) || input.pressed('jump'))
+        ) {
+          this.floatT = p.float.frames;
+          this.floatUsed = true;
+        }
+      }
     }
 
     // 4. The horizontal step (ML-C4, ML-C13).
-    if (!skipStep) {
+    if (!skipStep && !rooted) {
       if (p.inertia) this.inertiaStep(input, this.crouching);
       else if (b.onGround)
         this.groundMove(this.crouching ? 0 : dir, input.held('attack') || input.held('run'));
       else this.airMove(dir);
     }
     // Facing (ML-C5): with turnInAir false, on the ground to the direction held, never in the air.
-    if (!locked) {
+    if (!locked && !rooted) {
       if (p.turnInAir === false) {
         if (b.onGround && dir !== 0) this.facing = dir;
       } else if (b.vx !== 0) this.facing = sign(b.vx) as -1 | 1;
@@ -723,7 +754,11 @@ export class Player {
     // 5, 6. Gravity unless rising, then the fall cap (a clamp). Above a water level's surface the
     // swim profile's own values (SW-C10); a spring's rise its own gravity (ML-C23).
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
-    if (!b.onGround && !this.rising) {
+    if (this.floatT > 0 && !b.onGround) {
+      // Floating: level, no gravity (PE-6).
+      b.vy = 0;
+      this.floatT--;
+    } else if (!b.onGround && !this.rising) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
       const g = surface
         ? surface.gravity

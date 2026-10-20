@@ -250,6 +250,8 @@ export const sfx: Sfx[] = [
   { id: 'pit-shoot', pulse: '@2 v9 q8 x1 p-9 o7 d32' },
   // Pit's jump: a light flutter rising a fifth.
   { id: 'pit-jump', pulse: '@2 v10 q8 x1 p7 o5 a16' },
+  // Peach's float (D-PE-11): a soft chirp rising a third, then a sixth.
+  { id: 'peach-float', pulse: '@1 v7 q6 x1 l32 o6 c e a' },
   // Yoshi (2026-10-19-yoshi-build-classic-character.md YO-29, YM-29): original placeholders.
   // His jump: a round bouncy hop up a major sixth.
   { id: 'yoshi-jump', pulse: '@1 v11 q8 x1 p9 o5 e16' },
