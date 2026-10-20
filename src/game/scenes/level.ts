@@ -29,6 +29,7 @@ import { rulesOf } from '../context';
 import { reconcileRules } from '../rules/reconcile';
 import { SCREEN_W } from '@engine/viewport';
 import { talkToCaptive } from './free-hero';
+import { isAmmoPickup } from '../cheats';
 import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { ExplainerBox } from '../tutorial/explainers';
@@ -277,6 +278,11 @@ export class LevelScene implements Scene {
       this.game.scenes.push(this.airship ? airshipMenu(this.game) : new PauseScene(this.game, this.world));
       return;
     }
+    // A cheat unlocked mid-level (Classic mode, game.cheatTally): its card over the frozen level.
+    if (this.game.classicRun && this.game.cheatUnlocks?.length) {
+      this.game.showCheatUnlocks(this.world);
+      return;
+    }
     // A new tip holds the game until OK (0.4.45, tutorial/stage-tutorial.ts): the world stays frozen.
     if (this.tutorial?.hold(inputs)) return;
     // So does a pickup's first explainer (0.4.46, tutorial/explainers.ts).
@@ -328,6 +334,14 @@ export class LevelScene implements Scene {
     switch (ev.type) {
       case 'checkpoint':
         game.state.checkpoint = { level: this.level.id, x: ev.x, y: ev.y };
+        break;
+      // Classic mode's cheat goals (cheats.ts): what was defeated, stomped or broken.
+      case 'tally':
+        game.cheatTally?.(ev.stat);
+        break;
+      // An ammo pickup (StatManager.numAmmoPickupsCollected; Character.hitPickup's AMMO_DCT).
+      case 'pickup':
+        if (this.world.rules === 'classic' && isAmmoPickup(ev.item)) game.cheatTally?.('ammoPickups');
         break;
       case 'talk':
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
@@ -444,21 +458,13 @@ export class LevelScene implements Scene {
         break;
       }
       case 'exit':
-        game.state.checkpoint = null;
-        game.state.time = null;
-        if (game.playtestDone) game.playtestDone();
-        // A stage played as an arena round (arena/stage-round.ts): its exit passes the round.
-        else if (endStageRound(game, 'pass')) this.roundOver = true;
-        // In the story 8-4's `next=end` is a castle like any other since 0.4.55 (the ending is
-        // Bowser's Castle's: story/finale.ts endMoved): back to the map below.
-        else if (ev.next === 'end' && !(storyOn(game) && endMoved(this.level.parent ?? this.level.id)))
-          game.showEnding(this.level.parent ?? this.level.id);
-        // Campaign: the clear is recorded and the map shows what it opened (flagpole or castle).
-        // Otherwise on to the next level; a castle's "another castle" news is shown in the
-        // level, next to Toad (World.castleText).
-        else if (game.campaign) game.levelCleared(this.level.id);
-        else if (game.classicRun) game.levelExitTo(ev.next);
-        else game.goToLevel(ev.next, { mode: 'stand' });
+        // Classic mode: a clear (and a castle's) unlocks Infinite Time and Extra Checkpoints
+        // (Level.completeLevel); the select screen that follows every clear tells of them.
+        if (game.cheatGoalsCount && !game.playtestDone) {
+          const main = this.level.parent ?? this.level.id;
+          game.cheatEvent({ level: true, castle: /-4$/.test(main) });
+        }
+        this.exitTo(ev.next);
         break;
       case 'died': {
         if (game.playtestDone) {
@@ -479,7 +485,8 @@ export class LevelScene implements Scene {
           this.tutorial.respawn();
           break;
         }
-        if (!game.ctx.assist.infiniteLives) s.lives--;
+        // The World's assists: Classic mode's Infinite Lives cheat folds in there (cheatAssist).
+        if (!this.world.assist.infiniteLives) s.lives--;
         // Campaign: the lost life is saved at once, so quitting now keeps the count.
         if (game.campaign && s.lives > 0) game.autosave();
         // Respawn at the checkpoint if one was reached, else at the start of the main level.
@@ -501,6 +508,26 @@ export class LevelScene implements Scene {
         break;
       }
     }
+  }
+
+  /** The level's exit (`next`): the end of the game, the map, or the next level. */
+  private exitTo(next: string): void {
+    const game = this.game;
+    game.state.checkpoint = null;
+    game.state.time = null;
+    if (game.playtestDone) game.playtestDone();
+    // A stage played as an arena round (arena/stage-round.ts): its exit passes the round.
+    else if (endStageRound(game, 'pass')) this.roundOver = true;
+    // In the story 8-4's `next=end` is a castle like any other since 0.4.55 (the ending is
+    // Bowser's Castle's: story/finale.ts endMoved): back to the map below.
+    else if (next === 'end' && !(storyOn(game) && endMoved(this.level.parent ?? this.level.id)))
+      game.showEnding(this.level.parent ?? this.level.id);
+    // Campaign: the clear is recorded and the map shows what it opened (flagpole or castle).
+    // Otherwise on to the next level; a castle's "another castle" news is shown in the
+    // level, next to Toad (World.castleText).
+    else if (game.campaign) game.levelCleared(this.level.id);
+    else if (game.classicRun) game.levelExitTo(next);
+    else game.goToLevel(next, { mode: 'stand' });
   }
 
   /**

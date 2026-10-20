@@ -6,6 +6,7 @@ import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
+import { spikeTopDef } from './spike-top';
 import { linkPalettes, linkDef, linkClassicDef } from './link';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
@@ -103,6 +104,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   decor: decorDef,
   mario: marioDef,
   enemies: enemiesDef,
+  // Classic mode's Spike Top (Replace Goombas), drawn with the enemy palettes.
+  'spike-top': spikeTopDef,
   link: linkDef,
   megaman: megamanDef,
   // Classic SMBC's Bass (characters/bass/classic.ts).

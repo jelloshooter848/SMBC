@@ -99,6 +99,11 @@ export class Player {
   invuln = 0;
   /** Frames of star power. */
   star = 0;
+  /**
+   * Classic mode's Infinite Ammo cheat is on (the World sets it each frame from World.cheats):
+   * Classic weapons spend nothing, as under Star (characters/classic/power.ts freeAmmo).
+   */
+  cheatAmmo = false;
   dead = false;
   /** While set, the game is paused for the grow/shrink flicker. */
   transition: Transition | null = null;

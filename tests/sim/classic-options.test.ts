@@ -102,7 +102,7 @@ describe('settings: Settings.classic', () => {
     });
     // Each More Settings value list starts from the original's own order.
     expect(CLASSIC_ROW_VALUES.lives).toEqual([1, 3, 5, 7, 10]);
-    expect(CLASSIC_ROW_VALUES.goombas).toEqual(['off', 'buzzy', 'spiny']);
+    expect(CLASSIC_ROW_VALUES.goombas).toEqual(['off', 'buzzy', 'spiny', 'spike-top']);
   });
 
   it('a file saved before the options gets the defaults (deep merge)', () => {

@@ -213,6 +213,7 @@ describe('the title and the CLASSIC menu', () => {
       'Game mode',
       'More settings',
       'Weapons',
+      'Cheats',
       'All options',
       'Back',
     ]);
@@ -615,7 +616,14 @@ describe('the Classic pause menu', () => {
     d.idle(4);
     d.tap('start');
     // Every developer row free play or a campaign file's pause has in dev mode.
-    expect(labels(d.top())).toEqual(['Continue', 'Options', 'Dev mode', 'Assists', 'Quit to title']);
+    expect(labels(d.top())).toEqual([
+      'Continue',
+      'Options',
+      'Dev mode',
+      'Assists',
+      'Cheats',
+      'Quit to title',
+    ]);
   });
 });
 

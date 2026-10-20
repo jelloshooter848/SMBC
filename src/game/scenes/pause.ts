@@ -1,6 +1,7 @@
 import { MenuScene, type MenuItem } from './menu';
 import { AssistOptionsScene, OptionsScene } from './options';
 import { DevMenuScene } from './dev';
+import { CheatsScene } from './cheats-menu';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -40,6 +41,20 @@ export class PauseScene extends MenuScene {
         select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
       });
       items.push(...this.devItems());
+      // Developer mode: every cheat, at once (owner decision; Classic mode's Cheats page).
+      if (game.devMode)
+        items.push({
+          label: 'Cheats',
+          select: () =>
+            game.scenes.push(
+              new CheatsScene(game, () => game.scenes.pop(), {
+                all: true,
+                world: this.world,
+                translucent: true,
+              }),
+            ),
+          hint: 'Every original cheat, in developer mode',
+        });
       if (game.stageRound) items.push(this.giveUp());
       items.push({ label: 'Quit to title', select: () => game.showTitle() });
       this.setItems(items);

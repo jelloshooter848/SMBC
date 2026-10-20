@@ -58,6 +58,40 @@ export class HammerBro extends Enemy {
   private jumpFeet = 0;
   /** Which way it is pacing. Kept apart from vx, which a wall bump zeroes (`moveX`). */
   private paceDir: -1 | 1 = 1;
+  /**
+   * All Hammer Bros (Classic cheat): one sent out in place of a spawner's Bullet Bill or leaping
+   * Cheep Cheep (`new HammerBro(null, true)`: `flying`) keeps this speed across until it first
+   * lands, rising through anything, then plays as any other. Null: on its feet.
+   */
+  private launchVx: number | null = null;
+  /** The spawner that sent it (All Hammer Bros), which counts it as one of its own. */
+  spawner: 'cheep' | 'bullets' | 'blaster' | null = null;
+
+  /**
+   * All Hammer Bros (Classic cheat): a Hammer Bro sent from (x, y) at (vx, vy) by `spawner`, in
+   * place of its Bullet Bill or Cheep Cheep (Canon.shootTmrLsr, BulletBillSpawner, CheepFast).
+   */
+  static launched(
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    spawner: 'cheep' | 'bullets' | 'blaster',
+  ): HammerBro {
+    const h = new HammerBro(x, y);
+    h.launchVx = vx;
+    h.body.vx = vx;
+    h.body.vy = vy;
+    h.body.onGround = false;
+    h.facing = vx < 0 ? -1 : 1;
+    h.spawner = spawner;
+    return h;
+  }
+
+  /** Evil Hammer Bros (Classic cheat; HammerBro.evilHammerBrosHandler): chases from either side. */
+  private evil(world: World): boolean {
+    return world.cheats.evilHammerBros;
+  }
   /** Its chase walk (CHASE_SPEED); Classic More Settings > Enemy Speed: Fast raises it. */
   chaseSpeed = CHASE_SPEED;
 
@@ -78,10 +112,17 @@ export class HammerBro extends Enemy {
 
   update(world: World): void {
     const b = this.body;
+    if (this.launchVx !== null) {
+      if (!b.onGround) return this.fly(world);
+      // Landed: from here on a Hammer Bro like any other, pacing around this spot.
+      this.launchVx = null;
+      this.age = 0;
+    }
     const pl = world.nearestPlayer(b.x).body;
     const cx = b.x + (b.w >> 1);
     this.age++;
-    const chase = this.chase || this.age >= CHASE_AFTER;
+    const evil = this.evil(world);
+    const chase = this.chase || evil || this.age >= CHASE_AFTER;
 
     // Timers (the constructor starts JUMP_TMR; updateStats restarts it while on the ground).
     if (this.age === 1) {
@@ -104,6 +145,10 @@ export class HammerBro extends Enemy {
         this.chasing = true;
       } else this.chasing = false;
       this.facing = -1;
+    } else if (evil && pl.x > cx) {
+      b.vx = this.chaseSpeed;
+      this.chasing = true;
+      this.facing = 1;
     } else {
       if (this.chasing) {
         this.chasing = false;
@@ -158,6 +203,23 @@ export class HammerBro extends Enemy {
     if (this.hammerTimer > 0 && --this.hammerTimer === 0) this.throwDelay = HAMMER_DELAY;
     else if (this.throwDelay > 0 && --this.throwDelay === 0) this.throwHammer(world);
     this.currentFrame = this.throwDelay > 0 ? 'hammer-bro-0' : `hammer-bro-${(world.frame >> 3) & 1}`;
+    if (this.isBelowLevel()) this.destroy();
+  }
+
+  /** Sent out by a spawner (All Hammer Bros): across at its speed, through tiles while rising. */
+  private fly(world: World): void {
+    const b = this.body;
+    b.vx = this.launchVx ?? b.vx;
+    b.vy = Math.min(MAX_FALL, b.vy + GRAVITY);
+    if (b.vy < 0) {
+      b.x += velToSub(b.vx);
+      b.y += velToSub(b.vy);
+    } else {
+      moveX(b, world.map, velToSub(b.vx));
+      moveY(b, world.map, velToSub(b.vy));
+      if (b.onGround) b.vy = 0;
+    }
+    this.currentFrame = `hammer-bro-${(world.frame >> 3) & 1}`;
     if (this.isBelowLevel()) this.destroy();
   }
 
