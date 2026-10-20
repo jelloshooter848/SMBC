@@ -17,6 +17,7 @@ import { MARIO } from '@game/characters/mario';
 import { MEGAMAN } from '@game/characters/megaman';
 import { SAMUS } from '@game/characters/samus';
 import { applyRevivalBoost } from '@game/survival';
+import { megamanSmbcDef } from '@content/sprites/smbc-megaman';
 import type { CharacterDef } from '@game/characters/character';
 import type { LevelData } from '@game/level/schema';
 import { ScriptedInput } from '@game/sim/headless';
@@ -468,5 +469,25 @@ describe("12. Survival's power-up under Current rules: each hero's own Current u
     const w = world(flatLevel1(), null, MARIO, 'classic');
     applyRevivalBoost(w.player, w, 'mario');
     expect(w.player.powerState).toBe('fire');
+  });
+});
+
+describe('13. Mega Man shoot frame: no stray dark line under the buster', () => {
+  it('nothing is drawn right of his front boot below the buster arm (rows under it, x past the boots)', () => {
+    const rows = megamanSmbcDef.frames.shoot as string[];
+    // The buster's rows: those with pixels beyond the body's right edge in the idle frame.
+    const idle = megamanSmbcDef.frames.idle as string[];
+    const bodyRight = Math.max(...idle.map((r) => r.replace(/\.+$/, '').length - 1));
+    const busterRows = rows
+      .map((r, y) => (r.replace(/\.+$/, '').length - 1 > bodyRight ? y : -1))
+      .filter((y) => y >= 0);
+    expect(busterRows.length).toBeGreaterThan(0);
+    const below = Math.max(...busterRows) + 1;
+    // The front boot's right edge in the shoot frame's last row (the sole).
+    const boot = (rows.at(-1) ?? '').replace(/\.+$/, '').length - 1;
+    for (let y = below; y < rows.length; y++) {
+      const tail = (rows[y] ?? '').slice(boot + 1);
+      expect(tail.replace(/\./g, ''), `row ${y}: ${rows[y]}`).toBe('');
+    }
   });
 });
