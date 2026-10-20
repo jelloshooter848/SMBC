@@ -148,6 +148,9 @@
 - piranha 53 13
 - hammer-bro-chase 16 10
 + piranha 3 10 red=1
++ spiny 19 12
++ spiny 21 12
++ spiny 23 12
 + piranha 25 10 red=1
 + koopa-red 40 12 dx=8
 + piranha 45 9 red=1
@@ -156,6 +159,9 @@
 + piranha 65 10 red=1
 + koopa-red 73 12 dx=8
 + piranha 80 11 red=1
++ spiny 87 12
++ spiny 89 12
++ spiny 91 12
 -zone pipe 85 6 down -> ll-13-4-bonus 1 0 exit=none
 +zone pipe 94 12 right -> ll-13-4-bonus 1 0 exit=none
 start 3 9 pipe-exit

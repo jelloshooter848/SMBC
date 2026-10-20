@@ -47,6 +47,9 @@
 13 12 ..B
 3 13 #
 3 14 #
++ spike-top 9 9
++ spike-top 10 9
++ spike-top 11 9
 + koopa-green 11 12 dx=8
 -zone pipe 13 12 right -> ll-2-1 83 10 exit=up
 +zone pipe 13 4 right -> ll-2-1 83 10 exit=up

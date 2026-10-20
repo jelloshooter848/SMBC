@@ -177,10 +177,16 @@ describe('the title and the CLASSIC menu', () => {
   it('the menu: Super Mario Bros., The Lost Levels, Options, Back; each line is announced', () => {
     const h = classic();
     const menu = toClassicMenu(h);
-    expect(labels(menu)).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
+    expect(labels(menu)).toEqual([
+      'Super Mario Bros.',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of ['The Lost Levels', 'Options', 'Back', 'Super Mario Bros.']) {
+    for (const l of ['The Lost Levels', 'Map difficulty', 'Options', 'Back', 'Super Mario Bros.']) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -192,7 +198,13 @@ describe('the title and the CLASSIC menu', () => {
 
   it('The Lost Levels are offered from the start (G-003, D3)', () => {
     const h = classic();
-    expect(labels(toClassicMenu(h))).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
+    expect(labels(toClassicMenu(h))).toEqual([
+      'Super Mario Bros.',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     pick(h, 'The Lost Levels');
     choose(h, MARIO);
     const l = enterLevel(h);

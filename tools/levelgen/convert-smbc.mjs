@@ -310,6 +310,10 @@ const MARKER_TYPES = {
   n: 'hammer-bro-chase',
 };
 const ENTITIES = {
+  // Easy and Hard layers only (none on Normal): our Spike Top (entities/enemies/spike-top.ts).
+  enemySpikeTop: 'spike-top',
+  // Hard ll-13-4-exit's walking Spinies (our Lakitu's Spiny, entities/enemies).
+  enemySpiney: 'spiny',
   enemyCheepFast: 'cheep-red',
   enemyCheepSlow: 'cheep-grey',
   enemyBlooper: 'blooper',
@@ -353,6 +357,8 @@ const SHIFTABLE = new Set([
   'hammer-bro',
   'hammer-bro-chase',
   'buzzy',
+  'spike-top',
+  'spiny',
 ]);
 const shiftProps = (params) => ({
   ...(params.shiftRight ? { dx: 8 } : {}),
@@ -484,6 +490,17 @@ function tileChar(tok, area, world) {
     case 'groundPipeMidRightSide':
     case 'groundPipeIntTop':
       return ')';
+    // A sideways pipe opening to the right, and its junction on the left (Hard layers of 1-2 and
+    // 6-2, many Lost Levels areas): no mirrored tiles (the tile list only grows at its end, and
+    // the key box must stay last), so they are the left-facing pieces' tiles: solid all the same.
+    case 'groundPipeEndRightTop':
+      return '(';
+    case 'groundPipeEndRightBottom':
+      return '<';
+    case 'groundPipeIntRightTop':
+      return ')';
+    case 'groundPipeIntRightBottom':
+      return '>';
     case 'groundPipeMidLeftSide':
     case 'groundPipeIntBottom':
       return '>';
@@ -499,6 +516,7 @@ function tileChar(tok, area, world) {
     case 'standardPlatformStemSin':
     case 'standardPlatformStemMidTop':
     case 'standardPlatformStemRhtTop':
+    case 'standardPlatformStemMid':
       return trees ? 't' : 'i';
     case 'wavesLava':
       return '~';
@@ -1092,7 +1110,13 @@ function profileStates(levelId, levels) {
       const areas = new Map();
       for (const c of convertLevel(levelId, levels, p)) {
         applyNesFixes(c.id, c.builder, true);
-        areas.set(c.id, stateOf(c.builder));
+        const state = stateOf(c.builder);
+        // What this profile's build skipped (helpers for other heroes aside), for the log.
+        state.skipped = [...c.skipped]
+          .filter(([k]) => !k.endsWith('(helper)'))
+          .map(([k, v]) => `${k}×${v}`)
+          .join(', ');
+        areas.set(c.id, state);
       }
       out.set(profileKey(p), areas);
     }
@@ -1233,6 +1257,16 @@ function writeLayers(levelId, levels) {
       }
     }
     const lines = layers.reduce((n, l) => n + l.cells.length + l.adds.length + l.removes.length, 0);
+    // The tokens each profile's build skipped (no mapping yet), grouped by the same list.
+    const skips = new Map();
+    for (const [key, areas] of states) {
+      const sk = areas.get(areaId)?.skipped;
+      if (sk) skips.set(sk, [...(skips.get(sk) ?? []), key]);
+    }
+    for (const [sk, keys] of skips)
+      console.log(
+        `${areaId}: skipped ${sk} (${keys.length > 3 ? `${keys.slice(0, 3).join('; ')} and ${keys.length - 3} more` : keys.join('; ')})`,
+      );
     console.log(
       `${areaId}: ${layers.length} layers (${layers
         .map(layerHeader)

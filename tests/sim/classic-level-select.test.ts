@@ -52,22 +52,50 @@ function pick(h: H, label: string): void {
 }
 
 describe('G-006: Map Difficulty on the CLASSIC menu', () => {
-  it('left and right on a map set change it; it is shown, read out and saved; the rows stay the same', () => {
+  it('its own row after the map sets (NewGameOptionsMenu.as:43), changed by left, right and OK, read out and saved', () => {
     const h = classic();
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(labels(menu)).toEqual([...MAP_SETS.map((m) => m.label), 'Options', 'Back']);
-    expect(items(menu)[0]?.hint).toMatch(/Map difficulty: Normal/);
+    expect(labels(menu)).toEqual([...MAP_SETS.map((m) => m.label), 'Map difficulty', 'Options', 'Back']);
+    // The map set rows no longer change it.
+    expect(items(menu)[0]?.adjust).toBeUndefined();
+    const row = items(menu)[MAP_SETS.length] as MenuItem;
+    expect(row.value?.()).toBe('Normal');
     h.idle(8);
+    for (let i = 0; i < MAP_SETS.length; i++) h.tap('down');
+    expect(h.said.at(-1)).toMatch(/^Map difficulty: Normal\. Easy, Normal or Hard/);
     h.tap('right');
     expect(S(h).classicMapDifficulty).toBe('hard');
-    expect(h.said.at(-1)).toMatch(/^Super Mario Bros\..*Map difficulty: Hard/);
-    h.tap('right');
+    expect(h.said.at(-1)).toMatch(/^Map difficulty: Hard/);
+    // OK (CHANGE on a phone) steps it too.
+    h.tap('jump');
     expect(S(h).classicMapDifficulty).toBe('easy');
     h.tap('left');
-    h.tap('left');
+    expect(S(h).classicMapDifficulty).toBe('hard');
+    h.tap('right');
+    h.tap('right');
     expect(S(h).classicMapDifficulty).toBe('normal');
+    expect(menu.touchLabels().jump).toBe('CHANGE');
     for (const it of items(h.top())) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
+  });
+
+  it('under Current rules it shows Normal, says why and does not change; a beat counts as Normal', () => {
+    const h = classic({ classicMapDifficulty: 'hard', classicRules: 'current' });
+    h.game.showClassicMenu();
+    const menu = h.top() as ClassicMenuScene;
+    const row = items(menu)[MAP_SETS.length] as MenuItem;
+    expect(row.value?.()).toBe('Normal');
+    expect(row.hint).toMatch(/Classic rules only/);
+    row.adjust?.(1);
+    expect(S(h).classicMapDifficulty).toBe('hard');
+    h.idle(8);
+    h.tap('jump'); // Super Mario Bros.
+    choose(h, MARIO);
+    const l = enterLevel(h);
+    expect(l.world.mapDifficulty).toBe('normal');
+    h.game.classicDev = false;
+    (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
+    expect(loadProgress().classicBeat?.smb).toBe('normal');
   });
 
   it('a run on Hard is built for it (1-1 has its Lakitu), and its beat is recorded as Hard', () => {
@@ -142,7 +170,7 @@ describe('G-007: the Level Select cheat', () => {
     pick(h, 'Level select');
     const page = h.top() as LevelSelectScene;
     expect(page).toBeInstanceOf(LevelSelectScene);
-    expect(labels(page)).toEqual(['Map set', 'Difficulty', 'World', 'Level', 'Go', 'Back']);
+    expect(labels(page)).toEqual(['Map set', 'Map difficulty', 'World', 'Level', 'Go', 'Back']);
     expect(h.said.at(-1)).toMatch(/^Level select\. Map set: SMB/);
     h.idle(8);
     h.tap('right'); // The Lost Levels

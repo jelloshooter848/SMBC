@@ -326,7 +326,12 @@
 + piranha 164 12 red=1
 + piranha 170 10 red=1
 + firebar 22 4
++ spike-top 27 4
++ spike-top 29 4 dx=8
++ spike-top 32 4
++ spike-top 34 4 dx=8
 + koopa-red 34 12 dx=8
++ spike-top 37 4
 + koopa-green 37 12 dx=8
 + block-item 38 2 item=bee
 + koopa-red 49 8 dx=8

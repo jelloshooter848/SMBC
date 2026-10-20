@@ -22,8 +22,8 @@ under `## [Unreleased]`.
   lifts, blocks and steps the original lays for them, heroes who swim badly get stepping stones in
   water levels of both games, and Simon and Ryu get extra blocks before Bowser. The campaign maps
   are unchanged.
-- Classic mode: **Map Difficulty Easy, Normal or Hard**. Press left or right on a map set in the
-  CLASSIC menu to change it. Each difficulty plays the original's own version of every level
+- Classic mode: **Map Difficulty Easy, Normal or Hard**, a new row of the CLASSIC menu under the
+  map sets (with Classic rules; Current rules always play Normal). Each difficulty plays the original's own version of every level
   (other enemies and blocks), and Easy and Hard give the castles their checkpoints. Lakitu comes
   back sooner and throws more Spinies on Hard, and more flying Cheep Cheeps leap at once. A beaten
   set remembers the difficulty it was beaten on.

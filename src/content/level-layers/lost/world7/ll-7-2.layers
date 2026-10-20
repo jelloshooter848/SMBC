@@ -252,6 +252,7 @@
 - lift-h 85 10
 - koopa-para-green 171 10
 + block-item 9 4 item=bee
++ spike-top 9 11 dx=8
 + lift-h 21 11 len=4 range=3 dx=-8
 + lift-h 85 11 len=4 range=3 dx=-8
 + koopa-red 161 8 dx=8

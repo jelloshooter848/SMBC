@@ -325,10 +325,10 @@ export interface AreaSnapshot {
 /** Classic SMBC: the areas of one stage left so far, by level id. */
 export type AreaMemory = Map<string, AreaSnapshot>;
 
-/** The fixed seed headless runs use for a level unless they pass their own. */
 /** Flying Cheep Cheeps out at once, by map difficulty (FlyingCheepSpawner.as MAX_CHEEP_*). */
 export const FLYING_CHEEP_CAP: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 3, hard: 4 };
 
+/** The fixed seed headless runs use for a level unless they pass their own. */
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
 
 let visits = 0;
@@ -3022,11 +3022,6 @@ export class World {
   }
 
   /**
-   * Any hero's Clock (Character.as, PickupInfo.CLOCK): Clock.SCORE_VALUE = 1000 points and
-   * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
-   * (StatManager.checkCancelSecondsLeft).
-   */
-  /**
    * The Hudson Bee (G-023; Character.as:1612-1618): 8000 points shown where it was, and the
    * power-up sound.
    */
@@ -3035,6 +3030,11 @@ export class World {
     this.audio.sfx('powerup');
   }
 
+  /**
+   * Any hero's Clock (Character.as, PickupInfo.CLOCK): Clock.SCORE_VALUE = 1000 points and
+   * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
+   * (StatManager.checkCancelSecondsLeft).
+   */
   private collectClock(e: PowerUp): void {
     this.addScore(1000, e.body.x, e.body.y);
     this.audio.sfx('powerup');
