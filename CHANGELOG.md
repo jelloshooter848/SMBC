@@ -27,8 +27,8 @@ under `## [Unreleased]`.
   game in pale pink, all outlined so they read on a phone, and it grows open as the original's
   boxes do. A hero's own look has two lines, as in the original, and the box follows the skin
   menu's cursor; it has the original's size, with our one prompt in its bottom row. Each cell
-  and the HUD's framed box show the hero's face: our own close-up for each of the ten heroes,
-  the look's head for the others.
+  and the HUD's framed box show the look's face: our own close-up for every hero, skin and
+  Expansion hero.
 - Classic mode's select stands the hero at the centre on the next level's own sky, scenery and
   ground (1-1: blue sky, a hill and bushes over brick; 1-2: black and underground rock), as the
   original's select level does. The skin menu takes the grid's place while it is open.
