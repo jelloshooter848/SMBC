@@ -4939,6 +4939,13 @@ const CASTLE_COLS = 28;
  * with a `rescueName` (the original's skin name, ScreenManager.addTxtTmrHandler) has it in place
  * of "our princess", wrapped to fit; without one the two lines are today's.
  */
+export function anotherCastle(rescueName?: string): string[] {
+  if (rescueName === undefined) return ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
+  const first = `BUT ${fontText(rescueName)} IS IN`;
+  if (first.length <= CASTLE_COLS) return [first, 'ANOTHER CASTLE!'];
+  return wrapText(`${first} ANOTHER CASTLE!`, CASTLE_COLS);
+}
+
 /** A PitVacuum's pull (PitVacuum.setVacDir): "down-right", "down", "down-left". */
 const PULL_RIGHT = 1;
 const PULL_DOWN = 2;
@@ -4966,11 +4973,4 @@ export function pitVacuumColumns(map: TileMap): Int8Array {
     start = end + 1;
   }
   return out;
-}
-
-export function anotherCastle(rescueName?: string): string[] {
-  if (rescueName === undefined) return ['BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!'];
-  const first = `BUT ${fontText(rescueName)} IS IN`;
-  if (first.length <= CASTLE_COLS) return [first, 'ANOTHER CASTLE!'];
-  return wrapText(`${first} ANOTHER CASTLE!`, CASTLE_COLS);
 }
