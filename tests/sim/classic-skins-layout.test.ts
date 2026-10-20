@@ -3,7 +3,7 @@ import { defaultSettings } from '@engine/save/settings';
 import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from '@game/characters/protoman/classic';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
-import { SELECT_GRID, SKIN_PANEL, gridCell, skinCell } from '@game/scenes/select-grid';
+import { SELECT_GRID, SKIN_PANEL_Y, gridCell, skinCell } from '@game/scenes/select-grid';
 import { draw, makeGame, useStorage } from './heroes-harness';
 
 // Classic mode's select in the original 3.1.21's layout (CharacterSelectBox.as, CharacterSkinMenu.as;
@@ -79,7 +79,7 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     expect(h.said.at(-1)).toBe('Break Man, Proto Man, Mega Man 3.');
     // The panel: titled with the look, the HUD follows it.
     const t = draw(sel).texts;
-    expect(t.some((x) => x.str === 'BREAK MAN' && x.y === SKIN_PANEL.y + 7)).toBe(true);
+    expect(t.some((x) => x.str === 'BREAK MAN' && x.y === SKIN_PANEL_Y + 7)).toBe(true);
     expect(t.find((x) => x.y === 8 && x.x === 24)?.str).toBe('BREAK');
     h.tap('attack');
     expect(sel.pickerOpen).toBe(false);
@@ -108,7 +108,7 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     sel.tapAt(c.x + 4, c.y + 4);
     h.step();
     expect(sel.pickerOpen).toBe(true);
-    const k = skinCell(1);
+    const k = skinCell(1, 2);
     sel.tapAt(k.x + 4, k.y + 4);
     h.step();
     expect(sel.pickerSkin).toBe(BREAKMAN_CLASSIC);

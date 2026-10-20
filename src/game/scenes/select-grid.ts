@@ -16,10 +16,32 @@ export const SELECT_GRID = { cols: 9, cell: 24, gap: 2, x: 12, y: 36 } as const;
 /** The panel round the grid starts this far above and left of it. */
 const PANEL_PAD = 6;
 
-/** The skin menu's grid: `cols` x `rows` cells of `w` x `h` px a page, `gap` px apart. */
-export const SKIN_GRID = { cols: 5, rows: 3, w: 32, h: 36, gap: 2, x: 44, y: 50 } as const;
-/** The skin menu's panel. */
-export const SKIN_PANEL = { x: 38, y: 30, w: 180, h: 150 } as const;
+/** The skin menu's grid: at most `cols` x `rows` cells of `w` x `h` px a page, `gap` px apart. */
+export const SKIN_GRID = { cols: 5, rows: 3, w: 32, h: 36, gap: 2 } as const;
+/** The skin menu's panel top (it is sized to its looks, centred, as GridMenuBox sizes its own). */
+export const SKIN_PANEL_Y = 30;
+
+/** The skin menu's panel and grid for `n` looks: its box, the grid's top-left and columns. */
+export function skinLayout(n: number): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  gx: number;
+  gy: number;
+  cols: number;
+} {
+  const g = SKIN_GRID;
+  const cols = Math.max(1, Math.min(g.cols, n));
+  const rows = Math.max(1, Math.min(g.rows, Math.ceil(n / g.cols)));
+  const gw = cols * g.w + (cols - 1) * g.gap;
+  const gh = rows * g.h + (rows - 1) * g.gap;
+  // Wide enough for a look's name over it and its game under it.
+  const w = Math.max(gw + 16, 176);
+  const h = gh + 44;
+  const x = 128 - (w >> 1);
+  return { x, y: SKIN_PANEL_Y, w, h, gx: 128 - (gw >> 1), gy: SKIN_PANEL_Y + 18, cols };
+}
 
 /** The panels' colours: a light blue fill, two blue border lines, red corners. */
 export const PANEL = {
@@ -82,12 +104,13 @@ export function gridPanel(rows: number): { x: number; y: number; w: number; h: n
   return { x: g.x - PANEL_PAD, y: g.y - PANEL_PAD, w: w + 2 * PANEL_PAD, h: h + 2 * PANEL_PAD };
 }
 
-/** Skin menu cell `k` of a page's top-left. */
-export function skinCell(k: number): { x: number; y: number } {
+/** Skin menu cell `k` of a page's top-left, for a menu of `n` looks. */
+export function skinCell(k: number, n: number): { x: number; y: number } {
   const g = SKIN_GRID;
-  const col = k % g.cols;
-  const row = Math.floor(k / g.cols);
-  return { x: g.x + col * (g.w + g.gap), y: g.y + row * (g.h + g.gap) };
+  const L = skinLayout(n);
+  const col = k % L.cols;
+  const row = Math.floor(k / L.cols);
+  return { x: L.gx + col * (g.w + g.gap), y: L.gy + row * (g.h + g.gap) };
 }
 
 /** Draws `draw` clipped to a cell's inside (no clipping on renderers without it). */

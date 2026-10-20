@@ -16,7 +16,6 @@ import { menuTouchLabels } from '../touch-labels';
 import {
   SELECT_GRID,
   SKIN_GRID,
-  SKIN_PANEL,
   drawCell,
   drawDownArrow,
   drawPanel,
@@ -24,6 +23,7 @@ import {
   gridPanel,
   inCell,
   skinCell,
+  skinLayout,
 } from './select-grid';
 
 /**
@@ -428,7 +428,7 @@ export class CharacterSelectScene implements Scene {
       const per = SKIN_GRID.cols * SKIN_GRID.rows;
       const page = this.pickerPage;
       for (let k = 0; k < per && page * per + k < pk.list.length; k++) {
-        const c = skinCell(k);
+        const c = skinCell(k, pk.list.length);
         if (tap.x >= c.x && tap.x < c.x + SKIN_GRID.w && tap.y >= c.y && tap.y < c.y + SKIN_GRID.h) {
           if (page * per + k === pk.at) this.choosePicked();
           else this.pickerTo(page * per + k);
@@ -1245,7 +1245,7 @@ export class CharacterSelectScene implements Scene {
     if (!pk) return;
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
-    const P = SKIN_PANEL;
+    const P = skinLayout(pk.list.length);
     drawPanel(r, P.x, P.y, P.w, P.h);
     const skin = pk.list[pk.at];
     const title = fontText(skin?.name ?? '');
@@ -1255,7 +1255,7 @@ export class CharacterSelectScene implements Scene {
     for (let k = 0; k < per; k++) {
       const look = pk.list[page * per + k];
       if (!look) break;
-      const c = skinCell(k);
+      const c = skinCell(k, pk.list.length);
       drawCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, page * per + k === pk.at);
       const pt = this.artOf(look);
       const sheet = assets.sheet(pt.sheet, pt.palette);
