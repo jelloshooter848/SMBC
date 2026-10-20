@@ -8,8 +8,6 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
-## [0.4.58] - 2026-10-20
-
 ### Added
 
 - Classic mode: character select before every new level, as in the original's default
@@ -21,6 +19,10 @@ under `## [Unreleased]`.
   shrink flicker. Shots in the air or on the move keep the jump or walk pose.
 - Classic mode heroes are hit on the original's body boxes (their HRect sizes), and Samus's
   beams, Wave Beam and missiles and Mario's fireball take the original's sizes and colours.
+
+## [0.4.58] - 2026-10-20
+
+### Added
 
 - Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
   only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
