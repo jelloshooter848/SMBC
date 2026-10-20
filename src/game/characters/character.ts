@@ -60,6 +60,8 @@ export interface DeathPiece {
   vy: number;
   gravity: number;
   range: number;
+  /** Frames it holds at its start before it moves (MegaManParticle's 200 ms separation). */
+  delay?: number;
 }
 
 /** Per-character hooks. The shared Player handles movement; these add attacks, power-ups and damage. */
@@ -477,6 +479,11 @@ export interface CharacterDef {
     sheet: string;
     pieces: readonly DeathPiece[];
     jingle: string;
+    /**
+     * A sound played in place of the jingle (the music stops), after a pit death too: Classic
+     * Mega Man's and Bass's own death sound (G-054, MegaManBase.as 2599-2617).
+     */
+    sound?: string;
     frames: number;
     pitFrames: number;
   };

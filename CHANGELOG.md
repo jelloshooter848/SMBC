@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
+  own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
 - Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
   Controls screen asks for another (as the original does); a spare key of another action moves over.
 - Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a

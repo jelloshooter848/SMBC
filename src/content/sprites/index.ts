@@ -20,6 +20,7 @@ import {
   megamanVariantPalettes,
 } from './smbc-megaman-variants';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
+import { megamanOrbsDef } from './megaman-orbs';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
 import { simonPalettes, simonDef } from './simon';
@@ -125,6 +126,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   protoman: protomanDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  'megaman-orbs': megamanOrbsDef,
   // Classic SMBC's shots in the original's colours and sizes (Samus's beams, Mario's fireball).
   'smbc-shots': smbcShotsDef,
   'bill-classic': billClassicDef,

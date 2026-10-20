@@ -77,6 +77,8 @@ export const BASS_CLASSIC: CharacterDef = {
     weaponPalette: bassPalette,
     weaponLabel: (id) => (id === 'water-shield' ? 'WATER' : mmWeapon(id).label),
     slideFrame: 'dash',
+    // G-054: his own look's white orbs (MegaManParticle.BASS_COLOR_PARTICLE_SKIN_NUM lacks it).
+    orbs: 'white',
   }),
   // The castle text's name (BA-M13): the original's default skin (BmdInfo.as).
   rescueName: 'Dr. Wily',

@@ -290,11 +290,13 @@ export function burstPieces(
   const step = reduceFlashing ? 0 : (t >> 1) & 1;
   const out: { x: number; y: number; frame: string }[] = [];
   for (const piece of burst.pieces) {
-    const dx = piece.vx * t;
+    // A held piece (DeathPiece.delay) moves only once its wait is over.
+    const m = Math.max(0, t - (piece.delay ?? 0));
+    const dx = piece.vx * m;
     if (Math.abs(dx) > piece.range) continue;
     out.push({
       x: cx + piece.x + dx,
-      y: feet - piece.y + piece.vy * t + (piece.gravity * t * (t + 1)) / 2,
+      y: feet - piece.y + piece.vy * m + (piece.gravity * m * (m + 1)) / 2,
       frame: `${piece.frame}-${step}`,
     });
   }

@@ -3362,8 +3362,11 @@ export class World {
       p.body.vy = 0;
       if (this.activePlayers().length === 0) {
         this.audio.setTempoScale(1);
-        this.audio.playJingle(burst.jingle);
-      } else this.audio.sfx('hit');
+        if (burst.sound) {
+          this.audio.stopMusic();
+          this.audio.sfx(burst.sound);
+        } else this.audio.playJingle(burst.jingle);
+      } else this.audio.sfx(burst.sound ?? 'hit');
       return;
     }
     if (this.deathSfx) {
