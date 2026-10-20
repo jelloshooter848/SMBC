@@ -5,14 +5,7 @@ import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
-import {
-  CLASSIC_EXTRAS,
-  CLASSIC_VARIANTS,
-  classicOnly,
-  heroFor,
-  skinHost,
-  skinsOf,
-} from '../characters/registry';
+import { CLASSIC_EXTRAS, heroFor, skinHost, skinsOf } from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
@@ -607,12 +600,7 @@ export class Game {
   rosterFor(rules: Rules): CharacterDef[] {
     if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
     // A hero toggled off in the Dev menu is left out (and `?char=` falls back to the first).
-    // FU-3's variants follow the extras (their own slots, after Yoshi).
-    return [
-      ...this.deps.characters,
-      ...CLASSIC_EXTRAS.filter((d) => this.classicHeroOn(d)),
-      ...CLASSIC_VARIANTS.filter((d) => this.classicHeroOn(d)),
-    ];
+    return [...this.deps.characters, ...CLASSIC_EXTRAS.filter((d) => this.classicHeroOn(d))];
   }
 
   get ctx(): GameContext {
@@ -1357,7 +1345,7 @@ export class Game {
   heroLocked(def: CharacterDef): boolean {
     // A Classic-only extra (TG-42) can be picked only while the roster lists it; it has no
     // captive, so it is never added to `freed`.
-    if (classicOnly(def)) return !this.roster.includes(def);
+    if (CLASSIC_EXTRAS.includes(def)) return !this.roster.includes(def);
     if (this.devMode && this.devAllHeroes) return false;
     return this.campaign !== null && !this.freed.includes(def.id);
   }

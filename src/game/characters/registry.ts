@@ -93,6 +93,9 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   BASS_CLASSIC,
   PROTOMAN_CLASSIC,
   BREAKMAN_CLASSIC,
+  // Mega Man's gameplay variants (FU-3: Rock, Cut Man, Fire Man, Ice Man, Francesca and Doropie,
+  // Rokko Chan), after his rival: each its own slot, Doropie a skin on Francesca's.
+  ...CLASSIC_VARIANT_DEFS,
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
@@ -105,21 +108,10 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
 ];
 
 /**
- * Classic-only variants of a hero that play differently (FU-3: Rock, Francesca, Rokko Chan, Cut
- * Man, Ice Man, Fire Man), each with its own select slot after the extras. Listed by Game.roster
- * with the extras (a Classic-rules run outside the campaign), never anywhere else.
- */
-export const CLASSIC_VARIANTS: CharacterDef[] = [...CLASSIC_VARIANT_DEFS];
-
-/** A Classic-only hero: an extra or a variant (TG-42: never a captive, never in the campaign). */
-export function classicOnly(def: CharacterDef): boolean {
-  return CLASSIC_EXTRAS.includes(def) || CLASSIC_VARIANTS.includes(def);
-}
-
-/**
  * Classic mode's skins (FU-8): by select-slot hero id, the looks that slot can wear, its own
  * first. A skin plays exactly as its slot's hero (a hero that plays differently has its own slot:
- * CLASSIC_VARIANTS); the select's skin picker chooses among them, and the choice is remembered
+ * CLASSIC_EXTRAS' variants); the select's skin picker
+ chooses among them, and the choice is remembered
  * per hero (Settings.classicSkins).
  */
 export const CLASSIC_SKINS: Readonly<Record<string, readonly CharacterDef[]>> = CLASSIC_SKIN_LISTS;

@@ -42,9 +42,16 @@ describe('two-row character select', () => {
     h.tap('down');
     expect(idx(sel)).toBe(down);
     expect(h.said.at(-1)).toBe(`${sel.chars[down]?.name ?? 'Random'}, second row`);
+    // FU-3: Mega Man's variants fill a third row: Down goes on to it, then bumps; Up comes back.
     h.tap('down');
-    expect(idx(sel)).toBe(down);
-    const up = nearest(down, 0, first);
+    const third = idx(sel);
+    expect(sel.slot(third).y).toBeGreaterThan(sel.slot(down).y);
+    h.tap('down');
+    expect(idx(sel)).toBe(third);
+    h.tap('up');
+    const second = idx(sel);
+    expect(sel.slot(second).y).toBe(sel.slot(down).y);
+    const up = nearest(second, 0, first);
     h.tap('up');
     expect(idx(sel)).toBe(up);
     expect(h.said.at(-1)).toBe(`${sel.chars[up]?.name}, first row`);
