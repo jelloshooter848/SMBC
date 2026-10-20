@@ -34,7 +34,14 @@ export const PANEL = {
 } as const;
 
 /** A framed panel: the fill, two border lines one px apart, small red squares at the corners. */
-export function drawPanel(r: Renderer, x: number, y: number, w: number, h: number, fill: string = PANEL.fill): void {
+export function drawPanel(
+  r: Renderer,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  fill: string = PANEL.fill,
+): void {
   r.rect(x, y, w, h, PANEL.outer);
   r.rect(x + 1, y + 1, w - 2, h - 2, fill);
   r.rect(x + 2, y + 2, w - 4, h - 4, PANEL.inner);

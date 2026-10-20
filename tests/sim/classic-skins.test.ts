@@ -120,7 +120,7 @@ describe('FU-8: the skin picker on the Classic select', () => {
     const { h, sel, settings } = classicSelect();
     expect(h.said.at(-1)).toContain("Skin to change a hero's look.");
     cursorTo(h, sel, 'protoman');
-    expect(h.said.at(-1)).toBe('Proto Man, skin Proto Man');
+    expect(h.said.at(-1)).toBe('Proto Man, skin Proto Man, Mega Man 3');
     expect(sel.skinPicker).toBe(true);
     expect(sel.touchLabels().special).toBe('SKIN');
     h.tap('special');
@@ -131,7 +131,10 @@ describe('FU-8: the skin picker on the Classic select', () => {
     expect(h.said.at(-1)).toBe('Proto Man, skin Proto Man');
     expect(settings.classicSkins).toEqual({ protoman: 'protoman' });
     h.tap('special');
-    // OK starts the run as Break Man: his HUD name and look.
+    // OK opens the skin menu on Break Man; OK there starts the run as him: his HUD name and look.
+    h.tap('jump');
+    expect(sel.pickerOpen).toBe(true);
+    expect(sel.pickerSkin).toBe(BREAKMAN_CLASSIC);
     h.tap('jump');
     h.until(() => h.top() instanceof LevelScene, 600);
     const w = (h.top() as LevelScene).world;
@@ -156,7 +159,8 @@ describe('FU-8: the skin picker on the Classic select', () => {
     const settings = { ...defaultSettings(), classicSkins: { pit: 'darkpit' } };
     const { h, sel } = classicSelect(settings);
     cursorTo(h, sel, 'pit');
-    expect(h.said.at(-1)).toBe('Pit, skin Dark Pit');
+    expect(h.said.at(-1)).toBe('Pit, skin Dark Pit, Kid Icarus');
+    h.tap('jump');
     h.tap('jump');
     h.until(() => h.top() instanceof LevelScene, 600);
     expect(h.game.state.character).toBe(DARKPIT_CLASSIC);

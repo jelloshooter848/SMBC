@@ -17,7 +17,7 @@ import { Koopa } from '@game/entities/enemies/koopa';
 import { Projectile } from '@game/entities/projectiles/projectile';
 import { PowerUp } from '@game/entities/objects/powerup';
 import { Spring, SPRING_GREEN_BOOST, SPRING_RISE_GRAVITY } from '@game/entities/objects/spring';
-import { CharacterSelectScene, SECOND_ROW_DY } from '@game/scenes/character-select';
+import { CharacterSelectScene } from '@game/scenes/character-select';
 import type { LevelScene } from '@game/scenes/level';
 import type { World } from '@game/world/world';
 import type { GameState } from '@game/context';
@@ -138,11 +138,14 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     expect(sel).toBeInstanceOf(CharacterSelectScene);
     expect(sel.firstRow).toBe(CHARACTERS.length);
     expect(sel.chars[CHARACTERS.length]).toBe(BASS_CLASSIC);
-    expect(sel.slot(CHARACTERS.length).y).toBe(120 + SECOND_ROW_DY);
+    // The original's grid: the usual heroes fill its first row, Bass starts the second.
+    expect(sel.slot(CHARACTERS.length).y).toBeGreaterThan(sel.slot(0).y);
+    expect(sel.slot(CHARACTERS.length).x).toBe(sel.slot(0).x);
     expect(h.game.heroLocked(BASS_CLASSIC)).toBe(false);
     h.idle(12);
-    for (let i = 0; i < sel.chars.length && h.said.at(-1) !== 'Bass'; i++) h.tap('left');
-    expect(h.said.at(-1)).toBe('Bass');
+    // Classic mode's select says the hero, then its game (the original's name box).
+    for (let i = 0; i < sel.chars.length && h.said.at(-1) !== 'Bass, Mega Man 10'; i++) h.tap('left');
+    expect(h.said.at(-1)).toBe('Bass, Mega Man 10');
     h.tap('jump');
     h.until(() => h.top()?.constructor.name === 'LevelScene', 600);
     expect((h.top() as LevelScene).world.player.def).toBe(BASS_CLASSIC);

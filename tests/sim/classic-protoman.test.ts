@@ -227,6 +227,8 @@ describe('PM-18: the whistle on the pick, Proto Man only', () => {
     const sfxMock = h.audio.sfx as unknown as { mock: { calls: unknown[][] } };
     const before = sfxMock.mock.calls.length;
     h.tap('jump');
+    // A hero with other looks: OK opens the skin menu, on the saved look; OK again picks it.
+    if (sel.pickerOpen) h.tap('jump');
     return sfxMock.mock.calls.slice(before).map((c) => String(c[0]));
   }
 

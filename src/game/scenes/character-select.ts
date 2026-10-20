@@ -512,7 +512,8 @@ export class CharacterSelectScene implements Scene {
     this.index = i;
     this.game.ctx.audio.sfx('select');
     const name = this.sayName(i);
-    if (name) this.game.deps.announcer?.say(this._reviving ? `${name}: ${this.reviveAction(i).toLowerCase()}` : name);
+    if (name)
+      this.game.deps.announcer?.say(this._reviving ? `${name}: ${this.reviveAction(i).toLowerCase()}` : name);
   }
 
   /** Taps and clicks on the canvas reach the cells while this select is on top (Classic mode). */
@@ -575,7 +576,7 @@ export class CharacterSelectScene implements Scene {
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   private rowsHint(): string {
     if (this.rows > 2) return ' up and down for the other rows,';
-    return this.firstRowSlots < this.total ? ' up and down for the other row,' : '';
+    return this.rows === 2 ? ' up and down for the other row,' : '';
   }
 
   /** " Skin to change a hero's look." when some hero has other skins (FU-8), else nothing. */
@@ -1177,9 +1178,15 @@ export class CharacterSelectScene implements Scene {
       const leave = this.reviveLeave();
       if (leave)
         centred(
-          fontText(`${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`),
+          fontText(
+            `${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`,
+          ),
           py + 10,
         );
+      if (sv) {
+        const n = this.chars.filter((_, i) => !this.locked(i)).length;
+        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 20);
+      }
     } else if (!this.picker) {
       const steady = this.game.ctx.reduceFlashing || (this.t >> 5) % 2 === 0;
       const ok = abilityHint(this.game, 'OK', 'jump');

@@ -13,7 +13,8 @@ import { HeroItem } from '@game/entities/objects/hero-item';
 import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
-import { CharacterSelectScene, SECOND_ROW_DY } from '@game/scenes/character-select';
+import { SELECT_GRID } from '@game/scenes/select-grid';
+import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
 import { FileSelectScene } from '@game/scenes/file-select';
@@ -79,8 +80,10 @@ function choose(h: H, def: CharacterDef): void {
   expect(sel).toBeInstanceOf(CharacterSelectScene);
   h.idle(12);
   // One more step than heroes: Classic mode's Random slot ends the ring (FU-4).
-  for (let i = 0; i <= CHARACTERS.length && h.said.at(-1) !== def.name; i++) h.tap('right');
-  expect(h.said.at(-1)).toBe(def.name);
+  // Classic mode's select says the hero, then its game (the name box): "Link, The Legend of Zelda".
+  const said = () => h.said.at(-1)?.split(', ')[0];
+  for (let i = 0; i <= CHARACTERS.length && said() !== def.name; i++) h.tap('right');
+  expect(said()).toBe(def.name);
   h.tap('jump');
 }
 
@@ -269,7 +272,7 @@ describe('a Classic run', () => {
     // Every hero, and the Random slot that ends the ring (FU-4).
     for (let i = 0; i <= CHARACTERS.length; i++) {
       h.tap('right');
-      names.push(h.said.at(-1) ?? '');
+      names.push(h.said.at(-1)?.split(', ')[0] ?? '');
     }
     expect(new Set(names)).toEqual(new Set([...CHARACTERS.map((c) => c.name), 'Random']));
     choose(h, LINK);
@@ -760,28 +763,36 @@ describe('the select screen: Classic extras on a second row', () => {
     expect((h.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
   });
 
-  it('the first row is drawn as today; extras sit 40 px below; left and right walk the whole roster', () => {
+  it('the original grid: the usual heroes fill the first row, extras the next; left and right walk the whole roster', () => {
     const h = classic();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.firstRow).toBe(CHARACTERS.length);
-    const spacing = Math.min(64, 224 / CHARACTERS.length);
-    const x0 = 128 - ((CHARACTERS.length - 1) * spacing) / 2;
-    CHARACTERS.forEach((_, i) => expect(sel.slot(i)).toEqual({ x: Math.round(x0 + i * spacing), y: 120 }));
+    // Cells SELECT_GRID.cell px square, nine to a row (the original's CharacterSelectBox, fitted).
+    const step = SELECT_GRID.cell + SELECT_GRID.gap;
+    CHARACTERS.forEach((_, i) =>
+      expect(sel.slot(i)).toEqual({
+        x: SELECT_GRID.x + i * step + SELECT_GRID.cell / 2,
+        y: SELECT_GRID.y + SELECT_GRID.cell,
+      }),
+    );
     // The second row: the extra, then the Random slot (FU-4).
-    expect(sel.slot(CHARACTERS.length)).toEqual({ x: 96, y: 120 + SECOND_ROW_DY });
+    expect(sel.slot(CHARACTERS.length)).toEqual({
+      x: SELECT_GRID.x + SELECT_GRID.cell / 2,
+      y: SELECT_GRID.y + step + SELECT_GRID.cell,
+    });
     h.idle(12);
     h.tap('left');
     expect(h.said.at(-1)).toBe('Random');
     h.tap('left');
     expect(h.said.at(-1)).toBe('Extra');
     const t = draw(sel).texts;
-    const name = t.find((x) => x.str === 'EXTRA');
-    expect(name?.y).toBe(144 + SECOND_ROW_DY);
+    // The name box names the hero.
+    expect(t.some((x) => x.str === 'EXTRA')).toBe(true);
     for (const x of t) expect(x.y + 8).toBeLessThanOrEqual(240);
     h.tap('right');
     h.tap('right');
-    expect(h.said.at(-1)).toBe(CHARACTERS[0]?.name);
+    expect(h.said.at(-1)?.split(', ')[0]).toBe(CHARACTERS[0]?.name);
   });
 
   it('Classic rules Current: the registry, in one row', () => {

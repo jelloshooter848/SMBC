@@ -162,7 +162,8 @@ describe('a new game', () => {
     const d = draw(s);
     expect(d.sprites.some((x) => x.key.endsWith('~fallen'))).toBe(true);
     expect(d.texts.map((t) => t.str)).toEqual(
-      expect.arrayContaining(['REVIVE YOUR HEROES', '0 OF 9 HEROES STANDING', 'REVIVE']),
+      // The original's layout: the name box says what OK does, the hero, the lives remaining.
+      expect.arrayContaining(['REVIVE', 'MARIO', '3 LIVES REMAINING', '0 OF 9 HEROES STANDING']),
     );
   });
 
