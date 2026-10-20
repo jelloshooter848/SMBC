@@ -94,14 +94,19 @@ export interface Settings {
   classicCheats: ClassicCheatsSettings;
 }
 
-/** The original's cheats (Cheats.as), minus its no-ops (Classic Samus, Classic Simon) and Level Select. */
+/**
+ * The original's cheats (Cheats.as), minus Level Select. Classic Samus and Classic Simon (G-040)
+ * set Samus.classicMode and Simon.classicMode (Cheats.as 327, 337): the heroes read them.
+ */
 export const CLASSIC_CHEAT_IDS = [
   'allGroundIsBricks',
   'allHammerBros',
   'allWeaponsPierce',
   'alwaysBreakBricks',
   'bouncyPits',
+  'classicSamus',
   'classicScreenScroll',
+  'classicSimon',
   'everyoneCanStomp',
   'evilHammerBros',
   'extraCheckpoints',
@@ -139,7 +144,12 @@ export interface ClassicCheatsSettings {
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
-const OPEN_CHEATS: readonly ClassicCheatId[] = ['classicScreenScroll', 'everyoneCanStomp'];
+const OPEN_CHEATS: readonly ClassicCheatId[] = [
+  'classicSamus',
+  'classicScreenScroll',
+  'classicSimon',
+  'everyoneCanStomp',
+];
 
 export function defaultClassicCheats(): ClassicCheatsSettings {
   const flags = (v: (id: ClassicCheatId) => boolean) =>

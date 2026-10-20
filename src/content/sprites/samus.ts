@@ -16,6 +16,9 @@ export const samusPalettes: Record<string, string[]> = {
   samus: [NES.black, NES.orange, NES.redDark, NES.greenLight, NES.white, NES.yellow],
   // Heavier suit: warmer, pinker light armour over orange plates.
   'samus-varia': [NES.black, NES.peach, NES.orange, NES.greenLight, NES.white, NES.yellow],
+  // Missile mode (the Classic Samus cheat, G-040): the light armour turns green, our own pick.
+  'samus-missile': [NES.black, NES.greenLight, NES.greenDark, NES.cyan, NES.white, NES.yellow],
+  'samus-varia-missile': [NES.black, NES.greenLight, NES.peach, NES.cyan, NES.white, NES.yellow],
   // Invincibility flashes.
   'samus-star-0': [NES.black, NES.yellow, NES.redBright, NES.white, NES.white, NES.yellowLight],
   'samus-star-1': [NES.black, NES.cyan, NES.blueMid, NES.pink, NES.white, NES.white],

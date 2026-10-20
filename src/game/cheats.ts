@@ -115,9 +115,25 @@ export const CHEATS: readonly CheatInfo[] = [
     goalText: `Beat the game once and stomp ${CHEAT_GOALS.enemiesStomped} enemies.`,
   },
   {
+    // G-040: Samus.classicMode (Samus.as 991, 1037-1046, 1099).
+    id: 'classicSamus',
+    name: 'Classic Samus',
+    what: 'Special or Tools switches Samus between beam and missiles (her suit changes colour), and Down rolls her straight into the morph ball',
+    goal: { kind: 'open' },
+    goalText: '',
+  },
+  {
     id: 'classicScreenScroll',
     name: 'Classic Scroll',
     what: 'Classic Screen Scroll: the screen never scrolls back left, from the next area',
+    goal: { kind: 'open' },
+    goalText: '',
+  },
+  {
+    // G-040: Simon.classicMode (Simon.as 531, 613, 671, 795).
+    id: 'classicSimon',
+    name: 'Classic Simon',
+    what: "Simon's jump keeps the direction he took off in, and walking off a ledge he drops straight down",
     goal: { kind: 'open' },
     goalText: '',
   },

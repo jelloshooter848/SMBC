@@ -21,6 +21,9 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode cheats **Classic Samus** (Special or Tools switches between beam and missiles, her suit
+  changing colour, and Down rolls her straight into the morph ball) and **Classic Simon** (his jump keeps its
+  take-off direction; off a ledge he drops straight down), open from the start as in the original.
 - Classic mode's pause has a **Guide** row with the Classic hero's own How to play page, and How to play
   from Classic mode's options lists the Classic select's heroes as Classic mode plays them.
 - Classic mode's pause has the original's **Cheats** row: turn your unlocked cheats on or off mid-run;

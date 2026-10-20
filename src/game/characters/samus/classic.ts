@@ -58,8 +58,18 @@ import { SAMUS_CLASSIC_FRAMES, SAMUS_CLASSIC_ORIGIN } from '@content/sprites/sam
  * `missileExp` (the Missile Expansion: cap 99, never lost), `classicAll` (the dev full kit, TG-44)
  * with `tool` (its Select: 0 Wave, 1 Ice). Per level: `_crouch`, `_ball`, `_aimUp`, `_flip` (the
  * somersault), `_takeoff` (feet y at a somersault-able take-off), `_screwSnd`, `_wave` (Wave
- * phase), `_still` (crouched without moving since, PI-15), `_g` / `_feet` (last frame's ground).
+ * phase), `_still` (crouched without moving since, PI-15), `_g` / `_feet` (last frame's ground),
+ * `_mm` (missile mode, with the Classic Samus cheat: G-040).
  */
+
+/**
+ * The Classic Samus cheat (G-040, Samus.classicMode): Special or Select toggles missile mode
+ * (missileModeToggle, a suit colour change), in which Attack fires missiles; Down on the ground
+ * rolls her straight into the morph ball (pressDwnBtn's classic branch). Off: no change at all.
+ */
+const classicSamusCheat = (world: World): boolean => world.cheats.classicSamus;
+/** In missile mode (the cheat on, with Missiles): her suit's `-missile` palette, and Attack fires them. */
+const missileMode = (p: Player): boolean => !!s(p)._mm && !!s(p).missileUp;
 
 /** The variant options (PI-1). Classic Samus uses the defaults. */
 export interface ClassicSamusVariant {
@@ -444,6 +454,8 @@ export function classicSamus(
   const own = opts.sheet === undefined;
   function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     let palette = p.powerState === 'fire' ? `${prefix}-varia` : prefix;
+    // G-040: missile mode's suit (changeSuitColor's PAL_ROW_*_MISSILE rows; our own colours).
+    if (missileMode(p)) palette = `${palette}-missile`;
     const star = classicStarPaletteStep(p, frame, reduceFlashing);
     // SA-C24: the Screw Attack flashes like the Star (the Star's palette wins); reduce: Varia.
     if (star !== null) palette = `samus-star-${star}`;
@@ -518,6 +530,13 @@ export function classicSamus(
       if (inBall(p)) return { attack: 'BOMB', special: null, select: null };
       if (crouchPose(p) && v.noBeamInCrouch)
         return { attack: null, special: p.scratch.missileUp ? 'MISSILE' : null, select: null };
+      // G-040: with the Classic Samus cheat Attack fires the mode's weapon; Special switches it.
+      if (p.scratch._cs)
+        return {
+          attack: missileMode(p) ? 'MISSILE' : 'SHOOT',
+          special: p.scratch.missileUp ? 'SWITCH' : null,
+          select: p.scratch.classicAll ? 'BEAM' : null,
+        };
       return {
         attack: 'SHOOT',
         special: p.scratch.missileUp ? 'MISSILE' : null,
@@ -575,6 +594,24 @@ export function classicSamus(
           } else if (input.pressed('attack')) layBomb(p, world);
           if (inBall(p)) return;
         }
+        const cheat = classicSamusCheat(world);
+        // Remembered for touchLabels, which has no World (`_cs`: the cheat is on).
+        if (cheat) s(p)._cs = 1;
+        else delete s(p)._cs;
+        // G-040: Special or Select (not the dev kit's beam switch) toggles missile mode.
+        if (
+          cheat &&
+          s(p).missileUp &&
+          (input.pressed('special') || (input.pressed('select') && !s(p).classicAll))
+        ) {
+          if (s(p)._mm) delete s(p)._mm;
+          else s(p)._mm = 1;
+        } else if (!cheat) delete s(p)._mm;
+        if (cheat && v.morphBall && b.onGround && input.pressed('down') && !crouchPose(p)) {
+          // G-040: Down on the ground rolls her straight into the ball (no crouch first).
+          enterBall(p);
+          return;
+        }
         if (v.crouchWalk) {
           // PI-7, PI-8: the crouch pose while Down is held (in the air too with airCrouchPose).
           const want = input.held('down') && (b.onGround || v.airCrouchPose);
@@ -604,6 +641,12 @@ export function classicSamus(
         if (input.held('up') && !crouchPose(p)) s(p)._aimUp = 1;
         else delete s(p)._aimUp;
         updateFlip(p, input);
+        if (cheat) {
+          // G-040: Attack fires what the mode says; Special only toggles the mode.
+          if (input.pressed('attack') && missileMode(p)) fireMissile(p, world, v);
+          else if (input.pressed('attack') && !(crouchPose(p) && v.noBeamInCrouch)) fireBeam(p, world, v);
+          return;
+        }
         if (input.pressed('attack') && !(crouchPose(p) && v.noBeamInCrouch)) fireBeam(p, world, v);
         if (input.pressed('special')) fireMissile(p, world, v);
       },
