@@ -225,7 +225,8 @@ export function tickHoverBar(p: Player, st: SophiaState): void {
   if (!hasHover(p)) return;
   if (st.hovering) {
     st.fillT = 0;
-    if (p.star > 0) return;
+    // Star, or Classic mode's Infinite Ammo cheat (Sophia.as `|| Cheats.infiniteAmmo`), keeps it full.
+    if (p.star > 0 || p.cheatAmmo) return;
     if (++st.drainT >= HOVER_DRAIN) {
       st.drainT = 0;
       st.cells = Math.max(0, st.cells - 1);

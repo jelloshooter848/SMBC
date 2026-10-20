@@ -2,6 +2,7 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import { startHp, type CharacterDef } from './characters/character';
 import { heroFor } from './characters/registry';
+import { CLASSIC_CHEAT_IDS, type ClassicCheatId } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
@@ -42,6 +43,47 @@ export const DEFAULT_ASSIST: AssistOptions = {
   safetyFloor: false,
 };
 
+/**
+ * Classic mode's cheats that are on (settings.classicCheats.on). Only a Classic run under Classic
+ * rules has them (GameContext.classicCheats); everywhere else every one reads false (NO_CHEATS).
+ */
+export type CheatFlags = Readonly<Record<ClassicCheatId, boolean>>;
+
+export const NO_CHEATS: CheatFlags = Object.freeze(
+  Object.fromEntries(CLASSIC_CHEAT_IDS.map((id) => [id, false])) as Record<ClassicCheatId, boolean>,
+);
+
+/**
+ * The assists with the original's three assist-like cheats folded in (Infinite Lives, Infinite
+ * Time, Invincible: FU-7e maps them onto the assists' own code paths). A live view: each read
+ * asks `cheats()` and `base` again, so a toggle from the pause menu takes effect at once.
+ */
+export function cheatAssist(base: AssistOptions, cheats: () => CheatFlags): AssistOptions {
+  return {
+    get allowLeftScroll() {
+      return base.allowLeftScroll;
+    },
+    get infiniteLives() {
+      return base.infiniteLives || cheats().infiniteLives;
+    },
+    get invulnerable() {
+      return base.invulnerable || cheats().invincible;
+    },
+    get infiniteTime() {
+      return base.infiniteTime || cheats().infiniteTime;
+    },
+    get coyoteFrames() {
+      return base.coyoteFrames;
+    },
+    get fireRevertsToBig() {
+      return base.fireRevertsToBig;
+    },
+    get safetyFloor() {
+      return base.safetyFloor;
+    },
+  };
+}
+
 /** Shared services every scene and the world can reach. */
 export interface GameContext {
   assets: AssetRegistry;
@@ -55,6 +97,12 @@ export interface GameContext {
    * it once, in its constructor (World.rules).
    */
   rules?: Rules;
+  /**
+   * Classic mode's cheats (scenes/cheats-menu.ts). Optional: absent everywhere but a Classic run
+   * under Classic rules, where Game makes it a live view of settings.classicCheats.on; a World
+   * playing Current never reads it (World.cheats).
+   */
+  classicCheats?: CheatFlags;
   /**
    * Classic mode's options (Settings.classic: More Settings, Customize Weapons), present only in a
    * Classic mode run with Classic rules (Game.classicOptions); absent everywhere else (the

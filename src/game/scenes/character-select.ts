@@ -3,6 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
 import type { Game } from './game';
+import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import type { TouchLabels } from '@engine/input/touch';
@@ -63,7 +64,7 @@ export interface NewGamePick {
 export const SECOND_ROW_DY = 40;
 
 /** Classic Survival's box over the select: the revive news, or the "finished?" question. */
-type SurvivalBox = { kind: 'news' } | { kind: 'finished'; yes: boolean };
+type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; yes: boolean };
 
 /** The revive news (MessageBoxMessages.YOU_CAN_NOW_REVIVE), as the lines the box draws. */
 export const REVIVE_NEWS = ['YOU CAN NOW REVIVE', 'AND STRENGTHEN HEROES.'];
@@ -84,6 +85,10 @@ export class CharacterSelectScene implements Scene {
   private _reviving = false;
   /** Classic Survival's box over the select, while it is up (it waits for a press). */
   private box: SurvivalBox | null = null;
+  /** The boxes still to show after this one (the cheat news, then the revive news). */
+  private boxQueue: SurvivalBox[] = [];
+  /** The cheat news read out with its box (revive mode shows it in a box of its own). */
+  private cheatSaid = '';
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
@@ -247,7 +252,25 @@ export class CharacterSelectScene implements Scene {
     return n > 0 ? ` ${n} ${n === 1 ? 'hero' : 'heroes'} still to be found.` : '';
   }
 
+  /**
+   * Classic mode's cheats unlocked by the clear (or the game) before this screen (Game.cheatUnlocks;
+   * the original's "You unlocked ... cheat!" boxes): shown over the heroes and read out with the
+   * screen's own line, which already waits for a press.
+   */
+  private cheatNews: string[] = [];
+
+  /** The cheats just unlocked, taken from the game: their names, and the line read out. */
+  private takeCheatNews(): string {
+    const ids = this.game.cheatUnlocks?.splice(0) ?? [];
+    if (!ids.length) return '';
+    this.cheatNews = ids.map((id) => cheatInfo(id).name);
+    this.game.ctx.audio.sfx('1up');
+    const names = this.cheatNews.join(', ');
+    return ids.length === 1 ? ` You unlocked the ${names} cheat!` : ` You unlocked these cheats: ${names}!`;
+  }
+
   enter(): void {
+    const news = this.takeCheatNews();
     const pick = this.pick;
     const chars = this.chars;
     const sv = this.survival;
@@ -266,10 +289,13 @@ export class CharacterSelectScene implements Scene {
             chars.findIndex((c) => c.id === current),
           ),
         );
-        if (!sv.allFallen) {
-          this.box = { kind: 'news' };
-          this.game.deps.announcer?.say(`You can now revive and strengthen heroes. OK to go on.`);
-        } else this.sayRevive();
+        // Cheats unlocked by the clear come first (Cheats.unlockCheat's boxes), then the revive news
+        // unless every hero has fallen; each waits for OK, then revive mode is read out.
+        this.cheatSaid = news.trim();
+        const boxes: SurvivalBox[] = [];
+        if (news) boxes.push({ kind: 'cheats' });
+        if (!sv.allFallen) boxes.push({ kind: 'news' });
+        this.showBox(boxes);
         return;
       }
     }
@@ -289,7 +315,8 @@ export class CharacterSelectScene implements Scene {
         `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
           this.toFind() +
-          this.fallenNote(),
+          this.fallenNote() +
+          news,
       );
       return;
     }
@@ -298,7 +325,8 @@ export class CharacterSelectScene implements Scene {
     this.game.deps.announcer?.say(
       `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
         this.toFind() +
-        this.fallenNote(),
+        this.fallenNote() +
+        news,
     );
   }
 
@@ -377,6 +405,17 @@ export class CharacterSelectScene implements Scene {
     if (this.skipped(this.index)) this.index = this.unlocked(this.index);
   }
 
+  /** Shows the first of `boxes` (the rest queued) and reads it out; none: revive mode is read out. */
+  private showBox(boxes: SurvivalBox[]): void {
+    const [box, ...rest] = boxes;
+    this.box = box ?? null;
+    this.boxQueue = rest;
+    if (!box) this.sayRevive();
+    else if (box.kind === 'cheats') this.game.deps.announcer?.say(`${this.cheatSaid} OK to go on.`);
+    else if (box.kind === 'news')
+      this.game.deps.announcer?.say('You can now revive and strengthen heroes. OK to go on.');
+  }
+
   /** The box's input: the news closes on OK; the question toggles with the arrows, OK answers. */
   private updateBox(box: SurvivalBox, pressed: (a: Action) => boolean): void {
     if (this.t <= 10) return;
@@ -393,7 +432,8 @@ export class CharacterSelectScene implements Scene {
     this.game.ctx.audio.sfx('select');
     this.box = null;
     if (box.kind === 'finished' && box.yes) this.endRevive();
-    else this.sayRevive();
+    else if (box.kind === 'finished') this.sayRevive();
+    else this.showBox(this.boxQueue);
   }
 
   /** Revive mode's input (one player: Classic mode has no co-op). */
@@ -594,8 +634,10 @@ export class CharacterSelectScene implements Scene {
       // Survival: how many heroes still stand; the fallen are drawn grey.
       const n = this.chars.filter((_, i) => !this.locked(i)).length;
       const line = `${sv.standing().length} OF ${n} HEROES STANDING`;
-      r.text(font, line, 128 - line.length * 4, 52);
+      // The cheat news takes this place on the select (revive mode shows it in its own box).
+      if (this._reviving || !this.cheatNews.length) r.text(font, line, 128 - line.length * 4, 52);
     }
+    if (!this._reviving) this.renderCheatNews(r, font);
     const chars = this.chars;
     const first = this.firstRowSlots;
     const total = this.total;
@@ -716,7 +758,15 @@ export class CharacterSelectScene implements Scene {
   /** Survival's box (the revive news, or the "finished?" question with NO and YES). */
   private renderBox(r: Renderer, box: SurvivalBox): void {
     const font = this.game.ctx.assets.sheet('font');
-    const lines = box.kind === 'news' ? REVIVE_NEWS : REVIVE_DONE_QUESTION;
+    const lines =
+      box.kind === 'cheats'
+        ? [
+            this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!',
+            ...this.cheatNews.map((n) => n.toUpperCase()),
+          ]
+        : box.kind === 'news'
+          ? REVIVE_NEWS
+          : REVIVE_DONE_QUESTION;
     const rows = lines.length + 2;
     const h = rows * 12 + 12;
     const y = 120 - (h >> 1);
@@ -724,7 +774,7 @@ export class CharacterSelectScene implements Scene {
     r.rect(18, y + 2, 220, h - 4, '#000000');
     lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + 8 + i * 12));
     const last = y + 8 + (lines.length + 1) * 12;
-    if (box.kind === 'news') {
+    if (box.kind !== 'finished') {
       const ok = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
       r.text(font, ok, 128 - ok.length * 4, last);
     } else {
@@ -732,5 +782,15 @@ export class CharacterSelectScene implements Scene {
       r.text(font, 'YES', 148, last);
       r.text(font, '>', box.yes ? 136 : 72, last);
     }
+  }
+
+  /** The cheats just unlocked, under the heading: CHEAT UNLOCKED! and the names (two at most). */
+  private renderCheatNews(r: Renderer, font: ReturnType<Game['ctx']['assets']['sheet']>): void {
+    if (!this.cheatNews.length) return;
+    const lines = [this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!'];
+    const names = this.cheatNews.map((n) => n.toUpperCase());
+    lines.push(...names.slice(0, 2));
+    if (names.length > 2) lines.push(`AND ${names.length - 2} MORE`);
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 47 + i * 10));
   }
 }

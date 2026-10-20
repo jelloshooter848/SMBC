@@ -48,8 +48,8 @@ function die(h: H): void {
 }
 
 /** The first select of a Survival run, idled until it takes input. */
-function start(h: H): CharacterSelectScene {
-  h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+function start(h: H, levelId = '1-1'): CharacterSelectScene {
+  h.game.classicSelect(levelId, () => h.game.showClassicMenu());
   const s = sel(h);
   expect(s).toBeInstanceOf(CharacterSelectScene);
   h.idle(12);
@@ -73,8 +73,8 @@ function finishReviving(h: H): void {
 }
 
 /** A Survival run in its first level with Mario (revived), the other heroes fallen. */
-function playing(h: H, revive: string[] = [MARIO.id]): void {
-  start(h);
+function playing(h: H, revive: string[] = [MARIO.id], levelId = '1-1'): void {
+  start(h, levelId);
   for (const id of revive) {
     to(h, id);
     h.tap('jump');
@@ -503,5 +503,59 @@ describe('the revive prompt (QA)', () => {
     expect(prompt()).toMatch(/^OK( \(.+\))? TO REVIVE$/);
     h.tap('jump');
     expect(prompt()).toMatch(/^OK( \(.+\))? TO POWER UP$/);
+  });
+});
+
+describe('with Classic mode cheats (merged with the cheats branch)', () => {
+  it('the Infinite Lives cheat: a death plays as in the other modes, and reviving is free', () => {
+    const h = survival();
+    h.settings.classicCheats.on.infiniteLives = true;
+    h.settings.classicCheats.unlocked.infiniteLives = true;
+    playing(h);
+    expect(h.game.state.lives).toBe(3);
+    die(h);
+    expect(h.game.survival?.isFallen(MARIO.id)).toBe(false);
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.reviveHero(LUIGI)).toBe('revived');
+    expect(h.game.state.lives).toBe(3);
+  });
+
+  it("a level's exit passes the cleared level: a castle brings revival back, another level does not", () => {
+    const h = survival();
+    playing(h);
+    (h.top() as LevelScene).world.events.push({ type: 'exit', next: '1-2' });
+    h.step();
+    expect(sel(h).reviving).toBe(false);
+    const h2 = survival();
+    playing(h2, [MARIO.id], '1-4');
+    (h2.top() as LevelScene).world.events.push({ type: 'exit', next: '2-1' });
+    h2.step();
+    expect(sel(h2).reviving).toBe(true);
+  });
+
+  it('a first 1-4 clear: the cheat news first (read out, waits for OK), then the revive news and screen', () => {
+    const h = survival();
+    playing(h, [MARIO.id], '1-4');
+    (h.top() as LevelScene).world.events.push({ type: 'exit', next: '2-1' });
+    h.step();
+    expect(h.settings.classicCheats.unlocked.extraCheckpoints).toBe(true);
+    const s = sel(h);
+    expect(s.reviving).toBe(true);
+    expect(s.boxShown).toBe('cheats');
+    expect(h.said.at(-1)).toMatch(/^You unlocked these cheats: .*Extra Checkpoints.*! OK to go on\.$/);
+    const texts = () => draw(s).texts.map((t) => t.str);
+    expect(texts()).toEqual(
+      expect.arrayContaining(['CHEATS UNLOCKED!', 'EXTRA CHECKPOINTS', '1 OF 9 HEROES STANDING']),
+    );
+    // Drawn in the box only: not over the counts under the heading.
+    expect(draw(s).texts.filter((t) => t.str === 'CHEATS UNLOCKED!' && t.y < 80)).toEqual([]);
+    h.idle(600);
+    expect(s.boxShown).toBe('cheats');
+    h.tap('jump');
+    expect(s.boxShown).toBe('news');
+    expect(h.said.at(-1)).toBe('You can now revive and strengthen heroes. OK to go on.');
+    h.tap('jump');
+    expect(s.boxShown).toBeNull();
+    expect(h.said.at(-1)).toMatch(/^Revive your heroes: /);
   });
 });

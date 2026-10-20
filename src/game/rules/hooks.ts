@@ -68,6 +68,8 @@ export interface ClassicRulesHooks {
    * rules/classic-level-variants.ts); true when any applied. `spawns` is the World's own list of
    * the area's spawns (a copy of the level's), which an edit may change before they spawn.
    * `options` is the World's Classic mode options (World.classic: Replace Goombas, Piranhas).
+   * `world` is the World being built (the level-edit cheats, rules/classic-cheats.ts, read
+   * World.cheats and set its water line and extra checkpoints).
    */
   levelEdits(
     map: TileMap,
@@ -75,7 +77,10 @@ export interface ClassicRulesHooks {
     defs: readonly CharacterDef[],
     spawns?: EntitySpawn[],
     options?: Readonly<ClassicSettings> | null,
+    world?: World,
   ): boolean;
+  /** Armoured (HP-C12): the cheats' All Weapons Pierce goal counts these defeats. */
+  armoured(e: Enemy): boolean;
   /**
    * The World of a Classic area is built (players placed, map edited): the Classic Yoshi mount's
    * egg block and carried rider (2026-10-19-yoshi-build-classic-character.md YM-5, YM-7). Optional.

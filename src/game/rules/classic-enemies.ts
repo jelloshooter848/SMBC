@@ -37,6 +37,8 @@ export const CLASSIC_HP = {
   'koopa-para': 900,
   buzzy: 600,
   spiny: 350,
+  /** SpikeTop.as: HealthValue.SPIKE_TOP (600) is overwritten by its Goomba base's GOOMBA (250). */
+  'spike-top': 250,
   'bullet-bill': 400,
   lakitu: 800,
   'hammer-bro': 800,
@@ -52,9 +54,9 @@ export const CLASSIC_HP = {
   'bowser-mario': 5000,
 } as const;
 
-/** Armoured enemies (HP-C12): Buzzy Beetle and Bullet Bill (Spiny is not). */
+/** Armoured enemies (HP-C12): Buzzy Beetle, Bullet Bill and Spike Top (Spiny is not). */
 export function isArmoured(e: Enemy): boolean {
-  return e.kind === 'bullet-bill' || (e instanceof Koopa && e.color === 'buzzy');
+  return e.kind === 'bullet-bill' || e.kind === 'spike-top' || (e instanceof Koopa && e.color === 'buzzy');
 }
 
 /** Resists hit-stun, boomerang stun and Ice freeze (HP-C15): Lakitu, Bowser (and fakes). */
@@ -176,7 +178,9 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
     e.stopFrames = src.freezeFrames;
     return 'stun';
   }
-  if (isArmoured(e) && (src.pierce ?? 0) < ARMOUR_STRENGTH) {
+  // All Weapons Pierce (Classic cheat; Character.landAttack, Projectile.confirmedHit): armour
+  // never stops a hit.
+  if (isArmoured(e) && (src.pierce ?? 0) < ARMOUR_STRENGTH && !world.cheats.allWeaponsPierce) {
     if (src.blockedSfx) world.audio.sfx(src.blockedSfx);
     return 'blocked';
   }

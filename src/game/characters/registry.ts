@@ -30,7 +30,8 @@ import { ARTHUR_CLASSIC } from './arthur/classic';
 import { YOSHI_CLASSIC } from './yoshi/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
-import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
+import { classicEnemySpawned, classicHit, isArmoured } from '../rules/classic-enemies';
+import { applyCheatEdits } from '../rules/classic-cheats';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
@@ -46,12 +47,16 @@ installClassicRules({
   // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
   strikeBlock: (world, tx, ty, p, breakBricks, hit) =>
     yoshiEggStrike(world, tx, ty, p) ?? classicStrikeBlock(world, tx, ty, p, breakBricks, hit),
-  levelEdits: (map, id, defs, spawns, options) => {
-    // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas).
+  levelEdits: (map, id, defs, spawns, options, world) => {
+    // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas) and its
+    // level-edit cheats (rules/classic-cheats.ts).
     const water = applyClassicLevelEdits(map, id, defs);
     const wide = applyWideVariants(map, id, defs, spawns);
-    return applyOptionSpawns(map, spawns, options) || wide || water;
+    const opts = applyOptionSpawns(map, spawns, options);
+    const cheats = world && spawns ? applyCheatEdits(map, id, spawns, world) : false;
+    return opts || wide || water || cheats;
   },
+  armoured: isArmoured,
   worldLoaded: yoshiWorldLoaded,
   clearHop: yoshiClearHop,
 });

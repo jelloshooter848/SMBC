@@ -49,11 +49,10 @@ export const CLASSIC_PIRANHAS = ['some', 'all', 'green-some', 'green-all', 'red-
 export type ClassicPiranhas = (typeof CLASSIC_PIRANHAS)[number];
 
 /**
- * Replace Goombas (GoombaReplacementType). The original's fourth value, Spike Top, is a new
- * enemy that lands separately: it adds 'spike-top' here, its label and its spawn type
- * (rules/classic-options-level.ts GOOMBA_SPAWNS), and the menu offers it.
+ * Replace Goombas (GoombaReplacementType): Off, Buzzy Beetle, Spiny and Spike Top (the new enemy
+ * of entities/enemies/spike-top.ts, whose spawn type rules/classic-goombas.ts registers).
  */
-export const CLASSIC_GOOMBAS = ['off', 'buzzy', 'spiny'] as const;
+export const CLASSIC_GOOMBAS = ['off', 'buzzy', 'spiny', 'spike-top'] as const;
 export type ClassicGoombas = (typeof CLASSIC_GOOMBAS)[number];
 
 /**
