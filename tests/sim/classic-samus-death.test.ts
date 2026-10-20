@@ -74,8 +74,8 @@ describe('SA-C32: Classic Samus bursts into six pieces', () => {
   it('the Classic def sets it; no Current def and no other Classic def does', () => {
     expect(SAMUS_CLASSIC.deathBurst?.pieces).toHaveLength(6);
     for (const def of [...CHARACTERS, ...Object.values(CLASSIC_CHARACTERS)])
-      // G-054 (0.5.0): Classic Mega Man, Bass and Mega Man's looks burst into orbs.
-      if (def !== SAMUS_CLASSIC && def?.deathBurst?.sheet !== 'megaman-orbs')
+      // G-054 (0.5.0): Classic Mega Man, Bass and their looks burst into orbs; no Current def does.
+      if (def !== SAMUS_CLASSIC && !(def?.rules === 'classic' && def.deathBurst?.sheet === 'megaman-orbs'))
         expect(def?.deathBurst, def?.id).toBeUndefined();
   });
 

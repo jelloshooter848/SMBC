@@ -60,6 +60,7 @@ export function classicBass(
   base: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'music'>,
   profile: MovementProfile,
   palette: string,
+  orbs: 'colour' | 'white' = 'white',
 ): CharacterDef {
   return classicMegaMan({
     base,
@@ -83,8 +84,8 @@ export function classicBass(
     weaponPalette: (id: MMWeaponId) => (id === 'water-shield' ? `${palette}-water` : palette),
     weaponLabel: (id) => (id === 'water-shield' ? 'WATER' : mmWeapon(id).label),
     slideFrame: 'dash',
-    // G-054: his own look's white orbs (MegaManParticle.BASS_COLOR_PARTICLE_SKIN_NUM lacks it).
-    orbs: 'white',
+    // G-054: white orbs, colour only for Dr. Wily and Quick Man (BASS_COLOR_PARTICLE_SKIN_NUM 3, 4, 7, 8).
+    orbs,
   });
 }
 

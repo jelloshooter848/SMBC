@@ -101,6 +101,8 @@ function identity(id: string, name: string, hudName: string, palette: string): C
 }
 
 export const PIT_CLASSIC: CharacterDef = {
+  // A look of Samus's (the original's Samus class with a skin), where a rule names her.
+  lookOf: 'samus',
   ...classicSamus({
     base: identity('pit', 'Pit', 'PIT', 'pit'),
     variant: { ...PIT_VARIANT, shotLook: arrows('pit-shots') },
@@ -114,6 +116,7 @@ export const PIT_CLASSIC: CharacterDef = {
 };
 
 export const DARKPIT_CLASSIC: CharacterDef = {
+  lookOf: 'samus',
   ...classicSamus({
     base: identity('darkpit', 'Dark Pit', 'D.PIT', 'darkpit'),
     variant: { ...PIT_VARIANT, shotLook: arrows('darkpit-shots') },

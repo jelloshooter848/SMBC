@@ -122,4 +122,35 @@ describe('G-054 Mega Man and Bass burst into orbs', () => {
     const r = die(MEGAMAN, 'current');
     expect(r.jingles).toContain('death');
   });
+
+  it("each look's orbs follow MegaManParticle's colour lists", async () => {
+    const v = await import('@game/characters/megaman/classic-variants');
+    const pm = await import('@game/characters/protoman/classic');
+    const bl = await import('@game/characters/bass/classic-looks');
+    const { QUICKMAN_CLASSIC } = await import('@game/characters/bass/classic-quickman');
+    const n = (d: CharacterDef) => d.deathBurst?.pieces.length;
+    // MEGA_MAN_COLOR_PARTICLE_SKIN_NUM [0, 1, 10, 13..18, 21, 24, 25]: 12 colour orbs.
+    for (const d of [
+      mm,
+      v.ROCK_CLASSIC,
+      v.CUTMAN_CLASSIC,
+      v.ICEMAN_CLASSIC,
+      v.FIREMAN_CLASSIC,
+      v.FRANCESCA_CLASSIC,
+    ])
+      expect(n(d), d.id).toBe(12);
+    // The rest: 16 white ones (Proto Man 3-5, Break Man 8, 9, 19, Rokko 11, Doropie 26).
+    for (const d of [pm.PROTOMAN_CLASSIC, pm.BREAKMAN_CLASSIC, v.ROKKO_CLASSIC, v.DOROPIE_CLASSIC])
+      expect(n(d), d.id).toBe(16);
+    // BASS_COLOR_PARTICLE_SKIN_NUM [3, 4, 7, 8]: Dr. Wily and Quick Man; the rest white.
+    for (const d of [bl.WILY_CLASSIC, QUICKMAN_CLASSIC]) expect(n(d), d.id).toBe(12);
+    for (const d of [
+      BASS_CLASSIC,
+      bl.MRX_CLASSIC,
+      bl.COSSACK_CLASSIC,
+      bl.GEMINI_CLASSIC,
+      bl.SKULLMAN_CLASSIC,
+    ])
+      expect(n(d), d.id).toBe(16);
+  });
 });

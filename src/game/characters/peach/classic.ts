@@ -188,6 +188,9 @@ function peachTouchLabels(p: Player): ReturnType<NonNullable<CharacterDef['touch
 
 export const PEACH_CLASSIC: CharacterDef = {
   id: 'peach',
+  // A look of Luigi's (Luigi skins 8 and 10): Bowser's hit points and the Cheep leaps count her
+  // as Luigi, as the original's `player is Luigi` does.
+  lookOf: 'luigi',
   name: 'Peach',
   hudName: 'PEACH',
   // The original's Peach skins (Luigi skins 8 and 10) name the Subcon (BmdInfo.as:758, :766, namesArr[2]).

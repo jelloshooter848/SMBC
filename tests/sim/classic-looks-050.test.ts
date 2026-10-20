@@ -216,4 +216,25 @@ describe('G-053 the small-crouch looks', () => {
     };
     expect(hp(MARIO3_CLASSIC)).toBe(hp(MARIO_CLASSIC));
   });
+
+  it("the older looks count as their heroes too: Peach as Luigi for Bowser's hit points", async () => {
+    const { PEACH_CLASSIC } = await import('@game/characters/peach/classic');
+    const { LUIGI_CLASSIC } = await import('@game/characters/luigi/classic');
+    const { PIT_CLASSIC, DARKPIT_CLASSIC } = await import('@game/characters/pit/classic');
+    const v = await import('@game/characters/megaman/classic-variants');
+    const pm = await import('@game/characters/protoman/classic');
+    expect(PEACH_CLASSIC.lookOf).toBe('luigi');
+    expect(PIT_CLASSIC.lookOf).toBe('samus');
+    expect(DARKPIT_CLASSIC.lookOf).toBe('samus');
+    for (const d of [
+      v.ROCK_CLASSIC,
+      v.ROKKO_CLASSIC,
+      v.CUTMAN_CLASSIC,
+      pm.PROTOMAN_CLASSIC,
+      pm.BREAKMAN_CLASSIC,
+    ])
+      expect(d.lookOf, d.id).toBe('megaman');
+    const hp = (def: CharacterDef) => classicMaxHp(new Bowser(0, 0), world(def));
+    expect(hp(PEACH_CLASSIC)).toBe(hp(LUIGI_CLASSIC));
+  });
 });

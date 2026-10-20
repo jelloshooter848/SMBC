@@ -38,6 +38,7 @@ export const QUICKMAN_CLASSIC: CharacterDef = {
     },
     QUICKMAN_CLASSIC_PROFILE,
     'quickman',
+    'colour',
   ),
   lookOf: 'bass',
   guide: { ...BASS_CLASSIC_GUIDE, tagline: 'Quick Man: faster and a higher jump; no double jump or dash' },

@@ -478,11 +478,13 @@ describe('PE-11, PE-19: riding and lifting enemies', () => {
     const col = Math.floor(r.p.body.x / 4096) + 4;
     const b = place(r, new Bowser(col, 12, 'fire'));
     b.body.vx = 0;
-    const hp0 = b.classicHp ?? 2400;
+    // 0.5.0 (QA, lookOf): Peach is a Luigi look, so Bowser has his 5000 against Mario and Luigi.
+    const full = 5000;
+    const hp0 = b.classicHp ?? full;
     r.p.facing = 1;
     tap(r, 'attack');
     r.until(() => thrown(r).length === 0, [], 90);
-    expect(hp0 - (b.classicHp ?? 2400)).toBe(1000);
+    expect(hp0 - (b.classicHp ?? full)).toBe(1000);
   });
 
   it('a set-down enemy is back in the world, 12 px ahead, and resumes', () => {
