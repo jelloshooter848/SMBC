@@ -1223,8 +1223,7 @@ export class CharacterSelectScene implements Scene {
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
     // The HUD's face: the shown look's drawn face, else its art (doubled there).
-    const host = shown ? this.game.slotOf(shown) : null;
-    const face = shown && host === shown ? drawnFace(shown.id) : null;
+    const face = shown ? drawnFace(shown.id) : null;
     drawSelectHud(
       r,
       assets,
@@ -1264,8 +1263,8 @@ export class CharacterSelectScene implements Scene {
         const look = this.game.skinFor(c);
         // Survival's fallen heroes are greyed (CharacterSelectBox.markPortraitFallen: desaturate).
         const grey = (p: string) => (this.fallen(i) ? fxPalette(p, 'fallen') : p);
-        // Its own drawn face (head and shoulders filling the cell), else its art's head doubled.
-        const face = look === c ? drawnFace(c.id) : null;
+        // The look's drawn face (head and shoulders filling the cell), else its art's head doubled.
+        const face = drawnFace(look.id);
         if (face) {
           r.sprite(assets.sheet(face.sheet, grey(face.palette)), face.frame, at.x + 1, at.y + 1);
           return;

@@ -3,14 +3,15 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * Classic mode's select-screen faces: our own 24 x 24 close-ups (head and shoulders filling the
- * cell, as the original's portraits are framed), one per select slot hero, drawn by hand for this
- * screen. A look with no face of its own here shows its standing art's head doubled
+ * cell, as the original's portraits are framed), drawn by hand for this screen: each select slot
+ * hero, each skin (Mega Man's built on his face, as their bodies are on his frame) and each
+ * Expansion hero. A look with none here shows its standing art's head doubled
  * (scenes/select-grid.ts faceOf).
  *
  * One shared palette (roles):
  *   0 outline   1 white   2 skin   3 skin shade   4 red   5 dark red   6 green   7 dark green
  *   8 light blue   9 blue   a dark blue   b brown   c dark brown   d gold   e grey   f light grey
- *   g orange   h dark grey
+ *   g orange   h dark grey   i pink   j purple   k cyan   l pale gold   m pale blue
  */
 export const selectFacePalettes: Record<string, string[]> = {
   'select-faces': [
@@ -32,6 +33,11 @@ export const selectFacePalettes: Record<string, string[]> = {
     NES.lightGray,
     NES.orange,
     NES.darkGray,
+    NES.pink,
+    NES.purple,
+    NES.cyan,
+    NES.yellowLight,
+    NES.skyLight,
   ],
 };
 
@@ -315,6 +321,332 @@ const sophia = [
   '.0000............0000...',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
+/* ---------- the skins and the Expansion heroes ---------- */
+
+/** `rows` with each role in `map` swapped for another. */
+function recolour(rows: readonly string[], map: Readonly<Record<string, string>>): string[] {
+  return rows.map((r) => [...r].map((c) => map[c] ?? c).join(''));
+}
+
+/** `base` with `layer`'s drawn pixels painted over it ('.' keeps the base; ',' clears to '.'). */
+function over(base: readonly string[], layer: readonly string[]): string[] {
+  return base.map((r, y) => {
+    const l = layer[y] ?? '';
+    return [...r].map((c, x) => (l[x] === ',' ? '.' : l[x] && l[x] !== '.' ? l[x] : c)).join('');
+  });
+}
+
+/** Proto Man: Mega Man's build in red and grey, the dark visor over his eyes, the gold scarf. */
+const protoman = over(recolour(megaman, { '9': '4', '8': 'f' }), [
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '.....hhhhhhhhhhhhhhh....',
+  '....hh11hhhhhh11hhhh....',
+  '....hhhhhhhhhhhhhhhh....',
+  '.....hhhhhhhhhhhhhh.....',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '..0ddddd0000000ddddd0...',
+  '.0ddddddd0444440dddddd0.',
+  '.0dddddddd04440ddd0ddd0.',
+  '..00dd00ddd0400dd0.0dd0.',
+  '',
+  '',
+]);
+
+/** Break Man: Proto Man's mask in dark grey and deep red. */
+const breakman = recolour(protoman, { '4': 'h', f: '5' });
+
+/** Rock: no helmet, his spiky brown hair, a blue shirt. */
+const rock = over(recolour(megaman, { '8': 'm', '9': 'b' }), [
+  '....0.0.000.0.0.........',
+  '...0b0b0bbb0b0b0........',
+  '..0bbbbbbbbbbbbbb0......',
+  '..0bbbbbbbbbbbbbbbb0....',
+  '..0bbbbbbbbbbbbbbbbb0...',
+  '.0bbbbbbbbbbbbbbbbbbb0..',
+  '.0bbbbbbbbbbbbbbbbbbb0..',
+  '.0bbbb00000000000bbbbbb0',
+  '.0bbb0222222222222bbbbb0',
+  '.0bb022222222222222222b0',
+  '.02202',
+  '.02202',
+  '.02202',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+]);
+
+/** Cut Man: his helmet in orange and red under the great scissor blades. */
+const cutman = over(recolour(megaman, { '9': 'g', '8': '4' }), [
+  '...00..........00.......',
+  '..0110........0110......',
+  '..01110......01110......',
+  '...01110....01110.......',
+  '....011100001110........',
+  '.....0111111110.........',
+]);
+
+/** Fire Man: dark red with orange, the flame burning on his head. */
+const fireman = over(recolour(megaman, { '9': '5', '8': 'g' }), [
+  '.........d..............',
+  '.......d.dd.d...........',
+  '......ddgddgdd..........',
+  '.....dgggggggdd.........',
+  '.....dgg4444ggd.........',
+]);
+
+/** Ice Man: a blue parka hood, the white fur ring round his face, a pompom on top. */
+const iceman = over(recolour(megaman, { '8': '9' }), [
+  '.........0110...........',
+  '........011110..........',
+  '.........0110...........',
+  '',
+  '',
+  '',
+  '',
+  '.09991111111111111199990',
+  '.0991',
+  '.0912',
+  '.0912',
+  '.0912',
+  '.0912',
+  '.0912',
+  '.0912',
+  '.0991',
+  '.0999111111111111111999.',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+]);
+
+/** Francesca: the tall witch's hat with its gold band, her pale gold hair. */
+const francesca = over(recolour(megaman, { '9': 'l', '8': 'j' }), [
+  '...........000..........',
+  '..........0jj0..........',
+  '.........0jjj0..........',
+  '........0jjjj0..........',
+  '.......0jjjjjj0.........',
+  '.....00ddddddddd00......',
+  '..000jjjjjjjjjjjjjj000..',
+  '.0jjjjjjjjjjjjjjjjjjjjj0',
+]);
+
+/** Doropie: Francesca's other look, the hat and dress in red. */
+const doropie = recolour(francesca, { j: '4' });
+
+/** Rokko Chan: a pink helmet with a red crest, her brown hair out at the sides. */
+const rokko = over(recolour(megaman, { '9': 'i', '8': '4' }), [
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '0bb0',
+  '0bbb0',
+  '0bbb0',
+  '0bbb0..................0',
+  '.0bb0..................b0',
+  '..0b0.................bb0',
+]);
+
+/** Pit: brown hair under a green laurel, a bright face, the white toga with a gold clasp. */
+const pit = [
+  '.......0000000000.......',
+  '.....00bbbbbbbbbb00.....',
+  '....0bbbbbbbbbbbbbb0....',
+  '...0b66b66b66b66b66b0...',
+  '...0b66666666666666b0...',
+  '..0bbbbbbbbbbbbbbbbbb0..',
+  '..0bbb22b222222b22bbb0..',
+  '..0bb2222222222222bbb0..',
+  '..0bb2200022220002bb0...',
+  '..0b22201022220102bb0...',
+  '..0b22200022220002b20...',
+  '..0b22222222222222220...',
+  '..0b22222223222222220...',
+  '...0222222222222222220..',
+  '...02222220000022222200.',
+  '....022222222222222200..',
+  '.....0002222222220000...',
+  '.......002222222200.....',
+  '....00ffff000000fff00...',
+  '...0fffffffd11dfffff0...',
+  '..0ffffffffd11dffffff0..',
+  '.0fffffffffdddfffffff10.',
+  '.0ffffffffffffffffffff10',
+  '.0fffffffffffffffffff110',
+].map((r) => r.slice(0, 24).padEnd(24, '.'));
+
+/** Dark Pit: Pit's look in black and grey. */
+const darkpit = recolour(pit, { b: 'h', f: 'e', '6': '7' });
+
+/** Princess Peach: pale gold hair, her crown with its blue jewel, the pink dress. */
+const peach = [
+  '........0.0..0.0........',
+  '.......0d0d00d0d0.......',
+  '.......0ddd88ddd0.......',
+  '.....00dddddddddd00.....',
+  '....0llllllllllllll0....',
+  '...0llllllllllllllll0...',
+  '..0llllll22222222lllll0.',
+  '..0llll222222222222llll0',
+  '..0lll22200022200022lll0',
+  '..0lll22201022201022lll0',
+  '..0lll22200022200022lll0',
+  '..0lll22222222222222lll0',
+  '..0lll22222223222222lll0',
+  '..0llll222222222222llll0',
+  '..0lllll2224444442lllll0',
+  '..0llllll222222222lllll0',
+  '..0lllllll2222222llllll0',
+  '..0llllll000000000lllll0',
+  '...0ll0iiiiiiiiiiiii0ll0',
+  '....0iiiiiiii8iiiiiii0..',
+  '...0iiiiiiiii8iiiiiiii0.',
+  '..0iiiiiiiiiiiiiiiiiiii0',
+  '..0iiiiiiiiiiiiiiiiiiii0',
+  '..0iiiiiiiiiiiiiiiiiiii0',
+].map((r) => r.slice(0, 24).padEnd(24, '.'));
+
+/** Vic Viper: the ship's nose head on, its canopy, the wing roots and the red intakes. */
+const vicviper = [
+  '........................',
+  '..........0000..........',
+  '.........0ffff0.........',
+  '........0ffffff0........',
+  '........0f8888f0........',
+  '.......0ff8mm8ff0.......',
+  '.......0ff8888ff0.......',
+  '......0ffffffffff0......',
+  '......0fffeeeefff0......',
+  '.....0fffeeeeeefff0.....',
+  '....0ffffeeeeeeffff0....',
+  '...0fffffffffffffffff0..',
+  '..0ff44ffffffffffff44ff0',
+  '.0fff44ffeeeeeeeeff44fff0',
+  '0ffffffffeeeeeeeeffffffff',
+  '0eeeeeeeeeeeeeeeeeeeeeee0',
+  '.0000eeee0000000eeee0000.',
+  '.....0ee0.......0ee0.....',
+  '.....0440.......0440.....',
+  '......00.........00......',
+  '........................',
+  '........................',
+  '........................',
+  '........................',
+].map((r) => r.slice(0, 24).padEnd(24, '.'));
+
+/** The Warriors of Light: the fighter's spiky red hair, a stern face, blue armour. */
+const warriors = [
+  '...0.0..0.0..0.0..0.....',
+  '..0g0g00g0g00g0g00g0....',
+  '..0ggggggggggggggggg0...',
+  '.0ggggggggggggggggggg0..',
+  '.0ggggggggggggggggggg0..',
+  '.0gggg44444444444gggg0..',
+  '.0ggg2222222222222ggg0..',
+  '.0gg222000222200022gg0..',
+  '.0gg222010222201022gg0..',
+  '.0gg222000222200022gg0..',
+  '.0gg2222222222222222g0..',
+  '.0gg2222222322222222g0..',
+  '.0ggg222222222222222g0..',
+  '..0gg22222000002222g0...',
+  '..0ggg222222222222gg0...',
+  '...0gggg22222222ggg0....',
+  '....000002222220000.....',
+  '...0aaaa00000000aaaa0...',
+  '..0999990aaaaaa0999990..',
+  '.099999990aaaa099999990.',
+  '.0999999990aa0999999990.',
+  '0999999999900999999999900',
+  '0999999999999999999999990',
+  '0999999999999999999999990',
+].map((r) => r.slice(0, 24).padEnd(24, '.'));
+
+/** Sir Arthur: the silver knight's helmet, its visor slit and red plume, the armoured shoulders. */
+const arthur = [
+  '..............44........',
+  '............44444.......',
+  '.......000044444........',
+  '.....00ffffff00.........',
+  '....0ffffffffff00.......',
+  '...0fffffffffffff0......',
+  '..0ffffffffffffffff0....',
+  '..0ffffeeeeeeeeffff0....',
+  '..0fffe0000000000eff0...',
+  '..0fffe0hhhhhhhh0eff0...',
+  '..0fffe0000000000eff0...',
+  '..0ffffeeeeeeeeeefff0...',
+  '..0fffffffffffffffff0...',
+  '..0ffffeefeefeefefff0...',
+  '..0fffffffffffffffff0...',
+  '...0ffffffffffffff0.....',
+  '....00000000000000......',
+  '...0fffff0eeee0fffff0...',
+  '..0ffffffe0ee0effffff0..',
+  '.0fffffffee00eefffffff0.',
+  '0ffffffffeeeeeeffffffff0',
+  '0fffffffffeeeefffffffff0',
+  '0eeeeeeeeeeeeeeeeeeeeee0',
+  '0ffffffffffffffffffffff0',
+].map((r) => r.slice(0, 24).padEnd(24, '.'));
+
+/** Yoshi: the round green head and big nose, his white muzzle, the red saddle at his back. */
+const yoshi = [
+  '......00000.............',
+  '....00666660000.........',
+  '...0666666666660........',
+  '..066666111066660.......',
+  '..066661001066666000....',
+  '..066661001066666666600.',
+  '..0666661110666666666660',
+  '..06666666666666666666660',
+  '.0666666666666666666666660',
+  '.0666666666666666666666660',
+  '.0666666611111166666666660',
+  '..0666661111111111166660.',
+  '..066661111111111111110..',
+  '...0661111111111111110...',
+  '....0611111111111110.....',
+  '.....00111111111100......',
+  '......0000000000000......',
+  '....04440666666666000....',
+  '...0444406666666666660...',
+  '..04444066666666666666 0.',
+  '..0444066666666666666660.',
+  '.044406666666666666666660',
+  '.044406666666666666666660',
+  '.0000066666666666666666660',
+].map((r) => r.slice(0, 24).padEnd(24, '.').replace(/ /g, '.'));
+
 /** The faces by select-slot hero id (a frame each on the `select-faces` sheet). */
 export const SELECT_FACE_IDS = [
   'mario',
@@ -327,9 +659,52 @@ export const SELECT_FACE_IDS = [
   'bill',
   'ryu',
   'sophia',
+  'rock',
+  'protoman',
+  'breakman',
+  'cutman',
+  'fireman',
+  'iceman',
+  'francesca',
+  'doropie',
+  'rokko',
+  'pit',
+  'darkpit',
+  'peach',
+  'vicviper',
+  'warriors',
+  'arthur',
+  'yoshi',
 ];
 
 export const selectFacesDef: SpriteDef = {
   palette: 'select-faces',
-  frames: { mario, luigi, link, samus, simon, megaman, bass, bill, ryu, sophia },
+  frames: {
+    mario,
+    luigi,
+    link,
+    samus,
+    simon,
+    megaman,
+    bass,
+    bill,
+    ryu,
+    sophia,
+    rock,
+    protoman,
+    breakman,
+    cutman,
+    fireman,
+    iceman,
+    francesca,
+    doropie,
+    rokko,
+    pit,
+    darkpit,
+    peach,
+    vicviper,
+    warriors,
+    arthur,
+    yoshi,
+  },
 };

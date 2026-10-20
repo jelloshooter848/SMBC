@@ -4,8 +4,10 @@ import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
 import { CharacterSelectScene, lookName } from '@game/scenes/character-select';
 import { MEGAMAN } from '@game/characters/megaman';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import { SPRITES } from '@content/sprites';
 import {
   DEFAULT_SELECT_THEME,
+  drawnFace,
   NAME_BOX,
   ORIGINAL_GRID,
   SKIN_GRID,
@@ -123,27 +125,20 @@ describe('the skin menu', () => {
 });
 
 describe('item 5: faces', () => {
-  it("the HUD and the cells show a hero's head doubled, its top inside the box; Random a ?", () => {
+  it("the HUD box and the cells show the look's drawn face; Random a ?", () => {
     const { h, sel } = classicSelect();
     cursorTo(h, sel, 'megaman');
     h.tap('special');
     const d = draw(sel).sprites;
-    const face = faceOf('megaman-classic', 'portrait');
-    // The HUD face: Break Man's head's top row 1 px inside the box (not his feet, not a strip).
-    const hud = d.find((s) => s.frame === 'portrait' && s.y === HUD_FACE.y + 2 - face.top * 2);
-    expect(hud).toBeDefined();
-    h.tap('left');
-    while (!sel.chars[sel.cursor]) h.tap('right');
+    // The HUD box: Rock's face inside its 1 px frame; his cell too.
+    expect(d.some((s) => s.frame === 'rock' && s.y === HUD_FACE.y + 1)).toBe(true);
+    const c = sel.cellOf(sel.chars.findIndex((x) => x.id === 'megaman'));
+    expect(d.some((s) => s.frame === 'rock' && s.y === c.y + 1)).toBe(true);
     // Random: the "?" in the HUD box.
     for (let i = 0; i < 40 && sel.chars[sel.cursor]; i++) h.tap('left');
-    const r = draw(sel).sprites.filter((s) => s.frame === 'select-random-0' && s.y < 24);
-    expect(r.length).toBe(1);
-    // Cells: the same doubled head.
-    const at = sel.chars.findIndex((x) => x.id === 'megaman');
-    const c = sel.cellOf(at);
-    expect(draw(sel).sprites.some((s) => s.frame === 'portrait' && s.y === c.y + 2 - face.top * 2)).toBe(
-      true,
-    );
+    expect(draw(sel).sprites.filter((s) => s.frame === 'select-random-0' && s.y < 26).length).toBe(1);
+    // A look with no drawn face would show its art's head doubled (faceOf finds its top row).
+    expect(faceOf('megaman-classic', 'portrait').top).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -276,6 +271,19 @@ describe('the original\u2019s rows, box and faces', () => {
     expect(t.some((x) => x.includes('TO PICK'))).toBe(true);
   });
 
+  it('every hero, skin and Expansion hero has its own drawn 24 x 24 face', () => {
+    for (const id of [
+      ...['mario', 'luigi', 'link', 'samus', 'simon', 'megaman', 'bass', 'bill', 'ryu', 'sophia'],
+      ...['rock', 'protoman', 'breakman', 'cutman', 'fireman', 'iceman', 'francesca', 'doropie', 'rokko'],
+      ...['pit', 'darkpit', 'peach', 'vicviper', 'warriors', 'arthur', 'yoshi'],
+    ]) {
+      const rows = SPRITES['select-faces']?.frames[id];
+      expect(rows, id).toHaveLength(24);
+      for (const r of rows ?? []) expect(r.length, id).toBe(24);
+      expect(drawnFace(id)?.frame).toBe(id);
+    }
+  });
+
   it('every slot hero has its own drawn face in its cell and the HUD box', () => {
     const { h, sel } = classicSelect();
     const faces = () => draw(sel).sprites.filter((x) => x.key.startsWith('select-faces'));
@@ -295,8 +303,9 @@ describe('the original\u2019s rows, box and faces', () => {
     );
     // The HUD box (the cursor's hero) too: Mario in it and in his cell.
     expect(faces().filter((x) => x.frame === 'mario').length).toBe(2);
-    // A look of its own (Break Man) shows its art's head instead.
+    // Each look has its own: Break Man's on Mega Man's slot.
     h.game.setSkin(MEGAMAN, BREAKMAN_CLASSIC);
     expect(faces().some((x) => x.frame === 'megaman')).toBe(false);
+    expect(faces().some((x) => x.frame === 'breakman')).toBe(true);
   });
 });
