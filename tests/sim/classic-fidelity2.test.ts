@@ -140,12 +140,12 @@ describe('air states', () => {
     expect(pose(r)).toBe('simon-classic:jump-tuck');
     r.until(() => r.p.body.vy > 0, ['jump'], 120);
     r.step();
-    expect(pose(r)).toBe('simon:idle');
+    expect(pose(r)).toBe('simon-classic:idle');
     const w = rig(SIMON_CLASSIC);
     w.step(['jump']);
     w.step(['jump', 'attack']);
     w.until(() => !w.p.scratch._act, ['jump'], 60);
-    if (w.p.body.vy < 0) expect(pose(w)).toBe('simon:idle');
+    if (w.p.body.vy < 0) expect(pose(w)).toBe('simon-classic:idle');
     expect(w.p.scratch._airAtk).toBe(1);
   });
 
