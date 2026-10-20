@@ -229,6 +229,13 @@ export interface MovementProfile {
    */
   wallClimb?: WallClimbProfile | undefined;
   /**
+   * Classic Yoshi's flutter jump (2026-10-19-yoshi-build-classic-character.md YO-8; tier path):
+   * falling with jump held and the flutter not used since the last landing, spring or stomp
+   * bounce, gravity is off and vy -= `lift` a frame down to -`rise` (rising slowly), for at most
+   * `frames` frames; letting go of jump ends it. Once per jump. Absent: none.
+   */
+  flutter?: { frames: number; lift: number; rise: number } | undefined;
+  /**
    * A float (Classic Peach, PE-6; rise path only): once per airborne spell, on the first frame
    * falling (vy >= 0, the rise over) with Jump held since the take-off or pressed again while
    * falling, she hangs level (vy 0, no gravity) for `frames` frames with full air control. Letting

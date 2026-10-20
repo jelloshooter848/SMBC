@@ -54,6 +54,13 @@ export interface GameContext {
    * it once, in its constructor (World.rules).
    */
   rules?: Rules;
+  /**
+   * Classic SMBC's Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-1, a dev-only
+   * toggle): 'on' lets the first power-up block of each allowed area hatch him, 'ride' also starts
+   * every life on his back. Absent (always under Current, in a campaign file and with the toggle
+   * off): no mount code runs (YM-2). Game makes it a live view, like `rules`.
+   */
+  classicYoshi?: 'on' | 'ride';
 }
 
 /** Progress carried between levels. */

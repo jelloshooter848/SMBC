@@ -68,6 +68,11 @@ export interface ClassicRulesHooks {
    * the area's spawns (a copy of the level's), which an edit may change before they spawn.
    */
   levelEdits(map: TileMap, levelId: string, defs: readonly CharacterDef[], spawns?: EntitySpawn[]): boolean;
+  /**
+   * The World of a Classic area is built (players placed, map edited): the Classic Yoshi mount's
+   * egg block and carried rider (2026-10-19-yoshi-build-classic-character.md YM-5, YM-7). Optional.
+   */
+  worldLoaded?(world: World): void;
 }
 
 let hooks: ClassicRulesHooks | null = null;
