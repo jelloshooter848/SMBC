@@ -103,7 +103,8 @@ const burst = [
   '...2....',
 ];
 
-// The Wave Beam: an 8 x 8 ring with a black outline; the two frames swap the inner colours.
+// The Wave Beam: an 8 x 8 ring with a black outline; the two frames swap the inner colours. It
+// comes only with the Flower, so only its Varia colours are on the sheet (`wave-varia-*`).
 const wave0 = [
   '..0000..',
   '.022220.',
@@ -175,14 +176,12 @@ const fireballBurst = [
 export const smbcShotsDef: SpriteDef = {
   palette: 'smbc-shots',
   frames: {
-    'wave-0': wave0,
-    'wave-1': wave1,
-    'wave-burst': burst,
     'wave-varia-0': varia(wave0),
     'wave-varia-1': varia(wave1),
     'wave-varia-burst': varia(burst),
     missile,
-    'missile-up': transpose(missile),
+    // Turned to point up, one body row shorter so the art is its 8 x 10 body (MISSILE_UP_CLASSIC).
+    'missile-up': transpose(missile).filter((_, y) => y !== 5),
     // Its explosion (the Flash drawn 4 px up and left of the missile).
     'missile-burst': fireballBurst,
     'fireball-0': fireball0,

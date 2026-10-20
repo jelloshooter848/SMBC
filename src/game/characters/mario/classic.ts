@@ -220,11 +220,15 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
 
 /**
  * The grow and shrink flicker as the original steps it (F2; MarioMc `growStart..growEnd`, 14
- * frames, and `takeDamageStart..End`, 18 frames, at ANIM_TMR_FOR_TAKE_DAMAGE 75 ms = 4.5 game
- * frames): S small, M mid, B big. The last pose holds if the freeze outlasts the sequence.
+ * frames, and `takeDamageStart..End`, 18 frames): S small, M mid, B big. The grow steps on
+ * ANIM_TMR_FOR_FREEZE, 50 ms = 3 game frames (MarioBase.as:65, :899), so it is done at frame 42
+ * of the 61-frame freeze; the shrink on ANIM_TMR_FOR_TAKE_DAMAGE, 75 ms = 4.5 frames
+ * (MarioBase.as:66, :954). The last pose holds if the freeze outlasts the sequence.
  */
 export const CLASSIC_GROW_SEQ = 'SMSMSMSMBSMBBB';
 export const CLASSIC_SHRINK_SEQ = 'BBBBSBSBSBSBSBSBSS';
+export const CLASSIC_GROW_STEP = 3;
+export const CLASSIC_SHRINK_STEP = 4.5;
 const GROW_POSE: Record<string, [string, number]> = {
   S: ['small-idle', 0],
   M: ['grow-mid', 16],
@@ -233,8 +237,10 @@ const GROW_POSE: Record<string, [string, number]> = {
 function classicGrowFrame(p: Player, spec: SpriteSpec): SpriteSpec {
   const tr = p.transition;
   if (!tr || (tr.kind !== 'grow' && tr.kind !== 'shrink') || p.dead) return spec;
-  const seq = tr.kind === 'grow' ? CLASSIC_GROW_SEQ : CLASSIC_SHRINK_SEQ;
-  const step = seq[Math.min(seq.length - 1, Math.floor(tr.t / 4.5))] as string;
+  const grow = tr.kind === 'grow';
+  const seq = grow ? CLASSIC_GROW_SEQ : CLASSIC_SHRINK_SEQ;
+  const at = Math.floor(tr.t / (grow ? CLASSIC_GROW_STEP : CLASSIC_SHRINK_STEP));
+  const step = seq[Math.min(seq.length - 1, at)] as string;
   const [frame, offsetY] = GROW_POSE[step] as [string, number];
   return { ...spec, frame, offsetY };
 }
