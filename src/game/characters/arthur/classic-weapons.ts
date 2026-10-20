@@ -93,7 +93,7 @@ export const TORCH: ProjectileSpec = {
   frames: ['torch-0', 'torch-1'],
 };
 
-/** The torch's floor fire (AR-12): 150 a touch, armour-piercing, every 24 f, for 60 f. */
+/** The torch's floor fire (AR-12): 150 a touch, armour-piercing, every 24 f, for 73 f (4 touches). */
 export const TORCH_FIRE: ProjectileSpec = {
   ...BASE,
   kind: 'arthur-fire',
