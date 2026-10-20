@@ -320,7 +320,7 @@ export class Game {
     });
     // ctx.classicCheats: the cheats that are on, only while they play (cheatsLive), else absent.
     Object.defineProperty(deps.ctx, 'classicCheats', {
-      get: () => (this.cheatsLive ? this.deps.settings?.classicCheats.on : undefined),
+      get: () => (this.cheatsLive ? this.deps.settings?.classicCheats?.on : undefined),
       enumerable: true,
       configurable: true,
     });
@@ -396,7 +396,7 @@ export class Game {
       recordClassicClear(from);
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler).
       this.cheatEvent({ beat: 'smb' });
-      this.showCheatUnlocks(() => this.showClassicNewQuest());
+      this.showClassicNewQuest();
       return;
     }
     if (this.campaign) {
@@ -494,10 +494,6 @@ export class Game {
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
     } else then = () => (campaign ? this.returnToMap() : this.showTitle());
-    if (this.cheatUnlocks.length) {
-      const go = then;
-      then = () => this.showCheatUnlocks(go);
-    }
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
@@ -1314,12 +1310,19 @@ export class Game {
    * rules. Never with a campaign file open, never under Current rules.
    */
   get cheatsLive(): boolean {
-    return this.classicRun && this.campaign === null && this.liveRules === 'classic' && !!this.deps.settings;
+    return (
+      this.classicRun &&
+      this.campaign === null &&
+      this.liveRules === 'classic' &&
+      !!this.deps.settings?.classicCheats
+    );
   }
 
   /** Play counts toward the cheats' goals: a Classic run not started from developer mode. */
   get cheatGoalsCount(): boolean {
-    return this.classicRun && this.campaign === null && !this.classicDev && !!this.deps.settings;
+    return (
+      this.classicRun && this.campaign === null && !this.classicDev && !!this.deps.settings?.classicCheats
+    );
   }
 
   /** One more of `stat` toward the cheats' goals (StatManager's num* setters); unlocks what it earns. */
@@ -1353,40 +1356,28 @@ export class Game {
   }
 
   /**
-   * The YOU UNLOCKED cards of the cheats unlocked since the last ones (Cheats.unlockCheat's
-   * message boxes), one at a time, each read out and gone on with OK; then `next`. Over `world`
-   * (the level stays frozen beneath) when given, else full screen.
+   * A cheat unlocked mid-level (a count reached: Cheats.unlockCheat's message boxes at the end of
+   * the game loop): its YOU UNLOCKED card over the frozen level, read out, gone on with OK; one
+   * card per cheat. Unlocks from a clear or a game beaten are told on the select screen that
+   * follows instead (CharacterSelectScene), which already waits for a press.
    */
-  showCheatUnlocks(next: () => void, world: World | null = null): void {
+  showCheatUnlocks(world: World): void {
     const id = this.cheatUnlocks.shift();
-    if (!id) return next();
-    const lines = unlockedLines(id);
-    const ok = abilityHint(this, 'OK', 'jump');
-    const audio = this.deps.ctx.audio;
-    audio.sfx('1up');
+    if (!id) return;
+    this.deps.ctx.audio.sfx('1up');
     this.deps.announcer?.say(`You unlocked the ${cheatInfo(id).name} cheat! OK to continue.`);
-    const after = () => {
-      this.scenes.pop();
-      this.showCheatUnlocks(next, world);
-    };
-    if (world)
-      this.scenes.push(
-        new CardScene(this, lines, after, world, {
-          panel: true,
-          keys: ['start', 'attack', 'jump'],
-          prompt: ok,
-        }),
-      );
-    else {
-      this.scenes.clear();
-      this.scenes.push(
-        new MessageScene(this, [...lines, '', fontText(`PRESS ${ok}`)], () => this.showCheatUnlocks(next), [
-          'start',
-          'attack',
-          'jump',
-        ]),
-      );
-    }
+    this.scenes.push(
+      new CardScene(
+        this,
+        unlockedLines(id),
+        () => {
+          this.scenes.pop();
+          this.showCheatUnlocks(world);
+        },
+        world,
+        { panel: true, keys: ['start', 'attack', 'jump'], prompt: abilityHint(this, 'OK', 'jump') },
+      ),
+    );
   }
 
   /** The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). */

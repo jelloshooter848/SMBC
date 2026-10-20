@@ -279,7 +279,7 @@ export class LevelScene implements Scene {
     }
     // A cheat unlocked mid-level (Classic mode, game.cheatTally): its card over the frozen level.
     if (this.game.cheatUnlocks.length && this.game.classicRun) {
-      this.game.showCheatUnlocks(() => {}, this.world);
+      this.game.showCheatUnlocks(this.world);
       return;
     }
     // A new tip holds the game until OK (0.4.45, tutorial/stage-tutorial.ts): the world stays frozen.
@@ -458,15 +458,10 @@ export class LevelScene implements Scene {
       }
       case 'exit':
         // Classic mode: a clear (and a castle's) unlocks Infinite Time and Extra Checkpoints
-        // (Level.completeLevel), whose cards come before the next level.
+        // (Level.completeLevel); the select screen that follows every clear tells of them.
         if (game.cheatGoalsCount && !game.playtestDone) {
           const main = this.level.parent ?? this.level.id;
           game.cheatEvent({ level: true, castle: /-4$/.test(main) });
-          if (game.cheatUnlocks.length) {
-            const next = ev.next;
-            game.showCheatUnlocks(() => this.exitTo(next), this.world);
-            break;
-          }
         }
         this.exitTo(ev.next);
         break;

@@ -207,7 +207,7 @@ describe('the title and the CLASSIC menu', () => {
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
     expect(opts).toBeInstanceOf(ClassicOptionsScene);
-    expect(labels(opts)).toEqual(['Classic rules', 'All options', 'Back']);
+    expect(labels(opts)).toEqual(['Classic rules', 'Cheats', 'All options', 'Back']);
     expect(h.said.at(-1)).toMatch(/^Classic options\. Classic rules: Classic SMBC\./);
     // Drawn in full: the label, and the value right-aligned on its row.
     let t = draw(opts).texts.map((x) => x.str);
@@ -606,7 +606,14 @@ describe('the Classic pause menu', () => {
     d.idle(4);
     d.tap('start');
     // Every developer row free play or a campaign file's pause has in dev mode.
-    expect(labels(d.top())).toEqual(['Continue', 'Options', 'Dev mode', 'Assists', 'Quit to title']);
+    expect(labels(d.top())).toEqual([
+      'Continue',
+      'Options',
+      'Dev mode',
+      'Assists',
+      'Cheats',
+      'Quit to title',
+    ]);
   });
 });
 
