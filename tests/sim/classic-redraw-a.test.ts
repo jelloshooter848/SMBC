@@ -5,7 +5,11 @@ import { toPx } from '@engine/math/units';
 import { SPRITES } from '@content/sprites';
 import { LINK_CLASSIC_BODIES, LINK_CLASSIC_TOP } from '@content/sprites/link-classic';
 import { SAMUS_CLASSIC_FRAMES, SAMUS_CLASSIC_ORIGIN } from '@content/sprites/samus-classic';
-import { SIMON_CLASSIC_BODY_OF, SIMON_CLASSIC_FRAMES, SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
+import {
+  SIMON_CLASSIC_BODY_OF,
+  SIMON_CLASSIC_FRAMES,
+  SIMON_CLASSIC_ORIGIN,
+} from '@content/sprites/simon-classic';
 import { marioClassicDef } from '@content/sprites/mario-classic';
 import { shownPortrait, type CharacterDef } from '@game/characters/character';
 import { LINK_CLASSIC, SWORD_BOX } from '@game/characters/link/classic';
@@ -27,7 +31,14 @@ useStorage();
 type Size = readonly [number, number];
 
 /** The drawn bounding box of `rows` (width, height), and its bottom row. */
-function bbox(rows: readonly string[]): { w: number; h: number; top: number; bottom: number; left: number; right: number } {
+function bbox(rows: readonly string[]): {
+  w: number;
+  h: number;
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+} {
   let left = Infinity;
   let right = -1;
   let top = Infinity;
@@ -161,12 +172,16 @@ describe('every Classic pose at the original 3.1.21 size', () => {
     for (const [f, size] of Object.entries(SIMON_SIZES)) within(`simon ${f}`, SIMON_CLASSIC_FRAMES[f], size);
     for (const [whip, body] of Object.entries(SIMON_CLASSIC_BODY_OF)) {
       expect(SIMON_SIZES[body], body).toBeDefined();
-      expect(SPRITES['simon-classic']?.frames[whip] ?? SPRITES['simon-flame']?.frames[whip], whip).toBeDefined();
+      expect(
+        SPRITES['simon-classic']?.frames[whip] ?? SPRITES['simon-flame']?.frames[whip],
+        whip,
+      ).toBeDefined();
     }
   });
 
   it("Mario and Luigi: the poses more than 1 px off the original's are re-cut", () => {
-    for (const [f, size] of Object.entries(MARIO_SIZES)) within(`mario ${f}`, marioClassicDef.frames[f], size);
+    for (const [f, size] of Object.entries(MARIO_SIZES))
+      within(`mario ${f}`, marioClassicDef.frames[f], size);
     // Same cells as the campaign's frames, so every offset still holds.
     for (const [f, rows] of Object.entries(marioClassicDef.frames)) {
       const cur = SPRITES.mario?.frames[f] as string[];
@@ -219,7 +234,11 @@ function drawn(r: Rig): { bottom: number; feet: number; name: string } {
   const rows = SPRITES[s.sheet]?.frames[s.frame] as string[];
   expect(rows, `${s.sheet}:${s.frame}`).toBeDefined();
   const y = toPx(p.body.y) - s.offsetY;
-  return { bottom: y + bbox(rows).bottom + 1, feet: toPx(p.body.y + p.body.h), name: `${s.sheet}:${s.frame}` };
+  return {
+    bottom: y + bbox(rows).bottom + 1,
+    feet: toPx(p.body.y + p.body.h),
+    name: `${s.sheet}:${s.frame}`,
+  };
 }
 
 function standsOnFloor(def: CharacterDef, power: string, inputs: Action[][]): string[] {
@@ -337,7 +356,8 @@ describe('the rest of the Classic look', () => {
     const up = SPRITES['smbc-shots']?.frames[MISSILE_UP_CLASSIC.frames[0] as string] as string[];
     expect([up[0]?.length, up.length]).toEqual([MISSILE_UP_CLASSIC.w, MISSILE_UP_CLASSIC.h]);
     expect(WAVE_BEAM_CLASSIC.frames.every((f) => f.startsWith('wave-varia'))).toBe(true);
-    for (const f of ['wave-0', 'wave-1', 'wave-burst']) expect(SPRITES['smbc-shots']?.frames[f]).toBeUndefined();
+    for (const f of ['wave-0', 'wave-1', 'wave-burst'])
+      expect(SPRITES['smbc-shots']?.frames[f]).toBeUndefined();
   });
 
   it("the campaign's sheets are unchanged (and Pit's own)", () => {
