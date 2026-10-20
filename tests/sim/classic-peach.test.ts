@@ -8,6 +8,7 @@ import {
   characterById,
   heroFor,
 } from '@game/characters/registry';
+import { LUIGI } from '@game/characters/luigi';
 import { MARIO } from '@game/characters/mario';
 import { MARIO_CLASSIC, MARIO_CLASSIC_PROFILE } from '@game/characters/mario/classic';
 import { WARRIORS_CLASSIC } from '@game/characters/warriors/classic';
@@ -112,13 +113,15 @@ describe('Peach: identity and roster (PE-1..PE-3, TG-41)', () => {
     expect(rig().p.body.h).toBe(px(16));
   });
 
-  it('the Classic select lists her on the second row; Current and the campaign never do', () => {
+  it("the Classic select offers her as Luigi's skin; Current and the campaign never do", () => {
     const settings = { ...defaultSettings(), classicRules: 'classic' as const };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     h.idle(12);
-    expect(sel.chars.indexOf(PEACH_CLASSIC)).toBeGreaterThanOrEqual(sel.firstRow);
+    // A skin on Luigi's slot (the original's Luigi skins include Princess Peach).
+    expect(sel.chars).not.toContain(PEACH_CLASSIC);
+    expect(h.game.skinsFor(LUIGI)).toContain(PEACH_CLASSIC);
     expect(h.game.rosterFor('classic')).toContain(PEACH_CLASSIC);
     expect(h.game.rosterFor('current')).not.toContain(PEACH_CLASSIC);
     const c = makeGame({

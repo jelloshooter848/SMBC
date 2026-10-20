@@ -13,6 +13,7 @@ import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './lin
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
+import { selectFacePalettes, selectFacesDef } from './select-faces';
 import {
   MEGAMAN_VARIANT_SHEETS,
   MEGAMAN_VARIANT_SUITS,
@@ -129,6 +130,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'bill-classic': billClassicDef,
   'ryu-classic': ryuClassicDef,
   'megaman-classic': megamanClassicDef,
+  // Classic mode's select-screen faces (our own close-ups, scenes/select-grid.ts).
+  'select-faces': selectFacesDef,
   // Classic mode's Mega Man variants (FU-3), built on his Classic sheet: mm-rock, mm-cutman, ...
   ...MEGAMAN_VARIANT_SHEETS,
   'simon-classic': simonClassicDef,
@@ -237,6 +240,7 @@ const defaults: Record<string, readonly string[]> = {
   ...megamanPalettes,
   ...bassPalettes,
   ...protomanPalettes,
+  ...selectFacePalettes,
   ...megamanVariantPalettes,
   ...samusPalettes,
   ...smbcShotPalettes,

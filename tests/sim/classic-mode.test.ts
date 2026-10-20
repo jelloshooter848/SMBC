@@ -13,7 +13,6 @@ import { HeroItem } from '@game/entities/objects/hero-item';
 import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
-import { SELECT_GRID } from '@game/scenes/select-grid';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
@@ -210,6 +209,7 @@ describe('the title and the CLASSIC menu', () => {
     expect(labels(opts)).toEqual([
       'Classic rules',
       'Game mode',
+      'Expansion heroes',
       'More settings',
       'Weapons',
       // 0.5.0 (G-066).
@@ -746,24 +746,23 @@ describe('the select screen: Classic extras on a second row', () => {
     expect((h.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
   });
 
-  it('the original grid: the usual heroes fill the first row, extras the next; left and right walk the whole roster', () => {
+  it('the original grid: the slots in the original\u2019s order, then Random; left and right walk them all', () => {
     const h = classic();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
-    expect(sel.firstRow).toBe(CHARACTERS.length);
-    // Cells SELECT_GRID.cell px square, nine to a row (the original's CharacterSelectBox, fitted).
-    const step = SELECT_GRID.cell + SELECT_GRID.gap;
-    CHARACTERS.forEach((_, i) =>
-      expect(sel.slot(i)).toEqual({
-        x: SELECT_GRID.x + i * step + SELECT_GRID.cell / 2,
-        y: SELECT_GRID.y + SELECT_GRID.cell,
-      }),
+    // The original's slots, in its order (CharacterSelectBox.ORDER_VEC), then any stand-in extra.
+    const want = ['mario', 'luigi', 'link', 'samus', 'simon', 'megaman', 'bass', 'bill', 'ryu', 'sophia'];
+    // (This test hides the built extras and registers a stand-in, so Bass may be absent.)
+    expect(sel.chars.map((c) => c.id).filter((id) => want.includes(id))).toEqual(
+      want.filter((id) => sel.chars.some((c) => c.id === id)),
     );
-    // The second row: the extra, then the Random slot (FU-4).
-    expect(sel.slot(CHARACTERS.length)).toEqual({
-      x: SELECT_GRID.x + SELECT_GRID.cell / 2,
-      y: SELECT_GRID.y + step + SELECT_GRID.cell,
-    });
+    // Cells SELECT_GRID.cell px square, SELECT_GRID.cols to a row (the original's
+    // CharacterSelectBox, fitted to 240 px); the stand-in extra follows, then Random (FU-4).
+    const g = sel.grid;
+    for (let i = 0; i < sel.chars.length + 1; i++) {
+      const c = sel.cellOf(i);
+      expect(sel.slot(i)).toEqual({ x: c.x + g.cell / 2, y: c.y + g.cell });
+    }
     h.idle(12);
     h.tap('left');
     expect(h.said.at(-1)).toBe('Random');
@@ -783,7 +782,6 @@ describe('the select screen: Classic extras on a second row', () => {
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars).toBe(CHARACTERS);
-    expect(sel.firstRow).toBe(CHARACTERS.length);
     // BACK returns to the CLASSIC menu.
     h.idle(12);
     h.tap('attack');
