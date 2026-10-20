@@ -247,7 +247,8 @@ export function classicOnPowerUp(
       world.audio.playMusic('star');
       break;
     case '1up':
-      world.addLife(p.body.x, p.body.y - px(16));
+      // The hero's default pickup sound in place of the 1-up's (G-073; Mega Man's new life).
+      world.addLife(p.body.x, p.body.y - px(16), heroSound(p.def, 'item', '1up'));
       break;
   }
 }

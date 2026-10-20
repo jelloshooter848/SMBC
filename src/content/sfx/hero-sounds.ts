@@ -42,12 +42,19 @@ export const heroSfx: Sfx[] = [
   { id: 'mm-kill', noise: 'v12 x1 l64 n6 n9 r64 n7 n11 n14' },
   // Weapon energy (G-073): a rising chirp.
   { id: 'mm-energy', pulse: '@1 v10 q8 x0 l64 o5 c g o6 c x1 o6 g32' },
+  // An extra life (G-073; SFX_MEGA_MAN_GET_NEW_LIFE, his default pickup sound): a bright
+  // stepping chime, up and up again.
+  { id: 'mm-1up', pulse: '@2 v11 q8 x0 l32 o6 c e g o7 c x1 o6 g16 o7 c8' },
   // A Metal Blade (G-074): a spinning whine.
   { id: 'mm-blade', pulse: '@2 v9 q8 x0 l64 [o6 e c]2 x1 o6 e32' },
 
   /* ---------- Samus ---------- */
   // Landing (G-070): a soft metallic thump.
   { id: 'samus-land', pulse: '@1 v8 q8 x1 p-3 o3 c64', noise: 'v7 x1 l64 n10' },
+  // A footstep (G-070; Samus.as 1090, every 150 ms while she walks): a very short low tap.
+  { id: 'samus-step', noise: 'v6 x1 l64 n11' },
+  // Energy (G-073; SFX_SAMUS_GET_ENERGY, her default pickup sound): a quick rising sparkle.
+  { id: 'samus-energy', pulse: '@1 v10 q8 x0 l64 o5 b o6 e g+ x1 o6 b32' },
   // Curling into the Morph Ball (G-070): a quick descending whirr.
   { id: 'morph-ball', pulse: '@2 v10 q8 x0 l64 o6 c o5 g e c x1 o4 g32' },
   // The Screw Attack (G-070): a crackling spin that rises (one turn).
@@ -109,6 +116,8 @@ export const heroSfx: Sfx[] = [
   { id: 'bill-shot', pulse: '@0 v9 q8 x1 p-12 o5 c64', noise: 'v9 x1 l64 n3' },
   // The flame gun (G-074): a whooshing roar.
   { id: 'bill-flame', pulse: '@0 v8 q8 x1 p-5 o4 e32', noise: 'v10 x1 l64 n4 n6 n8' },
+  // An item (G-073; SFX_BILL_GET_ITEM, his default pickup sound): a rising fanfare blip.
+  { id: 'bill-item', pulse: '@2 v11 q8 x0 l64 o5 e b o6 e x1 o6 b32' },
   // Taking a hit (G-070, G-071; Bill.as 899): an electric shock, a buzzing crackle.
   {
     id: 'bill-shock',

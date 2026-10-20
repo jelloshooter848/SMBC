@@ -206,8 +206,13 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
   // HP-C6: Koopas and Buzzy Beetles change state with HP (no points either way).
   if (e instanceof Koopa && e.classicDamaged(e.classicHp) === 'shell') return 'shell';
   e.classicHpHit(src, world);
-  // The World plays the hit's sound: the hero's own (G-072), else the shared one.
-  const hitSfx = src.hitSfx ?? heroSound(attackerDef(src), 'hit');
-  if (hitSfx) src.hitSfx = hitSfx;
   return 'hp';
+}
+
+/**
+ * The sound of a hit that took hit points (World.hitSound, G-072): the hero's own (Link.as 1102,
+ * SimonProjectile.as 218-225, MegaManBase.as 1702-1707, ...), or undefined for the shared one.
+ */
+export function classicHitSfx(src: DamageSource): string | undefined {
+  return heroSound(attackerDef(src), 'hit');
 }

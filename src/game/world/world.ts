@@ -1544,12 +1544,17 @@ export class World {
     this.audio.sfx(opts.small ? 'bump' : 'explosion');
     for (const e of this.enemies) {
       if (!overlaps(box, e.body)) continue;
-      const res = e.hit(
-        { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1, ...opts.classicHit },
-        this,
-      );
+      const src: DamageSource = {
+        kind: 'bomb',
+        amount: opts.amount ?? 2,
+        owner,
+        dirX: e.body.x < cx ? -1 : 1,
+        ...opts.classicHit,
+      };
+      const res = e.hit(src, this);
       this.scoreKill(e, 'bomb', res);
-      if (res === 'hp') this.audio.sfx('hurt-enemy');
+      // Blasts make the hero's own hit sound too (G-072).
+      if (res === 'hp') this.audio.sfx(this.hitSound(src));
     }
     if (opts.hurtsPlayers ?? true) {
       for (const p of this.activePlayers()) {
@@ -1774,9 +1779,10 @@ export class World {
     for (let i = 0; i < lives; i++) this.addLife(this.player.body.x, this.player.body.y - px(16));
   }
 
-  addLife(x: number, y: number): void {
+  /** One more life, with its sound (`sfx`: a Classic hero's own, G-073; else `1up`). */
+  addLife(x: number, y: number, sfx = '1up'): void {
     this.state.lives++;
-    this.audio.sfx('1up');
+    this.audio.sfx(sfx);
     this.spawn(new ScorePopup(x, y, '1UP'));
   }
 
@@ -1791,6 +1797,14 @@ export class World {
    * hitCharacter with a star STAR, gBounceHit BELOW). Hit-point kills count once the last point goes.
    * Public for Classic weapons that hit by hand (Link's bomb blast).
    */
+  /**
+   * The sound of hit `src` taking an enemy's hit points: `hurt-enemy`, or under Classic rules the
+   * hero's own (G-072, rules/classic-enemies.ts classicHitSfx).
+   */
+  hitSound(src: DamageSource): string {
+    return (this.rules === 'classic' ? classicRules().hitSfx?.(src) : undefined) ?? 'hurt-enemy';
+  }
+
   scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
     if (r === 'kill' || r === 'flip' || (r === 'hp' && !e.alive))
       this.addScore(e.scoreFor(kind), e.body.x, e.body.y);
@@ -3010,7 +3024,7 @@ export class World {
           };
           const res = e.hit(src, this);
           this.scoreKill(e, src.kind, res);
-          if (res === 'hp') this.audio.sfx(src.hitSfx ?? 'hurt-enemy');
+          if (res === 'hp') this.audio.sfx(this.hitSound(src));
           if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
         }
       }
@@ -3231,7 +3245,7 @@ export class World {
       pr.hitIds.add(e.id);
       if (pr.spec.rehitAfter !== undefined) pr.markHit(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
-      if (r === 'hp' || r === 'stun') this.audio.sfx(src.hitSfx ?? 'hurt-enemy');
+      if (r === 'hp' || r === 'stun') this.audio.sfx(this.hitSound(src));
       // A shot that pierces what it defeats goes on only past a kill.
       const through =
         pr.spec.pierce ||

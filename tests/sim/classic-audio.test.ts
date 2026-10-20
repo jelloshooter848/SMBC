@@ -182,20 +182,43 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.music.at(-1)).toBe('smb-select');
     h.idle(12);
-    for (let i = 0; i <= CHARACTERS.length && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++) h.tap('right');
     h.tap('jump');
     expect(h.jingles).toContain('link-choose');
   });
 
-  it("Mega Man's pick teleports out with his jingle; a plain hero's plays the SMB transition", () => {
+  /** Classic mode's first select, then OK on hero `name`. */
+  const pickOn = (name: string) => {
     const h = audioGame();
-    h.game.state.character = CHARACTERS.find((c) => c.id === 'megaman') as CharacterDef;
-    h.game.selectLeft(true);
-    expect(h.jingles.at(-1)).toBe('mm-choose');
-    expect(h.sounds.at(-1)).toBe('mm-teleport');
-    h.game.state.character = MARIO;
-    h.game.selectLeft(true);
-    expect(h.jingles.at(-1)).toBe('smb-transition');
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    h.idle(12);
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== name; i++) h.tap('right');
+    h.tap('jump');
+    return h;
+  };
+
+  it("Mega Man's pick teleports out with his jingle; Bill's shocks him; Mario's plays the SMB transition", () => {
+    const mm = pickOn('Mega Man');
+    expect(mm.jingles.at(-1)).toBe('mm-choose');
+    expect(mm.sounds).toContain('mm-teleport');
+    // Bill is electrocuted as he is chosen (G-070; Bill.as chooseCharacter).
+    const bill = pickOn('Bill');
+    expect(bill.jingles.at(-1)).toBe('contra-card');
+    expect(bill.sounds).toContain('bill-shock');
+    expect(pickOn('Mario').jingles.at(-1)).toBe('smb-transition');
+  });
+
+  it('BACK from the select plays no choose jingle (and no teleport) over the CLASSIC menu', () => {
+    const h = audioGame();
+    h.game.showClassicMenu();
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    h.idle(12);
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Mega Man'; i++) h.tap('right');
+    h.tap('attack');
+    h.idle(4);
+    expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
+    expect(h.jingles).toEqual([]);
+    expect(h.sounds).not.toContain('mm-teleport');
   });
 
   it('a select outside Classic mode stays silent as before', () => {
@@ -345,6 +368,73 @@ describe('G-070 to G-074: the heroes’ own sounds', () => {
     h.until(() => w.player.body.onGround, 120);
     h.idle(2);
     expect(h.sounds).toContain('mm-land');
+  });
+
+  it('Samus walks with footsteps every 150 ms (G-070; Samus.as STEP_TMR)', () => {
+    const h = audioGame();
+    h.game.devClassicGame(SAMUS, '1-1', 'classic');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    h.idle(10);
+    h.sounds.length = 0;
+    for (let i = 0; i < 9 * 4; i++) h.step(['right']);
+    const steps = h.sounds.filter((x) => x === 'samus-step').length;
+    expect(steps).toBeGreaterThanOrEqual(3);
+    expect(steps).toBeLessThanOrEqual(4);
+    h.sounds.length = 0;
+    h.idle(20);
+    expect(h.sounds).not.toContain('samus-step');
+  });
+
+  it("each hero's default pickup sound: Samus's energy, Simon's sub-weapon, Bill's item (G-073)", () => {
+    expect(pickupSound({ id: 'samus' }, 'heart-small')).toBe('samus-energy');
+    expect(pickupSound({ id: 'simon' }, 'bomb')).toBe('cv-weapon');
+    expect(pickupSound({ id: 'simon' }, 'heart-large')).toBe('cv-heart');
+    expect(pickupSound({ id: 'bill' }, 'bomb')).toBe('bill-item');
+    expect(pickupSound({ id: 'link' }, 'ninpo-small')).toBe('link-item');
+    for (const id of ['samus-energy', 'cv-weapon', 'bill-item', 'mm-1up', 'samus-step'])
+      expect(SFX_IDS.has(id), id).toBe(true);
+  });
+
+  it("Mega Man's 1-up mushroom plays his new-life sound in place of the 1-up's (G-073)", () => {
+    const h = audioGame();
+    h.game.devClassicGame(CHARACTERS.find((c) => c.id === 'megaman') as CharacterDef, '1-1', 'classic');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    h.sounds.length = 0;
+    w.player.def.behaviour.onPowerUp?.(w.player, '1up', w);
+    expect(h.sounds).toContain('mm-1up');
+    expect(h.sounds).not.toContain('1up');
+    // Mario's stays the 1-up's.
+    const m = audioGame();
+    m.game.devClassicGame(MARIO, '1-1', 'classic');
+    m.until(() => m.top() instanceof LevelScene, 600);
+    const mw = (m.top() as LevelScene).world;
+    mw.player.def.behaviour.onPowerUp?.(mw.player, '1up', mw);
+    expect(m.sounds).toContain('1up');
+  });
+
+  it("a blast's hit makes the hero's own hit sound, and the hit source is left as it was (G-072)", () => {
+    const h = audioGame();
+    h.game.devClassicGame(SIMON, '1-1', 'classic');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    const src = { kind: 'bomb' as const, amount: 1, owner: w.player, dirX: 1 as const };
+    expect(w.hitSound(src)).toBe('cv-hit');
+    expect(src).toEqual({ kind: 'bomb', amount: 1, owner: w.player, dirX: 1 });
+    // Mario's (no sound of his own): the shared one.
+    const m = audioGame();
+    m.game.devClassicGame(MARIO, '1-1', 'classic');
+    m.until(() => m.top() instanceof LevelScene, 600);
+    const mw = (m.top() as LevelScene).world;
+    expect(mw.hitSound({ kind: 'bomb', amount: 1, owner: mw.player, dirX: 1 })).toBe('hurt-enemy');
+  });
+
+  it('the campaign keeps the shared hit sound for every hero', () => {
+    const h = audioGame();
+    h.game.newGame(SIMON, '1-1');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    expect(w.hitSound({ kind: 'bomb', amount: 1, owner: w.player, dirX: 1 })).toBe('hurt-enemy');
   });
 
   it('Samus lands, curls into the morph ball and spins the Screw Attack with her own sounds (G-070)', () => {

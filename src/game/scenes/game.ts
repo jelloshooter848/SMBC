@@ -361,6 +361,9 @@ export class Game {
     deps.ctx.audio.setMusicMap?.((id) => this.classicMusic(id));
   }
 
+  /** A hero was just picked on the select screen open now (its choose jingle plays as it closes). */
+  private heroChosen = false;
+
   /** Options > Music set's Random roll for each level scene (G-066): one per area, as it loads. */
   private readonly musicRolls = new WeakMap<LevelScene, 'character' | 'map'>();
 
@@ -393,6 +396,7 @@ export class Game {
    * music (G-061; the original's always comes from the map skin, SMB's here).
    */
   selectEntered(classic: boolean): void {
+    this.heroChosen = false;
     if (classic && this.campaign === null) this.deps.ctx.audio.playMusic(SMB_SET.select);
   }
 
@@ -402,7 +406,10 @@ export class Game {
    * (his pick sound), so his set has none. Anywhere else nothing.
    */
   selectLeft(classic: boolean): void {
-    if (!classic || this.campaign !== null) return;
+    // Only a pick plays it: Back (or any other way out) leaves in silence for the next scene's music.
+    const chosen = this.heroChosen;
+    this.heroChosen = false;
+    if (!chosen || !classic || this.campaign !== null) return;
     const id = this.state.character.id;
     const song = setSong(heroSet(id), 'choose');
     if (song) this.deps.ctx.audio.playJingle(song);
@@ -1319,6 +1326,7 @@ export class Game {
         player,
         current,
         onPick: (c) => {
+          this.heroChosen = true;
           if (c !== current) this.setHero(player, c);
           then();
         },
@@ -1844,7 +1852,10 @@ export class Game {
     }
     this.scenes.replace(
       new CharacterSelectScene(this, null, {
-        begin: (c) => this.classicGame(c, levelId),
+        begin: (c) => {
+          this.heroChosen = true;
+          this.classicGame(c, levelId);
+        },
         back,
         random: true,
       }),
@@ -2117,6 +2128,7 @@ export class Game {
         onPick: (c) => {
           // StatManager.playerDie resets the fallen hero to PS_NORMAL; a newly picked hero
           // starts from its default state too.
+          this.heroChosen = true;
           this.setHero(p2 ? 1 : 0, c);
           then();
         },

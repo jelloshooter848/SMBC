@@ -30,7 +30,7 @@ import { ARTHUR_CLASSIC } from './arthur/classic';
 import { YOSHI_CLASSIC } from './yoshi/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
-import { classicEnemySpawned, classicHit, isArmoured } from '../rules/classic-enemies';
+import { classicEnemySpawned, classicHit, classicHitSfx, isArmoured } from '../rules/classic-enemies';
 import { applyCheatEdits } from '../rules/classic-cheats';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
@@ -49,6 +49,7 @@ import {
 // to import classic modules.
 installClassicRules({
   enemyHit: classicHit,
+  hitSfx: classicHitSfx,
   enemySpawned: classicEnemySpawned,
   // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
   strikeBlock: (world, tx, ty, p, breakBricks, hit) =>

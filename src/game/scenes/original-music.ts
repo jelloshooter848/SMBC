@@ -200,8 +200,15 @@ const HERO_SET_OF: Readonly<Record<string, string>> = {
   sophia: 'sophia',
 };
 
-/** A sound with the choose jingle, by hero id: Mega Man and Bass teleport out (MegaMan.as 157). */
-export const CHOOSE_SFX: Readonly<Record<string, string>> = { megaman: 'mm-teleport', bass: 'mm-teleport' };
+/**
+ * A sound with the choose jingle, by hero id: Mega Man and Bass teleport out (MegaMan.as 157),
+ * Bill is electrocuted (Bill.as chooseCharacter 1087).
+ */
+export const CHOOSE_SFX: Readonly<Record<string, string>> = {
+  megaman: 'mm-teleport',
+  bass: 'mm-teleport',
+  bill: 'bill-shock',
+};
 
 /** The set hero `heroId` plays, or null for the SMB set. */
 export function heroSet(heroId: string): MusicSet | null {

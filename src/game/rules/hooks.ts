@@ -92,6 +92,11 @@ export interface ClassicRulesHooks {
    * (YM-21). Optional.
    */
   clearHop?(world: World, p: Player): void;
+  /**
+   * The sound of a hit that took an enemy's hit points (World.hitSound): the hero's own (G-072),
+   * or undefined for the shared `hurt-enemy`. Optional.
+   */
+  hitSfx?(src: DamageSource): string | undefined;
 }
 
 let hooks: ClassicRulesHooks | null = null;

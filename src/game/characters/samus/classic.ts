@@ -57,7 +57,7 @@ import { SAMUS_CLASSIC_FRAMES, SAMUS_CLASSIC_ORIGIN } from '@content/sprites/sam
  * Scratch keys. Carried (kit): `missileUp` (the Missile upgrade, never lost), `missiles` (count),
  * `missileExp` (the Missile Expansion: cap 99, never lost), `classicAll` (the dev full kit, TG-44)
  * with `tool` (its Select: 0 Wave, 1 Ice). Per level: `_crouch`, `_ball`, `_aimUp`, `_flip` (the
- * somersault), `_takeoff` (feet y at a somersault-able take-off), `_screwSnd`, `_wave` (Wave
+ * somersault), `_takeoff` (feet y at a somersault-able take-off), `_screwSnd`, `_air`, `_step`, `_wave` (Wave
  * phase), `_still` (crouched without moving since, PI-15), `_g` / `_feet` (last frame's ground).
  */
 
@@ -106,6 +106,9 @@ export const SAMUS_VARIANT: ClassicSamusVariant = {
   beamSfx: 'buster',
   suitSounds: true,
 };
+
+/** Frames between Samus's footsteps (Samus.as STEP_TMR, 150 ms). */
+export const SAMUS_STEP_FRAMES = 9;
 
 /** Each beam's own sound (G-074): the short and long beams, the Ice Beam and the Wave Beam. */
 function beamSound(spec: ProjectileSpec): string {
@@ -380,6 +383,13 @@ function trackJump(p: Player, input: InputFrame, world: World, v: ClassicSamusVa
     // Her landing (G-070; Samus.as 517): back on the ground after a frame in the air.
     if (s(p)._air && v.suitSounds && !inBall(p)) world.audio.sfx('samus-land');
     delete s(p)._air;
+    // Her footsteps (G-070; Samus.as 1086-1093, STEP_TMR 150 ms): one every 9 frames while she
+    // walks on the ground, the first 9 frames after she starts.
+    if (b.vx !== 0 && v.suitSounds && !inBall(p)) {
+      const step = (s(p)._step ?? 0) + 1;
+      s(p)._step = step >= SAMUS_STEP_FRAMES ? 0 : step;
+      if (step >= SAMUS_STEP_FRAMES) world.audio.sfx('samus-step');
+    } else delete s(p)._step;
     s(p)._g = 1;
     s(p)._feet = p.feetY;
     delete s(p)._takeoff;
