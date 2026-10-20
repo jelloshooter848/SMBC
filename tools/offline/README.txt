@@ -4,8 +4,8 @@ SMBC REMIX {{VERSION}}: play from a download
 Super Mario Bros. Crossover: REMIX is an unofficial, unaffiliated browser remake of the fan game
 Super Mario Bros. Crossover by Exploding Rabbit, with original art and music.
 
-CLASSIC on the title screen is the game: Super Mario Bros. and The Lost Levels with the heroes of
-the original. Chapter 1, the story mode, is coming soon (version 1.0); save files from earlier
+CLASSIC on the title screen is the game: Super Mario Bros., Super Mario Bros. Special and The Lost
+Levels with the heroes of the original. Chapter 1, the story mode, is coming soon (version 1.0); save files from earlier
 versions are kept for it.
 
 This is the whole game in one file, index.html. Play it offline, with nothing to install and no
