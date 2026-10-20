@@ -16,6 +16,28 @@ under `## [Unreleased]`.
   middle), as in the original. Other heroes and the campaign are not pulled.
 - Classic mode Options: **Expansion heroes** (off, as in the original). On, the select also offers
   the heroes the original never had: Vic Viper, the Warriors of Light, Sir Arthur and Yoshi.
+- Classic mode: **each hero's own music** (G-060), our own songs in the mood of the hero's game:
+  Link, Mega Man (and Bass and Proto Man), Samus, Simon, Ryu, Bill and Sophia III each have their
+  own overworld, underground, castle, boss, coin heaven and more, reusing the campaign's hero tunes
+  plus new choose and level-clear pieces (and Simon's and Ryu's death music). A type a hero has no
+  song for yet (the Star, hurry and game over tunes, Samus's water) plays the Super Mario Bros. one.
+  The campaign's music is unchanged.
+- Classic options: **Music set** (Character, the original's default; Map: the Super Mario Bros.
+  music for everyone; Random: either one for each area) (G-066).
+- Classic mode: the select screen has its own music, and the chosen hero's jingle plays over the
+  WORLD card (Proto Man whistles instead) (G-061, G-062). The walk-in areas before x-2 play a short
+  transition tune and coin heaven the Star tune (G-063); Bowser coming on screen switches to the boss
+  tune, the final boss's in worlds 8 and D (G-064).
+- Classic mode: **the heroes' own sounds**, all ours. Link, Mega Man, Bass, Bill and Sophia III die to
+  their own sound, Simon and Ryu to their own death music (G-065). Mega Man and Bill land with a
+  sound, Mega Man teleports out and Bill is shocked when chosen, and Samus walks, lands, curls into
+  the morph ball and spins the Screw Attack with hers (G-070). Link, Mega Man, Samus, Simon, Ryu
+  and Bill have their own hurt and pickup sounds, Mega Man's 1-up among them (G-071, G-073); Link,
+  Mega Man, Samus, Simon and Ryu their own hit sounds, blasts included, and all but Samus their own
+  defeat sounds (G-072). Link's arrows and bombs, each of Samus's beams and her bombs, Simon's
+  sub-weapons, Ryu's arts, Mega Man's Metal Blade and Bill's rifle, machine gun and flame gun no
+  longer borrow other heroes' sounds (G-074). The music and the hit and death sounds play in
+  Classic mode under either rules.
 - Classic mode: **each level is built for the hero playing it**, as in the original. Heroes with a
   shorter reach (Link, Samus, Simon, Mega Man, Bill, Ryu, Sophia III and others) get the extra
   lifts, blocks and steps the original lays for them, heroes who swim badly get stepping stones in
@@ -84,8 +106,34 @@ under `## [Unreleased]`.
   Mega Man"; a hero's own look once: "Mega Man, Mega Man"), also when SKIN changes the look; the
   skin menu reads the look's own game ("Break Man, Mega Man, Mega Man 3"). Down in a one-row skin
   menu no longer moves the cursor.
+- Classic mode comes first: the title menu is now **Classic**, **Chapter 1**, Custom levels and
+  Options, with Classic highlighted. The story campaign is **Chapter 1**, coming in 1.0: its row
+  (and a resume link, `#save=`) shows a **CHAPTER 1 COMING SOON!** card, read out and closed with
+  OK, instead of the file select. Every save file, save code and resume link is kept as it is
+  (a resume link stays in the address for later), and developer mode opens Chapter 1 as before.
+- The title no longer shows "CHAPTER 1" under the logo, the PRE-RELEASE footer or the count of
+  freed heroes; every hero now stands on the title's ground in colour.
+- The release downloads are now `smbc-remix-vX.Y.Z.zip` and `smbc-remix-vX.Y.Z-offline.zip`.
+- The README, the download's README.txt, the roadmap and the release notes describe the new plan:
+  0.5.0 the Classic remake, 0.6 to 0.9 new heroes, 1.0 Chapter 1.
+- Developer mode is for the game's developer on the released site: the title's code there asks
+  for a passphrase ("Wrong passphrase" when it isn't right), `?dev=1` does nothing, and a dev mode
+  left on from an earlier version is turned off. Local and development builds are unchanged.
+- Outside developer mode, a `?level=` link opens no campaign content: an SMB or Lost Levels level
+  starts a Classic mode run there, a custom level plays as before, and anything else opens the
+  title.
 - Classic mode: the **All Hammer Bros** cheat is unlocked by beating Super Mario Bros. Special, as
   in the original, no longer by beating The Lost Levels. Anyone who already unlocked it keeps it.
+
+### Fixed
+
+- Phones and tablets: the first tap on a text card's OK button no longer does nothing. The
+  touch buttons of a card, a story page, Toad's map pages and Bowser's gate pages, a tip that
+  holds the game, BACK UP YOUR GAME?, LOAD THIS SAVE?, the shop's BUY? card, the bonus items'
+  note and the Home Screen guide now appear only once the card takes a press (it ignores presses for its
+  first half second, so a press meant for the level can't skip it).
+- Phones and tablets: a thumb still held on a button when a card opens (JUMP, say) no longer
+  skips the card when its OK appears under it; lift and tap again.
 
 ## [0.4.64] - 2026-10-20
 

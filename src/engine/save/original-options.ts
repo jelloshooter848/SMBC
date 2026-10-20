@@ -68,6 +68,14 @@ export const CLASSIC_EXPANSION = ['off', 'on'] as const;
 export type ClassicExpansion = (typeof CLASSIC_EXPANSION)[number];
 export type ClassicGameMode = (typeof CLASSIC_GAME_MODES)[number];
 
+/**
+ * Music set (MusicSets.as, SoundOptions.as; G-066): Character plays each hero's own set (the
+ * original's default), Map the map's (always SMB's: we have no map skins), Random either one
+ * at random for each area. Read for any Classic mode run, whatever its rules.
+ */
+export const CLASSIC_MUSIC_SETS = ['character', 'map', 'random'] as const;
+export type ClassicMusicSet = (typeof CLASSIC_MUSIC_SETS)[number];
+
 /* ---------- Customize Weapons (CustomizeWeaponsMenu) ---------- */
 
 /** Mega Man's and Bass's Fire Flower weapon (MegaManSpecialWeapon). */
@@ -122,6 +130,7 @@ export interface ClassicSettings {
   piranhas: ClassicPiranhas;
   goombas: ClassicGoombas;
   gameMode: ClassicGameMode;
+  musicSet: ClassicMusicSet;
   /**
    * Expansion heroes (off by default, as the original has none): on, the Classic select also
    * offers the heroes SMBC 3.1.21 never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi).
@@ -158,6 +167,7 @@ export function defaultClassicSettings(): ClassicSettings {
     piranhas: 'some',
     goombas: 'off',
     gameMode: 'all',
+    musicSet: 'character',
     expansion: 'off',
     weapons: defaultClassicWeapons(),
   };
@@ -173,6 +183,7 @@ export const CLASSIC_ROW_VALUES = {
   piranhas: CLASSIC_PIRANHAS,
   goombas: CLASSIC_GOOMBAS,
   gameMode: CLASSIC_GAME_MODES,
+  musicSet: CLASSIC_MUSIC_SETS,
   expansion: CLASSIC_EXPANSION,
 } as const satisfies { [K in Exclude<keyof ClassicSettings, 'weapons'>]: readonly ClassicSettings[K][] };
 

@@ -8,6 +8,7 @@ import { OPENING_BURST, OPENING_TOAD_PAGES, PEACH_NOTE } from '@game/story/scrip
 import { inkNudge, noteSaid, OpeningScene, OPENING_TIMING } from '@game/story/opening';
 import { loadSave } from '@game/save/save-files';
 import { draw, makeGame, useStorage, type H } from './heroes-harness';
+import { openChapter1 } from './chapter1-open';
 
 // A new file opens in the Mushroom Kingdom (0.4.23, docs/STORY.md 2.1): Peach's castle, the
 // caption, her note on parchment, Toad's two pages, then the World 1 map. Once per file.
@@ -16,8 +17,10 @@ useStorage();
 
 /** Title → Start game → slot 1, a new file. */
 function newFile(h: H) {
+  openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
   h.game.showTitle();
   h.idle(8);
+  h.tap('down');
   h.tap('start');
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);

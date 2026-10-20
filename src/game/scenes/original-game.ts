@@ -16,6 +16,7 @@ import {
   EXPANSION_ROW,
   GAME_MODE_ROW,
   MORE_SETTINGS_ROWS,
+  MUSIC_SET_ROW,
   WEAPON_ROWS,
   optionItem,
   rowsOriginal,
@@ -232,7 +233,7 @@ export class ClassicMenuScene extends MenuScene {
               this.announce();
             }),
           ),
-        hint: 'Classic rules, game mode, more settings, weapons and all settings',
+        hint: 'Classic rules, game mode, more settings, weapons, music set and all settings',
       },
       { label: 'Back', select: () => game.showTitle() },
     );
@@ -325,6 +326,7 @@ export class ClassicOptionsScene extends MenuScene {
         select: menu('CUSTOMIZE WEAPONS', 'Customize weapons', WEAPON_ROWS),
         hint: "Each hero's weapons, with Classic SMBC rules",
       },
+      optionItem(game, MUSIC_SET_ROW, () => this.build()),
       {
         label: 'Cheats',
         select: () => game.scenes.push(new CheatsScene(game, () => this.back(), { all: game.devMode })),

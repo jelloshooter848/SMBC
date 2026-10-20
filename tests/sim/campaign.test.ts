@@ -32,6 +32,7 @@ import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Settings } from '@engine/save/settings';
 import { ALL_STORY, seeAllStory, skipOpening } from './story-seen';
+import { openChapter1 } from './chapter1-open';
 
 // Campaign mode: levels picked on the world map return to it when cleared, warps open their
 // target world, game over continues on the map, and the save file follows along. Every other
@@ -178,8 +179,10 @@ function choose(scene: unknown, label: string) {
 
 /** Title → Start game → file 1: a new file when it is empty, else that file. */
 function newFileFromTitle(h: H) {
+  openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
   h.game.showTitle();
   h.idle(8);
+  h.tap('down');
   h.tap('start');
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);
@@ -255,8 +258,10 @@ describe('campaign: a new file picks heroes only on entering a level', () => {
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.game.state.character).toBe(LINK);
     const again = makeGame();
+    openChapter1(again.game);
     again.game.showTitle();
     again.idle(8);
+    again.tap('down');
     again.tap('start');
     again.idle(8);
     again.tap('jump');

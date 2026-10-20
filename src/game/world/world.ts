@@ -1636,12 +1636,17 @@ export class World {
     this.audio.sfx(opts.small ? 'bump' : 'explosion');
     for (const e of this.enemies) {
       if (!overlaps(box, e.body)) continue;
-      const res = e.hit(
-        { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1, ...opts.classicHit },
-        this,
-      );
+      const src: DamageSource = {
+        kind: 'bomb',
+        amount: opts.amount ?? 2,
+        owner,
+        dirX: e.body.x < cx ? -1 : 1,
+        ...opts.classicHit,
+      };
+      const res = e.hit(src, this);
       this.scoreKill(e, 'bomb', res);
-      if (res === 'hp') this.audio.sfx('hurt-enemy');
+      // Blasts make the hero's own hit sound too (G-072).
+      if (res === 'hp') this.audio.sfx(this.hitSound(src));
     }
     if (opts.hurtsPlayers ?? true) {
       for (const p of this.activePlayers()) {
@@ -1868,9 +1873,10 @@ export class World {
     for (let i = 0; i < lives; i++) this.addLife(this.player.body.x, this.player.body.y - px(16));
   }
 
-  addLife(x: number, y: number): void {
+  /** One more life, with its sound (`sfx`: a Classic hero's own, G-073; else `1up`). */
+  addLife(x: number, y: number, sfx = '1up'): void {
     this.state.lives++;
-    this.audio.sfx('1up');
+    this.audio.sfx(sfx);
     this.spawn(new ScorePopup(x, y, '1UP'));
   }
 
@@ -1878,6 +1884,19 @@ export class World {
   private seqHit(s: number | '1up', x: number, y: number): void {
     if (s === '1up') this.addLife(x, y);
     else this.addScore(s, x, y);
+  }
+
+  /**
+   * The sound of hit `src` taking an enemy's hit points: `hurt-enemy`, or in a Classic mode run
+   * (either rules) the hero's own (G-072, rules/classic-enemies.ts classicHitSfx).
+   */
+  hitSound(src: DamageSource): string {
+    return (this.ctx.classicMode ? classicRules().hitSfx?.(src) : undefined) ?? 'hurt-enemy';
+  }
+
+  /** Is `p` riding a springboard now (pressed into it, before the launch)? */
+  onSpring(p: Player): boolean {
+    return this.entities.some((e) => e instanceof Spring && e.alive && e.ridBy(p));
   }
 
   /**
@@ -2729,8 +2748,11 @@ export class World {
     }
   }
 
-  /** Scroll-back camera: a live Bowser within 2 tiles of the screen (Level.as bowser.onScreen). */
-  private bowserOnScreen(): boolean {
+  /**
+   * Scroll-back camera, and Classic mode's boss music (LevelScene): a live Bowser within 2 tiles
+   * of the screen (Level.as bowser.onScreen).
+   */
+  bowserOnScreen(): boolean {
     for (const e of this.entities)
       if (
         e instanceof Bowser &&
@@ -3133,7 +3155,7 @@ export class World {
           };
           const res = e.hit(src, this);
           this.scoreKill(e, src.kind, res);
-          if (res === 'hp') this.audio.sfx('hurt-enemy');
+          if (res === 'hp') this.audio.sfx(this.hitSound(src));
           if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
         }
       }
@@ -3356,8 +3378,7 @@ export class World {
       pr.hitIds.add(e.id);
       if (pr.spec.rehitAfter !== undefined) pr.markHit(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
-      if (r === 'hp') this.audio.sfx('hurt-enemy');
-      else if (r === 'stun') this.audio.sfx('hurt-enemy');
+      if (r === 'hp' || r === 'stun') this.audio.sfx(this.hitSound(src));
       // A shot that pierces what it defeats goes on only past a kill.
       const through =
         pr.spec.pierce ||
@@ -3504,7 +3525,12 @@ export class World {
     }
     if (this.activePlayers().length === 0) {
       this.audio.setTempoScale(1);
-      this.audio.playJingle('death');
+      // A Classic mode run (either rules): the hero's own death sound (G-065).
+      const own = this.ctx.classicMode ? classicRules().deathSfx?.(p.def) : undefined;
+      if (own) {
+        this.audio.stopMusic();
+        this.audio.sfx(own);
+      } else this.audio.playJingle('death');
     } else this.audio.sfx('hit');
   }
 

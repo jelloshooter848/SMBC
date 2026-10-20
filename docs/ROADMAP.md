@@ -4,24 +4,27 @@ This file lists what is planned next and the ideas we have agreed to keep for la
 the owner picks the version number at release time. When an idea is built, move it to CHANGELOG.md and delete it
 here.
 
-## The chapters
+## The plan (owner, 2026-10-20)
 
-The game is released in three chapters. A chapter is "finished" when every level in it feels complete: its hidden
-hero, their mini game, its look, and its part of the story. Later chapters stay **playable but unfinished** in the
-meantime. Nothing is locked away because it isn't polished yet.
+The game ships **Classic mode first**, then new heroes, then the story campaign:
 
-| Chapter                     | Levels                                  | Release              | What makes it finished                                                                                                                                                                                                                                                                               |
-| --------------------------- | --------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. The Mushroom Kingdom** | 1-0, then 1-1 through 8-4               | **0.5.0**            | All 8 hidden heroes (Luigi to Sophia III); every hero's level in their game's look; the mini games true to their games; the story from 1-0 to the 8-4 false ending and the road into the Lost Kingdom; World 2's Top Secret Area; Larry's airship; every mini game reimagined (the audit's rebuilds) |
-| **2. The Lost Kingdom**     | Lost 1-1 through Lost 8-4, plus World 9 | **0.6.0** (proposed) | The Lost Kingdom story; Peach found at Lost 4-4 and playable; the main ending at Lost 8-4; the Koopaling airships side quest (the six wand pieces); the backward-warp traps; the warp hub's "???" pads                                                                                               |
-| **3. The Far Lands**        | Lost A-1 through D-4                    | **0.7.0** (proposed) | Opened by the six wand pieces; the chase for Bowser's star tip; the true ending at D-4                                                                                                                                                                                                               |
+| Release            | What                                                                                                                                                                                                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0.5.0**          | **The Classic remake:** a true remake of Super Mario Bros. Crossover 3.1.21 (title > CLASSIC) with our own art and music, the scope in `docs/classic/GAP_LIST_0.5.0.md` (every P0 and P1 item). The story campaign shows "CHAPTER 1 COMING SOON!" outside dev mode; every save is kept |
+| **0.6.0 to 0.9.x** | **New heroes** through the **Expansion heroes** option (off by default, so Classic stays the original's roster): Vic Viper, the Warriors of Light, Arthur and Yoshi first, then more from the candidate list                                                                           |
+| **1.0.0**          | **Chapter 1, the Mushroom Kingdom:** the story campaign (1-0, then 1-1 to 8-4, the hidden heroes, their mini games, the story) opened for everyone. Its save files, save codes and resume links from 0.4.x load as they are                                                            |
 
-When the whole game is finished, the owner may call it **1.0.0** (docs/RELEASING.md).
+Until 1.0.0 the campaign is built and tested in dev mode only (the title's Chapter 1 row and `#save=` links open
+it there). Chapters 2 and 3 (the Lost Kingdom and the Far Lands, below) come after 1.0.0; their version numbers are
+proposals.
 
-## Chapter 1: the path to 0.5.0
+## Chapter 1 so far (the 0.4.x releases)
 
-**Rule (owner):** everything planned that touches the Mushroom Kingdom (Chapter 1) ships before 0.5.0, including
-every reimagining of its mini games.
+The campaign was built in the 0.4.x releases, when Chapter 1 was meant to be 0.5.0. It ships as 1.0.0 instead (the
+plan above); this table is kept as the record of how it was built.
+
+**Rule (owner, then):** everything planned that touches the Mushroom Kingdom (Chapter 1) ships before its release,
+including every reimagining of its mini games.
 
 **Order (owner):** releases ship in whichever order they are ready; the first one out takes the next number.
 The part 2 rebuilds ship one hero at a time as each is ready (Mega Man as 0.4.15, Link as 0.4.16, Samus as 0.4.17), and Sophia took the next
@@ -40,7 +43,7 @@ hunt before 0.5.0; the finishing pass follows as 0.4.20.
 | 8     | **0.4.19**    | **The rebrand, as a public test release** (owner): the project becomes **Super Mario Bros. Crossover: REMIX** (SMBC REMIX), a nod to Jay Pavlina's original while saying it's a different project. A new title screen (a block CROSSOVER logo with a REMIX stamp over the Mushroom Kingdom, the freed heroes on the ground, the rift intro), "MADE BY JELLOSHOOTER848" and "BASED ON SUPER MARIO BROS. CROSSOVER BY EXPLODING RABBIT", the new name on the page title, README, pause screen and credits. Shipped early so the owner can bug hunt in the real world before 0.5.0 | In PR                                                 |
 | 9     | **0.4.20**    | **Chapter 1 finishing pass.** Sophia's level variants (the Sophia-only tiles from the original, e.g. 4-4's drops, deferred from 0.4.18); the tile-by-tile check of SMB 1-1 to 8-4 against the owner's NES maps (owner's rule: fix clear mistakes of ours; where Crossover deliberately differs from the NES, keep Crossover and list it; anything ambiguous goes to the owner to decide); a full playthrough of 1-0 to 8-4 with every hero, on desktop and phone, fixing what it finds; the 8-4 credits marked as the end of Chapter 1                                          | Planned                                               |
 | 10    | **0.4.2x**    | **Bug-hunt fixes:** what the owner finds playing the test releases, fixed in rounds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | After 0.4.19                                          |
-| 11    | **0.5.0**     | **The official Chapter 1 release** once the bug hunt comes back clean: README and in-game notes for Chapter 1, the release zip renamed, final checks. The Lost Levels stay playable as they are                                                                                                                                                                                                                                                                                                                                                                                 | Planned                                               |
+| 11    | **1.0.0**     | **The official Chapter 1 release** (was 0.5.0 until the 2026-10-20 plan) once the bug hunt comes back clean: README and in-game notes for Chapter 1, final checks. The Lost Levels stay playable as they are                                                                                                                                                                                                                                                                                                                                                                    | Planned                                               |
 
 ### The secrets guide (docs/secrets/: being made now, first edition with the next release, then updated with every release)
 
@@ -57,19 +60,12 @@ A folder that documents every secret in the game, with screenshots, so players w
 - **Later:** lay it out like an old tips-and-tricks magazine (an original look and name, not any real magazine's
   branding).
 
-## After Chapter 1: what's already planned
+## After 1.0.0: what's already planned
 
-Release numbers after 0.5.0 are proposals; the owner picks them.
+Release numbers after 1.0.0 are proposals; the owner picks them. (Classic SMBC rules, planned here as 0.5.1, became
+Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
 
-### 0.5.1: Classic SMBC rules (right after 0.5.0, before any Lost Kingdom work)
-
-The 19 reports from PR #51 (bug-reports/2026-10-07-_classic_.md and the per-hero reports): a dev-mode toggle that
-plays the game like the original Crossover 3.1.21. It covers each hero's original physics and power states, enemy
-HP and armour, bricks and shots, and swimming. Outside the toggle nothing changes. The new-character builds in
-PR #51 (Sophia's spec is already used in 0.4.18; Bass, Proto Man, Pit, Vic Viper, the Warriors of Light, and the
-candidate list) are not part of 0.5.1.
-
-### Chapter 2: the Lost Kingdom (0.5.2 onward, released as 0.6.0)
+### Chapter 2: the Lost Kingdom (after 1.0.0)
 
 | Order | What                                                                                                                                                                                                                                                                                                                           |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -79,33 +75,32 @@ candidate list) are not part of 0.5.1.
 | 4     | **The Koopaling airships** (idea 1): six SMB3-style airships behind the six forward warp zones in Lost Worlds 1–8, one Koopaling each (Morton, Wendy, Iggy, Roy, Lemmy, Ludwig), each returning a wand piece. A side quest: all six open the Far Lands (Chapter 3)                                                             |
 | 5     | **The backward-warp traps** (idea 2): LL 3-1's two and LL 8-1's backward warps lead to trap rooms with a big reward                                                                                                                                                                                                            |
 | 6     | **The warp hub's "???" pads:** opened by the Koopalings; a boss rush, time trials, and a hero gallery and sound test                                                                                                                                                                                                           |
-| 7     | **Chapter 2 finishing pass:** Lost Levels restyles or polish if wanted; a full playthrough of Lost 1-1 to 8-4 and World 9; then the 0.6.0 release                                                                                                                                                                              |
+| 7     | **Chapter 2 finishing pass:** Lost Levels restyles or polish if wanted; a full playthrough of Lost 1-1 to 8-4 and World 9; then its release                                                                                                                                                                                    |
 
-### Chapter 3: the Far Lands (0.6.x, released as 0.7.0)
+### Chapter 3: the Far Lands (after Chapter 2)
 
 | Order | What                                                                                                                                                         |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1     | **The Far Lands opened by the six wand pieces** (campaign; classic play keeps the NES unlock rule)                                                           |
 | 2     | **The chase for the star tip** through Lost A-1 to D-4, with its story lines                                                                                 |
 | 3     | **The true ending at D-4:** the wand made whole, the rift sealed, Larry's wand returned (with a lock), the final credits ("THE END. ...FOR REAL THIS TIME.") |
-| 4     | **Chapter 3 finishing pass**, then the 0.7.0 release. When the whole game is finished, the owner may call it 1.0.0                                           |
+| 4     | **Chapter 3 finishing pass**, then its release                                                                                                               |
 
 ### Any time (not tied to a chapter)
 
-- **New heroes** from PR #51's candidate list. Yoshi first: the Top Secret Area's egg will hatch him, as a rideable
-  partner or a hero.
+- **New heroes** from PR #51's candidate list: in Classic mode through the Expansion heroes option (0.6.0 to 0.9.x,
+  above). In the campaign, Yoshi first: the Top Secret Area's egg will hatch him, as a rideable partner or a hero.
 
 ## Details of the planned work
 
-### The rebrand: SMB Crossover REMIX (0.5.0)
+### The rebrand: SMB Crossover REMIX (0.4.19)
 
 - **Name:** the brand is **SMB Crossover REMIX**; the full name is "Super Mario Bros. Crossover: REMIX". It keeps the
   nod to the original fan game by Jay Pavlina (Exploding Rabbit) while making clear this is a separate project. A
   short form, "SMBC REMIX", is for tight spaces.
-- **Repository:** the owner renames the GitHub repository before 0.5.0 (a name like
-  `Super-Mario-Bros-Crossover-REMIX`, since GitHub names can't contain spaces or colons). The Pages build already
-  takes its base path from the repository name (`VITE_BASE` in release.yml), so the site follows the rename. Check
-  that the old address redirects. Until then the repository stays `SMBC` for testing.
+- **Repository (owner, 2026-10-20):** the repository keeps its name, `SMBC`, and the site stays at
+  `https://jelloshooter848.github.io/SMBC/`. The release zips carry the brand: `smbc-remix-vX.Y.Z.zip` (and
+  `-offline`) from 0.5.0.
 - **Credits on the title screen:** "MADE BY JELLOSHOOTER848", and a line such as "BASED ON SUPER MARIO BROS.
   CROSSOVER BY EXPLODING RABBIT". The full credits roll and the README say the same, alongside the existing
   "unaffiliated fan project, original art and music" notice.
@@ -114,7 +109,8 @@ candidate list) are not part of 0.5.1.
     Kingdom scene. Freed heroes stand on the ground in colour; unfound ones are "?" silhouettes, so the row doubles as
     a progress display. The menu, "CHAPTER 1", the version, "MADE BY JELLOSHOOTER848", the "BASED ON ... EXPLODING
     RABBIT" credit and a "PRE-RELEASE" footer (owner's choice; it replaced "UNOFFICIAL FAN PROJECT", which the
-    credits roll keeps) are all on screen.
+    credits roll keeps) are all on screen. **0.5.0:** "CHAPTER 1" and "PRE-RELEASE" are gone, the menu starts with
+    CLASSIC, and with the campaign closed every hero stands in colour.
   - **Intro, from C:** the wand's bolt tears a rift open, then the logo and the heroes drop out of it onto the field.
   - Built from the game's own sprites and font, with new gold/red font palettes; all art and music stay original.
   - **Kept for later:** mockup B (an SMB3 curtain stage with the heroes as the cast) and the rest of C (the rift with a

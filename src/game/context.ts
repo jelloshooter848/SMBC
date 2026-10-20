@@ -122,6 +122,12 @@ export interface GameContext {
    * off): no mount code runs (YM-2). Game makes it a live view, like `rules`.
    */
   classicYoshi?: 'on' | 'ride';
+  /**
+   * A Classic mode run (title > CLASSIC, or a dev Classic run) outside a campaign file, under
+   * either rules (0.5.0 audio: the heroes' own hit and death sounds, World.hitSound and kill).
+   * Game makes it a live view; absent (false) everywhere else.
+   */
+  classicMode?: boolean;
 }
 
 /** Progress carried between levels. */

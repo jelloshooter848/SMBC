@@ -1,6 +1,6 @@
 /*
  * The download build (0.4.49, `pnpm build:offline`, docs/RELEASING.md): one index.html that plays
- * from the disk. Players unzip smbc-vX.Y.Z-offline.zip and double-click index.html; the browser
+ * from the disk. Players unzip smbc-remix-vX.Y.Z-offline.zip and double-click index.html; the browser
  * opens it as file://, where a page may not load other files as scripts (module scripts need
  * CORS, which file:// has not), so everything goes inside the page:
  * - the game's script, as one inline module (inline modules fetch nothing, so they run from disk);
