@@ -29,6 +29,7 @@ import {
   type ClassicDropTable,
   type ClassicPowerKit,
 } from '../classic/power';
+import { weaponOf } from '../classic/options';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, SAMUS_FLIP_TICKS } from '../classic/anim';
 import {
   CLASSIC_MAX_BOMBS,
@@ -81,6 +82,11 @@ export interface ClassicSamusVariant {
    * the spec's own.
    */
   shotLook?: (spec: ProjectileSpec, up: boolean) => ProjectileSpec;
+  /**
+   * The Flower beam is Customize Weapons > Samus's choice (FU-7c: the Wave Beam, the original's
+   * default, or the Ice Beam). Absent (Pit, Dark Pit): the Wave Beam's numbers.
+   */
+  beamChoice?: boolean;
 }
 
 export const SAMUS_VARIANT: ClassicSamusVariant = {
@@ -215,11 +221,15 @@ function shotsOut(p: Player, world: World): number {
   return world.countProjectiles(p, 'samus-shot');
 }
 
-/** The beam she fires now (SA-C11, SA-C18): short when small, Long, then Wave (or Ice: TG-44). */
-function beamSpec(p: Player): ProjectileSpec {
+/**
+ * The beam she fires now (SA-C11, SA-C18): short when small, Long, then Wave (or Ice: the dev full
+ * kit's Select, TG-44, or Customize Weapons > Samus, FU-7c).
+ */
+function beamSpec(p: Player, v: ClassicSamusVariant): ProjectileSpec {
   if (p.powerState === 'small') return SHORT_BEAM_CLASSIC;
   if (p.powerState !== 'fire') return LONG_BEAM_CLASSIC;
-  return iceSelected(p) ? ICE_BEAM_CLASSIC : WAVE_BEAM_CLASSIC;
+  if (s(p).classicAll) return iceSelected(p) ? ICE_BEAM_CLASSIC : WAVE_BEAM_CLASSIC;
+  return v.beamChoice && weaponOf(p, 'samus') === 'ice' ? ICE_BEAM_CLASSIC : WAVE_BEAM_CLASSIC;
 }
 
 /** The dev full kit's Select (TG-44): Wave or Ice for the Flower beam. */
@@ -283,7 +293,7 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
 
 function fireBeam(p: Player, world: World, v: ClassicSamusVariant): void {
   if (shotsOut(p, world) >= CLASSIC_MAX_SHOTS) return;
-  spawnShot(p, world, beamSpec(p), v);
+  spawnShot(p, world, beamSpec(p, v), v);
   world.audio.sfx(v.beamSfx);
 }
 
@@ -628,7 +638,7 @@ const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
 };
 
 export const SAMUS_CLASSIC: CharacterDef = {
-  ...classicSamus(),
+  ...classicSamus({ variant: { beamChoice: true } }),
   deathBurst: SAMUS_DEATH,
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'the hatchling',

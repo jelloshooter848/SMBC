@@ -34,6 +34,7 @@ import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
+import { applyOptionSpawns } from '../rules/classic-options-level';
 import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
@@ -45,10 +46,11 @@ installClassicRules({
   // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
   strikeBlock: (world, tx, ty, p, breakBricks, hit) =>
     yoshiEggStrike(world, tx, ty, p) ?? classicStrikeBlock(world, tx, ty, p, breakBricks, hit),
-  levelEdits: (map, id, defs, spawns) => {
-    // Both tables apply.
+  levelEdits: (map, id, defs, spawns, options) => {
+    // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas).
     const water = applyClassicLevelEdits(map, id, defs);
-    return applyWideVariants(map, id, defs, spawns) || water;
+    const wide = applyWideVariants(map, id, defs, spawns);
+    return applyOptionSpawns(map, spawns, options) || wide || water;
   },
   worldLoaded: yoshiWorldLoaded,
   clearHop: yoshiClearHop,

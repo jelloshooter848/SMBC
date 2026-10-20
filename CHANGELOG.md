@@ -10,6 +10,17 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode Options: More settings, as in the original: Lives (1, 3, 5, 7, 10), When hit
+  (Lose everything, Previous state, Instant death), Attack, Item drops, Piranhas (Some or All
+  pipes, green or red), Goombas (Buzzy Beetle or Spiny) and Enemy speed. Every row starts at the
+  original's value; a changed row is marked, and Restore originals puts them back.
+- Classic mode: a Random slot (?) at the end of the select screen, and Options > Game mode:
+  All heroes (choose before every level and life, as before), Single hero (choose once) or
+  Single random (the game picks a hero for every level and life).
+- Classic mode Options > Weapons (Customize Weapons, as in the original): each hero's power-up
+  weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
+  extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
+  choice; the original's weapons are the default.
 - Classic Peach's last castle: Mario waits where the princess would, and greets her.
 
 ### Fixed
