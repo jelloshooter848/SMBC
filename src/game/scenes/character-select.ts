@@ -146,7 +146,7 @@ export class CharacterSelectScene implements Scene {
 
   /** The cheats just unlocked, taken from the game: their names, and the line read out. */
   private takeCheatNews(): string {
-    const ids = this.game.cheatUnlocks.splice(0);
+    const ids = this.game.cheatUnlocks?.splice(0) ?? [];
     if (!ids.length) return '';
     this.cheatNews = ids.map((id) => cheatInfo(id).name);
     this.game.ctx.audio.sfx('1up');

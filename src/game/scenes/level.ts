@@ -278,7 +278,7 @@ export class LevelScene implements Scene {
       return;
     }
     // A cheat unlocked mid-level (Classic mode, game.cheatTally): its card over the frozen level.
-    if (this.game.cheatUnlocks.length && this.game.classicRun) {
+    if (this.game.classicRun && this.game.cheatUnlocks?.length) {
       this.game.showCheatUnlocks(this.world);
       return;
     }
@@ -336,11 +336,11 @@ export class LevelScene implements Scene {
         break;
       // Classic mode's cheat goals (cheats.ts): what was defeated, stomped or broken.
       case 'tally':
-        game.cheatTally(ev.stat);
+        game.cheatTally?.(ev.stat);
         break;
       // Every drop a hero picks up counts as an ammo pickup (StatManager.numAmmoPickupsCollected).
       case 'pickup':
-        if (this.world.rules === 'classic') game.cheatTally('ammoPickups');
+        if (this.world.rules === 'classic') game.cheatTally?.('ammoPickups');
         break;
       case 'talk':
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).
