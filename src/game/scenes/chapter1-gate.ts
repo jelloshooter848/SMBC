@@ -11,6 +11,9 @@ import type { Game } from './game';
  * files still copies them out, and with dev mode on everything opens as before.
  */
 
+/** The box's bottom edge: clear of the title's version line (y 228). */
+export const CARD_BOTTOM = 222;
+
 /** The card the title's Chapter 1 row shows (at most 28 chars a line). */
 export const CHAPTER1_GATE_CARD: readonly string[] = [
   'CHAPTER 1',
@@ -42,6 +45,7 @@ export function showChapter1Gate(game: Game, lines: readonly string[] = CHAPTER1
     new CardScene(game, lines, () => game.scenes.pop(), null, {
       panel: true,
       overlay: true,
+      bottomY: CARD_BOTTOM,
       keys: ['jump', 'start', 'attack'],
       prompt: () => abilityHint(game, 'OK', 'jump'),
     }),

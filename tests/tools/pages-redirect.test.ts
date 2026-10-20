@@ -40,6 +40,9 @@ describe('G-110: the /SMBC/ redirect stub', () => {
     );
     expect(redirect('https://jelloshooter848.github.io/SMBC/index.html#save=AB').to).toBe(`${NEW}#save=AB`);
     expect(redirect('https://jelloshooter848.github.io/SMBC/assets/index-abc.js').to).toBe(NEW);
+    expect(redirect('https://jelloshooter848.github.io/SMBC/a/b/c?dev=1#save=AB').to).toBe(
+      `${NEW}?dev=1#save=AB`,
+    );
   });
 
   it('stays on the same origin, so the saves (kept per origin) come along', () => {
@@ -51,7 +54,14 @@ describe('G-110: the /SMBC/ redirect stub', () => {
   it('index.html and 404.html are the same page and both load redirect.js, with a link for no-script', () => {
     const index = read('index.html');
     expect(read('404.html')).toBe(index);
-    expect(index).toContain('<script src="redirect.js"></script>');
+    // An absolute path: 404.html answers any depth (/SMBC/a/b), where a relative one would miss.
+    expect(index).toContain('<script src="/SMBC/redirect.js"></script>');
+    const src = /<script src="([^"]+)"/.exec(index)?.[1] as string;
+    for (const page of [
+      'https://jelloshooter848.github.io/SMBC/',
+      'https://jelloshooter848.github.io/SMBC/a/b/c',
+    ])
+      expect(new URL(src, page).href).toBe('https://jelloshooter848.github.io/SMBC/redirect.js');
     expect(index).toContain(`href="${NEW}"`);
     expect(index).toContain(`url=${NEW}`);
     expect(index).toContain('Your saves are kept.');

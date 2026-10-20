@@ -24,8 +24,9 @@ under `## [Unreleased]`.
 ### Fixed
 
 - Phones and tablets: the first tap on a text card's OK button no longer does nothing. The
-  touch buttons of a card, a story page, Toad's map pages, a tip that holds the game and the
-  Home Screen guide now appear only once the card takes a press (it ignores presses for its
+  touch buttons of a card, a story page, Toad's map pages and Bowser's gate pages, a tip that
+  holds the game, BACK UP YOUR GAME?, LOAD THIS SAVE?, the shop's BUY? card, the bonus items'
+  note and the Home Screen guide now appear only once the card takes a press (it ignores presses for its
   first half second, so a press meant for the level can't skip it).
 
 ## [0.4.64] - 2026-10-20

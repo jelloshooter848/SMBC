@@ -74,6 +74,8 @@ export interface CardOptions {
   prompt?: string | (() => string);
   /** With `panel`: the box goes near the top, under the HUD (the tutorial's Toad), not the bottom. */
   top?: boolean;
+  /** With `panel` at the bottom: the box's bottom edge (screen y), default 12 px above the edge. */
+  bottomY?: number;
   /**
    * Draw the `panel` box with no level (`world` null): over whatever scene is beneath (the world
    * map), which keeps rendering. Without it a card with no world draws on black as before.
@@ -108,6 +110,7 @@ export class CardScene implements Scene {
     this.panel = opts.panel === true && (world !== null || opts.overlay === true);
     this.prompt = opts.prompt ?? '';
     this.top = opts.top === true;
+    this.bottomY = opts.bottomY ?? SCREEN_H - 12;
     this.skipKeys = opts.onSkip ? (opts.skipKeys ?? []) : [];
     this.onSkip = opts.onSkip ?? null;
     this.translucent = world !== null || this.panel;
@@ -118,6 +121,7 @@ export class CardScene implements Scene {
   private readonly panel: boolean;
   private readonly prompt: string | (() => string);
   private readonly top: boolean;
+  private readonly bottomY: number;
   private readonly skipKeys: readonly Action[];
   private readonly onSkip: (() => void) | null;
 
@@ -152,7 +156,7 @@ export class CardScene implements Scene {
       const prompt = typeof this.prompt === 'function' ? this.prompt() : this.prompt;
       const rows = this.lines.length + (prompt ? 1 : 0);
       const h = rows * 10 + 12;
-      const y = this.top ? 40 : SCREEN_H - 12 - h;
+      const y = this.top ? 40 : this.bottomY - h;
       r.rect(12, y, SCREEN_W - 24, h, '#fcfcfc');
       r.rect(14, y + 2, SCREEN_W - 28, h - 4, '#000');
       this.lines.forEach((l, i) => r.text(font, l, (SCREEN_W - l.length * 8) >> 1, y + 7 + i * 10));

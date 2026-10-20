@@ -178,7 +178,14 @@ export class GateScene {
           this.showPage(0);
           return;
         }
-        if (this.t >= GATE_MISFIRE_FRAMES) this.showPage(0);
+        if (this.t >= GATE_MISFIRE_FRAMES) {
+          // OK and SKIP were already on screen (`ready`): the page takes them at once, so the
+          // buttons don't blink off for its guard (no press is under way: it would have hurried
+          // the misfire on).
+          const shown = this.ready;
+          this.showPage(0);
+          if (shown) this.t = CARD_GUARD_FRAMES;
+        }
         return;
       case 'page':
         if (cardContinues(this.t, inputs, SKIP_KEYS)) {

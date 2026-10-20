@@ -15,7 +15,7 @@ import { TitleScene } from '@game/scenes/title';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { LoadCodeScene } from '@game/scenes/save-codes';
 import { CardScene } from '@game/scenes/message';
-import { CHAPTER1_GATE_CARD, CHAPTER1_LINK_CARD } from '@game/scenes/chapter1-gate';
+import { CARD_BOTTOM, CHAPTER1_GATE_CARD, CHAPTER1_LINK_CARD } from '@game/scenes/chapter1-gate';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import type { MenuItem } from '@game/scenes/menu';
 import { CHARACTERS } from '@game/characters/registry';
@@ -257,5 +257,23 @@ describe('G-111: the title hero row', () => {
     h.game.showTitle();
     const title = h.top() as TitleScene;
     expect(title.heroes.filter((x) => x.freed).map((x) => x.def.id)).toEqual(['mario', 'link', 'samus']);
+  });
+});
+
+describe('G-100: the card sits clear of the title', () => {
+  it('its box ends above the version line (y 228), so the build string stays readable', () => {
+    const h = makeGame();
+    choose(h, 'Chapter 1');
+    const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      rect(x: number, y: number, w: number, hh: number, c: string): void {
+        rects.push({ x, y, w, h: hh, c });
+      },
+    });
+    (h.top() as CardScene).render(r);
+    const frame = rects.find((b) => b.x === 12 && b.c === '#fcfcfc');
+    expect(frame).toBeDefined();
+    expect((frame?.y ?? 0) + (frame?.h ?? 0)).toBe(CARD_BOTTOM);
+    expect(CARD_BOTTOM).toBeLessThan(228);
   });
 });
