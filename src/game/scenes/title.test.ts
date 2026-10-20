@@ -15,8 +15,8 @@ import type { CharacterDef } from '@game/characters/character';
 import { newSave, writeSave } from '@game/save/save-files';
 import { Game } from './game';
 import { TitleScene } from './title';
-import { FileSelectScene } from './file-select';
 import { PauseScene } from './pause';
+import { ClassicMenuScene } from './original-game';
 import { DEV_CODE } from './cheat';
 import { heroRow, titleFreed, TITLE_TIMING } from './title-anim';
 
@@ -118,9 +118,10 @@ describe('title hero row', () => {
     expect(titleFreed([a, 'unreadable', b])).toEqual(['mario', 'link', 'samus']);
   });
 
-  it('the title scene reads the save files', () => {
+  it('the title scene reads the save files (dev mode: the campaign is open, 0.5.0)', () => {
     writeSave({ ...newSave(2, 'mario'), freed: ['mario', 'megaman'] });
     const h = makeGame();
+    (h.game.deps as { settings?: unknown }).settings = { dev: true } as Settings;
     h.game.showTitle();
     const title = h.game.scenes.top as TitleScene;
     expect(title.heroes.filter((x) => x.freed).map((x) => x.def.id)).toEqual(['mario', 'megaman']);
@@ -128,23 +129,23 @@ describe('title hero row', () => {
 });
 
 describe('title text', () => {
-  it('shows the menu, credits, chapter and the build version', () => {
+  it('shows the menu, credits and the build version', () => {
     const h = makeGame();
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     const t = texts(h.game.scenes.top as TitleScene).map((x) => x.str);
     for (const s of [
-      'START GAME',
+      'CLASSIC',
+      'CHAPTER 1',
       'CUSTOM LEVELS',
       'OPTIONS',
-      'CHAPTER 1',
       'MADE BY JELLOSHOOTER848',
       'BASED ON SUPER MARIO BROS.',
       'CROSSOVER BY EXPLODING RABBIT',
-      'PRE-RELEASE',
     ])
       expect(t).toContain(s);
     expect(t).not.toContain('UNOFFICIAL FAN PROJECT');
+    expect(t).not.toContain('PRE-RELEASE'); // 0.5.0, G-104
     expect(t).not.toContain('DEV MODE');
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
     const version = `V${__APP_VERSION__}`.toUpperCase();
@@ -152,18 +153,16 @@ describe('title text', () => {
     expect(t).toContain(version);
   });
 
-  it('puts PRE-RELEASE bottom left with the build version on the same line', () => {
+  it('puts the build version bottom right, with no PRE-RELEASE footer (0.5.0, G-104)', () => {
     const h = makeGame();
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     const all = texts(h.game.scenes.top as TitleScene);
     // Shadowed text draws twice (shadow first): the last draw is the text itself.
-    const footer = all.filter((x) => x.str === 'PRE-RELEASE').at(-1);
-    const version = all.filter((x) => x.str === `V${__APP_VERSION__}`.toUpperCase()).at(-1);
-    expect(footer).toMatchObject({ x: 4, y: 228 });
-    // Release and dev builds (V0.4.19-DEV.ABC1234) both fit beside the short footer.
-    expect(version?.y).toBe(228);
-    expect((version?.x ?? 0) > 4 + 'PRE-RELEASE'.length * 8).toBe(true);
+    const v = `V${__APP_VERSION__}`.toUpperCase();
+    const version = all.filter((x) => x.str === v).at(-1);
+    expect(version).toMatchObject({ x: 252 - (v.length * 8 - 1), y: 228 });
+    expect(all.some((x) => x.str === 'PRE-RELEASE')).toBe(false);
   });
 
   it('announces the screen and the highlighted entry', () => {
@@ -172,11 +171,12 @@ describe('title text', () => {
     const last = h.said.at(-1) ?? '';
     expect(last).toContain('REMIX');
     expect(last).toContain('Exploding Rabbit');
-    expect(last).toContain('Pre-release.');
+    expect(last).not.toContain('Pre-release');
     expect(last).not.toContain('Unofficial fan project');
-    expect(last).toContain('Start game');
-    // Mario starts free: a new save has none of the eight heroes to find yet.
-    expect(last).toContain('0 of 8 heroes freed.');
+    // 0.5.0 (G-103, G-112): Classic is first; no Chapter 1 title, no freed-heroes count.
+    expect(last).toContain('Classic');
+    expect(last).not.toContain('Chapter 1.');
+    expect(last).not.toContain('heroes freed');
   });
 });
 
@@ -221,7 +221,8 @@ describe('title intro (the rift)', () => {
     expect(title.phase).toBe('ready');
     h.idle(8);
     h.tap('start');
-    expect(h.game.scenes.top).toBeInstanceOf(FileSelectScene);
+    // The first row (Classic since 0.5.0, G-112) opens: the skip itself chose nothing.
+    expect(h.game.scenes.top).toBeInstanceOf(ClassicMenuScene);
   });
 
   it('ends by itself in about four to six seconds', () => {

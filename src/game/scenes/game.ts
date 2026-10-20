@@ -1,3 +1,4 @@
+import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
@@ -1078,6 +1079,12 @@ export class Game {
     const code = this.saveLink;
     if (code === null) return false;
     this.saveLink = null;
+    // 0.5.0 (G-101): the campaign is closed outside dev mode. The card says so, and the link stays
+    // in the address (nothing is loaded or cleared), so it still works once Chapter 1 is out.
+    if (!this.campaignOpen) {
+      showChapter1Gate(this, CHAPTER1_LINK_CARD);
+      return true;
+    }
     this.scenes.push(
       new LoadCodeScene(this, readSaveCode(code, 1), {
         done: (slot) => {
@@ -1408,6 +1415,14 @@ export class Game {
 
   get devMode(): boolean {
     return this.deps.settings?.dev ?? false;
+  }
+
+  /**
+   * Whether the story campaign (Chapter 1) can be opened from the title or a resume link: only
+   * with dev mode on until Chapter 1 ships (0.5.0, G-100; scenes/chapter1-gate.ts).
+   */
+  get campaignOpen(): boolean {
+    return this.devMode;
   }
 
   /** The map rules' `unlockAll`: the file's "Unlock all" flag, only while dev mode is on. */

@@ -15,6 +15,7 @@ import { MenuScene, type MenuItem } from './menu';
 import { abilityHint, boundKey, controlScheme } from './hints';
 import { OptionsScene } from './options';
 import { FileSelectScene } from './file-select';
+import { showChapter1Gate } from './chapter1-gate';
 import { CheatCode, DEV_CODE } from './cheat';
 import type { Game } from './game';
 import { Player } from '../entities/player';
@@ -34,8 +35,6 @@ import {
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
 const MADE = 'MADE BY JELLOSHOOTER848';
 const BASED = ['BASED ON SUPER MARIO BROS.', 'CROSSOVER BY EXPLODING RABBIT'];
-const FOOTER = 'PRE-RELEASE';
-const CHAPTER = 'CHAPTER 1';
 
 /** Where the logo pieces rest. */
 const CROSS_X = 17;
@@ -112,7 +111,10 @@ export class TitleScene extends MenuScene {
 
   constructor(game: Game) {
     super(game, '', [], null);
-    this.heroes = heroRow(game.deps.characters, titleFreed(listSaves()));
+    // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
+    // stands in colour; with dev mode on (the campaign playable) the row shows the best file's.
+    const all = game.deps.characters.map((c) => c.id);
+    this.heroes = heroRow(game.deps.characters, game.campaignOpen ? titleFreed(listSaves()) : all);
     const intro = game.deps.titleIntro === true && !game.titleIntroPlayed;
     game.titleIntroPlayed = true;
     this.phase = intro ? 'rift' : 'drop';
@@ -135,12 +137,18 @@ export class TitleScene extends MenuScene {
 
   private rebuild(): void {
     const game = this.game;
+    // 0.5.0 (G-112): Classic first; the campaign is "Chapter 1", closed outside dev mode (G-100).
     const items: MenuItem[] = [
-      { label: 'Start game', select: () => game.scenes.replace(new FileSelectScene(game)) },
       {
         label: 'Classic',
         select: () => game.showClassicMenu(),
         hint: 'The original game, as it was',
+      },
+      {
+        label: 'Chapter 1',
+        select: () =>
+          game.campaignOpen ? game.scenes.replace(new FileSelectScene(game)) : showChapter1Gate(game),
+        hint: game.campaignOpen ? 'The story mode' : 'Coming soon',
       },
       { label: 'Custom levels', select: () => game.showCustomLevels() },
       {
@@ -159,15 +167,11 @@ export class TitleScene extends MenuScene {
     if (this.phase === 'rift') audio.playJingle('title-rift');
     else audio.playMusic('title');
     this.rebuild();
-    // Mario starts free, so count the heroes to find, as character select does.
-    const toFind = this.heroes.filter((h) => h.def.id !== 'mario');
-    const freed = toFind.filter((h) => h.freed).length;
     const it = this.items[this.index];
     this.game.deps.announcer?.say(
       [
-        `${TITLE_NAME}. Chapter 1.`,
-        `${freed} of ${toFind.length} heroes freed.`,
-        'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit. Pre-release.',
+        `${TITLE_NAME}.`,
+        'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit.',
         `Version ${__APP_VERSION__}.`,
         this.phase === 'rift' ? 'Press any button to skip the intro.' : '',
         this.game.deps.settings?.audio
@@ -508,8 +512,6 @@ export class TitleScene extends MenuScene {
       const p = this.letterPos(i);
       if (p) r.sprite(sheet, `cross-${i}`, p.x, p.y + dy);
     }
-    if (this.phase === 'ready' || this.clock >= this.stampAt - T.stampPop)
-      this.text(r, CHAPTER, 22, 70 + dy, undefined, true);
     const st = this.clock - this.stampAt;
     if (st < -T.stampPop) return;
     if (st < 0 && !this.calm) {
@@ -585,12 +587,9 @@ export class TitleScene extends MenuScene {
     this.ctext(r, unlocked ? 'DEV MODE UNLOCKED' : MADE, 148 + dy, 'gold', true);
     this.ctext(r, BASED[0] as string, 160 + dy);
     this.ctext(r, BASED[1] as string, 169 + dy);
-    this.text(r, FOOTER, 4, 228 + dy, undefined, true);
-    // The version shares the footer line (release and V0.4.19-DEV.ABC1234 builds fit); only an
-    // unusually long build string moves up a line rather than running into the footer.
+    // The build version, bottom right (0.5.0, G-104: no PRE-RELEASE footer beside it any more).
     const v = this.version;
-    const vy = FOOTER.length + 1 + v.length > 31 ? 214 : 228;
-    this.text(r, v, 252 - (v.length * 8 - 1), vy + dy, undefined, true);
+    this.text(r, v, 252 - (v.length * 8 - 1), 228 + dy, undefined, true);
   }
 
   override render(r: Renderer): void {
