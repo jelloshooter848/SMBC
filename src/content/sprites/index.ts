@@ -6,7 +6,8 @@ import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
-import { linkPalettes, linkDef, linkClassicDef } from './link';
+import { linkPalettes, linkDef } from './link';
+import { linkClassicDef, linkClassicPalettes } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
@@ -212,6 +213,7 @@ const defaults: Record<string, readonly string[]> = {
   ...marioPalettes,
   ...enemyPalettes,
   ...linkPalettes,
+  ...linkClassicPalettes,
   ...megamanPalettes,
   ...bassPalettes,
   ...protomanPalettes,

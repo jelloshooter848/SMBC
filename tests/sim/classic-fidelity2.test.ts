@@ -108,8 +108,8 @@ describe('air states', () => {
     expect(seen.slice(0, 8).every((s) => s === 'link-classic:roll-0')).toBe(true);
     expect(seen[9]).toBe('link-classic:roll-1');
     expect(seen[17]).toBe('link-classic:roll-2');
-    expect(seen[26]).toBe('link:jump');
-    expect(seen[33]).toBe('link:jump');
+    expect(seen[26]).toBe('link-classic:jump');
+    expect(seen[33]).toBe('link-classic:jump');
     // It loops while airborne.
     const more = record(r, 10, ['jump']);
     if (!r.p.body.onGround) expect(more.some((s) => s.startsWith('link-classic:roll'))).toBe(true);
@@ -130,7 +130,7 @@ describe('air states', () => {
       rest.push(pose(j));
     }
     expect(rest.length).toBeGreaterThan(0);
-    expect(new Set(rest.slice(0, -1))).toEqual(new Set(['link:jump']));
+    expect(new Set(rest.slice(0, -1))).toEqual(new Set(['link-classic:jump']));
   });
 
   it('Simon tucks while rising and stands while falling, and after an air whip', () => {

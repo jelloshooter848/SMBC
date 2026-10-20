@@ -45,7 +45,8 @@ export class IntroScene implements Scene {
     if (place) r.text(font, place, (256 - place.length * 8) >> 1, 80);
     else
       r.text(font, `WORLD ${worldLabel(s.world)}-${shownStage(s.world, s.stage, s.campaignOrder)}`, 88, 80);
-    const c = shownPortrait(s.character);
+    // A Classic run's card shows the Classic hero's art (R1: drawn at the original's sizes).
+    const c = shownPortrait(heroFor(s.character, rulesOf(this.game.ctx)));
     const sheet = assets.sheet(c.sheet, c.palette);
     const f = sheet.frames.get(c.frame);
     r.sprite(sheet, c.frame, 96, 112 - (f?.h ?? 16) + 16);
