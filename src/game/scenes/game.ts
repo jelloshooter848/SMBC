@@ -443,31 +443,38 @@ export class Game {
     // Back without a pick: the select music stops (the CLASSIC menu is silent).
     if (!chosen) return this.deps.ctx.audio.stopMusic();
     // Already played as the pick performance began (heroPicked), else now.
-    if (!sounded) this.chooseSound(this.state.character);
+    if (!sounded) this.playChooseJingle(this.chooseId(this.state.character));
   }
 
-  /** The choose jingle and teleport for hero `c` were played (heroPicked) for this select. */
+  /** The choose jingle was played (heroPicked) for this select. */
   private chooseSounded = false;
 
   /**
    * A Classic select's pick performance begins (CharacterSelectScene.perform, G-055): the
-   * chosen hero's choose jingle (G-062) and Mega Man's and Bass's teleport (G-070) play now, as
-   * the original's chooseCharacter plays them with the move, not when the select closes.
+   * chosen hero's choose jingle (G-062) and its choose sound (G-070) play now, as the original's
+   * chooseCharacter plays them with the move, not when the select closes.
    */
   heroPicked(c: CharacterDef): void {
     if (this.campaign !== null) return;
     this.chooseSounded = true;
-    this.chooseSound(c);
+    this.playChooseJingle(this.chooseId(c));
   }
 
-  /** Hero `c`'s choose jingle (its look's hero's set: CharacterDef.lookOf) and teleport sound. */
-  private chooseSound(c: CharacterDef): void {
-    // A look with no set of its own takes its hero's (Proto Man keeps his own: no jingle).
-    const id = heroSet(c.id) ? c.id : (c.lookOf ?? c.id);
+  /** The id hero `c` chooses as: its own set's, else (a look with none) its hero's (lookOf). */
+  private chooseId(c: CharacterDef): string {
+    return heroSet(c.id) ? c.id : (c.lookOf ?? c.id);
+  }
+
+  /**
+   * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
+   * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
+   * The one trigger of both: the pick performance's start (heroPicked), else the select's close
+   * after a pick (selectLeft).
+   */
+  playChooseJingle(id: string): void {
     const song = setSong(heroSet(id), 'choose');
     if (song) this.deps.ctx.audio.playJingle(song);
     else this.deps.ctx.audio.stopMusic();
-    // Mega Man and Bass teleport out as they are chosen (G-070; MegaMan.as 157).
     const sfx = CHOOSE_SFX[id];
     if (sfx) this.deps.ctx.audio.sfx(sfx);
   }

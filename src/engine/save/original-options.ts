@@ -130,12 +130,12 @@ export interface ClassicSettings {
   piranhas: ClassicPiranhas;
   goombas: ClassicGoombas;
   gameMode: ClassicGameMode;
+  musicSet: ClassicMusicSet;
   /**
    * Expansion heroes (off by default, as the original has none): on, the Classic select also
    * offers the heroes SMBC 3.1.21 never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi).
    */
   expansion: ClassicExpansion;
-  musicSet: ClassicMusicSet;
   weapons: ClassicWeapons;
 }
 
@@ -167,8 +167,8 @@ export function defaultClassicSettings(): ClassicSettings {
     piranhas: 'some',
     goombas: 'off',
     gameMode: 'all',
-    expansion: 'off',
     musicSet: 'character',
+    expansion: 'off',
     weapons: defaultClassicWeapons(),
   };
 }
@@ -183,8 +183,8 @@ export const CLASSIC_ROW_VALUES = {
   piranhas: CLASSIC_PIRANHAS,
   goombas: CLASSIC_GOOMBAS,
   gameMode: CLASSIC_GAME_MODES,
-  expansion: CLASSIC_EXPANSION,
   musicSet: CLASSIC_MUSIC_SETS,
+  expansion: CLASSIC_EXPANSION,
 } as const satisfies { [K in Exclude<keyof ClassicSettings, 'weapons'>]: readonly ClassicSettings[K][] };
 
 /** The value lists of the Customize Weapons rows, by key. */
