@@ -8,8 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.60] - 2026-10-20
+
 ### Added
 
+- Classic mode: character select before every new level, as in the original's default
+  All Characters mode (the same hero keeps its power; OK goes straight on).
+- Classic mode heroes animate with the original 3.1.21's timing and states: per-hero walk
+  cycles, Link's somersault on every jump and walk-off, Simon's tucked rising jump, Mega Man's
+  arms-up jump, Ryu's 400 ms flip then upright fall, Bill's upright walk-off fall, Samus's
+  faster somersault and her air shot, air aim-up and walking aim-up poses, and Mario's grow and
+  shrink flicker. Shots in the air or on the move keep the jump or walk pose.
+- Classic mode heroes are hit on the original's body boxes (their HRect sizes), and Samus's
+  beams, Wave Beam and missiles and Mario's fireball take the original's sizes and colours.
 - Classic mode: **Yoshi** closes the second row (a hero the original game never had). He walks with no run, flutters
   when you hold JUMP while falling, ground-pounds with DOWN in the air (through bricks, onto enemies), licks enemies
   with his tongue and swallows them into eggs (DOWN) or spits them (ATTACK), and aims eggs with a sweeping cursor: hold
@@ -28,15 +39,6 @@ under `## [Unreleased]`.
 
 ### Added
 
-- Classic mode: character select before every new level, as in the original's default
-  All Characters mode (the same hero keeps its power; OK goes straight on).
-- Classic mode heroes animate with the original 3.1.21's timing and states: per-hero walk
-  cycles, Link's somersault on every jump and walk-off, Simon's tucked rising jump, Mega Man's
-  arms-up jump, Ryu's 400 ms flip then upright fall, Bill's upright walk-off fall, Samus's
-  faster somersault and her air shot, air aim-up and walking aim-up poses, and Mario's grow and
-  shrink flicker. Shots in the air or on the move keep the jump or walk pose.
-- Classic mode heroes are hit on the original's body boxes (their HRect sizes), and Samus's
-  beams, Wave Beam and missiles and Mario's fireball take the original's sizes and colours.
 - Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
   Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
   a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch
@@ -1422,7 +1424,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.59...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...HEAD
+[0.4.60]: https://github.com/jelloshooter848/SMBC/compare/v0.4.59...v0.4.60
 [0.4.59]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...v0.4.59
 [0.4.58]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...v0.4.58
 [0.4.57]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...v0.4.57
