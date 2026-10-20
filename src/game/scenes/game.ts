@@ -5,7 +5,7 @@ import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
-import { CLASSIC_EXTRAS, heroFor } from '../characters/registry';
+import { CLASSIC_EXTRAS, CLASSIC_VARIANTS, classicOnly, heroFor, skinHost, skinsOf } from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
@@ -412,8 +412,57 @@ export class Game {
   randomHero(among?: readonly CharacterDef[]): CharacterDef {
     // Survival: never a fallen hero (CharacterSelectBox: only standing heroes are selectable);
     // revive mode passes its own list (`among`).
-    const heroes = among ?? this.roster.filter((c) => !this.heroLocked(c) && !this.survival?.isFallen(c.id));
-    return this.pickRng.pick(heroes.length ? heroes : this.roster);
+    const heroes =
+      among ?? this.heroSlots.filter((c) => !this.heroLocked(c) && !this.survival?.isFallen(c.id));
+    // The hero comes in the look chosen for it (FU-8: the Random slot respects the skin picker).
+    return this.skinFor(this.pickRng.pick(heroes.length ? heroes : this.heroSlots));
+  }
+
+  /**
+   * The select screen's heroes (FU-8): the roster with every hero's other skins folded into its
+   * slot (registry CLASSIC_SKINS: Break Man into Proto Man's, Dark Pit into Pit's). A skin whose
+   * slot hero is not on the roster keeps a slot of its own.
+   */
+  get heroSlots(): CharacterDef[] {
+    const roster = this.roster;
+    const slots = roster.filter((c) => {
+      const host = skinHost(c);
+      return host === c || !roster.includes(host);
+    });
+    // Nothing folded (the campaign, Current rules): the roster itself.
+    return slots.length === roster.length ? roster : slots;
+
+  }
+
+  /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
+  slotOf(c: CharacterDef): CharacterDef {
+    const host = skinHost(c);
+    return host !== c && this.roster.includes(host) ? host : c;
+  }
+
+  /** Slot hero `c` in its chosen look (Settings.classicSkins; its own when none is chosen). */
+  skinFor(c: CharacterDef): CharacterDef {
+    const id = this.deps.settings?.classicSkins?.[c.id];
+    if (!id || id === c.id) return c;
+    return skinsOf(c).find((d) => d.id === id && this.roster.includes(d)) ?? c;
+  }
+
+  /** The skins slot hero `c` offers now (its own look first; only those on the roster). */
+  skinsFor(c: CharacterDef): readonly CharacterDef[] {
+    const list = skinsOf(c).filter((d) => d === c || this.roster.includes(d));
+    return list.length ? list : [c];
+  }
+
+  /** Remembers `skin` as slot hero `c`'s look (saved with the settings). */
+  setSkin(c: CharacterDef, skin: CharacterDef): void {
+    const s = this.deps.settings;
+    if (!s) return;
+    const skins = { ...(s.classicSkins ?? {}) };
+    if (skin === c) delete skins[c.id];
+    else skins[c.id] = skin.id;
+    if (Object.keys(skins).length) s.classicSkins = skins;
+    else delete s.classicSkins;
+    this.deps.applySettings?.();
   }
 
   /** Lives at a Classic run's start and after its continues (More Settings > Lives; else 3). */
@@ -436,13 +485,14 @@ export class Game {
     this.survival = null;
     if (!classic || !this.survivalMode) return;
     this.survival = this.newSurvival();
-    this.survival.revive(character.id);
+    this.survival.revive(this.slotOf(character).id);
     this.survival.reviveAllowed = false;
   }
 
   /** A new Survival for this run: every hero of its roster (not hidden or locked) fallen. */
   private newSurvival(): Survival {
-    return new Survival(() => this.roster.filter((c) => !this.heroLocked(c)).map((c) => c.id));
+    // By slot: a hero's skins are one hero (FU-8).
+    return new Survival(() => this.heroSlots.filter((c) => !this.heroLocked(c)).map((c) => c.id));
   }
 
   /**
@@ -474,7 +524,7 @@ export class Game {
    */
   survivalFall(): boolean {
     if (!this.survival || !this.survivalRun || this.livesInfinite) return false;
-    this.survival.fall(this.state.character.id);
+    this.survival.fall(this.slotOf(this.state.character).id);
     return true;
   }
 
@@ -487,7 +537,7 @@ export class Game {
     const sv = this.survival;
     if (!sv) return 'revived';
     if (!this.livesInfinite) this.state.lives = Math.max(0, this.state.lives - 1);
-    return sv.revive(c.id);
+    return sv.revive(this.slotOf(c).id);
   }
 
   /**
@@ -496,9 +546,10 @@ export class Game {
    * it is the hero playing and has the Fire Flower.
    */
   fullyUpgraded(c: CharacterDef): boolean {
-    if (this.survival?.isFallen(c.id)) return false;
-    if (this.survival?.boosted(c.id)) return true;
-    return c === this.state.character && this.state.powerState === 'fire';
+    const id = this.slotOf(c).id;
+    if (this.survival?.isFallen(id)) return false;
+    if (this.survival?.boosted(id)) return true;
+    return id === this.slotOf(this.state.character).id && this.state.powerState === 'fire';
   }
 
   /**
@@ -550,7 +601,12 @@ export class Game {
   rosterFor(rules: Rules): CharacterDef[] {
     if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
     // A hero toggled off in the Dev menu is left out (and `?char=` falls back to the first).
-    return [...this.deps.characters, ...CLASSIC_EXTRAS.filter((d) => this.classicHeroOn(d))];
+    // FU-3's variants follow the extras (their own slots, after Yoshi).
+    return [
+      ...this.deps.characters,
+      ...CLASSIC_EXTRAS.filter((d) => this.classicHeroOn(d)),
+      ...CLASSIC_VARIANTS.filter((d) => this.classicHeroOn(d)),
+    ];
   }
 
   get ctx(): GameContext {
@@ -1295,7 +1351,7 @@ export class Game {
   heroLocked(def: CharacterDef): boolean {
     // A Classic-only extra (TG-42) can be picked only while the roster lists it; it has no
     // captive, so it is never added to `freed`.
-    if (CLASSIC_EXTRAS.includes(def)) return !this.roster.includes(def);
+    if (classicOnly(def)) return !this.roster.includes(def);
     if (this.devMode && this.devAllHeroes) return false;
     return this.campaign !== null && !this.freed.includes(def.id);
   }
@@ -1914,7 +1970,7 @@ export class Game {
     const scene = this.levelScene(level, start);
     // Survival: a hero strengthened at the select gets its power-ups and ammo as it starts.
     const id = this.state.character.id;
-    if (this.survival?.takeBoost(id))
+    if (this.survival?.takeBoost(this.slotOf(this.state.character).id))
       scene.afterFirstUpdate = () => {
         const p = scene.world.players[0];
         if (p) applyRevivalBoost(p, scene.world, id);

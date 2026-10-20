@@ -214,12 +214,16 @@ describe('PM-13: lower shots', () => {
 
 describe('PM-18: the whistle on the pick, Proto Man only', () => {
   function pickSounds(def: CharacterDef): string[] {
-    const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
+    // FU-8: Break Man is Proto Man's second skin, picked on Proto Man's slot.
+    const settings = { ...defaultSettings(), classicSkins: { protoman: def.id } };
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
-    expect(sel.chars).toContain(def);
+    const slot = h.game.slotOf(def);
+    expect(sel.chars).toContain(slot);
     h.idle(12);
-    for (let i = 0; i < 40 && sel.chars[(sel as unknown as { index: number }).index] !== def; i++)
+    for (let i = 0; i < 40 && sel.chars[(sel as unknown as { index: number }).index] !== slot; i++)
+
       h.tap('right');
     const sfxMock = h.audio.sfx as unknown as { mock: { calls: unknown[][] } };
     const before = sfxMock.mock.calls.length;

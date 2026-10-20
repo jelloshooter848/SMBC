@@ -37,6 +37,7 @@ import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
 import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
+import { CLASSIC_SKIN_LISTS, CLASSIC_VARIANT_DEFS } from './classic/skins';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -102,6 +103,38 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   // Yoshi (YO-2): last.
   YOSHI_CLASSIC,
 ];
+
+/**
+ * Classic-only variants of a hero that play differently (FU-3: Rock, Francesca, Rokko Chan, Cut
+ * Man, Ice Man, Fire Man), each with its own select slot after the extras. Listed by Game.roster
+ * with the extras (a Classic-rules run outside the campaign), never anywhere else.
+ */
+export const CLASSIC_VARIANTS: CharacterDef[] = [...CLASSIC_VARIANT_DEFS];
+
+/** A Classic-only hero: an extra or a variant (TG-42: never a captive, never in the campaign). */
+export function classicOnly(def: CharacterDef): boolean {
+  return CLASSIC_EXTRAS.includes(def) || CLASSIC_VARIANTS.includes(def);
+}
+
+/**
+ * Classic mode's skins (FU-8): by select-slot hero id, the looks that slot can wear, its own
+ * first. A skin plays exactly as its slot's hero (a hero that plays differently has its own slot:
+ * CLASSIC_VARIANTS); the select's skin picker chooses among them, and the choice is remembered
+ * per hero (Settings.classicSkins).
+ */
+export const CLASSIC_SKINS: Readonly<Record<string, readonly CharacterDef[]>> = CLASSIC_SKIN_LISTS;
+
+/** The slot hero `def` is a skin of (itself when it is no other hero's skin). */
+export function skinHost(def: CharacterDef): CharacterDef {
+  for (const list of Object.values(CLASSIC_SKINS)) if (list.slice(1).includes(def)) return list[0] ?? def;
+  return def;
+}
+
+/** The skins hero `def`'s slot offers, its own look first (just `def` when it has none). */
+export function skinsOf(def: CharacterDef): readonly CharacterDef[] {
+  const host = skinHost(def);
+  return CLASSIC_SKINS[host.id]?.[0] === host ? (CLASSIC_SKINS[host.id] ?? [host]) : [host];
+}
 
 /**
  * The def a World plays for roster hero `def` under `rules` (TG-17). A def that is already a

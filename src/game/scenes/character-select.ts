@@ -63,6 +63,10 @@ export interface NewGamePick {
 
 /** The second row of heroes (heroes past the first row's) sits this far below the first. */
 export const SECOND_ROW_DY = 40;
+/** A third row (Classic mode's variants, FU-3) sits this far below the second (closer, to fit). */
+export const THIRD_ROW_DY = 34;
+/** The most slots a row past the first holds before the rest move to a third row. */
+export const ROW_MAX = 11;
 
 /** Classic Survival's box over the select: the revive news, or the "finished?" question. */
 type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; yes: boolean };
@@ -96,9 +100,12 @@ export class CharacterSelectScene implements Scene {
     private readonly start: NewGamePick | null = null,
   ) {}
 
-  /** The heroes to pick from: the run's roster (Game.roster; the Classic extras follow the usual ones). */
+  /**
+   * The heroes to pick from: the run's roster (Game.roster; the Classic extras follow the usual
+   * ones), one slot per hero: a hero's other skins are chosen on its slot (Game.heroSlots, FU-8).
+   */
   get chars(): readonly CharacterDef[] {
-    return this.game.roster;
+    return this.game.heroSlots;
   }
 
   /**
@@ -185,16 +192,66 @@ export class CharacterSelectScene implements Scene {
     return this.hasRandom && i === this.chars.length;
   }
 
-  /** Where slot `i` stands (a hero, or the Random slot): its centre x and its feet y. */
-  slot(i: number): { x: number; y: number } {
+  /**
+   * Where each row starts (slot index), then the total: the first row, then the slots past it on
+   * one row, or on two (the larger first) when they are more than ROW_MAX.
+   */
+  private get rowStarts(): number[] {
     const n = this.total;
     const first = this.firstRowSlots;
-    const row = i < first ? 0 : 1;
-    const len = row === 0 ? first : n - first;
-    const k = row === 0 ? i : i - first;
-    const spacing = Math.min(64, 224 / Math.max(1, len));
+    if (first >= n) return [0, n];
+    const rest = n - first;
+    if (rest <= ROW_MAX) return [0, first, n];
+    return [0, first, first + Math.ceil(rest / 2), n];
+  }
+
+  /** How many rows the select has (1 to 3). */
+  get rows(): number {
+    return this.rowStarts.length - 1;
+  }
+
+  /** The row slot `i` is on. */
+  private rowOf(i: number): number {
+    const starts = this.rowStarts;
+    let r = 0;
+    while (r + 1 < starts.length - 1 && i >= (starts[r + 1] as number)) r++;
+    return r;
+  }
+
+  /** The feet line of row `r`. */
+  private rowY(r: number): number {
+    return 120 + (r > 0 ? SECOND_ROW_DY : 0) + (r > 1 ? THIRD_ROW_DY : 0);
+  }
+
+  /** The spacing of the slots on slot `i`'s row. */
+  private spacingOf(i: number): number {
+    const starts = this.rowStarts;
+    const r = this.rowOf(i);
+    const len = (starts[r + 1] as number) - (starts[r] as number);
+    return Math.min(64, 224 / Math.max(1, len));
+  }
+
+  /** Where slot `i` stands (a hero, or the Random slot): its centre x and its feet y. */
+  slot(i: number): { x: number; y: number } {
+    const starts = this.rowStarts;
+    const row = this.rowOf(i);
+    const len = (starts[row + 1] as number) - (starts[row] as number);
+    const k = i - (starts[row] as number);
+    const spacing = this.spacingOf(i);
     const x0 = 128 - ((len - 1) * spacing) / 2;
-    return { x: Math.round(x0 + k * spacing), y: 120 + row * SECOND_ROW_DY };
+    return { x: Math.round(x0 + k * spacing), y: this.rowY(row) };
+  }
+
+  /**
+   * The lines under the heroes: the name, the line under it (lives, P2, revive's action), revive's
+   * two prompts, PRESS OK and RETURN TO MAP. A second row moves them down by its height; with a
+   * third they close up to fit the screen.
+   */
+  private get lines(): { name: number; under: number; ok: number; leave: number; press: number; map: number } {
+    const rows = this.rows;
+    if (rows >= 3) return { name: 204, under: 213, ok: 222, leave: 231, press: 224, map: 232 };
+    if (rows === 2) return { name: 184, under: 196, ok: 208, leave: 220, press: 210, map: 224 };
+    return { name: 144, under: 158, ok: 170, leave: 182, press: 184, map: 204 };
   }
 
   /** Hero `i` is a brainwashed captive on this campaign file: drawn as a silhouette, skipped. */
@@ -204,14 +261,47 @@ export class CharacterSelectScene implements Scene {
     return !c || this.game.heroLocked(c);
   }
 
-  /** What slot `i` is called (spoken): its hero's name, or Random. */
+  /**
+   * What slot `i` is called (spoken): its hero's name, or Random. A hero with skins (FU-8) says
+   * its look too: "Proto Man, skin Break Man".
+   */
   private slotName(i: number): string {
-    return this.isRandom(i) ? 'Random' : (this.chars[i]?.name ?? '');
+    if (this.isRandom(i)) return 'Random';
+    const c = this.chars[i];
+    if (!c) return '';
+    if (this.skinsAt(i).length < 2) return c.name;
+    return `${c.name}, skin ${this.game.skinFor(c).name}`;
   }
 
-  /** The hero OK on slot `i` gives: its own, or for the Random slot a random one. */
+  /** The looks slot `i`'s hero can wear (FU-8; one when it has no other skins). */
+  private skinsAt(i: number): readonly CharacterDef[] {
+    const c = this.isRandom(i) ? undefined : this.chars[i];
+    return c ? this.game.skinsFor(c) : [];
+  }
+
+  /** The hero under the cursor has other skins: the skin picker is offered. */
+  get skinPicker(): boolean {
+    return !this._reviving && !this.onMapRow && this.skinsAt(this.index).length > 1;
+  }
+
+  /** The skin picker (SKIN): slot `i`'s hero takes its next look, remembered and said. */
+  private nextSkin(i: number): void {
+    const c = this.chars[i];
+    const list = this.skinsAt(i);
+    if (!c || list.length < 2) return;
+    const at = list.indexOf(this.game.skinFor(c));
+    const skin = list[(at + 1) % list.length] ?? c;
+    this.game.setSkin(c, skin);
+    this.game.ctx.audio.sfx('select');
+    this.game.deps.announcer?.say(`${c.name}, skin ${skin.name}`);
+  }
+
+  /** The hero OK on slot `i` gives: its own (in its chosen look), or for the Random slot a random one. */
   private heroAt(i: number): CharacterDef | undefined {
-    if (!this.isRandom(i)) return this.chars[i];
+    if (!this.isRandom(i)) {
+      const c = this.chars[i];
+      return c && this.game.skinFor(c);
+    }
     // Revive mode's Random revives a random hero among those it can (getRandomCharInd).
     const c = this._reviving ? this.game.randomHero(this.pickable()) : this.game.randomHero();
     this.game.deps.announcer?.say(`Random: ${c.name}.`);
@@ -235,8 +325,9 @@ export class CharacterSelectScene implements Scene {
    * (CharacterDef.portraitFor: the Warriors of Light's remembered class), else `portrait`.
    */
   private portraitOf(c: CharacterDef): CharacterDef['portrait'] {
-    // A Classic run shows each hero's Classic art (R1: drawn at the original's sizes).
-    if (!c.portraitFor) return shownPortrait(heroFor(c, this.game.liveRules));
+    // A Classic run shows each hero's Classic art (R1: drawn at the original's sizes), in the
+    // look chosen for it (FU-8).
+    if (!c.portraitFor) return shownPortrait(heroFor(this.game.skinFor(c), this.game.liveRules));
     const s = this.game.state;
     const second = this.pick?.player === 1 && s.character2 !== null;
     const mine = second ? s.character2 : s.character;
@@ -245,7 +336,13 @@ export class CharacterSelectScene implements Scene {
 
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   private rowsHint(): string {
+    if (this.rows > 2) return ' up and down for the other rows,';
     return this.firstRowSlots < this.total ? ' up and down for the other row,' : '';
+  }
+
+  /** " Skin to change a hero's look." when some hero has other skins (FU-8), else nothing. */
+  private skinHint(): string {
+    return this.chars.some((_, i) => this.skinsAt(i).length > 1) ? " Skin to change a hero's look." : '';
   }
 
   /** " 7 heroes still to be found." in campaign play while any are locked, else nothing. */
@@ -284,7 +381,7 @@ export class CharacterSelectScene implements Scene {
       sv.reviveAllowed = false;
       if (this._reviving && this.pickable().length === 0) this._reviving = false;
       if (this._reviving) {
-        const current = (pick?.current ?? this.game.state.character).id;
+        const current = this.game.slotOf(pick?.current ?? this.game.state.character).id;
         this.index = this.unlocked(
           Math.max(
             0,
@@ -306,7 +403,7 @@ export class CharacterSelectScene implements Scene {
       this.index = this.unlocked(
         Math.max(
           0,
-          chars.findIndex((c) => c.id === pick.current.id),
+          chars.findIndex((c) => c.id === this.game.slotOf(pick.current).id),
         ),
       );
       // The last pick was the Random slot: the cursor starts there again.
@@ -316,6 +413,7 @@ export class CharacterSelectScene implements Scene {
       this.game.deps.announcer?.say(
         `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
+          this.skinHint() +
           this.toFind() +
           this.fallenNote() +
           news,
@@ -326,6 +424,7 @@ export class CharacterSelectScene implements Scene {
     this.index2 = this.unlocked(this.index2);
     this.game.deps.announcer?.say(
       `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
+        this.skinHint() +
         this.toFind() +
         this.fallenNote() +
         news,
@@ -385,6 +484,7 @@ export class CharacterSelectScene implements Scene {
     const name = this.slotName(this.index);
     this.game.deps.announcer?.say(
       `Choose your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
+        this.skinHint() +
         this.fallenNote(),
     );
   }
@@ -477,9 +577,11 @@ export class CharacterSelectScene implements Scene {
     if (this.box) return menuTouchLabels(false);
     if (this._reviving)
       return { jump: 'OK', attack: this.reviveLeave(), special: null, start: null, select: null };
-    if (this.pick?.onMap) return { jump: 'OK', attack: 'MAP', special: null, start: null, select: null };
+    // The skin picker (FU-8) on the touch Special button.
+    const special = this.skinPicker ? 'SKIN' : null;
+    if (this.pick?.onMap) return { jump: 'OK', attack: 'MAP', special, start: null, select: null };
     const back = !this.pick || !!this.pick.onCancel;
-    return { jump: 'OK', attack: back ? 'BACK' : null, special: null, start: null, select: null };
+    return { jump: 'OK', attack: back ? 'BACK' : null, special, start: null, select: null };
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
@@ -501,16 +603,17 @@ export class CharacterSelectScene implements Scene {
     // Two rows (the Classic extras): Up / Down go to the other row's nearest unlocked hero by
     // column; Up on the first row or Down on the second bumps (Down there is left to RETURN TO
     // MAP when the pick has it). One row: null, nothing changes (today's select).
-    const rows = this.firstRowSlots < n;
+    const rows = this.rows > 1;
+    const starts = this.rowStarts;
+    const ROW_NAMES = ['first', 'second', 'third'];
     const rowMove = (idx: number, f: InputFrame): number | null => {
       if (!rows) return null;
       const up = f.pressed('up');
       const down = f.pressed('down');
       if (up === down) return null;
-      const first = this.firstRowSlots;
-      const row = idx < first ? 0 : 1;
-      const to = up ? 0 : 1;
-      if (to === row) {
+      const row = this.rowOf(idx);
+      const to = up ? row - 1 : row + 1;
+      if (to < 0 || to >= this.rows) {
         if (down && this.pick?.onMap) return null;
         this.game.ctx.audio.sfx('bump');
         return idx;
@@ -518,7 +621,7 @@ export class CharacterSelectScene implements Scene {
       const x = this.slot(idx).x;
       let best = -1;
       let bd = Infinity;
-      for (let k = to === 0 ? 0 : first; k < (to === 0 ? first : n); k++) {
+      for (let k = starts[to] as number; k < (starts[to + 1] as number); k++) {
         if (this.skipped(k)) continue;
         const d = Math.abs(this.slot(k).x - x);
         if (d < bd) {
@@ -532,7 +635,7 @@ export class CharacterSelectScene implements Scene {
       }
       this.game.ctx.audio.sfx('select');
       const name = this.slotName(best);
-      if (name) this.game.deps.announcer?.say(`${name}, ${to === 0 ? 'first' : 'second'} row`);
+      if (name) this.game.deps.announcer?.say(`${name}, ${ROW_NAMES[to] ?? 'next'} row`);
       return best;
     };
     if (this.box) {
@@ -568,6 +671,7 @@ export class CharacterSelectScene implements Scene {
         const name = this.slotName(this.index);
         if (name) this.game.deps.announcer?.say(name);
       }
+      if (pressed('special') && !this.onMapRow && !this.isRandom(this.index)) this.nextSkin(this.index);
       const ok = this.t > 10 && (pressed('start') || pressed('jump'));
       const c = ok && !this.onMapRow ? this.heroAt(this.index) : chars[this.index];
       if (ok && !this.onMapRow) this.game.pickedRandom = this.isRandom(this.index);
@@ -588,6 +692,7 @@ export class CharacterSelectScene implements Scene {
       return;
     }
     this.index = rowMove(this.index, input) ?? move(this.index, input);
+    if (input.pressed('special') && !this.isRandom(this.index)) this.nextSkin(this.index);
     const f2 = inputs[1];
     // Classic mode is one player (no join).
     if (f2 && !this.start) {
@@ -640,15 +745,17 @@ export class CharacterSelectScene implements Scene {
       if (this._reviving || !this.cheatNews.length) r.text(font, line, 128 - line.length * 4, 52);
     }
     if (!this._reviving) this.renderCheatNews(r, font);
+    // The skin picker's hint (FU-8), named by ability with the real key when not on touch.
+    if (this.skinPicker && !this.cheatNews.length && !this.box) {
+      const hint = fontText(`${abilityHint(this.game, 'SKIN', 'special')} CHANGES LOOK`);
+      r.text(font, hint, 128 - hint.length * 4, 42);
+    }
     const chars = this.chars;
-    const first = this.firstRowSlots;
-    const total = this.total;
-    // A second row of heroes moves the lines under the heroes down by its height.
-    const below = first < total ? SECOND_ROW_DY : 0;
-    const spacingOf = (i: number) => Math.min(64, 224 / Math.max(1, i < first ? first : total - first));
+    // Rows of heroes move the lines under them down (Layout: lines).
+    const L = this.lines;
     chars.forEach((c, i) => {
       const { x, y: feet } = this.slot(i);
-      const spacing = spacingOf(i);
+      const spacing = this.spacingOf(i);
       const locked = this.locked(i);
       const pt = this.portraitOf(c);
       // Survival's fallen heroes are greyed (CharacterSelectBox.markPortraitFallen: desaturate).
@@ -680,7 +787,9 @@ export class CharacterSelectScene implements Scene {
           if (tight) r.rect(x - 8, feet + 2, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
           else r.text(font, '>', x - 20, feet - 8 - h / 2);
         }
-        r.text(font, c.name.toUpperCase(), 128 - (c.name.length * 8) / 2, 144 + below);
+        // The name of the look chosen for it (FU-8: a skin's own name).
+        const name = this.game.skinFor(c).name;
+        r.text(font, name.toUpperCase(), 128 - (name.length * 8) / 2, L.name);
       }
       if (this.p2 && i === this.index2)
         r.text(font, '2', tight ? x - 4 : x + 12, tight ? feet - h - 10 : feet - 8 - h / 2);
@@ -697,34 +806,31 @@ export class CharacterSelectScene implements Scene {
       r.sprite(items, frame, x - 8, feet - h);
       if (i === this.index) {
         if (!this.onMapRow) {
-          if (spacingOf(i) < 40)
+          if (this.spacingOf(i) < 40)
             r.rect(x - 8, feet + 2, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
           else r.text(font, '>', x - 20, feet - 8 - h / 2);
         }
-        r.text(font, 'RANDOM', 128 - 24, 144 + below);
+        r.text(font, 'RANDOM', 128 - 24, L.name);
       }
     }
-    // With a second row the lines below close up a little so everything fits the screen.
-    const low = below ? below - 2 : 0;
-    if (this._reviving) this.renderRevive(r, low);
+    if (this._reviving) this.renderRevive(r);
     else if (this.pick || sv) {
       // The original's CharacterSelect shows the lives left (numLives / livesTxt).
-      r.text(font, `×  ${this.game.state.lives}`, 108, 158 + low);
+      r.text(font, `×  ${this.game.state.lives}`, 108, L.under);
     } else if (this.p2) {
       const c2 = chars[this.index2];
-      if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, 158 + low);
+      if (c2) r.text(font, `P2: ${c2.name.toUpperCase()}`, 128 - ((c2.name.length + 4) * 8) / 2, L.under);
     } else if (!this.start && (this.t >> 6) % 2 === 1) {
       const join = fontText(`P2 ${abilityHint(this.game, 'MENU', 'start', 1)} TO JOIN`);
-      r.text(font, join, 128 - join.length * 4, 158 + low);
+      r.text(font, join, 128 - join.length * 4, L.under);
     }
     // Named by ability (OK), with the real key or pad button when not on touch.
     const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
-    const goY = below ? 210 : 184;
-    if (!this._reviving && (this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, goY);
+    if (!this._reviving && (this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, L.press);
     if (this.pick?.onMap) {
       const label = 'RETURN TO MAP';
       const x = 128 - label.length * 4;
-      const y = below ? 224 : 204;
+      const y = L.map;
       r.text(font, label, x, y);
       if (this.onMapRow) r.text(font, '>', x - 12, y);
     }
@@ -734,15 +840,16 @@ export class CharacterSelectScene implements Scene {
    * Revive mode's lines (CharacterSelectBox.changeNameBoxText): what OK does under the cursor,
    * then the two steady prompts (no blinking here, whatever Reduce flashing says).
    */
-  private renderRevive(r: Renderer, low: number): void {
+  private renderRevive(r: Renderer): void {
+    const L = this.lines;
     const font = this.game.ctx.assets.sheet('font');
     // The lives left, under the count of heroes standing ("2 lives remaining").
     const n = this.game.state.lives;
     const lives = `${n} ${n === 1 ? 'LIFE' : 'LIVES'} LEFT`;
     r.text(font, lives, 128 - lives.length * 4, 66);
     const action = this.reviveAction(this.index).toUpperCase();
-    r.text(font, action, 128 - action.length * 4, 158 + low);
-    const goY = 170 + low;
+    r.text(font, action, 128 - action.length * 4, L.under);
+    const goY = L.ok;
     // What OK does under the cursor: a standing hero is powered up instead.
     const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
     const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`);
@@ -752,7 +859,7 @@ export class CharacterSelectScene implements Scene {
       const line = fontText(
         `${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`,
       );
-      r.text(font, line, 128 - line.length * 4, goY + 12);
+      r.text(font, line, 128 - line.length * 4, L.leave);
     }
     if (this.box) this.renderBox(r, this.box);
   }
