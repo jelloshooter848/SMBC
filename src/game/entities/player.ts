@@ -149,6 +149,13 @@ export class Player {
   /** Set by the world each frame: the body's centre is under the water line (swim physics). */
   inWater = false;
   /**
+   * Set by the world each frame: the pull of the pits under the hero in an area that starts under
+   * water, in the water or above its surface line (Classic SMBC's PitVacuum, SwimProfile.pitPull,
+   * G-013): its sideways direction (0: straight down), or null with no pit under the hero (or no
+   * pull for this hero).
+   */
+  pitPull: -1 | 0 | 1 | null = null;
+  /**
    * Set by the world each frame: a water level with the body above its surface line. Only read
    * for SwimProfile.surface (Classic SMBC's gravity there).
    */
@@ -552,6 +559,9 @@ export class Player {
       else if (dir !== 0) this.facing = dir;
     }
 
+    // PitVacuum (G-013) above a water area's surface line too: the pull does not ask for water.
+    const pull = this.pitPull !== null ? p.swim?.pitPull : undefined;
+    if (pull) b.vx += (this.pitPull ?? 0) * pull.side;
     const wasOnGround = b.onGround;
     const gapSpeed =
       wasOnGround &&
@@ -588,8 +598,8 @@ export class Player {
       if (p.flutter && this.flutterStep(input, p.flutter)) {
         // Classic Yoshi's flutter (YO-8): no gravity this frame.
       } else if (surface) {
-        // Classic SMBC above a water level's surface line (SW-C10).
-        b.vy += surface.gravity;
+        // Classic SMBC above a water level's surface line (SW-C10), plus a pit's pull (G-013).
+        b.vy += surface.gravity + (pull?.down ?? 0);
         if (b.vy > surface.fallMax) b.vy = surface.fallMax;
       } else {
         if (this.launched && this.launchGravity) b.vy += this.launchGravity;
@@ -679,6 +689,8 @@ export class Player {
       }
       return this.swim(input, map, audio, dir, onHeadBump);
     }
+    // PitVacuum (G-013) above a water area's surface line: the pull does not ask for water.
+    const pull = this.pitPull !== null ? p.swim?.pitPull : undefined;
 
     // Take-off (ML-C8): a press on the ground (no buffer when `jumpBuffer` is false).
     const canJump = b.onGround && !locked && rooted !== true && (this.def.behaviour.canJump?.(this) ?? true);
@@ -787,12 +799,13 @@ export class Player {
         : this.launched && this.launchGravity
           ? this.launchGravity
           : r.gravity;
-      b.vy += g;
+      b.vy += g + (pull?.down ?? 0);
       const cap = surface ? surface.fallMax : p.maxFall;
       if (b.vy > cap) b.vy = cap;
     }
 
     // 7. The move.
+    if (pull) b.vx += (this.pitPull ?? 0) * pull.side;
     const wasOnGround = b.onGround;
     const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
     moveX(b, map, velToSub(b.vx));
@@ -1189,6 +1202,9 @@ export class Player {
     const sw = p.swim ?? DEFAULT_SWIM;
     const seabed = sw.mode === 'seabed';
     this.airCap = p.maxWalk;
+    // PitVacuum.pull (G-013): the pit's sideways pull, before the speed caps.
+    const pull = this.pitPull !== null ? sw.pitPull : undefined;
+    if (pull) b.vx += (this.pitPull ?? 0) * pull.side;
     // Character.as water block: on the floor a slow walker is capped at vxMaxGroundWater.
     const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
     if (b.vx > cap) b.vx = cap;
@@ -1232,8 +1248,11 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else {
-      b.vy += sw.gravity;
-      if (b.vy > sw.sinkMax) b.vy = sw.sinkMax;
+      // Pulled down, the sink cap gives way to the water level's fall cap (Character.as: the
+      // vyMaxPsvWater cap is skipped while pulledDown; MarioBase's water vyMaxPsv still holds).
+      b.vy += sw.gravity + (pull?.down ?? 0);
+      const sink = pull ? pull.fallMax : sw.sinkMax;
+      if (b.vy > sink) b.vy = sink;
     }
     this.tier = pickJumpTier(p, b.vx);
     this.updateAnim(dir);
