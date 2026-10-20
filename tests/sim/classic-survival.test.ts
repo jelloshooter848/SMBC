@@ -156,7 +156,7 @@ describe('a new game', () => {
     expect(h.said.at(-1)).toMatch(
       /^Revive your heroes: each costs one life\. 3 lives left\. Mario: revive\./,
     );
-    expect(h.said.at(-1)).toMatch(/OK to revive\. BACK to leave\./);
+    expect(h.said.at(-1)).toMatch(/OK to revive\. BACK to leave\. Every hero has fallen\.$/);
     expect(h.game.state.lives).toBe(3);
     // The fallen are drawn grey (markPortraitFallen: desaturate).
     const d = draw(s);
@@ -289,7 +289,7 @@ describe('revive mode (CharacterSelectBox.reviveCharacter, 406-455)', () => {
     expect(sel(h).boxShown).toBeNull();
     expect(sel(h).reviving).toBe(true);
     finishReviving(h);
-    expect(h.said.at(-1)).toMatch(/^Choose your hero\..*Fallen: Luigi, /);
+    expect(h.said.at(-1)).toMatch(/^Choose your hero\..* Standing: Mario\.$/);
   });
 
   it('needs at least one life to open (53, 133: MIN_LIVES_FOR_ALLOW_REVIVAL = 1)', () => {
@@ -315,7 +315,7 @@ describe('deaths and the end of the run', () => {
     expect(s).toBeInstanceOf(CharacterSelectScene);
     expect(s.reviving).toBe(false);
     expect(s.chars[s.cursor]).toBe(LUIGI);
-    expect(h.said.at(-1)).toMatch(/Fallen: Mario, /);
+    expect(h.said.at(-1)).toMatch(/ Standing: Luigi\.$/);
     expect(draw(s).texts.map((t) => t.str)).toContain('1 OF 9 HEROES STANDING');
   });
 
@@ -327,6 +327,7 @@ describe('deaths and the end of the run', () => {
     h.tap('jump'); // Luigi
     expect(h.top()).toBeInstanceOf(IntroScene);
     expect(h.game.cardLives).toBe(1);
+    expect(h.said.at(-1)).toBe('World 1-1. 1 life.');
     expect(draw(h.top() as IntroScene).texts.map((t) => t.str)).toContain('×  1');
   });
 

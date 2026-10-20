@@ -308,11 +308,20 @@ export class CharacterSelectScene implements Scene {
     return `${n} ${n === 1 ? 'life' : 'lives'} left`;
   }
 
-  /** Survival: " Fallen: Mario, Link." while any hero has fallen, else nothing. */
+  /**
+   * Survival: which heroes are lost, by the shorter list: " Fallen: Mario, Link." or
+   * " Standing: Luigi." (" Every hero has fallen." with none standing); nothing while none has
+   * fallen.
+   */
   private fallenNote(): string {
     if (!this.survival) return '';
-    const names = this.chars.filter((_, i) => this.fallen(i)).map((c) => c.name);
-    return names.length ? ` Fallen: ${names.join(', ')}.` : '';
+    const heroes = this.chars.filter((_, i) => !this.locked(i));
+    const fallen = heroes.filter((c) => this.survival?.isFallen(c.id));
+    const standing = heroes.filter((c) => !fallen.includes(c));
+    if (!fallen.length) return '';
+    if (!standing.length) return ' Every hero has fallen.';
+    const names = (l: CharacterDef[]) => l.map((c) => c.name).join(', ');
+    return fallen.length <= standing.length ? ` Fallen: ${names(fallen)}.` : ` Standing: ${names(standing)}.`;
   }
 
   /** What OK does to slot `i` in revive mode (CharacterSelectBox.changeNameBoxText). */
@@ -653,7 +662,8 @@ export class CharacterSelectScene implements Scene {
     }
     // With a second row the lines below close up a little so everything fits the screen.
     const low = below ? below - 2 : 0;
-    if (this.pick || sv) {
+    if (this._reviving) this.renderRevive(r, low);
+    else if (this.pick || sv) {
       // The original's CharacterSelect shows the lives left (numLives / livesTxt).
       r.text(font, `×  ${this.game.state.lives}`, 108, 158 + low);
     } else if (this.p2) {
@@ -666,8 +676,7 @@ export class CharacterSelectScene implements Scene {
     // Named by ability (OK), with the real key or pad button when not on touch.
     const go = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
     const goY = below ? 210 : 184;
-    if (this._reviving) this.renderRevive(r, low);
-    else if ((this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, goY);
+    if (!this._reviving && (this.t >> 5) % 2 === 0) r.text(font, go, 128 - go.length * 4, goY);
     if (this.pick?.onMap) {
       const label = 'RETURN TO MAP';
       const x = 128 - label.length * 4;
@@ -683,9 +692,13 @@ export class CharacterSelectScene implements Scene {
    */
   private renderRevive(r: Renderer, low: number): void {
     const font = this.game.ctx.assets.sheet('font');
+    // The lives left, under the count of heroes standing ("2 lives remaining").
+    const n = this.game.state.lives;
+    const lives = `${n} ${n === 1 ? 'LIFE' : 'LIVES'} LEFT`;
+    r.text(font, lives, 128 - lives.length * 4, 66);
     const action = this.reviveAction(this.index).toUpperCase();
-    r.text(font, action, 128 - action.length * 4, 170 + low);
-    const goY = 184 + low;
+    r.text(font, action, 128 - action.length * 4, 158 + low);
+    const goY = 170 + low;
     const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO REVIVE`);
     r.text(font, ok, 128 - ok.length * 4, goY);
     const leave = this.reviveLeave();
