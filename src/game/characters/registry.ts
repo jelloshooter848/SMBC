@@ -38,9 +38,11 @@ import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
 import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 import {
+  CLASSIC_EXPANSION_HEROES,
   CLASSIC_HERO_GAMES,
   CLASSIC_SKIN_GAMES,
   CLASSIC_SKIN_LISTS,
+  CLASSIC_SLOT_ORDER,
   CLASSIC_VARIANT_DEFS,
 } from './classic/skins';
 
@@ -99,8 +101,13 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   PROTOMAN_CLASSIC,
   BREAKMAN_CLASSIC,
   // Mega Man's gameplay variants (FU-3: Rock, Cut Man, Fire Man, Ice Man, Francesca and Doropie,
-  // Rokko Chan), after his rival: each its own slot, Doropie a skin on Francesca's.
+  // Rokko Chan): skins on his slot, each with its own rules.
   ...CLASSIC_VARIANT_DEFS,
+  // His variants (Rock, Cut Man, Fire Man, Ice Man, Francesca, Doropie, Rokko Chan) are
+  // Classic-only defs too, so the roster lists them for the skin menu and old saves.
+  ...(CLASSIC_SKIN_LISTS.megaman ?? []).filter(
+    (d) => d.rules === 'classic' && d !== PROTOMAN_CLASSIC && d !== BREAKMAN_CLASSIC,
+  ),
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
@@ -114,12 +121,22 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
 
 /**
  * Classic mode's skins (FU-8): by select-slot hero id, the looks that slot can wear, its own
- * first. A skin plays exactly as its slot's hero (a hero that plays differently has its own slot:
- * CLASSIC_EXTRAS' variants); the select's skin picker
- chooses among them, and the choice is remembered
- * per hero (Settings.classicSkins).
+ * first, in the original's skin order. A skin brings its own rules with it, as the original's do
+ * (SkinDescriptions.as), so each is a whole Classic def; the select's skin menu chooses among
+ * them, and the choice is remembered per hero (Settings.classicSkins).
  */
 export const CLASSIC_SKINS: Readonly<Record<string, readonly CharacterDef[]>> = CLASSIC_SKIN_LISTS;
+
+/** The select's slots, in the original's order (classic/skins.ts), by hero id. */
+export const CLASSIC_SLOTS: readonly string[] = CLASSIC_SLOT_ORDER;
+
+/** The heroes Options > Expansion heroes adds, by hero id (the original has none of them). */
+export const EXPANSION_HEROES: readonly string[] = CLASSIC_EXPANSION_HEROES;
+
+/** Hero `def` is one of a slot's other looks (never a slot of its own). */
+export function isSkin(def: CharacterDef): boolean {
+  return skinHost(def) !== def;
+}
 
 /** The slot hero `def` is a skin of (itself when it is no other hero's skin). */
 export function skinHost(def: CharacterDef): CharacterDef {

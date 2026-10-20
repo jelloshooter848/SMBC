@@ -214,8 +214,8 @@ describe('PM-13: lower shots', () => {
 
 describe('PM-18: the whistle on the pick, Proto Man only', () => {
   function pickSounds(def: CharacterDef): string[] {
-    // FU-8: Break Man is Proto Man's second skin, picked on Proto Man's slot.
-    const settings = { ...defaultSettings(), classicSkins: { protoman: def.id } };
+    // FU-8: Proto Man and Break Man are looks on Mega Man's slot, picked in its skin menu.
+    const settings = { ...defaultSettings(), classicSkins: { megaman: def.id } };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;

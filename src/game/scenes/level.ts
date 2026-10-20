@@ -688,6 +688,8 @@ export class LevelScene implements Scene {
       keyHolder: this.world.keyHolder,
       // Classic's Infinite Time cheat: TIME's digits hidden, the label kept (TopScreenText.hideTime).
       noTime: this.world.cheats.infiniteTime,
+      // A Classic run's HUD stays where its select's was (one TopScreenText for both).
+      classic: this.game.classicRun,
     });
     // The Bowser bar while his fight is on (0.4.47, campaign: world/boss-bar.ts).
     drawBowserBar(

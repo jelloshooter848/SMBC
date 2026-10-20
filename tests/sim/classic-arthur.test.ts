@@ -114,13 +114,16 @@ describe('definition and roster (AR-1..AR-3, TG-41)', () => {
     expect(h.game.roster).not.toContain(A);
   });
 
-  it('on the Classic select second row', () => {
+  it('an expansion hero: on the Classic select only with Options > Expansion heroes on', () => {
     const settings = { ...defaultSettings(), classicRules: 'classic' as const };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    expect((h.top() as CharacterSelectScene).chars).not.toContain(A);
+    settings.classic.expansion = 'on';
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
-    const at = sel.chars.indexOf(A);
-    expect(at).toBeGreaterThanOrEqual(sel.firstRow);
+    // After the original's eleven heroes.
+    expect(sel.chars.indexOf(A)).toBeGreaterThanOrEqual(10);
   });
 
   it('hitbox 12 x 24, crouched 12 x 16, the same in every state (AR-3)', () => {

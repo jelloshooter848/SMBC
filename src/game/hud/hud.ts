@@ -42,6 +42,8 @@ export interface HudOptions {
   area?: string;
   /** Every text gets the dark outline (a light sky behind the white letters: the Top Secret Area). */
   outline?: boolean;
+  /** A Classic run: the top rows in the original's columns (CLASSIC_HUD_COLUMNS), as on its select. */
+  classic?: boolean;
   /**
    * (0.4.52) The player carrying a room's key (World.keyHolder): its key icon on that player's
    * side, player 1's under the coins (KEY_ICON_P1), player 2's after their name (KEY_ICON_P2).
@@ -83,6 +85,46 @@ export const KEY_ICON_P2_LONG = { x: 204, y: 24 } as const;
 
 /** TIME's x when the WORLD column holds a place's name on two rows (BOWSER'S CASTLE). */
 export const TIME_X_PLACE = 216;
+
+/** The HUD's top two rows: the name and score, the coin, WORLD over the level, TIME over its digits. */
+export interface HudColumns {
+  readonly name: number;
+  readonly coins: number;
+  readonly world: number;
+  readonly level: number;
+  readonly time: number;
+  readonly timeNum: number;
+  /** TIME's x beside a place's name (TIME_X_PLACE in the campaign). */
+  readonly timePlace: number;
+}
+
+/** The campaign's columns (unchanged). */
+export const HUD_COLUMNS: HudColumns = {
+  name: 24,
+  coins: 96,
+  world: 144,
+  level: 152,
+  time: 200,
+  timeNum: 208,
+  timePlace: TIME_X_PLACE,
+};
+
+/**
+ * A Classic run's columns, the original's TopScreenText halved, the same over its select and its
+ * levels (one TopScreenText for both): the name and score at 34 (NAME_TXT_PNT 45 + HUD_X_OFS 22),
+ * the coin glyph at 110 so its coin starts at 111 (COIN_SYMBOL_PNT 222), WORLD at 154 (285 + 22)
+ * over the level at 162 (+ 16), TIME at 210 (398 + 22) over its digits at 216 (+ 12). Beside a
+ * place's name TIME goes to 224, its last letter at the screen's edge.
+ */
+export const CLASSIC_HUD_COLUMNS: HudColumns = {
+  name: 34,
+  coins: 110,
+  world: 154,
+  level: 162,
+  time: 210,
+  timeNum: 216,
+  timePlace: 224,
+};
 
 /** Columns the WORLD column has for an area's name (HudOptions.area), from x 144 to the edge. */
 export const HUD_AREA_COLS = 11;
@@ -132,37 +174,38 @@ export function drawHud(
   // every other hero's name has 6 or fewer.
   const name = (players[0]?.def ?? state.character).hudName.slice(0, 7).padEnd(6);
   const place = shownPlace(state.world, state.stage)?.shown;
-  text(name, 24, 8);
+  const C = opts.classic ? CLASSIC_HUD_COLUMNS : HUD_COLUMNS;
+  text(name, C.name, 8);
   // A 7-digit score (World.addScore caps it at SCORE_MAX). The coin counter sits 16 px after it,
   // as in the original's TopScreenText (SCORE_TXT_PNT, COIN_SYMBOL_PNT).
   if (opts.place !== undefined) {
     text(opts.place, 232 - opts.place.length * 8, 8);
   } else {
-    text(pad(state.score, 7), 24, 16);
+    text(pad(state.score, 7), C.name, 16);
     // Two digits, or three with the Wallet (0.4.42), which still end before WORLD.
-    text(`$×${coinText(state)}`, 96, 16);
+    text(`$×${coinText(state)}`, C.coins, 16);
     if (opts.area !== undefined) {
       // The area's name, its second row centred under the first; no clock, so no TIME.
       const [a, b] = hudAreaLines(opts.area);
-      text(a, 144, 8);
-      if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
+      text(a, C.world, 8);
+      if (b) text(b, C.world + (((a.length - b.length) * 8) >> 1), 16);
     } else if (place) {
       // A level shown by its name (BOWSER'S CASTLE, never "8-5"): the name in the WORLD column on
       // two rows, its second centred under the first, and TIME 16 px right to make room.
       const [a, b] = hudAreaLines(place);
-      text(a, 144, 8);
-      if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
-      text('TIME', TIME_X_PLACE, 8);
-      if (time !== null && !opts.noTime) text(pad(time, 3), TIME_X_PLACE + 8, 16);
+      text(a, C.world, 8);
+      if (b) text(b, C.world + (((a.length - b.length) * 8) >> 1), 16);
+      text('TIME', C.timePlace, 8);
+      if (time !== null && !opts.noTime) text(pad(time, 3), C.timePlace + 8, 16);
     } else {
-      text('WORLD', 144, 8);
+      text('WORLD', C.world, 8);
       text(
         `${worldLabel(state.world)}-${shownStage(state.world, state.stage, state.campaignOrder)}`,
-        152,
+        C.level,
         16,
       );
-      text('TIME', 200, 8);
-      if (time !== null && !opts.noTime) text(pad(time, 3), 208, 16);
+      text('TIME', C.time, 8);
+      if (time !== null && !opts.noTime) text(pad(time, 3), C.timeNum, 16);
     }
   }
   drawHeroStats(r, assets, state, players, text);
@@ -173,7 +216,7 @@ export function drawHud(
   }
   // Blink the timer label when low.
   if (opts.place === undefined && !opts.noTime && time !== null && time <= 100 && (frame >> 4) % 2 === 0)
-    text('TIME', place && opts.area === undefined ? TIME_X_PLACE : 200, 8);
+    text('TIME', place && opts.area === undefined ? C.timePlace : C.time, 8);
 }
 
 /**

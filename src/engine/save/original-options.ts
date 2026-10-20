@@ -63,6 +63,9 @@ export type ClassicGoombas = (typeof CLASSIC_GOOMBAS)[number];
  * Game.classicHeroChoice is the one place the select flow is decided.
  */
 export const CLASSIC_GAME_MODES = ['all', 'survival', 'single', 'single-random'] as const;
+/** Options > Expansion heroes: the heroes the original SMBC 3.1.21 never had. Off is the original. */
+export const CLASSIC_EXPANSION = ['off', 'on'] as const;
+export type ClassicExpansion = (typeof CLASSIC_EXPANSION)[number];
 export type ClassicGameMode = (typeof CLASSIC_GAME_MODES)[number];
 
 /* ---------- Customize Weapons (CustomizeWeaponsMenu) ---------- */
@@ -119,6 +122,11 @@ export interface ClassicSettings {
   piranhas: ClassicPiranhas;
   goombas: ClassicGoombas;
   gameMode: ClassicGameMode;
+  /**
+   * Expansion heroes (off by default, as the original has none): on, the Classic select also
+   * offers the heroes SMBC 3.1.21 never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi).
+   */
+  expansion: ClassicExpansion;
   weapons: ClassicWeapons;
 }
 
@@ -150,6 +158,7 @@ export function defaultClassicSettings(): ClassicSettings {
     piranhas: 'some',
     goombas: 'off',
     gameMode: 'all',
+    expansion: 'off',
     weapons: defaultClassicWeapons(),
   };
 }
@@ -164,6 +173,7 @@ export const CLASSIC_ROW_VALUES = {
   piranhas: CLASSIC_PIRANHAS,
   goombas: CLASSIC_GOOMBAS,
   gameMode: CLASSIC_GAME_MODES,
+  expansion: CLASSIC_EXPANSION,
 } as const satisfies { [K in Exclude<keyof ClassicSettings, 'weapons'>]: readonly ClassicSettings[K][] };
 
 /** The value lists of the Customize Weapons rows, by key. */
