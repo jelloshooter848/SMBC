@@ -330,6 +330,12 @@ describe('deaths and the end of the run', () => {
     die(h);
     h.idle(12);
     h.tap('jump'); // Luigi
+    // G-053, G-055 (0.5.0): Luigi's looks open first (OK keeps his own); then his performance.
+    if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
+    h.until(
+      () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+      300,
+    );
     expect(h.top()).toBeInstanceOf(IntroScene);
     expect(h.game.cardLives).toBe(1);
     expect(h.said.at(-1)).toBe('World 1-1. 1 life.');

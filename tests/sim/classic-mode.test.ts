@@ -84,6 +84,13 @@ function choose(h: H, def: CharacterDef): void {
   for (let i = 0; i <= CHARACTERS.length && said() !== def.name; i++) h.tap('right');
   expect(said()).toBe(def.name);
   h.tap('jump');
+  // G-050..G-055 (0.5.0): a hero with looks opens them first (OK keeps his own), and the pick
+  // performance plays before the game goes on.
+  if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
+  h.until(
+    () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+    300,
+  );
 }
 
 const level = (h: H) => h.top() as LevelScene;

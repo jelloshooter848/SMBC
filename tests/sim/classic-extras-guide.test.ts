@@ -35,8 +35,7 @@ describe('How to play lists the Classic extras', () => {
       'warriors',
       'peach',
       'arthur',
-      'yoshi',
-      // G-050..G-053 (0.5.0): the new looks.
+      // G-050..G-053 (0.5.0): the new looks, before Yoshi.
       'mario3',
       'zelda-nes',
       'zelda-snes',
@@ -44,6 +43,7 @@ describe('How to play lists the Classic extras', () => {
       'haggleman',
       'quickman',
       'luigi3',
+      'yoshi',
     ]);
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
