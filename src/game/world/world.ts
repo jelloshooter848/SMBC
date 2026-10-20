@@ -3875,13 +3875,18 @@ export class World {
           b.vy = 0;
         } else b.y = before + velToSub(b.vy);
         // Classic defs pick their walk pose by onGround (an air pose otherwise: Samus's
-        // somersault crouch, Bill and Ryu falling): the scripted walk stands on the ground.
-        if (this.rules === 'classic') b.onGround = landed;
+        // somersault crouch, Bill and Ryu falling) and by vx (standing still at 0: Samus, Sophia
+        // III): the scripted walk stands on the ground and moves at its 1 px a frame.
+        if (this.rules === 'classic') {
+          b.onGround = landed;
+          b.vx = 0x01000;
+        }
         if (c.camHold !== undefined && p.centerX - this.camera.x > c.camHold)
           this.camera.x = Math.min(this.camera.maxX, p.centerX - c.camHold);
         if (b.x >= c.walkTo) {
           c.phase = 'countdown';
           c.t = 0;
+          if (this.rules === 'classic') b.vx = 0;
           p.anim = 'idle';
           p.hidden = true;
         }

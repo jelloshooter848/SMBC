@@ -510,7 +510,8 @@ describe('14. The walk to the castle after the flagpole uses the ground pose (Cl
       2000,
       (f) => (f % 30 < 15 ? ['right', 'jump'] : ['right']),
       (w) => {
-        if (phase(w) === 'walk' && w.player.body.vy === 0) {
+        // Down from the pole's base block and walking (the first walk frame still shows the climb).
+        if (phase(w) === 'walk' && w.player.body.vy === 0 && w.player.anim === 'walk') {
           if (w.player.body.onGround) grounded++;
           else airborne++;
           frames.add(String(w.player.def.sprite(w.player, w.frame, true).frame));
@@ -523,12 +524,15 @@ describe('14. The walk to the castle after the flagpole uses the ground pose (Cl
   const AIR = /jump|fall|air|flip|somersault|spin|crouch|kneel/i;
 
   for (const id of ['samus', 'bill', 'ryu', 'simon', 'sophia']) {
-    it(`Classic ${id}: on the ground, in a ground pose, all the walk`, () => {
+    it(`Classic ${id}: on the ground, in its walking pose, all the walk`, () => {
       const def = CHARACTERS.find((c) => c.id === id) as CharacterDef;
       const r = walkFrames(def, 'classic');
       expect(r.grounded).toBeGreaterThan(10);
       expect(r.airborne).toBe(0);
       for (const f of r.frames) expect(f).not.toMatch(AIR);
+      // Moving: the walk (or Sophia III's drive), never the standing pose.
+      expect(r.frames.length).toBeGreaterThan(0);
+      for (const f of r.frames) expect(f).toMatch(/^(walk|drive)-/);
     });
   }
 
