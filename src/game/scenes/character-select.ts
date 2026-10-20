@@ -104,6 +104,14 @@ const BOX_GROW = 6;
  * Look `look` of slot hero `host` as said: the look's name, then the hero's ("Break Man, Proto
  * Man"); a hero's own look is just its name (no repeat).
  */
+/** The name box's prompt fits this many 8 px characters inside its rivets (NAME_BOX.w less 12 px a side). */
+const PROMPT_CHARS = Math.floor((NAME_BOX.w - 24) / 8);
+
+/** `s` as a sentence: a full stop added unless it already ends one ("Super Mario Bros."). */
+function sentence(s: string): string {
+  return /[.!?]$/.test(s) ? s : `${s}.`;
+}
+
 export function lookName(host: CharacterDef, look: CharacterDef): string {
   return look === host ? host.name : `${look.name}, ${host.name}`;
 }
@@ -445,7 +453,7 @@ export class CharacterSelectScene implements Scene {
     const pk = this.picker;
     const skin = pk?.list[pk.at];
     if (!pk || !skin) return '';
-    return `${this.lookSay(pk.host, skin)}.`;
+    return sentence(this.lookSay(pk.host, skin));
   }
 
   /** The skin menu's page (SKIN_GRID.cols x rows looks a page). */
@@ -540,11 +548,10 @@ export class CharacterSelectScene implements Scene {
 
   /** The grid slot under screen (x, y), or -1. */
   private slotAt(x: number, y: number): number {
-    const n = this.total;
-    for (let i = 0; i < n; i++) {
+    const size = this.grid.cell;
+    for (let i = 0; i < this.total; i++) {
       const c = this.cellOf(i);
-      const n = this.grid.cell;
-      if (x >= c.x && x < c.x + n && y >= c.y && y < c.y + n) return i;
+      if (x >= c.x && x < c.x + size && y >= c.y && y < c.y + size) return i;
     }
     return -1;
   }
@@ -702,7 +709,7 @@ export class CharacterSelectScene implements Scene {
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       const name = this.sayName(this.index) || pick.current.name;
       this.game.deps.announcer?.say(
-        `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
+        `${who} your hero. ${sentence(name)} Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
           this.skinHint() +
           this.toFind() +
@@ -1201,8 +1208,9 @@ export class CharacterSelectScene implements Scene {
    * ORIGINAL_GRID, is a data change with its roster.
    */
   get grid(): GridLayout {
-    // The original's two rows of six hold its eleven heroes and Random; a longer list (Options >
-    // Expansion heroes, a test's stand-in) uses the wider grid, so it still fits two or three rows.
+    // The original's two rows of six hold its eleven heroes and Random. A longer list uses the
+    // wider grid: Options > Expansion heroes makes 15 slots, two rows of eight (a test's longer
+    // stand-in roster takes a third row).
     return this.total <= ORIGINAL_GRID.cols * 2 ? ORIGINAL_GRID : SELECT_GRID;
   }
 
@@ -1219,8 +1227,6 @@ export class CharacterSelectScene implements Scene {
     // Survival's box takes the name box's place over them: boxRect).
     if (!this.box) this.renderClassicGround(r, this.shownHero());
     const assets = this.game.ctx.assets;
-    const font = assets.sheet('font');
-    const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
     // The HUD's face: the shown look's drawn face, else its art (doubled there).
     const face = shown ? drawnFace(shown.id) : null;
@@ -1309,19 +1315,19 @@ export class CharacterSelectScene implements Scene {
       );
       const ok = abilityHint(this.game, 'OK', 'jump');
       const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
-      const prompt = this._reviving
-        ? `${ok} TO ${verb}`
-        : this.skinsAt(this.index).length > 1
-          ? `${ok} TO CHOOSE A LOOK`
-          : `${ok} TO PICK`;
-      this.outlined(r, fontText(prompt), by + boxH - 14);
+      const what = this._reviving ? `TO ${verb}` : this.skinsAt(this.index).length > 1 ? 'LOOKS' : 'TO PICK';
+      // The key hint goes when it would not fit inside the box's rivets (a long key name).
+      const keyed = fontText(`${ok} ${what}`);
+      const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
+      this.outlined(r, prompt, by + boxH - 14);
     }
     const py = by + boxH + 4;
     const sv = this.survival;
     if (this._reviving) {
       const leave = this.reviveLeave();
       if (leave)
-        centred(
+        this.outlined(
+          r,
           fontText(
             `${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`,
           ),
@@ -1329,19 +1335,21 @@ export class CharacterSelectScene implements Scene {
         );
       if (sv) {
         const n = this.chars.filter((_, i) => !this.locked(i)).length;
-        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 10);
+        this.outlined(r, `${sv.standing().length} OF ${n} HEROES STANDING`, py + 10);
       }
     } else {
       if (this.cheatNews.length) {
         const news = [this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!'];
         news.push(...this.cheatNews.slice(0, 1).map((n) => n.toUpperCase()));
-        news.forEach((l, k) => centred(fontText(l), py + k * 10));
+        news.forEach((l, k) => this.outlined(r, fontText(l), py + k * 10));
       } else if (sv) {
         const n = this.chars.filter((_, i) => !this.locked(i)).length;
-        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py);
+        this.outlined(r, `${sv.standing().length} OF ${n} HEROES STANDING`, py);
       }
     }
-    if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
+    // Text on the sky is outlined (outlined), so it reads over clouds as well as sky.
+    if ((this.pick || sv) && !this._reviving)
+      this.outlined(r, `×  ${this.game.state.lives}`, 196, 'name', 200);
   }
 
   /**
@@ -1350,10 +1358,10 @@ export class CharacterSelectScene implements Scene {
    * SMB NES's brick is 4.5:1, on Zelda II's blue 2.9:1), and the outline keeps every letter's edge
    * readable on a phone (black on brick 4.5:1, on blue 7.3:1).
    */
-  private outlined(r: Renderer, str: string, y: number, kind: 'name' | 'tint' = 'name'): void {
+  private outlined(r: Renderer, str: string, y: number, kind: 'name' | 'tint' = 'name', at?: number): void {
     const assets = this.game.ctx.assets;
     const th = this.theme;
-    const x = 128 - str.length * 4;
+    const x = at ?? 128 - str.length * 4;
     const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
     for (const [dx, dy] of [
       [-1, 0],

@@ -12,9 +12,9 @@ import { SELECT_FACE_IDS } from '@content/sprites/select-faces';
  * grid of the hero's looks, five across and three down a page, titled with the look's name over
  * its source game.
  *
- * The original's portraits are 52 px, 4 px apart, six to a row, on a 512 px stage. Six to a row
- * would take four rows for our 24 slots (23 heroes and Random), which does not leave the name box
- * and the ground room on 240 px, so ours are eight to a row: 26 px cells, 3 px apart, three rows.
+ * The original's portraits are 52 px, 4 px apart, six to a row, on a 512 px stage; ours are halved
+ * (ORIGINAL_GRID). A list longer than its twelve slots (Options > Expansion heroes: 15) takes the
+ * wider SELECT_GRID, eight to a row, so it still leaves the name box and the ground room on 240 px.
  */
 
 /** A portrait grid: cells `cell` px square, `gap` px apart, `cols` to a row, its top-left at (x, y). */
@@ -39,7 +39,7 @@ function centredGrid(cols: number, cell: number, gap: number, y: number): GridLa
  */
 export const ORIGINAL_GRID: GridLayout = centredGrid(6, 26, 2, 36);
 
-/** The grid in use: eight to a row, so our roster's 24 slots fit three rows on 240 px. */
+/** The wider grid for more than twelve slots: eight to a row (Expansion heroes' 15 take two rows, up to 24 three). */
 export const SELECT_GRID: GridLayout = centredGrid(8, 26, 3, 36);
 
 /**

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSettings } from '@engine/save/settings';
+import { defaultSettings, normaliseSkins } from '@engine/save/settings';
 import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
 import { CharacterSelectScene, lookName } from '@game/scenes/character-select';
 import { MEGAMAN } from '@game/characters/megaman';
+import { SAMUS } from '@game/characters/samus';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { SPRITES } from '@content/sprites';
 import {
@@ -219,6 +220,21 @@ describe('the original roster, Expansion heroes and old saves', () => {
     expect(pick.chars[pick.cursor]).toBe(MEGAMAN);
     expect(pick.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN 3']);
   });
+
+  it('skin choices saved on the old Proto Man, Pit and Francesca slots move to Mega Man and Samus', () => {
+    expect(normaliseSkins({ protoman: 'breakman' })).toEqual({ megaman: 'breakman' });
+    expect(normaliseSkins({ pit: 'darkpit' })).toEqual({ samus: 'darkpit' });
+    expect(normaliseSkins({ francesca: 'doropie' })).toEqual({ megaman: 'doropie' });
+    // A skin the host chose itself stays; the old slot's own look adds nothing.
+    expect(normaliseSkins({ megaman: 'rock', protoman: 'breakman' })).toEqual({ megaman: 'rock' });
+    expect(normaliseSkins({ megaman: 'megaman', protoman: 'breakman' })).toEqual({ megaman: 'breakman' });
+    expect(normaliseSkins({ pit: 'pit' })).toBeUndefined();
+    const settings = defaultSettings();
+    settings.classicSkins = normaliseSkins({ protoman: 'breakman', pit: 'darkpit' }) ?? {};
+    const { h } = classicSelect(settings);
+    expect(h.game.skinFor(MEGAMAN).id).toBe('breakman');
+    expect(h.game.skinFor(SAMUS).id).toBe('darkpit');
+  });
 });
 
 describe("the select's backdrop and its name box", () => {
@@ -269,6 +285,42 @@ describe('the original\u2019s rows, box and faces', () => {
     expect(box.length).toBeGreaterThan(0);
     const t = draw(sel).texts.map((x) => x.str);
     expect(t.some((x) => x.includes('TO PICK'))).toBe(true);
+  });
+
+  it('its prompt always fits inside the rivets, dropping a long key name', () => {
+    const fits = (sel: CharacterSelectScene) => {
+      const t = draw(sel).texts.filter((x) => /^OK\b/.test(x.str));
+      expect(t.length).toBeGreaterThan(0);
+      for (const x of t) {
+        expect(x.x).toBeGreaterThanOrEqual(128 - NAME_BOX.w / 2 + 11);
+        expect(x.x + x.str.length * 8).toBeLessThanOrEqual(128 + NAME_BOX.w / 2 - 11);
+      }
+      return t.map((x) => x.str);
+    };
+    const { h, sel } = classicSelect();
+    cursorTo(h, sel, 'megaman');
+    expect(fits(sel).some((x) => x.endsWith('LOOKS'))).toBe(true);
+    const settings = defaultSettings();
+    const keys = settings.input.bindings[0];
+    if (keys) keys.keyboard.jump = ['NumpadEnter'];
+    const long = classicSelect(settings);
+    cursorTo(long.h, long.sel, 'megaman');
+    fits(long.sel);
+  });
+
+  it('a game ending in a full stop is said with one ("Super Mario Bros.", not "Bros..")', () => {
+    const { h, sel } = classicSelect();
+    const mario = sel.chars[0]!;
+    h.game.classicGame(mario, '1-1');
+    const pick = new CharacterSelectScene(h.game, {
+      player: 0,
+      current: mario,
+      onPick: () => {},
+      random: true,
+    });
+    pick.enter();
+    expect(h.said.at(-1)).toContain('Choose your hero. Mario, Super Mario Bros. Left');
+    for (const x of h.said) expect(x).not.toContain('..');
   });
 
   it('every hero, skin and Expansion hero has its own drawn 24 x 24 face', () => {
