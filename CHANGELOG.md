@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.58] - 2026-10-20
+
 ### Added
 
 - Classic mode: character select before every new level, as in the original's default
@@ -52,6 +54,25 @@ under `## [Unreleased]`.
 - Classic mode: the castle's "another castle" line names each Classic-only hero's own rescue: Dr. Wily for Bass,
   Roll for Proto Man and Break Man, Palutena for Pit and the Reaper for Dark Pit.
   Vic Viper and the Warriors of Light keep the usual line.
+- Classic mode's extra heroes get their own art: Pit and Dark Pit are now young winged angels with a laurel wreath,
+  tunic, sandals and a bow (their shots fly as arrows), and Proto Man and Break Man wear a visor, a striped helmet and a
+  flowing scarf that stays in every weapon suit; both show on the select screen. Bass's face is a paler tan, apart from
+  his orange helmet. Nothing about how they play changes.
+- Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
+  the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
+  while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
+
+### Changed
+
+- Classic rules: the camera now scrolls back left, as the original game does, keeping your hero in the middle of the
+  screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
+  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself and stops just
+  past the axe; after the axe it follows your hero on to Toad. Auto-scrolling stages and one-screen rooms keep their
+  own camera, and the campaign's camera is unchanged.
+- Classic rules: an area you leave by a pipe, vine or pit is kept as you left it, as in the original: back from a bonus
+  room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
+  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
+  the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
 
 ## [0.4.57] - 2026-10-19
 
@@ -151,13 +172,6 @@ under `## [Unreleased]`.
   cannon but not the Triple Missile), missile ammo drops only once she has missiles, and a hit that takes every power
   but keeps the missiles. No Jason in Classic: SELECT swaps the missiles when she has both. The Lost Levels castles
   (and the water of 3-2 and 6-2) get the original's wider shafts for her, as the other levels already do.
-- Classic mode's extra heroes get their own art: Pit and Dark Pit are now young winged angels with a laurel wreath,
-  tunic, sandals and a bow (their shots fly as arrows), and Proto Man and Break Man wear a visor, a striped helmet and a
-  flowing scarf that stays in every weapon suit; both show on the select screen. Bass's face is a paler tan, apart from
-  his orange helmet. Nothing about how they play changes.
-- Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
-  the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
-  while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
 
 ## [0.4.55] - 2026-10-13
 
@@ -1372,7 +1386,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...HEAD
+[0.4.58]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...v0.4.58
 [0.4.57]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...v0.4.57
 [0.4.56]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...v0.4.55

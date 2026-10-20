@@ -204,6 +204,8 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
     deathHop: { freeze: 15, vy: 0x042ab, gravity: 0x002ab, maxFall: 0x04800, frames: 195, pitFrames: 180 },
     // ML-C26: the walk at vxMax, then FX_DUNGEON_GOT_AXE .0001 with the stop snap.
     axeWalk: { speed: WALK, stop: 56210, snap: STOP_SNAP },
+    // MarioBase.as:1231 (Mario and Luigi): the screen follows the flag walk.
+    flagWalkFollow: true,
     seaFloorSafe: true,
   };
   // A Classic def leaves out the Current HUD extras (TG-22).

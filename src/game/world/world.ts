@@ -13,7 +13,7 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, HeroItemEntry, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
-import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
+import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';
 import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { SafetyFloor } from './safety-floor';
@@ -274,7 +274,31 @@ export interface WorldStart {
   deathStyle?: DeathStyle;
   /** The sound a non-hop death makes, in place of its style's own (DEATH_SFX). */
   deathSfx?: string;
+  /**
+   * Classic SMBC: the stage's areas left so far (World.areaMemory), passed on by a transfer to
+   * another area of the same stage. Left out, a Classic World starts a fresh memory (a new
+   * stage, a death, a warp: StatManager.resetLevelStats).
+   */
+  areaMemory?: AreaMemory;
 }
+
+/**
+ * An area as it was left (StatManager.saveAreaStats: its objects, ground and scenery): the tile
+ * map (bricks broken, blocks used, coins taken), the brick hit points and multi-coin blocks, the
+ * spawn list's progress and the map's own entities (enemies where and as they were, spawners,
+ * lifts) with any items still out.
+ */
+export interface AreaSnapshot {
+  tiles: Uint16Array;
+  brickHp: Map<string, number>;
+  coinBlocks: Map<string, { left: number; until: number }>;
+  spawnIndex: number;
+  spawns: EntitySpawn[];
+  entities: Entity[];
+}
+
+/** Classic SMBC: the areas of one stage left so far, by level id. */
+export type AreaMemory = Map<string, AreaSnapshot>;
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
@@ -524,6 +548,17 @@ export class World {
   hurryPlayed = false;
   private spawnIndex = 0;
   private spawns: EntitySpawn[];
+  /**
+   * Classic SMBC: the entities that came from the map's spawn list (fromMap), and, with the
+   * scroll-back camera, those parked off screen now instead of despawned. The original keeps
+   * every object of an area from its load and only takes it off the stage, still, while it is
+   * more than 2 tiles off screen (AnimatedObject.checkStgPos: removeChild, timers stopped); it
+   * comes back as it was.
+   */
+  private readonly fromMap = new WeakSet<Entity>();
+  private parked: Entity[] = [];
+  /** Classic SMBC: this stage's areas as they were left (see AreaSnapshot); null under Current. */
+  readonly areaMemory: AreaMemory | null;
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
@@ -555,6 +590,8 @@ export class World {
     player: Player;
     /** Fireworks to set off after the tally (1, 3 or 6, else 0): StatManager.touchFlag's HUD time. */
     fireworks: number;
+    /** Scroll-back camera: the hero's screen x (centre, subpixels) the walk to the castle keeps. */
+    camHold?: number;
   } | null = null;
   private pipeAnim: PipeAnim | null = null;
   /** Rising out of a pipe; `feet` is the subpixel y of the pipe top, where the rise ends. */
@@ -609,7 +646,20 @@ export class World {
    */
   remarkHook: ((level: string, hero: Player['def'], done: () => void) => boolean) | null = null;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number; stop?: number; page?: number; at?: number; coast?: number } | null = null;
+  bossClear: {
+    t: number;
+    stop?: number;
+    page?: number;
+    at?: number;
+    coast?: number;
+    /** Scroll-back camera: the hero's screen x (centre) the walk to Toad keeps (keepPlayerOnRight). */
+    camRight?: number;
+  } | null = null;
+  /**
+   * Scroll-back camera: the camera's own end, while the axe's tighter one holds it
+   * (Level.screenMaxRightScroll from bowserAxe until the axe is taken); null otherwise.
+   */
+  private preAxeMaxX: number | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
   /**
@@ -709,6 +759,11 @@ export class World {
     });
     this.heightPx = level.height * 16;
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
+    // Classic SMBC: SMBC 3.1.21's default camera scrolls back left (Cheats.classicScreenScroll
+    // off). Free, locked and auto-scroll cameras keep their own rules.
+    this.camera.scrollBack =
+      this.rules === 'classic' && !this.camera.free && !this.camera.locked && !this.camera.auto;
+    this.areaMemory = this.rules === 'classic' ? (start.areaMemory ?? new Map()) : null;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
     // A fill-up spot off the map (the Top Secret Area) runs no clock.
@@ -852,24 +907,34 @@ export class World {
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
+    // Scroll-back camera: while the castle's axe is there the screen ends just past it
+    // (Level.screenMaxRightScroll = bowserAxe.x + width/2 + BOWSER_AXE_SCREEN_SCROLL_OFFSET - SCREEN_WIDTH).
+    // A hero with its own scroll (Vic Viper, heroScrollEnd) keeps its own axe end.
+    const ownScroll = this.players.some((p) => p.def.autoScroll);
+    const axeAt =
+      this.camera.scrollBack && !ownScroll ? level.entities.find((e) => e.type === 'axe') : undefined;
+    if (axeAt) {
+      this.preAxeMaxX = this.camera.maxX;
+      this.camera.maxX = Math.max(0, Math.min(this.camera.maxX, px(axeAt.x * 16 + 8 + 4 - SCREEN_W)));
+    }
     this.camera.snapTo(this.player.body.x, this.player.body.y);
     this.alignBeam();
-    if (start.clearEnemies) {
-      // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
-      // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
-      // transporter at the right edge of the start cell (the pipe's middle; pitTransferEnd is
-      // shiftRight), a checkpoint from the player's centre. Fire bars and lava balls are
-      // projectiles there (FireBar, LavaFireBall), not enemies.
-      const x0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
-      const keepPiranhas = start.clearEnemies === 'keep-piranhas';
-      this.spawns = this.spawns.filter((s) => {
-        const cx = tileToSub(s.x) + px(8 + Number(s.props?.dx ?? 0));
-        if (Math.abs(cx - x0) >= px(ENEMY_REMOVAL_PX)) return true;
-        const e = this.makeEntity(s);
-        const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
-        return !enemy || (keepPiranhas && e instanceof Piranha);
-      });
-    }
+    // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
+    // the player goes, measured from its cell's centre. A pipe or pit arrival measures from the
+    // transporter at the right edge of the start cell (the pipe's middle; pitTransferEnd is
+    // shiftRight), a checkpoint from the player's centre. Fire bars and lava balls are
+    // projectiles there (FireBar, LavaFireBall), not enemies.
+    const clearX0 = mode === 'pipe-exit' || mode === 'fall' ? tileToSub(sx + 1) : this.player.centerX;
+    const keepPiranhas = start.clearEnemies === 'keep-piranhas';
+    const cleared = (e: Entity | null): boolean => {
+      const enemy = e instanceof Enemy && !(e instanceof Firebar) && !(e instanceof Podoboo);
+      return enemy && !(keepPiranhas && e instanceof Piranha);
+    };
+    const keepSpawn = (s: EntitySpawn): boolean => {
+      const cx = tileToSub(s.x) + px(8 + Number(s.props?.dx ?? 0));
+      return Math.abs(cx - clearX0) >= px(ENEMY_REMOVAL_PX) || !cleared(this.makeEntity(s));
+    };
+    if (start.clearEnemies) this.spawns = this.spawns.filter(keepSpawn);
     // Water levels (any swimming theme, or a map's `swim: true`): everything from the first row of
     // wave tiles down is swimmable.
     if (isSwimLevel(level)) {
@@ -920,6 +985,62 @@ export class World {
       const hidden = !!z.block && tileDef(this.map.get(z.block.x, z.block.y)).block?.content === 'teleporter';
       this.entities.push(new TeleportPad(z, hidden));
     }
+    // Classic SMBC: an area left earlier in this stage comes back as it was left
+    // (Level.rebuildLevel), and the arrival still clears the enemies near it.
+    const snap = this.areaMemory?.get(level.id);
+    if (snap) {
+      this.map.tiles.set(snap.tiles);
+      this.cracked = 0;
+      for (const id of this.map.tiles) if (id === T.CRACKED) this.cracked++;
+      for (const [k, v] of snap.brickHp) this.brickHp.set(k, v);
+      for (const [k, c] of snap.coinBlocks) this.coinBlocks.set(k, { ...c });
+      this.spawnIndex = snap.spawnIndex;
+      const rest = snap.spawns.slice(snap.spawnIndex);
+      this.spawns = [
+        ...snap.spawns.slice(0, snap.spawnIndex),
+        ...(start.clearEnemies ? rest.filter(keepSpawn) : rest),
+      ];
+      for (const e of snap.entities) {
+        if (
+          start.clearEnemies &&
+          cleared(e) &&
+          Math.abs(e.body.x + (e.body.w >> 1) - clearX0) < px(ENEMY_REMOVAL_PX)
+        )
+          continue;
+        if (!(e instanceof Pickup || e instanceof PowerUp)) this.fromMap.add(e);
+        if (this.camera.scrollBack && this.fromMap.has(e) && e.despawnMargin !== null && this.outOfReach(e))
+          this.parked.push(e);
+        else this.entities.push(e);
+      }
+      this.areaMemory?.delete(level.id);
+    }
+  }
+
+  /**
+   * Classic SMBC (StatManager.saveAreaStats, on Level.loadArea): keeps this area as it is now for
+   * a later return within the stage. The map's entities still alive (parked ones too) and items
+   * still out are kept; everything else (projectiles, effects, Lakitu, flying fish, bullets)
+   * goes, as the original destroys them on leaving.
+   */
+  rememberArea(): void {
+    if (!this.areaMemory) return;
+    const kept: Entity[] = [];
+    for (const e of [...this.entities, ...this.parked]) {
+      if (!e.alive) continue;
+      if (this.fromMap.has(e) || e instanceof Pickup || e instanceof PowerUp) kept.push(e);
+      else e.destroy();
+    }
+    const coinBlocks = new Map<string, { left: number; until: number }>();
+    // Timers count on from the new World's first frame.
+    for (const [k, c] of this.coinBlocks) coinBlocks.set(k, { left: c.left, until: c.until - this.frame });
+    this.areaMemory.set(this.level.id, {
+      tiles: new Uint16Array(this.map.tiles),
+      brickHp: new Map(this.brickHp),
+      coinBlocks,
+      spawnIndex: this.spawnIndex,
+      spawns: this.spawns,
+      entities: kept,
+    });
   }
 
   /** The player who touched the flagpole (its level-clear sequence is running), else null. */
@@ -999,6 +1120,7 @@ export class World {
       const e = this.makeEntity(s);
       if (!e) continue;
       this.entities.push(e);
+      if (this.areaMemory) this.fromMap.add(e);
       // Classic: an enemy's hit points are picked as it spawns (HP-C4: Bowser's from player 1's hero).
       if (this.rules === 'classic' && e instanceof Enemy) classicRules().enemySpawned(e, this);
     }
@@ -1769,7 +1891,11 @@ export class World {
     else if (lead) {
       const before = this.camera.x;
       // A hero may lead the camera from an eased anchor (CharacterDef.cameraX: Classic Sophia III).
-      this.camera.follow(lead.def.cameraX?.(lead) ?? lead.body.x, lead.body.y);
+      const camX = lead.def.cameraX?.(lead) ?? lead.body.x;
+      if (this.camera.scrollBack)
+        // A fixed half width (as snapTo): a body that changes width (Sophia's corner turns) does not jerk the screen.
+        this.camera.followBack(camX + px(8), this.bowserOnScreen());
+      else this.camera.follow(camX, lead.body.y);
       // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
       // held where it was, never pulled back (the screen does not scroll left), and a locked
       // screen is left alone.
@@ -2327,9 +2453,16 @@ export class World {
 
   private cull(): void {
     const left = this.camera.x;
+    if (this.camera.scrollBack) this.unpark();
     for (let i = this.entities.length - 1; i >= 0; i--) {
       const e = this.entities[i] as Entity;
       if (!e.alive) {
+        this.entities.splice(i, 1);
+        continue;
+      }
+      if (this.camera.scrollBack && e.despawnMargin !== null && this.fromMap.has(e) && this.outOfReach(e)) {
+        // Scroll-back: still, off the stage, until the camera comes back (see `parked`).
+        this.parked.push(e);
         this.entities.splice(i, 1);
         continue;
       }
@@ -2340,6 +2473,41 @@ export class World {
         this.entities.splice(i, 1);
       }
     }
+  }
+
+  /**
+   * Scroll-back: a map entity beyond reach of the screen: past its despawn margin on the left, or
+   * more than 2 tiles past the spawn margin on the right (the camera went back after it spawned).
+   */
+  private outOfReach(e: Entity): boolean {
+    const b = e.body;
+    if (b.x + b.w < this.camera.x - px(e.despawnMargin ?? 0)) return true;
+    return b.x > this.camera.right + px(SPAWN_MARGIN_PX + 32);
+  }
+
+  /** Scroll-back: parked entities the screen has come back to resume where they were. */
+  private unpark(): void {
+    for (let i = this.parked.length - 1; i >= 0; i--) {
+      const e = this.parked[i] as Entity;
+      if (!e.alive) this.parked.splice(i, 1);
+      else if (!this.outOfReach(e)) {
+        this.parked.splice(i, 1);
+        this.entities.push(e);
+      }
+    }
+  }
+
+  /** Scroll-back camera: a live Bowser within 2 tiles of the screen (Level.as bowser.onScreen). */
+  private bowserOnScreen(): boolean {
+    for (const e of this.entities)
+      if (
+        e instanceof Bowser &&
+        e.alive &&
+        e.body.x + e.body.w > this.camera.x - px(32) &&
+        e.body.x < this.camera.right + px(32)
+      )
+        return true;
+    return false;
   }
 
   /* ---------- Blocks & tiles ---------- */
@@ -3487,6 +3655,9 @@ export class World {
           c.phase = 'walk';
           c.t = 0;
           p.facing = 1;
+          // Scroll-back camera: MarioBase's flag-pole hop sets rightScrollPosOvRd to the hero's
+          // screen x, so the screen follows the walk to the castle from there.
+          if (this.camera.scrollBack && p.def.flagWalkFollow) c.camHold = p.centerX - this.camera.x;
           this.audio.playJingle('level-clear');
         }
         break;
@@ -3502,6 +3673,8 @@ export class World {
           b.y = tileToSub(feetRow) - b.h;
           b.vy = 0;
         } else b.y = before + velToSub(b.vy);
+        if (c.camHold !== undefined && p.centerX - this.camera.x > c.camHold)
+          this.camera.x = Math.min(this.camera.maxX, p.centerX - c.camHold);
         if (b.x >= c.walkTo) {
           c.phase = 'countdown';
           c.t = 0;
@@ -3570,6 +3743,26 @@ export class World {
     this.bossPlayer = p;
   }
   private bossPlayer: Player | null = null;
+
+  /**
+   * Scroll-back camera after the axe (Level.scrollScreen with keepPlayerOnRight): the hero walks
+   * on to near the screen's right edge (rightScrollPos = SCREEN_WIDTH - hWidth/2 - 8 Flash px);
+   * once stopped at the exit, the screen pans on at 150 Flash px/s until they are back at its
+   * centre.
+   */
+  private bossClearCamera(c: NonNullable<World['bossClear']>, p: Player): void {
+    // BowserAxe.axeEnd: bowserAxe = null, so the screen may scroll on to Toad (lifted here, after
+    // the frame the axe was taken in, so that frame's ordinary follow does not recentre the hero).
+    if (this.preAxeMaxX !== null) {
+      this.camera.maxX = this.preAxeMaxX;
+      this.preAxeMaxX = null;
+    }
+    c.camRight ??= px(SCREEN_W - 4) - (p.body.w >> 1);
+    if (c.stop !== undefined && !c.coast && c.camRight > SCROLL_BACK_CENTER)
+      c.camRight = Math.max(SCROLL_BACK_CENTER, c.camRight - BOSS_PAN);
+    const want = p.centerX - c.camRight;
+    if (want > this.camera.x) this.camera.x = Math.min(this.camera.maxX, want);
+  }
 
   /**
    * The castle whose fake gets the unmask scenes (docs/STORY.md 2.3a): the campaign's 1-4 to 8-4
@@ -3742,7 +3935,7 @@ export class World {
       const aw = p.def.axeWalk;
       walkStep(this, p, aw ? velToSub(aw.speed) : px(1));
       // The screen follows the walk, so Toad (or the princess) comes into view.
-      this.camera.follow(p.body.x);
+      if (!this.camera.scrollBack) this.camera.follow(p.body.x);
       this.spawnPending();
       // The walk ends on touching the exit marker, the tile before Toad (the original's
       // Level.as stops the player on touchedExit); without one it lasts three seconds.
@@ -3759,6 +3952,7 @@ export class World {
       if (c.coast < aw.snap) c.coast = 0;
       else walkStep(this, p, velToSub(c.coast));
     }
+    if (this.camera.scrollBack) this.bossClearCamera(c, p);
     if (c.stop === undefined) return;
     // Then Toad's thanks and 1.5 s later the news (the original's ADD_TXT_TMR_DUR), which stays
     // until OK (owner note 4: text never moves by itself; the original went on to the next level
