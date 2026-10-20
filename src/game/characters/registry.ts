@@ -105,7 +105,9 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   ...CLASSIC_VARIANT_DEFS,
   // His variants (Rock, Cut Man, Fire Man, Ice Man, Francesca, Doropie, Rokko Chan) are
   // Classic-only defs too, so the roster lists them for the skin menu and old saves.
-  ...(CLASSIC_SKIN_LISTS.megaman ?? []).filter((d) => d.rules === 'classic' && d !== PROTOMAN_CLASSIC && d !== BREAKMAN_CLASSIC),
+  ...(CLASSIC_SKIN_LISTS.megaman ?? []).filter(
+    (d) => d.rules === 'classic' && d !== PROTOMAN_CLASSIC && d !== BREAKMAN_CLASSIC,
+  ),
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
