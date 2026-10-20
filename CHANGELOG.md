@@ -28,6 +28,8 @@ under `## [Unreleased]`.
   weaker buster), **Francesca** with her Doropie look (no slide) and **Rokko Chan** (a dash and dash
   jump instead of the slide, no charge).
 
+## [0.4.63] - 2026-10-20
+
 ### Changed
 
 - Classic mode's All Hammer Bros cheat: its goal says that beating The Lost Levels stands in
@@ -1545,7 +1547,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...HEAD
+[0.4.63]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...v0.4.63
 [0.4.62]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...v0.4.62
 [0.4.61]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...v0.4.61
 [0.4.60]: https://github.com/jelloshooter848/SMBC/compare/v0.4.59...v0.4.60
