@@ -10,6 +10,26 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
+  Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
+  a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch
+  that stops every enemy), lifts the enemy she stands on (she rides most enemies instead of stomping them; spiny ones
+  hurt) or lifts the brick under her feet; THROW throws it, and a thrown enemy knocks out whatever it hits. Down with
+  Attack sets it down. Stay crouched to charge a super jump. The Fire Flower's white dress plucks twice as fast and her
+  vegetables fly through what they defeat. A hit drops what she carries. Her own art, guide page and float sound.
+- Classic mode: **Sir Arthur** joins the second row, a knight who was never in the original game, with new art. He
+  starts in his boxers; the Mushroom is his **steel armour** and the Fire Flower **gold armour**, and one hit bursts all
+  of it off (in boxers a hit leaves a heap of bones). He walks slowly, his jump keeps the direction he takes off in, and
+  he gets one more jump in the air, in the direction held. THROW sends his weapon (he stops for a moment on the ground;
+  in the air, down and THROW throws straight down): the **lance**, then whatever a weapon pot holds (one defeated enemy
+  in eight drops one): a fast **dagger**, a **torch** whose fire burns through armour, or an **axe** that arcs through
+  walls. Gold armour makes every weapon stronger and armour-piercing, and adds **MAGIC** (Special): lightning on both
+  sides after a short wind-up. The HUD names the weapon he holds, and a new weapon is announced.
+
+## [0.4.58] - 2026-10-20
+
+### Added
+
 - Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
   only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
   up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
@@ -42,21 +62,13 @@ under `## [Unreleased]`.
 - Classic mode: the castle's "another castle" line names each Classic-only hero's own rescue: Dr. Wily for Bass,
   Roll for Proto Man and Break Man, Palutena for Pit and the Reaper for Dark Pit.
   Vic Viper and the Warriors of Light keep the usual line.
-- Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
-  Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
-  a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch
-  that stops every enemy), lifts the enemy she stands on (she rides most enemies instead of stomping them; spiny ones
-  hurt) or lifts the brick under her feet; THROW throws it, and a thrown enemy knocks out whatever it hits. Down with
-  Attack sets it down. Stay crouched to charge a super jump. The Fire Flower's white dress plucks twice as fast and her
-  vegetables fly through what they defeat. A hit drops what she carries. Her own art, guide page and float sound.
-- Classic mode: **Sir Arthur** joins the second row, a knight who was never in the original game, with new art. He
-  starts in his boxers; the Mushroom is his **steel armour** and the Fire Flower **gold armour**, and one hit bursts all
-  of it off (in boxers a hit leaves a heap of bones). He walks slowly, his jump keeps the direction he takes off in, and
-  he gets one more jump in the air, in the direction held. THROW sends his weapon (he stops for a moment on the ground;
-  in the air, down and THROW throws straight down): the **lance**, then whatever a weapon pot holds (one defeated enemy
-  in eight drops one): a fast **dagger**, a **torch** whose fire burns through armour, or an **axe** that arcs through
-  walls. Gold armour makes every weapon stronger and armour-piercing, and adds **MAGIC** (Special): lightning on both
-  sides after a short wind-up. The HUD names the weapon he holds, and a new weapon is announced.
+- Classic mode's extra heroes get their own art: Pit and Dark Pit are now young winged angels with a laurel wreath,
+  tunic, sandals and a bow (their shots fly as arrows), and Proto Man and Break Man wear a visor, a striped helmet and a
+  flowing scarf that stays in every weapon suit; both show on the select screen. Bass's face is a paler tan, apart from
+  his orange helmet. Nothing about how they play changes.
+- Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
+  the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
+  while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
 
 ## [0.4.57] - 2026-10-19
 
@@ -156,13 +168,6 @@ under `## [Unreleased]`.
   cannon but not the Triple Missile), missile ammo drops only once she has missiles, and a hit that takes every power
   but keeps the missiles. No Jason in Classic: SELECT swaps the missiles when she has both. The Lost Levels castles
   (and the water of 3-2 and 6-2) get the original's wider shafts for her, as the other levels already do.
-- Classic mode's extra heroes get their own art: Pit and Dark Pit are now young winged angels with a laurel wreath,
-  tunic, sandals and a bow (their shots fly as arrows), and Proto Man and Break Man wear a visor, a striped helmet and a
-  flowing scarf that stays in every weapon suit; both show on the select screen. Bass's face is a paler tan, apart from
-  his orange helmet. Nothing about how they play changes.
-- Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
-  the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
-  while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
 
 ## [0.4.55] - 2026-10-13
 
@@ -1377,7 +1382,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...HEAD
+[0.4.58]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...v0.4.58
 [0.4.57]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...v0.4.57
 [0.4.56]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...v0.4.56
 [0.4.55]: https://github.com/jelloshooter848/SMBC/compare/v0.4.54...v0.4.55
