@@ -247,7 +247,14 @@ export class CharacterSelectScene implements Scene {
    * two prompts, PRESS OK and RETURN TO MAP. A second row moves them down by its height; with a
    * third they close up to fit the screen.
    */
-  private get lines(): { name: number; under: number; ok: number; leave: number; press: number; map: number } {
+  private get lines(): {
+    name: number;
+    under: number;
+    ok: number;
+    leave: number;
+    press: number;
+    map: number;
+  } {
     const rows = this.rows;
     if (rows >= 3) return { name: 204, under: 213, ok: 222, leave: 231, press: 224, map: 232 };
     if (rows === 2) return { name: 184, under: 196, ok: 208, leave: 220, press: 210, map: 224 };

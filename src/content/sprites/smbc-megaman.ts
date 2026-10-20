@@ -83,11 +83,6 @@ const standBody = [
   '...0222220.0222220...',
   '...0000000.0000000...',
 ];
-const stand = (h: readonly string[]): SmbcLayer[] => [
-  [standBody, -10.5, -13],
-  [h, -6.5, -24],
-];
-
 // The shoot body: the front arm up and out to the buster.
 const shootBody = [
   '.....00111111111110..',
@@ -280,30 +275,87 @@ const slideBody = [
 
 const C = MEGAMAN_SMBC_CANVAS;
 const at = (...layers: SmbcLayer[]): string[] => anchored(C, ...layers);
-const climb0 = at([climbBody, -8, -29], [headBack, -6, -24]);
 
-export const megamanSmbcDef: SpriteDef = {
-  palette: 'megaman',
-  frames: {
-    idle: at(...stand(head)),
-    // The select screen's and the intro card's portrait: the stand, cropped.
-    portrait: trimmed(at(...stand(head))),
-    'idle-blink': at(...stand(headBlink)),
-    // The original's charge is a palette flash only (CHARGE_START 550 ms), not a new pose.
-    'charge-0': at(...stand(head)),
-    shoot: at([shootBody, -10.5, -24 + 11], [buster, 7.5, -16], [head, -5.5, -24]),
-    step: at([stepBody, -10.5, -13], [head, -6.5, -24]),
-    'walk-0': at([runA, -12, -11], [head, -5, -22]),
-    'walk-1': at([runB, -9, -13], [head, -7, -24]),
-    'walk-2': at([runC, -13, -11], [head, -6, -22]),
-    'walk-shoot-0': at([clear(runA, 17, 0, 23, 5), -12, -11], [buster, 4, -15], [head, -5, -22]),
-    'walk-shoot-1': at([runB, -9, -13], [buster, 4, -17], [head, -7, -24]),
-    'walk-shoot-2': at([clear(runC, 15, 0, 20, 5), -13, -11], [buster, 4, -15], [head, -6, -22]),
-    jump: at([jumpBody, -13, -30], [head, -6.5, -26]),
-    'jump-shoot': at([clear(jumpBody, 15, 0, 25, 13), -13, -30], [buster, 3, -23], [head, -6.5, -26]),
-    hurt: at([hurtBody, -13.5, -28], [headHurt, -7, -28]),
-    'climb-0': climb0,
-    'climb-1': flipH(climb0),
-    slide: at([slideBody, -13.5, -10], [head, -0.5, -21]),
-  },
-};
+/**
+ * A head set for his frame (13 px wide; 11 rows, or taller with the extra rows on top, as a crest
+ * or a hat): facing right, its blink and hurt faces, and the back of it for climbing.
+ */
+export interface MegamanHeads {
+  head: readonly string[];
+  blink: readonly string[];
+  hurt: readonly string[];
+  back: readonly string[];
+}
+
+/** His own heads (the round helmet). */
+export const MEGAMAN_HEADS: MegamanHeads = { head, blink: headBlink, hurt: headHurt, back: headBack };
+
+/**
+ * A head's blink, hurt and back faces, for a head drawn on his face plan: its face's rows 4-9
+ * (from the bottom 11 rows) hold his eye and mouth at columns 6-12, as his own head does. The
+ * blink and hurt faces copy his eyes and mouth there; the back paints the face over with `hair`.
+ */
+export function headFaces(h: readonly string[], hair = '2'): MegamanHeads {
+  const top = h.length - 11;
+  const face = (rows: Record<number, string>) =>
+    h.map((r, y) => {
+      const k = y - top;
+      const put = rows[k];
+      return put ? r.slice(0, 6) + put + r.slice(13) : r;
+    });
+  const blink = face({ 5: (headBlink[5] as string).slice(6), 6: (headBlink[6] as string).slice(6) });
+  const hurt = face({
+    5: (headHurt[5] as string).slice(6),
+    6: (headHurt[6] as string).slice(6),
+    8: (headHurt[8] as string).slice(6),
+  });
+  const back = h.map((r, y) =>
+    y - top >= 3 && y - top <= 9 ? r.slice(0, 5) + r.slice(5, 12).replace(/[0345]/g, hair) + r.slice(12) : r,
+  );
+  return { head: h, blink, hurt, back };
+}
+
+/**
+ * His sheet with head set `H` (R1's poses, his bodies and buster): Mega Man's own, and the Classic
+ * gameplay variants built on his frame (FU-3, smbc-megaman-variants.ts). A taller head keeps its
+ * bottom where his sits. `dash` is the upright dash some variants use in place of the slide.
+ */
+export function megamanSmbcSheet(palette: string, H: MegamanHeads = MEGAMAN_HEADS): SpriteDef {
+  const up = (rows: readonly string[]) => rows.length - 11;
+  const hd = (rows: readonly string[], x: number, y: number): SmbcLayer => [rows, x, y - up(rows)];
+  const climb0 = at([climbBody, -8, -29], hd(H.back, -6, -24));
+  return {
+    palette,
+    frames: {
+      idle: at(...standWith(hd(H.head, -6.5, -24))),
+      // The select screen's and the intro card's portrait: the stand, cropped.
+      portrait: trimmed(at(...standWith(hd(H.head, -6.5, -24)))),
+      'idle-blink': at(...standWith(hd(H.blink, -6.5, -24))),
+      // The original's charge is a palette flash only (CHARGE_START 550 ms), not a new pose.
+      'charge-0': at(...standWith(hd(H.head, -6.5, -24))),
+      shoot: at([shootBody, -10.5, -24 + 11], [buster, 7.5, -16], hd(H.head, -5.5, -24)),
+      step: at([stepBody, -10.5, -13], hd(H.head, -6.5, -24)),
+      'walk-0': at([runA, -12, -11], hd(H.head, -5, -22)),
+      'walk-1': at([runB, -9, -13], hd(H.head, -7, -24)),
+      'walk-2': at([runC, -13, -11], hd(H.head, -6, -22)),
+      'walk-shoot-0': at([clear(runA, 17, 0, 23, 5), -12, -11], [buster, 4, -15], hd(H.head, -5, -22)),
+      'walk-shoot-1': at([runB, -9, -13], [buster, 4, -17], hd(H.head, -7, -24)),
+      'walk-shoot-2': at([clear(runC, 15, 0, 20, 5), -13, -11], [buster, 4, -15], hd(H.head, -6, -22)),
+      jump: at([jumpBody, -13, -30], hd(H.head, -6.5, -26)),
+      'jump-shoot': at([clear(jumpBody, 15, 0, 25, 13), -13, -30], [buster, 3, -23], hd(H.head, -6.5, -26)),
+      hurt: at([hurtBody, -13.5, -28], hd(H.hurt, -7, -28)),
+      'climb-0': climb0,
+      'climb-1': flipH(climb0),
+      slide: at([slideBody, -13.5, -10], hd(H.head, -0.5, -21)),
+      // The upright dash: the long stride, leaning in (Rokko Chan's dash instead of a slide).
+      dash: at([runA, -12, -11], hd(H.head, -4, -22)),
+    },
+  };
+}
+
+/** His standing pose under head layer `h`. */
+function standWith(h: SmbcLayer): SmbcLayer[] {
+  return [[standBody, -10.5, -13], h];
+}
+
+export const megamanSmbcDef: SpriteDef = megamanSmbcSheet('megaman');

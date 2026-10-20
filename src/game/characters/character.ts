@@ -103,6 +103,11 @@ export interface CharacterBehaviour {
    * MM-C6). Absent: a profile with a slide always may.
    */
   canSlide?(p: Player): boolean;
+  /**
+   * False while Down + Jump is a plain jump, not a slide (Classic Mega Man's no-slide variants,
+   * FU-3: the original's skinDisableSlide). Absent: a profile with a slide slides.
+   */
+  slides?(p: Player): boolean;
   /** The player just got on a vine (Character.getOnVine → setState("vine") ends other states). */
   onGrabVine?(p: Player): void;
   /** The player just got on Castlevania stairs (Player.getOnStairs): end states stairs can't hold. */
@@ -245,6 +250,9 @@ export interface CharacterDef {
    * (Sophia III's hull flashes through palettes).
    */
   noHurtBlink?: boolean;
+  /** Firebars pass through the hero harmlessly (Classic Fire Man, FU-3). Absent: they hurt. */
+  fireBarProof?: boolean;
+
   /** Tool belt entries (Select cycles, C uses). */
   tools?(p: Player): ToolInfo[];
   /** Secondary HUD meter (magic, weapon energy). */

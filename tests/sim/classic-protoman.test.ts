@@ -223,7 +223,6 @@ describe('PM-18: the whistle on the pick, Proto Man only', () => {
     expect(sel.chars).toContain(slot);
     h.idle(12);
     for (let i = 0; i < 40 && sel.chars[(sel as unknown as { index: number }).index] !== slot; i++)
-
       h.tap('right');
     const sfxMock = h.audio.sfx as unknown as { mock: { calls: unknown[][] } };
     const before = sfxMock.mock.calls.length;

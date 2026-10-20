@@ -5,7 +5,14 @@ import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
-import { CLASSIC_EXTRAS, CLASSIC_VARIANTS, classicOnly, heroFor, skinHost, skinsOf } from '../characters/registry';
+import {
+  CLASSIC_EXTRAS,
+  CLASSIC_VARIANTS,
+  classicOnly,
+  heroFor,
+  skinHost,
+  skinsOf,
+} from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
@@ -431,7 +438,6 @@ export class Game {
     });
     // Nothing folded (the campaign, Current rules): the roster itself.
     return slots.length === roster.length ? roster : slots;
-
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
