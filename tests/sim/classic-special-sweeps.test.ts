@@ -5,7 +5,7 @@ import type { Action } from '@engine/input/actions';
 import { runSim } from '@game/sim/headless';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
-import { CLASSIC_CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
+import { CLASSIC_CHARACTERS, CLASSIC_EXTRAS, CLASSIC_SKINS, CLASSIC_SLOTS } from '@game/characters/registry';
 import type { CharacterDef } from '@game/characters/character';
 import { testLevel } from './classic-harness';
 import { LINK } from '@game/characters/link';
@@ -165,12 +165,21 @@ function canLeave(
 
 /**
  * Each Classic hero's reach out of a room, measured: his running jump's rise (with his air jump,
- * Simon's and Bass's), Rush Coil's launch for Mega Man (classic-rush.ts: about 103
+ * Simon's and Bass's), Rush Coil's launch for Mega Man and his looks (classic-rush.ts: about 103
  * px; the Select tap), and whether he climbs walls (Ryu).
  */
 function reachOf(def: CharacterDef): { jump: number; climbs: boolean } {
   const hero = heroFor(def, 'classic');
-  const jump = Math.max(jumpPx(hero), hero.id === 'megaman' ? RUSH_RISE : 0);
+  // Select calls Rush (classicMegaMan's `rush` option: Mega Man and his looks, not Bass).
+  const w = runSim({
+    level: testLevel(),
+    character: hero,
+    rules: 'classic',
+    script: { steps: [] },
+    maxFrames: 0,
+  }).world;
+  const rush = hero.touchLabels?.(w.player, w).select === 'RUSH';
+  const jump = Math.max(jumpPx(hero), rush ? RUSH_RISE : 0);
   return { jump, climbs: !!hero.movement.wallClimb };
 }
 /** Rush Coil's launch (classic-rush.ts RUSH_BOUNCE_VY: "launched about 103 px"), a little under. */
@@ -180,6 +189,20 @@ const RUSH_RISE = 100;
 const SELECT_HEROES: CharacterDef[] = [
   ...(Object.values(CLASSIC_CHARACTERS) as CharacterDef[]),
   ...CLASSIC_EXTRAS.filter((d) => d.id === 'bass'),
+];
+
+/**
+ * Every look those ten slots can wear (CLASSIC_SKINS: Peach and Luigi 3 on Luigi's, Pit on
+ * Samus's, Mega Man's variants...), as the World plays it (heroFor): each brings its own moves
+ * and level flags, so each is swept on its own.
+ */
+const ALL_LOOKS: CharacterDef[] = [
+  ...new Set(
+    CLASSIC_SLOTS.flatMap((id) => {
+      const host = SELECT_HEROES.find((d) => d.id === id) as CharacterDef;
+      return (CLASSIC_SKINS[id] ?? [host]).map((d) => heroFor(d, 'classic'));
+    }),
+  ),
 ];
 
 /**
@@ -206,7 +229,9 @@ describe('G-020: every way into a Special bonus room puts the hero inside it, wi
   it('on every difficulty, for every Classic hero (his reach and his pieces): inside, on the floor, the exit in reach', () => {
     const bad: string[] = [];
     expect(SELECT_HEROES).toHaveLength(10);
-    for (const def of SELECT_HEROES) {
+    expect(ALL_LOOKS.length).toBeGreaterThan(20);
+    for (const host of SELECT_HEROES) expect(ALL_LOOKS, host.id).toContain(host);
+    for (const def of ALL_LOOKS) {
       const { jump, climbs } = reachOf(def);
       expect(jump, def.id).toBeGreaterThanOrEqual(40);
       for (const difficulty of ['easy', 'normal', 'hard'] as const)
