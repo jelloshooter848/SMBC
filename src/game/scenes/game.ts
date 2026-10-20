@@ -705,6 +705,7 @@ export class Game {
   }
 
   showTitle(): void {
+    this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
     this.deps.ctx.audio.stopMusic();
@@ -1582,8 +1583,25 @@ export class Game {
     const c = this.deps.settings?.classicCheats;
     if (!c || !this.cheatGoalsCount) return;
     addCheatStat(c, stat);
-    this.cheatsUnlocked(unlockEarned(c));
-    saveSettings(this.deps.settings as Settings);
+    const unlocked = unlockEarned(c);
+    this.cheatsUnlocked(unlocked);
+    // Saved in batches (per area, per clear: flushCheatStats), not on every kill; an unlock at once.
+    this.cheatStatsDirty = true;
+    if (unlocked.length) this.flushCheatStats();
+  }
+
+  /** Counts tallied since the last save (cheatTally), written by flushCheatStats. */
+  private cheatStatsDirty = false;
+
+  /**
+   * Saves the cheats' counts if any changed since the last save: at each area's start
+   * (startLevel), a clear (cheatEvent), a game over, the title, and when the page is hidden
+   * (main.ts), so a run's kills are kept without a settings write per kill.
+   */
+  flushCheatStats(): void {
+    if (!this.cheatStatsDirty) return;
+    this.cheatStatsDirty = false;
+    if (this.deps.settings) saveSettings(this.deps.settings);
   }
 
   /**
@@ -1601,6 +1619,7 @@ export class Game {
       e.noContinue = c.continuesUsed === 0;
     }
     this.cheatsUnlocked(unlockEarned(c, e));
+    this.cheatStatsDirty = false;
     saveSettings(s);
   }
 
@@ -1905,6 +1924,7 @@ export class Game {
    * other level ends a run aboard. A dev airship round's levels replace each other over its list.
    */
   startLevel(level: LevelData, start: LevelStart): void {
+    this.flushCheatStats();
     if (this.chapterBlocked(level.id)) return this.chapterGateBack();
     const run = this.airship;
     if (!isAirshipArea(level.id)) {
@@ -2091,6 +2111,7 @@ export class Game {
    * (progress kept) and NO to the title.
    */
   gameOver(levelId: string | null = null, player = 0): void {
+    this.flushCheatStats();
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

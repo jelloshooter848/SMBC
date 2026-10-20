@@ -22,7 +22,8 @@ import { drawHud } from '@game/hud/hud';
 import { levelSeed, World, type WorldStart } from '@game/world/world';
 import { IntroScene } from '@game/scenes/intro';
 import type { Game } from '@game/scenes/game';
-import { cheatInfo } from '@game/cheats';
+import { CHEAT_GOALS, cheatInfo } from '@game/cheats';
+import { LevelScene } from '@game/scenes/level';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // Classic patch 3 (owner-approved review findings of #164-#167): one describe per item.
@@ -232,5 +233,44 @@ describe('4. Classic mode with Current rules: nothing counts toward the cheats',
     expect(h.settings.classicCheats.unlocked.infiniteTime).toBe(true);
     expect(h.settings.classicCheats.unlocked.extraCheckpoints).toBe(true);
     expect(h.settings.classicCheats.stats.enemiesDefeated).toBe(1);
+  });
+});
+
+describe('5. Cheat counts are saved per area / per clear, not per kill', () => {
+  const savedStat = () =>
+    (JSON.parse(store.get(SETTINGS_KEY) ?? '{}') as Partial<Settings>).classicCheats?.stats.enemiesDefeated;
+
+  it('kills in an area write nothing; the next area start saves them all at once', () => {
+    const h = classicGame();
+    h.game.classicGame(MARIO);
+    h.until(() => h.top() instanceof LevelScene, 600);
+    store.delete(SETTINGS_KEY);
+    for (let i = 0; i < 20; i++) h.game.cheatTally('enemiesDefeated');
+    expect(h.settings.classicCheats.stats.enemiesDefeated).toBe(20);
+    expect(store.has(SETTINGS_KEY)).toBe(false);
+    const w = (h.top() as LevelScene).world;
+    w.events.push({ type: 'exit', next: '1-2' });
+    h.until(() => store.has(SETTINGS_KEY), 600);
+    expect(savedStat()).toBe(20);
+  });
+
+  it('a clear saves them, an unlock saves at once, and flushCheatStats writes only when dirty', () => {
+    const h = classicGame();
+    h.game.classicGame(MARIO);
+    store.delete(SETTINGS_KEY);
+    h.game.flushCheatStats();
+    expect(store.has(SETTINGS_KEY)).toBe(false);
+    h.game.cheatTally('enemiesDefeated');
+    h.game.cheatEvent({ level: true });
+    expect(savedStat()).toBe(1);
+    store.delete(SETTINGS_KEY);
+    h.settings.classicCheats.stats.hammerBrosDefeated = CHEAT_GOALS.hammerBrosDefeated - 1;
+    h.game.cheatTally('hammerBrosDefeated');
+    expect(h.settings.classicCheats.unlocked.evilHammerBros).toBe(true);
+    expect(store.has(SETTINGS_KEY)).toBe(true);
+    store.delete(SETTINGS_KEY);
+    h.game.cheatTally('enemiesDefeated');
+    h.game.showTitle();
+    expect(savedStat()).toBe(2);
   });
 });
