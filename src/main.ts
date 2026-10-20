@@ -22,7 +22,8 @@ import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
 import { Game } from '@game/scenes/game';
 import { CHARACTERS, heroFor } from '@game/characters/registry';
-import { urlClassicRun, urlRules, urlYoshi } from '@game/dev-url';
+import { urlLevelStart, urlRules, urlYoshi } from '@game/dev-url';
+import { devLockFor, enforceDevLock, urlDevAllowed } from '@game/dev-lock';
 import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 import { miniGameFor } from '@game/minigames';
@@ -43,6 +44,10 @@ function boot(): void {
   if (!canvas) throw new Error('#screen canvas missing');
   const overlay = document.getElementById('overlay') as HTMLElement;
   const settings: Settings = loadSettings();
+  // The dev-mode lock (0.5.0, game/dev-lock.ts): open on local builds; on a release, only the
+  // passphrase (its salted hash in __DEV_LOCK_HASH__) opens it, and a dev flag it didn't open is off.
+  const devLock = devLockFor(__RELEASE_BUILD__, __DEV_LOCK_HASH__);
+  if (enforceDevLock(devLock, settings)) saveSettings(settings);
 
   const viewport = new Viewport(canvas, { integerScale: settings.video.integerScale });
   const renderer = new CanvasRenderer(viewport.ctx);
@@ -123,6 +128,7 @@ function boot(): void {
     input,
     announcer,
     titleIntro: true,
+    devLock,
     freshSeeds: true,
     homeScreen: {
       ios: isIOS(platform),
@@ -275,7 +281,8 @@ function boot(): void {
 
   const params = new URLSearchParams(location.search);
   const dev = params.get('dev');
-  if (dev !== null) {
+  // A release build ignores `?dev=` entirely (0.5.0, game/dev-lock.ts): the passphrase is the only way in.
+  if (dev !== null && urlDevAllowed(devLock)) {
     settings.dev = dev !== '0' && dev !== 'false';
     applySettings();
   }
@@ -288,11 +295,14 @@ function boot(): void {
     if (code !== null) game.saveLink = code;
   });
   const level = params.get('level');
-  if (level) {
+  // Outside dev mode a link opens no campaign content (0.5.0, dev-url.ts urlLevelStart): custom
+  // levels as before, SMB and Lost Levels levels as a Classic run, anything else the title.
+  const start = urlLevelStart(params, settings.dev);
+  if (level && start) {
     // `&rules=classic|current` (dev mode only, dev-url.ts): the run's rules; `char` reads the
     // roster for them (the Classic extras too). `&mode=classic` (dev mode only): a Classic mode
     // run, as the dev Level select's Mode row (its rules: `rules=`, else Options' Classic rules).
-    const classic = urlClassicRun(params, settings.dev);
+    const classic = start === 'classic';
     const rules = urlRules(params, settings.dev) ?? (classic ? settings.classicRules : 'current');
     // `&yoshi=1|ride` (dev mode only): the Classic Yoshi mount for this session (YM-1).
     game.yoshiUrl = urlYoshi(params, settings.dev);
@@ -304,7 +314,7 @@ function boot(): void {
     else game.newGame(c1, level, c2, { rules });
     // The full kit of the def played under the run's rules (TG-8).
     const hero = heroFor(c1, game.liveRules);
-    if (params.get('kit') === 'full' && hero.devKit) {
+    if (settings.dev && params.get('kit') === 'full' && hero.devKit) {
       game.state.kit = hero.devKit();
       if (game.liveRules === 'classic') {
         // Classic: the top power state too (TG-8, TG-21).

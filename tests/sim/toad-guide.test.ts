@@ -62,6 +62,7 @@ describe("Toad's map scenes", () => {
     h.until(() => map(h).toad?.lines != null, 200);
     // At World 1's start (the left edge) he stops beside the hero, never on top of him.
     expect(Math.abs(toadSprite(h)!.x - map(h).hx)).toBeGreaterThanOrEqual(16);
+    h.until(() => map(h).toad?.ready === true, 60); // (0.5.0: the buttons show once the guard is over (a tap then works))
     expect(map(h).touchLabels()).toMatchObject({ jump: 'OK', attack: 'SKIP' });
     // The box sits at the top, under the header.
     const { texts } = draw(map(h));

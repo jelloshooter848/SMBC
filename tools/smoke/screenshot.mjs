@@ -57,7 +57,7 @@ try {
   await page.goto('http://localhost:4173/');
   await page.waitForTimeout(600);
   await page.screenshot({ path: join(outDir, '00-title.png') });
-  // Title menu: Start game, Classic, Custom levels, Options (then Dev mode when unlocked).
+  // Title menu (0.5.0): Classic, Chapter 1, Custom levels, Options (then Dev mode when unlocked).
   for (let i = 0; i < 3; i++) {
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(100);

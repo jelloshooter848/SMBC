@@ -7,7 +7,7 @@ import type { HomeScreenFlags } from '@engine/save/settings';
 import { SCREEN_W } from '@engine/viewport';
 import { FONT_COLOURS, type FontColour } from '@content/sprites/font';
 import { APP_ICON, APP_ICON_COLOURS } from '@content/sprites/app-icon';
-import { CardScene, cardContinues } from '../scenes/message';
+import { CardScene, cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import { abilityHint } from '../scenes/hints';
 import type { MenuItem } from '../scenes/menu';
 import type { Game } from '../scenes/game';
@@ -403,6 +403,8 @@ export class InstallGuideScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
+    // None while the card's guard ignores presses (message.ts CardScene).
+    if (this.t < CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS; // the next frame's press counts
     return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'BACK' };
   }
 

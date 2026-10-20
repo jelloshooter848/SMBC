@@ -20,7 +20,8 @@ import { DEV_CODE } from '@game/scenes/cheat';
 import { GameOverScene } from '@game/scenes/game-over';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { FileSelectScene } from '@game/scenes/file-select';
-import { CardScene, MessageScene } from '@game/scenes/message';
+import { CardScene, CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
+import { NO_INPUT } from '@engine/input/input-manager';
 import { CreditsScene } from '@game/scenes/credits';
 import { CHARACTERS } from '@game/characters/registry';
 import { MARIO } from '@game/characters/mario';
@@ -112,11 +113,16 @@ describe('touch labels per scene', () => {
     const next = () => undefined;
     h.game.scenes.push(new IntroScene(h.game, next));
     expect(shown(h.game)).toBe('- - - - -');
-    h.game.scenes.replace(new MessageScene(h.game, ['HI'], next));
+    // (0.5.0: the buttons show once the guard is over (a tap then works).)
+    const ready = <S extends { update: MessageScene['update'] }>(s: S): S => {
+      for (let i = 0; i <= CARD_GUARD_FRAMES; i++) s.update(NO_INPUT, [NO_INPUT]);
+      return s;
+    };
+    h.game.scenes.replace(ready(new MessageScene(h.game, ['HI'], next)));
     expect(shown(h.game)).toBe('OK - - - -');
-    h.game.scenes.replace(new MessageScene(h.game, ['HI'], next, ['start']));
+    h.game.scenes.replace(ready(new MessageScene(h.game, ['HI'], next, ['start'])));
     expect(shown(h.game)).toBe('- - - OK -');
-    h.game.scenes.replace(new CardScene(h.game, ['THANK YOU'], next));
+    h.game.scenes.replace(ready(new CardScene(h.game, ['THANK YOU'], next)));
     expect(shown(h.game)).toBe('- OK - - -');
     h.game.scenes.replace(new CreditsScene(h.game, [], next));
     expect(shown(h.game)).toBe('- - - FASTER -');
