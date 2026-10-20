@@ -16,6 +16,8 @@ under `## [Unreleased]`.
   air), and the rider hops back on and rides to the castle.
 - Classic Yoshi mount: the rider's own clear, respawn, jump and stand-still rules still apply on
   the saddle (Arthur, Peach, Samus and the Warriors end their moves at the flagpole).
+- Classic Yoshi: a Lakitu he eats (playable or ridden) leaves his cloud drifting away instead
+  of vanishing with him.
 
 ## [0.4.60] - 2026-10-20
 

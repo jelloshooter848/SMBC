@@ -17,6 +17,10 @@ import { WARRIORS_CLASSIC } from '@game/characters/warriors/classic';
 import { PAIR_H, PAIR_W, RIDE_KEY, YoshiMount, ridingOf } from '@game/characters/classic/yoshi-mount';
 import { Flagpole } from '@game/entities/objects/flagpole';
 import type { Player } from '@game/entities/player';
+import { Lakitu } from '@game/entities/enemies/lakitu';
+import { LakituCloud } from '@game/characters/classic/yoshi-tongue';
+import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
+import { flatLevel } from './classic-plumber-harness';
 import { useStorage } from './heroes-harness';
 
 // Review fixes to the Classic Yoshi mount (classic-patch-2 items 1-3): the pair's hurt box, the
@@ -46,6 +50,9 @@ class MRig {
     this.input.setHeld(hold);
     this.input.next();
     this.world.update([this.input]);
+  }
+  run(n: number): void {
+    for (let i = 0; i < n; i++) this.step();
   }
 }
 
@@ -156,5 +163,39 @@ describe("the rider's own hooks under the overlay (item 3)", () => {
     const arthurBase = heroFor(ARTHUR_CLASSIC, 'classic').behaviour;
     const arthur = new MRig(ARTHUR_CLASSIC, getLevel('1-1'), 'ride');
     expect(arthur.p.def.behaviour.onRespawn).toBe(arthurBase.onRespawn);
+  });
+});
+
+describe("an eaten Lakitu's cloud drifts away (item 4)", () => {
+  function eat(def: CharacterDef, mount: GameContext['classicYoshi']): { r: MRig; l: Lakitu } {
+    const r = new MRig(def, flatLevel({}, 60), mount);
+    for (let i = 0; i < 10; i++) r.step();
+    r.p.facing = 1;
+    const l = new Lakitu(r.p.body.x + px(26), r.p.feetY - px(30));
+    r.world.spawn(l);
+    r.step(['attack']);
+    for (let i = 0; i < 12 && l.alive; i++) r.step();
+    expect(l.alive).toBe(false);
+    return { r, l };
+  }
+  const clouds = (w: World) =>
+    w.entities.filter((e): e is LakituCloud => e instanceof LakituCloud && e.alive);
+
+  it('the mount swallows him; his cloud floats off away from Yoshi and is gone off the screen', () => {
+    const { r } = eat(MARIO, 'ride');
+    const c = clouds(r.world)[0] as LakituCloud;
+    expect(c).toBeDefined();
+    const x0 = c.body.x;
+    const y0 = c.body.y;
+    r.run(30);
+    expect(c.body.x).toBeGreaterThan(x0);
+    expect(c.body.y).toBeLessThan(y0);
+    r.run(600);
+    expect(c.alive).toBe(false);
+  });
+
+  it('the playable Yoshi keeps him in his mouth; the cloud drifts off the same way', () => {
+    const { r } = eat(YOSHI_CLASSIC, undefined);
+    expect(clouds(r.world)).toHaveLength(1);
   });
 });
