@@ -16,6 +16,19 @@ export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', '
 /** Its short form, for the closing lines. */
 export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'REMIX'];
 
+/**
+ * The credit for the one named original-art exception (owner decision, 0.5.0; docs/ART_EXCEPTIONS.md):
+ * "Exploding Rabbit logo (c) Jay Pavlina / Exploding Rabbit, used as a tribute in Classic mode;
+ * will be replaced on request."
+ */
+export const CREDITS_RABBIT_LOGO: readonly string[] = [
+  'EXPLODING RABBIT LOGO',
+  '(C) JAY PAVLINA /',
+  'EXPLODING RABBIT, USED AS A',
+  'TRIBUTE IN CLASSIC MODE;',
+  'WILL BE REPLACED ON REQUEST.',
+];
+
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
   ...CREDITS_NAME,
@@ -37,7 +50,9 @@ export const CREDITS: readonly string[] = [
   'SMBC REMIX CONTRIBUTORS',
   '',
   'EVERY SPRITE AND TILE IS',
-  'ORIGINAL PIXEL ART.',
+  'ORIGINAL PIXEL ART, BUT ONE:',
+  // The one named art exception (docs/ART_EXCEPTIONS.md; sprites/rabbit-logo.ts).
+  ...CREDITS_RABBIT_LOGO,
   'EVERY SONG IS ORIGINAL',
   'CHIPTUNE.',
   '',

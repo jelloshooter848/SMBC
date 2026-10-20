@@ -2920,8 +2920,13 @@ export class World {
       case 'hammer':
       case 'wing':
         // The Hudson Bee rises out like any item (Brick.normalItemExitBrickStart, G-023), and
-        // Super Mario Bros. Special's Atom, Hammer and Wing likewise (G-022).
-        this.spawn(new PowerUp(tx, ty, content));
+        // Super Mario Bros. Special's Atom, Hammer and Wing likewise (G-022). The full power-up
+        // wears the original's logo in Classic play only (sprites/rabbit-logo.ts).
+        {
+          const u = new PowerUp(tx, ty, content);
+          if (content === 'rabbit' && this.rules === 'classic') u.classicLogo = true;
+          this.spawn(u);
+        }
         this.audio.sfx('powerup-appear');
         break;
       case 'vine':

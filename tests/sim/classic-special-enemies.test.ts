@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SPRITES } from '@content/sprites';
 import { specialEnemiesDef, specialItemFrames } from '@content/sprites/special';
+import { rabbitLogoDef, rabbitLogoPalettes } from '@content/sprites/rabbit-logo';
+import { CREDITS, CREDITS_RABBIT_LOGO } from '@game/scenes/credits';
 import { itemsDef } from '@content/sprites/items';
 import { validateDef } from '@engine/gfx/pixelart';
 import { px } from '@engine/math/units';
@@ -482,5 +484,56 @@ describe('G-022: the items', () => {
     p.def.behaviour.onPickup?.(p, 'arrow-pack', w);
     expect(p.scratch.arrows).toBe(arrows);
     expect(AMMO_PICKUPS.has('arrow-pack')).toBe(true);
+  });
+
+  it('the full power-up shows the original logo in Classic play, our own icon under Current rules', () => {
+    const drawn = (rules: 'classic' | 'current', reduceFlashing: boolean, frame: number) => {
+      const level = testLevel({ 9: '..........?' });
+      level.entities.push({ type: 'block-item', x: 10, y: 9, props: { item: 'rabbit' } });
+      const w = classicWorld(MARIO, level, rules);
+      w.player.body.x = px(10 * 16 + 2);
+      w.player.body.y = px(10 * 16);
+      w.player.body.vy = -0x04000;
+      for (let i = 0; i < 20; i++) step(w);
+      const it = w.entities.find((e): e is PowerUp => e instanceof PowerUp && e.item === 'rabbit');
+      expect(it, rules).toBeDefined();
+      const out: string[] = [];
+      const r = {
+        sprite: (sheet: { id: string }, f: string) => void out.push(`${sheet.id}:${f}`),
+      } as unknown as Renderer;
+      const view = {
+        assets: { sheet: (id: string) => ({ id }) },
+        camX: 0,
+        reduceFlashing,
+        frame,
+      } as unknown as View;
+      (it as PowerUp).render(r, view);
+      return out[0] ?? '';
+    };
+    expect(drawn('classic', false, 0)).toBe('rabbit-logo:rabbit-0');
+    // Four frames on 75 ms (ANIM_MODERATE_TMR).
+    const frames = new Set([0, 5, 10, 14, 19].map((f) => drawn('classic', false, f)));
+    expect(frames.size).toBe(4);
+    // Reduce flashing holds it on one frame.
+    expect(new Set([0, 5, 10, 14].map((f) => drawn('classic', true, f)))).toEqual(
+      new Set(['rabbit-logo:rabbit-0']),
+    );
+    expect(drawn('current', false, 0)).toMatch(/^items:flower-/);
+    expect(new Set([0, 8, 16].map((f) => drawn('current', true, f))).size).toBe(1);
+  });
+
+  it('the logo is the named art exception: text pixel arrays, four 16x16 frames, its own palette, credited', () => {
+    expect(() => validateDef('rabbit-logo', rabbitLogoDef)).not.toThrow();
+    expect(SPRITES['rabbit-logo']).toBe(rabbitLogoDef);
+    expect(Object.keys(rabbitLogoDef.frames)).toEqual(['rabbit-0', 'rabbit-1', 'rabbit-2', 'rabbit-3']);
+    for (const rows of Object.values(rabbitLogoDef.frames)) {
+      expect(rows).toHaveLength(16);
+      for (const row of rows) expect(row).toHaveLength(16);
+    }
+    expect(rabbitLogoPalettes['rabbit-logo']).toHaveLength(8);
+    expect(CREDITS.join(' ')).toContain(CREDITS_RABBIT_LOGO.join(' '));
+    expect(CREDITS_RABBIT_LOGO.join(' ')).toBe(
+      'EXPLODING RABBIT LOGO (C) JAY PAVLINA / EXPLODING RABBIT, USED AS A TRIBUTE IN CLASSIC MODE; WILL BE REPLACED ON REQUEST.',
+    );
   });
 });

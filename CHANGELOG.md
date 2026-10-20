@@ -63,6 +63,8 @@ under `## [Unreleased]`.
   Barrels and living Flames that only a Star or the Hammer can put out. None of them can be
   stomped. Special has a few of them on Easy and Normal and many more on Hard; Super Mario Bros.
   and The Lost Levels have them on Hard only.
+- Classic mode: the full power-up in Special shows the original's **Exploding Rabbit logo**, as a
+  tribute (Classic rules only; credited in the credits, and replaced on request).
 - Classic mode: Special's **new items**, in blocks: the **Atom** defeats every enemy on screen, the
   **Hammer** swings over and in front of you for ten seconds and defeats any enemy it touches, and
   the **Wing** lets you swim through the air for ten seconds. Each is worth 1000 points and says

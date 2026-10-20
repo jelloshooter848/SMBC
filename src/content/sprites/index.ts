@@ -9,6 +9,7 @@ import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { spikeTopDef } from './spike-top';
 import { specialEnemiesDef } from './special';
+import { rabbitLogoDef, rabbitLogoPalettes } from './rabbit-logo';
 import { linkPalettes, linkDef } from './link';
 import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
@@ -120,6 +121,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'spike-top': spikeTopDef,
   // Super Mario Bros. Special's enemies (G-021), drawn with the enemy palettes.
   'special-enemies': specialEnemiesDef,
+  // The one named original-art exception (Classic mode's full power-up; docs/ART_EXCEPTIONS.md).
+  'rabbit-logo': rabbitLogoDef,
   link: linkDef,
   megaman: megamanDef,
   // Classic SMBC's Bass (characters/bass/classic.ts).
@@ -235,6 +238,7 @@ const defaults: Record<string, readonly string[]> = {
   ...fontPalettes,
   ...fontTints,
   ...itemPalettes,
+  ...rabbitLogoPalettes,
   ...decorPalettes,
   ...marioPalettes,
   ...enemyPalettes,

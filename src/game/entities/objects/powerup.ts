@@ -71,6 +71,8 @@ export class PowerUp extends Entity {
    * Null for every Current hero.
    */
   art: { sheet: string; frames: readonly string[] } | null = null;
+  /** The full power-up drawn as the original's logo (set by a Classic World only). */
+  classicLogo = false;
 
   constructor(
     tx: number,
@@ -166,7 +168,17 @@ export class PowerUp extends Entity {
     const moderate = view.reduceFlashing ? 0 : Math.floor(view.frame / 4) & 1;
     if (this.item === 'atom') frame = `atom-${moderate}`;
     // The full power-up: drawn as the Fire Flower (the original's art is its maker's logo).
-    if (this.item === 'rabbit') frame = `flower-${view.reduceFlashing ? 0 : (view.frame >> 3) & 1}`;
+    if (this.item === 'rabbit') {
+      // Classic mode: the original's Exploding Rabbit logo (the named art exception,
+      // sprites/rabbit-logo.ts), four frames on ANIM_MODERATE_TMR (75 ms); otherwise our own
+      // drawing, the Fire Flower's. Reduce flashing holds either on its first frame.
+      if (this.classicLogo) {
+        const k = view.reduceFlashing ? 0 : Math.floor((view.frame * 1000) / 60 / 75) % 4;
+        r.sprite(view.assets.sheet('rabbit-logo'), `rabbit-${k}`, this.screenX(view), this.screenY());
+        return;
+      }
+      frame = `flower-${view.reduceFlashing ? 0 : (view.frame >> 3) & 1}`;
+    }
     if (this.item === 'wing') frame = `wing-${moderate}`;
     r.sprite(sheet, frame, this.screenX(view), this.screenY());
   }
