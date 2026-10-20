@@ -24,7 +24,8 @@ import { IntroScene } from '@game/scenes/intro';
 import type { Game } from '@game/scenes/game';
 import { CHEAT_GOALS, cheatInfo } from '@game/cheats';
 import { LevelScene } from '@game/scenes/level';
-import { MORE_SETTINGS_ROWS } from '@game/scenes/original-options';
+import { MORE_SETTINGS_ROWS, optionItem } from '@game/scenes/original-options';
+import { defaultClassicSettings, type ClassicSettings } from '@engine/save/original-options';
 import { px } from '@engine/math/units';
 import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
 import { edible, mouthOf } from '@game/characters/classic/yoshi-tongue';
@@ -318,5 +319,34 @@ describe("7. More Settings rows in the original's order (DifficultySettingsMenu.
       'Goombas',
       'Enemy speed',
     ]);
+  });
+});
+
+describe("8. The When hit hint speaks only the current value's meaning", () => {
+  const whenHit = MORE_SETTINGS_ROWS.find((r) => r.label === 'When hit');
+  const hintFor = (v: ClassicSettings['whenHit']): string => {
+    const classic = { ...defaultClassicSettings(), whenHit: v };
+    const game = { deps: { settings: { classic } } } as unknown as Game;
+    return optionItem(game, whenHit as never, () => undefined).hint ?? '';
+  };
+
+  it('each value is told alone; the other two are not named', () => {
+    const lose = hintFor('lose-everything');
+    expect(lose).toBe('Any hit leaves you small');
+    const prev = hintFor('previous-state');
+    expect(prev).toMatch(/^A hit takes one power-up away: Fire goes to big, big to small\. Changed from/);
+    // Only the Changed from note names another value (the original's).
+    expect(prev.split('. Changed')[0]).not.toMatch(/Lose everything|Instant death|defeats/);
+    const dead = hintFor('instant-death');
+    expect(dead).toMatch(/^Any hit defeats you\. Changed from the original: Lose everything$/);
+    expect(dead.split('. Changed')[0]).not.toMatch(/Previous state|small/);
+  });
+
+  it('the other rows keep their own hint', () => {
+    const lives = MORE_SETTINGS_ROWS[0];
+    const game = { deps: { settings: { classic: defaultClassicSettings() } } } as unknown as Game;
+    expect(optionItem(game, lives as never, () => undefined).hint).toBe(
+      'Lives at the start and after each continue',
+    );
   });
 });

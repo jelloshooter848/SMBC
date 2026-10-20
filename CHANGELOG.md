@@ -18,6 +18,7 @@ under `## [Unreleased]`.
   clear or a game beaten), as the cheats play only with Classic rules.
 - Classic mode's More settings list their rows in the original's order: Lives, Attack, When
   hit, Item drops, Piranhas, Goombas, Enemy speed.
+- Classic mode's More settings: the When hit row tells only what its chosen value does.
 
 ### Fixed
 
