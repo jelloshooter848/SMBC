@@ -13,6 +13,11 @@ import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './lin
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
+import {
+  MEGAMAN_VARIANT_SHEETS,
+  MEGAMAN_VARIANT_SUITS,
+  megamanVariantPalettes,
+} from './smbc-megaman-variants';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
@@ -124,6 +129,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'bill-classic': billClassicDef,
   'ryu-classic': ryuClassicDef,
   'megaman-classic': megamanClassicDef,
+  // Classic mode's Mega Man variants (FU-3), built on his Classic sheet: mm-rock, mm-cutman, ...
+  ...MEGAMAN_VARIANT_SHEETS,
   'simon-classic': simonClassicDef,
   'link-classic': linkClassicDef,
   'link-classic-shield': linkClassicShieldDef,
@@ -230,6 +237,7 @@ const defaults: Record<string, readonly string[]> = {
   ...megamanPalettes,
   ...bassPalettes,
   ...protomanPalettes,
+  ...megamanVariantPalettes,
   ...samusPalettes,
   ...smbcShotPalettes,
   ...pitPalettes,
@@ -325,6 +333,11 @@ for (let i = 0; i < 4; i++) {
 }
 // Their own sheet asks for `<sheet>-rush` with Rush out (megaman/classic.ts): Mega Man's.
 fallback('protoman-rush', 'megaman-rush');
+// Classic mode's Mega Man variants (FU-3): Mega Man's Star colours and Rush suit.
+for (const name of MEGAMAN_VARIANT_SUITS)
+  for (let i = 0; i < 4; i++) fallback(`${name}-star-${i}`, `megaman-star-${i}`);
+for (const sheet of Object.keys(MEGAMAN_VARIANT_SHEETS)) fallback(`${sheet}-rush`, 'megaman-rush');
+
 fallback('mario-fire', 'mario');
 fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');

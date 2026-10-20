@@ -196,6 +196,25 @@ export interface ClassicMegaManOptions {
   shotPad?: ShotPad;
   /** PM-18: the character select's pick sound (CharacterDef.pickSfx). Absent: the usual one. */
   pickSfx?: string;
+  /*
+   * The gameplay variants (FU-3: SkinDescriptions.as and MegaManBase's skin switches). Absent,
+   * each is Mega Man's.
+   */
+  /**
+   * `sheet` is drawn as Mega Man's own is (R1): a feet-anchored canvas the size of his
+   * (MEGAMAN_SMBC_CANVAS), so a variant built from his redrawn sheet lines up with his box.
+   * Absent: a `sheet` is drawn at Proto Man's old offsets.
+   */
+  canvas?: boolean;
+  /**
+   * Down + Jump never slides (skinDisableSlide: Rock, Francesca, Doropie), except in Charge Kick's
+   * kick mode with the energy for it, as in the original. Absent: he slides.
+   */
+  noSlide?: boolean;
+  /** Firebars pass through him harmlessly (Fire Man: MegaManBase.hitProj). */
+  fireBarProof?: boolean;
+  /** Head bumps break bricks in every power state (Cut Man: changeBrickState BRICK_BREAKER). */
+  headBreaksBricks?: boolean;
 }
 
 /* ---------- scratch keys (apart from Current's: w<id>, helmet, weapons, chargeT, etanks) ---------- */
@@ -223,7 +242,9 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const drops = o.drops ?? CLASSIC_DROPS.megaman;
   const sheet = o.sheet ?? 'megaman';
   /** R1: Mega Man himself draws every pose from his Classic sheet at the original sizes. */
-  const own = o.sheet === undefined;
+  const own = o.sheet === undefined || o.canvas === true;
+  /** The sheet those poses come from: his own, or a variant's built from it (FU-3). */
+  const canvasSheet = o.sheet === undefined ? 'megaman-classic' : o.sheet;
   const suit = o.palette ?? 'megaman';
   const buster = o.buster ?? { spec: MM_BUSTER, cap: MM_BUSTER_CAP };
   const charge =
@@ -612,7 +633,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       // R1: the canvas's origin (feet centre) under the hitbox's bottom centre.
       const box = def.hitbox(p);
       return {
-        sheet: 'megaman-classic',
+        sheet: canvasSheet,
         palette,
         frame: name,
         flip: p.facing < 0,
@@ -662,8 +683,10 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     // so nothing clears the screen.
     stomps: false,
     crouches: false,
-    // He bumps bricks from below in every state and never breaks them (MM-C33).
-    canBreakBricks: () => false,
+    // He bumps bricks from below in every state and never breaks them (MM-C33); Cut Man's head
+    // breaks them (FU-3).
+    canBreakBricks: () => o.headBreaksBricks === true,
+    ...(o.fireBarProof ? { fireBarProof: true } : {}),
     hitbox: (p) => (p.sliding > 0 ? { w: 12, h: profile.slide?.hitboxH ?? 15 } : { w: 12, h: 22 }),
     // F2: the original's HRect (24 standing, 27.5 in the air, the slide's own height), walk
     // (the step frame, then 4 poses A B C B at 100 ms), and the shot poses kept walking or jumping.
@@ -709,6 +732,15 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
         p.scratch._wChargeT = 0;
       },
       canSlide: (p) => !p.scratch._carry && !p.scratch._bbRoot,
+      ...(o.noSlide
+        ? {
+            // skinDisableSlide (FU-3): Down + Jump jumps, but a Charge Kick slide (kick mode, with
+            // its energy) still slides.
+            slides: (p: Player) =>
+              heldWeapon(p) === 'charge-kick' && !!p.scratch[KICK] && energy(p, 'charge-kick') >= 4,
+          }
+        : {}),
+
       ...(rapid
         ? {
             rooted(p: Player, input: InputFrame): boolean | 'canJump' {

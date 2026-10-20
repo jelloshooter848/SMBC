@@ -8,6 +8,26 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode's select screen in the original's layout (our own art): the HUD on top with the
+  highlighted hero's small portrait and name, a framed grid of portrait cells (the Random "?" last),
+  a name box with the look's name in quotes, the hero and its game, and the hero standing on the
+  ground below. Each move reads out the hero, its look and its game; a tap on a cell moves there,
+  a second tap takes it.
+- Classic mode: a **skin menu**, as in the original. OK on a hero with other looks opens a framed
+  grid of them, titled with the look's name over its source game; OK takes the look and the hero,
+  BACK returns. Each hero's choice is remembered (SKIN on the select also cycles it), and the HUD
+  name, the art, the How to play page and the castle's rescue name follow it. The Random slot and
+  Survival respect it. Break Man is now Proto Man's second look and Dark Pit Pit's (they play
+  exactly alike), so each hero has one cell.
+- Classic mode: Mega Man's gameplay variants from the original, each with its own cell and our own
+  art built from his redrawn sheet: **Rock** (no charge, no slide), **Cut Man** (shots pass through
+  enemies and bricks, his head breaks bricks, two shots at a time), **Fire Man** (stronger shots,
+  firebars pass through him, two shots, double knockback), **Ice Man** (a full charge freezes, a
+  weaker buster), **Francesca** with her Doropie look (no slide) and **Rokko Chan** (a dash and dash
+  jump instead of the slide, no charge).
+
 ## [0.4.63] - 2026-10-20
 
 ### Changed

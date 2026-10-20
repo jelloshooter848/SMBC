@@ -257,6 +257,13 @@ export const MOUNT_SPECIAL: Readonly<Record<string, (p: Player) => MountSpecial>
   bass: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
   protoman: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
   breakman: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  rock: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  cutman: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  fireman: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  iceman: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  francesca: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  doropie: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
+  rokko: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
   bill: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
 };
 

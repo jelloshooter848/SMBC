@@ -66,7 +66,7 @@ describe('Classic mode: character select between levels (F2)', () => {
     clear(h, '1-3');
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     h.idle(12);
-    for (let i = 0; i < 12 && h.said.at(-1) !== LINK.name; i++) h.tap('right');
+    for (let i = 0; i < 12 && h.said.at(-1)?.split(', ')[0] !== LINK.name; i++) h.tap('right');
     h.tap('jump');
     const l = enterLevel(h);
     expect(l.level.id).toBe('1-3');

@@ -458,7 +458,13 @@ export class Player {
     if (this.stun > 0 && !b.onGround) this.airJumpsLeft = 0;
     if (b.onGround) this.airJumpsLeft = p.airJumps ?? 0;
     if (canJump && this.jumpPressed(input)) {
-      if (p.slide && input.held('down') && b.onGround && !slideJump) {
+      if (
+        p.slide &&
+        input.held('down') &&
+        b.onGround &&
+        !slideJump &&
+        (this.def.behaviour.slides?.(this) ?? true)
+      ) {
         input.consumeJumpBuffer();
         // No slide during a thrown weapon's stop or while the behaviour says no (Player.root).
         if (!rooted && !stabRooted && (this.def.behaviour.canSlide?.(this) ?? true)) this.startSlide();

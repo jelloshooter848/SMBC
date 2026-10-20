@@ -5,8 +5,9 @@ import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { makeGame } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
-// The two-row select (Classic extras on a second row): Up / Down move between the rows to the
-// nearest column and say so; Left / Right still walk the whole roster; one row is unchanged.
+// Classic mode's select rows (the original's grid, the Classic extras after the usual heroes): Up /
+// Down move between the rows to the nearest column and say so; Left / Right still walk the whole
+// roster; the free-play select's one row is unchanged.
 
 isolateClassicRegistry();
 
@@ -41,13 +42,21 @@ describe('two-row character select', () => {
     const down = nearest(0, first, n);
     h.tap('down');
     expect(idx(sel)).toBe(down);
-    expect(h.said.at(-1)).toBe(`${sel.chars[down]?.name ?? 'Random'}, second row`);
+    expect(h.said.at(-1)).toMatch(new RegExp(`^${sel.chars[down]?.name ?? 'Random'}(, .*)?, second row$`));
+    // The original's grid holds the roster in rows of nine, three of them with Mega Man's variants
+    // (FU-3): Down goes on to the third, then bumps; Up comes back.
     h.tap('down');
-    expect(idx(sel)).toBe(down);
-    const up = nearest(down, 0, first);
+    const third = idx(sel);
+    expect(sel.slot(third).y).toBeGreaterThan(sel.slot(down).y);
+    h.tap('down');
+    expect(idx(sel)).toBe(third);
+    h.tap('up');
+    const second = idx(sel);
+    expect(sel.slot(second).y).toBe(sel.slot(down).y);
+    const up = nearest(second, 0, first);
     h.tap('up');
     expect(idx(sel)).toBe(up);
-    expect(h.said.at(-1)).toBe(`${sel.chars[up]?.name}, first row`);
+    expect(h.said.at(-1)).toMatch(new RegExp(`^${sel.chars[up]?.name}(, .*)?, first row$`));
     h.tap('up');
     expect(idx(sel)).toBe(up);
     // From the last first-row hero, Down lands on the nearest column (the right end).
@@ -72,14 +81,14 @@ describe('two-row character select', () => {
   });
 
   it('one row (Classic rules set to Current, free play): Up and Down do nothing, text as today', () => {
+    // Classic mode's select is the original's grid (nine to a row, then the "?" cell), so only
+    // the free-play select keeps the one row.
     const { h, sel } = classicSelect('current');
     expect(sel.firstRow).toBe(sel.chars.length);
-    expect(h.said.at(-1)).toBe('Select your hero. Left and right to choose, OK to begin.');
-    const n = h.said.length;
-    h.tap('down');
-    h.tap('up');
-    expect(idx(sel)).toBe(0);
-    expect(h.said.length).toBe(n);
+    expect(sel.rows).toBe(2);
+    expect(h.said.at(-1)).toBe(
+      'Select your hero. Left and right to choose, up and down for the other row, OK to begin.',
+    );
     const f = makeGame();
     f.game.showCharacterSelect();
     const s2 = f.top() as CharacterSelectScene;

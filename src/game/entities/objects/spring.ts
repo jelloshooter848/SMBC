@@ -37,6 +37,14 @@ export const SPRING_GREEN_BOOST: Readonly<Record<string, number>> = {
   // Classic-only extras: the Mega Man family's 3000 (PM-15) and Samus's 1750 (PI-19).
   protoman: flash(3000),
   breakman: flash(3000),
+  // Mega Man's gameplay variants (FU-3): his 3000.
+  rock: flash(3000),
+  cutman: flash(3000),
+  fireman: flash(3000),
+  iceman: flash(3000),
+  francesca: flash(3000),
+  doropie: flash(3000),
+  rokko: flash(3000),
   pit: flash(1750),
   darkpit: flash(1750),
   // The Warriors of Light: SpringGreen names no Warrior class, so the red spring's 1000 (WL-6).
@@ -61,6 +69,13 @@ export const SPRING_RISE_GRAVITY: Readonly<Record<string, number>> = {
   sophia: flashAccel(1050),
   protoman: flashAccel(1500),
   breakman: flashAccel(1500),
+  rock: flashAccel(1500),
+  cutman: flashAccel(1500),
+  fireman: flashAccel(1500),
+  iceman: flashAccel(1500),
+  francesca: flashAccel(1500),
+  doropie: flashAccel(1500),
+  rokko: flashAccel(1500),
   pit: flashAccel(700),
   darkpit: flashAccel(700),
   warriors: flashAccel(1400),

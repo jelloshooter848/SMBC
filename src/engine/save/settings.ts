@@ -81,6 +81,12 @@ export interface Settings {
    */
   classicDev: ClassicDevToggles;
   /**
+   * Classic mode's skin picker (FU-8): each hero's chosen look, as skin id by select-slot hero id
+   * (`{ protoman: 'breakman' }`). Absent or missing a hero: that hero's own look. Optional, so
+   * files saved before it need no migration; loadSettings keeps its string entries.
+   */
+  classicSkins?: Record<string, string>;
+  /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
    * into older files (every field defaults to the original's: all off, most locked).
@@ -260,9 +266,21 @@ export function loadSettings(): Settings {
   s.classicCheats.continuesUsed = Number.isFinite(used) ? Math.max(0, Math.floor(used)) : 0;
   s.classic = normaliseClassic(s.classic);
   s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
+  // The merge keeps only keys the defaults have, so the skin choices are copied over here.
+  const skins = normaliseSkins(stored.classicSkins);
+  if (skins) s.classicSkins = skins;
+  else delete s.classicSkins;
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;
+}
+
+/** Settings.classicSkins as stored: its string entries (hero id to skin id), or undefined. */
+export function normaliseSkins(v: unknown): Record<string, string> | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, id] of Object.entries(v as Record<string, unknown>)) if (typeof id === 'string') out[k] = id;
+  return Object.keys(out).length ? out : undefined;
 }
 
 /** Stored bindings predate newer actions: give any missing action its default codes. */

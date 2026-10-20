@@ -63,9 +63,10 @@ describe('FU-4: the Random slot', () => {
     expect(h.said.at(-1)).toBe('Random');
     const t = draw(sel).texts.map((x) => x.str);
     expect(t).toContain('RANDOM');
-    // One row (the extras hidden here): the slot sits after the last hero on that row.
-    expect(sel.slot(sel.chars.length).y).toBe(sel.slot(0).y);
-    expect(sel.slot(sel.chars.length).x).toBeGreaterThan(sel.slot(sel.chars.length - 1).x);
+    // The original's grid (the extras hidden here): the "?" cell follows the last hero.
+    const q = sel.slot(sel.chars.length);
+    const last = sel.slot(sel.chars.length - 1);
+    expect(q.y > last.y || (q.y === last.y && q.x > last.x)).toBe(true);
     // Right wraps back to the first hero.
     h.tap('right');
     expect(idx(sel)).toBe(0);

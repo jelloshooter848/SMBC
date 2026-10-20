@@ -3091,6 +3091,9 @@ export class World {
     const pb = p.body;
     // The hurt box (CharacterDef.hurtbox, Classic: the original's HRect); the body without one.
     if (!overlaps(p.hurtBody(), e.body)) return;
+    // A whole firebar, its anchor ball too, passes through Classic Fire Man (MegaManBase.hitProj).
+    if (e instanceof Firebar && p.def.fireBarProof) return;
+
     // A sword/thrust that is touching this enemy handles it; no body contact damage.
     if (p.activeMelee && overlaps(p.activeMelee, e.body) && !this.thrustIgnoresShell(p, e)) return;
     if (p.star > 0) {
