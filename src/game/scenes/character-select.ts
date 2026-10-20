@@ -16,7 +16,9 @@ import { menuTouchLabels } from '../touch-labels';
 import { drawSelectHud } from '../hud/select-hud';
 import { SKY } from '../world/tile-render';
 import {
+  NAME_BOX,
   SELECT_GRID,
+  type GridLayout,
   SKIN_GRID,
   drawCell,
   drawDownArrow,
@@ -259,13 +261,13 @@ export class CharacterSelectScene implements Scene {
   /**
    * Where each row starts (slot index), then the total: the first row, then the slots past it on
    * one row, or on two (the larger first) when they are more than ROW_MAX. Classic mode's grid:
-   * rows of SELECT_GRID.cols.
+   * rows of its grid's columns (`grid`).
    */
   private get rowStarts(): number[] {
     const n = this.total;
     if (this.classicLayout) {
       const starts: number[] = [];
-      for (let i = 0; i < n; i += SELECT_GRID.cols) starts.push(i);
+      for (let i = 0; i < n; i += this.grid.cols) starts.push(i);
       starts.push(n);
       return starts;
     }
@@ -308,8 +310,8 @@ export class CharacterSelectScene implements Scene {
    */
   slot(i: number): { x: number; y: number } {
     if (this.classicLayout) {
-      const c = gridCell(i);
-      return { x: c.x + SELECT_GRID.cell / 2, y: c.y + SELECT_GRID.cell };
+      const c = gridCell(i, this.grid);
+      return { x: c.x + this.grid.cell / 2, y: c.y + this.grid.cell };
     }
     const starts = this.rowStarts;
     const row = this.rowOf(i);
@@ -519,8 +521,9 @@ export class CharacterSelectScene implements Scene {
   private slotAt(x: number, y: number): number {
     const n = this.total;
     for (let i = 0; i < n; i++) {
-      const c = gridCell(i);
-      if (x >= c.x && x < c.x + SELECT_GRID.cell && y >= c.y && y < c.y + SELECT_GRID.cell) return i;
+      const c = gridCell(i, this.grid);
+      const n = this.grid.cell;
+      if (x >= c.x && x < c.x + n && y >= c.y && y < c.y + n) return i;
     }
     return -1;
   }
@@ -1172,6 +1175,14 @@ export class CharacterSelectScene implements Scene {
     return DEFAULT_SELECT_THEME;
   }
 
+  /**
+   * The portrait grid's layout (select-grid.ts): SELECT_GRID for this roster; the original's,
+   * ORIGINAL_GRID, is a data change with its roster.
+   */
+  get grid(): GridLayout {
+    return SELECT_GRID;
+  }
+
   /** The cursor ring's colour now (revive mode's own cycle). */
   private cursorNow(): string {
     const th = this.theme;
@@ -1186,7 +1197,7 @@ export class CharacterSelectScene implements Scene {
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
     drawSelectHud(r, assets, this.game.state, shown, shown ? this.artOf(shown) : null, this.theme.hudFrame);
-    const pan = gridPanel(this.rows);
+    const pan = gridPanel(this.rows, this.grid);
     const by = pan.y + pan.h + 4;
     if (this.picker) {
       // The skin menu takes the select box's place (CharacterSelectBox opens CharacterSkinMenu
@@ -1198,10 +1209,10 @@ export class CharacterSelectScene implements Scene {
     // The portrait grid: each hero's face, our standing art doubled (the original's close-ups).
     const th = this.theme;
     drawPanel(r, pan.x, pan.y, pan.w, pan.h, th);
-    const cell = SELECT_GRID.cell;
+    const cell = this.grid.cell;
     const ring = this.cursorNow();
     for (let i = 0; i < this.total; i++) {
-      const at = gridCell(i);
+      const at = gridCell(i, this.grid);
       drawCell(r, at.x, at.y, cell, cell, i === this.index ? ring : null, th);
       inCell(r, at.x, at.y, cell, cell, () => {
         if (this.isRandom(i)) {
@@ -1229,7 +1240,7 @@ export class CharacterSelectScene implements Scene {
     }
     const lines = this.nameBoxLines();
     const boxH = 12 + lines.length * 10;
-    drawPanel(r, 24, by, 208, boxH, th);
+    drawPanel(r, NAME_BOX.x, by, NAME_BOX.w, boxH, th);
     // The hero's name in the menu font; the look's name and the game in the selected tint.
     lines.forEach((l, k) =>
       this.outlined(r, l, by + 7 + k * 10, l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name'),
@@ -1407,7 +1418,7 @@ export class CharacterSelectScene implements Scene {
   heroesBottom(): number {
     // Classic mode's grid: its panel's bottom (a cell's portrait may reach past its cell).
     if (this.classicLayout) {
-      const pan = gridPanel(this.rows);
+      const pan = gridPanel(this.rows, this.grid);
       return pan.y + pan.h;
     }
     return this.slot(Math.max(0, this.total - 1)).y;

@@ -16,8 +16,33 @@ import { SPRITES } from '@content/sprites';
  * and the ground room on 240 px, so ours are eight to a row: 26 px cells, 3 px apart, three rows.
  */
 
-/** The portrait grid: cells `cell` px square, `gap` px apart, `cols` to a row. */
-export const SELECT_GRID = { cols: 8, cell: 26, gap: 3, x: 13, y: 36 } as const;
+/** A portrait grid: cells `cell` px square, `gap` px apart, `cols` to a row, its top-left at (x, y). */
+export interface GridLayout {
+  readonly cols: number;
+  readonly cell: number;
+  readonly gap: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A grid of `cols` columns centred on the screen. */
+function centredGrid(cols: number, cell: number, gap: number, y: number): GridLayout {
+  return { cols, cell, gap, x: 128 - ((cols * cell + (cols - 1) * gap) >> 1), y };
+}
+
+/**
+ * The original's grid (CharacterSelectBox.as 41-42, 69-73: PORTRAIT_SIZE 52, SPACE_BETWEEN_PORTRAITS
+ * 4, NUM_PORTS_PER_ROW_ARR [6, 6], halved): two rows of six, 26 px cells 2 px apart. With its roster
+ * (Mario, Luigi, Link, Samus, Simon, Mega Man, Bass, Bill, Ryu, Sophia III, Random) it is a data
+ * change: SELECT_GRID = ORIGINAL_GRID.
+ */
+export const ORIGINAL_GRID: GridLayout = centredGrid(6, 26, 2, 36);
+
+/** The grid in use: eight to a row, so our roster's 24 slots fit three rows on 240 px. */
+export const SELECT_GRID: GridLayout = centredGrid(8, 26, 3, 36);
+
+/** The name box: 200 px wide, centred (the original's NAME_BOX_WIDTH 400 at 512 px). */
+export const NAME_BOX = { x: 28, w: 200 } as const;
 /** The panel round the grid starts this far above and left of it. */
 const PANEL_PAD = 6;
 
@@ -171,16 +196,17 @@ export function drawCell(
 }
 
 /** Cell `i`'s top-left on the select grid. */
-export function gridCell(i: number): { x: number; y: number } {
-  const g = SELECT_GRID;
+export function gridCell(i: number, g: GridLayout = SELECT_GRID): { x: number; y: number } {
   const col = i % g.cols;
   const row = Math.floor(i / g.cols);
   return { x: g.x + col * (g.cell + g.gap), y: g.y + row * (g.cell + g.gap) };
 }
 
 /** The select panel's box for `rows` rows of cells. */
-export function gridPanel(rows: number): { x: number; y: number; w: number; h: number } {
-  const g = SELECT_GRID;
+export function gridPanel(
+  rows: number,
+  g: GridLayout = SELECT_GRID,
+): { x: number; y: number; w: number; h: number } {
   const w = g.cols * g.cell + (g.cols - 1) * g.gap;
   const h = rows * g.cell + (rows - 1) * g.gap;
   return { x: g.x - PANEL_PAD, y: g.y - PANEL_PAD, w: w + 2 * PANEL_PAD, h: h + 2 * PANEL_PAD };
