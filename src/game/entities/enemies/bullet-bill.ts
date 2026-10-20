@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { px, velToSub } from '@engine/math/units';
 import { Enemy } from './enemy';
+import { HammerBro } from './hammer-bro';
 import { ENEMY_SCORES } from '../../rules/score';
 import { Entity, type View } from '../entity';
 import type { World } from '../../world/world';
@@ -71,7 +72,12 @@ export class BulletLauncher extends Entity {
     if (--this.timer > 0) return;
     this.timer = FIRE_MIN + world.rng.int(FIRE_SPREAD);
     let out = 0;
-    for (const e of world.entities) if (e instanceof BulletBill && e.alive && e.fromBlaster) out++;
+    for (const e of world.entities)
+      if (
+        e.alive &&
+        ((e instanceof BulletBill && e.fromBlaster) || (e instanceof HammerBro && e.spawner === 'blaster'))
+      )
+        out++;
     if (out >= MAX_BLASTER_BILLS) return;
     const cam = world.camera;
     const b = this.body;
@@ -83,9 +89,16 @@ export class BulletLauncher extends Entity {
     if (Math.abs(dx) <= px(32)) return;
     const dir: -1 | 1 = dx < 0 ? -1 : 1;
     const x = dir < 0 ? b.x - px(14) : b.x + px(16);
-    const bill = new BulletBill(x, b.y + px(2), dir);
-    bill.fromBlaster = true;
-    world.spawn(bill);
+    // All Hammer Bros (Classic cheat; Canon.shootTmrLsr): the blaster fires a Hammer Bro, feet
+    // at the barrel's foot (`hb.y = y + TILE_SIZE - 2`), at a Bullet Bill's speed.
+    if (world.cheats.allHammerBros) {
+      const hx = dir < 0 ? b.x - px(12) : b.x + px(16);
+      world.spawn(HammerBro.launched(hx, b.y + px(16 - 22 - 1), dir * BULLET_SPEED, 0, 'blaster'));
+    } else {
+      const bill = new BulletBill(x, b.y + px(2), dir);
+      bill.fromBlaster = true;
+      world.spawn(bill);
+    }
     world.audio.sfx('kick');
   }
 

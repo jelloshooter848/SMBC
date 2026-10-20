@@ -1,6 +1,7 @@
 import type { ClassicGoombas, ClassicSettings } from '@engine/save/original-options';
 import type { EntitySpawn } from '../level/schema';
 import { T } from '../level/tiles';
+import { registerGoombaReplacements, replaceGoombas } from './classic-goombas';
 import type { TileMap } from '../world/tilemap';
 
 /**
@@ -10,14 +11,21 @@ import type { TileMap } from '../world/tilemap';
  * values (Off, Some Pipes) nothing changes.
  */
 
+/** The extra Replace Goombas choices (rules/classic-goombas.ts: Spike Top): spawn type by value. */
+const EXTRA: Record<string, string> = {};
+registerGoombaReplacements((r) => {
+  EXTRA[r.id] = r.spawn;
+});
+
 /**
- * The spawn type every Goomba becomes, by Replace Goombas value. Spike Top (a new enemy) adds its
- * row here and its value to CLASSIC_GOOMBAS when it lands.
+ * The spawn type every Goomba becomes, by Replace Goombas value. Spike Top comes from
+ * rules/classic-goombas.ts (registerGoombaReplacements, its spawn type 'spike-top').
  */
 export const GOOMBA_SPAWNS: Readonly<Record<ClassicGoombas, string | null>> = {
   off: null,
   buzzy: 'buzzy',
   spiny: 'spiny',
+  'spike-top': EXTRA['spike-top'] ?? null,
 };
 
 /** The upright and hanging plant spawn types (World.makeEntity). */
@@ -42,13 +50,7 @@ export function applyOptionSpawns(
   if (!opts || !spawns) return false;
   let changed = false;
   const goomba = GOOMBA_SPAWNS[opts.goombas];
-  if (goomba)
-    for (let i = 0; i < spawns.length; i++) {
-      const s = spawns[i] as EntitySpawn;
-      if (s.type !== 'goomba') continue;
-      spawns[i] = { ...s, type: goomba };
-      changed = true;
-    }
+  if (goomba && replaceGoombas(spawns, goomba) > 0) changed = true;
   const p = opts.piranhas;
   if (p === 'all' || p === 'green-all' || p === 'red-all') {
     const has = new Set(

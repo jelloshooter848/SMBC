@@ -3,7 +3,7 @@ import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
-import type { GameContext, GameState, Rules } from '../context';
+import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
 import { CLASSIC_EXTRAS, heroFor } from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
@@ -15,7 +15,15 @@ import { Rng } from '@engine/rng';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
-import type { ClassicDevToggles, Settings } from '@engine/save/settings';
+import {
+  saveSettings,
+  CLASSIC_CHEAT_IDS,
+  type ClassicCheatId,
+  type ClassicCheatStat,
+  type ClassicDevToggles,
+  type Settings,
+} from '@engine/save/settings';
+import { addCheatStat, cheatInfo, unlockedLines, unlockEarned, type CheatEvent } from '../cheats';
 import type { ClassicSettings } from '@engine/save/original-options';
 import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
@@ -192,6 +200,10 @@ export class Game {
    * play: liveRules does that, and ignores it while a campaign file is open.
    */
   runRules: Rules = 'current';
+  /** Continues used in this Classic run (StatManager.numContinuesUsed: Infinite Lives' goal). */
+  classicContinues = 0;
+  /** Cheats unlocked and not yet shown: each gets its YOU UNLOCKED card (showCheatUnlocks). */
+  cheatUnlocks: ClassicCheatId[] = [];
   /**
    * Classic mode: the last hero choice was the select screen's Random slot (FU-4), so the next
    * select starts on it again. Reset with each Classic mode run.
@@ -317,6 +329,12 @@ export class Game {
       set: (r: Rules) => {
         this.runRules = r;
       },
+      enumerable: true,
+      configurable: true,
+    });
+    // ctx.classicCheats: the cheats that are on, only while they play (cheatsLive), else absent.
+    Object.defineProperty(deps.ctx, 'classicCheats', {
+      get: () => (this.cheatsLive ? this.cheatsInForce : undefined),
       enumerable: true,
       configurable: true,
     });
@@ -489,6 +507,8 @@ export class Game {
       // A developer-started run counts for nothing: the title, as free play.
       if (this.classicDev) return this.showTitle();
       recordClassicClear(from);
+      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler).
+      this.cheatEvent({ beat: 'smb' });
       this.showClassicNewQuest();
       return;
     }
@@ -527,6 +547,8 @@ export class Game {
   private showLostEnding(from: string): void {
     const s = this.state;
     const campaign = this.campaign !== null;
+    // Classic mode: The Lost Levels beaten (beatGameHandler), for the cheats' goals.
+    if (from === 'll-8-4' && this.classicRun) this.cheatEvent({ beat: 'lost' });
     if (campaign) {
       s.checkpoint = null;
       s.time = null;
@@ -1408,6 +1430,104 @@ export class Game {
     this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, true);
   }
 
+  /**
+   * Classic mode's cheats play now (FU-7e, scenes/cheats-menu.ts): a Classic run under Classic
+   * rules. Never with a campaign file open, never under Current rules.
+   */
+  get cheatsLive(): boolean {
+    return (
+      this.classicRun &&
+      this.campaign === null &&
+      this.liveRules === 'classic' &&
+      !!this.deps.settings?.classicCheats
+    );
+  }
+
+  /**
+   * The cheats in force (GameContext.classicCheats): each one on and, outside developer mode,
+   * unlocked, so a locked cheat turned on from the dev pause stops with dev mode off. A live view
+   * (made once): every read asks the settings again.
+   */
+  private readonly cheatsInForce: CheatFlags = Object.freeze(
+    Object.defineProperties(
+      {},
+      Object.fromEntries(
+        CLASSIC_CHEAT_IDS.map((id) => [
+          id,
+          {
+            enumerable: true,
+            get: () => {
+              const c = this.deps.settings?.classicCheats;
+              return !!c && c.on[id] && (this.devMode || c.unlocked[id]);
+            },
+          },
+        ]),
+      ),
+    ),
+  ) as CheatFlags;
+
+  /** Play counts toward the cheats' goals: a Classic run not started from developer mode. */
+  get cheatGoalsCount(): boolean {
+    return (
+      this.classicRun && this.campaign === null && !this.classicDev && !!this.deps.settings?.classicCheats
+    );
+  }
+
+  /** One more of `stat` toward the cheats' goals (StatManager's num* setters); unlocks what it earns. */
+  cheatTally(stat: ClassicCheatStat): void {
+    const c = this.deps.settings?.classicCheats;
+    if (!c || !this.cheatGoalsCount) return;
+    addCheatStat(c, stat);
+    this.cheatsUnlocked(unlockEarned(c));
+    saveSettings(this.deps.settings as Settings);
+  }
+
+  /**
+   * A Classic run cleared a level (`level`, `castle`) or beat a game (`beat`): the goals that ask
+   * for it (Level.completeLevel, StatManager.beatGameHandler) unlock their cheats.
+   */
+  cheatEvent(ev: { level?: boolean; castle?: boolean; beat?: 'smb' | 'lost' }): void {
+    const s = this.deps.settings;
+    if (!s || !this.cheatGoalsCount) return;
+    const c = s.classicCheats;
+    const e: CheatEvent = { level: ev.level === true, castle: ev.castle === true };
+    if (ev.beat) {
+      c.beaten[ev.beat] = true;
+      e.noContinue = this.classicContinues === 0;
+    }
+    this.cheatsUnlocked(unlockEarned(c, e));
+    saveSettings(s);
+  }
+
+  private cheatsUnlocked(ids: readonly ClassicCheatId[]): void {
+    for (const id of ids) if (!this.cheatUnlocks.includes(id)) this.cheatUnlocks.push(id);
+  }
+
+  /**
+   * A cheat unlocked mid-level (a count reached: Cheats.unlockCheat's message boxes at the end of
+   * the game loop): its YOU UNLOCKED card over the frozen level, read out, gone on with OK; one
+   * card per cheat. Unlocks from a clear or a game beaten are told on the select screen that
+   * follows instead (CharacterSelectScene), which already waits for a press.
+   */
+  showCheatUnlocks(world: World): void {
+    const id = this.cheatUnlocks.shift();
+    if (!id) return;
+    this.deps.ctx.audio.sfx('1up');
+    this.deps.announcer?.say(`You unlocked the ${cheatInfo(id).name} cheat! OK to continue.`);
+    this.scenes.push(
+      new CardScene(
+        this,
+        unlockedLines(id),
+        () => {
+          this.scenes.pop();
+          this.showCheatUnlocks(world);
+        },
+        world,
+        { panel: true, keys: ['start', 'attack', 'jump'], prompt: abilityHint(this, 'OK', 'jump') },
+      ),
+    );
+  }
+
   /** The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). */
   get classicRules(): Rules {
     return this.deps.settings?.classicRules ?? 'classic';
@@ -1426,6 +1546,7 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    this.classicContinues = 0;
     this.state = newGameState(character, character2, this.liveRules);
     if (classic) this.classicStartLives();
     this.playtestDone = null;
@@ -1866,6 +1987,7 @@ export class Game {
    * character select as for a new level.
    */
   continueGame(levelId: string | null, player = 0): void {
+    if (this.classicRun) this.classicContinues++;
     const old = this.state;
     this.state = newGameState(old.character, old.character2, this.liveRules);
     if (this.classicRun) this.classicStartLives();

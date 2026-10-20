@@ -4,6 +4,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
 import { heroFor } from '../characters/registry';
 import type { Game } from './game';
+import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
 import type { TouchLabels } from '@engine/input/touch';
@@ -183,7 +184,25 @@ export class CharacterSelectScene implements Scene {
     return n > 0 ? ` ${n} ${n === 1 ? 'hero' : 'heroes'} still to be found.` : '';
   }
 
+  /**
+   * Classic mode's cheats unlocked by the clear (or the game) before this screen (Game.cheatUnlocks;
+   * the original's "You unlocked ... cheat!" boxes): shown over the heroes and read out with the
+   * screen's own line, which already waits for a press.
+   */
+  private cheatNews: string[] = [];
+
+  /** The cheats just unlocked, taken from the game: their names, and the line read out. */
+  private takeCheatNews(): string {
+    const ids = this.game.cheatUnlocks?.splice(0) ?? [];
+    if (!ids.length) return '';
+    this.cheatNews = ids.map((id) => cheatInfo(id).name);
+    this.game.ctx.audio.sfx('1up');
+    const names = this.cheatNews.join(', ');
+    return ids.length === 1 ? ` You unlocked the ${names} cheat!` : ` You unlocked these cheats: ${names}!`;
+  }
+
   enter(): void {
+    const news = this.takeCheatNews();
     const pick = this.pick;
     const chars = this.chars;
     if (pick) {
@@ -201,7 +220,8 @@ export class CharacterSelectScene implements Scene {
       this.game.deps.announcer?.say(
         `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
-          this.toFind(),
+          this.toFind() +
+          news,
       );
       return;
     }
@@ -209,7 +229,8 @@ export class CharacterSelectScene implements Scene {
     this.index2 = this.unlocked(this.index2);
     this.game.deps.announcer?.say(
       `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
-        this.toFind(),
+        this.toFind() +
+        news,
     );
   }
 
@@ -361,6 +382,7 @@ export class CharacterSelectScene implements Scene {
       const line = `${find} ${find === 1 ? 'HERO' : 'HEROES'} TO FIND`;
       r.text(font, line, 128 - line.length * 4, 52);
     }
+    this.renderCheatNews(r, font);
     const chars = this.chars;
     const first = this.firstRowSlots;
     const total = this.total;
@@ -446,5 +468,15 @@ export class CharacterSelectScene implements Scene {
       r.text(font, label, x, y);
       if (this.onMapRow) r.text(font, '>', x - 12, y);
     }
+  }
+
+  /** The cheats just unlocked, under the heading: CHEAT UNLOCKED! and the names (two at most). */
+  private renderCheatNews(r: Renderer, font: ReturnType<Game['ctx']['assets']['sheet']>): void {
+    if (!this.cheatNews.length) return;
+    const lines = [this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!'];
+    const names = this.cheatNews.map((n) => n.toUpperCase());
+    lines.push(...names.slice(0, 2));
+    if (names.length > 2) lines.push(`AND ${names.length - 2} MORE`);
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 47 + i * 10));
   }
 }

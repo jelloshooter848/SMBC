@@ -7,6 +7,7 @@ import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
 import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
+import { spikeTopDef } from './spike-top';
 import { linkPalettes, linkDef } from './link';
 import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
@@ -108,6 +109,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   // Classic SMBC Mario and Luigi's re-cut frames at the original's sizes (R1).
   'mario-classic': marioClassicDef,
   enemies: enemiesDef,
+  // Classic mode's Spike Top (Replace Goombas), drawn with the enemy palettes.
+  'spike-top': spikeTopDef,
   link: linkDef,
   megaman: megamanDef,
   // Classic SMBC's Bass (characters/bass/classic.ts).

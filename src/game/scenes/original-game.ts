@@ -2,6 +2,7 @@ import { loadProgress, saveProgress } from '@engine/save/progress';
 import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
+import { CheatsScene } from './cheats-menu';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
@@ -165,6 +166,13 @@ export class ClassicOptionsScene extends MenuScene {
         value: state(WEAPON_ROWS),
         select: menu('CUSTOMIZE WEAPONS', 'Customize weapons', WEAPON_ROWS),
         hint: "Each hero's weapons, with Classic SMBC rules",
+      },
+      {
+        label: 'Cheats',
+        select: () => game.scenes.push(new CheatsScene(game, () => this.back(), { all: game.devMode })),
+        hint: game.devMode
+          ? 'The original cheats; developer mode opens them all'
+          : 'The original cheats; play to unlock them',
       },
       {
         label: 'All options',
