@@ -21,9 +21,10 @@ import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
-import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
+import type { CardScene } from '@game/scenes/message';
+import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { reconcileRules } from '@game/rules/reconcile';
-import { ClassicMenuScene, ClassicOptionsScene, lostLevelsOpen } from '@game/scenes/original-game';
+import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -39,7 +40,7 @@ isolateClassicRegistry({ hideExtras: true });
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
 // campaign file is opened or written; deaths and continues go through character select as in
 // the original; warp zones go where the original's go; 8-4 ends with the original ending, then
-// the Lost Levels follow (and the CLASSIC menu offers them from then on).
+// the title. Every map set is offered from the start (0.5.0, owner decision D3).
 
 useStorage();
 
@@ -172,13 +173,13 @@ describe('the title and the CLASSIC menu', () => {
     expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);
   });
 
-  it('the menu: Super Mario Bros., Options, Back; each line is announced', () => {
+  it('the menu: Super Mario Bros., The Lost Levels, Options, Back; each line is announced', () => {
     const h = classic();
     const menu = toClassicMenu(h);
-    expect(labels(menu)).toEqual(['Super Mario Bros.', 'Options', 'Back']);
+    expect(labels(menu)).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of ['Options', 'Back', 'Super Mario Bros.']) {
+    for (const l of ['The Lost Levels', 'Options', 'Back', 'Super Mario Bros.']) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -188,12 +189,7 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 
-  it('The Lost Levels show only once SMB is beaten in Classic mode (a campaign clear does not count)', () => {
-    expect(lostLevelsOpen()).toBe(false);
-    file({ gameCleared: true });
-    expect(lostLevelsOpen()).toBe(false);
-    expect(labels(toClassicMenu(classic()))).toEqual(['Super Mario Bros.', 'Options', 'Back']);
-    saveProgress({ ...loadProgress(), cleared: ['8-4'] });
+  it('The Lost Levels are offered from the start (G-003, D3)', () => {
     const h = classic();
     expect(labels(toClassicMenu(h))).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
     pick(h, 'The Lost Levels');
@@ -426,7 +422,7 @@ describe('a Classic run', () => {
     expect(w.storyMode).toBe(false);
   });
 
-  it('8-4: the original ending and credits, then the Lost Levels open and follow', () => {
+  it('8-4: the original ending and credits, then the title (G-004, D3)', () => {
     const h = classic();
     h.game.classicGame(MARIO, '8-4-end');
     const l = enterLevel(h);
@@ -439,23 +435,24 @@ describe('a Classic run', () => {
     expect(h.said.at(-1)).toBe('Credits.');
     h.until(() => (credits as CreditsScene).touchLabels().jump === 'OK', 6000);
     h.tap('jump');
-    const card = h.top();
-    expect(card).toBeInstanceOf(MessageScene);
-    expect(h.said.at(-1)).toMatch(/^The Lost Levels are open!|^THE LOST LEVELS ARE OPEN!/i);
-    expect(h.said.at(-1)).not.toMatch(/\b(press|push)\s+[abc]\b/i);
-    expect(loadProgress().cleared).toContain('8-4');
-    expect(lostLevelsOpen()).toBe(true);
+    // The cheats the clear and the game unlocked (All Ground Is Bricks among them): a card each,
+    // read out, then the title.
+    const cards: string[] = [];
+    for (let i = 0; i < 10 && h.top() instanceof MessageScene; i++) {
+      cards.push(h.said.at(-1) ?? '');
+      h.idle(CARD_GUARD_FRAMES + 2);
+      h.tap('jump');
+    }
+    expect(cards).toContainEqual(expect.stringMatching(/^You unlocked the All Ground Is Bricks cheat!/));
+    for (const c of cards) expect(c).not.toMatch(/\b(press|push)\s+[abc]\b/i);
+    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(loadProgress().classicBeat?.smb).toBe('normal');
     expect(saveFiles()).toEqual([]);
-    h.idle(CARD_GUARD_FRAMES + 40);
-    h.tap('jump');
-    choose(h, LINK);
-    const ll = enterLevel(h);
-    expect(ll.level.id).toBe('ll-1-1');
-    expect(h.game.classicRun).toBe(true);
+    expect(h.game.classicRun).toBe(false);
   });
 });
 
-describe('a dev-started Classic run never opens the Lost Levels', () => {
+describe('a dev-started Classic run records no beat status', () => {
   function beat84(h: H): void {
     const l = enterLevel(h);
     l.world.events.push({ type: 'exit', next: 'end' });
@@ -477,7 +474,7 @@ describe('a dev-started Classic run never opens the Lost Levels', () => {
       beat84(h);
       expect(h.top()).toBeInstanceOf(TitleScene);
       expect(loadProgress().cleared).toEqual([]);
-      expect(lostLevelsOpen()).toBe(false);
+      expect(loadProgress().classicBeat?.smb).toBe('none');
     },
   );
 
@@ -488,7 +485,7 @@ describe('a dev-started Classic run never opens the Lost Levels', () => {
     h.game.classicGame(MARIO, '8-4-end');
     expect(h.game.classicDev).toBe(false);
     beat84(h);
-    expect(lostLevelsOpen()).toBe(true);
+    expect(loadProgress().classicBeat?.smb).toBe('normal');
   });
 });
 
@@ -533,22 +530,6 @@ describe('the CLASSIC tag: fully on screen, clear of every HUD line', () => {
 });
 
 describe('QA nits', () => {
-  it('the Classic Lost Levels 8-4 card names the ability (no button letter) and is announced', () => {
-    const h = classic();
-    h.game.classicGame(MARIO, 'll-8-4');
-    const l = enterLevel(h);
-    l.world.events.push({ type: 'exit', next: 'end' });
-    h.step();
-    const card = h.top() as CardScene;
-    expect(card).toBeInstanceOf(CardScene);
-    expect(card.lines).not.toContain('PUSH BUTTON B');
-    expect(card.lines).toContain('TO GO ON');
-    const press = card.lines.find((x) => x.startsWith('PRESS OK'));
-    expect(press).toBeDefined();
-    expect(h.said.at(-1)).toContain(press as string);
-    expect(h.said.at(-1)).not.toMatch(/\bBUTTON B\b/);
-  });
-
   it('free play keeps the NES wording on that card', () => {
     const h = classic();
     h.game.newGame(MARIO, 'll-8-4');

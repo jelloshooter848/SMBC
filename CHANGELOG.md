@@ -10,11 +10,24 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode: **every map set is open from the start**. The CLASSIC menu offers Super Mario
+  Bros. and The Lost Levels right away, and each line says whether that set has been beaten and
+  on which difficulty. Old Classic SMB clears count as beaten on Normal.
+- Classic mode: a **TIME UP** card when the clock runs out, as in the original. It is read out and
+  waits for OK, then the death goes on as usual.
+- Classic mode: in water areas the **pits pull Mario and Luigi in** (down and toward the pit's
+  middle), as in the original. Other heroes and the campaign are not pulled.
 - Classic mode Options: **Expansion heroes** (off, as in the original). On, the select also offers
   the heroes the original never had: Vic Viper, the Warriors of Light, Sir Arthur and Yoshi.
 
 ### Changed
 
+- Classic mode: **The Lost Levels run straight on from World 1 to World D**, as in the original.
+  8-4 is an ordinary castle with Toad and goes on to World 9 whatever warps were used; 9-4 goes on
+  to World A; D-4 says "YOUR QUEST IS OVER." and rolls the credits. The campaign and free play
+  keep their own Lost Levels endings.
+- Classic mode: after the credits, any cheats the win unlocked are shown one card at a time, then
+  the game returns to the title (the Lost Levels no longer follow straight on from SMB).
 - Classic mode's select screen is now the original's: its eleven heroes in its order (Mario,
   Luigi, Link, Samus, Simon, then Mega Man, Bass, Bill, Ryu, Sophia III and the Random "?"),
   five cells over six, as the original lays them out without its map-skin cell. Every other look is a skin on one of their slots, each with its own
