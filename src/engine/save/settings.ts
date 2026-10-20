@@ -103,6 +103,12 @@ export interface Settings {
    */
   classicSkins?: Record<string, string>;
   /**
+   * Classic mode's Disable characters (G-032; GeneralOptions.as 23, 47-53): the select-slot hero
+   * ids left out of the select, the Random slot and Single random. At least one hero always
+   * stays (Game.heroSlots). Optional, so older files need no migration.
+   */
+  classicHeroesOff?: string[];
+  /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
    * into older files (every field defaults to the original's: all off, most locked).
@@ -110,14 +116,19 @@ export interface Settings {
   classicCheats: ClassicCheatsSettings;
 }
 
-/** The original's cheats (Cheats.as), minus its no-ops (Classic Samus, Classic Simon) and Level Select. */
+/**
+ * The original's cheats (Cheats.as), minus Level Select. Classic Samus and Classic Simon (G-040)
+ * set Samus.classicMode and Simon.classicMode (Cheats.as 327, 337): the heroes read them.
+ */
 export const CLASSIC_CHEAT_IDS = [
   'allGroundIsBricks',
   'allHammerBros',
   'allWeaponsPierce',
   'alwaysBreakBricks',
   'bouncyPits',
+  'classicSamus',
   'classicScreenScroll',
+  'classicSimon',
   'everyoneCanStomp',
   'evilHammerBros',
   'extraCheckpoints',
@@ -164,7 +175,12 @@ export interface ClassicCheatsSettings {
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
-const OPEN_CHEATS: readonly ClassicCheatId[] = ['classicScreenScroll', 'everyoneCanStomp'];
+const OPEN_CHEATS: readonly ClassicCheatId[] = [
+  'classicSamus',
+  'classicScreenScroll',
+  'classicSimon',
+  'everyoneCanStomp',
+];
 
 export function defaultClassicCheats(): ClassicCheatsSettings {
   const flags = (v: (id: ClassicCheatId) => boolean) =>
@@ -299,6 +315,11 @@ export function loadSettings(): Settings {
   const skins = normaliseSkins(stored.classicSkins);
   if (skins) s.classicSkins = skins;
   else delete s.classicSkins;
+  const off = Array.isArray(stored.classicHeroesOff)
+    ? (stored.classicHeroesOff as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (off.length) s.classicHeroesOff = off;
+  else delete s.classicHeroesOff;
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

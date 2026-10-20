@@ -143,13 +143,18 @@ export class Spring extends Entity {
     b.onGround = true;
     b.y = this.body.y - b.h;
     if (this.t > PRESS_FRAMES) {
-      const id = p.def.id;
+      // Its own numbers, else (a Classic look with none: CharacterDef.lookOf) its hero's.
+      const own = p.def.id;
+      const host = p.def.lookOf ?? own;
       const vy = !this.boost
         ? SPRING_PLAIN
         : this.green
-          ? (SPRING_GREEN_BOOST[id] ?? (SPRING_GREEN_BOOST.mario as number))
+          ? (SPRING_GREEN_BOOST[own] ?? SPRING_GREEN_BOOST[host] ?? (SPRING_GREEN_BOOST.mario as number))
           : SPRING_BOOST;
-      p.springLaunch(vy, SPRING_RISE_GRAVITY[id] ?? (SPRING_RISE_GRAVITY.mario as number));
+      p.springLaunch(
+        vy,
+        SPRING_RISE_GRAVITY[own] ?? SPRING_RISE_GRAVITY[host] ?? (SPRING_RISE_GRAVITY.mario as number),
+      );
       this.rider = null;
       this.launchedRider = p;
       this.fit();

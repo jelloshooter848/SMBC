@@ -5,6 +5,21 @@ import { SAMUS } from '../samus';
 import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from '../protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from '../pit/classic';
 import { PEACH_CLASSIC } from '../peach/classic';
+import { MARIO } from '../mario';
+import { LINK } from '../link';
+import { RYU } from '../ryu';
+import { BASS_CLASSIC } from '../bass/classic';
+import { QUICKMAN_CLASSIC } from '../bass/classic-quickman';
+import {
+  COSSACK_CLASSIC,
+  GEMINI_CLASSIC,
+  MRX_CLASSIC,
+  SKULLMAN_CLASSIC,
+  WILY_CLASSIC,
+} from '../bass/classic-looks';
+import { HAGGLEMAN_CLASSIC } from '../ryu/classic-haggleman';
+import { ZELDA_GB_CLASSIC, ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC } from '../link/classic-zelda';
+import { LUIGI3_CLASSIC, MARIO3_CLASSIC } from '../mario/classic-looks';
 import {
   CUTMAN_CLASSIC,
   DOROPIE_CLASSIC,
@@ -41,8 +56,24 @@ export const CLASSIC_SKIN_LISTS: Readonly<Record<string, readonly CharacterDef[]
   ],
   // Samus's skins (BmdInfo.as): Pit, then Dark Pit.
   samus: [SAMUS, PIT_CLASSIC, DARKPIT_CLASSIC],
-  // Luigi's: Princess Peach (Super Mario Bros. 2).
-  luigi: [LUIGI, PEACH_CLASSIC],
+  // Luigi's: Princess Peach (Super Mario Bros. 2), and his Super Mario Bros. 3 look (G-053).
+  luigi: [LUIGI, PEACH_CLASSIC, LUIGI3_CLASSIC],
+  // 0.5.0 (G-050..G-053): Mario's Super Mario Bros. 3 look; Link's Princess Zelda (NES, SNES,
+  // Game Boy, in Link.SKIN_* order); Bass's Quick Man; Ryu's Haggle Man.
+  mario: [MARIO, MARIO3_CLASSIC],
+  link: [LINK, ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC, ZELDA_GB_CLASSIC],
+  // Bass.SKIN_ORDER (Bass.as 48-64, read by CharacterSkinMenu.as 103): Dr. Wily, Mr. X, Dr.
+  // Cossack, Quick Man, Gemini Man, Skull Man.
+  bass: [
+    BASS_CLASSIC,
+    WILY_CLASSIC,
+    MRX_CLASSIC,
+    COSSACK_CLASSIC,
+    QUICKMAN_CLASSIC,
+    GEMINI_CLASSIC,
+    SKULLMAN_CLASSIC,
+  ],
+  ryu: [RYU, HAGGLEMAN_CLASSIC],
 };
 
 /**
@@ -110,4 +141,16 @@ export const CLASSIC_SKIN_GAMES: Readonly<Record<string, string>> = {
   pit: 'Kid Icarus',
   darkpit: 'Kid Icarus: Uprising',
   peach: 'Super Mario Bros. 2',
+  mario3: 'Super Mario Bros. 3',
+  luigi3: 'Super Mario Bros. 3',
+  'zelda-nes': 'The Legend of Zelda',
+  'zelda-snes': 'A Link to the Past',
+  'zelda-gb': "Link's Awakening",
+  quickman: 'Mega Man 2',
+  haggleman: 'Haggle Man',
+  wily: 'Mega Man 2',
+  mrx: 'Mega Man 6',
+  cossack: 'Mega Man 4',
+  gemini: 'Mega Man 3',
+  skullman: 'Mega Man 4',
 };

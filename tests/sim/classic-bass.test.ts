@@ -145,6 +145,8 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     for (let i = 0; i < sel.chars.length && h.said.at(-1) !== 'Bass, Mega Man 10'; i++) h.tap('left');
     expect(h.said.at(-1)).toBe('Bass, Mega Man 10');
     h.tap('jump');
+    // G-051 (0.5.0): Bass has a second look (Quick Man), so OK opens his looks; OK picks his own.
+    if (sel.pickerOpen) h.tap('jump');
     h.until(() => h.top()?.constructor.name === 'LevelScene', 600);
     expect((h.top() as LevelScene).world.player.def).toBe(BASS_CLASSIC);
     expect(h.game.state.character).toBe(BASS_CLASSIC);

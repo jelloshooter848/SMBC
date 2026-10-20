@@ -151,6 +151,8 @@ import { CostumePile } from '../entities/effects/costume-pile';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
+/** The hurt blink held steady with Reduce flashing (G-092): the hero at 65 %, as Classic heroes are. */
+export const HURT_STEADY_ALPHA = 0.65;
 /** What goes on from the castle's text (OK): JUMP or ATTACK. MENU still pauses. */
 const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
 /** How long an item's name shows under the HUD when first found (docs/POWERUPS.md 3.3). */
@@ -773,11 +775,6 @@ export class World {
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0, pierced: 0 };
-  /**
-   * The enemy each player stands on (CharacterDef.standsOnEnemies, Classic Peach's riding) and
-   * where it was when last ridden. Empty unless a def sets standsOnEnemies.
-   */
-  private readonly rides = new Map<Player, { e: Enemy; x: number }>();
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
@@ -1318,7 +1315,7 @@ export class World {
         // A Classic mode run's ordinary castle (classicEnd, G-002): Toad waits, as in the
         // original's data (the converter put the NES princess in Lost Levels 8-4).
         if (this.classicEnd?.next) return new Toad(s.x, s.y);
-        return new Princess(s.x, s.y, this.player.def.endingGreeter ?? null);
+        return new Princess(s.x, s.y);
       case 'toad':
         return new Toad(s.x, s.y);
       case 'captive': {
@@ -2080,7 +2077,6 @@ export class World {
       if (e instanceof Enemy && e.alive && this.cheats.bouncyPits) this.bounceEnemy(e);
     }
     this.resolveLifts();
-    this.rideEnemies();
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -2623,7 +2619,8 @@ export class World {
     // MAX_CHEEP_EASY / NORMAL / HARD (FlyingCheepSpawner.as:17-19, 37-50; G-006): 2, 3 or 4.
     const cap = FLYING_CHEEP_CAP[this.mapDifficulty];
     if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < cap) {
-      const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
+      const leadId = lead.def.lookOf ?? lead.def.id;
+      const marioType = leadId === 'mario' || leadId === 'luigi';
       const target = {
         centerX: lead.centerX,
         vx: lead.body.vx,
@@ -3267,9 +3264,6 @@ export class World {
     // No stomp during a Classic SMBC hit's push (PS-C12), nor under water for a hero whose
     // swim profile says so (SW-C7): plain contact.
     const stompBarred = p.hurtLock !== null || (p.inWater && p.profile.swim?.noStomp === true);
-    // CharacterDef.standsOnEnemies (Classic Peach, PE-11): landing on it, or riding it, is no
-    // stomp and no hurt (World.rideEnemies keeps her on top).
-    if (!stompBarred && p.def.standsOnEnemies?.(p, e) && (fromAbove || this.rides.get(p)?.e === e)) return;
     // CharacterDef.seaFloorSafe (ML-C25): a Blooper leaves a hero on the sea floor alone.
     if (e instanceof Blooper && p.def.seaFloorSafe === true && pb.onGround && feet === px(this.heightPx - 32))
       return;
@@ -3436,49 +3430,6 @@ export class World {
 
   /* ---------- Lifts ---------- */
 
-  /** The enemy `p` stands on now (CharacterDef.standsOnEnemies), or null. */
-  ridingEnemy(p: Player): Enemy | null {
-    const r = this.rides.get(p);
-    return r && r.e.alive && this.entities.includes(r.e) ? r.e : null;
-  }
-
-  /**
-   * Enemies as moving floors (CharacterDef.standsOnEnemies; Classic Peach's riding, PE-11), after
-   * the enemies moved, like Lift.carry: a hero falling onto one (or still on the one ridden last
-   * frame) is put on its top, grounded, and moved by its step. Only defs that set the field ride.
-   */
-  private rideEnemies(): void {
-    for (const p of this.activePlayers()) {
-      const stands = p.def.standsOnEnemies;
-      const was = this.rides.get(p);
-      this.rides.delete(p);
-      if (!stands || p.vine || p.stairs || p.frozen) continue;
-      const pb = p.body;
-      if (pb.vy < 0) continue;
-      const feet = pb.y + pb.h;
-      for (const e of this.enemies) {
-        const eb = e.body;
-        if (pb.x >= eb.x + eb.w || pb.x + pb.w <= eb.x || !stands(p, e)) continue;
-        const riding = was?.e === e;
-        const onTop = riding
-          ? feet >= eb.y - px(4) && feet <= eb.y + px(12)
-          : pb.prevBottom <= eb.y + px(4) && feet >= eb.y && feet <= eb.y + px(12);
-        if (!onTop) continue;
-        pb.y = eb.y - pb.h;
-        pb.vy = 0;
-        pb.onGround = true;
-        const dx = riding && was ? eb.x - was.x : 0;
-        if (dx !== 0) {
-          const wall = pb.hitWall;
-          moveX(pb, this.playerMap(p), dx);
-          if (pb.hitWall === 0) pb.hitWall = wall;
-        }
-        this.rides.set(p, { e, x: eb.x });
-        break;
-      }
-    }
-  }
-
   private resolveLifts(): void {
     for (const e of this.entities) {
       if (!(e instanceof Lift) || !e.alive) continue;
@@ -3512,10 +3463,17 @@ export class World {
       if (toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
       p.body.vx = 0;
       p.body.vy = 0;
+      // Its sound: the hero's death sound from Classic mode's table (G-065; every burst is a
+      // Classic def's, so a dev Classic-rules start reads it too), else its jingle. After a pit
+      // too (no pieces then).
+      const sound = p.def.rules === 'classic' ? classicRules().deathSfx?.(p.def) : undefined;
       if (this.activePlayers().length === 0) {
         this.audio.setTempoScale(1);
-        this.audio.playJingle(burst.jingle);
-      } else this.audio.sfx('hit');
+        if (sound) {
+          this.audio.stopMusic();
+          this.audio.sfx(sound);
+        } else this.audio.playJingle(burst.jingle);
+      } else this.audio.sfx(sound ?? 'hit');
       return;
     }
     if (this.deathSfx) {
@@ -4369,13 +4327,7 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      // CharacterDef.endingGreeter: who stands in the princess's place greets the hero instead.
-      const greeter = end ? this.player.def.endingGreeter : undefined;
-      const news = greeter
-        ? [...greeter.news]
-        : end
-          ? ['YOUR QUEST IS OVER.']
-          : anotherCastle(p.def.rescueName);
+      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
@@ -5011,6 +4963,9 @@ export class World {
       if (look.visible) translucent(r, look.alpha, () => this.drawPlayer(r, view, p));
       return;
     }
+    // G-092: with Reduce flashing the hurt blink is held steady, the hero drawn see-through.
+    if (view.reduceFlashing && p.invuln > 0 && p.def.noHurtBlink !== true)
+      return translucent(r, HURT_STEADY_ALPHA, () => this.drawPlayer(r, view, p));
     if (!p.visible(view.frame)) return;
     this.drawPlayer(r, view, p);
   }

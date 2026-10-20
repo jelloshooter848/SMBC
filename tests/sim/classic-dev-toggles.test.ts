@@ -48,12 +48,13 @@ describe('Settings.classicDev', () => {
 });
 
 describe('CharacterDef.notInOriginal', () => {
-  it('Vic Viper, the Warriors of Light, Peach, Arthur and Yoshi set it; the original heroes and extras never', () => {
+  // Owner decision (#179): Peach is the original's Luigi skin, so she is in the original.
+  it('Vic Viper, the Warriors of Light, Arthur and Yoshi set it; the original heroes, extras and Peach never', () => {
     for (const d of [VICVIPER_CLASSIC, WARRIORS_CLASSIC, YOSHI_CLASSIC])
       expect(d.notInOriginal, d.id).toBe(true);
-    for (const id of ['peach', 'arthur'])
+    for (const id of ['arthur'])
       expect(CLASSIC_EXTRAS.find((d) => d.id === id)?.notInOriginal, id).toBe(true);
-    for (const id of ['bass', 'protoman', 'breakman', 'pit', 'darkpit'])
+    for (const id of ['bass', 'protoman', 'breakman', 'pit', 'darkpit', 'peach'])
       expect(CLASSIC_EXTRAS.find((d) => d.id === id)?.notInOriginal, id).toBeUndefined();
     for (const c of CHARACTERS) expect(c.notInOriginal, c.id).toBeUndefined();
   });
@@ -77,8 +78,10 @@ describe('the Dev menu rows', () => {
       expect(items(menu).some((i) => i.label.endsWith(label))).toBe(false);
     expect(classicHeroLabel(WARRIORS_CLASSIC)).toBe('Classic: Warriors');
     expect(classicHeroLabel(VICVIPER_CLASSIC)).toBe('Classic: Vic Viper');
-    // Peach and Arthur (notInOriginal on their own branches) get rows too; Yoshi stays last.
-    for (const label of ['Classic: Peach', 'Classic: Arthur', 'Classic: Yoshi']) row(menu, label);
+    // Arthur (notInOriginal on its own branch) gets a row too; Peach, the original's Luigi skin,
+    // does not (owner decision, #179); Yoshi stays last.
+    for (const label of ['Classic: Arthur', 'Classic: Yoshi']) row(menu, label);
+    expect(items(menu).some((i) => i.label === 'Classic: Peach')).toBe(false);
     expect(CLASSIC_EXTRAS.at(-1)).toBe(YOSHI_CLASSIC);
   });
 

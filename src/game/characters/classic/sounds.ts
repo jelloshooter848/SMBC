@@ -91,26 +91,33 @@ export const CLASSIC_HERO_SOUNDS: Readonly<Record<string, ClassicHeroSounds>> = 
 
 /** Hero `def`'s own `kind` sound, else `fallback` (the shared one). */
 export function heroSound(
-  def: Pick<CharacterDef, 'id'> | null | undefined,
+  def: Pick<CharacterDef, 'id' | 'lookOf'> | null | undefined,
   kind: Exclude<keyof ClassicHeroSounds, 'pickups'>,
   fallback: string,
 ): string;
 export function heroSound(
-  def: Pick<CharacterDef, 'id'> | null | undefined,
+  def: Pick<CharacterDef, 'id' | 'lookOf'> | null | undefined,
   kind: Exclude<keyof ClassicHeroSounds, 'pickups'>,
   fallback?: undefined,
 ): string | undefined;
 export function heroSound(
-  def: Pick<CharacterDef, 'id'> | null | undefined,
+  def: Pick<CharacterDef, 'id' | 'lookOf'> | null | undefined,
   kind: Exclude<keyof ClassicHeroSounds, 'pickups'>,
   fallback?: string,
 ): string | undefined {
-  return (def ? CLASSIC_HERO_SOUNDS[def.id]?.[kind] : undefined) ?? fallback;
+  // A look sounds as its hero (CharacterDef.lookOf: Zelda as Link, Quick Man as Bass).
+  return (
+    (def ? (CLASSIC_HERO_SOUNDS[def.id] ?? CLASSIC_HERO_SOUNDS[def.lookOf ?? def.id])?.[kind] : undefined) ??
+    fallback
+  );
 }
 
 /** Hero `def`'s sound for picking up `kind`, else its default pickup sound, else the shared `pickup`. */
-export function pickupSound(def: Pick<CharacterDef, 'id'> | null | undefined, kind: PickupKind): string {
-  const s = def ? CLASSIC_HERO_SOUNDS[def.id] : undefined;
+export function pickupSound(
+  def: Pick<CharacterDef, 'id' | 'lookOf'> | null | undefined,
+  kind: PickupKind,
+): string {
+  const s = def ? (CLASSIC_HERO_SOUNDS[def.id] ?? CLASSIC_HERO_SOUNDS[def.lookOf ?? def.id]) : undefined;
   return s?.pickups?.[kind] ?? s?.item ?? 'pickup';
 }
 

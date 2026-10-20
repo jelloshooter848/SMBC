@@ -72,11 +72,14 @@ const inLevel = (h: H) => h.top() instanceof LevelScene;
 const level = (h: H) => h.top() as LevelScene;
 
 describe('settings.classicCheats', () => {
-  it('defaults to the original: all off, only Everyone Can Stomp and Classic Scroll open', () => {
+  // G-040 (0.5.0): Classic Samus and Classic Simon are open from the start too (Cheats.as 36, 38).
+  it('defaults to the original: all off, only Classic Samus, Classic Scroll, Classic Simon and Everyone Can Stomp open', () => {
     const c = defaultSettings().classicCheats;
     expect(Object.values(c.on).every((v) => v === false)).toBe(true);
     expect(CLASSIC_CHEAT_IDS.filter((id) => c.unlocked[id])).toEqual([
+      'classicSamus',
       'classicScreenScroll',
+      'classicSimon',
       'everyoneCanStomp',
     ]);
     expect(Object.values(c.stats).every((v) => v === 0)).toBe(true);
@@ -111,7 +114,7 @@ describe('the Cheats page', () => {
     expect(h.said.at(-1)).toMatch(/^Cheats\./);
     const l = labels(page);
     expect(l).toHaveLength(CHEATS.length + 2);
-    expect(l.filter((x) => x === HIDDEN_CHEAT)).toHaveLength(CHEATS.length - 2);
+    expect(l.filter((x) => x === HIDDEN_CHEAT)).toHaveLength(CHEATS.length - 4); // G-040: two more open
     expect(l).toContain('Everyone Can Stomp');
     expect(l).toContain('Classic Scroll');
     expect(l.at(-2)).toBe('Enter code');
@@ -185,13 +188,14 @@ describe('the Cheats page', () => {
     expect(labels(page)).not.toContain('Enter code');
   });
 
-  it('the Classic pause has no Cheats row; in developer mode it opens every cheat, live', () => {
+  // G-031 (0.5.0): the Classic pause has the original's Cheats row (Pause > Options > Cheats).
+  it('the Classic pause has a Cheats row; in developer mode it opens every cheat, live', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     h.until(() => inLevel(h), 600);
     h.idle(4);
     h.tap('start');
-    expect(labels(h.top())).not.toContain('Cheats');
+    expect(labels(h.top())).toContain('Cheats');
     const d = classic({ dev: true });
     d.game.classicGame(MARIO);
     d.until(() => inLevel(d), 600);

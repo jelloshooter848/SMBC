@@ -247,10 +247,6 @@ export class Player {
    * ground pound drop (YO-9), set and cleared by his behaviour. Always 0 for every other hero.
    */
   fallCap = 0;
-  /** Frames left of a float (MovementProfile.float, Classic Peach PE-6); 0 when not floating. */
-  floatT = 0;
-  /** The float was used in this airborne spell (readied again on landing). */
-  floatUsed = false;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -347,10 +343,7 @@ export class Player {
     if (this.hurtLock) this.tickHurtLock();
     // A hit, a vine or stairs take him off a wall (RY-C13).
     if (this.wall && (this.hurtLock || this.stun > 0 || this.vine || this.stairs)) this.wall = null;
-    if (this.vine) {
-      this.floatT = 0;
-      return this.climb(input, map, audio);
-    }
+    if (this.vine) return this.climb(input, map, audio);
     if (this.stairs) return this.stairWalk(input);
     if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
     if (this.wall) return this.wallUpdate(input, map, audio, onHeadBump);
@@ -387,7 +380,8 @@ export class Player {
     this.skidding = false;
 
     // Crouching: only when tall enough and on the ground; can't walk while crouched.
-    const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+    const canCrouch =
+      this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching || this.def.smallCrouch === true);
     const wantCrouch =
       input.held('down') &&
       canCrouch &&
@@ -660,7 +654,9 @@ export class Player {
     // horizontal step once (`justCrouched`); under a low ceiling he stays down.
     let skipStep = false;
     if (b.onGround && !this.crouchJump) {
-      const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+      const canCrouch =
+        this.def.crouches &&
+        (this.def.hitbox(this).h > 16 || this.crouching || this.def.smallCrouch === true);
       const want = input.held('down') && canCrouch;
       const cramped = this.crouching && !want && !this.roomToStand(map);
       if (want !== this.crouching && !cramped) {
@@ -677,7 +673,6 @@ export class Player {
       this.cutting = false;
       this.riseY0 = null;
       this.crouchJump = false;
-      this.floatT = 0;
       if (b.onGround) this.sinceGround = 0;
       if (p.inertia && !skipStep) this.inertiaStep(input, this.crouching);
       else if (!p.inertia) {
@@ -694,8 +689,6 @@ export class Player {
     if (b.onGround) {
       this.sinceGround = 0;
       this.airJumpsLeft = 0;
-      this.floatT = 0;
-      this.floatUsed = false;
     } else this.sinceGround++;
     if (canJump && this.jumpPressed(input)) {
       input.consumeJumpBuffer();
@@ -748,23 +741,6 @@ export class Player {
           if (p.softCut !== undefined) b.vy = damp(b.vy, p.softCut);
         } else this.cutting = false;
       }
-      // The float (PE-6): Jump let go (or a hit) ends it; it starts falling with Jump held since
-      // the take-off, or pressed again while falling.
-      if (p.float) {
-        if (this.floatT > 0) {
-          if (locked || !input.held('jump')) this.floatT = 0;
-        } else if (
-          !this.floatUsed &&
-          !locked &&
-          !this.rising &&
-          b.vy >= 0 &&
-          input.held('jump') &&
-          ((y0 !== null && !this.jumpReleased) || input.pressed('jump'))
-        ) {
-          this.floatT = p.float.frames;
-          this.floatUsed = true;
-        }
-      }
     }
 
     // 4. The horizontal step (ML-C4, ML-C13).
@@ -785,11 +761,7 @@ export class Player {
     // 5, 6. Gravity unless rising, then the fall cap (a clamp). Above a water level's surface the
     // swim profile's own values (SW-C10); a spring's rise its own gravity (ML-C23).
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
-    if (this.floatT > 0 && !b.onGround) {
-      // Floating: level, no gravity (PE-6).
-      b.vy = 0;
-      this.floatT--;
-    } else if (!b.onGround && !this.rising) {
+    if (!b.onGround && !this.rising) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
       const g = surface
         ? surface.gravity

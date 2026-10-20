@@ -7,7 +7,7 @@ import { runSim, ScriptedInput } from '@game/sim/headless';
 import type { CharacterDef } from '@game/characters/character';
 import { CHARACTERS, CLASSIC_EXTRAS, CLASSIC_SKINS, skinHost, skinsOf } from '@game/characters/registry';
 import { LUIGI } from '@game/characters/luigi';
-import { MARIO } from '@game/characters/mario';
+import { SIMON } from '@game/characters/simon';
 import { MEGAMAN } from '@game/characters/megaman';
 import { SAMUS } from '@game/characters/samus';
 import { PEACH_CLASSIC } from '@game/characters/peach/classic';
@@ -104,12 +104,13 @@ describe('FU-8: skins in the registry', () => {
       ROKKO_CLASSIC,
     ]);
     expect(skinsOf(SAMUS)).toEqual([SAMUS, PIT_CLASSIC, DARKPIT_CLASSIC]);
-    expect(skinsOf(LUIGI)).toEqual([LUIGI, PEACH_CLASSIC]);
+    // G-050..G-053 (0.5.0): Luigi's SMB3 look after Peach; Mario, Link, Bass and Ryu have looks.
+    expect(skinsOf(LUIGI).slice(0, 2)).toEqual([LUIGI, PEACH_CLASSIC]);
     for (const d of [BREAKMAN_CLASSIC, PROTOMAN_CLASSIC, ROCK_CLASSIC, ROKKO_CLASSIC])
       expect(skinHost(d)).toBe(MEGAMAN);
     expect(skinHost(DARKPIT_CLASSIC)).toBe(SAMUS);
     expect(skinHost(PEACH_CLASSIC)).toBe(LUIGI);
-    expect(skinsOf(MARIO)).toEqual([MARIO]);
+    expect(skinsOf(SIMON)).toEqual([SIMON]);
     // Every look past the slot's own is a Classic-only def (never a campaign hero).
     for (const list of Object.values(CLASSIC_SKINS))
       for (const d of list.slice(1)) {
@@ -162,7 +163,7 @@ describe('FU-8: the skin picker on the Classic select', () => {
 
   it('a hero with no other skin: no SKIN button, Skin does nothing', () => {
     const { h, sel, settings } = classicSelect();
-    cursorTo(h, sel, 'mario');
+    cursorTo(h, sel, 'simon');
     expect(sel.skinPicker).toBe(false);
     expect(sel.touchLabels().special).toBeNull();
     const n = h.said.length;

@@ -10,6 +10,27 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Bass's other looks from the original, in our own art: **Dr. Wily**, **Mr. X**, **Dr. Cossack**, **Gemini
+  Man** and **Skull Man** (each plays as Bass).
+- Classic mode's select: a picked hero acts out a move in its cell (Mario hops, Link raises his arms, Mega
+  Man teleports away, Bill flashes, and so on) for the original's wait before the game goes on; OK or BACK
+  skips it, and Reduce flashing holds Bill's flash steady.
+- Classic mode's new looks, each a skin with the original's rules and our own art: **Princess Zelda** on
+  Link (NES, SNES and Game Boy looks: a weaker sword, 400-damage arrows that go on through what they defeat),
+  **Quick Man** on Bass (faster, the high jump, no double jump or dash), **Haggle Man** on Ryu (his sword hits
+  sooner), and Mario's and Luigi's **Super Mario Bros. 3** looks, in which small Mario and Luigi can duck and
+  crouch-jump.
+- Classic mode keeps your run: each level's start is saved, and CLASSIC > **Continue** picks the run up there
+  with its lives, score, coins, hero and power (Survival's fallen heroes too). A game over or the credits end it.
+- Classic mode Options > **Disable heroes** (the original's Disable characters): a hero turned off leaves the
+  select, the Random slot and Single random; one hero always stays on.
+- Classic mode cheats **Classic Samus** (Special or Tools switches between beam and missiles, her suit
+  changing colour, and Down rolls her straight into the morph ball) and **Classic Simon** (his jump keeps its
+  take-off direction; off a ledge he drops straight down), open from the start as in the original.
+- Classic mode's pause has a **Guide** row with the Classic hero's own How to play page, and How to play
+  from Classic mode's options lists the Classic select's heroes as Classic mode plays them.
+- Classic mode's pause has the original's **Cheats** row: turn your unlocked cheats on or off mid-run;
+  Invincible and the other assist-like cheats apply at once, and Water Mode floods the level at once.
 - Classic mode: the original's third map set, **Super Mario Bros. Special** (SMB Special on the
   CLASSIC menu, between the other two): 32 levels, built for each hero and each Map Difficulty like
   the others, ending with the credits and the title as Super Mario Bros. does.
@@ -27,6 +48,24 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Release builds: the dev-mode passphrase may be 6 to 32 characters (it was 8 to 32).
+- Classic mode's castle text follows the original for every look: Toad thanks the look by its own short name
+  (THANK YOU ZELDA!, THANK YOU DR. WILY!, Sophia III's THANK YOU JASON!), and each look names its own captive in
+  another castle.
+- Classic mode's Princess Peach is now the original's Luigi look: she plays exactly as Luigi (his moves, jump,
+  fireballs, springs and Bowser's hit points) with only her own look; her vegetables, float and riding are gone
+  from Classic, and her last castle is the original's: the princess, THANK YOU TOADSTOOL! and YOUR QUEST IS OVER. A
+  run or save as Peach plays on as Luigi in her look.
+- Classic Pit and Dark Pit, Samus's looks, now play Samus's music set and her hurt, hit and item sounds.
+- Classic Pit and Dark Pit now die as Samus does (they are her looks in the original): her six-piece burst, in
+  their colours, and her death jingle.
+- Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
+  own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
+- Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
+  Controls screen asks for another (as the original does); a spare key of another action moves over.
+- Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
+  JUMP, ATTACK or START press (on touch, SKIP) now skips it. It is the one written exception to "text never moves on by itself"
+  (docs/ACCESSIBILITY.md).
 - Classic mode: the **All Hammer Bros** cheat is unlocked by beating Super Mario Bros. Special, as
   in the original, no longer by beating The Lost Levels. Anyone who already unlocked it keeps it.
 - Classic mode: a shared level link (to a Super Mario Bros., Special or Lost Levels level) now
@@ -35,6 +74,11 @@ under `## [Unreleased]`.
   in bricks and hidden blocks and the Atoms that the original puts there.
 - The credits are read out to screen readers, the whole roll at once as it starts (the Classic
   and the campaign credits alike).
+
+### Fixed
+
+- With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
+  rules) is held steady: the hero stays drawn, see-through, instead of blinking.
 
 ## [0.4.65] - 2026-10-20
 

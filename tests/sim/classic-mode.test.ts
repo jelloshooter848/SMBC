@@ -85,6 +85,13 @@ function choose(h: H, def: CharacterDef): void {
   for (let i = 0; i <= CHARACTERS.length && said() !== def.name; i++) h.tap('right');
   expect(said()).toBe(def.name);
   h.tap('jump');
+  // G-050..G-055 (0.5.0): a hero with looks opens them first (OK keeps his own), and the pick
+  // performance plays before the game goes on.
+  if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
+  h.until(
+    () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+    300,
+  );
 }
 
 const level = (h: H) => h.top() as LevelScene;
@@ -236,6 +243,8 @@ describe('the title and the CLASSIC menu', () => {
       'Weapons',
       // 0.5.0 (G-066).
       'Music set',
+      // G-032 (0.5.0): the original's Disable characters.
+      'Disable heroes',
       'Cheats',
       'All options',
       'Back',
@@ -605,7 +614,8 @@ describe('QA nits', () => {
 });
 
 describe('the Classic pause menu', () => {
-  it('Continue, Options, Quit to title (and every dev row with dev mode on)', () => {
+  // G-093, G-031 (0.5.0): the hero's Guide row, and Cheats (with Classic rules), as the original's pause has.
+  it('Continue, Guide, Options, Cheats, Quit to title (and every dev row with dev mode on)', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     enterLevel(h);
@@ -613,7 +623,7 @@ describe('the Classic pause menu', () => {
     h.tap('start');
     const pause = h.top() as PauseScene;
     expect(pause).toBeInstanceOf(PauseScene);
-    expect(labels(pause)).toEqual(['Continue', 'Options', 'Quit to title']);
+    expect(labels(pause)).toEqual(['Continue', 'Guide', 'Options', 'Cheats', 'Quit to title']);
     pick(h, 'Quit to title');
     expect(h.top()).toBeInstanceOf(TitleScene);
     expect(h.game.classicRun).toBe(false);
@@ -627,6 +637,7 @@ describe('the Classic pause menu', () => {
     // Every developer row free play or a campaign file's pause has in dev mode.
     expect(labels(d.top())).toEqual([
       'Continue',
+      'Guide',
       'Options',
       'Dev mode',
       'Assists',

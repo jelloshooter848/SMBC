@@ -44,8 +44,11 @@ describe('Classic mode: character select between levels (F2)', () => {
     // Never auto-advances.
     h.idle(600);
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
-    // OK keeps the hero (one press skips it).
+    // OK keeps the hero. G-053, G-055 (0.5.0): Mario's looks open first (OK keeps his own), and
+    // his pick performance plays before the card.
     h.tap('jump');
+    if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
+    h.until(() => h.top() instanceof IntroScene, 300);
     expect(h.top()).toBeInstanceOf(IntroScene);
     const l = enterLevel(h);
     expect(l.level.id).toBe('1-2');
@@ -61,6 +64,8 @@ describe('Classic mode: character select between levels (F2)', () => {
     clear(h, '1-2');
     h.idle(12);
     h.tap('jump');
+    // G-053 (0.5.0): Mario's looks open first; OK keeps his own.
+    if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
     enterLevel(h);
     expect(h.game.state.powerState).toBe('fire');
     clear(h, '1-3');
@@ -68,6 +73,8 @@ describe('Classic mode: character select between levels (F2)', () => {
     h.idle(12);
     for (let i = 0; i < 12 && h.said.at(-1)?.split(', ')[0] !== LINK.name; i++) h.tap('right');
     h.tap('jump');
+    // G-050 (0.5.0): Link's looks open first; OK keeps his own.
+    if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
     const l = enterLevel(h);
     expect(l.level.id).toBe('1-3');
     expect(h.game.state.character).toBe(LINK);

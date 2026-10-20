@@ -60,6 +60,8 @@ export interface DeathPiece {
   vy: number;
   gravity: number;
   range: number;
+  /** Frames it holds at its start before it moves (MegaManParticle's 200 ms separation). */
+  delay?: number;
 }
 
 /** Per-character hooks. The shared Player handles movement; these add attacks, power-ups and damage. */
@@ -216,6 +218,17 @@ export interface CharacterDef {
   stomps: boolean;
   /** Can duck with down (Mario when big, Link). */
   crouches: boolean;
+  /**
+   * Ducks when small too (Classic mode's looks with a small crouch frame, G-053; MarioBase.as
+   * canCrouch: hasSmallCrouchFrame). Absent: only a hero taller than 16 px ducks, as today.
+   */
+  smallCrouch?: true;
+  /**
+   * A look's own hero (Classic mode's skins, G-050..G-053): the hero id the original's rules
+   * name it by where they name a hero (Cheep leaps aimed at Mario and Luigi, Bowser's hit points
+   * against them). Absent: the def's own id.
+   */
+  lookOf?: string;
   canBreakBricks(p: Player): boolean;
   hitbox(p: Player): { w: number; h: number };
   sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec;
@@ -401,8 +414,9 @@ export interface CharacterDef {
    */
   powerUpArt?(kind: PowerUpKind): { sheet: string; frames: readonly string[] } | null;
   /**
-   * The name Toad thanks after the castle axe ("THANK YOU <name>!"), when not `name` (Classic
-   * Warriors of Light: WARRIOR, WL-M13). Absent: `name`.
+   * The name Toad thanks after the castle axe ("THANK YOU <name>!"), when not `name`: the
+   * original's rule (ScreenManager.displayThankYouText), the look's short name (BmdInfo namesArr[1],
+   * Peach's TOADSTOOL), Sophia III's JASON, the Warriors of Light's WARRIOR (WL-M13). Absent: `name`.
    */
   thanksName?: string;
   /**
@@ -433,13 +447,6 @@ export interface CharacterDef {
    * princess" by ScreenManager.addTxtTmrHandler). Absent: "OUR PRINCESS", as today.
    */
   rescueName?: string;
-  /**
-   * Classic SMBC (patch-2 item 9, owner idea): who stands in the last castle's princess room in
-   * place of the princess (a 16-px-wide frame standing on her tile, facing the hero), and the
-   * castle lines said there after "THANK YOU <name>!" in place of "YOUR QUEST IS OVER." (Classic
-   * Peach: Mario greets her). Absent: the princess and today's lines.
-   */
-  endingGreeter?: { sheet: string; palette: string; frame: string; h: number; news: readonly string[] };
   /**
    * The walk cycle as the original steps it (Classic SMBC): `frames` poses (Player.walkFrame
    * 0..frames-1), one every `ticks` game frames (fractional: 6.9 is the original's 115 ms), at any
@@ -496,12 +503,6 @@ export interface CharacterDef {
     maxFrames: number;
     dir(p: Player): -1 | 1;
   };
-  /**
-   * Landing on enemy `e` from above stands on it as on a moving floor (Classic Peach's riding,
-   * PE-11): no stomp and no hurt; the enemy's movement carries the hero (World.rideEnemies), who
-   * can walk, jump and lift from there. Contact from the side or below is as usual. Absent: never.
-   */
-  standsOnEnemies?(p: Player, e: Enemy): boolean;
   /**
    * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
    * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. Every Classic def

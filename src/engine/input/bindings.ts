@@ -92,3 +92,36 @@ export function describePad(code: Code): string {
   };
   return names[code] ?? describeCode(code).toUpperCase();
 }
+
+/** Where another binding already holds a code: the player, the action, and whether it is that action's only one. */
+export interface BindingClash {
+  player: number;
+  action: Action;
+  only: boolean;
+}
+
+/**
+ * Every other binding that already holds `code` (G-091: remapping never leaves two actions on
+ * one key, as the original's ButtonManager refuses a bound key). The action being remapped never
+ * clashes with itself. A keyboard is shared by every player, so keyboard codes are checked across
+ * all of them; a pad button only against the same player.
+ */
+export function bindingClashes(
+  all: readonly PlayerBindings[],
+  player: number,
+  kind: 'keyboard' | 'gamepad',
+  action: Action,
+  code: Code,
+): BindingClash[] {
+  const out: BindingClash[] = [];
+  for (let p = 0; p < all.length; p++) {
+    if (kind === 'gamepad' && p !== player) continue;
+    const map = all[p]?.[kind];
+    if (!map) continue;
+    for (const a of Object.keys(map) as Action[]) {
+      if (p === player && a === action) continue;
+      if (map[a].includes(code)) out.push({ player: p, action: a, only: map[a].length === 1 });
+    }
+  }
+  return out;
+}

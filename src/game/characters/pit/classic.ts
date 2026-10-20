@@ -1,7 +1,7 @@
 import type { CharacterDef } from '../character';
 import type { ProjectileSpec } from '../../entities/projectiles/projectile';
 import { SAMUS } from '../samus';
-import { classicSamus, type ClassicSamusVariant } from '../samus/classic';
+import { SAMUS_DEATH, classicSamus, type ClassicSamusVariant } from '../samus/classic';
 import { pitClassicGuide } from './classic-guide';
 
 /**
@@ -101,6 +101,8 @@ function identity(id: string, name: string, hudName: string, palette: string): C
 }
 
 export const PIT_CLASSIC: CharacterDef = {
+  // A look of Samus's (the original's Samus class with a skin), where a rule names her.
+  lookOf: 'samus',
   ...classicSamus({
     base: identity('pit', 'Pit', 'PIT', 'pit'),
     variant: { ...PIT_VARIANT, shotLook: arrows('pit-shots') },
@@ -111,9 +113,12 @@ export const PIT_CLASSIC: CharacterDef = {
   }),
   // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
   rescueName: 'Palutena',
+  // Samus's six-piece burst and her death jingle (the original's Samus skins die as she does).
+  deathBurst: SAMUS_DEATH,
 };
 
 export const DARKPIT_CLASSIC: CharacterDef = {
+  lookOf: 'samus',
   ...classicSamus({
     base: identity('darkpit', 'Dark Pit', 'D.PIT', 'darkpit'),
     variant: { ...PIT_VARIANT, shotLook: arrows('darkpit-shots') },
@@ -125,4 +130,6 @@ export const DARKPIT_CLASSIC: CharacterDef = {
   // The castle text's name (PM-M8, BA-M13, PI-M5): Samus's Dark Pit skin, skin 11
   // (BmdInfo.as:1147).
   rescueName: 'the Reaper',
+  // Samus's six-piece burst and her death jingle (the original's Samus skins die as she does).
+  deathBurst: SAMUS_DEATH,
 };

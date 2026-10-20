@@ -37,9 +37,11 @@ export class PauseScene extends MenuScene {
     // A Classic mode run: the original's short pause, plus every developer row while dev mode is on.
     if (game.classicRun && !game.playtestDone) {
       items.push(...this.reserveItem());
+      // The hero's own How to play page, as the run's rules play it (G-093).
+      items.push(...this.guideItems());
       items.push({
         label: 'Options',
-        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true)),
+        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true, true)),
       });
       // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
       if (game.deps.settings?.classicCheats.levelSelect)
@@ -49,6 +51,22 @@ export class PauseScene extends MenuScene {
           hint: 'Go to any level, keeping your lives and score',
         });
       items.push(...this.devItems());
+      // The cheats mid-run (G-031: the original's Pause > Options > Cheats): the unlocked ones,
+      // with Classic rules (the only rules cheats play under). Invincible and the assist-like
+      // cheats apply at once; Water Mode floods the paused level at once.
+      if (!game.devMode && game.cheatsLive)
+        items.push({
+          label: 'Cheats',
+          select: () =>
+            game.scenes.push(
+              new CheatsScene(game, () => game.scenes.pop(), {
+                all: false,
+                world: this.world,
+                translucent: true,
+              }),
+            ),
+          hint: 'Turn the cheats you have unlocked on or off',
+        });
       // Developer mode: every cheat, at once (owner decision; Classic mode's Cheats page).
       if (game.devMode)
         items.push({
@@ -64,7 +82,12 @@ export class PauseScene extends MenuScene {
           hint: 'Every original cheat, in developer mode',
         });
       if (game.stageRound) items.push(this.giveUp());
-      items.push({ label: 'Quit to title', select: () => game.showTitle() });
+      items.push({
+        label: 'Quit to title',
+        select: () => game.showTitle(),
+        // G-008: the run's resume slot holds this level's start (not in developer runs).
+        ...(game.classicDev ? {} : { hint: 'Classic mode > Continue picks the run up from this level' }),
+      });
       this.setItems(items);
       return;
     }
@@ -73,14 +96,7 @@ export class PauseScene extends MenuScene {
     // The hero's own guide (and player two's in co-op).
     const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
     const world = this.world;
-    // The guide of the hero being played (the def for the World's rules, TG-19).
-    heroes.forEach((c, i) => {
-      const def = world?.players[i]?.def ?? c;
-      items.push({
-        label: heroes.length > 1 ? `Guide: ${def.name}` : 'Guide',
-        select: () => game.scenes.push(new GuideScene(game, def, () => game.scenes.pop())),
-      });
-    });
+    items.push(...this.guideItems());
     // Campaign levels: replay the hero's training stage, then back to this paused level.
     if (world)
       heroes.forEach((c, i) => {
@@ -139,6 +155,19 @@ export class PauseScene extends MenuScene {
         select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()),
       });
     this.setItems(items);
+  }
+
+  /** The guide of each hero being played (the def for the World's rules, TG-19), player two's too. */
+  private guideItems(): MenuItem[] {
+    const game = this.game;
+    const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
+    return heroes.map((c, i) => {
+      const def = this.world?.players[i]?.def ?? c;
+      return {
+        label: heroes.length > 1 ? `Guide: ${def.name}` : 'Guide',
+        select: () => game.scenes.push(new GuideScene(game, def, () => game.scenes.pop())),
+      };
+    });
   }
 
   /** Stored items (E-tanks) are used from here, like the original weapon menu. */
