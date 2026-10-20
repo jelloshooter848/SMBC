@@ -305,6 +305,47 @@ describe('the Classic heroes play on the new sheets', () => {
     }
   });
 
+  it('every animation state (vine, flagpole, pipe, hurt, death) has a drawn frame', () => {
+    const anims = [
+      'idle',
+      'walk',
+      'skid',
+      'jump',
+      'fall',
+      'climb',
+      'hurt',
+      'attack',
+      'swim',
+      'crouch',
+      'pipe',
+    ];
+    const bad: string[] = [];
+    for (const def of [
+      MEGAMAN_CLASSIC,
+      RYU_CLASSIC,
+      BILL_CLASSIC,
+      SOPHIA_CLASSIC,
+      PROTOMAN_CLASSIC,
+      BASS_CLASSIC,
+    ]) {
+      const r = new Rig(def, flatLevel(), 'classic', 'big');
+      r.settle();
+      const p = r.p as unknown as { anim: string; dead: boolean; walkFrame: number };
+      for (const dead of [false, true])
+        for (const a of anims)
+          for (let f = 0; f < 32; f++) {
+            p.anim = a;
+            p.dead = dead;
+            p.walkFrame = f;
+            const s = def.sprite(r.p, f, false);
+            // 'none': Sophia III is gone after her blast.
+            if (s.frame !== 'none' && !SPRITES[s.sheet]?.frames[s.frame])
+              bad.push(`${def.id} ${a}: ${s.sheet}:${s.frame}`);
+          }
+    }
+    expect([...new Set(bad)]).toEqual([]);
+  });
+
   it("Ryu's run: four distinct poses, 75 ms each (owner decision)", () => {
     expect(WALK_RYU).toEqual([0, 1, 2, 3]);
     expect(CLASSIC_WALK_ANIM.ryu).toEqual({ frames: 4, ticks: 4.5 });
