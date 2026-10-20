@@ -690,8 +690,9 @@ export class Game {
         this.levelSelectUnlocked = true;
         saveSettings(this.deps.settings as Settings);
       }
-      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler). The
-      // Special set's goal (All Hammer Bros) comes with that set (G-020).
+      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
+      // All Ground Is Bricks, The Lost Levels All Hammer Bros for now (the original's goal for it
+      // is the Special set, which brings its own beat event, G-020).
       if (set === 'smb' || set === 'lost') this.cheatEvent({ beat: set });
       this.showClassicUnlocks();
       return;

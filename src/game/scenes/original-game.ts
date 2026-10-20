@@ -155,9 +155,11 @@ export class ClassicMenuScene extends MenuScene {
     const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
-    // Every map set from the start (G-003, D3), each with its beat status (G-005). Left and
-    // right on a map set change the Map Difficulty (G-006; the original's New Game row), shown
-    // on the status line and read with the row; the run is built for it.
+    // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
+    // the hint, drawn as BEATEN at the row's end (render). Left and right on a map set change the
+    // Map Difficulty (G-006; the original's New Game row), shown on the status line and read with
+    // the row; the run is built for it.
+    this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
     const s = game.deps.settings;
     const difficulty = () => s?.classicMapDifficulty ?? 'normal';
     this.status = `Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}`;
@@ -203,7 +205,33 @@ export class ClassicMenuScene extends MenuScene {
   protected override announce(): void {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
+
+  /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
+  private beaten: boolean[] = [];
+
+  /**
+   * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
+   * screen and short, so its rows never scroll); the spoken hint carries the difficulty.
+   */
+  override render(r: Renderer): void {
+    super.render(r);
+    const font = this.game.ctx.assets.sheet('font');
+    this.beaten.forEach((b, i) => {
+      if (b)
+        r.text(
+          font,
+          BEATEN_MARK,
+          MENU_VALUE_RIGHT - BEATEN_MARK.length * 8,
+          CLASSIC_RULES_Y + i * MENU_ROW_H,
+        );
+    });
+  }
 }
+
+/** The CLASSIC menu's mark on a beaten map set's row, and where menu rows and values go (menu.ts). */
+const BEATEN_MARK = 'BEATEN';
+const MENU_VALUE_RIGHT = 232;
+const MENU_ROW_H = 14;
 
 /** Classic mode's options: its rules, then every other setting (the usual Options). */
 export class ClassicOptionsScene extends MenuScene {

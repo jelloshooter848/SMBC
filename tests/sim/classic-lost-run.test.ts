@@ -22,7 +22,8 @@ import {
   recordClassicBeat,
 } from '@game/scenes/original-game';
 import { TitleScene } from '@game/scenes/title';
-import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { spokenLevel } from '@game/map/campaign-order';
+import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
 // 0.5.0 Classic gap list, batch 2: the Lost Levels run straight on from 1-1 to D-4 with 8-4 an
@@ -123,6 +124,17 @@ describe('G-001/G-002: the Lost Levels run straight on from 1-1 to D-4', () => {
     expect(loadProgress().lost.beaten).toBe(0);
   });
 
+  it('8-4: the castle card is read out, its news and its OK prompt, with no button letter', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, 'll-8-4-end3');
+    enterLevel(h);
+    const before = h.said.length;
+    takeAxe(h, 125);
+    const said = h.said.slice(before).find((t) => t.startsWith('THANK YOU MARIO!'));
+    expect(said).toBe('THANK YOU MARIO! BUT OUR PRINCESS IS IN ANOTHER CASTLE! OK to continue.');
+    expect(said).not.toMatch(/\b(press|push)\s+[abc]\b|button [abc]/i);
+  });
+
   it("9-4's flag goes on to World A (10-1)", () => {
     const h = classic();
     h.game.classicGame(MARIO, 'll-9-4');
@@ -133,7 +145,15 @@ describe('G-001/G-002: the Lost Levels run straight on from 1-1 to D-4', () => {
     l.world.events.push({ type: 'exit', next: 'll-10-1' });
     h.step();
     choose(h, MARIO);
+    h.until(() => h.said.some((t) => /World A-1/.test(t)), 300);
+    expect(h.said.some((t) => /World 10-1/.test(t))).toBe(false);
     expect(enterLevel(h).level.id).toBe('ll-10-1');
+  });
+
+  it('worlds A-D are read out as shown (worldLabel), never as 10-13', () => {
+    expect(spokenLevel(10, 1, false)).toBe('World A-1');
+    expect(spokenLevel(13, 4, false)).toBe('World D-4');
+    expect(spokenLevel(9, 2, false)).toBe('World 9-2');
   });
 
   it('D-4: "YOUR QUEST IS OVER.", the credits, the cheat cards, then the title; Lost Levels beaten', () => {
@@ -186,6 +206,19 @@ describe('G-003/G-004: every map set from the start; the title after the credits
     const smb = items(h.top())[0] as MenuItem;
     expect(smb.hint).toMatch(/Beaten on Normal/);
     expect(items(h.top())[1]?.hint).not.toMatch(/Beaten/);
+    // Drawn too: BEATEN at the end of the SMB row only, inside the screen.
+    const marks = draw(h.top() as ClassicMenuScene).texts.filter((t) => t.str === 'BEATEN');
+    expect(marks).toHaveLength(1);
+    const label = draw(h.top() as ClassicMenuScene).texts.find((t) => t.str === 'SUPER MARIO BROS.');
+    expect(marks[0]?.y).toBe(label?.y);
+    expect((marks[0]?.x ?? 0) + 6 * 8).toBeLessThanOrEqual(256);
+    expect(marks[0]?.x ?? 0).toBeGreaterThan((label?.x ?? 0) + 'SUPER MARIO BROS.'.length * 8);
+  });
+
+  it('nothing is drawn as beaten before a win', () => {
+    const h = classic();
+    h.game.showClassicMenu();
+    expect(draw(h.top() as ClassicMenuScene).texts.some((t) => t.str === 'BEATEN')).toBe(false);
   });
 });
 

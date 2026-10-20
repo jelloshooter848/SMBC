@@ -43,9 +43,18 @@ function pitRoom(theme = 'water', swim = true) {
 }
 
 /** Sinks `def` from above column `col` for `frames` frames; the body's vx and vy each frame. */
-function sink(def: CharacterDef, rules: 'classic' | 'current', col = 20, frames = 40, level = pitRoom()) {
+function sink(
+  def: CharacterDef,
+  rules: 'classic' | 'current',
+  col = 20,
+  frames = 40,
+  level = pitRoom(),
+  opts: { row?: number; waterMode?: boolean } = {},
+) {
   const vx: number[] = [];
   const vy: number[] = [];
+  const pulls: (number | null)[] = [];
+  const wet: boolean[] = [];
   let world: World | null = null;
   runSim({
     level,
@@ -57,8 +66,9 @@ function sink(def: CharacterDef, rules: 'classic' | 'current', col = 20, frames 
     controller: (w, f) => {
       if (f === 0) {
         world = w;
+        if (opts.waterMode) w.setWaterMode(true);
         w.player.body.x = px(col * 16 + 2);
-        w.player.body.y = px(5 * 16);
+        w.player.body.y = px((opts.row ?? 5) * 16);
         w.player.body.vx = 0;
         w.player.body.vy = 0;
       }
@@ -67,10 +77,12 @@ function sink(def: CharacterDef, rules: 'classic' | 'current', col = 20, frames 
     until: (w, f) => {
       vx.push(w.player.body.vx);
       vy.push(w.player.body.vy);
+      pulls.push(w.player.pitPull);
+      wet.push(w.player.inWater);
       return f >= frames;
     },
   });
-  return { vx, vy, world: world as World | null };
+  return { vx, vy, pulls, wet, world: world as World | null };
 }
 
 describe('G-013: PitVacuum columns (setUpPitVacs)', () => {
@@ -138,6 +150,35 @@ describe('G-013: the pull', () => {
     // A dry level with the same pit: no vacuums (Level._initialWaterLevel).
     const dry = sink(classicStandIn(MARIO), 'classic', 20, 10, pitRoom('overworld', false));
     expect(dry.world?.player.pitPull ?? null).toBeNull();
+  });
+
+  it('pulls Mario and Luigi above the surface line too (PitVacuum.as 44-45: no water check)', () => {
+    for (const base of [MARIO, LUIGI]) {
+      // Row 0, above the waves on row 2: out of the water, in an area that starts under water.
+      const r = sink(classicStandIn(base), 'classic', 20, 6, pitRoom(), { row: 0 });
+      expect(r.wet[0], base.id).toBe(false);
+      expect(r.pulls[0], base.id).toBe(1);
+      expect(r.vx[0], base.id).toBeGreaterThan(0);
+      // Faster than the fall above the line alone (surface gravity) by the pull.
+      const surface = CLASSIC_SWIM.mario?.surface?.gravity ?? 0;
+      expect((r.vy[1] ?? 0) - (r.vy[0] ?? 0), base.id).toBe(surface + (plumber?.down ?? 0));
+      // The registered Classic def (its own rise path above the line) is pulled the same way.
+      const real = sink(base, 'classic', 20, 6, pitRoom(), { row: 0 });
+      expect(real.wet[0], base.id).toBe(false);
+      expect(real.pulls[0], base.id).toBe(1);
+      expect(Math.max(...real.vx), base.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('Water Mode adds no pull, and other heroes stay unpulled above the line', () => {
+    const wm = sink(classicStandIn(MARIO), 'classic', 20, 10, pitRoom('overworld', false), {
+      waterMode: true,
+    });
+    expect(wm.wet.some(Boolean)).toBe(true);
+    expect(wm.pulls.every((x) => x === null)).toBe(true);
+    const link = sink(classicStandIn(LINK), 'classic', 20, 6, pitRoom(), { row: 0 });
+    expect(link.pulls.every((x) => x === null)).toBe(true);
+    expect(link.vx.every((x) => x === 0)).toBe(true);
   });
 
   it('a pulled hero ends in the pit', () => {
