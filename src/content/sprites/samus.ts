@@ -424,6 +424,26 @@ const bootRight = [
 const bootLeft = bootRight.map((r) => r.split('').reverse().join(''));
 const GUTS = [helmetRight, padRight, bootRight, helmetLeft, padLeft, bootLeft];
 
+/* ---------- Classic SMBC's air and aim poses (F2) ---------- */
+
+// Knees pulled up in front for the jump, shins folded under, boots off the floor (6 rows).
+const legsTuck = [
+  '....011111110...',
+  '....0111111110..',
+  '....0000002210..',
+  '.........02210..',
+  '........022210..',
+  '........000000..',
+];
+/** The whole figure 2 px lower than standing, over the tucked legs. */
+const airBody = (shoot: boolean): string[] =>
+  shoot
+    ? compose(W, H, [head, -1, 6], [torsoShoot, -1, 16], [legsTuck, -1, 26], [cannonFwd, 11, 19])
+    : compose(W, H, [head, 0, 6], [torso, 0, 16], [legsTuck, 0, 26]);
+/** Aiming up over `legs` placed at row `ly` (head and torso `dy` from standing). */
+const aimingUp = (legs: readonly string[], ly: number, dy = 0): string[] =>
+  compose(W, H, [head, -1, 4 + dy], [torsoShoot, -1, 14 + dy], [legs, -1, ly], [cannonUp, 12, 4 + dy]);
+
 /**
  * Classic SMBC Samus's extra frames (SA-C4: `crouch`, `crouch-shoot`; SA-C32: `guts-<1..6>-<0|1>`),
  * a sheet of their own (`samus-classic`, the same palettes) so the Current sheet keeps its
@@ -434,6 +454,14 @@ export const samusClassicDef: SpriteDef = {
   frames: {
     crouch,
     'crouch-shoot': crouchShoot,
+    // F2: the original's `jump` (knees up), `jumpShoot`, `upJump` and `upWalk-1..3`, drawn at
+    // today's scale.
+    air: airBody(false),
+    'air-shoot': airBody(true),
+    'up-air': aimingUp(legsTuck, 26, 2),
+    'up-walk-0': aimingUp(legsWalk0, 25),
+    'up-walk-1': aimingUp(legsWalk1, 24, -1),
+    'up-walk-2': aimingUp(legsWalk2, 25),
     ...Object.fromEntries(
       GUTS.flatMap((g, i) => [
         [`guts-${i + 1}-0`, g],

@@ -33,6 +33,13 @@ const ARROW_FRAMES: Readonly<Record<string, string>> = {
   'ice-beam-1': 'ice-arrow-1',
   'wave-beam-0': 'light-arrow-0',
   'wave-beam-1': 'light-arrow-1',
+  // Classic Samus's beams in the original's look (F2).
+  'classic-beam-0': 'arrow-0',
+  'classic-beam-1': 'arrow-1',
+  'classic-ice-beam-0': 'ice-arrow-0',
+  'classic-ice-beam-1': 'ice-arrow-1',
+  'wave-varia-0': 'light-arrow-0',
+  'wave-varia-1': 'light-arrow-1',
   missile: 'heavy-arrow',
   'missile-up': 'heavy-arrow-up',
 };
@@ -53,10 +60,23 @@ function arrows(sheet: string): (spec: ProjectileSpec, up: boolean) => Projectil
         const a = ARROW_FRAMES[f] ?? 'arrow-0';
         return up && a !== 'heavy-arrow-up' ? a.replace(/-(\d)$/, '-up-$1') : a;
       };
+      // Pit's own copy: his arrows keep their 8 x 8 cell, drawn at the body (Classic Samus's
+      // beams took the original's 4 x 5 bolt in F2; Pit is not in the original).
+      const { drawOffset: _drawn, ...rest } = spec;
+      const frames = spec.frames.map(frame);
+      // The Wave Beam is one frame now; his light arrow keeps its two-frame shimmer.
+      const one = frames[0];
+      if (frames.length === 1 && one && /^light-arrow(-up)?-0$/.test(one))
+        frames.push(one.replace(/0$/, '1'));
+      // His heavy arrow keeps its 16 x 8 body (8 x 16 fired up).
+      const heavy = frames[0]?.startsWith('heavy-arrow');
+      const size = heavy ? (frames[0] === 'heavy-arrow-up' ? { w: 8, h: 16 } : { w: 16, h: 8 }) : null;
       look = {
-        ...spec,
+        ...rest,
+        ...(spec.drawOffset ? { w: 8, h: 8 } : {}),
+        ...size,
         sheet,
-        frames: spec.frames.map(frame),
+        frames,
         ...(spec.burstFrame ? { burstFrame: 'burst' } : {}),
       };
       book.set(spec, look);

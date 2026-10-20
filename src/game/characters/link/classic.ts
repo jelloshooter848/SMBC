@@ -45,6 +45,7 @@ import {
   sub,
   type ShotDir,
 } from './classic-weapons';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, LINK_FLIP_TICKS, WALK_ABAB, walkPose } from '../classic/anim';
 
 /**
  * Classic SMBC Link (2026-10-07-link-classic-smbc-rules.md, LK-C1..LK-C45): the original's
@@ -247,6 +248,8 @@ function othersOut(p: Player, world: World): number {
 }
 
 function startAction(p: Player, pose: number): void {
+  // Any action in the air ends the somersault: upright to the landing (Link.as attackStart).
+  if (!p.body.onGround) p.scratch._flipDone = 1;
   p.attackTimer = ATTACK_FRAMES;
   p.scratch._pose = pose;
   p.activeMelee = null;
@@ -280,8 +283,33 @@ function shootArrow(p: Player, world: World, input: InputFrame): boolean {
   return true;
 }
 
+/**
+ * The somersault (F2; Link.as jump 696-709, checkState 801-824, flipTmrHandler 440-444): from any
+ * take-off, a jump or a walk off a ledge, he rolls for as long as he is airborne; a stab, a throw,
+ * a thrust, a vine or a hit ends it and he stays upright to the landing. Not in water.
+ */
+function trackFlip(p: Player): void {
+  const sc = p.scratch;
+  if (p.body.onGround || p.inWater) {
+    sc._flipT = 0;
+    sc._flipDone = 0;
+    return;
+  }
+  if (p.hurtLock || p.stun > 0) sc._flipDone = 1;
+  if (!sc._flipDone) sc._flipT = (sc._flipT ?? 0) + 1;
+}
+
+/** The air pose: 3 rolled poses then the upright `jump` twice, one every 140 ms; upright once ended. */
+const FLIP_POSES = ['roll-0', 'roll-1', 'roll-2', 'jump', 'jump'] as const;
+export function linkAirPose(p: Player): string {
+  const t = p.scratch._flipT ?? 0;
+  if (p.scratch._flipDone || t <= 0) return 'jump';
+  return FLIP_POSES[Math.floor((t - 1) / LINK_FLIP_TICKS) % FLIP_POSES.length] as string;
+}
+
 function update(p: Player, input: InputFrame, world: World): void {
   claimKit(p);
+  trackFlip(p);
   if (classicBusy(p)) {
     // A hit's push cancels the attack state (LK-C17); a freeze holds everything.
     if (p.hurtLock) {
@@ -359,6 +387,7 @@ function update(p: Player, input: InputFrame, world: World): void {
     p.activeMelee = null;
     return;
   }
+  p.scratch._flipDone = 1;
   if (p.scratch._thrust !== kind) {
     newAction(p);
     p.scratch._thrust = kind;
@@ -408,9 +437,11 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   else {
     switch (p.anim) {
       case 'walk':
-        name = `walk-${p.walkFrame}`;
+        name = `walk-${walkPose(p, WALK_ABAB)}`;
         break;
       case 'jump':
+        name = linkAirPose(p);
+        break;
       case 'swim':
         name = 'jump';
         break;
@@ -422,7 +453,8 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     }
   }
   // The 12 × 16 body (LK-C4) with the 24 px tall art drawn bottom-aligned on it.
-  return { sheet: 'link', palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY: 16 };
+  const sheet = name.startsWith('roll-') ? 'link-classic' : 'link';
+  return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY: 16 };
 }
 
 export const LINK_CLASSIC: CharacterDef = {
@@ -442,6 +474,9 @@ export const LINK_CLASSIC: CharacterDef = {
   crouches: false,
   canBreakBricks: () => false,
   hitbox: () => ({ w: 12, h: 16 }),
+  // F2: the original's HRect, 13.5 x 15 in every frame; its walk, 4 poses at 100 ms.
+  hurtbox: () => ({ w: CLASSIC_HURT.w, h: CLASSIC_HURT.link }),
+  walkAnim: CLASSIC_WALK_ANIM.link,
   sprite,
   blockPowerUp: classicBlockPowerUp,
   powerIcon: true,
@@ -490,6 +525,8 @@ export const LINK_CLASSIC: CharacterDef = {
     // LK-C43: on a vine World skips `update` (no stab, boomerang, bomb or jump); grabbing one
     // ends a push (Player.tickHurtLock) and the attack state here.
     onGrabVine(p) {
+      // Off a vine he falls upright (Link.as 455-460).
+      p.scratch._flipDone = 1;
       p.attackTimer = 0;
       p.scratch._pose = 0;
       clearThrust(p);

@@ -502,3 +502,31 @@ export const billDef: SpriteDef = {
     'hang-1': hang1,
   },
 };
+
+/* ---------- Classic SMBC's fall (F2) ---------- */
+
+// Legs in a wide split on the way down, both boots off the floor (10 rows).
+const legsFall = [
+  '.....0333330....',
+  '....033003330...',
+  '...0330...0330..',
+  '..0330.....0330.',
+  '..0330.....0330.',
+  '.0330.......0330',
+  '.0220.......0220',
+  '02220.......0222',
+  '00000.......0000',
+  '................',
+];
+
+/**
+ * Classic SMBC Bill's walk-off fall (F2; the original's torso and legs `fall`, Bill.as 448-455:
+ * upright with the legs split, no somersault), on a sheet of its own (`bill-classic`, his
+ * palettes). With the rifle level, as he can fire straight ahead falling.
+ */
+export const billClassicDef: SpriteDef = {
+  palette: 'bill',
+  frames: {
+    fall: standing(legsFall),
+  },
+};

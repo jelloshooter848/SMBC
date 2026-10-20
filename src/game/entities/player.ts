@@ -1430,12 +1430,21 @@ export class Player {
     const b = this.body;
     if (this.stun > 0) this.anim = 'hurt';
     else if (this.sliding > 0) this.anim = 'slide';
-    else if (this.attackTimer > 0) this.anim = 'attack';
+    else if (this.attackTimer > 0 && !this.def.attackKeepsMotion) this.anim = 'attack';
     else if (!b.onGround) this.anim = 'jump';
     else if (this.crouching) this.anim = 'crouch';
     else if (this.skidding) this.anim = 'skid';
     else if (b.vx !== 0 || dir !== 0) {
       this.anim = 'walk';
+      const wa = this.def.walkAnim;
+      if (wa) {
+        // The original's cycle (CharacterDef.walkAnim): a fixed pose time at any speed.
+        if (++this.walkTick >= wa.ticks) {
+          this.walkTick -= wa.ticks;
+          this.walkFrame = (this.walkFrame + 1) % wa.frames;
+        }
+        return;
+      }
       // Walk cycle speed scales with velocity like SMB1 (faster at run speed).
       const speed = Math.abs(b.vx);
       const rate = speed >= this.profile.maxRun - 0x100 ? 2 : speed >= this.profile.maxWalk ? 3 : 5;
@@ -1446,7 +1455,22 @@ export class Player {
     } else {
       this.anim = 'idle';
       this.walkFrame = 0;
+      // The original's cycle starts each walk with a whole first pose.
+      if (this.def.walkAnim) this.walkTick = 0;
     }
+  }
+
+  /**
+   * The box enemies and enemy shots hit: CharacterDef.hurtbox's size centred on the body, on its
+   * feet; the body itself when the def has none (every Current def).
+   */
+  hurtBody(): AABB {
+    const b = this.body;
+    const hb = this.def.hurtbox?.(this);
+    if (!hb) return b;
+    const w = px(hb.w);
+    const h = px(hb.h);
+    return { x: b.x + ((b.w - w) >> 1), y: b.y + b.h - h, w, h };
   }
 
   /** Fired upward by a spring: a jump at `boost` times the normal takeoff speed. */

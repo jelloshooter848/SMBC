@@ -15,6 +15,14 @@ import { cycleTool, toolIndex, type ToolInfo } from '../toolbelt';
 import { RYU } from './index';
 import { RYU_CLASSIC_GUIDE } from './classic-guide';
 import {
+  CLASSIC_HURT,
+  CLASSIC_WALK_ANIM,
+  RYU_FLIP_FRAMES,
+  RYU_FLIP_TICKS,
+  WALK_RYU,
+  walkPose,
+} from '../classic/anim';
+import {
   CLASSIC_ARTS,
   CLASSIC_JUMP_SLASH_DAMAGE,
   CLASSIC_SWORD_DAMAGE,
@@ -299,12 +307,45 @@ function endAttacks(p: Player): void {
   endThrow(p);
 }
 
+/** An upward kick this frame bigger than this (velocity units) starts the flip. */
+const FLIP_KICK = 0x01000;
+
+/**
+ * The flip (F2; Ryu.as startFlip from jump 857, the wall jump 839, an enemy bounce 1095 and a
+ * spring 1299; FLIP_TMR 400 ms): every take-off that throws him up flips him for 24 frames, then
+ * he falls upright. A new upward kick this frame is such a take-off; walking off a ledge is not.
+ */
+function trackFlip(p: Player): void {
+  const b = p.body;
+  const s = p.scratch;
+  const lastVy = s._vy ?? 0;
+  s._vy = b.vy;
+  if (b.onGround || p.wall || p.inWater) {
+    s._flipT = 0;
+    return;
+  }
+  if ((s._flipT ?? 0) > 0) s._flipT = (s._flipT ?? 0) - 1;
+  if (b.vy < 0 && b.vy < lastVy - FLIP_KICK && p.stun === 0 && !p.hurtLock) s._flipT = RYU_FLIP_FRAMES;
+}
+
+/** The flip's 5 frames at 33 ms: the tuck, then a whole turn of the spin. */
+const FLIP_POSES = ['jump', 'spin-1', 'spin-2', 'spin-3', 'spin-0'] as const;
+/** His pose in the air (F2): a flip frame while the flip lasts, else the upright `fall`. */
+export function ryuAirPose(p: Player): string {
+  const t = p.scratch._flipT ?? 0;
+  if (p.inWater) return 'jump';
+  if (t <= 0) return 'fall';
+  const i = Math.floor((RYU_FLIP_FRAMES - t) / RYU_FLIP_TICKS) % FLIP_POSES.length;
+  return FLIP_POSES[i] as string;
+}
+
 function update(p: Player, input: InputFrame, world: World): void {
   classicStartKit(p, START);
   const b = p.body;
   const s = p.scratch;
   const wasAir = s._air === 1;
   s._air = b.onGround ? 0 : 1;
+  trackFlip(p);
   if (classicBusy(p)) return endAttacks(p);
 
   // Lifts: hold on to the one he is on, or grab one he presses into.
@@ -392,8 +433,10 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     sheet = 'ryu-wave';
   } else if (t > 0) name = p.crouching ? 'crouch-slash' : t > LIVE_FROM ? 'slash-0' : 'slash-1';
   else if (p.crouching) name = 'crouch';
-  else if (!b.onGround) name = 'jump';
-  else if (p.anim === 'walk') name = `walk-${p.walkFrame}`;
+  else if (!b.onGround) {
+    name = ryuAirPose(p);
+    if (name === 'fall') sheet = 'ryu-classic';
+  } else if (p.anim === 'walk') name = `walk-${walkPose(p, WALK_RYU)}`;
   else name = 'idle';
   return {
     sheet,
@@ -420,6 +463,16 @@ export const RYU_CLASSIC: CharacterDef = {
   meleeStrikesBlocks: true,
   // Ryu does not grow (RY-C18): Current's 12 x 24 body, 12 x 16 crouched.
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
+  // F2: the original's HRect (27 standing, 25 in the air, 15.75 crouched) and run (5 x 75 ms).
+  hurtbox: (p) => ({
+    w: CLASSIC_HURT.w,
+    h: p.crouching
+      ? CLASSIC_HURT.ryu.crouch
+      : p.body.onGround
+        ? CLASSIC_HURT.ryu.stand
+        : CLASSIC_HURT.ryu.air,
+  }),
+  walkAnim: CLASSIC_WALK_ANIM.ryu,
   sprite,
   blockPowerUp: classicBlockPowerUp,
   powerIcon: true,

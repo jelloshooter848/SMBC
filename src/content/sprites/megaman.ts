@@ -388,6 +388,60 @@ export const megamanDef: SpriteDef = {
   },
 };
 
+/* ---------- Classic SMBC's jump (F2) ---------- */
+
+// The torso with no arms (they are their own layers here), 8 rows.
+const torsoBare = [
+  '....01111110....',
+  '...0111111110...',
+  '...0111111110...',
+  '...0111111110...',
+  '...0111111110...',
+  '...0111111110...',
+  '...0022222200...',
+  '....02222220....',
+];
+// An arm flung up beside the head: the dark glove on top, the light arm down to the shoulder.
+const armRaised = ['000', '020', '020', '010', '010', '010', '010', '010'];
+// Legs spread wide in the air: the back leg kicked back, the front one reaching forward.
+const legsSpread = [
+  '...0110..0110...',
+  '..0220....0220..',
+  '.02220....02220.',
+  '.02220....02220.',
+  '.00000....00000.',
+];
+
+/**
+ * Classic SMBC Mega Man's air poses (F2; the original's `jump`: arms raised, legs spread, held
+ * rising and falling, MegaManBase.as 1110-1135; `jumpShoot` the same with the buster out), on a
+ * sheet of their own (`megaman-classic`, his palettes) so the campaign's sheet keeps its frames.
+ * Drawn at today's sprite scale.
+ */
+export const megamanClassicDef: SpriteDef = {
+  palette: 'megaman',
+  frames: {
+    jump: compose(
+      W,
+      H,
+      [armRaised, 0, 12],
+      [armRaised, 13, 12],
+      [head, 0, 8],
+      [torsoBare, 0, 18],
+      [legsSpread, 0, 26],
+    ),
+    'jump-shoot': compose(
+      24,
+      H,
+      [armRaised, 0, 12],
+      [head, 0, 8],
+      [torsoShoot, 0, 18],
+      [legsSpread, 0, 26],
+      [cannon, 12, 18],
+    ),
+  },
+};
+
 /**
  * His body parts, for the Classic-only heroes built on his frame (Proto Man and Break Man,
  * protoman.ts): the same torso, cannon, legs and climbing poses under their own head.

@@ -24,6 +24,9 @@ import {
   FIREBALL_CLASSIC,
 } from './classic-weapons';
 import { plumberClassicGuide } from './classic-guide';
+import { CLASSIC_HURT } from '../classic/anim';
+import type { Player } from '../../entities/player';
+import type { SpriteSpec } from '../character';
 
 /**
  * Classic SMBC Mario and Luigi (2026-10-07-mario-luigi-classic-smbc-rules.md, ML-C1..ML-C28).
@@ -181,7 +184,13 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
     crouches: true,
     // ML-C24: big and fire heads break bricks, small heads bump them; the fireball never touches them.
     canBreakBricks: (p) => p.powerState !== 'small',
-    sprite: (p, frame, reduceFlashing) => plumberSprite(p, frame, reduceFlashing, parts.palettes),
+    sprite: (p, frame, reduceFlashing) =>
+      classicGrowFrame(p, plumberSprite(p, frame, reduceFlashing, parts.palettes)),
+    // F2: the original's HRect, 13 x 15 small or crouched, 13 x 28 big.
+    hurtbox: (p) => ({
+      w: CLASSIC_HURT.mario.w,
+      h: p.powerState === 'small' || p.crouching ? CLASSIC_HURT.mario.small : CLASSIC_HURT.mario.big,
+    }),
     blockPowerUp: classicBlockPowerUp,
     powerIcon: true,
     behaviour: plumberClassicBehaviour(kit),
@@ -207,6 +216,27 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
   delete def.startHp;
   delete def.drop;
   return def;
+}
+
+/**
+ * The grow and shrink flicker as the original steps it (F2; MarioMc `growStart..growEnd`, 14
+ * frames, and `takeDamageStart..End`, 18 frames, at ANIM_TMR_FOR_TAKE_DAMAGE 75 ms = 4.5 game
+ * frames): S small, M mid, B big. The last pose holds if the freeze outlasts the sequence.
+ */
+export const CLASSIC_GROW_SEQ = 'SMSMSMSMBSMBBB';
+export const CLASSIC_SHRINK_SEQ = 'BBBBSBSBSBSBSBSBSS';
+const GROW_POSE: Record<string, [string, number]> = {
+  S: ['small-idle', 0],
+  M: ['grow-mid', 16],
+  B: ['big-idle', 16],
+};
+function classicGrowFrame(p: Player, spec: SpriteSpec): SpriteSpec {
+  const tr = p.transition;
+  if (!tr || (tr.kind !== 'grow' && tr.kind !== 'shrink') || p.dead) return spec;
+  const seq = tr.kind === 'grow' ? CLASSIC_GROW_SEQ : CLASSIC_SHRINK_SEQ;
+  const step = seq[Math.min(seq.length - 1, Math.floor(tr.t / 4.5))] as string;
+  const [frame, offsetY] = GROW_POSE[step] as [string, number];
+  return { ...spec, frame, offsetY };
 }
 
 export const MARIO_CLASSIC: CharacterDef = {
