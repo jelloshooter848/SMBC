@@ -26,6 +26,9 @@ under `## [Unreleased]`.
   hero is covered.
 - Classic Survival: in revive mode the screen reader says "OK to power up" on a standing hero,
   as the screen shows.
+- Classic Survival with Current rules: powering up a standing hero gives two of that hero's own
+  upgrades (Mega Man's helmet, then a weapon; Samus's Varia Suit, then a beam), not the Classic
+  Fire Flower's.
 - Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
   clear raises the flag at once, with no time tally (and no fireworks), as in the original.
 

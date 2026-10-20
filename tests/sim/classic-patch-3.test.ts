@@ -14,6 +14,9 @@ import {
 } from '@engine/save/settings';
 import { DEFAULT_ASSIST, NO_CHEATS, newGameState, type CheatFlags, type Rules } from '@game/context';
 import { MARIO } from '@game/characters/mario';
+import { MEGAMAN } from '@game/characters/megaman';
+import { SAMUS } from '@game/characters/samus';
+import { applyRevivalBoost } from '@game/survival';
 import type { CharacterDef } from '@game/characters/character';
 import type { LevelData } from '@game/level/schema';
 import { ScriptedInput } from '@game/sim/headless';
@@ -433,5 +436,37 @@ describe('11. Revive mode on a standing hero says "OK to power up", as the scree
     expect(line).toMatch(/Mario: power up\. .* OK to power up\./);
     expect(line).not.toMatch(/OK to revive/);
     expect(draw(s).texts.map((t) => t.str)).toContain('OK (Z) TO POWER UP');
+  });
+});
+
+describe("12. Survival's power-up under Current rules: each hero's own Current upgrade", () => {
+  const flatLevel1 = () => getLevel('1-1');
+
+  it("Current Mega Man: the helmet, then his first weapon (not the Classic Flower's path)", () => {
+    const w = world(flatLevel1(), null, MEGAMAN, 'current');
+    applyRevivalBoost(w.player, w, 'megaman');
+    expect(w.player.scratch.helmet).toBe(1);
+    expect(w.player.scratch.weapons).toBe(1);
+  });
+
+  it('Current Samus: the Varia Suit, then the next beam', () => {
+    const w = world(flatLevel1(), null, SAMUS, 'current');
+    applyRevivalBoost(w.player, w, 'samus');
+    expect(w.player.scratch.varia).toBe(1);
+    expect(w.player.scratch.beam).toBe(1);
+  });
+
+  it('Current Mario: the Mushroom, then the Flower; no points either way', () => {
+    const w = world(flatLevel1(), null, MARIO, 'current');
+    const score = w.state.score;
+    applyRevivalBoost(w.player, w, 'mario');
+    expect(w.player.powerState).toBe('fire');
+    expect(w.state.score).toBe(score);
+  });
+
+  it('Classic rules keep the Classic path: two Fire Flowers to the Classic hero', () => {
+    const w = world(flatLevel1(), null, MARIO, 'classic');
+    applyRevivalBoost(w.player, w, 'mario');
+    expect(w.player.powerState).toBe('fire');
   });
 });

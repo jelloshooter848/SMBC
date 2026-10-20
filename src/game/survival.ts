@@ -129,7 +129,8 @@ export const REVIVAL_PICKUPS: Readonly<Record<string, readonly PickupKind[]>> = 
 
 /**
  * Gives a strengthened hero its strengthening as it starts a level: two Fire Flowers (in Classic
- * power-ups the random upgrade is the Mushroom, then the Fire Flower: StatManager.getRandomUpgrade)
+ * power-ups the random upgrade is the Mushroom, then the Fire Flower: StatManager.getRandomUpgrade;
+ * under Current rules two of the hero's own Current upgrades instead)
  * and its revivalBoost pickups, through the hero's own power-up and pickup code, quietly and with
  * no animation (hitPickup(pickup, false)), and no points (StatManager.addPoints scores nothing at
  * character select).
@@ -139,7 +140,15 @@ export function applyRevivalBoost(p: Player, world: World, heroId: string): void
     audio: { value: NULL_AUDIO },
     addScore: { value: () => {} },
   }) as World;
-  for (let i = 0; i < STRENGTHEN_STEPS; i++) p.def.behaviour.onPowerUp(p, 'flower', quiet);
+  for (let i = 0; i < STRENGTHEN_STEPS; i++) {
+    // Classic mode with Current rules: each step is the hero's own Current upgrade, the item a
+    // power block gives it now (blockPowerUp: Mega Man's helmet then weapons, Samus's Varia Suit
+    // then beams, Mario's Mushroom then Flower), through World.powerUp, not the Classic Flower.
+    const kind = world.rules === 'current' ? p.def.blockPowerUp(p) : 'flower';
+    if (kind === 'poison' || kind === 'clock') continue;
+    if (world.rules === 'current') quiet.powerUp(p, kind);
+    else p.def.behaviour.onPowerUp(p, kind, quiet);
+  }
   for (const kind of REVIVAL_PICKUPS[heroId] ?? []) p.def.behaviour.onPickup?.(p, kind, quiet);
   if (p.transition) {
     p.transition = null;
