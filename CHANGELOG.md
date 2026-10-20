@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
+  Controls screen asks for another (as the original does); a spare key of another action moves over.
 - Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
   JUMP, ATTACK or START press now skips it. It is the one written exception to "text never moves on by itself"
   (docs/ACCESSIBILITY.md).

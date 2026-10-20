@@ -1,7 +1,7 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { Actions, ActionLabels, type Action } from '@engine/input/actions';
-import { describeCode, describePad } from '@engine/input/bindings';
+import { bindingClashes, describeCode, describePad } from '@engine/input/bindings';
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
@@ -206,15 +206,35 @@ class ControlsOptions extends MenuScene {
     this.setItems(items);
   }
 
-  private capture(action: Action, kind: 'keyboard' | 'gamepad'): void {
+  /** `taken` (G-091): the last key was refused; the line says whose it is, and asks again. */
+  private capture(action: Action, kind: 'keyboard' | 'gamepad', taken?: string): void {
     const input = this.game.deps.input;
     if (!input) return;
     this.capturing = { action, kind };
-    this.status = kind === 'keyboard' ? 'Press a key (Esc cancels)' : 'Press a button';
-    this.game.deps.announcer?.say(this.status);
+    const ask = kind === 'keyboard' ? 'Press a key (Esc cancels)' : 'Press a button';
+    this.status = taken ?? ask;
+    this.game.deps.announcer?.say(taken ? `${taken}. ${ask.replace('a ', 'another ')}` : ask);
     void input.captureNext().then((got) => {
       const s = settings(this.game);
       const b = s.input.bindings[0];
+      const clashes =
+        b && got && got.kind === kind ? bindingClashes(s.input.bindings, 0, kind, action, got.code) : [];
+      // G-091: a key that is another action's only key is refused, and the screen asks again
+      // (as the original's ButtonManager does). A spare key of another action (our defaults
+      // give most actions two or three) moves over instead, so no key ever does two things.
+      const taken = clashes.find((c) => c.only);
+      if (got && taken) {
+        const name = kind === 'gamepad' ? describePad(got.code) : describeCode(got.code);
+        const who = taken.player === 0 ? '' : `P${taken.player + 1} `;
+        this.capture(action, kind, `${name} is already ${who}${ActionLabels[taken.action].split(' ')[0]}`);
+        return;
+      }
+      if (got) {
+        for (const c of clashes) {
+          const map = s.input.bindings[c.player]?.[kind];
+          if (map) map[c.action] = map[c.action].filter((x) => x !== got.code);
+        }
+      }
       if (b && got && got.kind === kind) {
         b[kind][action] = [got.code];
         apply(this.game);

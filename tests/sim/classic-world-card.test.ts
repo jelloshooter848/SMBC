@@ -8,7 +8,8 @@ import type { Game } from '../../src/game/scenes/game';
 // G-090 (D4): the WORLD card moves on by itself, as the original's InformativeBlackScreen does
 // (2000 ms, 2500 ms in Single Character), and in a Classic run a press skips it.
 
-const press = (a: Action | null): InputFrame => ({ pressed: (k: Action) => k === a }) as unknown as InputFrame;
+const press = (a: Action | null): InputFrame =>
+  ({ pressed: (k: Action) => k === a }) as unknown as InputFrame;
 
 function run(opts: { frames?: number; skippable?: boolean }, pressAt: number | null): number | null {
   let doneAt: number | null = null;
