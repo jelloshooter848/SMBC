@@ -246,6 +246,11 @@ export interface CharacterDef {
   /** The kit the How to play page's live demo uses (Classic Vic Viper: none). Absent: `devKit`. */
   guideKit?(): Record<string, number>;
   /**
+   * The power state the How to play page's live demo shows (Classic Peach: 'big', her own dress
+   * rather than the Flower's white one). Absent: 'fire' for a power-up hero, as today.
+   */
+  guidePower?: string;
+  /**
    * Reserve energy tanks drawn as small boxes above the EN number (Samus, NES Metroid style):
    * `full` of `total` hold energy, `bar` is the number shown. Null with no tanks.
    */

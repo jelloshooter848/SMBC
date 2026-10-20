@@ -630,6 +630,12 @@ describe('PE-23..PE-26: guide, touch, art and sound (TG-22, TG-40)', () => {
     expect(sfx.some((s) => s.id === 'peach-float')).toBe(true);
   });
 
+  it("the guide demo shows her own dress (big), not the Flower's", () => {
+    expect(PEACH_CLASSIC.guidePower).toBe('big');
+    for (const d of [...CHARACTERS, ...Object.values(CLASSIC_CHARACTERS)])
+      expect(d?.guidePower, d?.id).toBeUndefined();
+  });
+
   it('her poses: lift, carry, float', () => {
     const r = rig('big');
     r.step(['special']);

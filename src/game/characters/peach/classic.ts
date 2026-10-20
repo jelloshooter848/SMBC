@@ -211,6 +211,8 @@ export const PEACH_CLASSIC: CharacterDef = {
   standsOnEnemies: (p, e) => carryStands(PEACH_CARRY, p, e),
   // TG-44: no tools and one kit; the full kit is just the top power state.
   devKit: () => ({}),
+  // The guide's demo wears her own pink dress (big), not the Flower's white one.
+  guidePower: 'big',
   // Mario's death hop (ML-C18) and walk to Toad (ML-C26).
   deathHop: { freeze: 15, vy: 0x042ab, gravity: 0x002ab, maxFall: 0x04800, frames: 195, pitFrames: 180 },
   axeWalk: { speed: 0x01755, stop: 56210, snap: 0x00555 },
