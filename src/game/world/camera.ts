@@ -32,7 +32,7 @@ export const SCROLL_BACK_CENTER = px(SCREEN_W / 2);
  * of the screen (leftScrollPos = SCREEN_WIDTH*.1), and only follows right past the screen's
  * last 4 px (SCREEN_WIDTH - BOWSER_AXE_SCREEN_SCROLL_OFFSET, 8 Flash px).
  */
-const BOSS_PAN = px(1.25);
+export const BOSS_PAN = px(1.25);
 const BOSS_LEFT = Math.round(px(SCREEN_W * 0.1));
 const BOSS_RIGHT = px(SCREEN_W - 4);
 

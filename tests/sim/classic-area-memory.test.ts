@@ -3,19 +3,27 @@ import { px } from '@engine/math/units';
 import type { Action } from '@engine/input/actions';
 import { getLevel } from '@content/levels';
 import { MARIO } from '@game/characters/mario';
+import { LINK } from '@game/characters/link';
+import type { CharacterDef } from '@game/characters/character';
 import { Goomba } from '@game/entities/enemies/goomba';
 import type { Entity } from '@game/entities/entity';
 import { runSim, ScriptedInput } from '@game/sim/headless';
 import type { AreaMemory, World, WorldStart } from '@game/world/world';
+import { SCROLL_BACK_CENTER } from '@game/world/camera';
 
 // Classic SMBC's area memory (StatManager.saveAreaStats / Level.rebuildLevel): an area left
 // through a pipe, vine or pit comes back as it was left when the hero returns within the stage;
 // a new stage, a death or a warp starts fresh (resetLevelStats). And the flag walk's camera.
 
-function world(id: string, start: WorldStart, rules: 'classic' | 'current' = 'classic'): World {
+function world(
+  id: string,
+  start: WorldStart,
+  rules: 'classic' | 'current' = 'classic',
+  character: CharacterDef = MARIO,
+): World {
   const level = getLevel(id);
   if (!level) throw new Error(id);
-  return runSim({ level, character: MARIO, script: { steps: [] }, maxFrames: 0, rules, start }).world;
+  return runSim({ level, character, script: { steps: [] }, maxFrames: 0, rules, start }).world;
 }
 
 function hold(w: World, keys: Action[], n: number): void {
@@ -91,6 +99,17 @@ describe('Classic area memory (1-1 and its bonus room)', () => {
     expect(goombas(back).filter((g) => g.body.x < px(30 * 16))).toHaveLength(0);
   });
 
+  it('restored entities on screen are active at once; ones that never despawn are never parked', () => {
+    const { w, alive, aliveX } = before();
+    w.rememberArea();
+    // An arrival with the living Goomba on screen (no enemies cleared).
+    const at = world('1-1', { x: 34, y: 12, mode: 'stand', areaMemory: w.areaMemory as AreaMemory });
+    expect(alive.body.x).toBe(aliveX);
+    expect(at.entities.includes(alive)).toBe(true);
+    expect(parked(at).includes(alive)).toBe(false);
+    expect(parked(at).every((e) => e.despawnMargin !== null)).toBe(true);
+  });
+
   it('a death (or a new stage) starts fresh: blocks and enemies are back', () => {
     const { w } = before();
     w.rememberArea();
@@ -109,8 +128,11 @@ describe('Classic area memory (1-1 and its bonus room)', () => {
 });
 
 describe('Classic flag walk camera', () => {
-  function flagWalk(rules: 'classic' | 'current'): { atWalk: number; end: number } {
-    const w = world('1-1', { x: 190, y: 12, mode: 'stand' }, rules);
+  function flagWalk(
+    rules: 'classic' | 'current',
+    hero: CharacterDef = MARIO,
+  ): { atWalk: number; end: number } {
+    const w = world('1-1', { x: 190, y: 12, mode: 'stand' }, rules, hero);
     let atWalk = -1;
     for (let i = 0; i < 900 && w.clearPhase !== 'countdown'; i++) {
       hold(w, w.clearPhase ? [] : ['right', 'run', 'jump'], 1);
@@ -128,5 +150,49 @@ describe('Classic flag walk camera', () => {
   it('Current: the screen holds still through the walk, as before', () => {
     const { atWalk, end } = flagWalk('current');
     expect(end).toBe(atWalk);
+  });
+
+  it('Classic heroes that are not plumbers (not MarioBase) keep the screen still', () => {
+    const { atWalk, end } = flagWalk('classic', LINK);
+    expect(end).toBe(atWalk);
+  });
+});
+
+describe('Classic castle camera (axe)', () => {
+  const AXE_END = px(141 * 16 + 8 + 4 - 256);
+
+  it('the screen ends just past the axe while it is there (screenMaxRightScroll)', () => {
+    const w = world('1-4', { x: 139, y: 8, mode: 'stand' });
+    w.player.star = 3000;
+    hold(w, ['right'], 120);
+    expect(w.camera.maxX).toBe(AXE_END);
+    expect(w.camera.x).toBeLessThanOrEqual(AXE_END);
+  });
+
+  it('Current keeps its own castle end', () => {
+    const cur = world('1-4', { x: 139, y: 8, mode: 'stand' }, 'current');
+    const cls = world('1-4', { x: 139, y: 8, mode: 'stand' });
+    expect(cur.camera.maxX).toBeGreaterThan(cls.camera.maxX);
+  });
+
+  it('after the axe: the hero walks on near the right edge, then the screen pans back to centre', () => {
+    const w = world('1-4', { x: 139, y: 8, mode: 'stand' });
+    w.player.star = 3000;
+    let maxScreen = 0;
+    for (
+      let i = 0;
+      i < 1500 && !(w.bossClear?.stop !== undefined && w.bossClear.t - w.bossClear.stop > 400);
+      i++
+    ) {
+      hold(w, w.bossClear ? [] : i % 30 < 15 ? ['right', 'jump'] : ['right'], 1);
+      if (w.bossClear) maxScreen = Math.max(maxScreen, w.player.centerX - w.camera.x);
+    }
+    expect(w.bossClear?.stop).toBeDefined();
+    expect(w.camera.maxX).toBeGreaterThan(AXE_END);
+    // keepPlayerOnRight: well past the centre during the walk.
+    expect(maxScreen).toBeGreaterThan(px(200));
+    // Then panned until the hero is at the centre (or the map's end is reached).
+    const screen = w.player.centerX - w.camera.x;
+    expect(screen === SCROLL_BACK_CENTER || w.camera.x === w.camera.maxX).toBe(true);
   });
 });

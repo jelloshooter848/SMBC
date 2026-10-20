@@ -13,7 +13,7 @@ import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, HeroItemEntry, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T } from '../level/tiles';
-import { Camera, DEFAULT_AUTO_SCROLL } from './camera';
+import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';
 import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
 import { SafetyFloor } from './safety-floor';
@@ -646,7 +646,20 @@ export class World {
    */
   remarkHook: ((level: string, hero: Player['def'], done: () => void) => boolean) | null = null;
   /** Set when Bowser's bridge is cut; freezes everything but the axe sequence. */
-  bossClear: { t: number; stop?: number; page?: number; at?: number; coast?: number } | null = null;
+  bossClear: {
+    t: number;
+    stop?: number;
+    page?: number;
+    at?: number;
+    coast?: number;
+    /** Scroll-back camera: the hero's screen x (centre) the walk to Toad keeps (keepPlayerOnRight). */
+    camRight?: number;
+  } | null = null;
+  /**
+   * Scroll-back camera: the camera's own end, while the axe's tighter one holds it
+   * (Level.screenMaxRightScroll from bowserAxe until the axe is taken); null otherwise.
+   */
+  private preAxeMaxX: number | null = null;
   /** The castle-clear message shown over the level (Toad's thanks), one entry per text row. */
   castleText: string[] = [];
   /**
@@ -894,6 +907,13 @@ export class World {
     // An intro is a cutscene (Level.as watchModeOverride: tsTxt.hideTime()): no clock runs, and
     // the main area after it starts its own.
     if (this.autoWalk) this.time = null;
+    // Scroll-back camera: while the castle's axe is there the screen ends just past it
+    // (Level.screenMaxRightScroll = bowserAxe.x + width/2 + BOWSER_AXE_SCREEN_SCROLL_OFFSET - SCREEN_WIDTH).
+    const axeAt = this.camera.scrollBack ? level.entities.find((e) => e.type === 'axe') : undefined;
+    if (axeAt) {
+      this.preAxeMaxX = this.camera.maxX;
+      this.camera.maxX = Math.max(0, Math.min(this.camera.maxX, px(axeAt.x * 16 + 8 + 4 - SCREEN_W)));
+    }
     this.camera.snapTo(this.player.body.x, this.player.body.y);
     this.alignBeam();
     // Level.destroyNearbyEnemies: every enemy of the area (spawned or not) within 6 tiles of
@@ -985,7 +1005,8 @@ export class World {
         )
           continue;
         if (!(e instanceof Pickup || e instanceof PowerUp)) this.fromMap.add(e);
-        if (this.camera.scrollBack && this.fromMap.has(e)) this.parked.push(e);
+        if (this.camera.scrollBack && this.fromMap.has(e) && e.despawnMargin !== null && this.outOfReach(e))
+          this.parked.push(e);
         else this.entities.push(e);
       }
       this.areaMemory?.delete(level.id);
@@ -1866,7 +1887,8 @@ export class World {
       // A hero may lead the camera from an eased anchor (CharacterDef.cameraX: Classic Sophia III).
       const camX = lead.def.cameraX?.(lead) ?? lead.body.x;
       if (this.camera.scrollBack)
-        this.camera.followBack(camX + (lead.centerX - lead.body.x), this.bowserOnScreen());
+        // A fixed half width (as snapTo): a body that changes width (Sophia's corner turns) does not jerk the screen.
+        this.camera.followBack(camX + px(8), this.bowserOnScreen());
       else this.camera.follow(camX, lead.body.y);
       // Never on past an anchor, with a little room behind it (a parked tank stays on screen):
       // held where it was, never pulled back (the screen does not scroll left), and a locked
@@ -3569,7 +3591,7 @@ export class World {
           p.facing = 1;
           // Scroll-back camera: MarioBase's flag-pole hop sets rightScrollPosOvRd to the hero's
           // screen x, so the screen follows the walk to the castle from there.
-          if (this.camera.scrollBack) c.camHold = p.centerX - this.camera.x;
+          if (this.camera.scrollBack && p.def.flagWalkFollow) c.camHold = p.centerX - this.camera.x;
           this.audio.playJingle('level-clear');
         }
         break;
@@ -3641,6 +3663,11 @@ export class World {
 
   private startBossClear(axe: Axe, p: Player): void {
     axe.destroy();
+    // BowserAxe.axeEnd: bowserAxe = null, so the screen may scroll on to Toad.
+    if (this.preAxeMaxX !== null) {
+      this.camera.maxX = this.preAxeMaxX;
+      this.preAxeMaxX = null;
+    }
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
@@ -3655,6 +3682,20 @@ export class World {
     this.bossPlayer = p;
   }
   private bossPlayer: Player | null = null;
+
+  /**
+   * Scroll-back camera after the axe (Level.scrollScreen with keepPlayerOnRight): the hero walks
+   * on to near the screen's right edge (rightScrollPos = SCREEN_WIDTH - hWidth/2 - 8 Flash px);
+   * once stopped at the exit, the screen pans on at 150 Flash px/s until they are back at its
+   * centre.
+   */
+  private bossClearCamera(c: NonNullable<World['bossClear']>, p: Player): void {
+    c.camRight ??= px(SCREEN_W - 4) - (p.body.w >> 1);
+    if (c.stop !== undefined && !c.coast && c.camRight > SCROLL_BACK_CENTER)
+      c.camRight = Math.max(SCROLL_BACK_CENTER, c.camRight - BOSS_PAN);
+    const want = p.centerX - c.camRight;
+    if (want > this.camera.x) this.camera.x = Math.min(this.camera.maxX, want);
+  }
 
   /**
    * The castle whose fake gets the unmask scenes (docs/STORY.md 2.3a): the campaign's 1-4 to 8-4
@@ -3827,7 +3868,7 @@ export class World {
       const aw = p.def.axeWalk;
       walkStep(this, p, aw ? velToSub(aw.speed) : px(1));
       // The screen follows the walk, so Toad (or the princess) comes into view.
-      this.camera.follow(p.body.x);
+      if (!this.camera.scrollBack) this.camera.follow(p.body.x);
       this.spawnPending();
       // The walk ends on touching the exit marker, the tile before Toad (the original's
       // Level.as stops the player on touchedExit); without one it lasts three seconds.
@@ -3844,6 +3885,7 @@ export class World {
       if (c.coast < aw.snap) c.coast = 0;
       else walkStep(this, p, velToSub(c.coast));
     }
+    if (this.camera.scrollBack) this.bossClearCamera(c, p);
     if (c.stop === undefined) return;
     // Then Toad's thanks and 1.5 s later the news (the original's ADD_TXT_TMR_DUR), which stays
     // until OK (owner note 4: text never moves by itself; the original went on to the next level

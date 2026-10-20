@@ -308,6 +308,12 @@ export interface CharacterDef {
    */
   axeWalk?: { speed: number; stop: number; snap: number };
   /**
+   * Classic SMBC's flag walk camera: after the flagpole hop the screen follows the walk to the
+   * castle, holding the hero where they stand on screen (MarioBase.flagDelayTmrLsr sets
+   * Level.rightScrollPosOvRd; only Mario and Luigi extend MarioBase). Absent: the screen holds.
+   */
+  flagWalkFollow?: boolean;
+  /**
    * A Blooper cannot hurt this hero standing on the sea floor two tiles above the stage bottom
    * (Classic SMBC ML-C25, MarioBase.hitEnemy's BLOOPA_NO_HURT_Y).
    */

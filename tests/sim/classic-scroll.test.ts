@@ -184,6 +184,6 @@ describe('Classic camera scrolls back left (SMBC 3.1.21 default)', () => {
     hold(w, ['right'], 200);
     const p = w.player;
     expect(w.camera.scrollBack).toBe(true);
-    expect(w.camera.x).toBe(p.body.x - px(40) + (p.centerX - p.body.x) - SCROLL_BACK_CENTER);
+    expect(w.camera.x).toBe(p.body.x - px(40) + px(8) - SCROLL_BACK_CENTER);
   });
 });
