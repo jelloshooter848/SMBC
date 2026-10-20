@@ -54,6 +54,8 @@ export const HIT_INVULN = 120;
 export const FLEE_SPEED = 0x02000;
 /** A shell held this long is swallowed (YM-15). */
 export const SHELL_HOLD = 600;
+/** After getting off on purpose, frames on the ground (beside him) before he can be mounted again. */
+export const REMOUNT_WAIT = 30;
 /** A freshly hatched Yoshi steps off his block at 1 px/f (tuning). */
 export const WALK_OFF = 0x01000;
 /** Kit key: 1 riding, 2 benched. */
@@ -157,6 +159,9 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       b.onGround = false;
       yoshi.body.vy = 0;
       yoshi.state = how === 'leap' ? 'drop' : 'wait';
+      // A rider who got off on purpose does not land straight back on (YM-19).
+      yoshi.leftBy = p;
+      yoshi.leftT = 0;
       if (how === 'leap') yoshi.body.onGround = false;
       break;
     }
@@ -395,6 +400,12 @@ export class YoshiMount extends Entity {
   state: 'wait' | 'walk' | 'ridden' | 'flee' | 'drop' | 'gone' = 'wait';
   rider: Player | null = null;
   fleeDir: -1 | 1 = 1;
+  /**
+   * The rider who just got off with Down + Jump (YM-19): not remounted until they have landed
+   * clear of his back, or stood REMOUNT_WAIT frames after landing. Null: anyone may get on.
+   */
+  leftBy: Player | null = null;
+  leftT = 0;
   /** Frames walking after the hatch, and the drop's carried speed (stepping off the block). */
   private walkT = 0;
   private stepVx = 0;
@@ -457,9 +468,15 @@ export class YoshiMount extends Entity {
       this.state = 'gone';
       return this.destroy();
     }
+    const left = this.leftBy;
+    if (left && left.body.onGround) {
+      const clear = left.body.x + left.body.w <= b.x || left.body.x >= b.x + b.w;
+      if (clear || ++this.leftT >= REMOUNT_WAIT) this.leftBy = null;
+    }
     // Landing on his back (re)mounts (YM-6, YM-17).
     for (const p of world.players) {
-      if (p.dead || p.out || RIDES.has(p) || !mayRide(p.def) || p.fallSpeed <= 0) continue;
+      if (p.dead || p.out || p === this.leftBy || RIDES.has(p) || !mayRide(p.def) || p.fallSpeed <= 0)
+        continue;
       const pb = p.body;
       const feet = pb.y + pb.h;
       if (pb.x + pb.w <= b.x || pb.x >= b.x + b.w) continue;

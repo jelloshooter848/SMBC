@@ -322,6 +322,15 @@ describe('YM-17..YM-19: losing him, getting off', () => {
     expect(ridingOf(r.p)).toBeNull();
     expect(y.state).toBe('wait');
     expect(r.p.body.h).toBe(px(heroFor(LINK, 'classic').hitbox(r.p).h));
+    // Straight up and back down onto his spot: he still waits, 120 frames on.
+    r.run(120);
+    expect(ridingOf(r.p)).toBeNull();
+    expect(y.state).toBe('wait');
+    // A real hop onto his back later gets back on.
+    r.p.body.y = y.body.y - px(40);
+    r.p.body.onGround = false;
+    for (let i = 0; i < 60 && !ridingOf(r.p); i++) r.step();
+    expect(ridingOf(r.p)).not.toBeNull();
   });
 });
 
