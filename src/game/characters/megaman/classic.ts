@@ -31,6 +31,7 @@ import {
 } from '../classic/power';
 import { MEGAMAN, MEGAMAN_PROFILE } from './index';
 import { MEGAMAN_CLASSIC_GUIDE } from './classic-guide';
+import { CLASSIC_HURT, CLASSIC_WALK, WALK_ABCB, walkPose } from '../classic/anim';
 import { ClassicRush } from './classic-rush';
 import {
   CLASSIC_FLOWER_WEAPON,
@@ -559,6 +560,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     if (star !== null) palette = `${suit}-star-${star}`;
     const shooting = p.attackTimer > 0;
     let name: string;
+    let air = false;
     if (p.dead || p.anim === 'hurt') name = 'hurt';
     else if (p.sliding > 0) name = o.slideFrame ?? 'slide';
     else if (rapid && p.anim !== 'climb') name = rapidPose(p, rapid);
@@ -567,10 +569,12 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       switch (p.anim) {
         case 'walk':
         case 'skid':
-          name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
+          name = shooting ? `walk-shoot-${walkPose(p, WALK_ABCB)}` : `walk-${walkPose(p, WALK_ABCB)}`;
           break;
         case 'jump':
           name = shooting ? 'jump-shoot' : 'jump';
+          // F2: Mega Man's own arms-up jump (the original's, rising and falling alike).
+          if (sheet === 'megaman') air = true;
           break;
         case 'climb':
           name = `climb-${(frame >> 3) & 1}`;
@@ -583,7 +587,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       }
     }
     return {
-      sheet,
+      sheet: air ? 'megaman-classic' : sheet,
       palette,
       frame: name,
       flip: p.facing < 0,
@@ -604,7 +608,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     if (p.scratch._bbRoot) return `shoot${aim}`;
     if (p.stepT > 0) return 'step';
     if (b.vx !== 0) {
-      const n = p.anim === 'walk' ? p.walkFrame : (p.frame >> 3) % 3;
+      const n = p.anim === 'walk' ? walkPose(p, WALK_ABCB) : (p.frame >> 3) % 3;
       return aiming ? `walk-shoot-${n}` : `walk-${n}`;
     }
     return aiming ? `shoot${aim}` : (p.frame & 255) < 8 ? 'idle-blink' : 'idle';
@@ -628,6 +632,19 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     // He bumps bricks from below in every state and never breaks them (MM-C33).
     canBreakBricks: () => false,
     hitbox: (p) => (p.sliding > 0 ? { w: 12, h: profile.slide?.hitboxH ?? 15 } : { w: 12, h: 22 }),
+    // F2: the original's HRect (24 standing, 27.5 in the air, the slide's own height), walk
+    // (the step frame, then 4 poses A B C B at 100 ms), and the shot poses kept walking or jumping.
+    hurtbox: (p) => ({
+      w: CLASSIC_HURT.w,
+      h:
+        p.sliding > 0
+          ? (profile.slide?.hitboxH ?? CLASSIC_HURT.megaman.slide)
+          : p.body.onGround
+            ? CLASSIC_HURT.megaman.stand
+            : CLASSIC_HURT.megaman.jump,
+    }),
+    walkAnim: CLASSIC_WALK.megaman,
+    attackKeepsMotion: true,
     sprite,
     blockPowerUp: classicBlockPowerUp,
     powerIcon: true,

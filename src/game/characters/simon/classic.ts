@@ -31,6 +31,7 @@ import {
 } from '../classic/power';
 import { SIMON, SIMON_TOOL_LABELS } from './index';
 import { SIMON_CLASSIC_GUIDE } from './classic-guide';
+import { CLASSIC_HURT, CLASSIC_WALK, WALK_ABCB, walkPose } from '../classic/anim';
 import {
   ACTION_FRAMES,
   AXE_CLASSIC,
@@ -222,6 +223,11 @@ function whipBox(p: Player) {
   return { x, y: p.feetY - px(top), w, h: px(top - bottom) };
 }
 
+/** Rising in the air with no whip or throw since the take-off: the tucked jump (F2). */
+export function tucked(p: Player): boolean {
+  return !p.body.onGround && p.body.vy < 0 && !p.scratch._airAtk && !p.crouching;
+}
+
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const star = classicStarPaletteStep(p, frame, reduceFlashing);
   const palette = star === null ? 'simon' : `simon-star-${star}`;
@@ -243,8 +249,14 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     } else name = (p.scratch._ac ? 'crouch-' : '') + (p.powerState === 'small' ? 'whip-chain' : 'whip-star');
   } else if (p.crouching) name = 'crouch';
   else if (p.anim === 'swim') name = `swim-${(frame >> 3) & 1}`;
-  else if (!p.body.onGround) name = 'jump';
-  else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${p.walkFrame}`;
+  else if (!p.body.onGround) {
+    // F2 (Simon.as 655-679): the tucked `jump` while rising, the standing pose (`fall`) while
+    // falling and for the rest of the air time after a whip or throw up there.
+    if (tucked(p)) {
+      name = 'jump-tuck';
+      sheet = 'simon-classic';
+    } else name = 'idle';
+  } else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${walkPose(p, WALK_ABCB)}`;
   else name = 'idle';
   return {
     sheet,
@@ -317,6 +329,12 @@ export const SIMON_CLASSIC: CharacterDef = {
   canBreakBricks: () => false,
   meleeStrikesBlocks: true,
   sprite,
+  // F2: the original's walk (4 poses at 115 ms) and HRect (30 standing, 25 tucked, 15.75 crouched).
+  walkAnim: CLASSIC_WALK.simon,
+  hurtbox: (p) => ({
+    w: CLASSIC_HURT.w,
+    h: p.crouching ? CLASSIC_HURT.simon.crouch : tucked(p) ? CLASSIC_HURT.simon.jump : CLASSIC_HURT.simon.stand,
+  }),
   blockPowerUp: classicBlockPowerUp,
   // No size change, so the HUD shows the Mushroom or Fire Flower (PS-C26).
   powerIcon: true,
@@ -385,6 +403,9 @@ export const SIMON_CLASSIC: CharacterDef = {
       else p.activeMelee = null;
       if (s._act === THROW && t === THROW_AT) release(p, world);
       p.attackTimer = s._act ? ACTION_FRAMES - t : 0;
+      // A whip or throw in the air: upright for the rest of the jump (attackedInAir, F2).
+      if (b.onGround) s._airAtk = 0;
+      else if (s._act) s._airAtk = 1;
     },
     // On the ground he is rooted for the whole whip or throw, unless he jumps out of it (SI-C4).
     rooted: (p, input) => (rooted(p, input) ? 'canJump' : false),
