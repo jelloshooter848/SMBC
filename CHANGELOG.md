@@ -8,19 +8,33 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode Options: **Expansion heroes** (off, as in the original). On, the select also offers
+  the heroes the original never had: Vic Viper, the Warriors of Light, Sir Arthur and Yoshi.
+
 ### Changed
 
-- Classic mode's select screen and skin menu now match the original's default look: brick-orange
-  panels with a light bevel and rivet corners, dark red cells, and a thin gold cursor ring that
-  cycles (held still with Reduce flashing). The name box shows the hero in white and the look's
-  name and its game in pale pink, all outlined so they read on a phone. A hero's own look has two
-  lines, as in the original, and the box follows the skin menu's cursor. Each cell and the HUD's
-  framed box show the hero's face (the Random slot's "?" in the HUD too); eight cells to a row
-  fit the 24 slots on screen. The hero stands at the centre on the next level's sky and ground
-  (underground levels: black and underground rock). The skin menu takes the grid's place.
-- Classic mode's select reads out the look, the hero and the game ("Break Man, Proto Man, Mega
-  Man 3"; a hero's own look once: "Proto Man, Mega Man 3"), also when SKIN changes the look; Down
+- Classic mode's select screen is now the original's: its eleven heroes in its order (Mario,
+  Luigi, Link, Samus, Simon, then Mega Man, Bass, Bill, Ryu, Sophia III) and the Random "?",
+  two rows of six cells. Every other look is a skin on one of their slots, each with its own
+  rules, as in the original: Mega Man wears Rock, Proto Man, Break Man, Cut Man, Fire Man, Ice
+  Man, Francesca, Doropie and Rokko Chan; Samus wears Pit and Dark Pit; Luigi wears Princess
+  Peach. A save or a link naming a look that had its own slot plays on as that look.
+- Classic mode's select and skin menu wear the original's default look: brick-orange panels with
+  a light bevel and rivet corners, dark red cells, and a thin gold cursor ring that cycles (held
+  still with Reduce flashing). The name box shows the hero in white and the look's name and its
+  game in pale pink, all outlined so they read on a phone, and it grows open as the original's
+  boxes do. A hero's own look has two lines, as in the original, and the box follows the skin
+  menu's cursor. Each cell and the HUD's framed box show the hero's face.
+- Classic mode's select stands the hero at the centre on the next level's own sky, scenery and
+  ground (1-1: blue sky, a hill and bushes over brick; 1-2: black and underground rock), as the
+  original's select level does. The skin menu takes the grid's place while it is open.
+- Classic mode's select reads out the look, the hero and the game ("Break Man, Mega Man, Mega
+  Man 3"; a hero's own look once: "Mega Man, Mega Man"), also when SKIN changes the look; Down
   in a one-row skin menu no longer moves the cursor.
+
+## [0.4.64] - 2026-10-20
 
 ### Added
 
@@ -1561,7 +1575,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...HEAD
+[0.4.64]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...v0.4.64
 [0.4.63]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...v0.4.63
 [0.4.62]: https://github.com/jelloshooter848/SMBC/compare/v0.4.61...v0.4.62
 [0.4.61]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...v0.4.61
