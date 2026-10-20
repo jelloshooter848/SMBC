@@ -345,6 +345,7 @@ export const WARRIORS_CLASSIC: CharacterDef = {
   hudName: 'WARRIOR',
   thanksName: 'WARRIOR',
   rules: 'classic',
+  notInOriginal: true,
   movement: WARRIORS_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: false,

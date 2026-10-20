@@ -23,3 +23,15 @@ export function urlRules(params: URLSearchParams, dev: boolean): Rules | null {
 export function urlClassicRun(params: URLSearchParams, dev: boolean): boolean {
   return dev && params.get('mode') === 'classic';
 }
+
+/**
+ * `?yoshi=1|ride` (dev mode only; 2026-10-19-yoshi-build-classic-character.md YM-1): turns the
+ * Classic Yoshi mount on for this start ('on'), or on with every life starting on his back
+ * ('ride', a testing aid). Null: the Dev menu's toggle decides. Ignored with dev mode off.
+ */
+export function urlYoshi(params: URLSearchParams, dev: boolean): 'on' | 'ride' | null {
+  const v = params.get('yoshi');
+  if (!dev || v === null) return null;
+  if (v === 'ride') return 'ride';
+  return v === '1' || v === 'on' ? 'on' : null;
+}

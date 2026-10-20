@@ -252,4 +252,27 @@ export const sfx: Sfx[] = [
   { id: 'pit-jump', pulse: '@2 v10 q8 x1 p7 o5 a16' },
   // Peach's float (D-PE-11): a soft chirp rising a third, then a sixth.
   { id: 'peach-float', pulse: '@1 v7 q6 x1 l32 o6 c e a' },
+  // Yoshi (2026-10-19-yoshi-build-classic-character.md YO-29, YM-29): original placeholders.
+  // His jump: a round bouncy hop up a major sixth.
+  { id: 'yoshi-jump', pulse: '@1 v11 q8 x1 p9 o5 e16' },
+  // One flutter kick (played every 8 frames while it lasts): two soft quick paddles.
+  { id: 'yoshi-flutter', pulse: '@2 v7 q6 x1 l64 o5 g o6 c' },
+  // The ground pound's curl: a quick spinning climb.
+  { id: 'yoshi-pound-spin', pulse: '@1 v9 q8 x0 l64 o5 c e g o6 c x1 e32' },
+  // The ground pound landing: a deep thump with a crunch.
+  { id: 'yoshi-pound', pulse: '@0 v12 q8 x1 p-12 o3 c16', noise: 'v12 x1 l32 n12 n14' },
+  // The tongue: a wet flick up.
+  { id: 'yoshi-tongue', pulse: '@2 v10 q8 x1 p8 o6 c32' },
+  // A gulp: a falling pulse.
+  { id: 'yoshi-swallow', pulse: '@1 v10 q8 x1 p-8 o5 g16' },
+  // An egg laid: a bright little pop.
+  { id: 'yoshi-lay', pulse: '@2 v10 q8 x0 l32 o6 c e x1 g16' },
+  // An egg thrown: a short falling whoosh.
+  { id: 'yoshi-throw', pulse: '@1 v10 q8 x1 p-6 o6 e32', noise: 'v5 x1 l32 n1' },
+  // An egg bouncing off the ground: a dry high tick.
+  { id: 'yoshi-egg-bounce', pulse: '@2 v8 q8 x1 o6 a64' },
+  // The mount's egg bursting open: a climbing cheer.
+  { id: 'yoshi-hatch', pulse: '@2 v11 q8 x0 l64 o5 g o6 c e g x1 o7 c16' },
+  // The mount running off after a hit: a sad falling call.
+  { id: 'yoshi-cry', pulse: '@2 v10 q7 x0 l32 o6 e d c x1 o5 a8' },
 ];

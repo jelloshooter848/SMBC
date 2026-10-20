@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: **Yoshi** closes the second row (a hero the original game never had). He walks with no run, flutters
+  when you hold JUMP while falling, ground-pounds with DOWN in the air (through bricks, onto enemies), licks enemies
+  with his tongue and swallows them into eggs (DOWN) or spits them (ATTACK), and aims eggs with a sweeping cursor: hold
+  EGG (Special) and let go to throw. Three eggs small, six with the Mushroom, red armour-piercing eggs with the Fire
+  Flower. His own art, sounds and Classic guide page.
+- Developer mode: the Dev menu (from the title or the Classic pause) has Classic mode toggles: **Classic: Yoshi mount**
+  (off by default, so Classic plays as the original) and a **Classic: <hero>** ON / OFF row for each Classic hero the
+  original SMBC 3.1.21 did not have (Vic Viper, the Warriors of Light, Peach, Arthur, Yoshi; a hero turned off leaves
+  the Classic select). With the mount on, the first power-up `?` block of each overworld or underground area gives a
+  Yoshi egg: land on his back to ride; he steps down off the block first. Every hero rides with Yoshi's run and jump; ATTACK licks (shells are held and spat, a red one as three fireballs) and
+  SPECIAL is the hero's own. A hit throws the rider off with their power kept and Yoshi runs away; DOWN + JUMP gets
+  off. He waits outside castles, water and bonus rooms and is back in the next area. `&yoshi=1` (or `ride`) turns it
+  on for a dev start.
+
 ## [0.4.59] - 2026-10-20
 
 ### Added
