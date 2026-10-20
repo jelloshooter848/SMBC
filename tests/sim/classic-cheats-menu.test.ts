@@ -122,7 +122,7 @@ describe('the Cheats page', () => {
     h.idle(8);
     h.tap('down');
     expect(h.said.at(-1)).toBe(
-      `Locked cheat. Beat The Lost Levels.`, // All Hammer Bros
+      `Locked cheat. Beat The Lost Levels (in place of the original's Special maps).`, // All Hammer Bros
     );
     h.tap('down');
     expect(h.said.at(-1)).toBe(

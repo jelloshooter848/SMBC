@@ -16,6 +16,7 @@ import { drawHud } from '@game/hud/hud';
 import { levelSeed, World, type WorldStart } from '@game/world/world';
 import { IntroScene } from '@game/scenes/intro';
 import type { Game } from '@game/scenes/game';
+import { cheatInfo } from '@game/cheats';
 
 // Classic patch 3 (owner-approved review findings of #164-#167): one describe per item.
 
@@ -141,5 +142,13 @@ describe('1. Infinite Time: no TIME on the HUD or the card, no tally', () => {
     expect(on).not.toContain('TIME');
     expect(on).not.toContain('400');
     expect(card({ ...NO_CHEATS }, false)).toEqual(expect.arrayContaining(['TIME', '400']));
+  });
+});
+
+describe('2. All Hammer Bros: the goal says The Lost Levels stands in for the Special maps', () => {
+  it("the locked text names The Lost Levels and the original's Special maps", () => {
+    const t = cheatInfo('allHammerBros').goalText;
+    expect(t).toMatch(/The Lost Levels/);
+    expect(t).toMatch(/Special maps/);
   });
 });

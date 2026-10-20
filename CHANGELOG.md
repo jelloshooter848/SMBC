@@ -10,6 +10,9 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic mode's All Hammer Bros cheat: its goal says that beating The Lost Levels stands in
+  for the original's Special maps, which Classic mode does not have.
+
 ### Fixed
 
 - Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
