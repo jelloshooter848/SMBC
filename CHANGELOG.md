@@ -20,7 +20,8 @@ under `## [Unreleased]`.
   enemies and bricks, his head breaks bricks, two shots at a time), **Fire Man** (stronger shots,
   firebars pass through him, two shots, double knockback), **Ice Man** (a full charge freezes, a
   weaker buster), **Francesca** with her Doropie look (no slide) and **Rokko Chan** (a dash and dash
-  jump instead of the slide, no charge). The select screen gains a third row for them.
+  jump instead of the slide, no charge). With them the Classic-only heroes no longer fit one
+  row, so the select screen shows them on two rows under the usual heroes.
 
 ## [0.4.62] - 2026-10-20
 

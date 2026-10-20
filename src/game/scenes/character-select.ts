@@ -63,7 +63,10 @@ export interface NewGamePick {
 
 /** The second row of heroes (heroes past the first row's) sits this far below the first. */
 export const SECOND_ROW_DY = 40;
-/** A third row (Classic mode's variants, FU-3) sits this far below the second (closer, to fit). */
+/**
+ * A third row sits this far below the second (closer, to fit): the Classic-only heroes split over
+ * two rows once they are more than ROW_MAX (the extras with Mega Man's variants, FU-3).
+ */
 export const THIRD_ROW_DY = 34;
 /** The most slots a row past the first holds before the rest move to a third row. */
 export const ROW_MAX = 11;

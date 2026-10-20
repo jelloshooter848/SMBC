@@ -42,7 +42,8 @@ describe('two-row character select', () => {
     h.tap('down');
     expect(idx(sel)).toBe(down);
     expect(h.said.at(-1)).toBe(`${sel.chars[down]?.name ?? 'Random'}, second row`);
-    // FU-3: Mega Man's variants fill a third row: Down goes on to it, then bumps; Up comes back.
+    // FU-3: with Mega Man's variants the Classic-only heroes split over two rows, so a third row
+    // follows: Down goes on to it, then bumps; Up comes back.
     h.tap('down');
     const third = idx(sel);
     expect(sel.slot(third).y).toBeGreaterThan(sel.slot(down).y);
