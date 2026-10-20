@@ -190,6 +190,8 @@ export const PEACH_CLASSIC: CharacterDef = {
   id: 'peach',
   name: 'Peach',
   hudName: 'PEACH',
+  // The original's Peach skins (Luigi skins 8 and 10) name the Subcon (BmdInfo.as:758, :766, namesArr[2]).
+  rescueName: 'the Subcon',
   rules: 'classic',
   notInOriginal: true,
   movement: PEACH_CLASSIC_PROFILE,
