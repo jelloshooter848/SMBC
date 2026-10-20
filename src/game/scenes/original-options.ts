@@ -124,15 +124,19 @@ function row<K extends keyof typeof CLASSIC_ROW_VALUES>(
   };
 }
 
-/** More Settings (DifficultySettingsMenu under Classic power-ups), in the original's order. */
+/**
+ * More Settings (DifficultySettingsMenu under Classic power-ups), in the original's order:
+ * loadItems' Lives, Attack Strength, Damage Response (the classic one), Item Drop Rate, Piranhas,
+ * Replace Goombas, Enemy Speed (Start With Mushroom is left out in classic mode).
+ */
 export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
   row('lives', 'Lives', 'Lives at the start and after each continue'),
+  row('attack', 'Attack', "Every hero's attack strength"),
   row(
     'whenHit',
     'When hit',
     'Lose everything: any hit leaves you small. Previous state: Fire goes to big. Instant death: any hit defeats you',
   ),
-  row('attack', 'Attack', "Every hero's attack strength"),
   row('drops', 'Item drops', 'How often enemies and blocks drop ammo'),
   row('piranhas', 'Piranhas', 'Which pipes have Piranha Plants, and their colour'),
   row('goombas', 'Goombas', 'Every Goomba becomes this enemy'),

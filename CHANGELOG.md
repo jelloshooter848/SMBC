@@ -16,6 +16,8 @@ under `## [Unreleased]`.
   (not only the current one) keeps it locked, since the count is kept with the save.
 - Classic mode with Current rules: nothing counts toward the cheats' goals any more (not even a
   clear or a game beaten), as the cheats play only with Classic rules.
+- Classic mode's More settings list their rows in the original's order: Lives, Attack, When
+  hit, Item drops, Piranhas, Goombas, Enemy speed.
 
 ### Fixed
 

@@ -24,6 +24,7 @@ import { IntroScene } from '@game/scenes/intro';
 import type { Game } from '@game/scenes/game';
 import { CHEAT_GOALS, cheatInfo } from '@game/cheats';
 import { LevelScene } from '@game/scenes/level';
+import { MORE_SETTINGS_ROWS } from '@game/scenes/original-options';
 import { px } from '@engine/math/units';
 import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
 import { edible, mouthOf } from '@game/characters/classic/yoshi-tongue';
@@ -303,5 +304,19 @@ describe("6. Yoshi's tongue vs Spike Top: inedible, like a Spiny", () => {
     for (let i = 0; i < 12; i++) r.step([]);
     expect(mouthOf(r.p)).toBeNull();
     expect(st.alive).toBe(true);
+  });
+});
+
+describe("7. More Settings rows in the original's order (DifficultySettingsMenu.loadItems)", () => {
+  it('Lives, Attack, When hit, Item drops, Piranhas, Goombas, Enemy speed', () => {
+    expect(MORE_SETTINGS_ROWS.map((r) => r.label)).toEqual([
+      'Lives',
+      'Attack',
+      'When hit',
+      'Item drops',
+      'Piranhas',
+      'Goombas',
+      'Enemy speed',
+    ]);
   });
 });
