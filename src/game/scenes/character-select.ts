@@ -699,7 +699,9 @@ export class CharacterSelectScene implements Scene {
     const action = this.reviveAction(this.index).toUpperCase();
     r.text(font, action, 128 - action.length * 4, 158 + low);
     const goY = 170 + low;
-    const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO REVIVE`);
+    // What OK does under the cursor: a standing hero is powered up instead.
+    const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+    const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`);
     r.text(font, ok, 128 - ok.length * 4, goY);
     const leave = this.reviveLeave();
     if (leave) {

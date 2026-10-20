@@ -396,6 +396,19 @@ export class Game {
     return this.deps.settings?.classic.gameMode === 'survival';
   }
 
+  /**
+   * A run that starts without Classic mode's first select (a dev Classic run, Free play, a dev
+   * Level select start): Survival only for a Classic run with Survival set, its hero standing and
+   * no revival waiting; any other run has none (a Survival run left behind ends here).
+   */
+  private survivalWithoutSelect(classic: boolean, character: CharacterDef): void {
+    this.survival = null;
+    if (!classic || !this.survivalMode) return;
+    this.survival = this.newSurvival();
+    this.survival.revive(character.id);
+    this.survival.reviveAllowed = false;
+  }
+
   /** A new Survival for this run: every hero of its roster (not hidden or locked) fallen. */
   private newSurvival(): Survival {
     return new Survival(() => this.roster.filter((c) => !this.heroLocked(c)).map((c) => c.id));
@@ -406,7 +419,12 @@ export class Game {
    * numLives = 1 when the campaign mode is SURVIVAL), where each hero has one life.
    */
   get cardLives(): number {
-    return this.survival ? 1 : this.state.lives;
+    return this.survivalRun ? 1 : this.state.lives;
+  }
+
+  /** A Classic Survival run is being played (its run ends only when every hero has fallen). */
+  get survivalRun(): boolean {
+    return this.survival !== null && this.classicRun;
   }
 
   /**
@@ -415,7 +433,7 @@ export class Game {
    * death as in any other mode.
    */
   survivalFall(): boolean {
-    if (!this.survival || this.deps.ctx.assist.infiniteLives) return false;
+    if (!this.survival || !this.survivalRun || this.deps.ctx.assist.infiniteLives) return false;
     this.survival.fall(this.state.character.id);
     return true;
   }
@@ -1357,6 +1375,7 @@ export class Game {
     this.state = newGameState(character, null, rules);
     if (!classic) this.state.lives = 99;
     else this.classicStartLives();
+    this.survivalWithoutSelect(classic, character);
     if (fullKit && hero.devKit) this.state.kit = hero.devKit();
     if (hero.damage.kind === 'powerup') this.state.powerState = power;
     else {
@@ -1488,12 +1507,7 @@ export class Game {
     this.state = newGameState(character, character2, this.liveRules);
     if (classic) this.classicStartLives();
     if (paid !== null) this.state.lives = paid;
-    else if (classic && this.survivalMode) {
-      // A dev Classic run in Survival has had no select: its hero starts standing.
-      this.survival = this.newSurvival();
-      this.survival.revive(character.id);
-      this.survival.reviveAllowed = false;
-    }
+    else this.survivalWithoutSelect(classic, character);
     this.playtestDone = null;
     this.quickRespawn = false;
     this.backupDue = null;

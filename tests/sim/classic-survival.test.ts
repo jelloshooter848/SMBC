@@ -457,3 +457,51 @@ describe('accessibility and touch', () => {
     expect(lines.size).toBe(1);
   });
 });
+
+describe('runs started without the first select (QA)', () => {
+  it('a dev Level select Classic run with Survival set plays Survival, its hero standing', () => {
+    const h = survival();
+    h.game.devStart('1-1', MARIO, 'small', false, undefined, { rules: 'classic', classic: true });
+    expect(h.game.survivalRun).toBe(true);
+    expect(h.game.survival?.standing()).toEqual([MARIO.id]);
+    expect(h.game.survival?.reviveAllowed).toBe(false);
+    expect(h.game.cardLives).toBe(1);
+    die(h);
+    // Mario fell and he was the only one standing: the run is over.
+    expect(h.top()).toBeInstanceOf(GameOverScene);
+  });
+
+  it('Free play started from inside a Survival run has no Survival: lives, no falls', () => {
+    const h = survival();
+    playing(h);
+    expect(h.game.survivalRun).toBe(true);
+    h.game.devStart('1-1', MARIO, 'small');
+    expect(h.game.survival).toBeNull();
+    expect(h.game.cardLives).toBe(h.game.state.lives);
+    const lives = h.game.state.lives;
+    die(h);
+    expect(h.game.state.lives).toBe(lives - 1);
+    expect(h.top()).toBeInstanceOf(IntroScene);
+  });
+
+  it('infinite lives with no lives left: the run goes on while a hero stands (checkGameOver)', () => {
+    const h = survival();
+    playing(h, [MARIO.id, LUIGI.id, SIMON.id]);
+    expect(h.game.state.lives).toBe(0);
+    h.game.ctx.assist.infiniteLives = true;
+    die(h);
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.survival?.isFallen(MARIO.id)).toBe(false);
+  });
+});
+
+describe('the revive prompt (QA)', () => {
+  it('says what OK does: REVIVE for a fallen hero, POWER UP for a standing one', () => {
+    const h = survival();
+    const s = start(h);
+    const prompt = () => draw(s).texts.find((t) => /^OK\b.* TO /.test(t.str))?.str;
+    expect(prompt()).toMatch(/^OK( \(.+\))? TO REVIVE$/);
+    h.tap('jump');
+    expect(prompt()).toMatch(/^OK( \(.+\))? TO POWER UP$/);
+  });
+});

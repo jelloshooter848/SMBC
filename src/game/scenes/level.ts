@@ -497,9 +497,10 @@ export class LevelScene implements Scene {
         // Respawn at the checkpoint if one was reached, else at the start of the main level.
         const cp = s.checkpoint;
         const mainLevel = cp?.level ?? this.level.parent ?? this.level.id;
-        // Survival's run ends when every hero has fallen, whatever the lives (checkGameOver).
-        if (fell ? game.survival?.allFallen === true : s.lives <= 0) {
-          if (!fell) s.lives = 0;
+        // Survival's run ends only when every hero has fallen, whatever the lives
+        // (EventManager.checkGameOver), infinite lives included.
+        if (game.survivalRun ? game.survival?.allFallen === true : s.lives <= 0) {
+          if (!game.survivalRun) s.lives = 0;
           game.gameOver(mainLevel, ev.player ?? 0);
           return;
         }
