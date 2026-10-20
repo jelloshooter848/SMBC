@@ -6,7 +6,7 @@
  * never prints the passphrase. With no passphrase it prints nothing: the build then has no way into
  * dev mode at all.
  *
- * The passphrase must be one the game's prompt can type (scenes/passphrase.ts): 8 to 32 of A-Z,
+ * The passphrase must be one the game's prompt can type (scenes/passphrase.ts): 6 to 32 of A-Z,
  * 0-9 and '-', in any case: surrounding spaces and newlines (a pasted secret) are trimmed, then it
  * is upper-cased. Anything else fails the release (exit 1) rather than lock the owner out; the
  * error never shows the secret. The salt and the normalising match dev-lock.ts.
@@ -15,8 +15,8 @@ import { createHash } from 'node:crypto';
 
 export const DEV_LOCK_SALT = 'smbc-remix/dev-mode/v1:';
 
-/** What the prompt can type: 8 to 32 of A-Z, 0-9 and '-' (after upper-casing). */
-export const PASSPHRASE_RULE = /^[A-Z0-9-]{8,32}$/;
+/** What the prompt can type: 6 to 32 of A-Z, 0-9 and '-' (after upper-casing). */
+export const PASSPHRASE_RULE = /^[A-Z0-9-]{6,32}$/;
 
 /** The hash dev-lock.ts's hashPassphrase gives for `text`. */
 export function devLockHash(text) {
@@ -34,7 +34,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const pass = raw.trim().toUpperCase();
     if (!PASSPHRASE_RULE.test(pass)) {
       process.stderr.write(
-        '::error::DEV_MODE_PASSPHRASE must be 8 to 32 characters of A-Z, 0-9 and "-" (any case), ' +
+        '::error::DEV_MODE_PASSPHRASE must be 6 to 32 characters of A-Z, 0-9 and "-" (any case), ' +
           'which is all the game can type. Change the secret and release again.\n',
       );
       process.exit(1);

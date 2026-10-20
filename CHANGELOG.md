@@ -8,6 +8,10 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Release builds: the dev-mode passphrase may be 6 to 32 characters (it was 8 to 32).
+
 ## [0.4.65] - 2026-10-20
 
 ### Added
