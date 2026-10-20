@@ -19,6 +19,11 @@ export const FIREBALL_CLASSIC: ProjectileSpec = {
   bounceVy: -0x02400, // 2.25 px/f up off the top of the ground
   burstOnCeiling: true,
   classicBlocks: { ground: 'collide', afterBlock: 'end', strikesBlocks: false },
+  // The original's ball fills its 8 x 8 (MarioFireBallMc `start`, 4 spin frames) and bursts up
+  // to 16 x 16 (`blowUp-3`), in red d82800 / orange fc9838 / white (F2: our own pixels).
+  sheet: 'smbc-shots',
+  frames: ['fireball-0', 'fireball-1', 'fireball-2', 'fireball-3'],
+  burstFrame: 'fireball-burst',
 };
 
 /** Throw pose length (MarioBase: 75 ms; Current 8 frames). Cosmetic. */

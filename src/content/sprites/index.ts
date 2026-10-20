@@ -6,17 +6,18 @@ import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
-import { linkPalettes, linkDef } from './link';
-import { megamanPalettes, megamanDef } from './megaman';
+import { linkPalettes, linkDef, linkClassicDef } from './link';
+import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
-import { simonPalettes, simonDef } from './simon';
+import { simonPalettes, simonDef, simonClassicDef } from './simon';
 import { simonFlameDef } from './simon-flame';
-import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
-import { billPalettes, billDef } from './bill';
+import { smbcShotPalettes, smbcShotsDef } from './smbc-shots';
+import { ryuPalettes, ryuDef, ryuWaveDef, ryuClassicDef } from './ryu';
+import { billPalettes, billDef, billClassicDef } from './bill';
 import { mapPalettes, mapDef } from './map';
 import { stationPalettes, stationDef } from './station';
 import { zebesPalettes, zebesDef } from './zebes';
@@ -109,6 +110,13 @@ export const SPRITES: Record<string, SpriteDef> = {
   protoman: protomanDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  // Classic SMBC's shots in the original's colours and sizes (Samus's beams, Mario's fireball).
+  'smbc-shots': smbcShotsDef,
+  'bill-classic': billClassicDef,
+  'ryu-classic': ryuClassicDef,
+  'megaman-classic': megamanClassicDef,
+  'simon-classic': simonClassicDef,
+  'link-classic': linkClassicDef,
   // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
   pit: pitDef,
   'pit-shots': pitShotsDef,
@@ -208,6 +216,7 @@ const defaults: Record<string, readonly string[]> = {
   ...bassPalettes,
   ...protomanPalettes,
   ...samusPalettes,
+  ...smbcShotPalettes,
   ...pitPalettes,
   ...pitShotPalettes,
   ...warriorsPalettes,

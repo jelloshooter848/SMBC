@@ -12,6 +12,15 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode: character select before every new level, as in the original's default
+  All Characters mode (the same hero keeps its power; OK goes straight on).
+- Classic mode heroes animate with the original 3.1.21's timing and states: per-hero walk
+  cycles, Link's somersault on every jump and walk-off, Simon's tucked rising jump, Mega Man's
+  arms-up jump, Ryu's 400 ms flip then upright fall, Bill's upright walk-off fall, Samus's
+  faster somersault and her air shot, air aim-up and walking aim-up poses, and Mario's grow and
+  shrink flicker. Shots in the air or on the move keep the jump or walk pose.
+- Classic mode heroes are hit on the original's body boxes (their HRect sizes), and Samus's
+  beams, Wave Beam and missiles and Mario's fireball take the original's sizes and colours.
 - Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
   Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
   a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch

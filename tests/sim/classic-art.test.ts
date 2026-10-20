@@ -141,9 +141,12 @@ describe('Pit and Dark Pit: their own sheet', () => {
       [fired[0], WAVE_BEAM_CLASSIC],
       [fired[1], MISSILE_CLASSIC],
     ] as const) {
+      // Pit's own numbers (F2): the heavy arrow keeps its 16 x 8 body while Classic Samus's missile
+      // took the original's 10 x 8; every other number is Samus's.
       const { sheet, frames, burstFrame, ...rest } = (shot as Projectile).spec;
       const { sheet: _s, frames: _f, burstFrame: _b, ...want } = base;
-      expect(rest).toEqual(want);
+      const own = base === MISSILE_CLASSIC ? { w: 16, h: 8 } : { w: 8, h: 8 };
+      expect(rest).toEqual({ ...want, ...own });
       expect(sheet).toBe('pit-shots');
       for (const f of [...frames, ...(burstFrame ? [burstFrame] : [])])
         expect(SPRITES['pit-shots']?.frames[f], f).toBeDefined();

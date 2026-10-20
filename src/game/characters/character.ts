@@ -407,6 +407,24 @@ export interface CharacterDef {
    */
   rescueName?: string;
   /**
+   * The walk cycle as the original steps it (Classic SMBC): `frames` poses (Player.walkFrame
+   * 0..frames-1), one every `ticks` game frames (fractional: 6.9 is the original's 115 ms), at any
+   * walking speed. Absent: Player.updateAnim's 3-frame cycle at 5 / 3 / 2 frames by speed, as today.
+   */
+  walkAnim?: { frames: number; ticks: number };
+  /**
+   * The attack timer does not take over Player.anim (Classic SMBC): while attackTimer runs the
+   * hero keeps its walk / jump state, so its sprite can show a walking or airborne shot (Mega
+   * Man's jump-shoot, Samus's jumpShoot). Absent: anim is 'attack' while attackTimer > 0, as today.
+   */
+  attackKeepsMotion?: boolean;
+  /**
+   * The box enemies and their shots hit (Classic SMBC: the original's HRect, width x height in
+   * px, centred on the body and standing on its feet). Terrain still uses `hitbox`. Absent: the
+   * body itself, as today (Player.hurtBody).
+   */
+  hurtbox?(p: Player): { w: number; h: number };
+  /**
    * The x (subpixels) the camera follows for this hero in place of `body.x`, asked once a frame
    * while the hero leads (Classic SMBC Sophia III, SO-39: a corner turn's jump in her anchor is
    * eased, Sophia.as screenScrollPosOffset). Absent: `body.x`, as today.

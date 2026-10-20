@@ -1443,7 +1443,7 @@ export class World {
     }
     if (opts.hurtsPlayers ?? true) {
       for (const p of this.activePlayers()) {
-        if (overlaps(box, p.body)) this.hurtPlayer(p, p.centerX < cx ? -1 : 1);
+        if (overlaps(box, p.hurtBody())) this.hurtPlayer(p, p.centerX < cx ? -1 : 1);
       }
     }
     const breaker = owner ?? this.nearestPlayer(cx);
@@ -2964,7 +2964,8 @@ export class World {
 
   private playerVsEnemy(p: Player, e: Enemy): void {
     const pb = p.body;
-    if (!overlaps(pb, e.body)) return;
+    // The hurt box (CharacterDef.hurtbox, Classic: the original's HRect); the body without one.
+    if (!overlaps(p.hurtBody(), e.body)) return;
     // A sword/thrust that is touching this enemy handles it; no body contact damage.
     if (p.activeMelee && overlaps(p.activeMelee, e.body) && !this.thrustIgnoresShell(p, e)) return;
     if (p.star > 0) {
@@ -3041,7 +3042,7 @@ export class World {
           return;
         }
       }
-      if (!overlaps(pr.body, p.body)) return;
+      if (!overlaps(pr.body, p.hurtBody())) return;
       if (p.def.behaviour.blocks?.(p, pr)) {
         pr.destroy();
         this.audio.sfx('bump');

@@ -366,7 +366,16 @@ describe('a Classic run', () => {
     h.game.classicGame(MARIO);
     const order: string[] = [];
     for (let n = 0; n < 40; n++) {
-      h.until(() => inLevel(h) || h.top() instanceof CreditsScene, 600);
+      // F2: each clear goes through character select (the original's All Characters mode).
+      h.until(
+        () => inLevel(h) || h.top() instanceof CreditsScene || h.top() instanceof CharacterSelectScene,
+        600,
+      );
+      if (h.top() instanceof CharacterSelectScene) {
+        h.idle(12);
+        h.tap('jump');
+        h.until(() => inLevel(h) || h.top() instanceof CreditsScene, 600);
+      }
       if (!inLevel(h)) break;
       const l = level(h);
       const ws = `${l.level.world}-${l.level.stage}`;

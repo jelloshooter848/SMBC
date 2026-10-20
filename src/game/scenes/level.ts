@@ -457,6 +457,7 @@ export class LevelScene implements Scene {
         // Otherwise on to the next level; a castle's "another castle" news is shown in the
         // level, next to Toad (World.castleText).
         else if (game.campaign) game.levelCleared(this.level.id);
+        else if (game.classicRun) game.levelExitTo(ev.next);
         else game.goToLevel(ev.next, { mode: 'stand' });
         break;
       case 'died': {
@@ -520,6 +521,7 @@ export class LevelScene implements Scene {
       if (game.playtestDone) game.playtestDone();
       // The campaign's hand-off back to the map (Game.takeCrystalBall).
       else if (game.campaign) game.takeCrystalBall(this.level.id);
+      else if (next && game.classicRun) game.levelExitTo(next);
       else if (next) game.goToLevel(next, { mode: 'stand' });
       else game.showTitle();
     };
@@ -551,6 +553,7 @@ export class LevelScene implements Scene {
     const end = () => {
       if (game.playtestDone) game.playtestDone();
       else if (game.campaign) game.campaignTopSecret(secret, this.level.id);
+      else if (next && game.classicRun) game.levelExitTo(next);
       else if (next) game.goToLevel(next, { mode: 'stand' });
       else game.showTitle();
     };

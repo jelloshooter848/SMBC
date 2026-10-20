@@ -3,6 +3,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipH, swapColors } from '@engine/gfx/pixelart';
 import { mapIconFrames } from './map-icons';
 import { topSecretItemFrames } from './top-secret';
+import { smbcBeamItemFrames } from './smbc-shots';
 
 /**
  * Item palette roles:
@@ -2194,6 +2195,8 @@ export const itemsDef: SpriteDef = {
     'ice-beam-1': iceBeam(beam1),
     'wave-beam-0': waveBeam0,
     'wave-beam-1': waveBeam1,
+    // Classic SMBC Samus's beam in the original's look (smbc-shots.ts, F2).
+    ...smbcBeamItemFrames,
     missile,
     'missile-up': missileUp,
     'morph-bomb-0': morphBomb0,

@@ -21,6 +21,7 @@ import {
   type ClassicPowerKit,
 } from '../classic/power';
 import { BILL } from './index';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
 import { BillShot, billShotsOut, CLASSIC_GUNS, clearBillShots, type ClassicGunId } from './classic-weapons';
 
 /**
@@ -323,6 +324,7 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const ay = p.scratch.aimY ?? 0;
   let name: string;
   let offsetY = 8;
+  let sheet = 'bill';
   if (p.dead) name = 'die';
   else if (p.crouching) {
     name = 'prone';
@@ -337,14 +339,19 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
           : `spin-${(frame >> 2) & 3}`;
     else if (ay < 0) name = ax === 0 ? 'aim-up' : 'aim-diag-up';
     else if (ay > 0) name = 'aim-diag-down';
-    else name = 'shoot'; // a fall: a still pose with the gun forward
+    else if (p.inWater) name = 'shoot';
+    else {
+      // F2: a walk off a ledge falls upright, legs split (the original's torso and legs `fall`).
+      name = 'fall';
+      sheet = 'bill-classic';
+    }
   } else if (ay < 0 && ax === 0) name = 'aim-up';
   else if (ay < 0) name = 'aim-diag-up';
   else if (ay > 0)
     name = 'aim-diag-down'; // walking with Down + a direction
-  else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${p.walkFrame}`;
+  else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${walkPose(p, WALK_ABCB)}`;
   else name = p.attackTimer > 0 ? 'shoot' : 'idle';
-  return { sheet: 'bill', palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
+  return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
 }
 
 /* ---------- guide and touch (TG-22, BI-C31) ---------- */
@@ -401,6 +408,18 @@ export const BILL_CLASSIC: CharacterDef = {
   canBreakBricks: () => false,
   // BI-C9: prone 12 × 15 (the original's 13.5 × 15 at our width); standing 12 × 24.
   hitbox: (p) => (p.crouching ? { w: 12, h: 15 } : { w: 12, h: 24 }),
+  // F2: the original's HRect (31.5 standing, 16.25 in the somersault, 15 prone), legs' walk
+  // (4 x 115 ms), and walking while he shoots.
+  hurtbox: (p) => ({
+    w: CLASSIC_HURT.w,
+    h: p.crouching
+      ? CLASSIC_HURT.bill.prone
+      : !p.body.onGround && p.scratch._somersault
+        ? CLASSIC_HURT.bill.jump
+        : CLASSIC_HURT.bill.stand,
+  }),
+  walkAnim: CLASSIC_WALK_ANIM.bill,
+  attackKeepsMotion: true,
   sprite,
   blockPowerUp: classicBlockPowerUp,
   jumpSfx: () => 'jump-small',
