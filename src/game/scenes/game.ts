@@ -15,7 +15,7 @@ import { Rng } from '@engine/rng';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
-import type { Settings } from '@engine/save/settings';
+import type { ClassicDevToggles, Settings } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
 import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
@@ -326,6 +326,13 @@ export class Game {
       enumerable: true,
       configurable: true,
     });
+    // The Classic Yoshi mount (YM-1, YM-2): only in a Classic-rules run outside the campaign,
+    // with the Dev menu's toggle (or a dev `&yoshi=` start) on.
+    Object.defineProperty(deps.ctx, 'classicYoshi', {
+      get: () => this.yoshiMount,
+      enumerable: true,
+      configurable: true,
+    });
   }
 
   /**
@@ -373,6 +380,34 @@ export class Game {
   }
 
   /**
+   * A dev `?level=` start's `&yoshi=1|ride` (main.ts, dev-url.ts urlYoshi): overrides the Dev menu's
+   * Yoshi mount toggle for the session. Null: the toggle decides.
+   */
+  yoshiUrl: 'on' | 'ride' | null = null;
+
+  /** The Classic Yoshi mount in force now (GameContext.classicYoshi): undefined when off. */
+  get yoshiMount(): 'on' | 'ride' | undefined {
+    if (this.liveRules !== 'classic' || !this.devMode) return undefined;
+    if (this.yoshiUrl) return this.yoshiUrl;
+    return this.classicToggles.yoshiMount ? 'on' : undefined;
+  }
+
+  /**
+   * The Dev menu's Classic toggles in force (Settings.classicDev): the saved ones while dev mode
+   * is on, else the defaults (every hero on, no Yoshi mount), so Classic plays as shipped.
+   */
+  get classicToggles(): ClassicDevToggles {
+    const s = this.deps.settings;
+    // A hand-made settings object (a test harness's) may predate the field: the defaults.
+    return (this.devMode && s?.classicDev) || { yoshiMount: false, heroesOff: [] };
+  }
+
+  /** False for a hero not in SMBC 3.1.21 (CharacterDef.notInOriginal) toggled off in the Dev menu. */
+  classicHeroOn(def: CharacterDef): boolean {
+    return !def.notInOriginal || !this.classicToggles.heroesOff.includes(def.id);
+  }
+
+  /**
    * The one place that decides the live rules (TG-9 rules model): 'current' whenever a campaign
    * file is open, else the run's (runRules). A World reads them once, when it is built.
    */
@@ -392,7 +427,8 @@ export class Game {
   /** The roster for a non-campaign run under `rules` (the dev Level select's Rules row). */
   rosterFor(rules: Rules): CharacterDef[] {
     if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
-    return [...this.deps.characters, ...CLASSIC_EXTRAS];
+    // A hero toggled off in the Dev menu is left out (and `?char=` falls back to the first).
+    return [...this.deps.characters, ...CLASSIC_EXTRAS.filter((d) => this.classicHeroOn(d))];
   }
 
   get ctx(): GameContext {

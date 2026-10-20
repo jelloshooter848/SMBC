@@ -27,6 +27,7 @@ import { VICVIPER_CLASSIC } from './vicviper/classic';
 import { WARRIORS_CLASSIC } from './warriors/classic';
 import { PEACH_CLASSIC } from './peach/classic';
 import { ARTHUR_CLASSIC } from './arthur/classic';
+import { YOSHI_CLASSIC } from './yoshi/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
@@ -34,6 +35,7 @@ import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
+import { yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -41,13 +43,16 @@ import { applyOptionSpawns } from '../rules/classic-options-level';
 installClassicRules({
   enemyHit: classicHit,
   enemySpawned: classicEnemySpawned,
-  strikeBlock: classicStrikeBlock,
+  // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
+  strikeBlock: (world, tx, ty, p, breakBricks, hit) =>
+    yoshiEggStrike(world, tx, ty, p) ?? classicStrikeBlock(world, tx, ty, p, breakBricks, hit),
   levelEdits: (map, id, defs, spawns, options) => {
     // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas).
     const water = applyClassicLevelEdits(map, id, defs);
     const wide = applyWideVariants(map, id, defs, spawns);
     return applyOptionSpawns(map, spawns, options) || wide || water;
   },
+  worldLoaded: yoshiWorldLoaded,
 });
 
 /** Playable characters in select-screen order. */
@@ -73,7 +78,7 @@ export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
 
 /**
  * Classic-only heroes (TG-41), in select order (Bass, Proto Man, Pit, Vic Viper, Warriors of
- * Light, Peach, Arthur, ...), only the built ones; each has `rules: 'classic'`. Only Game.roster lists them
+ * Light, Peach, Arthur, ..., Yoshi), only the built ones; each has `rules: 'classic'`. Only Game.roster lists them
  * (Classic-rules non-campaign runs): never in CHARACTERS, heroesToFind, captives, the map or
  * the training rooms.
  */
@@ -88,6 +93,8 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   PEACH_CLASSIC,
   // Sir Arthur (AR-2): after Peach.
   ARTHUR_CLASSIC,
+  // Yoshi (YO-2): last.
+  YOSHI_CLASSIC,
 ];
 
 /**
