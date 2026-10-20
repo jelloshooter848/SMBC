@@ -219,6 +219,10 @@ export function drawHeroStats(
   // Classic SMBC: the power icon (PS-C26) and one ammo counter in the tool slot (PS-C27).
   const icon = powerIcon(players[0]);
   if (icon) r.sprite(assets.sheet('items'), icon, POWER_ICON_P1.x, POWER_ICON_P1.y);
+  // The Classic Yoshi mount waiting outside a castle, water or bonus area (its kit key `yoshiRide`
+  // 2, YM-24): his head after the power icon. Only the Classic mount sets the key.
+  if (player?.scratch.yoshiRide === 2)
+    r.sprite(assets.sheet('yoshi'), 'yoshi-head', POWER_ICON_P1.x + 10, POWER_ICON_P1.y);
   const ammo = player ? def.hudAmmo?.(player) : null;
   if (ammo) {
     const sheet = assets.sheet(ammo.sheet ?? 'items');

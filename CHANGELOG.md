@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.60] - 2026-10-20
+
 ### Added
 
 - Classic mode: character select before every new level, as in the original's default
@@ -19,6 +21,24 @@ under `## [Unreleased]`.
   shrink flicker. Shots in the air or on the move keep the jump or walk pose.
 - Classic mode heroes are hit on the original's body boxes (their HRect sizes), and Samus's
   beams, Wave Beam and missiles and Mario's fireball take the original's sizes and colours.
+- Classic mode: **Yoshi** closes the second row (a hero the original game never had). He walks with no run, flutters
+  when you hold JUMP while falling, ground-pounds with DOWN in the air (through bricks, onto enemies), licks enemies
+  with his tongue and swallows them into eggs (DOWN) or spits them (ATTACK), and aims eggs with a sweeping cursor: hold
+  EGG (Special) and let go to throw. Three eggs small, six with the Mushroom, red armour-piercing eggs with the Fire
+  Flower. His own art, sounds and Classic guide page.
+- Developer mode: the Dev menu (from the title or the Classic pause) has Classic mode toggles: **Classic: Yoshi mount**
+  (off by default, so Classic plays as the original) and a **Classic: <hero>** ON / OFF row for each Classic hero the
+  original SMBC 3.1.21 did not have (Vic Viper, the Warriors of Light, Peach, Arthur, Yoshi; a hero turned off leaves
+  the Classic select). With the mount on, the first power-up `?` block of each overworld or underground area gives a
+  Yoshi egg: land on his back to ride; he steps down off the block first. Every hero rides with Yoshi's run and jump; ATTACK licks (shells are held and spat, a red one as three fireballs) and
+  SPECIAL is the hero's own. A hit throws the rider off with their power kept and Yoshi runs away; DOWN + JUMP gets
+  off. He waits outside castles, water and bonus rooms and is back in the next area. `&yoshi=1` (or `ride`) turns it
+  on for a dev start.
+
+## [0.4.59] - 2026-10-20
+
+### Added
+
 - Classic mode's new hero **Princess Peach** (second row, after the Warriors of Light; never in the campaign): Super
   Mario Bros. 2's princess on Classic Mario's walk and run, with a lower jump. Keep Jump held as she falls to float for
   a moment. LIFT pulls a vegetable out of the ground (now and then a POW block, and every sixth one in a row a Stopwatch
@@ -34,6 +54,19 @@ under `## [Unreleased]`.
   in eight drops one): a fast **dagger**, a **torch** whose fire burns through armour, or an **axe** that arcs through
   walls. Gold armour makes every weapon stronger and armour-piercing, and adds **MAGIC** (Special): lightning on both
   sides after a short wind-up. The HUD names the weapon he holds, and a new weapon is announced.
+- Classic mode: Princess Peach's castle line names the Subcon, as the original's Peach skins do.
+
+### Changed
+
+- Classic rules: the camera now scrolls back left, as the original game does, keeping your hero in the middle of the
+  screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
+  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself and stops just
+  past the axe; after the axe it follows your hero on to Toad. Auto-scrolling stages and one-screen rooms keep their
+  own camera, and the campaign's camera is unchanged.
+- Classic rules: an area you leave by a pipe, vine or pit is kept as you left it, as in the original: back from a bonus
+  room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
+  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
+  the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
 
 ### Changed
 
@@ -89,18 +122,6 @@ under `## [Unreleased]`.
 - Classic mode fixes: Sophia III's guide says her jump height doesn't depend on speed; Bill's Flare pierces armour at
   the original's strength; Vic Viper's power bar names (MISSILE shown as MISSL) keep clear of the CLASSIC tag and hide
   while player two's HUD is shown; player two's key icon no longer covers a seven-letter name.
-
-### Changed
-
-- Classic rules: the camera now scrolls back left, as the original game does, keeping your hero in the middle of the
-  screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
-  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself and stops just
-  past the axe; after the axe it follows your hero on to Toad. Auto-scrolling stages and one-screen rooms keep their
-  own camera, and the campaign's camera is unchanged.
-- Classic rules: an area you leave by a pipe, vine or pit is kept as you left it, as in the original: back from a bonus
-  room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
-  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
-  the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
 
 ## [0.4.57] - 2026-10-19
 
@@ -1414,7 +1435,9 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.60...HEAD
+[0.4.60]: https://github.com/jelloshooter848/SMBC/compare/v0.4.59...v0.4.60
+[0.4.59]: https://github.com/jelloshooter848/SMBC/compare/v0.4.58...v0.4.59
 [0.4.58]: https://github.com/jelloshooter848/SMBC/compare/v0.4.57...v0.4.58
 [0.4.57]: https://github.com/jelloshooter848/SMBC/compare/v0.4.56...v0.4.57
 [0.4.56]: https://github.com/jelloshooter848/SMBC/compare/v0.4.55...v0.4.56

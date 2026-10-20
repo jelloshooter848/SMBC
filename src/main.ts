@@ -22,7 +22,7 @@ import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
 import { Game } from '@game/scenes/game';
 import { CHARACTERS, heroFor } from '@game/characters/registry';
-import { urlClassicRun, urlRules } from '@game/dev-url';
+import { urlClassicRun, urlRules, urlYoshi } from '@game/dev-url';
 import { DEFAULT_ASSIST } from '@game/context';
 import { MENU_TOUCH_LABELS } from '@game/touch-labels';
 import { miniGameFor } from '@game/minigames';
@@ -288,6 +288,8 @@ function boot(): void {
     // run, as the dev Level select's Mode row (its rules: `rules=`, else Options' Classic rules).
     const classic = urlClassicRun(params, settings.dev);
     const rules = urlRules(params, settings.dev) ?? (classic ? settings.classicRules : 'current');
+    // `&yoshi=1|ride` (dev mode only): the Classic Yoshi mount for this session (YM-1).
+    game.yoshiUrl = urlYoshi(params, settings.dev);
     const roster = game.rosterFor(rules);
     const c1 = roster.find((c) => c.id === params.get('char')) ?? (roster[0] as (typeof roster)[0]);
     const c2 = roster.find((c) => c.id === params.get('char2')) ?? null;
