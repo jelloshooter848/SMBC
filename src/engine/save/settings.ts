@@ -3,11 +3,11 @@ import type { PlayerBindings } from '../input/bindings';
 import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
 import type { BeatDifficulty } from './progress';
+import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
 
 /** Classic mode's map difficulties (data/MapDifficulty.as), as the beat status names them. */
 export type MapDifficulty = BeatDifficulty;
 export const MAP_DIFFICULTIES: readonly MapDifficulty[] = ['easy', 'normal', 'hard'];
-import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
 
 export type TouchMode = 'auto' | 'on' | 'off';
 /** Touch d-pad: drawn at a fixed spot, or a stick that centres under the thumb. */

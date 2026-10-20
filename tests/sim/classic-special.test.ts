@@ -203,6 +203,7 @@ describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
       'Super Mario Bros.',
       'SMB Special',
       'The Lost Levels',
+      'Map difficulty',
       'Options',
       'Back',
     ]);
@@ -213,11 +214,18 @@ describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
     expect(h.said.at(-1)).not.toMatch(/Beaten/);
   });
 
-  it('its row starts a Classic run at Special 1-1, on the menu difficulty', () => {
-    const h = classic({ classicMapDifficulty: 'easy' });
+  it("its row starts a Classic run at Special 1-1, on the Map difficulty row's difficulty", () => {
+    const h = classic();
     h.game.showClassicMenu();
     h.idle(8);
-    h.tap('down');
+    // The Map difficulty row (after the map sets): Normal, left to Easy.
+    for (let i = 0; i < MAP_SETS.length; i++) h.tap('down');
+    expect(h.said.at(-1)).toMatch(/^Map difficulty: Normal/);
+    h.tap('left');
+    expect(S(h).classicMapDifficulty).toBe('easy');
+    // Up to SMB Special, and OK.
+    for (let i = 1; i < MAP_SETS.length; i++) h.tap('up');
+    expect(h.said.at(-1)).toMatch(/^SMB Special\./);
     h.tap('jump');
     choose(h, MARIO);
     const l = enterLevel(h);

@@ -675,7 +675,8 @@ export class Game {
       // A developer-started run counts for nothing: the title, as free play.
       if (this.classicDev) return this.showTitle();
       const set = mapSetOf(from).id;
-      recordClassicBeat(set, this.classicDifficulty);
+      // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
+      recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
       // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
       const cheats = this.deps.settings?.classicCheats;
       if (
@@ -1796,6 +1797,12 @@ export class Game {
    * menus a new Classic run starts there (the select screen first).
    */
   classicLevelSelect(levelId: string, difficulty: MapDifficulty): void {
+    // Go keeps the chosen difficulty (GameSettings.changeMapDifficulty).
+    const settings = this.deps.settings;
+    if (settings && settings.classicMapDifficulty !== difficulty) {
+      settings.classicMapDifficulty = difficulty;
+      this.deps.applySettings?.();
+    }
     if (
       this.classicRun &&
       this.campaign === null &&

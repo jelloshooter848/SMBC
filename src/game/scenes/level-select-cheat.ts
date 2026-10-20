@@ -1,8 +1,7 @@
-import type { MapDifficulty } from '@engine/save/settings';
-import { MAP_DIFFICULTIES } from '@engine/save/settings';
 import { MenuScene } from './menu';
+import { LevelScene } from './level';
 import type { Game } from './game';
-import { DIFFICULTY_NAMES, MAP_SETS, type MapSet } from './original-game';
+import { MAP_SETS, mapDifficultyItem, mapSetOf, type MapSet } from './original-game';
 
 /*
  * The Level Select cheat (G-007): the original's 17th cheat (Cheats.as:47), unlocked by beating
@@ -34,17 +33,30 @@ export function levelSelectTarget(game: Game, set: MapSet, world: number, level:
 
 export class LevelSelectScene extends MenuScene {
   private set: MapSet;
-  private difficulty: MapDifficulty;
   private world = 1;
   private level = 1;
 
   constructor(game: Game, onBack: () => void, translucent = false) {
     super(game, 'LEVEL SELECT', [], onBack, translucent);
     this.set = MAP_SETS[0] as MapSet;
-    this.difficulty = game.classicRun
-      ? game.classicDifficulty
-      : (game.deps.settings?.classicMapDifficulty ?? 'normal');
+    // From a level (the pause menu): its map set, world and level (LevelSelectMenu.as:35-46).
+    const here = game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const id = here?.world.level.id;
+    if (id) {
+      this.set = mapSetOf(id);
+      const m = /(\d+)-(\d+)/.exec(id.slice(this.set.start.replace(/\d+-\d+$/, '').length));
+      if (m) {
+        this.world = Math.min(Math.max(1, Number(m[1])), this.set.lastWorld);
+        this.level = Math.min(Math.max(1, Number(m[2])), 4);
+      }
+    }
     this.build();
+  }
+
+  /** Whether the run plays (or will play) Classic rules: Map difficulty applies only then. */
+  private get classic(): boolean {
+    const g = this.game;
+    return (g.classicRun ? g.liveRules : (g.deps.settings?.classicRules ?? 'classic')) === 'classic';
   }
 
   private build(): void {
@@ -60,14 +72,7 @@ export class LevelSelectScene extends MenuScene {
         },
         hint: 'Which game',
       },
-      {
-        label: 'Difficulty',
-        value: () => DIFFICULTY_NAMES[this.difficulty],
-        adjust: (d) => {
-          this.difficulty = step(MAP_DIFFICULTIES, this.difficulty, d);
-        },
-        hint: 'Map difficulty: Easy, Normal or Hard',
-      },
+      mapDifficultyItem(this.game, () => this.classic),
       {
         label: 'World',
         value: () => worldName(this.world),
@@ -95,7 +100,8 @@ export class LevelSelectScene extends MenuScene {
   private go(): void {
     const game = this.game;
     const target = levelSelectTarget(game, this.set, this.world, this.level);
-    game.classicLevelSelect(target, this.difficulty);
+    const difficulty = this.classic ? (game.deps.settings?.classicMapDifficulty ?? 'normal') : 'normal';
+    game.classicLevelSelect(target, difficulty);
   }
 
   override enter(): void {

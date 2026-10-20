@@ -1,3 +1,4 @@
+import type { MapDifficulty } from '@engine/save/settings';
 export type Theme =
   | 'overworld'
   | 'underground'
@@ -597,9 +598,9 @@ export interface LevelData {
   layers?: LevelLayer[];
 }
 
-/** Classic mode's Map Difficulty (G-006; data/MapDifficulty.as). */
-export type MapDifficulty = 'easy' | 'normal' | 'hard';
-export const MAP_DIFFICULTIES: readonly MapDifficulty[] = ['easy', 'normal', 'hard'];
+/** Classic mode's Map Difficulty (G-006; data/MapDifficulty.as): one definition, the settings'. */
+export type { MapDifficulty };
+export { MAP_DIFFICULTIES } from '@engine/save/settings';
 
 /**
  * The original's per-hero level flags (Character.as): `horz` / `vert` (usesHorzObjs /

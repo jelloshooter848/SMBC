@@ -178,10 +178,24 @@ describe('the title and the CLASSIC menu', () => {
     const h = classic();
     const menu = toClassicMenu(h);
     // G-020: SMB Special between the two (the original's order).
-    expect(labels(menu)).toEqual(['Super Mario Bros.', 'SMB Special', 'The Lost Levels', 'Options', 'Back']);
+    expect(labels(menu)).toEqual([
+      'Super Mario Bros.',
+      'SMB Special',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of ['SMB Special', 'The Lost Levels', 'Options', 'Back', 'Super Mario Bros.']) {
+    for (const l of [
+      'SMB Special',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+      'Super Mario Bros.',
+    ]) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -197,6 +211,7 @@ describe('the title and the CLASSIC menu', () => {
       'Super Mario Bros.',
       'SMB Special',
       'The Lost Levels',
+      'Map difficulty',
       'Options',
       'Back',
     ]);

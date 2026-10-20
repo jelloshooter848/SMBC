@@ -145,6 +145,8 @@
 + lakitu 130 0 end=169
 + koopa-red 133 12 dx=8
 + block-item 139 8 item=clock
++ spike-top 150 12
++ spike-top 151 12 dx=8
 + koopa-para-green 163 11 dx=8
 + barrel 195 8 dx=8
 + barrel 197 6 dx=8

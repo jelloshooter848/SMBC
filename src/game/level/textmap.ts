@@ -745,7 +745,6 @@ function tileIdByName(name: string): number | undefined {
   return TILES.find((t) => t.name === name)?.id;
 }
 
-/** Serialize back to the text format (used by the editor and round-trip tests). */
 /** `type x y key=val ...`, as a map line. */
 const spawnLine = (e: EntitySpawn): string =>
   `${e.type} ${e.x} ${e.y}${
@@ -757,6 +756,7 @@ const spawnLine = (e: EntitySpawn): string =>
       : ''
   }`;
 
+/** Serialize back to the text format (used by the editor and round-trip tests). */
 export function serializeTextMap(level: LevelData): string {
   const rev = new Map<number | string, string>();
   for (const [ch, v] of Object.entries(DEFAULT_LEGEND)) if (!rev.has(v)) rev.set(v, ch);

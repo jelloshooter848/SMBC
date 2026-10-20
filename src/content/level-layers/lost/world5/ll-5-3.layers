@@ -341,6 +341,7 @@
 - koopa-para-red 201 5
 + lift-h 37 11 len=4 range=3
 + lift-h 101 11 len=4 range=3
++ spike-top 10 10 dx=8
 + piranha 14 10 red=1
 + blooper 29 10
 + piranha 78 10 red=1

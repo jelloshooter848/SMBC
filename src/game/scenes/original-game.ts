@@ -135,6 +135,34 @@ export const DIFFICULTY_NAMES: Record<MapDifficulty, string> = {
   hard: 'Hard',
 };
 
+/** The status line while Current rules leave every map on Normal (it fits the 28 columns). */
+export const CURRENT_RULES_NORMAL = 'Current rules: always Normal';
+
+/**
+ * A Map difficulty row (G-006): its value, changed with left and right (and OK / CHANGE on a
+ * phone), saved and read out. While `classic()` is false (Current rules) it shows Normal, says
+ * why and does not change.
+ */
+export function mapDifficultyItem(game: Game, classic: () => boolean): MenuItem {
+  const s = game.deps.settings;
+  const value = () => (classic() ? (s?.classicMapDifficulty ?? 'normal') : 'normal');
+  return {
+    label: 'Map difficulty',
+    value: () => DIFFICULTY_NAMES[value()],
+    adjust: (d) => {
+      if (!s || !classic()) return;
+      const all = MAP_DIFFICULTIES;
+      s.classicMapDifficulty = all[(all.indexOf(value()) + d + all.length) % all.length] as MapDifficulty;
+      game.deps.applySettings?.();
+    },
+    get hint() {
+      return classic()
+        ? 'Easy, Normal or Hard: each plays the original version of every level'
+        : 'Classic rules only: with Current rules every level plays as Normal';
+    },
+  };
+}
+
 /** Where the Classic rules value is drawn: right edge, and the first full-screen menu row's y. */
 const CLASSIC_RULES_RIGHT = 248;
 const CLASSIC_RULES_Y = 64;
@@ -165,30 +193,18 @@ export class ClassicMenuScene extends MenuScene {
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
-    // the hint, drawn as BEATEN at the row's end (render). Left and right on a map set change the
-    // Map Difficulty (G-006; the original's New Game row), shown on the status line and read with
-    // the row; the run is built for it.
+    // the hint, drawn as BEATEN at the row's end (render).
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
-    const s = game.deps.settings;
-    const difficulty = () => s?.classicMapDifficulty ?? 'normal';
-    this.status = `Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}`;
     const items: MenuItem[] = MAP_SETS.map((set) => ({
       label: set.label,
       select: () => game.classicSelect(set.start, back),
-      ...(s
-        ? {
-            adjust: (d: -1 | 1) => {
-              const all = MAP_DIFFICULTIES;
-              s.classicMapDifficulty = all[
-                (all.indexOf(difficulty()) + d + all.length) % all.length
-              ] as MapDifficulty;
-              game.deps.applySettings?.();
-              this.build();
-            },
-          }
-        : {}),
-      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}. Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}, left or right to change${own}`,
+      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
     }));
+    // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
+    // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
+    // as Normal, which the row shows and says (and it does not change).
+    items.push(mapDifficultyItem(game, () => game.deps.settings?.classicRules !== 'current'));
+    this.status = game.deps.settings?.classicRules === 'current' ? CURRENT_RULES_NORMAL : '';
     items.push(
       {
         label: 'Options',

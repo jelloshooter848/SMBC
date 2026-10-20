@@ -17,6 +17,7 @@ import { SIMON } from '@game/characters/simon';
 import { RYU } from '@game/characters/ryu';
 import { SOPHIA } from '@game/characters/sophia';
 import { SAMUS } from '@game/characters/samus';
+import { BASS_CLASSIC as BASS } from '@game/characters/bass/classic';
 
 // G-010, G-011, G-012, G-006: the original builds each level for the map difficulty and the hero
 // (Level.as buildLevel 757-787). tools/levelgen/convert-smbc.mjs --layers writes everything the
@@ -58,6 +59,8 @@ describe('G-010: each Classic def declares its level flags', () => {
     expect(f(SIMON)).toEqual(['badswimmer', 'horz', 'poorbowser']);
     expect(f(RYU)).toEqual(['badswimmer', 'horz', 'poorbowser', 'vert']);
     expect(f(SOPHIA)).toEqual(['horz', 'vert', 'wide']);
+    // Bass.as:102-103: no helper pieces (not Mega Man's `horz`, whose factory his def spreads).
+    expect(f(BASS)).toEqual(['badswimmer']);
   });
 
   it('no Current def has level flags', async () => {
@@ -186,6 +189,15 @@ describe('G-006: Map Difficulty layers', () => {
         id,
       ).toBe(true);
     }
+  });
+
+  it("Hard 1-2's top pipe keeps its junction and its right-facing end (groundPipeIntRight*, EndRight*)", () => {
+    const hard = layeredLevel(getLevel('1-2'), { difficulty: 'hard', flags: [] });
+    for (const y of [2, 3]) {
+      expect(isSolid(cell(hard, 169, y) ?? 0), `169,${y}`).toBe(true);
+      expect(isSolid(cell(hard, 176, y) ?? 0), `176,${y}`).toBe(true);
+    }
+    expect([cell(hard, 176, 2), cell(hard, 176, 3)]).toEqual([T.PIPE_H_TL, T.PIPE_H_BL]);
   });
 
   it("Easy and Hard open the locked castles' checkpoints (Level.as:1454)", () => {

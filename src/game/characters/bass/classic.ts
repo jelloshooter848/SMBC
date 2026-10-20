@@ -55,8 +55,6 @@ const BASS_BASE: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'mu
 const bassPalette = (id: MMWeaponId): string => (id === 'water-shield' ? 'bass-water' : 'bass');
 
 export const BASS_CLASSIC: CharacterDef = {
-  // The original's level flags (G-010): Bass.as:102-103: no helper pieces (his Quick Man look has them). level/layers.ts lays its pieces by them.
-  levelFlags: {},
   ...classicMegaMan({
     base: BASS_BASE,
     profile: BASS_CLASSIC_PROFILE,
@@ -80,6 +78,9 @@ export const BASS_CLASSIC: CharacterDef = {
     weaponLabel: (id) => (id === 'water-shield' ? 'WATER' : mmWeapon(id).label),
     slideFrame: 'dash',
   }),
+  // The original's level flags (G-010), after the Mega Man factory's (which has his `horz`):
+  // Bass.as:102-103 gives him no helper pieces (his Quick Man look has them).
+  levelFlags: {},
   // The castle text's name (BA-M13): the original's default skin (BmdInfo.as).
   rescueName: 'Dr. Wily',
 };

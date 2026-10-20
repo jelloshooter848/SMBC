@@ -301,6 +301,7 @@
 + piranha-down 39 8 red=1
 + piranha 39 11 red=1
 + piranha 46 13 red=1
++ spike-top 55 7 dx=8
 + fly 65 4 dx=8
 + piranha 69 13 red=1
 + piranha 72 13 red=1
@@ -309,7 +310,12 @@
 + piranha 76 13 red=1
 + piranha 78 13 red=1
 + piranha 82 13 red=1
++ spike-top 92 12
 + fly 115 4
++ spike-top 117 4 dx=8
++ spike-top 120 4 dx=8
++ spike-top 123 4 dx=8
++ spike-top 126 4 dx=8
 + piranha 133 13 red=1
 + block-item 140 5 item=atom
 + block-item 146 5 item=clock
