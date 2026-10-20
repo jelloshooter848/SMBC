@@ -727,7 +727,7 @@ const ROWS = [
   { y: 15, vy: -200, g: 350 },
   { y: 6, vy: -100, g: 150 },
 ] as const;
-const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
+export const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
   sheet: 'samus-classic',
   pieces: [1, -1].flatMap((side, s) =>
     ROWS.map((r, i) => ({

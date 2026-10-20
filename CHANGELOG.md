@@ -65,6 +65,8 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic Pit and Dark Pit now die as Samus does (they are her looks in the original): her six-piece burst, in
+  their colours, and her death jingle.
 - Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
   own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
 - Remapping never leaves one key on two actions: a key that is another action's only key is refused and the

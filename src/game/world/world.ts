@@ -3405,9 +3405,10 @@ export class World {
       if (toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
       p.body.vx = 0;
       p.body.vy = 0;
-      // Its sound: Classic mode's table of hero death sounds (G-065), else the burst's own, else
-      // its jingle. After a pit too (no pieces then).
-      const sound = (this.ctx.classicMode ? classicRules().deathSfx?.(p.def) : undefined) ?? burst.sound;
+      // Its sound: the hero's death sound from Classic mode's table (G-065; every burst is a
+      // Classic def's, so a dev Classic-rules start reads it too), else its jingle. After a pit
+      // too (no pieces then).
+      const sound = p.def.rules === 'classic' ? classicRules().deathSfx?.(p.def) : undefined;
       if (this.activePlayers().length === 0) {
         this.audio.setTempoScale(1);
         if (sound) {

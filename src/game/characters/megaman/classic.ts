@@ -151,7 +151,7 @@ export interface RapidFire {
  * (diagonals at SQRT1_2), gone off the screen. Mega Man's own look has the colour particles: 4
  * inner (90 px/s) and 8 outer (240 px/s), parting after 200 ms. Bass's has the white ones: 8 and
  * 8 (80 and 180 px/s), at once. The original's px/s halved for our 16 px tiles, per 60 fps
- * frame. His death sound plays in place of the jingle (SFX_MEGA_MAN_DIE), after a pit too,
+ * frame. His death sound (SFX_MEGA_MAN_DIE, Classic mode's sound table) plays in place of the jingle, after a pit too,
  * where no orbs show; the death ends after DIE_TMR_DEL_NORMAL / DIE_TMR_DEL_PIT, 2500 ms.
  */
 const ORB_PX_S = 0.5 / 60;
@@ -195,7 +195,8 @@ export function megaManOrbs(kind: 'colour' | 'white'): NonNullable<CharacterDef[
     kind === 'colour'
       ? [...orbRing(['up', 'rht', 'dwn', 'lft'], 90, 12), ...orbRing(ALL_DIRS, 240, 12)]
       : [...orbRing(ALL_DIRS, 80, 0), ...orbRing(ALL_DIRS, 180, 0)];
-  return { sheet: 'megaman-orbs', pieces, jingle: 'death', sound: 'mm-death', frames: 150, pitFrames: 150 };
+  // His death sound comes from Classic mode's table (classic/sounds.ts: mm-death), as every hero's.
+  return { sheet: 'megaman-orbs', pieces, jingle: 'death', frames: 150, pitFrames: 150 };
 }
 
 export interface ClassicMegaManOptions {
