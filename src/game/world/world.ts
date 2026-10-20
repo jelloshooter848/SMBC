@@ -319,7 +319,7 @@ export type AreaMemory = Map<string, AreaSnapshot>;
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
 /** Flying Cheep Cheeps out at once, by map difficulty (FlyingCheepSpawner.as MAX_CHEEP_*). */
-const FLYING_CHEEP_CAP: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 3, hard: 4 };
+export const FLYING_CHEEP_CAP: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 3, hard: 4 };
 
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
 

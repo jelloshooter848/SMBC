@@ -34,12 +34,12 @@ const THROW_FRAMES = 15;
  * `maxSpinyDifficulty` (Lakitu.as:246-258): this Lakitu's own Spinies alive at once
  * (`SPINEY_DCT`), by map difficulty (G-006; always Normal under Current rules).
  */
-const MAX_SPINIES: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 4, hard: 6 };
+export const MAX_SPINIES: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 4, hard: 6 };
 /**
  * `LakituSpawner.spawnDelTmrDur` (LakituSpawner.as:28-41): 48, 40 or 16 × 397 ms (TIME units) on
  * Easy, Normal and Hard: 19.06 s, 15.88 s, 6.35 s.
  */
-const RESPAWN_FRAMES: Readonly<Record<MapDifficulty, number>> = { easy: 1143, normal: 953, hard: 381 };
+export const RESPAWN_FRAMES: Readonly<Record<MapDifficulty, number>> = { easy: 1143, normal: 953, hard: 381 };
 
 /**
  * Lakitu: rides a cloud along the top of the screen, swinging back and forth over the player,
