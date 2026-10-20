@@ -11,8 +11,9 @@ import type { Settings } from '@engine/save/settings';
  * - With no secret, a release build has no way in at all: the title's code does nothing.
  * - `?dev=` is ignored on a release build, and a dev flag saved by an earlier version is cleared
  *   until the passphrase is entered (settings.devUnlock remembers which build's lock was opened).
- * - The prompt (scenes/passphrase.ts) offers A-Z, 0-9, space and '-': an entry is hashed in
- *   capitals with its outer spaces trimmed (`normalizePassphrase`), as the workflow does.
+ * - The prompt (scenes/passphrase.ts) offers A-Z, 0-9 and '-', up to 32 of them: an entry is
+ *   hashed in capitals (`normalizePassphrase`), as the workflow does, which also refuses a secret
+ *   the prompt couldn't type (8 to 32 of those characters).
  */
 
 /** The fixed salt in front of the passphrase (the same in release.yml's hash step). */

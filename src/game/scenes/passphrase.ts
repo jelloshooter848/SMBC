@@ -19,7 +19,7 @@ import type { Game } from './game';
 /** The letters on offer, in rows of ten (the font has no lowercase; entries are checked in capitals). */
 export const PASSPHRASE_ROWS: readonly string[] = ['ABCDEFGHIJ', 'KLMNOPQRST', 'UVWXYZ0123', '456789-'];
 /** The longest entry. */
-export const PASSPHRASE_MAX = 24;
+export const PASSPHRASE_MAX = 32;
 
 interface Cell {
   /** A letter, or the DELETE / DONE buttons. */
@@ -241,7 +241,9 @@ export class PassphraseScene implements Scene {
     // The entry, as stars, in a box.
     r.rect(40, 56, 176, 16, '#fcfcfc');
     r.rect(42, 58, 172, 12, '#000');
-    const stars = '*'.repeat(Math.min(this.entry.length, 20));
+    // Up to 20 stars fit the box; a longer entry (up to 32) shows 16 and its length.
+    const n = this.entry.length;
+    const stars = n <= 20 ? '*'.repeat(n) : `${'*'.repeat(16)} ${n}`;
     text(stars, 48, 60);
     CELLS.forEach((c, i) => {
       if (i === this.index) r.rect(c.x - 3, c.y - 3, c.w + 6, 14, '#3cbcfc');

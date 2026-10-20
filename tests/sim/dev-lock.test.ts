@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { getLevel } from '@content/levels';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { DEFAULT_ASSIST } from '@game/context';
@@ -125,6 +125,35 @@ describe('the lock for a build', () => {
     expect(out).toBe('');
   });
 
+  it('the workflow script refuses a secret the prompt cannot type (exit 1, never echoing it)', async () => {
+    const run = (secret: string) => {
+      const r = spawnSync(process.execPath, ['tools/release/dev-lock-hash.mjs'], {
+        env: { ...process.env, DEV_MODE_PASSPHRASE: secret },
+      });
+      return { code: r.status, out: r.stdout.toString(), err: r.stderr.toString() };
+    };
+    // Valid: 8 to 32 of A-Z, 0-9 and '-', any case (upper-cased before hashing).
+    for (const ok of ['abcd-123', 'Open-Sesame-42', 'A'.repeat(32)]) {
+      const r = run(ok);
+      expect(r.code, ok).toBe(0);
+      expect(r.out).toBe(`DEV_MODE_HASH=${await hashPassphrase(ok)}\n`);
+      expect(r.out + r.err).not.toContain(ok);
+    }
+    const bad = {
+      'too short': 'ABC-123',
+      'too long': 'A'.repeat(33),
+      'a space': 'OPEN SESAME',
+      'an underscore': 'OPEN_SESAME',
+    };
+    for (const [why, secret] of Object.entries(bad)) {
+      const r = run(secret);
+      expect(r.code, why).toBe(1);
+      expect(r.out, why).toBe('');
+      expect(r.err, why).toMatch(/8 to 32 characters of A-Z, 0-9 and "-"/);
+      expect(r.err, why).not.toContain(secret);
+    }
+  });
+
   it('only the right entry opens a locked build; nothing opens an open or closed one', async () => {
     const lock = devLockFor(true, await hashPassphrase(PASS));
     expect(await passphraseOpens(lock, PASS)).toBe(true);
@@ -214,6 +243,17 @@ describe('the title on a release build', () => {
     expect(h.top()).toBeInstanceOf(TitleScene);
     expect(h.settings.dev).toBe(true);
     expect(h.said.at(-1)).toBe('Developer mode unlocked.');
+  });
+
+  it('the prompt takes a 32-character entry (the longest the secret may be) and opens with it', async () => {
+    const long = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ012-34';
+    expect(long).toHaveLength(32);
+    const hash = await hashPassphrase(long);
+    const h = makeGame(devLockFor(true, hash));
+    enterCode(h);
+    await typeAndCheck(h, long);
+    expect(h.settings.dev).toBe(true);
+    expect(h.settings.devUnlock).toBe(hash);
   });
 
   it('the prompt works by touch: no buttons during the guard, then OK, DELETE / BACK and DONE; a tap on a letter types it', async () => {
