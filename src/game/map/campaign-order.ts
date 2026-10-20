@@ -12,6 +12,7 @@
  * page's roads in the new order; nothing else changes. Since 0.4.53 World 6 (6-2 ↔ 6-1) and World 7
  * (7-3 → 7-1, 7-1 → 7-2, 7-2 → 7-3) too.
  */
+import { worldLabel } from '../hud/world-label';
 
 /** Internal level id → the label the campaign shows for it, for levels shown as another stage. */
 export const CAMPAIGN_LABELS: Readonly<Record<string, string>> = {
@@ -70,7 +71,12 @@ export function shownPlace(world: number, stage: number): PlaceName | null {
   return PLACE_NAMES[`${world}-${stage}`] ?? null;
 }
 
-/** What the announcer calls a level: its place's name, else 'World 4-1' (the campaign's label). */
+/**
+ * What the announcer calls a level: its place's name, else 'World 4-1' (the campaign's label),
+ * with the world as shown (worldLabel: the Lost Levels' worlds 10-13 are A-D).
+ */
 export function spokenLevel(world: number, stage: number, campaignOrder: boolean | undefined): string {
-  return shownPlace(world, stage)?.said ?? `World ${world}-${shownStage(world, stage, campaignOrder)}`;
+  return (
+    shownPlace(world, stage)?.said ?? `World ${worldLabel(world)}-${shownStage(world, stage, campaignOrder)}`
+  );
 }

@@ -27,6 +27,8 @@ const PLUMBER: SwimProfile = {
   surfaceTest: 'top',
   noStomp: true,
   surface: { gravity: 0x0018e, fallMax: 0x03555 }, // 700 / 400
+  // PitVacuum (G-013): vertPullPwr 600, horzPullPwr 400 px/s²; MarioBase's water vyMaxPsv 400.
+  pitPull: { down: 0x002ab, side: 0x001c7, fallMax: 0x03555 },
 };
 
 /** A floor jumper: take-off already less one frame of `gravity`. */

@@ -58,6 +58,13 @@ export interface SwimProfile {
   surface?: { gravity: number; fallMax: number } | undefined;
   /** Classic SMBC: a dash jump's take-off under water (SlideProfile.jumpSpeed; Bass BA-15). */
   slideJump?: number | undefined;
+  /**
+   * Classic SMBC's PitVacuum (G-013; enemies/PitVacuum.as, Mario and Luigi only): in an area that
+   * starts under water, a pit's bottom-row tiles pull the hero down by `down` a frame and toward
+   * the pit's middle by `side` (once each a frame, whatever the number of tiles), and while pulled
+   * down the fall is capped at `fallMax` instead of `sinkMax`. Absent: no pull.
+   */
+  pitPull?: { down: number; side: number; fallMax: number } | undefined;
 }
 
 /**
