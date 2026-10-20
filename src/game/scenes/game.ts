@@ -15,6 +15,7 @@ import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
 import type { Settings } from '@engine/save/settings';
+import type { ClassicSettings } from '@engine/save/original-options';
 import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Viewport } from '@engine/viewport';
@@ -308,6 +309,29 @@ export class Game {
       enumerable: true,
       configurable: true,
     });
+    // ctx.classic likewise: Classic mode's options, only while a Classic run plays Classic rules.
+    Object.defineProperty(deps.ctx, 'classic', {
+      get: () => this.classicOptions,
+      enumerable: true,
+      configurable: true,
+    });
+  }
+
+  /**
+   * Classic mode's gameplay options (Settings.classic: More Settings, Customize Weapons) for the
+   * run being played: only a Classic run (Classic mode, or a dev Classic run) with Classic rules,
+   * else undefined, so the campaign and every Current run never see them. Without settings (the
+   * test harnesses) undefined too: the original's values.
+   */
+  get classicOptions(): ClassicSettings | undefined {
+    if (!this.classicRun || this.liveRules !== 'classic') return undefined;
+    return this.deps.settings?.classic;
+  }
+
+  /** Lives at a Classic run's start and after its continues (More Settings > Lives; else 3). */
+  private classicStartLives(): void {
+    const lives = this.classicOptions?.lives;
+    if (lives !== undefined) this.state.lives = lives;
   }
 
   /**
@@ -1177,6 +1201,7 @@ export class Game {
     const hero = heroFor(character, rules);
     this.state = newGameState(character, null, rules);
     if (!classic) this.state.lives = 99;
+    else this.classicStartLives();
     if (fullKit && hero.devKit) this.state.kit = hero.devKit();
     if (hero.damage.kind === 'powerup') this.state.powerState = power;
     else {
@@ -1304,6 +1329,7 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic && dev;
     this.state = newGameState(character, character2, this.liveRules);
+    if (classic) this.classicStartLives();
     this.playtestDone = null;
     this.quickRespawn = false;
     this.backupDue = null;
@@ -1728,6 +1754,7 @@ export class Game {
   continueGame(levelId: string | null, player = 0): void {
     const old = this.state;
     this.state = newGameState(old.character, old.character2, this.liveRules);
+    if (this.classicRun) this.classicStartLives();
     this.state.warped = old.warped;
     const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
     if (id === null) {

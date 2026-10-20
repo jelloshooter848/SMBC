@@ -3,6 +3,7 @@ import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import type { BlockHit, BlockStrike } from './hooks';
 import { CURRENT_POINT_DAMAGE } from './classic-enemies';
+import { attackMult } from '../characters/classic/options';
 
 /**
  * Classic SMBC block rules (bug-reports/2026-10-07-classic-bricks-and-shots.md, BR-C1..BR-C19):
@@ -52,7 +53,10 @@ export function classicStrikeBlock(
         // A Current def's blast or shot (no Classic def yet, TG-20) counts its points as the HP
         // door does.
         const units = p.def.rules === 'classic' ? 1 : CURRENT_POINT_DAMAGE;
-        const hp = (world.brickHp.get(key) ?? BRICK_HP) - hit.damage * units;
+        // More Settings > Attack Strength (Brick.takeDamage: int(dmg × dmgMult)); Normal is ×1.
+        const mult = attackMult(world.classic);
+        const dmg = mult === 1 ? hit.damage * units : Math.floor(hit.damage * units * mult);
+        const hp = (world.brickHp.get(key) ?? BRICK_HP) - dmg;
         breaks = hp <= 0;
         if (!breaks) {
           world.brickHp.set(key, hp);

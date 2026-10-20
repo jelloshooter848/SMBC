@@ -2,6 +2,7 @@ import type { PaletteMode } from '../gfx/palette';
 import type { PlayerBindings } from '../input/bindings';
 import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
+import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
 
 export type TouchMode = 'auto' | 'on' | 'off';
 /** Touch d-pad: drawn at a fixed spot, or a stick that centres under the thumb. */
@@ -67,6 +68,12 @@ export interface Settings {
    * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
    */
   classicRules: ClassicRules;
+  /**
+   * Classic mode's options (title > CLASSIC > Options: Game Mode, More Settings, Customize
+   * Weapons; save/original-options.ts), every one defaulting to the original's. Files saved
+   * before them get the defaults (the deep merge, then normaliseClassic).
+   */
+  classic: ClassicSettings;
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
@@ -121,6 +128,7 @@ export function defaultSettings(): Settings {
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
+    classic: defaultClassicSettings(),
   };
 }
 
@@ -165,6 +173,7 @@ export function loadSettings(): Settings {
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
+  s.classic = normaliseClassic(s.classic);
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

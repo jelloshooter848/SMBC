@@ -4,6 +4,7 @@ import type { Player, HurtLock } from '../../entities/player';
 import type { World } from '../../world/world';
 import type { CharacterBehaviour, HurtResult } from '../character';
 import type { PickupKind } from '../../entities/objects/pickup';
+import { dropOffset, optionsOf } from './options';
 
 /**
  * Classic SMBC power states, hit response, drops and Star (`2026-10-07-classic-power-states.md`,
@@ -258,10 +259,13 @@ export function classicOnHurt(
   fromDir: -1 | 1 = 1,
   kit: ClassicPowerKit,
 ): HurtResult {
-  if (p.powerState !== 'big' && p.powerState !== 'fire') return 'dead';
+  const to = classicHurtState(p);
+  if (to === 'dead') return 'dead';
   if (p.powerState === 'fire') kit.loseFire?.(p, world);
-  kit.loseBig?.(p, world);
-  p.powerState = 'small';
+  // Previous State keeps the Mushroom from the Flower (Character.takeDamage: the Mushroom's list
+  // goes only with Lose Everything or without the Flower).
+  if (to === 'small') kit.loseBig?.(p, world);
+  p.powerState = to;
   // Any attack in progress ends (PS-C12).
   p.activeMelee = null;
   p.attackTimer = 0;
@@ -269,16 +273,28 @@ export function classicOnHurt(
   p.crouching = false;
   p.scratch._hurtAt = p.frame;
   world.audio.sfx('pipe');
-  startResponse(p, fromDir, kit);
+  startResponse(p, fromDir, kit, to === 'small');
   return 'hurt';
 }
 
-function startResponse(p: Player, fromDir: -1 | 1, kit: ClassicPowerKit): void {
+/**
+ * Where a hit leaves `p` under More Settings > When Hit (ClassicDamageResponse): Lose Everything
+ * (the original's default) ends small; Previous State goes Fire to Big, Big to small; Instant
+ * Death kills. A small hero always dies.
+ */
+export function classicHurtState(p: Player): 'small' | 'big' | 'dead' {
+  if (p.powerState !== 'big' && p.powerState !== 'fire') return 'dead';
+  const rule = optionsOf(p).whenHit;
+  if (rule === 'instant-death') return 'dead';
+  return rule === 'previous-state' && p.powerState === 'fire' ? 'big' : 'small';
+}
+
+function startResponse(p: Player, fromDir: -1 | 1, kit: ClassicPowerKit, shrinks: boolean): void {
   const r = kit.response;
   if (r.kind === 'freeze') {
     // The world stands still for the freeze (World.update returns while a transition runs, and
     // Player.update with it), so the invulnerable frames start counting when it ends.
-    p.startTransition(kit.grows ? 'shrink' : 'freeze', r.frames + 1);
+    p.startTransition(kit.grows && shrinks ? 'shrink' : 'freeze', r.frames + 1);
     p.invuln = r.invuln;
     return;
   }
@@ -470,6 +486,17 @@ export const CLASSIC_DROPS: Readonly<Record<string, ClassicDropTable>> = {
 };
 
 /**
+ * The chance a `source` drops for `p`: the original's rate, or with More Settings > Item Drop
+ * Rate (RandomDropGenerator.checkDropItem) the hero's 25 % plus the offset, times the source's
+ * factor (a brick 0.25, a coin block 0.5). Normal is CLASSIC_DROP_RATES exactly.
+ */
+export function classicDropRate(p: Player, source: ClassicDropSource): number {
+  const off = dropOffset(p);
+  if (off === 0) return CLASSIC_DROP_RATES[source];
+  return (CLASSIC_DROP_RATES.enemy + off) * (CLASSIC_DROP_RATES[source] / CLASSIC_DROP_RATES.enemy);
+}
+
+/**
  * CharacterDef.drop / blockDrop for a Classic def: one chance roll at the source's rate, then
  * the item roll. Null for a source the hero has no drops from, or before the gate opens.
  */
@@ -481,7 +508,7 @@ export function classicDrop(
 ): PickupKind | null {
   if (!table || !table.sources.includes(source)) return null;
   if (table.gate && !table.gate(p)) return null;
-  if (!rng.chance(CLASSIC_DROP_RATES[source])) return null;
+  if (!rng.chance(classicDropRate(p, source))) return null;
   const items = table.items;
   if (items.length === 1) return (items[0] as readonly [PickupKind, number])[0];
   let r = rng.float();

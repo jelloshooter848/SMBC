@@ -7,11 +7,12 @@ import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
 import type { PickupKind } from '../../entities/objects/pickup';
 import {
-  CLASSIC_DROP_RATES,
   CLASSIC_POWER_SCORE,
   CLASSIC_STAR_MUSIC_LEFT,
   classicBlockPowerUp,
   classicBusy,
+  classicDropRate,
+  classicHurtState,
   classicOnPowerUp,
   classicRespawn,
   classicStarPaletteStep,
@@ -189,9 +190,11 @@ const behaviour: CharacterBehaviour = {
   },
   onHurt(p, world, fromDir = 1): HurtResult {
     // Lose Everything (SO-23): straight to Normal; the missiles and their ammo stay.
-    if (p.powerState !== 'big' && p.powerState !== 'fire') return 'dead';
+    // More Settings > When Hit (classicHurtState): Lose Everything by default.
+    const to = classicHurtState(p);
+    if (to === 'dead') return 'dead';
     const st = sophiaState(p);
-    p.powerState = 'small';
+    p.powerState = to;
     p.attackTimer = 0;
     p.scratch._hurtAt = p.frame;
     p.invuln = HURT_INVULN;
@@ -244,8 +247,8 @@ export const SOPHIA_CLASSIC: CharacterDef = {
     };
   },
   // A kill rolls here; a kill by her shot rolls again as her explosion ends (weapons.ts killBoom).
-  drop: (rng, _enemy, killer) => (killer ? roll(killer, CLASSIC_DROP_RATES.enemy, rng) : null),
-  blockDrop: (rng, p, source) => roll(p, CLASSIC_DROP_RATES[source], rng),
+  drop: (rng, _enemy, killer) => (killer ? roll(killer, classicDropRate(killer, 'enemy'), rng) : null),
+  blockDrop: (rng, p, source) => roll(p, classicDropRate(p, source), rng),
   // TG-44: both missiles, full; the Triple Missile selected first (SO-M9).
   devKit: () => ({ hasTriple: 1, triple: TRIPLE_MAX, hasHoming: 1, homing: HOMING_MAX }),
   // SO-43: after the castle axe she drives on at her top speed, then her floor friction is
