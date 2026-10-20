@@ -9,14 +9,20 @@ import { SPRITES } from '@content/sprites';
 import {
   DEFAULT_SELECT_THEME,
   drawnFace,
+  gridPanel,
+  skinCell,
+  skinGrid,
+  skinLayout,
   NAME_BOX,
   ORIGINAL_GRID,
-  SKIN_GRID,
   SELECT_THEMES,
   cursorColour,
   faceOf,
 } from '@game/scenes/select-grid';
-import { HUD_FACE } from '@game/hud/select-hud';
+import { HUD_FACE, HUD_TEXT } from '@game/hud/select-hud';
+import { fontText } from '@game/hud/text';
+import { CLASSIC_HERO_GAMES } from '@game/characters/classic/skins';
+import { Survival } from '@game/survival';
 import { draw, makeGame, useStorage } from './heroes-harness';
 
 // Classic mode's select matched to the original 3.1.21 (owner's screenshots and
@@ -79,15 +85,17 @@ describe('the name box (CharNameBox) and the announcer', () => {
     expect(sel.nameBoxLines()).toEqual(['MEGA MAN', 'MEGA MAN']);
   });
 
-  it('items 2, 4: it follows the skin menu cursor, with the look’s game', () => {
+  it('items 2, 4: it follows the skin menu cursor, always with the hero’s game', () => {
     const { h, sel } = classicSelect();
     cursorTo(h, sel, 'samus');
     h.tap('jump');
     expect(sel.pickerOpen).toBe(true);
     expect(sel.nameBoxLines()).toEqual(['SAMUS', 'METROID']);
     h.tap('right');
-    expect(sel.nameBoxLines()).toEqual(['"PIT"', 'SAMUS', 'KID ICARUS']);
+    // CharacterSelectBox.changeNameBoxText: the hero's first game; the skin menu names Pit's own.
+    expect(sel.nameBoxLines()).toEqual(['"PIT"', 'SAMUS', 'METROID']);
     expect(h.said.at(-1)).toBe('Pit, Samus, Kid Icarus.');
+    expect(draw(sel).texts.some((x) => x.str === 'KID ICARUS')).toBe(true);
   });
 
   it('item 7: look, hero, game; no repeat for a hero’s own look; the Skin key says the game', () => {
@@ -117,7 +125,7 @@ describe('the skin menu', () => {
     h.tap('jump');
     expect(sel.pickerSkin).toBe(MEGAMAN);
     // Mega Man's looks fill two rows, so Down moves a row; on the last it bumps.
-    const rows = Math.ceil(h.game.skinsFor(MEGAMAN).length / SKIN_GRID.cols);
+    const rows = Math.ceil(h.game.skinsFor(MEGAMAN).length / (sel.pickerLayout?.cols ?? 1));
     for (let i = 0; i < rows - 1; i++) h.tap('down');
     const last = sel.pickerSkin;
     h.tap('down');
@@ -218,7 +226,7 @@ describe('the original roster, Expansion heroes and old saves', () => {
     });
     pick.enter();
     expect(pick.chars[pick.cursor]).toBe(MEGAMAN);
-    expect(pick.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN 3']);
+    expect(pick.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN']);
   });
 
   it('skin choices saved on the old Proto Man, Pit and Francesca slots move to Mega Man and Samus', () => {
@@ -234,6 +242,43 @@ describe('the original roster, Expansion heroes and old saves', () => {
     const { h } = classicSelect(settings);
     expect(h.game.skinFor(MEGAMAN).id).toBe('breakman');
     expect(h.game.skinFor(SAMUS).id).toBe('darkpit');
+  });
+
+  it('an Expansion hero from a link or save while Expansion heroes is off plays as Mario', () => {
+    const yoshiOf = (h: ReturnType<typeof makeGame>) => h.game.roster.find((c) => c.id === 'yoshi');
+    // The normal select: the run starts as Mario, and the select shows him under the cursor.
+    const settings = defaultSettings();
+    const { h } = classicSelect(settings);
+    const yoshi = yoshiOf(h);
+    expect(yoshi).toBeDefined();
+    if (!yoshi) return;
+    h.game.classicGame(yoshi, '1-1');
+    expect(h.game.state.character.id).toBe('mario');
+    h.game.classicSelect('1-1', () => {});
+    const sel = h.top() as CharacterSelectScene;
+    expect(sel.chars.some((c) => c.id === 'yoshi')).toBe(false);
+    expect(sel.chars[sel.cursor]?.id).toBe('mario');
+    // Survival: Mario stands, so the run is not over before it starts.
+    const sv = defaultSettings();
+    sv.classic.gameMode = 'survival';
+    // A link straight into a run (no select first): Survival starts with the hero standing.
+    const s = { h: makeGame({ deps: { settings: sv, applySettings: () => {} } }) };
+    const y2 = yoshiOf(s.h);
+    if (!y2) return;
+    s.h.game.classicGame(y2, '1-1');
+    expect(s.h.game.state.character.id).toBe('mario');
+    const survival = s.h.game.survival;
+    expect(survival).toBeInstanceOf(Survival);
+    expect(survival?.standing()).toEqual(['mario']);
+    expect(survival?.allFallen).toBe(false);
+    // With Expansion heroes on, Yoshi plays as himself.
+    const on = defaultSettings();
+    on.classic.expansion = 'on';
+    const e = classicSelect(on);
+    const y3 = yoshiOf(e.h);
+    if (!y3) return;
+    e.h.game.classicGame(y3, '1-1');
+    expect(e.h.game.state.character.id).toBe('yoshi');
   });
 });
 
@@ -279,22 +324,89 @@ describe('the original\u2019s rows, box and faces', () => {
     expect(sel.chars[5]?.id).toBe('megaman');
   });
 
-  it('the name box is the original\u2019s 200 x 72 (400 x 150 halved), with our prompt in its bottom row', () => {
-    const { sel } = classicSelect();
-    const box = rects(sel).filter((x) => x.w === NAME_BOX.w && x.h === NAME_BOX.h);
-    expect(box.length).toBeGreaterThan(0);
-    const t = draw(sel).texts.map((x) => x.str);
-    // G-053 (0.5.0): Mario has a second look, so his prompt offers LOOKS.
-    expect(t.some((x) => x.includes('TO PICK') || x.includes('LOOKS'))).toBe(true);
+  it("the name box is the original's: 158 wide, narrower than the panel, as tall as its lines", () => {
+    // CharNameBox: its fill fits "The Legend of Zelda 2" and three 28 px lines, in a 14 px frame,
+    // centred on y 145 (NAME_BOX_Y_POS 290), all halved.
+    expect(NAME_BOX).toMatchObject({ x: 49, y: 119, w: 158, h: 52, h2: 38, step: 14 });
+    const { h, sel } = classicSelect();
+    const pan = gridPanel(sel.rows, sel.grid);
+    expect(NAME_BOX.w).toBeLessThan(pan.w);
+    // Mario's own look: two lines, so the box closes up from the bottom.
+    const box = () => rects(sel).filter((x) => x.w === NAME_BOX.w && x.y === NAME_BOX.y);
+    expect(box().some((x) => x.h === NAME_BOX.h2)).toBe(true);
+    // A skin: three lines.
+    cursorTo(h, sel, 'megaman');
+    h.tap('special');
+    h.idle(12);
+    expect(box().some((x) => x.h === NAME_BOX.h)).toBe(true);
+    // Every line fits inside the box; the prompt is under it.
+    const t = draw(sel).texts.filter((x) => x.y > NAME_BOX.y && x.y < NAME_BOX.y + NAME_BOX.h);
+    for (const x of t) {
+      expect(x.x).toBeGreaterThanOrEqual(NAME_BOX.x + 1);
+      expect(x.x + x.str.length * 8).toBeLessThanOrEqual(NAME_BOX.x + NAME_BOX.w - 1);
+    }
+    const under = draw(sel)
+      .texts.filter((x) => x.y >= NAME_BOX.y + NAME_BOX.h)
+      .map((x) => x.str);
+    expect(under.some((x) => x.endsWith('LOOKS'))).toBe(true);
   });
 
-  it('its prompt always fits inside the rivets, dropping a long key name', () => {
+  it("every hero's game fits the name box", () => {
+    for (const g of Object.values(CLASSIC_HERO_GAMES))
+      expect(fontText(g).length * 8).toBeLessThanOrEqual(NAME_BOX.w - 4);
+  });
+
+  it("the grid panel is the original's 185 x 70 at y 45, its cells 9 px in", () => {
+    const { sel } = classicSelect();
+    const pan = gridPanel(sel.rows, sel.grid);
+    // CharacterSelectBox: centred on y 80 (Y_POS 160), portraits 4 px into the fill, 14 px frame.
+    expect(pan).toEqual({ x: 36, y: 45, w: 185, h: 70 });
+    // Centred on y 80, and 4 px over the name box.
+    expect(pan.y + pan.h / 2).toBe(80);
+    expect(NAME_BOX.y - (pan.y + pan.h)).toBe(4);
+    expect(sel.cellOf(0)).toEqual({ x: pan.x + 9, y: pan.y + 9 });
+  });
+
+  it("the HUD's face is inset as the original's, its text after it", () => {
+    // TopScreenText: PORT_PNT (12, 14) with its frame 2 px out; NAME_TXT_PNT x 67; halved.
+    expect(HUD_FACE).toEqual({ x: 5, y: 6, size: 26 });
+    expect(HUD_TEXT).toEqual({ name: 34, coins: 108, world: 154, level: 162, time: 210 });
+    const { sel } = classicSelect();
+    const t = draw(sel).texts;
+    expect(t.find((x) => x.str === 'MARIO')?.x).toBe(34);
+    expect(t.find((x) => x.str === 'WORLD')?.x).toBe(154);
+    expect(t.find((x) => x.str === 'TIME')?.x).toBe(210);
+  });
+
+  it("the skin menu's cells are each hero's preview size, 2 px apart, the panel fitted to them", () => {
+    // GridMenuBox / Character.SKIN_PREVIEW_SIZE: the preview + 1 px a side; Bill's 35 x 38 make
+    // the original's 37 x 40 cells, five to a row and three rows: a 208 x 170 box.
+    expect(skinGrid('bill')).toEqual({ cols: 5, rows: 3, w: 37, h: 40, gap: 2 });
+    const bill = skinLayout(15, 'bill');
+    expect([bill.w, bill.h]).toEqual([208, 170]);
+    expect(bill.y + (bill.h >> 1)).toBe(120);
+    expect(skinGrid('megaman')).toMatchObject({ cols: 5, w: 35, h: 35 });
+    expect(skinGrid('samus')).toMatchObject({ cols: 6, w: 32, h: 40 });
+    const { h, sel } = classicSelect();
+    cursorTo(h, sel, 'megaman');
+    h.tap('jump');
+    const L = sel.pickerLayout;
+    expect(L).toMatchObject({ cw: 35, ch: 35, cols: 5 });
+    if (!L) return;
+    // Every look stands inside its cell, and the panel holds the grid and the text.
+    const k = skinCell(9, L);
+    expect(k.x + L.cw).toBeLessThanOrEqual(L.x + L.w - 7);
+    expect(L.gameY + 8).toBeLessThanOrEqual(L.y + L.h - 7);
+    expect(draw(sel).texts.some((x) => x.str === 'MEGA MAN' && x.y === L.gameY)).toBe(true);
+  });
+
+  it('its prompt always fits on the screen, dropping a long key name', () => {
     const fits = (sel: CharacterSelectScene) => {
       const t = draw(sel).texts.filter((x) => /^OK\b/.test(x.str));
       expect(t.length).toBeGreaterThan(0);
       for (const x of t) {
-        expect(x.x).toBeGreaterThanOrEqual(128 - NAME_BOX.w / 2 + 11);
-        expect(x.x + x.str.length * 8).toBeLessThanOrEqual(128 + NAME_BOX.w / 2 - 11);
+        expect(x.x).toBeGreaterThanOrEqual(8);
+        expect(x.x + x.str.length * 8).toBeLessThanOrEqual(248);
       }
       return t.map((x) => x.str);
     };

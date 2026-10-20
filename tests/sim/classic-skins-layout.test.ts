@@ -5,7 +5,7 @@ import { MEGAMAN } from '@game/characters/megaman';
 import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
-import { SELECT_GRID, SKIN_PANEL_Y, skinCell } from '@game/scenes/select-grid';
+import { SELECT_GRID, skinCell } from '@game/scenes/select-grid';
 import { draw, makeGame, useStorage } from './heroes-harness';
 
 // Classic mode's select in the original 3.1.21's layout (CharacterSelectBox.as, CharacterSkinMenu.as;
@@ -43,16 +43,16 @@ describe('the original layout: grid, name box, ground', () => {
     const t = draw(sel).texts;
     for (const x of t) expect(x.y + 8).toBeLessThanOrEqual(240);
     // The HUD on top names the hero under the cursor.
-    expect(t.find((x) => x.y === 8 && x.x === 32)?.str).toBe('MARIO');
+    expect(t.find((x) => x.y === 8 && x.x === 34)?.str).toBe('MARIO');
   });
 
   it("a skin's name in quotes over its hero, and the hero's game", () => {
     const settings = { ...defaultSettings(), classicSkins: { megaman: 'breakman' } };
     const { h, sel } = classicSelect(settings);
     cursorTo(h, sel, 'megaman');
-    expect(sel.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN 3']);
-    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man 3');
-    expect(draw(sel).texts.find((x) => x.y === 8 && x.x === 32)?.str).toBe('BREAK');
+    expect(sel.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN']);
+    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man');
+    expect(draw(sel).texts.find((x) => x.y === 8 && x.x === 34)?.str).toBe('BREAK');
   });
 
   it('the Random cell is held still with Reduce flashing', () => {
@@ -85,8 +85,8 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man 3.');
     // The panel: titled with the look, the HUD follows it.
     const t = draw(sel).texts;
-    expect(t.some((x) => x.str === 'BREAK MAN' && x.y === SKIN_PANEL_Y + 7)).toBe(true);
-    expect(t.find((x) => x.y === 8 && x.x === 32)?.str).toBe('BREAK');
+    expect(t.some((x) => x.str === 'BREAK MAN' && x.y === sel.pickerLayout?.titleY)).toBe(true);
+    expect(t.find((x) => x.y === 8 && x.x === 34)?.str).toBe('BREAK');
     h.tap('attack');
     expect(sel.pickerOpen).toBe(false);
     expect(settings.classicSkins?.megaman).toBeUndefined();
@@ -116,7 +116,9 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     sel.tapAt(c.x + 4, c.y + 4);
     h.step();
     expect(sel.pickerOpen).toBe(true);
-    const k = skinCell(3, h.game.skinsFor(MEGAMAN).length);
+    const L = sel.pickerLayout;
+    if (!L) throw new Error('no skin menu');
+    const k = skinCell(3, L);
     sel.tapAt(k.x + 4, k.y + 4);
     h.step();
     expect(sel.pickerSkin).toBe(BREAKMAN_CLASSIC);

@@ -486,10 +486,19 @@ export class Game {
   /**
    * A hero from an old save or a run begun before the slots changed (a skin that had its own slot:
    * Peach, Pit, Proto Man, the Mega Man variants): its slot's hero, with the skin remembered as
-   * that slot's look, so the run goes on looking and playing as it did. Any other hero is itself.
+   * that slot's look, so the run goes on looking and playing as it did. A hero with no slot now is
+   * swapped for the first slot's; any other hero is itself.
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
+    // A hero the select does not offer now (an Expansion hero from a link or save while Options >
+    // Expansion heroes is off): the first slot's hero, Mario, in his chosen look, so Survival has a
+    // hero standing and the select shows who plays.
+    const slots = this.heroSlots;
+    if (!slots.includes(host)) {
+      const first = slots.find((d) => !this.heroLocked(d)) ?? slots[0];
+      return first ? this.skinFor(first) : c;
+    }
     if (host === c) return c;
     if (this.deps.settings && this.deps.settings.classicSkins?.[host.id] !== c.id) this.setSkin(host, c);
     return c;
@@ -1785,8 +1794,9 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
-    // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look.
-    if (classic) this.restoreSlotHero(character);
+    // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
+    // a hero the select does not offer now plays as its first slot's hero.
+    if (classic) character = this.restoreSlotHero(character);
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
     this.state = newGameState(character, character2, this.liveRules);
