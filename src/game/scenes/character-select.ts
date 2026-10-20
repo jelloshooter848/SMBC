@@ -13,6 +13,7 @@ import { fxPalette } from '@content/sprites/palette-fx';
 import { askTraining, needsTraining } from '../tutorial/training';
 import { MIN_LIVES_FOR_REVIVAL, type Survival } from '../survival';
 import { menuTouchLabels } from '../touch-labels';
+import { drawSelectHud } from '../hud/select-hud';
 import {
   SELECT_GRID,
   SKIN_GRID,
@@ -1135,7 +1136,7 @@ export class CharacterSelectScene implements Scene {
     const font = assets.sheet('font');
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
-    this.renderClassicHud(r, shown);
+    drawSelectHud(r, assets, this.game.state, shown, shown ? this.artOf(shown) : null);
     // The portrait grid.
     const pan = gridPanel(this.rows);
     drawPanel(r, pan.x, pan.y, pan.w, pan.h);
@@ -1218,26 +1219,6 @@ export class CharacterSelectScene implements Scene {
     if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
     if (this.picker) this.renderPicker(r);
     if (this.box) this.renderBox(r, this.box);
-  }
-
-  /** The HUD on top: the shown hero's small portrait and HUD name, score, coins, WORLD, TIME. */
-  private renderClassicHud(r: Renderer, shown: CharacterDef | null): void {
-    const assets = this.game.ctx.assets;
-    const font = assets.sheet('font');
-    const s = this.game.state;
-    if (shown) {
-      const pt = this.artOf(shown);
-      const sheet = assets.sheet(pt.sheet, pt.palette);
-      const f = sheet.frames.get(pt.frame);
-      // The head, in a 16 px box left of the name.
-      inCell(r, 5, 5, 18, 18, () => r.sprite(sheet, pt.frame, 14 - ((f?.w ?? 16) >> 1), 6));
-    }
-    r.text(font, (shown ? shown.hudName : 'RANDOM').slice(0, 7), 24, 8);
-    r.text(font, String(s.score).padStart(7, '0'), 24, 16);
-    r.text(font, `$×${String(s.coins).padStart(2, '0')}`, 96, 16);
-    r.text(font, 'WORLD', 144, 8);
-    r.text(font, `${s.world}-${s.stage}`, 152, 16);
-    r.text(font, 'TIME', 200, 8);
   }
 
   /** The skin menu (CharacterSkinMenu): the look's name, a page of looks, its source game. */
