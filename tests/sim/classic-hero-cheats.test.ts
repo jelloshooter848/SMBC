@@ -85,7 +85,7 @@ describe('G-040 Classic Samus', () => {
     tap(w, 'special');
     expect(missiles(w)).toBe(10);
     expect(palette(w)).toMatch(/-missile$/);
-    expect(w.player.def.touchLabels?.(w.player)).toMatchObject({ attack: 'MISSILE', special: 'SWITCH' });
+    expect(w.player.def.touchLabels?.(w.player, w)).toMatchObject({ attack: 'MISSILE', special: 'SWITCH' });
     run(w, 30);
     tap(w, 'attack');
     expect(missiles(w)).toBe(9);

@@ -526,12 +526,12 @@ export function classicSamus(
     // TG-44: Flower state, Missiles with 99 and the Expansion, and Select between Wave and Ice.
     devKit: () => ({ missileUp: 1, missiles: MISSILE_EXP_CAP, missileExp: 1, classicAll: 1 }),
     tools: (p) => devTools(p),
-    touchLabels(p) {
+    touchLabels(p, world) {
       if (inBall(p)) return { attack: 'BOMB', special: null, select: null };
       if (crouchPose(p) && v.noBeamInCrouch)
         return { attack: null, special: p.scratch.missileUp ? 'MISSILE' : null, select: null };
       // G-040: with the Classic Samus cheat Attack fires the mode's weapon; Special switches it.
-      if (p.scratch._cs)
+      if (classicSamusCheat(world))
         return {
           attack: missileMode(p) ? 'MISSILE' : 'SHOOT',
           special: p.scratch.missileUp ? 'SWITCH' : null,
@@ -595,9 +595,6 @@ export function classicSamus(
           if (inBall(p)) return;
         }
         const cheat = classicSamusCheat(world);
-        // Remembered for touchLabels, which has no World (`_cs`: the cheat is on).
-        if (cheat) s(p)._cs = 1;
-        else delete s(p)._cs;
         // G-040: Special or Select (not the dev kit's beam switch) toggles missile mode.
         if (
           cheat &&
