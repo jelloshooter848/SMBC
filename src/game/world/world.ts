@@ -3714,6 +3714,7 @@ export class World {
         if (c.t === 1) {
           b.x = tileToSub(c.pole.tx) + px(10);
           p.facing = -1;
+          if (this.rules === 'classic') classicRules().clearHop?.(this, p);
         }
         if (c.t >= 20) {
           c.phase = 'walk';
