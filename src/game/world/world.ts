@@ -28,6 +28,7 @@ import { Cheep } from '../entities/enemies/cheep';
 import { Blooper } from '../entities/enemies/blooper';
 import { Podoboo } from '../entities/enemies/podoboo';
 import { HammerBro } from '../entities/enemies/hammer-bro';
+import { SpikeTop } from '../entities/enemies/spike-top';
 import { LakituZone } from '../entities/enemies/lakitu';
 import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
@@ -1220,6 +1221,9 @@ export class World {
         return new Koopa(x + px(2), y + px(2), 'buzzy');
       case 'spiny':
         return new Spiny(x + px(2), y + px(2), false);
+      // Classic mode's Replace Goombas: Spike Top (rules/classic-goombas.ts).
+      case 'spike-top':
+        return new SpikeTop(x + px(2), y + px(2));
       case 'bullet-bill':
         return new BulletBill(x + px(1), y + px(2), -1);
       case 'lakitu':
