@@ -160,14 +160,15 @@ describe('Current unchanged (TG-38)', () => {
 });
 
 describe('PE-5: jumping', () => {
-  // The report's "about 75" running apex assumed Classic Mario's 81 px; he measures 83.7
-  // (classic-mario-luigi.test.ts), so the 50 px cap gives 77.7 (and 69.7 carrying at speed).
-  it("standing apex 64-67 px (Mario 67), running 6 px under Mario's 83.7", () => {
+  // Run cap 47 (owner 2026-10-20): Classic Mario runs to 83.7 px (classic-mario-luigi.test.ts),
+  // so 47 gives about 75. Carrying keeps its 42 px cap: about 70 at speed.
+  it('standing apex 64-67 px (Mario 67), running apex 74-76 px', () => {
     const stand = measureJump(PEACH_CLASSIC, 0, Infinity);
     expect(stand.apex).toBeGreaterThanOrEqual(64);
     expect(stand.apex).toBeLessThanOrEqual(67);
     const run = measureJump(PEACH_CLASSIC, 0x02800, Infinity);
-    expect(run.apex).toBeCloseTo(83.7 - 6, 0);
+    expect(run.apex).toBeGreaterThanOrEqual(74);
+    expect(run.apex).toBeLessThanOrEqual(76);
   });
 
   function carryJump(vx: number): number {
@@ -184,7 +185,7 @@ describe('PE-5: jumping', () => {
     return (y0 - min) / 256;
   }
 
-  it('carrying: 56-58 px standing, 8 px under the free jump at speed', () => {
+  it('carrying: 56-58 px standing, about 70 px at speed (cap 42)', () => {
     const s = carryJump(0);
     expect(s).toBeGreaterThanOrEqual(56);
     expect(s).toBeLessThanOrEqual(58);

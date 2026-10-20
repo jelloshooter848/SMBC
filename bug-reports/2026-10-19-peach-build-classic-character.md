@@ -105,7 +105,7 @@ and gap crossing are Mario's. Only the rise caps change:
 | Walk / run cap | 1.4583 / 2.5 px/f | same | |
 | Accel, release, brake, skid | Mario's | same | |
 | Rise speed, stand / run | 0x03555 / 0x03800 | same | |
-| Rise cap, stand / run | 42 / 56 px | **40 / 50 px (T)** | apex about 65 / 75 px (Mario 67 / 81) |
+| Rise cap, stand / run | 42 / 56 px | **40 / 47 px** (owner 2026-10-20; was 50) | apex about 65 / 75 px (Mario 67 / 83.7) |
 | Rise cap while carrying | — | **32 / 42 px (T)** | apex about 57 / 67 px |
 | Min line | 19 px | **16 px (T)** | |
 | Gravity, fall cap | 0x00355, 0x05000 | same | |
@@ -338,7 +338,7 @@ chirp (D-PE-11). No music override.
 New file `tests/sim/peach-classic.test.ts` (headless, `rules = 'classic'`, `char = peach`):
 - Roster: with Classic mode, the select's second row lists Peach; under Current or in a campaign, `heroFor` never
   returns her and `?char=peach` gives Mario (TG-41).
-- Jump: standing apex 64-66 px; running apex 74-76 px; carrying 56-58 / 66-68 px.
+- Jump: standing apex 64-66 px; running apex 74-76 px; carrying 56-58 / about 70 px (the carry caps stay 32 / 42).
 - Float: held Jump, vy = 0 for 90 frames after the apex, then falls; a release on frame 20 ends it; a second float in
   the same air spell does not start; none under water.
 - Lift: on `ground`, Special roots her 20 f, then `p.scratch` shows a carried turnip; on a `?` block nothing happens;

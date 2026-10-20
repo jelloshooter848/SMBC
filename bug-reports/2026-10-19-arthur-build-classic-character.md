@@ -138,7 +138,7 @@ Hits to kill (HP-C8): lance 300 → Goomba 1, Koopa 2, Hammer Bro 3, Paratroopa 
 Koopa 3, Bowser 12; axe 400 → Koopa 2, Bowser 6. Every steel weapon has pierce 0: a Buzzy Beetle or Bullet Bill blocks
 it with the blocked behaviour (HP-C14). Hit-stun: none (T). All are removed off screen.
 
-**AR-12. The torch's floor fire.** Where the torch lands, a 16 × 10 fire burns for **60 f (T)** on that spot (2 frames,
+**AR-12. The torch's floor fire.** Where the torch lands, a 16 × 10 fire burns for **73 f** (owner 2026-10-20: 4 touches at 0/24/48/72; was 60 f) on that spot (2 frames,
 8 f each), re-hitting an enemy every 24 f (`rehitAfter`) for 150, **pierce 6** (it gets through armour, as Simon's Holy
 Water, SI-C24). It strikes a brick it touches. It does not hurt Arthur. The torch landing on a pit edge burns where it
 stops; a torch falling into a pit is gone. Spec: `HOLY_FLAME_CLASSIC` (`simon/classic-weapons.ts:100-115`) with these
@@ -292,7 +292,7 @@ roll, floor-jumping water. New:
 - Lance: 2 on screen; a 3rd press does nothing; a Goomba dies to 1, a Koopa to 2; a Buzzy blocks it; a lance at a
   pipe ends there; a plain brick breaks.
 - Axe: passes through a pipe and kills two Goombas in a line.
-- Torch: lands, the fire lasts 60 f and kills a Buzzy Beetle (600) in 4 touches 24 f apart.
+- Torch: lands, the fire lasts 73 f and one fire kills a Buzzy Beetle (600) in 4 touches 24 f apart (0/24/48/72).
 - Power: boxers + hit = death (bones); Steel + hit = boxers with the push, weapon kept; Gold + hit = boxers.
 - Gold: the lance passes Buzzy armour and deals 400; Lightning kills a Goomba 56 px behind him.
 - Pots: a seeded RNG drops a pot; touching it changes `p.scratch.weapon`; it is never the held weapon.

@@ -40,11 +40,11 @@ import { PEACH_CLASSIC_GUIDE } from './classic-guide';
  * marked (T) in the report are tuning values for the owner's playtest.
  */
 
-/** PE-5: Mario's numbers with lower rise caps and min line (T). */
+/** PE-5: Mario's numbers with lower rise caps and min line (T); run cap 47 (owner 2026-10-20): a 75 px running apex. */
 export const PEACH_CONSTANTS: PlumberConstants = {
   ...MARIO_CONSTANTS,
   standCap: 40,
-  runCap: 50,
+  runCap: 47,
   minLine: 16,
 };
 

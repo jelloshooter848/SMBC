@@ -29,8 +29,8 @@ export const WEAPON_NAMES: Readonly<Record<ArthurWeaponId, string>> = {
 /** The Gold armour's extra damage and pierce (AR-18). */
 export const GOLD_BONUS = 100;
 const GOLD_PIERCE = 6;
-/** The torch's floor fire (AR-12): 60 f, re-hits every 24 f. */
-export const FIRE_FRAMES = 60;
+/** The torch's floor fire (AR-12; owner 2026-10-20): 73 f, re-hits every 24 f, so 4 touches (0/24/48/72). */
+export const FIRE_FRAMES = 73;
 export const FIRE_REHIT = 24;
 /** Lightning (AR-19): 40 f wind-up, 20 f bolts, 90 f cooldown, 56 px either side, 24 px wide. */
 export const MAGIC_WINDUP = 40;
@@ -252,7 +252,7 @@ export class ArthurTorch extends Projectile {
 }
 
 /**
- * The torch's floor fire (AR-12): drops to the ground where it was lit and burns there for 60 f,
+ * The torch's floor fire (AR-12): drops to the ground where it was lit and burns there for 73 f,
  * hitting each enemy inside it again every 24 f; gone into a pit. It never hurts Arthur.
  */
 export class TorchFire extends Projectile {

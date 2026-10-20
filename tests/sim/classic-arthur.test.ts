@@ -306,7 +306,7 @@ describe('throws (AR-8..AR-14)', () => {
     for (const g of goombas) expect(dead(g)).toBe(true);
   });
 
-  it('the torch lands and burns 60 f; 150 a touch every 24 f through a Buzzy armour (AR-12)', () => {
+  it('the torch lands and burns 73 f; 150 a touch every 24 f through a Buzzy armour, 4 touches (AR-12)', () => {
     const dry = rig();
     dry.p.scratch.weapon = ARTHUR_WEAPONS.indexOf('torch');
     tap(dry, 'attack');
@@ -332,13 +332,12 @@ describe('throws (AR-8..AR-14)', () => {
       const now = buzzy.classicHp ?? 600;
       if (now !== (hp.at(-1) ?? 600)) hp.push(now);
     }
-    // The torch itself is blocked by the armour (steel, pierce 0); the fire pierces: three
-    // touches in its 60 frames (0, 24, 48).
-    expect(hp).toEqual([450, 300, 150]);
-    // A second torch's fire finishes it (the fourth touch).
-    tap(r, 'attack', 80);
+    // The torch itself is blocked by the armour (steel, pierce 0); the fire pierces: four
+    // touches in its 73 frames (0, 24, 48, 72) finish the Buzzy Beetle (600).
+    expect(hp.slice(0, 3)).toEqual([450, 300, 150]);
     expect(dead(buzzy)).toBe(true);
     expect(FIRE_REHIT).toBe(24);
+    expect(FIRE_FRAMES).toBeGreaterThanOrEqual(73);
   });
 
   it('Down + Attack in the air throws straight down (AR-14)', () => {
