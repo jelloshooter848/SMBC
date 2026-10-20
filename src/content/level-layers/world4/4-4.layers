@@ -300,7 +300,9 @@
 + piranha-down 142 6 red=1
 + piranha 142 10 red=1
 + podoboo 151 12
++ fly 155 7
 + podoboo 157 12
++ fly 158 6
 + firebar 158 7
 + firebar 170 6
 + firebar-ccw 170 10
@@ -308,7 +310,9 @@
 + firebar 208 6
 + firebar-ccw 208 10
 + podoboo 215 12
++ fly 219 7
 + podoboo 221 12
++ fly 222 6
 + firebar 222 7
 + firebar 234 6
 + firebar-ccw 234 10
@@ -316,7 +320,10 @@
 + firebar 271 6
 + firebar-ccw 271 10
 + block-item 273 9 item=clock
++ icicle 274 5
 + block-item 279 2 item=bee
++ fly 281 9
++ fly 283 9
 + buzzy 167 5
 + buzzy 231 5
 + goomba 169 9

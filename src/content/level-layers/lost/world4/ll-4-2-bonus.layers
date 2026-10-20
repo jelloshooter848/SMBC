@@ -14,6 +14,7 @@
 1 9 .
 3 9 C===CC===C
 3 10 $$
++ block-item 10 6 item=clock
 
 [layer hard]
 0 2 }

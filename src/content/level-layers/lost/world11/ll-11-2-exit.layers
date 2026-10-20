@@ -63,9 +63,11 @@
 + piranha 1 5 red=1
 + piranha-down 5 6 red=1
 + koopa-red 5 8 dx=8
++ icicle 7 3 dx=8
 + koopa-para-red 9 9 dx=8 dy=-8
 + piranha-down 12 7 red=1
 + koopa-red 13 9 dx=8
++ icicle 14 3 dx=8
 + koopa-para-red 15 8 dx=8 dy=-8
 + koopa-red 18 5 dx=8
 start 1 4 pipe-exit

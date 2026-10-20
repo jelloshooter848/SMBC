@@ -327,7 +327,9 @@
 + piranha 51 13 red=1
 + block-item 62 5 item=clock
 + piranha 64 2 red=1
++ barrel 91 1 dx=8
 + piranha-down 92 6 red=1
++ barrel 93 1
 + piranha-down 96 7 red=1
 + koopa-para-red 98 8 dx=8 dy=-8
 + piranha-down 105 10 red=1
@@ -336,7 +338,10 @@
 + koopa-para-green 144 8 dx=8
 + piranha 147 13 red=1
 + koopa-para-green 148 8 dx=8
++ icicle 151 3
 + koopa-para-green 152 8 dx=8
++ icicle 155 3 dx=8
++ icicle 159 3 dx=8
 + koopa-green 27 3
 + hammer-bro 60 4
 + koopa-red 102 5

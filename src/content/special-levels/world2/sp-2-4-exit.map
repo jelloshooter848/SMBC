@@ -1,0 +1,38 @@
+id: sp-2-4-exit
+name: WORLD 2-4
+world: 2
+stage: 4
+theme: overworld
+music: overworld
+time: inherit
+start: 2,3
+startMode: fall
+camera: scroll
+parent: sp-2-4
+
+[tiles]
+;; 0                16               32               48
+................ ................ ................ ..
+................ ................ ................ ..
+BB.............. ............BBBB BBBBBBBBBBBBBBBB BB
+BB.............. ............BBBB BBBBBBBBBBBBBBBB BB
+BB.............. ................ ..B????????????B BB
+BB.............. ..............BB B.B............B BB
+BB$$$$$$$$$$$$$$ $$$$$$$$$$$$$$BB B.B............B BB
+BB.............. ..............BB B.B22222222222.B BB
+BB.............. ..............BB B..............B BB
+BB.............. ..............BB BBBwwwwwwwwwwwwB BB
+BB.............. ............[]BB BBB.......#..()B BB
+BB.............. ............{}BB BBB...#...#..<>B BB
+BB)))))))))))))) )))))))))))))}BB BBBBBBBBBBBBBBBB BB
+BB>>>>>>>>>>>>>> >>>>>>>>>>>>>}## ################ ##
+BB.............. ............{}## ################ ##
+
+[zones]
+pipe 28 10 down -> sp-2-4 122 10 exit=up
+pipe 45 11 right -> sp-2-4 122 10 exit=up
+
+[decor]
+cloud-1 5 3
+cloud-1 17 2
+cloud-1 24 8

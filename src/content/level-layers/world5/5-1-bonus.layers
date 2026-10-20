@@ -30,3 +30,8 @@
 0 12 .
 0 13 .BBB===BB===BBBB
 0 14 ................
++ icicle 5 3
++ icicle 6 3 dx=8
++ icicle 8 3
++ crab 10 12 dx=8
++ crab 12 12

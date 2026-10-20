@@ -119,6 +119,7 @@
 + piranha-down 126 9
 + piranha 131 11
 + piranha-down 180 8
++ block-item 172 5 item=clock
 + hammer-bro 173 11 dx=8
 +zone checkpoint 135 12
 
@@ -268,6 +269,7 @@
 + piranha 56 13 red=1
 + koopa-para-green-h 67 6
 + koopa-para-green-h 70 10 dx=8
++ barrel 77 4 dx=8
 + piranha 78 13 red=1
 + piranha 83 7 red=1
 + koopa-para-green-h 91 11 dy=-8
@@ -279,10 +281,13 @@
 + piranha-down 115 9 red=1
 + piranha-down 118 9 red=1
 + block-item 124 2 item=bee
++ fly 142 11
 + lift-v 144 9 len=4 range=6 dx=-8 dy=-8
 + koopa-red 150 4 dx=8
 + koopa-red 152 8 dx=8
++ fire-enemy 159 6
 + hammer-bro 173 11 dx=8
++ block-item 178 5 item=clock
 + piranha 187 13 red=1
 + piranha 198 13 red=1
 + koopa-para-red 204 9 dy=-8

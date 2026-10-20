@@ -240,6 +240,7 @@
 + piranha 265 13
 + piranha 352 5
 + piranha 387 11
++ block-item 15 5 item=clock
 + koopa-green 139 4 dx=8
 + koopa-green 144 4 dx=8
 + koopa-green 149 4 dx=8
@@ -431,6 +432,9 @@
 - koopa-green 248 12
 - koopa-green 265 12
 - koopa-green 268 12
++ block-item 31 12 item=clock
++ crab 40 4 dx=8
++ crab 42 4
 + piranha 44 13 red=1
 + piranha 48 13 red=1
 + piranha 52 13 red=1
@@ -448,6 +452,7 @@
 + piranha 170 9 red=1
 + koopa-para-red 173 9 dx=8 dy=-8
 + piranha 176 13 red=1
++ barrel 190 4 dx=8
 + koopa-red 194 8 dx=8
 + koopa-para-red 199 10 dx=8 dy=-8
 + koopa-para-red 208 10 dx=8 dy=-8
@@ -464,6 +469,7 @@
 + koopa-red 257 8 dx=8
 + koopa-para-green-h 261 11 dx=8
 + koopa-para-green-h 268 7 dx=8
++ block-item 275 2 item=clock
 + koopa-para-green-h 275 4
 + koopa-para-red 279 4 dy=-8
 + piranha 282 5 red=1
@@ -475,6 +481,9 @@
 + firebar-ccw 317 5
 + firebar 318 9
 + koopa-red 323 1 dx=8
++ barrel 338 7 dx=8
++ barrel 342 3 dx=8
++ barrel 346 1 dx=8
 + koopa-para-red 349 4 dx=8 dy=-8
 + koopa-para-green-h 406 8 dx=8 dy=-8
 + piranha 406 10 red=1

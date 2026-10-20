@@ -110,7 +110,7 @@
 86 9 $
 91 9 $
 99 9 $$
-108 9 ==EC=
+108 9 =EEC=
 114 9 $
 117 9 $
 120 9 $$
@@ -252,6 +252,8 @@
 - koopa-para-green 161 10
 - koopa-para-green 172 10
 - buzzy 81 12
++ block-item 109 9 item=atom
++ block-item 174 9 item=clock
 +zone checkpoint 183 12
 
 [layer hard]

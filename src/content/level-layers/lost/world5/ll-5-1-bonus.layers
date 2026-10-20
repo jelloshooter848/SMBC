@@ -57,6 +57,7 @@
 + piranha 4 13 red=1
 + piranha 7 13 red=1
 + piranha 10 13 red=1
++ block-item 11 5 item=clock
 + piranha 13 13 red=1
 + block-item 15 9 item=bee
 -zone pipe 13 12 right -> ll-5-1 115 10 exit=up

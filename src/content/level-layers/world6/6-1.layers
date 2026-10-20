@@ -17,7 +17,7 @@
 61 5 =ME?=
 74 5 $$
 88 5 $$$$$
-111 5 ==M=E
+111 5 E=M=E
 127 5 $$$
 137 5 ?EC?
 148 5 $$$
@@ -139,7 +139,10 @@
 174 14 ##
 - lakitu 21 0
 + lakitu 50 0 end=123
++ block-item 63 9 item=atom
++ block-item 111 5 item=atom
 + block-item 131 8 item=clock
++ block-item 137 5 item=wing
 
 [layer hard]
 177 4 B
@@ -217,16 +220,26 @@
 176 14 BB........
 - lakitu 21 0
 + lakitu 9 0 end=173
++ fire-enemy 13 12
 + piranha 24 13
++ barrel 30 10
++ barrel 33 9
++ barrel 36 8
 + piranha 42 13
 + koopa-para-green-h 57 11 dx=8
 + koopa-para-green 73 7
++ crab 123 10
++ crab 125 8
++ crab 127 7
 + block-item 131 8 item=clock
 + piranha 139 13
 + piranha 143 11
 + koopa-para-green 146 6 dx=8
 + piranha 147 7
 + block-item 150 7 item=bee
++ barrel 169 11
++ barrel 171 9
++ barrel 173 7
 
 [layer horz]
 + lift-fall 181 4 len=2 dx=8

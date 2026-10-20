@@ -138,6 +138,7 @@
 152 14 #
 - buzzy 54 12
 - buzzy 92 12
++ block-item 146 5 item=clock
 
 [layer hard]
 173 3 2BB
@@ -154,7 +155,7 @@
 74 5 E
 81 5 =
 115 5 EEEEEEEEEEEEE
-140 5 =
+140 5 E
 146 5 E
 160 5 E5E
 174 5 DG
@@ -287,6 +288,8 @@
 + piranha 183 9 red=1
 + piranha 189 10 red=1
 + piranha 201 9 red=1
++ crab 14 12 dx=8
++ crab 16 12
 + piranha 21 13 red=1
 + piranha 26 13 red=1
 + buzzy 33 12 dx=8
@@ -298,12 +301,18 @@
 + piranha-down 39 8 red=1
 + piranha 39 11 red=1
 + piranha 46 13 red=1
++ fly 65 4 dx=8
 + piranha 69 13 red=1
 + piranha 72 13 red=1
++ fly 73 4 dx=8
++ fly 76 4 dx=8
 + piranha 76 13 red=1
 + piranha 78 13 red=1
 + piranha 82 13 red=1
++ fly 115 4
 + piranha 133 13 red=1
++ block-item 140 5 item=atom
++ block-item 146 5 item=clock
 + piranha 170 13 red=1
 + block-item 173 3 item=bee
 + piranha-down 174 5 red=1

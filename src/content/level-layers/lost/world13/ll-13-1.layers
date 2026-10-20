@@ -129,7 +129,7 @@
 173 4 {}
 53 5 ^
 87 5 E
-91 5 ......
+90 5 E......
 105 5 .
 110 5 .
 147 5 P
@@ -204,6 +204,8 @@
 + piranha 39 10 red=1
 + koopa-para-red 47 9 dx=8 dy=-8
 + koopa-para-red 59 9 dy=-8
++ block-item 87 5 item=clock
++ block-item 90 5 item=hammer
 + koopa-para-green-h 98 10 dx=8 dy=-8
 + piranha 142 9 red=1
 + hammer-bro 145 4 dx=8

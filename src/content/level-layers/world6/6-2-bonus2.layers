@@ -36,3 +36,10 @@
 6 12 ..
 0 13 .()))...())))BBB
 0 14 .<>>>...<>>>>BBB
++ icicle 3 3
++ icicle 4 10
++ icicle 5 3 dx=8
++ icicle 6 10 dx=8
++ icicle 7 3 dx=8
++ icicle 9 10
++ icicle 10 3

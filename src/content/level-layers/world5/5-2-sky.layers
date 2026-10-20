@@ -63,8 +63,13 @@
 + koopa-para-green 25 12
 + koopa-para-green 27 12
 + koopa-para-green 31 5
++ icicle 31 9
 + koopa-para-green 35 5
++ icicle 35 9
 + koopa-para-red 52 6
++ fly 53 12
 + koopa-para-red 56 6
++ fly 57 12
++ fly 61 12
 -zone pit 0 -> 5-2 130 0
 +zone pit 0 -> 5-2 99 0

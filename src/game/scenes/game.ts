@@ -8,6 +8,7 @@ import {
   lostLettersOpen,
   recordLostGameBeaten,
   saveProgress,
+  type MapSetId,
 } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
@@ -691,9 +692,9 @@ export class Game {
         saveSettings(this.deps.settings as Settings);
       }
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
-      // All Ground Is Bricks, The Lost Levels All Hammer Bros for now (the original's goal for it
-      // is the Special set, which brings its own beat event, G-020).
-      if (set === 'smb' || set === 'lost') this.cheatEvent({ beat: set });
+      // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
+      // count and no-continue goals.
+      this.cheatEvent({ beat: set });
       this.showClassicUnlocks();
       return;
     }
@@ -1713,7 +1714,7 @@ export class Game {
    * A Classic run cleared a level (`level`, `castle`) or beat a game (`beat`): the goals that ask
    * for it (Level.completeLevel, StatManager.beatGameHandler) unlock their cheats.
    */
-  cheatEvent(ev: { level?: boolean; castle?: boolean; beat?: 'smb' | 'lost' }): void {
+  cheatEvent(ev: { level?: boolean; castle?: boolean; beat?: MapSetId }): void {
     const s = this.deps.settings;
     if (!s || !this.cheatGoalsCount) return;
     const c = s.classicCheats;

@@ -65,7 +65,9 @@
 - hammer-bro 17 12
 + piranha 3 11 red=1
 + piranha 10 11 red=1
++ icicle 7 3 dx=8
 + block-item 7 5 item=clock
++ icicle 11 3 dx=8
 + piranha 26 10 red=1
 + hammer-bro-chase 18 12
 

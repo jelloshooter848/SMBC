@@ -43,6 +43,9 @@
 5 12 .......
 0 13 .)..B.......B..{
 0 14 .>.............{
++ icicle 5 3 dx=8
++ icicle 7 3 dx=8
 + firebar 8 11 len=12
++ icicle 9 3 dx=8
 -zone pipe 13 12 right -> ll-1-1 163 10 exit=up
 +zone pipe 13 12 right -> ll-1-1 123 8 exit=up

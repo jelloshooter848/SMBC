@@ -304,6 +304,9 @@
 + lift-fall 134 8 len=4 dx=-8
 + balance 139 6 x2=144 y2=10 len=4 top=2
 + koopa-para-red 141 6 dx=8
++ barrel 152 9 dx=8 dy=-8
++ barrel 156 6 dx=8 dy=-8
++ barrel 160 3 dx=8 dy=-8
 + koopa-green 130 7
 
 [layer horz]

@@ -71,9 +71,12 @@
 0 13 .B------B...ii..|.B......B......
 0 14 .B......B...ii..|.B......B......
 + piranha-down 4 10 red=1
++ icicle 8 3 dx=8
 + piranha-down 12 5 red=1
++ icicle 17 3 dx=8
 + piranha-down 21 8 red=1
 + koopa-red 24 10 dx=8
++ block-item 25 5 item=clock
 -zone pipe 29 12 right -> ll-1-2 131 10 exit=up
 +zone pipe 29 4 right -> ll-1-2 131 10 exit=up
 

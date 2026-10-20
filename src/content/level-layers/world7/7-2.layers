@@ -397,7 +397,9 @@
 178 14 ........
 187 14 .
 189 14 BBB
++ crab 25 12 dx=8
 + blooper 34 5 dx=8
++ crab 42 4
 + block-item 140 4 item=clock
 -zone pipe 189 8 right -> 7-2-exit 3 10 exit=up
 +zone bullets 111 36

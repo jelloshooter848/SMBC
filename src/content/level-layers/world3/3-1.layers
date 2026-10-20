@@ -112,12 +112,13 @@
 - koopa-green 152 4
 - hammer-bro 113 8
 + koopa-para-green 27 6
++ block-item 111 9 item=atom
 + block-item 115 9 item=clock
 
 [layer hard]
 79 5 1
 82 5 .
-89 5 ==
+89 5 E=
 92 5 .
 113 5 P
 117 5 5
@@ -219,10 +220,16 @@
 + piranha 67 11 red=1
 + piranha 103 9 red=1
 + koopa-para-green 27 6
++ fly 79 8
++ fly 81 8
++ block-item 89 5 item=atom
 + koopa-para-green 101 10
 + koopa-para-green 141 6
 + block-item 151 5 item=clock
++ fly 168 8
 + piranha 181 13
++ barrel 187 7
++ barrel 189 5
 + hammer-bro 118 4
 + koopa-green 157 4
 + koopa-red 53 12

@@ -56,10 +56,15 @@
 21 12 iii
 0 13 B.iii....ii.....i....iii...mmmm{
 0 14 B.iii....ii.....i....iii....ii.{
++ icicle 4 3 dx=8
 + koopa-para-red 6 11 dx=8
++ icicle 8 3 dx=8
 + koopa-red 10 9 dx=8
 + koopa-para-red 13 9
++ icicle 16 3
 + koopa-red 16 10 dx=8
 + koopa-para-red 18 9 dx=8 dy=-8
++ icicle 21 3
 + koopa-red 23 6 dx=8
 + koopa-para-red 25 9 dx=8 dy=-8
++ icicle 27 3 dx=8

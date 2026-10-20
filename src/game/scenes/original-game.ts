@@ -45,8 +45,8 @@ export interface MapSet {
 
 /**
  * Classic mode's map sets, in the original's order (MapPack: Smb, Special, LostLevels), every one
- * open from the start (G-003, owner decision D3). The Special set goes between the two when it is
- * built (G-020): one more entry here, with its own id prefix.
+ * open from the start (G-003, owner decision D3). Each owns its id prefix: none for SMB1, `sp-`
+ * for Super Mario Bros. Special (G-020), `ll-` for The Lost Levels.
  */
 export const MAP_SETS: readonly MapSet[] = [
   {
@@ -57,7 +57,16 @@ export const MAP_SETS: readonly MapSet[] = [
     about: 'The original game with every hero',
     owns: (id) => /^\d+-\d+/.test(id),
   },
-  // G-020 (Super Mario Bros. Special) goes here: { id: 'special', label: 'Special', ... }.
+  {
+    id: 'special',
+    // The original's menu name (MenuBoxItems.SMB_SPECIAL); a longer one would run into BEATEN.
+    label: 'SMB Special',
+    start: 'sp-1-1',
+    // levelDataSpecial.xml: eight worlds, 8-4 ends the game as in SMB1 (LevelData.worldCount).
+    lastWorld: 8,
+    about: 'Super Mario Bros. Special: 32 new levels, with icicles, crabs, flies, barrels and fire',
+    owns: (id) => id.startsWith('sp-'),
+  },
   {
     id: 'lost',
     label: 'The Lost Levels',

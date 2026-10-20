@@ -18,7 +18,7 @@
 159 4 $
 168 4 $$$
 27 5 ...
-62 5 =CE==
+62 5 =CEE=
 83 5 PE
 86 5 EC
 97 5 =?C=??=EM=
@@ -127,6 +127,7 @@
 - hammer-bro 85 8
 - hammer-bro 135 12
 + koopa-green 64 12 dx=8
++ block-item 65 5 item=atom
 + block-item 134 5 item=clock
 + koopa-green 170 4
 + koopa-green 26 12
@@ -226,11 +227,14 @@
 + koopa-red 119 12 dx=8
 + koopa-para-green-h 123 9 dx=8 dy=-8
 + piranha 125 12 red=1
++ block-item 134 5 item=clock
 + hammer-bro-chase 136 8 dx=8
 + koopa-para-red 143 6 dx=8
 + koopa-para-green-h 151 4
 + piranha 154 11
 + piranha 157 8 red=1
++ barrel 162 5
++ barrel 168 5
 + koopa-red 32 12
 + hammer-bro-chase 136 12
 -zone checkpoint 98 12

@@ -1,0 +1,36 @@
+id: sp-4-3-bonus
+name: WORLD 4-3
+world: 4
+stage: 3
+theme: overworld
+music: underground
+time: inherit
+start: 5,0
+startMode: fall
+camera: scroll
+parent: sp-4-3
+
+[tiles]
+;; 0                16
+................ ....
+................ ....
+BBBBBBBBBBBBBBBB BBBB
+BBBBBBBBBBBBBBBB BBBB
+BB..$$$$$$$$$$$$ ..BB
+BB.............. ..BB
+BB.............. ..BB
+BB.............. ..BB
+BB[].....##..... []BB
+BB{}............ {}BB
+BB{}............ {}BB
+BB{}............ {}BB
+BB{}............ {}BB
+BBBBBBBBBBBBBBBB BBBB
+BBBBBBBBBBBBBBBB BBBB
+
+[zones]
+pipe 16 8 down -> sp-4-3 203 12 exit=up
+
+[decor]
+tree-small 7 11
+tree-small 12 11

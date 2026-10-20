@@ -177,6 +177,10 @@
 - koopa-red 26 8
 - koopa-red 29 8
 - koopa-green 54 12
++ icicle 11 3 dx=8
++ icicle 13 3 dx=8
++ icicle 22 3 dx=8
++ icicle 24 3 dx=8
 + piranha 25 9 red=1
 + firebar 31 8
 + firebar-ccw 35 10

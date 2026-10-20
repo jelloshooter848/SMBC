@@ -38,6 +38,7 @@
 12 14 .
 27 14 .
 + firebar-ccw 12 9
++ fly 17 4 dx=8
 
 [layer horz]
 18 5 T

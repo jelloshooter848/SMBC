@@ -77,6 +77,7 @@
 + piranha 193 10
 + bowser 231 9
 + lift-h 39 12 len=4 range=3 dx=-8
++ block-item 47 9 item=clock
 + lift-h 234 6 len=4 range=3 dx=-8
 -zone bowser-fire 171
 -zone pipe 97 10 down -> ll-11-4 19 10 exit=up
@@ -268,6 +269,7 @@
 + firebar-ccw 66 6
 + piranha 70 6
 + podoboo 75 12
++ block-item 84 6 item=clock
 + podoboo 88 12
 + podoboo 106 12
 + podoboo 120 12
@@ -275,6 +277,7 @@
 + block-item 148 6 item=bee
 + podoboo 152 12
 + podoboo 170 12
++ block-item 180 6 item=clock
 + podoboo 184 12
 -zone bowser-fire 171
 +zone checkpoint 90 11

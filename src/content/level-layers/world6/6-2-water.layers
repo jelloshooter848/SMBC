@@ -82,5 +82,12 @@
 56 14 .....
 - lift-down 23 6
 - lift-down 29 10
++ crab 12 5
++ crab 13 5 dx=8
++ crab 16 12
 + lift-v 23 10 len=4 range=6
 + lift-v 29 10 len=4 range=6
++ crab 40 3
++ crab 41 3 dx=8
++ crab 51 12 dx=8
++ crab 53 12

@@ -251,6 +251,7 @@
 + block-item 80 6 item=bee
 + podoboo 93 12
 + piranha-down 95 10 red=1
++ icicle 105 7 dx=8
 + podoboo 111 12
 + goomba 137 11 dx=8
 + firebar-ccw 143 2

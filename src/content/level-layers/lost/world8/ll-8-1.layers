@@ -295,21 +295,33 @@
 - buzzy 69 12
 - hammer-bro-chase 112 12
 - koopa-red 173 12
++ crab 13 12 dx=8
++ crab 16 12
++ icicle 20 3 dx=8
 + block-item 21 5 item=clock
++ icicle 25 3
 + piranha-down 27 6 red=1
 + piranha 27 13 red=1
++ icicle 29 3 dx=8
 + piranha-down 31 6 red=1
 + piranha 31 13 red=1
++ icicle 33 3 dx=8
 + koopa-red 33 8 dx=8
 + piranha-down 35 6 red=1
 + piranha 35 13 red=1
++ icicle 37 3 dx=8
 + koopa-red 37 8 dx=8
 + piranha-down 39 6 red=1
 + piranha 39 13 red=1
 + koopa-red 40 12 dx=8
++ icicle 42 3
++ icicle 47 3
 + piranha-down 49 10 red=1
++ icicle 52 3
 + piranha-down 54 5 red=1
 + koopa-para-green-h 66 3 dy=-8
++ barrel 68 12 dx=8
++ barrel 70 12 dx=8
 + firebar-ccw 78 12
 + firebar 82 12
 + piranha 93 13 red=1

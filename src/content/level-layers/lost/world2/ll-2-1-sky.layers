@@ -53,7 +53,7 @@
 84 6 OOOOOOO
 115 6 OOO
 14 7 O
-17 7 =OOOOOOOOOOOOOOOOOOOOOOOOOOO
+17 7 EOOOOOOOOOOOOOOOOOOOOOOOOOOO
 46 7 $
 48 7 O
 63 7 O
@@ -72,8 +72,8 @@
 18 9 O
 32 9 .
 44 9 O
-46 9 $=
-64 9 =$
+46 9 $E
+64 9 E$
 67 9 O
 17 10 EO
 44 10 O
@@ -90,6 +90,10 @@
 68 13 ................
 107 13 ...
 - lift-right 17 10
++ block-item 17 7 item=hammer
++ block-item 17 10 item=clock
++ block-item 47 9 item=hammer
++ block-item 64 9 item=hammer
 + koopa-para-red 81 5 dx=8 dy=-8
 + koopa-para-red 92 5 dx=8 dy=-8
 + koopa-para-red 112 5 dx=8 dy=-8

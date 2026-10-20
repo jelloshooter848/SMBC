@@ -31,6 +31,7 @@
 + piranha-down 16 8
 + piranha-down 20 8
 + piranha-down 24 8
++ block-item 29 7 item=clock
 
 [layer hard]
 0 0 B{}B
@@ -68,9 +69,13 @@
 0 13 B.iii.....[]..[]..[]..[]..[]BBBB
 0 14 B.iii.....{}..{}..{}..{}..{}....
 + piranha 10 13 red=1
++ icicle 14 3 dx=8
 + piranha 14 13 red=1
++ icicle 18 3 dx=8
 + piranha 18 13 red=1
++ icicle 22 3 dx=8
 + piranha 22 13 red=1
++ icicle 26 3 dx=8
 + piranha 26 13 red=1
 -zone pipe 29 12 right -> ll-8-2 83 10 exit=up
 +zone pipe 29 12 right -> ll-8-2 78 9 exit=up

@@ -121,7 +121,7 @@
 190 6 {}
 251 6 ^{}
 68 7 $$$$
-125 7 =
+125 7 E
 181 7 {}
 190 7 {}
 251 7 |{}
@@ -283,7 +283,14 @@
 + piranha 112 13 red=1
 + block-item 117 5 item=clock
 + koopa-para-red 123 8
++ block-item 125 7 item=hammer
 + koopa-para-red 127 9
++ crab 136 12
++ fly 137 12 dx=8
++ crab 139 12
++ crab 158 12
++ fly 159 12 dx=8
++ crab 161 12
 + block-item 163 12 item=bee
 + koopa-para-green-h 166 7
 + piranha 181 2 red=1
@@ -293,7 +300,10 @@
 + koopa-para-green 209 12
 + koopa-para-green-h 228 10 dx=8 dy=-8
 + koopa-para-green-h 238 6 dx=8 dy=-8
++ barrel 251 3
++ barrel 252 3
 + piranha 252 5 red=1
++ barrel 253 3
 + koopa-red 194 7
 + koopa-red 87 8
 + koopa-red 239 8

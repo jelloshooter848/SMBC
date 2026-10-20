@@ -148,12 +148,14 @@
 + koopa-para-green 16 12
 + block-item 19 2 item=bee
 + koopa-para-green 19 4
++ fly 44 8
 + koopa-para-red 62 6 dx=8
 + firebar 85 9
 + firebar-ccw 94 7
 + firebar 106 6
 + goomba 117 5 dx=8
 + block-item 124 9 item=clock
++ fly 126 12
 + lift-fall 129 11 len=2
 + lift-fall 132 9 len=2
 + lift-fall 135 7 len=2

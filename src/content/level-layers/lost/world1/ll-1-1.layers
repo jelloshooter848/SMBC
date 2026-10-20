@@ -254,10 +254,13 @@
 + koopa-para-green 13 8 dy=-8
 + koopa-para-green 14 9 dx=8 dy=-8
 + piranha 22 5 red=1
++ barrel 32 1
 + piranha-down 32 9 red=1
 + goomba 38 8 dx=8
 + piranha-down 56 10 red=1
++ barrel 58 4 dx=8
 + koopa-green 60 12 dx=8
++ barrel 63 8 dx=8
 + goomba 64 4 dx=8
 + piranha 65 5 red=1
 + koopa-para-green-h 71 7 dx=8

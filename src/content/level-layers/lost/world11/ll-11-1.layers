@@ -117,7 +117,7 @@
 +zone checkpoint 110 12
 
 [layer hard]
-10 2 BBBB==CBBBBBB
+10 2 BBBBE=CBBBBBB
 24 2 BBB6
 83 2 BBBBBBBBBBBBBBBB
 104 2 []
@@ -279,6 +279,7 @@
 - spring-green 129 12
 - koopa-green 148 12
 + piranha-down 11 9 red=1
++ block-item 14 2 item=atom
 + block-item 17 6 item=bee
 + piranha-down 19 6 red=1
 + piranha-down 21 6 red=1
@@ -288,7 +289,11 @@
 + koopa-para-red 29 8 dx=8
 + koopa-para-red 35 8 dy=-8
 + koopa-para-red 39 9 dx=8 dy=-8
++ barrel 47 8 dx=8
++ barrel 50 7
 + block-item 71 4 item=clock
++ crab 83 12 dx=8
++ block-item 84 9 item=hammer
 + piranha 104 2 red=1
 + goomba 114 11 dx=8
 + koopa-para-green-h 120 7 dx=8

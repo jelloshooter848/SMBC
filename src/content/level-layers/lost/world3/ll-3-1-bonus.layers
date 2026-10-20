@@ -70,7 +70,9 @@
 + piranha-down 3 9 red=1
 + piranha-down 5 9 red=1
 + piranha-down 7 6 red=1
++ icicle 11 3 dx=8
 + koopa-red 12 7 dx=8
++ icicle 19 3 dx=8
 + koopa-red 20 4 dx=8
 + koopa-red 8 11
 -zone pipe 29 12 right -> ll-3-1-exit 3 10 exit=up

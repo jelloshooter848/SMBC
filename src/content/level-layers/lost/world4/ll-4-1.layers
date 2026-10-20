@@ -214,6 +214,9 @@
 + koopa-para-green-h 19 7 dy=-8
 + koopa-para-red 37 9 dx=8
 + piranha 58 13 red=1
++ crab 90 12 dx=8
++ barrel 101 7 dx=8
++ barrel 104 5 dx=8
 + koopa-red 107 5 dx=8
 + block-item 136 8 item=bee
 + koopa-red 145 12 dx=8
@@ -236,6 +239,10 @@
 [layer easy horz]
 - lift-fall 194 4
 + lift-fall 195 4 len=2
+
+[layer hard horz]
+- crab 90 12
++ crab 86 12 dx=8
 
 [layer vert]
 148 8 ..

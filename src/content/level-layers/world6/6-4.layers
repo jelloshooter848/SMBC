@@ -151,7 +151,9 @@
 + firebar 84 9
 + firebar-ccw 88 4
 + firebar 92 9
++ fly 103 9
 + block-item 104 5 item=bee
++ block-item 113 9 item=clock
 + podoboo 121 12
 + koopa-green 49 8
 + koopa-green 60 8

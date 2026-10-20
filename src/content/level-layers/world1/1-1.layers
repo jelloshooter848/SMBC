@@ -86,7 +86,7 @@
 186 8 .|.
 21 9 4
 94 9 =
-101 9 =
+101 9 E
 118 9 2
 129 9 []
 152 9 .
@@ -147,6 +147,9 @@
 + piranha 46 9
 + koopa-para-green 56 8 dx=8
 + piranha 57 9
++ icicle 85 6
++ icicle 92 6
++ block-item 101 9 item=atom
 + koopa-red 106 12 dx=8
 + block-item 109 9 item=clock
 + piranha 129 9 red=1

@@ -36,7 +36,9 @@
 44 13 ....
 + goomba 18 12 dx=8
 + koopa-para-green-h 39 7
++ fly 55 12
 + koopa-para-red 58 5
++ fly 59 12
 + goomba 20 12
 -zone pit 0 -> 2-1 162 0
 +zone pit 0 -> 2-1 99 0

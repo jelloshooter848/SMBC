@@ -304,6 +304,8 @@
 + piranha 38 13 red=1
 + koopa-red 41 12 dx=8
 + piranha-down 43 10 red=1
++ barrel 56 9 dx=8
++ barrel 58 8 dx=8
 + piranha 61 8 red=1
 + lift-h 68 10 len=4 range=3 dx=-8
 + lift-h 74 12 len=4 range=3 dx=-8
@@ -311,6 +313,7 @@
 + lift-h 86 13 len=4 range=3 dx=-8
 + lift-h 92 11 len=4 range=3 dx=-8
 + piranha-down 102 5 red=1
++ block-item 110 9 item=clock
 + piranha-down 112 6 red=1
 + piranha-down 117 7 red=1
 + piranha-down 121 4 red=1

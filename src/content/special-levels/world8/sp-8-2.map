@@ -1,0 +1,64 @@
+id: sp-8-2
+name: WORLD 8-2
+world: 8
+stage: 2
+theme: overworld
+music: overworld
+time: 400
+start: 2,10
+startMode: stand
+camera: scroll
+
+[tiles]
+;; 0                16               32               48               64               80               96               112              128              144              160              176
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ .........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ................ .........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ...............o .........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ...............! .........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ ...............! .........
+................ ................ ................ ................ ................ ................ ................ ................ ................ ................ .....BB........! .........
+................ .....=C=........ ................ ............$... ................ $............... ................ ................ ................ ................ ....BBB........! .........
+................ .............AAA AAAAAAAAAAAAAAAA AAAAAAAAAAA..... ......1......... ..AAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAAAAAAAAAAA AAAAAAA........! .........
+................ .............HHH HHHHHHHHHHHHHHHH HHHHHHHHHHH..... ................ .3HHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHBHBH........! .........
+................ .............HHH HHHHHHHHHHHHHHHH HHHHHHHHHHH..... ................ ..HHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HBBBBBH........! .........
+...............B -------------BHH HHHHHHHHHHHHHHHH HHHHHHHHHHH..... ................ ..HHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH BBBBBBH........! .........
+..[]..........BB .............BHH HHHHHHHHHHHHHHHH HHHHHHHHHHH..... ................ ..HHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHBBHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHB BBBHBBH........! .........
+..{}.........BBB .............BBB HHHHHHHHHHHHHHHH HHHHHHHHHHH..... ................ ..HHHHHHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHBHHHHHHHHH HHHHHHHHHHHHHHHH HHHHHHHHHHHHHHHH BHBHBHH........B .........
+################ wwwwwwwwwwwww### ################ ################ ################ ################ ################ ################ ################ ################ #######........# #########
+################ .............### ################ ################ ################ ################ ################ ################ ################ ################ #######........# #########
+
+[entities]
+barrel 12 11 dx=8
+fire-enemy 15 8 dx=8
+barrel 18 8 dx=8
+fly 23 8 dx=8 dy=-8
+fly 27 8 dx=8 dy=-8
+hammer-bro 55 12
+hammer-bro 90 12
+hammer-bro 97 12
+hammer-bro 131 12
+hammer-bro 137 12
+barrel 155 12 dx=8
+barrel 158 10 dx=8
+barrel 161 7 dx=8
+fire-enemy 164 4 dx=8
+decor-castle 179 12
+
+[zones]
+checkpoint 2 10
+exit 175 next=sp-8-3-start
+
+[decor]
+cloud-2 5 3
+bush-3 6 12
+cloud-1 17 4
+cloud-1 29 2
+cloud-1 78 3
+cloud-1 88 2
+cloud-1 109 3
+cloud-1 123 3
+cloud-1 133 4
+cloud-1 144 3
+cloud-2 155 4
+cloud-1 170 3
+cloud-1 177 3

@@ -219,6 +219,8 @@
 + piranha 10 11
 + koopa-red 23 9 dx=8
 + block-item 116 3 item=bee
++ fly 139 9
++ fly 142 9
 + koopa-para-green-h 150 10 dx=8
 + block-item 163 6 item=clock
 + koopa-para-green-h 175 7 dx=8

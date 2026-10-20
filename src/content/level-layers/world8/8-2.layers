@@ -298,18 +298,24 @@
 + piranha 43 12 red=1
 + piranha 46 13 red=1
 + piranha 48 11 red=1
++ barrel 49 2 dx=8
 + piranha 51 12 red=1
 + piranha 53 10 red=1
 + piranha 57 13 red=1
++ barrel 59 2 dx=8
 + piranha 60 9 red=1
 + piranha 62 13 red=1
 + piranha 66 11 red=1
 + piranha 68 10 red=1
++ barrel 69 2 dx=8
 + piranha 71 12 red=1
 + piranha 73 9 red=1
++ barrel 79 2 dx=8
 + piranha 79 12 red=1
 + koopa-para-green-h 85 8
 + piranha-down 99 6
++ block-item 99 9 item=clock
++ fly 105 8
 + piranha-down 110 6
 + piranha 180 12
 + firebar 184 10

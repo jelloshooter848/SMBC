@@ -145,15 +145,24 @@
 82 14 .
 116 14 ..
 - podoboo 26 12
++ icicle 10 5
 + goomba 13 9 dx=8
 + firebar-ccw 24 4
 + podoboo 31 12
++ icicle 37 5
++ icicle 39 5
++ fly 43 12
++ icicle 59 3
 + block-item 59 5 item=bee
 + firebar 72 5
++ barrel 95 9
 + firebar 100 4
 + firebar 106 4
++ icicle 112 5 dx=8
 + block-item 112 7 item=clock
 + podoboo 116 12
++ barrel 125 9
++ barrel 127 9
 + koopa-green 44 8
 + goomba 12 9
 + koopa-red 71 12

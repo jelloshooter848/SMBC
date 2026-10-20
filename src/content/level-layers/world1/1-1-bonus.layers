@@ -34,6 +34,8 @@
 4 12 .......
 0 13 .BB.........BBBB
 0 14 ................
++ icicle 4 3
++ icicle 10 3
 + block-item 14 2 item=bee
 -zone pipe 13 12 right -> 1-1 163 10 exit=up
 +zone pipe 13 12 right -> 1-1 46 8 exit=up

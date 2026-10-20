@@ -235,13 +235,24 @@
 165 14 .
 185 14 .
 187 14 .
++ crab 31 10 dx=8
 + blooper 33 6
++ crab 48 12
 + cheep-red 57 7
 + cheep-grey 59 8 dx=8
 + cheep-red 60 11 dy=-8
++ crab 64 7 dx=8
 + block-item 85 5 item=bee
++ crab 116 12
++ crab 118 12
++ crab 133 3
++ crab 135 3
 + block-item 140 4 item=clock
 + blooper 147 8
++ crab 171 12
++ crab 173 12
++ crab 175 12
++ crab 183 4
 -zone pipe 189 8 right -> 2-2-exit 3 10 exit=up
 +zone pipe 189 8 right -> 2-2-exit 1 10 exit=up
 

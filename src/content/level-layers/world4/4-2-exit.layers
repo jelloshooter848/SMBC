@@ -38,6 +38,7 @@
 0 14 .{}..i.....i..........
 - piranha 3 11
 + piranha 1 11
++ barrel 7 5 dx=8 dy=-8
 + koopa-red 12 4 dx=8
 start 1 10 pipe-exit
 

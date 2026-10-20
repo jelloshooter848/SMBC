@@ -86,7 +86,13 @@
 47 14 .
 49 14 ............
 62 14 ...
++ crab 12 5
++ crab 13 5 dx=8
 + block-item 16 6 item=bee
++ crab 41 3
++ crab 42 3 dx=8
++ crab 52 8 dx=8
++ crab 56 5 dx=8
 + blooper 58 4
 + firebar-ccw 62 6
 + firebar-ccw 62 9
