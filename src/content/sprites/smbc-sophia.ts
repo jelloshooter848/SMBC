@@ -196,11 +196,11 @@ export const sophiaSmbcDef: SpriteDef = {
     'hover-0': tankPose({ drop: 2, jets: jetBig }),
     'hover-1': tankPose({ drop: 2, jets: jetSmall }),
     open: tank([hullBody, -13, -18], [hatchOpen, -10, -24], [wheel(1), -12, -8], [wheel(0), 4, -8]),
-    'aim-diag': tank([hullBody, -13, -18], [barrelDiag, 5, -22], [wheel(1), -12, -8], [wheel(0), 4, -8]),
+    'aim-diag': tank([hullBody, -13, -18], [barrelDiag, 3, -24], [wheel(1), -12, -8], [wheel(0), 4, -8]),
     // Up: the hull lifted on its struts, the barrel straight up.
     'aim-up': tank(
       [hullBody, -13, -22],
-      [barrelUp, 1, -26],
+      [barrelUp, 1, -24],
       [['.0.', '060', '060', '060'], -9, -8],
       [['.0.', '060', '060', '060'], 7, -8],
       [wheel(1), -12, -8],
