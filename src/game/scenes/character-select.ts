@@ -557,6 +557,8 @@ export class CharacterSelectScene implements Scene {
     if (!this.classicLayout || this._reviving) return go();
     const slotId = this.game.slotOf(c).id;
     this.show = { c, slot: this.index, t: 0, frames: pickShowFrames(slotId), go };
+    // The choose jingle and teleport start with the move (G-062, G-070).
+    this.game.heroPicked(c);
   }
 
   /** A frame of the performance: it ends after its wait, or at a fresh OK or BACK press. */
@@ -644,6 +646,7 @@ export class CharacterSelectScene implements Scene {
   }
 
   exit(): void {
+    this.game.selectLeft(this.hasRandom);
     this.unbindPointer?.();
     this.unbindPointer = null;
   }
@@ -721,6 +724,7 @@ export class CharacterSelectScene implements Scene {
   }
 
   enter(): void {
+    this.game.selectEntered(this.hasRandom);
     this.bindPointer();
     const news = this.takeCheatNews();
     const pick = this.pick;

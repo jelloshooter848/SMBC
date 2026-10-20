@@ -6,20 +6,7 @@ All notable changes to this project are documented in this file. The format foll
 [docs/RELEASING.md](docs/RELEASING.md). Every pull request with a user-facing change adds a line
 under `## [Unreleased]`.
 
-### Changed
-
-- Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
-  own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
-- Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
-  Controls screen asks for another (as the original does); a spare key of another action moves over.
-- Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
-  JUMP, ATTACK or START press now skips it. It is the one written exception to "text never moves on by itself"
-  (docs/ACCESSIBILITY.md).
-
-### Fixed
-
-- With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
-  rules) is held steady: the hero stays drawn, see-through, instead of blinking.
+## [Unreleased]
 
 ### Added
 
@@ -44,11 +31,6 @@ under `## [Unreleased]`.
   from Classic mode's options lists the Classic select's heroes as Classic mode plays them.
 - Classic mode's pause has the original's **Cheats** row: turn your unlocked cheats on or off mid-run;
   Invincible and the other assist-like cheats apply at once, and Water Mode floods the level at once.
-
-## [Unreleased]
-
-### Added
-
 - Classic mode: **every map set is open from the start**. The CLASSIC menu offers Super Mario
   Bros. and The Lost Levels right away, and each line says whether that set has been beaten and
   on which difficulty. Old Classic SMB clears count as beaten on Normal.
@@ -58,9 +40,38 @@ under `## [Unreleased]`.
   middle), as in the original. Other heroes and the campaign are not pulled.
 - Classic mode Options: **Expansion heroes** (off, as in the original). On, the select also offers
   the heroes the original never had: Vic Viper, the Warriors of Light, Sir Arthur and Yoshi.
+- Classic mode: **each hero's own music** (G-060), our own songs in the mood of the hero's game:
+  Link, Mega Man (and Bass and Proto Man), Samus, Simon, Ryu, Bill and Sophia III each have their
+  own overworld, underground, castle, boss, coin heaven and more, reusing the campaign's hero tunes
+  plus new choose and level-clear pieces (and Simon's and Ryu's death music). A type a hero has no
+  song for yet (the Star, hurry and game over tunes, Samus's water) plays the Super Mario Bros. one.
+  The campaign's music is unchanged.
+- Classic options: **Music set** (Character, the original's default; Map: the Super Mario Bros.
+  music for everyone; Random: either one for each area) (G-066).
+- Classic mode: the select screen has its own music, and the chosen hero's jingle plays over the
+  WORLD card (Proto Man whistles instead) (G-061, G-062). The walk-in areas before x-2 play a short
+  transition tune and coin heaven the Star tune (G-063); Bowser coming on screen switches to the boss
+  tune, the final boss's in worlds 8 and D (G-064).
+- Classic mode: **the heroes' own sounds**, all ours. Link, Mega Man, Bass, Bill and Sophia III die to
+  their own sound, Simon and Ryu to their own death music (G-065). Mega Man and Bill land with a
+  sound, Mega Man teleports out and Bill is shocked when chosen, and Samus walks, lands, curls into
+  the morph ball and spins the Screw Attack with hers (G-070). Link, Mega Man, Samus, Simon, Ryu
+  and Bill have their own hurt and pickup sounds, Mega Man's 1-up among them (G-071, G-073); Link,
+  Mega Man, Samus, Simon and Ryu their own hit sounds, blasts included, and all but Samus their own
+  defeat sounds (G-072). Link's arrows and bombs, each of Samus's beams and her bombs, Simon's
+  sub-weapons, Ryu's arts, Mega Man's Metal Blade and Bill's rifle, machine gun and flame gun no
+  longer borrow other heroes' sounds (G-074). The music and the hit and death sounds play in
+  Classic mode under either rules.
 
 ### Changed
 
+- Classic Mega Man (and his looks) and Bass now die as in the original: energy orbs burst out of him with his
+  own death sound in place of Mario's jingle (a fall down a pit plays the sound only). Our own orb art.
+- Remapping never leaves one key on two actions: a key that is another action's only key is refused and the
+  Controls screen asks for another (as the original does); a spare key of another action moves over.
+- Classic mode's WORLD card moves on by itself as in the original (2 seconds, 2.5 in Single Character), and a
+  JUMP, ATTACK or START press now skips it. It is the one written exception to "text never moves on by itself"
+  (docs/ACCESSIBILITY.md).
 - Classic mode: **The Lost Levels run straight on from World 1 to World D**, as in the original.
   8-4 is an ordinary castle with Toad and goes on to World 9 whatever warps were used; 9-4 goes on
   to World A; D-4 says "YOUR QUEST IS OVER." and rolls the credits. The campaign and free play
@@ -97,6 +108,11 @@ under `## [Unreleased]`.
   Mega Man"; a hero's own look once: "Mega Man, Mega Man"), also when SKIN changes the look; the
   skin menu reads the look's own game ("Break Man, Mega Man, Mega Man 3"). Down in a one-row skin
   menu no longer moves the cursor.
+
+### Fixed
+
+- With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
+  rules) is held steady: the hero stays drawn, see-through, instead of blinking.
 
 ## [0.4.64] - 2026-10-20
 

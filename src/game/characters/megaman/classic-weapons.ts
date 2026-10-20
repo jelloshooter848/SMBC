@@ -711,7 +711,8 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
     case 'metal-blade': {
       if (capCount(world, p) >= 3 || !f.spend(id, cost)) return false;
       shoot(f, METAL_BLADE, aim8(f), centre(p, METAL_BLADE));
-      world.audio.sfx('buster');
+      // The blade's own whine (G-074; SFX_MEGA_MAN_METAL_BLADE).
+      world.audio.sfx('mm-blade');
       return true;
     }
     case 'hard-knuckle': {

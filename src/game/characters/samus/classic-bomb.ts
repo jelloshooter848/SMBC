@@ -5,6 +5,7 @@ import { Entity, type View } from '../../entities/entity';
 import { Explosion } from '../../entities/effects/effects';
 import type { Player } from '../../entities/player';
 import type { World } from '../../world/world';
+import { heroSound } from '../classic/sounds';
 import { tileDef } from '../../level/tiles';
 import {
   BOMB_BLAST_PX,
@@ -71,7 +72,7 @@ export class ClassicBomb extends Entity {
           world,
         );
         world.scoreKill(e, 'bomb', r);
-        if (r === 'hp') world.audio.sfx('hurt-enemy');
+        if (r === 'hp') world.audio.sfx(heroSound(this.owner.def, 'hit', 'hurt-enemy'));
       }
       const p = this.owner;
       const b = p.body;

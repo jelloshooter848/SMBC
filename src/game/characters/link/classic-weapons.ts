@@ -11,6 +11,7 @@ import { Player } from '../../entities/player';
 import type { ClassicHitProps } from '../../rules/damage';
 import { T, tileDef } from '../../level/tiles';
 import type { World } from '../../world/world';
+import { heroSound } from '../classic/sounds';
 
 /**
  * Classic SMBC Link's weapons (2026-10-07-link-classic-smbc-rules.md, LK-C28..LK-C38): the Red
@@ -496,7 +497,7 @@ export class LinkBomb extends Entity {
       };
       const res = e.hit(src, world);
       world.scoreKill(e, 'bomb', res);
-      if (res === 'hp' || res === 'stun') world.audio.sfx('hurt-enemy');
+      if (res === 'hp' || res === 'stun') world.audio.sfx(heroSound(this.owner.def, 'hit', 'hurt-enemy'));
     }
   }
 

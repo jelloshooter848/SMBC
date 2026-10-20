@@ -87,6 +87,8 @@ describe('settings: Settings.classic', () => {
       goombas: 'off',
       gameMode: 'all',
       expansion: 'off',
+      // 0.5.0 (G-066): Music set, the original's Character.
+      musicSet: 'character',
       weapons: {
         bass: 'water-shield',
         billFirst: 'mg',

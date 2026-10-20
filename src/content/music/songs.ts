@@ -18,6 +18,7 @@ import { openingSong } from './opening';
 import { bowserSpellSong } from './bowser-spell';
 import { worldMapSongs } from './world-maps';
 import { valleyOfBowserSongs } from './valley-of-bowser';
+import { heroSetSongs } from './hero-sets';
 
 /**
  * Original chiptune score for the game. Everything here is composed for this project; nothing is
@@ -1244,4 +1245,6 @@ export const songs: Song[] = [
   ...worldMapSongs,
   // Bowser's own music (0.4.54): the VALLEY OF BOWSER's map song and his bridge fight's.
   ...valleyOfBowserSongs,
+  // Classic mode's music sets (0.5.0): the SMB select and transition tunes, the heroes' jingles.
+  ...heroSetSongs,
 ];
