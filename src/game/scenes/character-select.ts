@@ -2,7 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
-import { heroFor, heroGame, skinGame } from '../characters/registry';
+import { heroFor, skinGame } from '../characters/registry';
 import type { Game } from './game';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
@@ -20,6 +20,7 @@ import {
   drawCell,
   drawDownArrow,
   drawPanel,
+  faceAt,
   gridCell,
   gridPanel,
   inCell,
@@ -88,6 +89,14 @@ export const ROW_MAX = 11;
 /** Survival's box: its line height and its padding (CharacterSelectScene.boxRect). */
 const BOX_LINE = 10;
 const BOX_PAD = 6;
+
+/**
+ * Look `look` of slot hero `host` as said: the look's name, then the hero's ("Break Man, Proto
+ * Man"); a hero's own look is just its name (no repeat).
+ */
+export function lookName(host: CharacterDef, look: CharacterDef): string {
+  return look === host ? host.name : `${look.name}, ${host.name}`;
+}
 
 /** Classic Survival's box over the select: the revive news, or the "finished?" question. */
 type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; yes: boolean };
@@ -341,19 +350,25 @@ export class CharacterSelectScene implements Scene {
     if (this.isRandom(i)) return 'Random';
     const c = this.chars[i];
     if (!c) return '';
-    if (this.skinsAt(i).length < 2) return c.name;
-    return `${c.name}, skin ${this.game.skinFor(c).name}`;
+    return lookName(c, this.game.skinFor(c));
   }
 
   /**
-   * What a move onto slot `i` says: its name (and look), then in Classic mode the game the hero
-   * comes from, as the name box shows it ("Proto Man, skin Break Man, Mega Man 3").
+   * What a move onto slot `i` says: its look and hero, then in Classic mode the look's game, as the
+   * name box shows them ("Break Man, Proto Man, Mega Man 3"; "Proto Man, Mega Man 3").
    */
   private sayName(i: number): string {
-    const name = this.slotName(i);
-    const c = this.isRandom(i) ? undefined : this.chars[i];
-    const game = this.classicLayout && c ? heroGame(c) : '';
-    return game && name ? `${name}, ${game}` : name;
+    if (this.isRandom(i)) return 'Random';
+    const c = this.chars[i];
+    if (!c) return '';
+    return this.lookSay(c, this.game.skinFor(c));
+  }
+
+  /** Look `look` of slot hero `host` as said: lookName, then in Classic mode the look's game. */
+  private lookSay(host: CharacterDef, look: CharacterDef): string {
+    const name = lookName(host, look);
+    const game = this.classicLayout ? skinGame(look) : '';
+    return game ? `${name}, ${game}` : name;
   }
 
   /** The looks slot `i`'s hero can wear (FU-8; one when it has no other skins). */
@@ -376,7 +391,7 @@ export class CharacterSelectScene implements Scene {
     const skin = list[(at + 1) % list.length] ?? c;
     this.game.setSkin(c, skin);
     this.game.ctx.audio.sfx('select');
-    this.game.deps.announcer?.say(`${c.name}, skin ${skin.name}`);
+    this.game.deps.announcer?.say(this.lookSay(c, skin));
   }
 
   /** OK on slot `i` opens the skin menu: Classic mode, picking (not reviving), a hero with looks. */
@@ -403,8 +418,7 @@ export class CharacterSelectScene implements Scene {
     const pk = this.picker;
     const skin = pk?.list[pk.at];
     if (!pk || !skin) return '';
-    const game = skinGame(skin);
-    return `${skin.name}${skin === pk.host ? '' : `, ${pk.host.name}`}${game ? `, ${game}` : ''}.`;
+    return `${this.lookSay(pk.host, skin)}.`;
   }
 
   /** The skin menu's page (SKIN_GRID.cols x rows looks a page). */
@@ -446,8 +460,11 @@ export class CharacterSelectScene implements Scene {
     if (pressed('left')) this.pickerTo(pk.at === 0 ? pk.list.length - 1 : pk.at - 1);
     else if (pressed('right')) this.pickerTo((pk.at + 1) % pk.list.length);
     else if (pressed('up')) this.pickerTo(pk.at - cols);
-    else if (pressed('down')) this.pickerTo(Math.min(pk.at + cols, pk.list.length - 1));
-    else if (pressed('jump') || pressed('start')) this.choosePicked();
+    else if (pressed('down')) {
+      // The next row's cell below, or its last when the row is short; on the last row, a bump.
+      const lastRow = Math.floor((pk.list.length - 1) / cols);
+      this.pickerTo(Math.floor(pk.at / cols) < lastRow ? Math.min(pk.at + cols, pk.list.length - 1) : -1);
+    } else if (pressed('jump') || pressed('start')) this.choosePicked();
     else if (pressed('attack') || pressed('select')) {
       // BACK: to the select, the look unchanged (CharacterSkinMenu.pressAtkBtn).
       this.picker = null;
@@ -1125,18 +1142,21 @@ export class CharacterSelectScene implements Scene {
    * (none for a hero's own look), the hero, its game; revive mode: what OK does, the hero, the
    * lives remaining.
    */
-  nameBoxLines(): [string, string, string] {
+  nameBoxLines(): string[] {
     const i = this.index;
     if (this._reviving) {
       const n = this.game.state.lives;
       const hero = this.isRandom(i) ? 'RANDOM' : fontText(this.chars[i]?.name ?? '');
       return [fontText(this.reviveAction(i)), hero, `${n} ${n === 1 ? 'LIFE' : 'LIVES'} REMAINING`];
     }
-    if (this.isRandom(i)) return ['', 'RANDOM', ''];
-    const c = this.chars[i];
-    if (!c) return ['', '', ''];
-    const skin = this.game.skinFor(c);
-    return [skin === c ? '' : `"${fontText(skin.name)}"`, fontText(c.name), fontText(heroGame(c))];
+    // The skin menu's cursor look, else the slot's in its chosen look.
+    const host = this.picker?.host ?? (this.isRandom(i) ? undefined : this.chars[i]);
+    if (!host) return ['RANDOM'];
+    const look = this.picker ? (this.pickerSkin ?? host) : this.game.skinFor(host);
+    // CharNameBox.changeText: a look with a name of its own adds it in quotes on top; a hero's own
+    // look (no skin name) has the two lines only, and the box closes up.
+    const lines = [fontText(host.name), fontText(skinGame(look))];
+    return look === host ? lines : [`"${fontText(look.name)}"`, ...lines];
   }
 
   /** Classic mode's select, in the original 3.1.21's layout (select-grid.ts). */
@@ -1147,13 +1167,21 @@ export class CharacterSelectScene implements Scene {
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
     drawSelectHud(r, assets, this.game.state, shown, shown ? this.artOf(shown) : null);
-    // The portrait grid.
     const pan = gridPanel(this.rows);
+    const by = pan.y + pan.h + 4;
+    if (this.picker) {
+      // The skin menu takes the select box's place (CharacterSelectBox opens CharacterSkinMenu
+      // instead of itself), so no cell shows behind or under it.
+      this.renderPicker(r);
+      this.renderClassicGround(r, shown);
+      return;
+    }
+    // The portrait grid: each hero's face, our standing art doubled (the original's close-ups).
     drawPanel(r, pan.x, pan.y, pan.w, pan.h);
     const cell = SELECT_GRID.cell;
     for (let i = 0; i < this.total; i++) {
       const at = gridCell(i);
-      drawCell(r, at.x, at.y, cell, cell, i === this.index && !this.picker);
+      drawCell(r, at.x, at.y, cell, cell, i === this.index);
       inCell(r, at.x, at.y, cell, cell, () => {
         if (this.isRandom(i)) {
           // The Random cell: our own "?" (held still with Reduce flashing).
@@ -1169,25 +1197,21 @@ export class CharacterSelectScene implements Scene {
         const pt = this.artOf(this.game.skinFor(c));
         // Survival's fallen heroes are greyed (CharacterSelectBox.markPortraitFallen: desaturate).
         const sheet = assets.sheet(pt.sheet, this.fallen(i) ? fxPalette(pt.palette, 'fallen') : pt.palette);
-        const f = sheet.frames.get(pt.frame);
-        // Head and shoulders: the portrait's top 2 px in, centred.
-        r.sprite(sheet, pt.frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + 2);
+        const f = faceAt(pt.sheet, pt.frame, at.x + 1, at.y + 1, cell - 2, 2, 1);
+        r.sprite(sheet, pt.frame, f.x, f.y, false, false, 0, 2);
       });
     }
     // The name box under it (Survival's box takes its place while it shows: boxRect).
-    const by = pan.y + pan.h + 4;
     if (this.box) {
-      // The box sits under the grid, over the name box, prompts and ground (boxRect).
       this.renderBox(r, this.box);
       return;
     }
-    drawPanel(r, 24, by, 208, 40);
     const lines = this.nameBoxLines();
-    lines.forEach((l, k) => {
-      if (l) centred(l, by + 6 + k * 10);
-    });
+    const boxH = 12 + lines.length * 10;
+    drawPanel(r, 24, by, 208, boxH);
+    lines.forEach((l, k) => this.outlined(r, l, by + 7 + k * 10));
     // The prompts, named by ability (with the real key when not on touch).
-    const py = by + 46;
+    const py = by + boxH + 4;
     const sv = this.survival;
     if (this._reviving) {
       const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
@@ -1204,7 +1228,7 @@ export class CharacterSelectScene implements Scene {
         const n = this.chars.filter((_, i) => !this.locked(i)).length;
         centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 20);
       }
-    } else if (!this.picker) {
+    } else {
       const steady = this.game.ctx.reduceFlashing || (this.t >> 5) % 2 === 0;
       const ok = abilityHint(this.game, 'OK', 'jump');
       const line = this.skinsAt(this.index).length > 1 ? `${ok} TO CHOOSE A LOOK` : `PRESS ${ok}`;
@@ -1220,13 +1244,45 @@ export class CharacterSelectScene implements Scene {
     }
     this.renderClassicGround(r, shown);
     if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
-    if (this.picker) this.renderPicker(r);
   }
 
-  /** The ground, and the hero (or look) standing on it, left of the prompts. */
+  /**
+   * Text on the periwinkle panels: white with a black outline, as the original's is outlined.
+   * White on periwinkle alone is about 3.1:1; the outline (black on periwinkle 6.5:1, white on
+   * black 20:1) is what keeps it readable on a phone.
+   */
+  private outlined(r: Renderer, str: string, y: number): void {
+    const assets = this.game.ctx.assets;
+    const x = 128 - str.length * 4;
+    const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
+    for (const [dx, dy] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ] as const)
+      r.text(dark, str, x + dx, y + dy);
+    r.text(assets.sheet('font'), str, x, y);
+  }
+
+  /**
+   * The level the select is for: the one about to be played (Game.selectLevel), whose ground the
+   * hero stands on (the original's CharacterSelect is drawn over the level's own ground).
+   */
+  private groundTheme(): string {
+    const id = this.game.selectLevel;
+    if (!id) return 'overworld';
+    try {
+      return this.game.deps.getLevel(id).theme ?? 'overworld';
+    } catch {
+      return 'overworld';
+    }
+  }
+
+  /** The current level's ground, and the hero (or look) standing on it, left of the prompts. */
   private renderClassicGround(r: Renderer, shown: CharacterDef | null): void {
     const assets = this.game.ctx.assets;
-    const tiles = assets.sheet('tiles');
+    const tiles = assets.sheet('tiles', `tiles-${this.groundTheme()}`);
     for (let x = 0; x < 256; x += 16) {
       r.sprite(tiles, 'ground', x, 208);
       r.sprite(tiles, 'ground', x, 224);
@@ -1245,12 +1301,10 @@ export class CharacterSelectScene implements Scene {
     const pk = this.picker;
     if (!pk) return;
     const assets = this.game.ctx.assets;
-    const font = assets.sheet('font');
     const P = skinLayout(pk.list.length);
     drawPanel(r, P.x, P.y, P.w, P.h);
     const skin = pk.list[pk.at];
-    const title = fontText(skin?.name ?? '');
-    r.text(font, title, 128 - title.length * 4, P.y + 7);
+    this.outlined(r, fontText(skin?.name ?? ''), P.y + 8);
     const per = SKIN_GRID.cols * SKIN_GRID.rows;
     const page = this.pickerPage;
     for (let k = 0; k < per; k++) {
@@ -1276,8 +1330,7 @@ export class CharacterSelectScene implements Scene {
       drawDownArrow(r, P.x + 6, P.y + P.h - 10);
       drawDownArrow(r, P.x + P.w - 13, P.y + P.h - 10);
     }
-    const game = fontText(skin ? skinGame(skin) : '');
-    r.text(font, game, 128 - game.length * 4, P.y + P.h - 16);
+    this.outlined(r, fontText(skin ? skinGame(skin) : ''), P.y + P.h - 16);
   }
 
   /**

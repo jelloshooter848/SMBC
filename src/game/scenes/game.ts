@@ -213,6 +213,11 @@ export class Game {
    * select starts on it again. Reset with each Classic mode run.
    */
   pickedRandom = false;
+  /**
+   * The level the next select screen is for (Classic mode's select stands the hero on its ground):
+   * set by the new game's select, a warp's and a death's. Null: none known (the overworld's).
+   */
+  selectLevel: string | null = null;
   /** Classic mode's random hero picks (the Random slot, Single random): seeded per run. */
   private pickRng = new Rng(RANDOM_PICK_SEED);
 
@@ -1245,6 +1250,7 @@ export class Game {
   warpToLevel(levelId: string, start: LevelStart, pipe = true): void {
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
+    this.selectLevel = levelId;
     // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
     // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
     if (pipe && this.survival) this.survival.reviveAllowed = true;
@@ -1775,6 +1781,7 @@ export class Game {
     this.campaign = null;
     this.runRules = this.classicRules;
     this.pickedRandom = false;
+    this.selectLevel = levelId;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // Game mode Single random: no select screen at all (CampaignModes.SINGLE_RANDOM).
     if (this.classicHeroChoice(true) === 'random') return this.classicGame(this.singleRandomHero(), levelId);
@@ -2033,6 +2040,7 @@ export class Game {
    * coins and the checkpoint are kept. Dev-mode starts respawn straight away.
    */
   respawn(levelId: string, start: LevelStart, player = 0): void {
+    this.selectLevel = levelId;
     if (this.quickRespawn) {
       this.goToLevel(levelId, start);
       return;
