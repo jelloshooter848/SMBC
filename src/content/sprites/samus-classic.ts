@@ -379,7 +379,8 @@ const shift = (layers: Layer[], dy: number): Layer[] => layers.map(([r, x, y]): 
 
 const frames: Record<string, string[]> = {
   idle: figure(torsoOut, legsStand, out),
-  shoot: figure(torsoOut, legsStand, outShot),
+  // standShoot (20 x 33): the cannon kicked back into the pad as it fires.
+  shoot: figure(torsoOut, legsStand, [[cannonShot, 18, 9]]),
   'walk-0': figure(torsoDown, legsWalk0),
   'walk-1': figure(torsoDown, legsWalk1),
   'walk-2': figure(torsoDown, legsWalk2),
@@ -418,7 +419,7 @@ frames['spin-3'] = cell(26, [tuckUp, 6, 0]);
 for (let i = 0; i < 4; i++) {
   let b = ball;
   for (let k = 0; k < i; k++) b = rotateCW(b.slice(0, 14).map((r) => r)).concat(['..............']);
-  frames[`ball-${i}`] = cell(15, [b, 7, 0]);
+  frames[`ball-${i}`] = cell(15, [b, 7, 1]);
 }
 frames.hurt = frames.air as string[];
 frames.die = frames.idle as string[];
