@@ -297,7 +297,7 @@ function boot(): void {
   });
   const level = params.get('level');
   // Outside dev mode a link opens no campaign content (0.5.0, dev-url.ts urlLevelStart): custom
-  // levels as before, SMB and Lost Levels levels as a Classic run, anything else the title.
+  // levels as before, SMB, Special and Lost Levels levels as a Classic run, anything else the title.
   const start = urlLevelStart(params, settings.dev);
   if (level && start) {
     // `&rules=classic|current` (dev mode only, dev-url.ts): the run's rules; `char` reads the

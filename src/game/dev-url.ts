@@ -36,13 +36,16 @@ export function urlYoshi(params: URLSearchParams, dev: boolean): 'on' | 'ride' |
   return v === '1' || v === 'on' ? 'on' : null;
 }
 
-/** The levels a Classic run starts at from a link: SMB 1-1 to 8-4 and the Lost Levels' 1-1 to D-4. */
-const CLASSIC_LINK_LEVEL = /^(?:[1-8]|ll-(?:[1-9]|1[0-3]))-[1-4]$/;
+/**
+ * The levels a Classic run starts at from a link: SMB 1-1 to 8-4, Super Mario Bros. Special's
+ * sp-1-1 to sp-8-4 (G-020) and the Lost Levels' 1-1 to D-4.
+ */
+const CLASSIC_LINK_LEVEL = /^(?:[1-8]|sp-[1-8]|ll-(?:[1-9]|1[0-3]))-[1-4]$/;
 
 /**
  * How a `?level=` link starts (0.5.0): with dev mode on, as before (free play, or a Classic run
  * with `mode=classic`). With it off, the campaign's content stays closed until Chapter 1 opens: a
- * custom level plays as before, an SMB or Lost Levels level starts a Classic run there (Classic
+ * custom level plays as before, an SMB, Special or Lost Levels level starts a Classic run there (Classic
  * mode's rules and heroes), and anything else (1-0, the heroes' rooms and stages) opens the title
  * instead (null). Null too when there is no `level`.
  */
