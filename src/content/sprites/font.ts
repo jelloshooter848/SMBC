@@ -27,6 +27,10 @@ export const fontPalettes: Record<string, readonly string[]> = {
   [FONT_COLOURS.cyan]: tint(NES.skyLight),
   [FONT_COLOURS.black]: tint(NES.black),
   [FONT_COLOURS.ink]: tint(NES.brownDark),
+  // Classic mode's select themes (game/scenes/select-grid.ts SELECT_THEMES): `font-sel-<hex>`.
+  'font-sel-fcbcb0': tint('#fcbcb0'),
+  'font-sel-c4d4fc': tint('#c4d4fc'),
+  'font-sel-2038ec': tint('#2038ec'),
 };
 
 /**

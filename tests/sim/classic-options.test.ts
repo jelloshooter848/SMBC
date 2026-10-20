@@ -86,6 +86,7 @@ describe('settings: Settings.classic', () => {
       piranhas: 'some',
       goombas: 'off',
       gameMode: 'all',
+      expansion: 'off',
       weapons: {
         bass: 'water-shield',
         billFirst: 'mg',

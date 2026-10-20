@@ -39,7 +39,9 @@ export class IntroScene implements Scene {
     const font = assets.sheet('font');
     const s = this.game.state;
     // initiateBlackScreen hides the time's digits with the infinite-time cheat.
-    drawHud(r, assets, s, this.game.ctx.assist.infiniteTime ? null : this.time, 0, []);
+    drawHud(r, assets, s, this.game.ctx.assist.infiniteTime ? null : this.time, 0, [], {
+      classic: this.game.classicRun,
+    });
     // A level shown by its name (BOWSER'S CASTLE, never "8-5") has it centred instead.
     const place = shownPlace(s.world, s.stage)?.shown;
     if (place) r.text(font, place, (256 - place.length * 8) >> 1, 80);
