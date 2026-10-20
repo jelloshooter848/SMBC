@@ -44,3 +44,41 @@ export const CLASSIC_VARIANT_DEFS: readonly CharacterDef[] = [
   DOROPIE_CLASSIC,
   ROKKO_CLASSIC,
 ];
+
+/**
+ * The game each hero comes from, as the original's select names it under the hero
+ * (CharacterSelectBox.changeNameBoxText: CharacterInfo's first game), by select-slot hero id; and
+ * each skin's source game, as its skin menu names it (CharacterSkinMenu.generateBottomText:
+ * BmdInfo's IND_GAME_SOURCE), by skin id where it differs. Heroes the original lacks name their
+ * own game. Short titles, so a line fits the name box.
+ */
+export const CLASSIC_HERO_GAMES: Readonly<Record<string, string>> = {
+  mario: 'Super Mario Bros.',
+  luigi: 'The Lost Levels',
+  link: 'The Legend of Zelda',
+  megaman: 'Mega Man',
+  samus: 'Metroid',
+  simon: 'Castlevania',
+  ryu: 'Ninja Gaiden',
+  bill: 'Contra',
+  sophia: 'Blaster Master',
+  bass: 'Mega Man 10',
+  protoman: 'Mega Man 3',
+  rock: 'Mega Man',
+  cutman: 'Mega Man',
+  fireman: 'Mega Man',
+  iceman: 'Mega Man',
+  francesca: 'The Krion Conquest',
+  rokko: 'Rokko Chan',
+  pit: 'Kid Icarus',
+  vicviper: 'Gradius',
+  warriors: 'Final Fantasy',
+  peach: 'Super Mario Bros. 2',
+  arthur: "Ghosts 'n Goblins",
+  yoshi: 'Super Mario World',
+};
+
+/** A skin's own source game where it is not its hero's (BmdInfo.as IND_GAME_SOURCE). */
+export const CLASSIC_SKIN_GAMES: Readonly<Record<string, string>> = {
+  darkpit: 'Kid Icarus: Uprising',
+};

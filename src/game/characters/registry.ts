@@ -37,7 +37,12 @@ import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
 import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
-import { CLASSIC_SKIN_LISTS, CLASSIC_VARIANT_DEFS } from './classic/skins';
+import {
+  CLASSIC_HERO_GAMES,
+  CLASSIC_SKIN_GAMES,
+  CLASSIC_SKIN_LISTS,
+  CLASSIC_VARIANT_DEFS,
+} from './classic/skins';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -120,6 +125,16 @@ export const CLASSIC_SKINS: Readonly<Record<string, readonly CharacterDef[]>> = 
 export function skinHost(def: CharacterDef): CharacterDef {
   for (const list of Object.values(CLASSIC_SKINS)) if (list.slice(1).includes(def)) return list[0] ?? def;
   return def;
+}
+
+/** The game hero `def` (a select slot's hero, or one of its skins) comes from; '' when unknown. */
+export function heroGame(def: CharacterDef): string {
+  return CLASSIC_HERO_GAMES[skinHost(def).id] ?? '';
+}
+
+/** Skin `def`'s source game (its own, else its hero's). */
+export function skinGame(def: CharacterDef): string {
+  return CLASSIC_SKIN_GAMES[def.id] ?? heroGame(def);
 }
 
 /** The skins hero `def`'s slot offers, its own look first (just `def` when it has none). */

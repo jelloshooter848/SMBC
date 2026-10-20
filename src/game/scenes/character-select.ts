@@ -2,7 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
-import { heroFor } from '../characters/registry';
+import { heroFor, heroGame, skinGame } from '../characters/registry';
 import type { Game } from './game';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
@@ -13,6 +13,18 @@ import { fxPalette } from '@content/sprites/palette-fx';
 import { askTraining, needsTraining } from '../tutorial/training';
 import { MIN_LIVES_FOR_REVIVAL, type Survival } from '../survival';
 import { menuTouchLabels } from '../touch-labels';
+import {
+  SELECT_GRID,
+  SKIN_GRID,
+  SKIN_PANEL,
+  drawCell,
+  drawDownArrow,
+  drawPanel,
+  gridCell,
+  gridPanel,
+  inCell,
+  skinCell,
+} from './select-grid';
 
 /**
  * One player picks a hero mid-run: entering a level from the world map, after a death with lives
@@ -97,6 +109,17 @@ export class CharacterSelectScene implements Scene {
   private boxQueue: SurvivalBox[] = [];
   /** The cheat news read out with its box (revive mode shows it in a box of its own). */
   private cheatSaid = '';
+  /**
+   * Classic mode's skin menu (the original's CharacterSkinMenu), while it is open: the slot's
+   * hero, its looks and the one under the cursor.
+   */
+  private picker: { slot: number; host: CharacterDef; list: readonly CharacterDef[]; at: number } | null =
+    null;
+  /** Taps and clicks on the canvas (Classic mode's cells), screen px, handled in update. */
+  private readonly taps: { x: number; y: number }[] = [];
+  /** A tap on the cell under the cursor confirms it this frame (as OK). */
+  private tapOk = false;
+  private unbindPointer: (() => void) | null = null;
   constructor(
     private readonly game: Game,
     private readonly pick: HeroPick | null = null,
@@ -196,11 +219,37 @@ export class CharacterSelectScene implements Scene {
   }
 
   /**
+   * Classic mode's select (title > CLASSIC, and its picks after a death or a clear) is drawn in
+   * the original 3.1.21's layout: a grid of portrait cells with a name box and a skin menu
+   * (select-grid.ts). Every other select keeps the rows of standing heroes.
+   */
+  get classicLayout(): boolean {
+    return this.hasRandom;
+  }
+
+  /** The skin menu is open (Classic mode). */
+  get pickerOpen(): boolean {
+    return this.picker !== null;
+  }
+
+  /** The look under the skin menu's cursor, while it is open. */
+  get pickerSkin(): CharacterDef | null {
+    return this.picker ? (this.picker.list[this.picker.at] ?? null) : null;
+  }
+
+  /**
    * Where each row starts (slot index), then the total: the first row, then the slots past it on
-   * one row, or on two (the larger first) when they are more than ROW_MAX.
+   * one row, or on two (the larger first) when they are more than ROW_MAX. Classic mode's grid:
+   * rows of SELECT_GRID.cols.
    */
   private get rowStarts(): number[] {
     const n = this.total;
+    if (this.classicLayout) {
+      const starts: number[] = [];
+      for (let i = 0; i < n; i += SELECT_GRID.cols) starts.push(i);
+      starts.push(n);
+      return starts;
+    }
     const first = this.firstRowSlots;
     if (first >= n) return [0, n];
     const rest = n - first;
@@ -234,8 +283,15 @@ export class CharacterSelectScene implements Scene {
     return Math.min(64, 224 / Math.max(1, len));
   }
 
-  /** Where slot `i` stands (a hero, or the Random slot): its centre x and its feet y. */
+  /**
+   * Where slot `i` stands (a hero, or the Random slot): its centre x and its feet y. Classic
+   * mode's grid: its cell's centre x and bottom.
+   */
   slot(i: number): { x: number; y: number } {
+    if (this.classicLayout) {
+      const c = gridCell(i);
+      return { x: c.x + SELECT_GRID.cell / 2, y: c.y + SELECT_GRID.cell };
+    }
     const starts = this.rowStarts;
     const row = this.rowOf(i);
     const len = (starts[row + 1] as number) - (starts[row] as number);
@@ -283,6 +339,17 @@ export class CharacterSelectScene implements Scene {
     return `${c.name}, skin ${this.game.skinFor(c).name}`;
   }
 
+  /**
+   * What a move onto slot `i` says: its name (and look), then in Classic mode the game the hero
+   * comes from, as the name box shows it ("Proto Man, skin Break Man, Mega Man 3").
+   */
+  private sayName(i: number): string {
+    const name = this.slotName(i);
+    const c = this.isRandom(i) ? undefined : this.chars[i];
+    const game = this.classicLayout && c ? heroGame(c) : '';
+    return game && name ? `${name}, ${game}` : name;
+  }
+
   /** The looks slot `i`'s hero can wear (FU-8; one when it has no other skins). */
   private skinsAt(i: number): readonly CharacterDef[] {
     const c = this.isRandom(i) ? undefined : this.chars[i];
@@ -304,6 +371,167 @@ export class CharacterSelectScene implements Scene {
     this.game.setSkin(c, skin);
     this.game.ctx.audio.sfx('select');
     this.game.deps.announcer?.say(`${c.name}, skin ${skin.name}`);
+  }
+
+  /** OK on slot `i` opens the skin menu: Classic mode, picking (not reviving), a hero with looks. */
+  private opensPicker(i: number): boolean {
+    return this.classicLayout && !this._reviving && this.skinsAt(i).length > 1;
+  }
+
+  /** Opens the skin menu on slot `i`, its cursor on the hero's chosen look. */
+  private openPicker(i: number): void {
+    const host = this.chars[i];
+    if (!host) return;
+    const list = this.skinsAt(i);
+    const at = Math.max(0, list.indexOf(this.game.skinFor(host)));
+    this.picker = { slot: i, host, list, at };
+    this.game.ctx.audio.sfx('coin');
+    this.game.deps.announcer?.say(
+      `Choose a look for ${host.name}. ${this.pickerSay()} ${list.length} looks. ` +
+        `Arrows to choose, OK to pick, back to return.`,
+    );
+  }
+
+  /** The skin menu's line for the look under its cursor: its name, its hero, its game. */
+  private pickerSay(): string {
+    const pk = this.picker;
+    const skin = pk?.list[pk.at];
+    if (!pk || !skin) return '';
+    const game = skinGame(skin);
+    return `${skin.name}${skin === pk.host ? '' : `, ${pk.host.name}`}${game ? `, ${game}` : ''}.`;
+  }
+
+  /** The skin menu's page (SKIN_GRID.cols x rows looks a page). */
+  private get pickerPage(): number {
+    return Math.floor((this.picker?.at ?? 0) / (SKIN_GRID.cols * SKIN_GRID.rows));
+  }
+
+  /** Moves the skin menu's cursor to look `to` (said; a bump where it cannot go). */
+  private pickerTo(to: number): void {
+    const pk = this.picker;
+    if (!pk) return;
+    if (to < 0 || to >= pk.list.length || to === pk.at) {
+      this.game.ctx.audio.sfx('bump');
+      return;
+    }
+    pk.at = to;
+    this.game.ctx.audio.sfx('select');
+    this.game.deps.announcer?.say(this.pickerSay());
+  }
+
+  /** The skin menu's input: arrows move, OK picks the look (and the hero), BACK returns. */
+  private updatePicker(pressed: (a: Action) => boolean): void {
+    const pk = this.picker;
+    if (!pk) return;
+    const tap = this.taps.shift();
+    if (tap) {
+      const per = SKIN_GRID.cols * SKIN_GRID.rows;
+      const page = this.pickerPage;
+      for (let k = 0; k < per && page * per + k < pk.list.length; k++) {
+        const c = skinCell(k);
+        if (tap.x >= c.x && tap.x < c.x + SKIN_GRID.w && tap.y >= c.y && tap.y < c.y + SKIN_GRID.h) {
+          if (page * per + k === pk.at) this.choosePicked();
+          else this.pickerTo(page * per + k);
+          return;
+        }
+      }
+    }
+    const cols = SKIN_GRID.cols;
+    if (pressed('left')) this.pickerTo(pk.at === 0 ? pk.list.length - 1 : pk.at - 1);
+    else if (pressed('right')) this.pickerTo((pk.at + 1) % pk.list.length);
+    else if (pressed('up')) this.pickerTo(pk.at - cols);
+    else if (pressed('down')) this.pickerTo(Math.min(pk.at + cols, pk.list.length - 1));
+    else if (pressed('jump') || pressed('start')) this.choosePicked();
+    else if (pressed('attack') || pressed('select')) {
+      // BACK: to the select, the look unchanged (CharacterSkinMenu.pressAtkBtn).
+      this.picker = null;
+      this.game.ctx.audio.sfx('bump');
+      this.game.deps.announcer?.say(this.sayName(this.index));
+    }
+  }
+
+  /** OK in the skin menu: the look is remembered and the hero picked in it (chooseCharacter). */
+  private choosePicked(): void {
+    const pk = this.picker;
+    const skin = pk?.list[pk.at];
+    if (!pk || !skin) return;
+    this.picker = null;
+    this.game.setSkin(pk.host, skin);
+    this.confirm(skin);
+  }
+
+  /** OK takes hero `c` (a slot's, in its look): the pick's or the new game's next step. */
+  private confirm(c: CharacterDef): void {
+    const pick = this.pick;
+    if (pick) {
+      this.game.pickedRandom = false;
+      this.game.ctx.audio.sfx(c.pickSfx ?? 'coin');
+      // Campaign: the first pick of a hero on the file asks about training first.
+      if (pick.training !== false && needsTraining(this.game, c))
+        askTraining(this.game, c, pick.player, () => pick.onPick(c), pick.music);
+      else pick.onPick(c);
+      return;
+    }
+    if (this.start) this.game.pickedRandom = false;
+    if (c.pickSfx) this.game.ctx.audio.sfx(c.pickSfx);
+    if (this.start) this.start.begin(c);
+    else this.game.newGame(c, '1-1', null);
+  }
+
+  /**
+   * A tap or click at screen (x, y) on Classic mode's select: on a cell, the cursor goes there
+   * (or, on the cell under it, OK). Taken in the next update.
+   */
+  tapAt(x: number, y: number): boolean {
+    if (!this.classicLayout || this.box) return false;
+    this.taps.push({ x, y });
+    return true;
+  }
+
+  /** The grid slot under screen (x, y), or -1. */
+  private slotAt(x: number, y: number): number {
+    const n = this.total;
+    for (let i = 0; i < n; i++) {
+      const c = gridCell(i);
+      if (x >= c.x && x < c.x + SELECT_GRID.cell && y >= c.y && y < c.y + SELECT_GRID.cell) return i;
+    }
+    return -1;
+  }
+
+  /** A grid tap (Classic mode): onto a cell, or OK on the one under the cursor. */
+  private takeGridTap(): void {
+    this.tapOk = false;
+    const tap = this.taps.shift();
+    if (!tap) return;
+    const i = this.slotAt(tap.x, tap.y);
+    if (i < 0 || this.skipped(i)) return;
+    if (i === this.index) {
+      this.tapOk = true;
+      return;
+    }
+    this.index = i;
+    this.game.ctx.audio.sfx('select');
+    const name = this.sayName(i);
+    if (name) this.game.deps.announcer?.say(this._reviving ? `${name}: ${this.reviveAction(i).toLowerCase()}` : name);
+  }
+
+  /** Taps and clicks on the canvas reach the cells while this select is on top (Classic mode). */
+  private bindPointer(): void {
+    const canvas = this.game.deps.canvas;
+    const viewport = this.game.deps.viewport;
+    if (!this.classicLayout || !canvas || !viewport || this.unbindPointer) return;
+    const down = (e: PointerEvent) => {
+      if (this.game.scenes.top !== this) return;
+      const s = viewport.toScreen(e.clientX, e.clientY);
+      if (this.tapAt(s.x, s.y)) e.preventDefault();
+    };
+    canvas.addEventListener('pointerdown', down);
+    this.unbindPointer = () => canvas.removeEventListener('pointerdown', down);
+  }
+
+  exit(): void {
+    this.unbindPointer?.();
+    this.unbindPointer = null;
   }
 
   /** The hero OK on slot `i` gives: its own (in its chosen look), or for the Random slot a random one. */
@@ -379,6 +607,7 @@ export class CharacterSelectScene implements Scene {
   }
 
   enter(): void {
+    this.bindPointer();
     const news = this.takeCheatNews();
     const pick = this.pick;
     const chars = this.chars;
@@ -419,7 +648,7 @@ export class CharacterSelectScene implements Scene {
       // The last pick was the Random slot: the cursor starts there again.
       if (this.hasRandom && this.game.pickedRandom) this.index = chars.length;
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
-      const name = this.slotName(this.index) || pick.current.name;
+      const name = this.sayName(this.index) || pick.current.name;
       this.game.deps.announcer?.say(
         `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
@@ -562,7 +791,7 @@ export class CharacterSelectScene implements Scene {
         `${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}`,
       );
     }
-    if (this.t > 10 && (input.pressed('jump') || input.pressed('start'))) {
+    if (this.t > 10 && (input.pressed('jump') || input.pressed('start') || this.tapOk)) {
       this.revive();
       return;
     }
@@ -585,6 +814,7 @@ export class CharacterSelectScene implements Scene {
   /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
   touchLabels(): TouchLabels {
     if (this.box) return menuTouchLabels(false);
+    if (this.picker) return { jump: 'OK', attack: 'BACK', special: null, start: null, select: null };
     if (this._reviving)
       return { jump: 'OK', attack: this.reviveLeave(), special: null, start: null, select: null };
     // The skin picker (FU-8) on the touch Special button.
@@ -606,7 +836,7 @@ export class CharacterSelectScene implements Scene {
       let to = (idx + d) % n;
       while (to !== idx && this.skipped(to)) to = (to + d) % n;
       this.game.ctx.audio.sfx(to === idx ? 'bump' : 'select');
-      const name = this.slotName(to);
+      const name = this.sayName(to);
       if (name) this.game.deps.announcer?.say(name);
       return to;
     };
@@ -644,7 +874,7 @@ export class CharacterSelectScene implements Scene {
         return idx;
       }
       this.game.ctx.audio.sfx('select');
-      const name = this.slotName(best);
+      const name = this.sayName(best);
       if (name) this.game.deps.announcer?.say(`${name}, ${ROW_NAMES[to] ?? 'next'} row`);
       return best;
     };
@@ -652,6 +882,11 @@ export class CharacterSelectScene implements Scene {
       this.updateBox(this.box, (a) => inputs.some((f) => f.pressed(a)));
       return;
     }
+    if (this.picker) {
+      this.updatePicker((a) => input.pressed(a));
+      return;
+    }
+    this.takeGridTap();
     if (this._reviving) {
       this.updateRevive(input, move, rowMove);
       return;
@@ -682,7 +917,12 @@ export class CharacterSelectScene implements Scene {
         if (name) this.game.deps.announcer?.say(name);
       }
       if (pressed('special') && !this.onMapRow && !this.isRandom(this.index)) this.nextSkin(this.index);
-      const ok = this.t > 10 && (pressed('start') || pressed('jump'));
+      const ok = this.t > 10 && (pressed('start') || pressed('jump') || this.tapOk);
+      // Classic mode: a hero with other looks opens the skin menu first (CharacterSkinMenu).
+      if (ok && !this.onMapRow && this.opensPicker(this.index)) {
+        this.openPicker(this.index);
+        return;
+      }
       const c = ok && !this.onMapRow ? this.heroAt(this.index) : chars[this.index];
       if (ok && !this.onMapRow) this.game.pickedRandom = this.isRandom(this.index);
       if (onMap && (pressed('select') || pressed('attack') || (ok && this.onMapRow))) {
@@ -715,7 +955,11 @@ export class CharacterSelectScene implements Scene {
         if (f2.pressed('select')) this.p2 = false;
       }
     }
-    if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
+    if (this.t > 10 && (input.pressed('start') || input.pressed('jump') || this.tapOk)) {
+      if (this.opensPicker(this.index)) {
+        this.openPicker(this.index);
+        return;
+      }
       const c = this.heroAt(this.index);
       if (this.start) this.game.pickedRandom = this.isRandom(this.index);
       const c2 = this.p2 ? (chars[this.index2] ?? null) : null;
@@ -733,6 +977,10 @@ export class CharacterSelectScene implements Scene {
   }
 
   render(r: Renderer): void {
+    if (this.classicLayout) {
+      this.renderClassic(r);
+      return;
+    }
     r.clear('#000');
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
@@ -844,6 +1092,184 @@ export class CharacterSelectScene implements Scene {
       r.text(font, label, x, y);
       if (this.onMapRow) r.text(font, '>', x - 12, y);
     }
+  }
+
+  /** The hero shown in the HUD and on the ground: the skin menu's look, else the slot's in its look. */
+  private shownHero(): CharacterDef | null {
+    if (this.picker) return this.pickerSkin;
+    if (this.isRandom(this.index)) return null;
+    const c = this.chars[this.index];
+    return c ? this.game.skinFor(c) : null;
+  }
+
+  /** The portrait frame Classic mode draws for `c` (its Classic art). */
+  private artOf(c: CharacterDef): CharacterDef['portrait'] {
+    return shownPortrait(heroFor(c, this.game.liveRules));
+  }
+
+  /**
+   * The name box's three lines (CharacterSelectBox.changeNameBoxText): the look's name in quotes
+   * (none for a hero's own look), the hero, its game; revive mode: what OK does, the hero, the
+   * lives remaining.
+   */
+  nameBoxLines(): [string, string, string] {
+    const i = this.index;
+    if (this._reviving) {
+      const n = this.game.state.lives;
+      const hero = this.isRandom(i) ? 'RANDOM' : fontText(this.chars[i]?.name ?? '');
+      return [fontText(this.reviveAction(i)), hero, `${n} ${n === 1 ? 'LIFE' : 'LIVES'} REMAINING`];
+    }
+    if (this.isRandom(i)) return ['', 'RANDOM', ''];
+    const c = this.chars[i];
+    if (!c) return ['', '', ''];
+    const skin = this.game.skinFor(c);
+    return [skin === c ? '' : `"${fontText(skin.name)}"`, fontText(c.name), fontText(heroGame(c))];
+  }
+
+  /** Classic mode's select, in the original 3.1.21's layout (select-grid.ts). */
+  private renderClassic(r: Renderer): void {
+    r.clear('#000');
+    const assets = this.game.ctx.assets;
+    const font = assets.sheet('font');
+    const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
+    const shown = this.shownHero();
+    this.renderClassicHud(r, shown);
+    // The portrait grid.
+    const pan = gridPanel(this.rows);
+    drawPanel(r, pan.x, pan.y, pan.w, pan.h);
+    const cell = SELECT_GRID.cell;
+    for (let i = 0; i < this.total; i++) {
+      const at = gridCell(i);
+      drawCell(r, at.x, at.y, cell, cell, i === this.index && !this.picker);
+      inCell(r, at.x, at.y, cell, cell, () => {
+        if (this.isRandom(i)) {
+          // The Random cell: our own "?" (held still with Reduce flashing).
+          const items = assets.sheet('items');
+          const frame =
+            !this.game.ctx.reduceFlashing && (this.t >> 4) % 2 === 1 ? 'select-random-1' : 'select-random-0';
+          const f = items.frames.get(frame);
+          r.sprite(items, frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + ((cell - (f?.h ?? 20)) >> 1));
+          return;
+        }
+        const c = this.chars[i];
+        if (!c) return;
+        const pt = this.artOf(this.game.skinFor(c));
+        // Survival's fallen heroes are greyed (CharacterSelectBox.markPortraitFallen: desaturate).
+        const sheet = assets.sheet(pt.sheet, this.fallen(i) ? fxPalette(pt.palette, 'fallen') : pt.palette);
+        const f = sheet.frames.get(pt.frame);
+        // Head and shoulders: the portrait's top 2 px in, centred.
+        r.sprite(sheet, pt.frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + 2);
+      });
+    }
+    // The name box under it.
+    const by = pan.y + pan.h + 4;
+    drawPanel(r, 24, by, 208, 40);
+    const lines = this.nameBoxLines();
+    lines.forEach((l, k) => {
+      if (l) centred(l, by + 6 + k * 10);
+    });
+    // The prompts, named by ability (with the real key when not on touch).
+    const py = by + 46;
+    const sv = this.survival;
+    if (this._reviving) {
+      const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+      centred(fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`), py);
+      const leave = this.reviveLeave();
+      if (leave)
+        centred(
+          fontText(`${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`),
+          py + 10,
+        );
+    } else if (!this.picker) {
+      const steady = this.game.ctx.reduceFlashing || (this.t >> 5) % 2 === 0;
+      const ok = abilityHint(this.game, 'OK', 'jump');
+      const line = this.skinsAt(this.index).length > 1 ? `${ok} TO CHOOSE A LOOK` : `PRESS ${ok}`;
+      if (steady) centred(fontText(line), py);
+      if (this.cheatNews.length) {
+        const news = [this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!'];
+        news.push(...this.cheatNews.slice(0, 1).map((n) => n.toUpperCase()));
+        news.forEach((l, k) => centred(fontText(l), py + 10 + k * 10));
+      } else if (sv) {
+        const n = this.chars.filter((_, i) => !this.locked(i)).length;
+        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 10);
+      }
+    }
+    // The ground, and the hero (or look) standing on it.
+    const tiles = assets.sheet('tiles');
+    for (let x = 0; x < 256; x += 16) {
+      r.sprite(tiles, 'ground', x, 208);
+      r.sprite(tiles, 'ground', x, 224);
+    }
+    if (shown) {
+      const pt = this.artOf(shown);
+      const sheet = assets.sheet(pt.sheet, pt.palette);
+      const f = sheet.frames.get(pt.frame);
+      // Left of the prompts, so a tall hero never stands in their lines.
+      r.sprite(sheet, pt.frame, 28 - ((f?.w ?? 16) >> 1), 208 - (f?.h ?? 32));
+    }
+    if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
+    if (this.picker) this.renderPicker(r);
+    if (this.box) this.renderBox(r, this.box);
+  }
+
+  /** The HUD on top: the shown hero's small portrait and HUD name, score, coins, WORLD, TIME. */
+  private renderClassicHud(r: Renderer, shown: CharacterDef | null): void {
+    const assets = this.game.ctx.assets;
+    const font = assets.sheet('font');
+    const s = this.game.state;
+    if (shown) {
+      const pt = this.artOf(shown);
+      const sheet = assets.sheet(pt.sheet, pt.palette);
+      const f = sheet.frames.get(pt.frame);
+      // The head, in a 16 px box left of the name.
+      inCell(r, 5, 5, 18, 18, () => r.sprite(sheet, pt.frame, 14 - ((f?.w ?? 16) >> 1), 6));
+    }
+    r.text(font, (shown ? shown.hudName : 'RANDOM').slice(0, 7), 24, 8);
+    r.text(font, String(s.score).padStart(7, '0'), 24, 16);
+    r.text(font, `$×${String(s.coins).padStart(2, '0')}`, 96, 16);
+    r.text(font, 'WORLD', 144, 8);
+    r.text(font, `${s.world}-${s.stage}`, 152, 16);
+    r.text(font, 'TIME', 200, 8);
+  }
+
+  /** The skin menu (CharacterSkinMenu): the look's name, a page of looks, its source game. */
+  private renderPicker(r: Renderer): void {
+    const pk = this.picker;
+    if (!pk) return;
+    const assets = this.game.ctx.assets;
+    const font = assets.sheet('font');
+    const P = SKIN_PANEL;
+    drawPanel(r, P.x, P.y, P.w, P.h);
+    const skin = pk.list[pk.at];
+    const title = fontText(skin?.name ?? '');
+    r.text(font, title, 128 - title.length * 4, P.y + 7);
+    const per = SKIN_GRID.cols * SKIN_GRID.rows;
+    const page = this.pickerPage;
+    for (let k = 0; k < per; k++) {
+      const look = pk.list[page * per + k];
+      if (!look) break;
+      const c = skinCell(k);
+      drawCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, page * per + k === pk.at);
+      const pt = this.artOf(look);
+      const sheet = assets.sheet(pt.sheet, pt.palette);
+      const f = sheet.frames.get(pt.frame);
+      // Standing in its cell, feet 2 px above the bottom.
+      inCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, () =>
+        r.sprite(
+          sheet,
+          pt.frame,
+          c.x + ((SKIN_GRID.w - (f?.w ?? 16)) >> 1),
+          c.y + SKIN_GRID.h - 2 - (f?.h ?? 32),
+        ),
+      );
+    }
+    // More pages: down-arrows in the bottom corners.
+    if ((page + 1) * per < pk.list.length) {
+      drawDownArrow(r, P.x + 6, P.y + P.h - 10);
+      drawDownArrow(r, P.x + P.w - 13, P.y + P.h - 10);
+    }
+    const game = fontText(skin ? skinGame(skin) : '');
+    r.text(font, game, 128 - game.length * 4, P.y + P.h - 16);
   }
 
   /**
