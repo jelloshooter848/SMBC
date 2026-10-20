@@ -313,6 +313,11 @@ export interface CharacterDef {
    */
   seaFloorSafe?: boolean;
   /**
+   * The sound the character select plays when this hero is picked (Classic Proto Man's whistle,
+   * PM-18). Absent: the select's usual sound. Only Classic-only extras set it.
+   */
+  pickSfx?: string;
+  /**
    * Down crouches only with no left/right and no up held (Classic SMBC Bill, BI-C3/BI-C8: Down plus a
    * direction walks with the gun aimed down, and Up wins over Down). Absent: Down crouches whatever
    * else is held, as today.

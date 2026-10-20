@@ -8,6 +8,7 @@ import { marioPalettes, marioDef } from './mario';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
 import { megamanPalettes, megamanDef } from './megaman';
+import { bassPalettes, bassDef } from './bass';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { simonPalettes, simonDef } from './simon';
 import { simonFlameDef } from './simon-flame';
@@ -96,6 +97,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,
+  // Classic SMBC's Bass (characters/bass/classic.ts).
+  bass: bassDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
   simon: simonDef,
@@ -178,6 +181,7 @@ const defaults: Record<string, readonly string[]> = {
   ...enemyPalettes,
   ...linkPalettes,
   ...megamanPalettes,
+  ...bassPalettes,
   ...samusPalettes,
   ...simonPalettes,
   ...ryuPalettes,
@@ -257,6 +261,11 @@ for (let i = 0; i < 4; i++) {
   fallback(`bill-star-${i}`, 'bill');
 }
 for (let i = 0; i < 3; i++) fallback(`megaman-charge-${i}`, 'megaman');
+// Classic Proto Man and Break Man flash Mega Man's Star colours (PM-16).
+for (let i = 0; i < 4; i++) {
+  fallback(`protoman-star-${i}`, `megaman-star-${i}`);
+  fallback(`breakman-star-${i}`, `megaman-star-${i}`);
+}
 fallback('mario-fire', 'mario');
 fallback('luigi', 'mario');
 fallback('luigi-fire', 'mario-fire');

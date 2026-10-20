@@ -27,12 +27,18 @@ export const SPRING_GREEN_BOOST: Readonly<Record<string, number>> = {
   mario: flash(2750),
   luigi: flash(2750),
   megaman: flash(3000),
+  bass: flash(3000),
   bill: flash(2150),
   link: flash(2750),
   ryu: flash(2750),
   samus: flash(1750),
   simon: flash(4250),
   sophia: flash(3500),
+  // Classic-only extras: the Mega Man family's 3000 (PM-15) and Samus's 1750 (PI-19).
+  protoman: flash(3000),
+  breakman: flash(3000),
+  pit: flash(1750),
+  darkpit: flash(1750),
 };
 /**
  * The rise after a launch uses the hero's own gravity (the launch starts no jump rise), in Flash
@@ -48,8 +54,13 @@ export const SPRING_RISE_GRAVITY: Readonly<Record<string, number>> = {
   samus: flashAccel(700),
   bill: flashAccel(1000),
   megaman: flashAccel(1500),
+  bass: flashAccel(1500),
   simon: flashAccel(1500),
   sophia: flashAccel(1050),
+  protoman: flashAccel(1500),
+  breakman: flashAccel(1500),
+  pit: flashAccel(700),
+  darkpit: flashAccel(700),
 };
 
 /**

@@ -43,6 +43,7 @@ import {
   MM_ROOT_FRAMES,
   MM_WEAPONS,
   WEAPON_UNITS,
+  MM_SHOT_PAD,
   balloonOf,
   busterSpawn,
   capCount,
@@ -59,6 +60,7 @@ import {
   touchingBrick,
   type MMFire,
   type MMWeaponId,
+  type ShotPad,
 } from './classic-weapons';
 import { MMShot } from './classic-weapons';
 
@@ -116,10 +118,31 @@ const SHOOT_POSE = 16;
 /** Select held this long swaps the buttons; a release before it is a tap (MM-C1, MM-C3). */
 export const MM_SELECT_HOLD = 21;
 
+/** Where one rapid-fire shot comes out and how it flies (Bass's 7-way aim, BA-20). */
+export type RapidAim = (
+  p: Player,
+  input: InputFrame,
+  spec: ProjectileSpec,
+) => { aim: number; x: number; y: number; vx: number; vy: number };
+
+/**
+ * A rapid-fire buster (Classic Bass, BA-9, BA-19..BA-21) instead of Mega Man's one shot a press:
+ * the press fires at once, then a timer counting `step` a frame fires each time it reaches `every`
+ * (keeping the remainder) while the button stays held; aimed by `aim`. On the ground he is rooted
+ * while the button is held (CharacterBehaviour.rooted), Left / Right only turning him.
+ */
+export interface RapidFire {
+  step: number;
+  every: number;
+  aim: RapidAim;
+  /** Pose suffix per aim (`shoot<suffix>`, `jump-shoot<suffix>`), indexed by `aim`'s result. */
+  poses: readonly string[];
+}
+
 /** Options of a Classic Mega Man variant. Everything optional falls back to Mega Man's. */
 export interface ClassicMegaManOptions {
-  /** The roster def it plays for (id, name, hudName, portrait, music; TG-18). */
-  base: CharacterDef;
+  /** The roster def it plays for (id, name, hudName, portrait, music; TG-18), or a Classic-only hero's. */
+  base: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'music'>;
   profile?: MovementProfile;
   response?: ClassicHitResponse;
   drops?: ClassicDropTable;
@@ -137,6 +160,33 @@ export interface ClassicMegaManOptions {
   /** Rush Coil on a Select tap. */
   rush?: boolean;
   guide?: CharacterGuide;
+  /** A rapid-fire, rooting, aimed buster (Bass); absent: Mega Man's press-to-fire buster. */
+  rapid?: RapidFire;
+  /**
+   * A Select press swaps the buttons at once (no hold timer, no Rush tap; under the dev full kit it
+   * picks the next weapon instead): Bass, BA-6. Absent: Mega Man's tap / hold (MM-C3).
+   */
+  swapOnPress?: boolean;
+  /** The suit palette while weapon `id` is held. Absent: the weapon row's (MM-C23). */
+  weaponPalette?: (id: MMWeaponId) => string;
+  /** The touch caption of weapon `id`. Absent: the weapon row's. */
+  weaponLabel?: (id: MMWeaponId) => string;
+  /** The slide's pose name (Bass's upright `dash`). Absent: `slide`. */
+  slideFrame?: string;
+  /*
+   * Proto Man and Break Man's rule changes (2026-10-07-protoman-build-classic-character.md, PM-1).
+   * Absent, each is Mega Man's.
+   */
+  /** PM-11: the buster charges in every power state. Absent: only with the Mushroom (MM-C20). */
+  chargeWithoutMushroom?: boolean;
+  /** PM-12: the buster cap while small (3 again with the Mushroom). Absent: `buster.cap`. */
+  busterCapSmall?: number;
+  /** PM-9: a survived hit's push speed (`response.vx`). Absent: the response's own. */
+  knockbackVx?: number;
+  /** PM-13: buster-placed shots' height above the feet. Absent: MM_SHOT_PAD (13 / 17 px). */
+  shotPad?: ShotPad;
+  /** PM-18: the character select's pick sound (CharacterDef.pickSfx). Absent: the usual one. */
+  pickSfx?: string;
 }
 
 /* ---------- scratch keys (apart from Current's: w<id>, helmet, weapons, chargeT, etanks) ---------- */
@@ -154,7 +204,13 @@ const KICK = 'mmKick';
 export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const base = o.base;
   const profile = o.profile ?? MEGAMAN_CLASSIC_PROFILE;
-  const response = o.response ?? (CLASSIC_HIT_RESPONSES.megaman as ClassicHitResponse);
+  const baseResponse = o.response ?? (CLASSIC_HIT_RESPONSES.megaman as ClassicHitResponse);
+  const response: ClassicHitResponse =
+    o.knockbackVx !== undefined && baseResponse.kind === 'push'
+      ? { ...baseResponse, vx: o.knockbackVx }
+      : baseResponse;
+  const pad = o.shotPad ?? MM_SHOT_PAD;
+  const chargeSmall = o.chargeWithoutMushroom === true;
   const drops = o.drops ?? CLASSIC_DROPS.megaman;
   const sheet = o.sheet ?? 'megaman';
   const suit = o.palette ?? 'megaman';
@@ -164,6 +220,9 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const flower = o.flowerWeapon === undefined ? CLASSIC_FLOWER_WEAPON : o.flowerWeapon;
   const all = o.allWeapons ?? MM_WEAPONS.map((x) => x.id);
   const hasRush = o.rush ?? true;
+  const rapid = o.rapid ?? null;
+  const weaponPalette = o.weaponPalette ?? ((id: MMWeaponId) => mmWeapon(id).palette);
+  const weaponLabel = o.weaponLabel ?? ((id: MMWeaponId) => mmWeapon(id).label);
 
   /** Every weapon starts full each life (MM-C17): the start kit. */
   const START: Record<string, number> = {};
@@ -229,6 +288,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       energy: (id) => energy(p, id),
       spend: (id, cost) => spendAmmo(p, energyKey(id), cost),
       has: (id, cost) => hasAmmo(p, energyKey(id), cost),
+      pad,
     };
   }
 
@@ -245,6 +305,26 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   }
 
   function selectButton(p: Player, input: InputFrame, world: World): void {
+    if (o.swapOnPress) {
+      // Bass (BA-6, BA-25): the press swaps at once, or under the full kit picks the next weapon.
+      if (!input.pressed('select')) return;
+      if (p.scratch[ALL]) {
+        const b = belt(p);
+        p.scratch.tool = (toolIndex(p, b) + 1) % b.length;
+        p.scratch._wChargeT = 0;
+        world.audio.sfx('select');
+        return;
+      }
+      const w = heldWeapon(p);
+      if (w && w !== 'charge-kick') {
+        p.scratch[SWAP] = p.scratch[SWAP] ? 0 : 1;
+        // The swap stops the auto-fire until the new buster button is let go.
+        p.scratch._bbBlock = 1;
+        p.scratch._bbOn = 0;
+        world.audio.sfx('select');
+      }
+      return;
+    }
     if (input.held('select')) {
       const t = (p.scratch._selT ?? 0) + 1;
       p.scratch._selT = t;
@@ -273,19 +353,66 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   }
 
   function fireBuster(p: Player, world: World, spec: ProjectileSpec): void {
-    const pos = busterSpawn(p, spec);
+    const pos = busterSpawn(p, spec, pad);
     world.spawn(new MMShot(pos.x, pos.y, p.facing, spec, p));
     world.audio.sfx(spec === buster.spec ? 'buster' : 'charge-shot');
     p.attackTimer = SHOOT_POSE;
   }
 
+  /** The shot cap now (MM-C19): `busterCapSmall` while small (Proto Man 2, Bass 3), else `buster.cap`. */
+  const busterCap = (p: Player): number =>
+    p.powerState === 'small' ? (o.busterCapSmall ?? buster.cap) : buster.cap;
+
+  /** The rapid-fire buster button is held and live: it fires (off a dash) and roots (BA-9, BA-21). */
+  const rapidHeld = (p: Player, input: InputFrame): boolean =>
+    rapid !== null && !classicBusy(p) && !p.scratch._bbBlock && input.held(swapped(p) ? 'special' : 'attack');
+
+  function rapidShot(p: Player, input: InputFrame, world: World, r: RapidFire): void {
+    if (p.sliding > 0 || capCount(world, p) >= busterCap(p)) return;
+    const a = r.aim(p, input, buster.spec);
+    world.spawn(new MMShot(a.x, a.y, p.facing, buster.spec, p, { vx: a.vx, vy: a.vy }));
+    world.audio.sfx('buster');
+    p.scratch._aim = a.aim;
+    p.attackTimer = MM_ROOT_FRAMES;
+  }
+
+  /** Bass's buster button (BA-21): the press fires, then every `every / step` frames while held. */
+  function rapidButton(p: Player, input: InputFrame, world: World, btn: 'attack' | 'special', r: RapidFire) {
+    if (!input.held(btn)) {
+      p.scratch._bbBlock = 0;
+      p.scratch._bbOn = 0;
+      p.scratch._bbT = 0;
+      return;
+    }
+    if (p.scratch._bbBlock) return;
+    if (input.pressed(btn)) {
+      p.scratch._bbOn = 1;
+      p.scratch._bbT = 0;
+      rapidShot(p, input, world, r);
+      return;
+    }
+    if (!p.scratch._bbOn) {
+      // Held through a hit's lock: firing resumes one step later (BA-17).
+      p.scratch._bbOn = 1;
+      p.scratch._bbT = 0;
+    }
+    let t = (p.scratch._bbT ?? 0) + r.step;
+    if (t >= r.every) {
+      t -= r.every;
+      rapidShot(p, input, world, r);
+    }
+    p.scratch._bbT = t;
+  }
+
   /** The buster button (MM-C19, MM-C20). */
   function busterButton(p: Player, input: InputFrame, world: World, btn: 'attack' | 'special'): void {
+    if (rapid) return rapidButton(p, input, world, btn, rapid);
     const sliding = p.sliding > 0;
-    const canCharge = charge !== null && p.powerState !== 'small';
+    const small = p.powerState === 'small';
+    const canCharge = charge !== null && (chargeSmall || !small);
     if (input.pressed(btn)) {
       const fullOut = charge !== null && countShots(world, p, (k) => k === charge.full.kind) > 0;
-      if (!sliding && capCount(world, p) < buster.cap && !fullOut) fireBuster(p, world, buster.spec);
+      if (!sliding && capCount(world, p) < busterCap(p) && !fullOut) fireBuster(p, world, buster.spec);
       if (canCharge) p.scratch._chargeT = 1;
       return;
     }
@@ -419,7 +546,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     let palette = suit;
     if (h === 'rush') palette = `${sheet}-rush`;
     else if (h === 'charge-kick') palette = p.scratch[KICK] ? mmWeapon(h).palette : suit;
-    else if (h) palette = mmWeapon(h).palette;
+    else if (h) palette = weaponPalette(h);
     const t = Math.max(p.scratch._chargeT ?? 0, p.scratch._wChargeT ?? 0);
     const levels = charge?.levels ?? MM_CHARGE;
     const charging = t >= levels.start;
@@ -433,7 +560,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     const shooting = p.attackTimer > 0;
     let name: string;
     if (p.dead || p.anim === 'hurt') name = 'hurt';
-    else if (p.sliding > 0) name = 'slide';
+    else if (p.sliding > 0) name = o.slideFrame ?? 'slide';
+    else if (rapid && p.anim !== 'climb') name = rapidPose(p, rapid);
     else if (p.stepT > 0 && p.body.onGround) name = 'walk-0';
     else {
       switch (p.anim) {
@@ -462,6 +590,24 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       offsetX: 2,
       offsetY: p.sliding > 0 ? 32 - (profile.slide?.hitboxH ?? 15) : 10,
     };
+  }
+
+  /**
+   * Bass's poses (BA-32): rooted (the buster button held on the ground) or within 12 frames of a
+   * shot he shows the aim of the last shot, standing, jumping or (after a shot) walking.
+   */
+  function rapidPose(p: Player, r: RapidFire): string {
+    const aiming = p.attackTimer > 0 || !!p.scratch._bbRoot;
+    const aim = r.poses[p.scratch._aim ?? 0] ?? '';
+    const b = p.body;
+    if (!b.onGround) return aiming ? `jump-shoot${aim}` : 'jump';
+    if (p.scratch._bbRoot) return `shoot${aim}`;
+    if (p.stepT > 0) return 'step';
+    if (b.vx !== 0) {
+      const n = p.anim === 'walk' ? p.walkFrame : (p.frame >> 3) % 3;
+      return aiming ? `walk-shoot-${n}` : `walk-${n}`;
+    }
+    return aiming ? `shoot${aim}` : (p.frame & 255) < 8 ? 'idle-blink' : 'idle';
   }
 
   const def: CharacterDef = {
@@ -493,15 +639,17 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     meter,
     devKit: () => ({ ...START, [ALL]: 1 }),
     guide: o.guide ?? MEGAMAN_CLASSIC_GUIDE,
+    ...(o.pickSfx !== undefined ? { pickSfx: o.pickSfx } : {}),
     touchLabels(p) {
       const w = heldWeapon(p);
       const h = held(p);
-      const label = w ? mmWeapon(w).label : h === 'rush' ? 'RUSH' : null;
+      const label = w ? weaponLabel(w) : h === 'rush' ? 'RUSH' : null;
       const sw = swapped(p);
+      const swap = o.swapOnPress && w && w !== 'charge-kick' ? 'SWAP' : null;
       return {
         attack: sw ? label : 'SHOOT',
         special: sw ? 'SHOOT' : label,
-        select: p.scratch[ALL] ? 'WEAPON' : hasRush ? 'RUSH' : null,
+        select: p.scratch[ALL] ? 'WEAPON' : hasRush ? 'RUSH' : swap,
       };
     },
     behaviour: {
@@ -509,7 +657,18 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
         p.scratch._chargeT = 0;
         p.scratch._wChargeT = 0;
       },
-      canSlide: (p) => !p.scratch._carry,
+      canSlide: (p) => !p.scratch._carry && !p.scratch._bbRoot,
+      ...(rapid
+        ? {
+            rooted(p: Player, input: InputFrame): boolean | 'canJump' {
+              // BA-9: before the move; Left / Right turn him at once; Jump still jumps.
+              const on = p.sliding === 0 && rapidHeld(p, input);
+              p.scratch._bbRoot = on ? 1 : 0;
+              if (on && input.dirX !== 0) p.facing = input.dirX;
+              return on ? 'canJump' : false;
+            },
+          }
+        : {}),
       update(p, input, world) {
         classicStartKit(p, START);
         if (!p.transition) delete p.scratch._fillFrom;
@@ -518,6 +677,12 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
         if (classicBusy(p)) return;
         selectButton(p, input, world);
         const sw = swapped(p);
+        if (rapid) {
+          // Rooted only on the ground (rooted() runs there before the move); landing roots at once.
+          const root = p.body.onGround && p.sliding === 0 && rapidHeld(p, input);
+          p.scratch._bbRoot = root ? 1 : 0;
+          if (root) p.body.vx = 0;
+        }
         busterButton(p, input, world, sw ? 'special' : 'attack');
         weaponButton(p, input, world, sw ? 'attack' : 'special');
         kickTick(p, world, input);
@@ -533,6 +698,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       },
       onHurt: (p, world, fromDir) => {
         p.scratch._chargeT = 0;
+        p.scratch._bbOn = 0;
+        p.scratch._bbRoot = 0;
         p.root = 0;
         return classicOnHurt(p, world, fromDir, KIT);
       },

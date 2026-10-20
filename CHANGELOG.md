@@ -8,6 +8,24 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
+  only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
+  up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
+  Down + Jump at full height, and a jump out of the dash keeps its speed. The Fire Flower gives the Water Shield and
+  its energy bar, and Select swaps the shot and shield buttons at once. He cannot charge and has no Rush. New
+  original art.
+- Classic mode: **Proto Man** and **Break Man** join the select screen's second row (Classic mode and developer Classic
+  runs only). They play as Classic Mega Man, but charge the buster from the start, fire two buster shots at a time
+  until they take a Mushroom, are knocked back twice as far by a hit, and shoot a little lower. Proto Man whistles
+  when picked.
+- Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
+  crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
+  crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
+- Classic mode: the castle's "another castle" line names each Classic-only hero's own rescue: Dr. Wily for Bass,
+  Roll for Proto Man and Break Man, Palutena for Pit and the Reaper for Dark Pit.
+
 ## [0.4.57] - 2026-10-19
 
 ### Added
