@@ -14,6 +14,8 @@ under `## [Unreleased]`.
   for the original's Special maps, which Classic mode does not have.
 - Classic mode's Infinite Lives cheat: as in the original, a continue used in any Classic run
   (not only the current one) keeps it locked, since the count is kept with the save.
+- Classic mode with Current rules: nothing counts toward the cheats' goals any more (not even a
+  clear or a game beaten), as the cheats play only with Classic rules.
 
 ### Fixed
 

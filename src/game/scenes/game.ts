@@ -1562,10 +1562,18 @@ export class Game {
     ),
   ) as CheatFlags;
 
-  /** Play counts toward the cheats' goals: a Classic run not started from developer mode. */
+  /**
+   * Play counts toward the cheats' goals: a Classic run with Classic rules, not started from
+   * developer mode. Cheats play only with Classic rules, so under Current rules nothing counts:
+   * no kill, no clear, no game beaten, no continue.
+   */
   get cheatGoalsCount(): boolean {
     return (
-      this.classicRun && this.campaign === null && !this.classicDev && !!this.deps.settings?.classicCheats
+      this.classicRun &&
+      this.campaign === null &&
+      !this.classicDev &&
+      this.liveRules === 'classic' &&
+      !!this.deps.settings?.classicCheats
     );
   }
 

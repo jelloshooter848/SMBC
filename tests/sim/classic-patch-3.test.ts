@@ -203,3 +203,34 @@ describe('3. Infinite Lives: continues count over the save, not per run', () => 
     expect(h.settings.classicCheats.continuesUsed).toBe(0);
   });
 });
+
+describe('4. Classic mode with Current rules: nothing counts toward the cheats', () => {
+  it('no clear, no game beaten, no continue and no tally counts under Current rules', () => {
+    const h = classicGame();
+    h.settings.classicRules = 'current';
+    h.game.classicGame(MARIO);
+    expect(h.game.cheatGoalsCount).toBe(false);
+    h.game.cheatEvent({ level: true, castle: true });
+    h.game.cheatEvent({ beat: 'smb' });
+    h.game.cheatTally('enemiesDefeated');
+    h.game.continueGame('1-1');
+    const c = h.settings.classicCheats;
+    expect(c.unlocked.infiniteTime).toBe(false);
+    expect(c.unlocked.extraCheckpoints).toBe(false);
+    expect(c.unlocked.allGroundIsBricks).toBe(false);
+    expect(c.beaten.smb).toBe(false);
+    expect(c.stats.enemiesDefeated).toBe(0);
+    expect(c.continuesUsed).toBe(0);
+  });
+
+  it('the same calls under Classic rules count', () => {
+    const h = classicGame();
+    h.game.classicGame(MARIO);
+    expect(h.game.cheatGoalsCount).toBe(true);
+    h.game.cheatEvent({ level: true, castle: true });
+    h.game.cheatTally('enemiesDefeated');
+    expect(h.settings.classicCheats.unlocked.infiniteTime).toBe(true);
+    expect(h.settings.classicCheats.unlocked.extraCheckpoints).toBe(true);
+    expect(h.settings.classicCheats.stats.enemiesDefeated).toBe(1);
+  });
+});
