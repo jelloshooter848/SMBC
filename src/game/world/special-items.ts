@@ -128,12 +128,21 @@ export class HammerWeapon extends Entity {
     }
   }
 
+  /**
+   * The hammer where it is now. It swaps place 13 times a second, so under Reduce flashing both
+   * places are drawn, steady (it strikes only where it is).
+   */
   render(r: Renderer, view: View): void {
     if (this.owner.hidden) return;
     const sheet = view.assets.sheet('items');
-    const x = toPx(this.body.x) - view.camX;
-    const y = toPx(this.body.y);
-    if (this.overhead) r.sprite(sheet, 'hammer-up', x, y);
-    else r.sprite(sheet, 'hammer-side', x, y, this.owner.facing < 0);
+    const o = this.owner.body;
+    const up = { x: toPx(o.x + (o.w >> 1)) - 8 - view.camX, y: toPx(o.y) - 16 };
+    const side = {
+      x: (this.owner.facing > 0 ? toPx(o.x + o.w) : toPx(o.x) - 16) - view.camX,
+      y: toPx(o.y + o.h) - 16,
+    };
+    if (view.reduceFlashing || this.overhead) r.sprite(sheet, 'hammer-up', up.x, up.y);
+    if (view.reduceFlashing || !this.overhead)
+      r.sprite(sheet, 'hammer-side', side.x, side.y, this.owner.facing < 0);
   }
 }

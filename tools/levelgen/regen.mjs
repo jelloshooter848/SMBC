@@ -55,7 +55,15 @@ for (const set of SETS.filter((s) => !only || s.id === only))
     const out = layers ? join(root, 'level-layers', `${set.dir}${w}`) : maps;
     const r = spawnSync(
       process.execPath,
-      [tool, ...set.extra, ...flags.filter((f) => !f.startsWith('--only=')), `--maps=${maps}`, join(xmlDir, set.xml), out, ...stages(w)],
+      [
+        tool,
+        ...set.extra,
+        ...flags.filter((f) => !f.startsWith('--only=')),
+        `--maps=${maps}`,
+        join(xmlDir, set.xml),
+        out,
+        ...stages(w),
+      ],
       { stdio: 'inherit' },
     );
     if (r.status !== 0) failed = true;

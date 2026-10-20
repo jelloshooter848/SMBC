@@ -150,9 +150,11 @@ export class PowerUp extends Entity {
     if (this.item === 'star') frame = `star-${(view.frame >> 2) & 3}`;
     if (this.item === 'poison') frame = 'poison-mushroom';
     if (this.item === 'bee') frame = `bee-${(view.frame >> 3) & 1}`;
-    // Atom and Wing animate on ANIM_MODERATE_TMR (75 ms: about 4 frames).
-    if (this.item === 'atom') frame = `atom-${Math.floor(view.frame / 4) & 1}`;
-    if (this.item === 'wing') frame = `wing-${Math.floor(view.frame / 4) & 1}`;
+    // Atom and Wing animate on ANIM_MODERATE_TMR (75 ms: about 4 frames); Reduce flashing holds
+    // them on their first frame.
+    const moderate = view.reduceFlashing ? 0 : Math.floor(view.frame / 4) & 1;
+    if (this.item === 'atom') frame = `atom-${moderate}`;
+    if (this.item === 'wing') frame = `wing-${moderate}`;
     r.sprite(sheet, frame, this.screenX(view), this.screenY());
   }
 }

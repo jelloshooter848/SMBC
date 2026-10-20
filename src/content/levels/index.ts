@@ -3,11 +3,14 @@ import type { LevelData } from '@game/level/schema';
 
 // SMB1's worlds, The Lost Levels' and Super Mario Bros. Special's (`sp-` ids, G-020; kept in
 // src/content/special-levels/, apart from the campaign's maps here).
-const sources = import.meta.glob(['./world*/*.map', './lost/world*/*.map', '../special-levels/world*/*.map'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
+const sources = import.meta.glob(
+  ['./world*/*.map', './lost/world*/*.map', '../special-levels/world*/*.map'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+) as Record<string, string>;
 
 /**
  * Each area's `.layers` file (src/content/level-layers/, same paths; written by

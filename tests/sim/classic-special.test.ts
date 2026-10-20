@@ -70,7 +70,8 @@ function targets(l: LevelData): string[] {
   const out: string[] = [];
   for (const z of l.zones as Zone[]) {
     if (z.kind === 'exit' && z.next !== 'end') out.push(z.next);
-    if ((z.kind === 'pipe' || z.kind === 'vine' || z.kind === 'pit') && 'target' in z) out.push(z.target.level);
+    if ((z.kind === 'pipe' || z.kind === 'vine' || z.kind === 'pit') && 'target' in z)
+      out.push(z.target.level);
   }
   return out;
 }
@@ -132,7 +133,8 @@ describe('G-020: the Special set loads and every area converts', () => {
 
   it('every pipe, vine, pit and exit leads to a Special area; 8-4 ends the game', () => {
     const ids = new Set(special());
-    for (const id of ids) for (const t of targets(getLevel(id))) expect(ids.has(t), `${id} -> ${t}`).toBe(true);
+    for (const id of ids)
+      for (const t of targets(getLevel(id))) expect(ids.has(t), `${id} -> ${t}`).toBe(true);
     const ends = [...ids].filter((id) =>
       getLevel(id).zones.some((z) => z.kind === 'exit' && z.next === 'end'),
     );
@@ -144,7 +146,10 @@ describe('G-020: the Special set loads and every area converts', () => {
   it('only knows spawn types the World builds, in its maps and in every layer', () => {
     for (const id of special()) {
       const l = getLevel(id);
-      const types = [...l.entities.map((e) => e.type), ...(l.layers ?? []).flatMap((y) => (y.add ?? []).map((e) => e.type))];
+      const types = [
+        ...l.entities.map((e) => e.type),
+        ...(l.layers ?? []).flatMap((y) => (y.add ?? []).map((e) => e.type)),
+      ];
       for (const t of types) expect(KNOWN.has(t), `${id}: ${t}`).toBe(true);
     }
   });
@@ -187,12 +192,18 @@ describe('G-020: the Special set loads and every area converts', () => {
 });
 
 describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
-  it("lists it between SMB and The Lost Levels (MapPack: Smb, Special, LostLevels), open from the start", () => {
+  it('lists it between SMB and The Lost Levels (MapPack: Smb, Special, LostLevels), open from the start', () => {
     expect(MAP_SETS.map((m) => m.id)).toEqual(['smb', 'special', 'lost']);
     const h = classic();
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(items(menu).map((i) => i.label)).toEqual(['Super Mario Bros.', 'SMB Special', 'The Lost Levels', 'Options', 'Back']);
+    expect(items(menu).map((i) => i.label)).toEqual([
+      'Super Mario Bros.',
+      'SMB Special',
+      'The Lost Levels',
+      'Options',
+      'Back',
+    ]);
     for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
     h.idle(8);
     h.tap('down');
@@ -240,7 +251,10 @@ describe('G-005 / G-020: beat status and the end of the game', () => {
     h.game.classicGame(MARIO, 'sp-8-4-end4');
     const l = enterLevel(h);
     expect(l.world.classicEnd).toEqual({ next: null });
-    expect(l.world.entities.some((e) => e instanceof Princess) || l.level.entities.some((e) => e.type === 'princess')).toBe(true);
+    expect(
+      l.world.entities.some((e) => e instanceof Princess) ||
+        l.level.entities.some((e) => e.type === 'princess'),
+    ).toBe(true);
     const w = l.world;
     h.game.ctx.assist.invulnerable = true;
     const put = (col: number) => {
@@ -317,7 +331,9 @@ describe('G-020: All Hammer Bros comes from beating Special only (StatManager.as
   });
 
   it('a save that unlocked it under the old goal keeps it; an old save has Special unbeaten', () => {
-    const old = defaultSettings() as unknown as { classicCheats: { beaten: Record<string, boolean>; unlocked: Record<string, boolean> } };
+    const old = defaultSettings() as unknown as {
+      classicCheats: { beaten: Record<string, boolean>; unlocked: Record<string, boolean> };
+    };
     old.classicCheats.unlocked.allHammerBros = true;
     old.classicCheats.beaten = { smb: false, lost: true };
     store.set(SETTINGS_KEY, JSON.stringify(old));
@@ -363,14 +379,27 @@ describe('G-006 / G-010: the layers per difficulty and hero', () => {
     expect(link).not.toBe(base);
   });
 
-  it('the World lays them: a Hard run has more of Special 4-2\'s enemies than an Easy one', () => {
+  it("the World lays them: a Hard run has more of Special 4-2's enemies than an Easy one", () => {
     const run = (mapDifficulty: 'easy' | 'normal' | 'hard') =>
-      runSim({ level: getLevel('sp-4-2'), character: MARIO, rules: 'classic', mapDifficulty, script: { steps: [] }, maxFrames: 1 })
-        .world.level;
-    const enemies = (l: LevelData) => ['icicle', 'crab', 'fly', 'barrel', 'fire-enemy', 'goomba'].reduce((n, t) => n + count(l, t), 0);
+      runSim({
+        level: getLevel('sp-4-2'),
+        character: MARIO,
+        rules: 'classic',
+        mapDifficulty,
+        script: { steps: [] },
+        maxFrames: 1,
+      }).world.level;
+    const enemies = (l: LevelData) =>
+      ['icicle', 'crab', 'fly', 'barrel', 'fire-enemy', 'goomba'].reduce((n, t) => n + count(l, t), 0);
     expect(enemies(run('hard'))).toBeGreaterThan(enemies(run('easy')));
     // A Current World plays the map as it is.
-    const cur = runSim({ level: getLevel('sp-4-2'), character: MARIO, rules: 'current', script: { steps: [] }, maxFrames: 1 });
+    const cur = runSim({
+      level: getLevel('sp-4-2'),
+      character: MARIO,
+      rules: 'current',
+      script: { steps: [] },
+      maxFrames: 1,
+    });
     expect(cur.world.level).toBe(getLevel('sp-4-2'));
   });
 
@@ -378,7 +407,9 @@ describe('G-006 / G-010: the layers per difficulty and hero', () => {
     const hardAdds = (prefix: RegExp) =>
       levelIds()
         .filter((id) => prefix.test(id))
-        .flatMap((id) => (getLevel(id).layers ?? []).filter((l) => l.difficulty === 'hard').flatMap((l) => l.add ?? []));
+        .flatMap((id) =>
+          (getLevel(id).layers ?? []).filter((l) => l.difficulty === 'hard').flatMap((l) => l.add ?? []),
+        );
     const smb = hardAdds(/^\d/).map((e) => (e.type === 'block-item' ? String(e.props?.item) : e.type));
     const lost = hardAdds(/^ll-/).map((e) => (e.type === 'block-item' ? String(e.props?.item) : e.type));
     for (const t of ['icicle', 'crab', 'fly', 'barrel']) {

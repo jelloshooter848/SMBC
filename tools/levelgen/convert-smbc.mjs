@@ -607,9 +607,9 @@ function convertArea(level, area, id, levels, profile) {
   // GameSuperMarioBros.createPlayList), e.g. 2-2c's underground look over the overworld tune.
   const typeMusic =
     SPECIAL && SPECIAL_AREA_THEMES[`${levelId}${area.id}`]
-      ? { underGround: 'underground', pipeBonus: 'underground', water: 'water', castle: 'castle' }[
+      ? ({ underGround: 'underground', pipeBonus: 'underground', water: 'water', castle: 'castle' }[
           area.type
-        ] ?? 'overworld'
+        ] ?? 'overworld')
       : null;
   const music = typeMusic ?? THEME_MUSIC[theme] ?? theme;
   const header = {
