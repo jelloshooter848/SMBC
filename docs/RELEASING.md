@@ -78,10 +78,9 @@ pnpm -s release:check --tag v0.2.0 --notes
 Tags are public and permanent in practice: never move a tag that has been released; release a
 patch instead.
 
-The zip is the exact site that was deployed. It is built for the repository's path (`/SMBC/`,
-`/SMBC-Remix/` after the rename), so serve it from a folder of that name (for example
-`mkdir SMBC-Remix && unzip smbc-remix-v0.5.0.zip -d SMBC-Remix && npx serve .` then open
-`/SMBC-Remix/`).
+The zip is the exact site that was deployed. It is built for the `/SMBC/` path, so serve it from
+a folder of that name (for example `mkdir SMBC && unzip smbc-remix-v0.5.0.zip -d SMBC && npx serve .`
+then open `/SMBC/`).
 
 ### The download: `smbc-remix-vX.Y.Z-offline.zip`
 
@@ -110,44 +109,6 @@ public site, `SITE_URL` in `src/engine/site.ts`, never on its file:// address.
 `tests/tools/offline.test.ts` builds it and checks it is one file with no outside script, style
 or link. Play-test it from disk before a release by opening `dist-offline/index.html` in a
 browser (no `pnpm preview`): the title, the save note, a level, and a reload keeping the save.
-
-### Renaming the repository (SMBC to SMBC-Remix, with 0.5.0)
-
-The owner renames the repository on GitHub (Settings → General → Repository name: `SMBC-Remix`).
-GitHub redirects the repository's own links (clones, issues, releases), but **not** its Pages
-site: `https://jelloshooter848.github.io/SMBC/` would stop working, and with it every shared
-link, resume link (`#save=`) and installed Home Screen app. So, right after the rename, in this
-order:
-
-1. **Redeploy the site** at its new address: Actions → Release → Run workflow with the newest tag
-   (the build takes `VITE_BASE` from the repository name, so it lands on `/SMBC-Remix/`).
-2. **Point the links at the new address (required)** in one pull request, merged before step 3:
-   `SITE_URL` in `src/engine/site.ts` (links the download shares), the play link in `README.md`,
-   the two links at the bottom of `tools/offline/README.txt`, the release steps above, the
-   CHANGELOG footers (`compare/` links), and the tests that name the old address (`git grep -n
-"jelloshooter848.github.io/SMBC/\|jelloshooter848/SMBC"`). This is not optional: step 3
-   turns off GitHub's own redirects (below), so a `github.com/jelloshooter848/SMBC` link left
-   behind would open the stub repository instead of the game's.
-3. **Keep the old address working:** create a new public repository named `SMBC`, copy the
-   files of `tools/pages-redirect/` (`index.html`, `404.html`, `redirect.js`, `sw.js`) to its
-   root, and turn on Pages for it (Settings → Pages → Deploy from a branch, `main`, `/`). Every
-   address under `/SMBC/`, at any depth, then opens the game at `/SMBC-Remix/` with its query and
-   hash (`tests/tools/pages-redirect.test.ts`). Its `sw.js` retires the old address's service
-   worker, so an old install stops serving the old build and moves on too. **Creating a
-   repository with the old name ends GitHub's redirects from it:** clones, issues, pull
-   requests, releases and old release downloads at `github.com/jelloshooter848/SMBC/...` then
-   reach the stub, not SMBC-Remix. Local clones must change their remote (`git remote set-url
-origin https://github.com/jelloshooter848/SMBC-Remix.git`), and old links into the repository
-   on GitHub stop working. Only the Pages address is carried over, by the stub.
-4. **Check it:** open an old resume link (`…/SMBC/#save=…`) and see the game ask LOAD THIS SAVE?
-   on the new address (in dev mode until Chapter 1 opens; otherwise its COMING SOON card); a save
-   made on the old address is still there (both addresses share the origin
-   `jelloshooter848.github.io`, and the browser keeps saves per origin).
-
-Installed apps: an Android or desktop install keeps the old address as its start page, so it now
-opens through the redirect (in a browser tab); installing again from the new address gives the
-app back. On iPhone the Home Screen app keeps its own saves: carry them over with Options → Save
-files → COPY CODE / PASTE CODE before installing it again.
 
 ### One-time setup: let tags deploy
 

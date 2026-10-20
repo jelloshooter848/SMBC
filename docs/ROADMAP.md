@@ -93,19 +93,14 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
 
 ## Details of the planned work
 
-### The rebrand: SMB Crossover REMIX (0.4.19; the repository rename with 0.5.0)
+### The rebrand: SMB Crossover REMIX (0.4.19)
 
 - **Name:** the brand is **SMB Crossover REMIX**; the full name is "Super Mario Bros. Crossover: REMIX". It keeps the
   nod to the original fan game by Jay Pavlina (Exploding Rabbit) while making clear this is a separate project. A
   short form, "SMBC REMIX", is for tight spaces.
-- **Repository (owner, 2026-10-20):** the owner renames the GitHub repository to **`SMBC-Remix`** for 0.5.0. The
-  Pages build takes its base path from the repository name (`VITE_BASE` in release.yml), so the site moves to
-  `https://jelloshooter848.github.io/SMBC-Remix/`. GitHub Pages does not redirect a renamed project site, so the old
-  address keeps working through a small redirect stub (`tools/pages-redirect/`, set up as a new `SMBC` repository;
-  the steps are in docs/RELEASING.md "Renaming the repository"). It carries `#save=` and `#level=` links over and
-  retires the old address's offline copy. Saves are kept: both addresses are on the same origin
-  (`jelloshooter848.github.io`), and the browser keeps saves per origin. The release zip is
-  `smbc-remix-vX.Y.Z.zip` (and `-offline`) from 0.5.0.
+- **Repository (owner, 2026-10-20):** the repository keeps its name, `SMBC`, and the site stays at
+  `https://jelloshooter848.github.io/SMBC/`. The release zips carry the brand: `smbc-remix-vX.Y.Z.zip` (and
+  `-offline`) from 0.5.0.
 - **Credits on the title screen:** "MADE BY JELLOSHOOTER848", and a line such as "BASED ON SUPER MARIO BROS.
   CROSSOVER BY EXPLODING RABBIT". The full credits roll and the README say the same, alongside the existing
   "unaffiliated fan project, original art and music" notice.
