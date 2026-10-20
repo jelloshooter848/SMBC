@@ -205,7 +205,7 @@ describe('air states', () => {
     const r = rig(BILL_CLASSIC);
     r.step(['jump']);
     r.step(['jump']);
-    expect(pose(r)).toMatch(/^bill:spin-/);
+    expect(pose(r)).toMatch(/^bill-classic:spin-/); // R1: his Classic sheet
   });
 
   it('Samus: knees-up jump, air shot, air aim-up, walk aiming up, and a 33 ms somersault', () => {
