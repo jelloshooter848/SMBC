@@ -123,6 +123,38 @@ describe('G-093 the Classic guide', () => {
     expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
   });
 
+  it('#179: from Classic > Options > All options: the Classic select’s heroes, with Expansion off and on; a look (Peach) is its slot (Luigi)', () => {
+    const open = (expansion: 'on' | 'off', skins?: Record<string, string>) => {
+      const h = classic({ ...(skins ? { classicSkins: skins } : {}) });
+      h.settings.classic = { ...h.settings.classic, expansion };
+      h.game.showClassicMenu();
+      h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
+      pick(h, 'How to play');
+      return labels(h.top()).filter((l) => l !== 'Back');
+    };
+    const off = open('off');
+    expect(off).toEqual([
+      'Mario',
+      'Luigi',
+      'Link',
+      'Samus',
+      'Simon',
+      'Mega Man',
+      'Bass',
+      'Bill',
+      'Ryu',
+      'Sophia III',
+    ]);
+    const on = open('on');
+    expect(on.slice(0, off.length)).toEqual(off);
+    // The Expansion heroes (the ones the original never had) follow the original's ten.
+    expect(on.length).toBeGreaterThan(off.length);
+    expect(on).toContain('Yoshi');
+    const peach = open('off', { luigi: 'peach' });
+    expect(peach).toEqual(off);
+    expect(peach).not.toContain('Peach');
+  });
+
   it('with Classic rules set to Current it lists the Current heroes', () => {
     const h = classic({ classicRules: 'current' });
     h.game.showClassicMenu();
