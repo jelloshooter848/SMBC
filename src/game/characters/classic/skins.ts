@@ -62,13 +62,14 @@ export const CLASSIC_SKIN_LISTS: Readonly<Record<string, readonly CharacterDef[]
   // Game Boy, in Link.SKIN_* order); Bass's Quick Man; Ryu's Haggle Man.
   mario: [MARIO, MARIO3_CLASSIC],
   link: [LINK, ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC, ZELDA_GB_CLASSIC],
-  // Bass.SKIN_* order: Dr. Wily, Mr. X, Quick Man, Dr. Cossack, Gemini Man, Skull Man.
+  // Bass.SKIN_ORDER (Bass.as 48-64, read by CharacterSkinMenu.as 103): Dr. Wily, Mr. X, Dr.
+  // Cossack, Quick Man, Gemini Man, Skull Man.
   bass: [
     BASS_CLASSIC,
     WILY_CLASSIC,
     MRX_CLASSIC,
-    QUICKMAN_CLASSIC,
     COSSACK_CLASSIC,
+    QUICKMAN_CLASSIC,
     GEMINI_CLASSIC,
     SKULLMAN_CLASSIC,
   ],

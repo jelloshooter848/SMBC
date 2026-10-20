@@ -20,13 +20,14 @@ import { drawnFace } from '@game/scenes/select-grid';
 const LOOKS = [WILY_CLASSIC, MRX_CLASSIC, COSSACK_CLASSIC, GEMINI_CLASSIC, SKULLMAN_CLASSIC];
 
 describe("Bass's looks", () => {
-  it("sit on his slot in the original's order, Quick Man among them", () => {
+  // #179: Bass.SKIN_ORDER (Bass.as 48-64; CharacterSkinMenu.as 103).
+  it('sit on his slot in Bass.SKIN_ORDER, Quick Man after Dr. Cossack', () => {
     expect(skinsOf(BASS_CLASSIC)).toEqual([
       BASS_CLASSIC,
       WILY_CLASSIC,
       MRX_CLASSIC,
-      QUICKMAN_CLASSIC,
       COSSACK_CLASSIC,
+      QUICKMAN_CLASSIC,
       GEMINI_CLASSIC,
       SKULLMAN_CLASSIC,
     ]);
