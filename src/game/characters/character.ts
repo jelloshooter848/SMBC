@@ -426,6 +426,13 @@ export interface CharacterDef {
    */
   rescueName?: string;
   /**
+   * Classic SMBC (patch-2 item 9, owner idea): who stands in the last castle's princess room in
+   * place of the princess (a 16-px-wide frame standing on her tile, facing the hero), and the
+   * castle lines said there after "THANK YOU <name>!" in place of "YOUR QUEST IS OVER." (Classic
+   * Peach: Mario greets her). Absent: the princess and today's lines.
+   */
+  endingGreeter?: { sheet: string; palette: string; frame: string; h: number; news: readonly string[] };
+  /**
    * The walk cycle as the original steps it (Classic SMBC): `frames` poses (Player.walkFrame
    * 0..frames-1), one every `ticks` game frames (fractional: 6.9 is the original's 115 ms), at any
    * walking speed. Absent: Player.updateAnim's 3-frame cycle at 5 / 3 / 2 frames by speed, as today.

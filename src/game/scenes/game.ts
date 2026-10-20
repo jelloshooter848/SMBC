@@ -378,6 +378,19 @@ export class Game {
    * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
    * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
    */
+  /**
+   * Game mode Single random's pick, said with the next lives card ("Sophia III. World 1-1. 3
+   * lives."), as no select screen names it. Cleared once said.
+   */
+  private sayHero: string | null = null;
+
+  /** Single random: a random hero, to be named on the next lives card. */
+  private singleRandomHero(): CharacterDef {
+    const c = this.randomHero();
+    this.sayHero = c.name;
+    return c;
+  }
+
   randomHero(among?: readonly CharacterDef[]): CharacterDef {
     // Survival: never a fallen hero (CharacterSelectBox: only standing heroes are selectable);
     // revive mode passes its own list (`among`).
@@ -1156,7 +1169,7 @@ export class Game {
       const choice = this.classicHeroChoice(false);
       if (choice === 'keep') return go();
       if (choice === 'random') {
-        const c = this.randomHero();
+        const c = this.singleRandomHero();
         if (c !== s.character) this.setHero(0, c);
         return go();
       }
@@ -1555,7 +1568,7 @@ export class Game {
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // Game mode Single random: no select screen at all (CampaignModes.SINGLE_RANDOM).
-    if (this.classicHeroChoice(true) === 'random') return this.classicGame(this.randomHero(), levelId);
+    if (this.classicHeroChoice(true) === 'random') return this.classicGame(this.singleRandomHero(), levelId);
     // Survival: a new game (StatManager.startNewGameHandler): every hero fallen, revival allowed,
     // and the starting lives to revive with, so the first select opens in revive mode.
     this.survival = null;
@@ -1737,8 +1750,10 @@ export class Game {
       this.startLevel(level, start);
       return;
     }
+    const hero = this.sayHero ? `${this.sayHero}. ` : '';
+    this.sayHero = null;
     this.deps.announcer?.say(
-      `${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
+      `${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
@@ -1824,7 +1839,7 @@ export class Game {
     if (this.classicRun) {
       const choice = this.classicHeroChoice(false);
       if (choice !== 'select') {
-        this.setHero(0, choice === 'random' ? this.randomHero() : current);
+        this.setHero(0, choice === 'random' ? this.singleRandomHero() : current);
         return then();
       }
     }

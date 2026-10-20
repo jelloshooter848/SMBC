@@ -81,6 +81,12 @@ export interface ClassicRulesHooks {
    * egg block and carried rider (2026-10-19-yoshi-build-classic-character.md YM-5, YM-7). Optional.
    */
   worldLoaded?(world: World): void;
+  /**
+   * The flagpole's clear sequence just hopped `p` off the pole's foot (World.updateClear 'hop'):
+   * a Classic Yoshi mount rider gets back on the Yoshi waiting there and rides to the castle
+   * (YM-21). Optional.
+   */
+  clearHop?(world: World, p: Player): void;
 }
 
 let hooks: ClassicRulesHooks | null = null;

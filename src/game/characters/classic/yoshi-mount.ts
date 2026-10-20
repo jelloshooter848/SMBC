@@ -1,4 +1,4 @@
-import { px, toPx, velToSub } from '@engine/math/units';
+import { px, tileAt, tileToSub, toPx, velToSub } from '@engine/math/units';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
@@ -14,6 +14,7 @@ import { T, tileDef } from '../../level/tiles';
 import { Koopa } from '../../entities/enemies/koopa';
 import { Projectile, type ProjectileSpec } from '../../entities/projectiles/projectile';
 import { BrickPiece } from '../../entities/effects/effects';
+import { Flagpole } from '../../entities/objects/flagpole';
 import { EGG_HATCH_FRAME, YoshiEgg } from '../../entities/objects/yoshi-egg';
 import { MARIO_CLASSIC_PROFILE } from '../mario/classic';
 import { FIREBALL_CLASSIC } from '../mario/classic-weapons';
@@ -108,7 +109,7 @@ function say(world: World, text: string): void {
 }
 
 /** Gets `p` on `yoshi` (YM-10): the overlay def, the pair's box, feet where they were. */
-export function mount(p: Player, yoshi: YoshiMount, world: World): void {
+export function mount(p: Player, yoshi: YoshiMount, world: World, quiet = false): void {
   if (RIDES.has(p) || !mayRide(p.def)) return;
   const base = p.def;
   RIDES.set(p, { base, mount: yoshi });
@@ -127,7 +128,7 @@ export function mount(p: Player, yoshi: YoshiMount, world: World): void {
   yoshi.state = 'ridden';
   yoshi.rider = p;
   ensureFx(p, world);
-  say(world, 'Riding Yoshi');
+  if (!quiet) say(world, 'Riding Yoshi');
 }
 
 export type Dismount = 'off' | 'leap' | 'hit' | 'flag' | 'bench' | 'death';
@@ -178,8 +179,12 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       say(world, 'Yoshi ran away');
       break;
     case 'flag':
-      // He waits at the pole's base; the rider gets back on in the next level (YM-21, YM-7).
+      // He sits at the pole's base, where the rider's hop off the pole lands, and the rider gets
+      // back on there (yoshiClearHop) to walk to the castle and ride on into the next level
+      // (YM-21, YM-7). The clear sequence holds every entity still, so he is put there now.
       yoshi.state = 'wait';
+      yoshi.body.vy = 0;
+      atPoleBase(yoshi, world);
       break;
     case 'bench':
       p.scratch[RIDE_KEY] = 2;
@@ -191,6 +196,49 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       yoshi.destroy();
       break;
   }
+}
+
+/**
+ * Yoshi on the ground at the flagpole's base (YM-21): where the clear sequence's hop puts the
+ * rider (World.updateClear: 10 px right of the pole's column, feet on the base block), facing
+ * back at the pole. With no pole near (the axe), straight down to the floor under him.
+ */
+function atPoleBase(yoshi: YoshiMount, world: World): void {
+  const b = yoshi.body;
+  let pole: Flagpole | null = null;
+  for (const e of world.entities)
+    if (e instanceof Flagpole && (!pole || Math.abs(e.body.x - b.x) < Math.abs(pole.body.x - b.x))) pole = e;
+  if (pole && Math.abs(pole.body.x - b.x) < px(64)) {
+    b.x = tileToSub(pole.tx) + px(10);
+    b.y = px(pole.baseY) - b.h;
+    yoshi.facing = -1;
+    b.onGround = true;
+    return;
+  }
+  const map = world.map;
+  const col = tileAt(b.x + (b.w >> 1));
+  for (let ty = Math.max(0, tileAt(b.y + b.h - 1)); ty < world.level.height; ty++)
+    if (map.isSolid(col, ty)) {
+      b.y = tileToSub(ty) - b.h;
+      b.onGround = true;
+      return;
+    }
+}
+
+/**
+ * ClassicRulesHooks.clearHop (YM-21): the flagpole's clear sequence just hopped `p` off the
+ * pole's foot; a rider who rode up to the pole lands back on the Yoshi sitting there, and the
+ * pair walks to the castle.
+ */
+export function yoshiClearHop(world: World, p: Player): void {
+  if (!world.ctx.classicYoshi || RIDES.has(p) || p.scratch[RIDE_KEY] !== 1 || !mayRide(p.def)) return;
+  const yoshi = world.entities.find(
+    (e): e is YoshiMount => e instanceof YoshiMount && e.alive && e.state === 'wait' && e.rider === null,
+  );
+  if (!yoshi) return;
+  const facing = p.facing;
+  mount(p, yoshi, world, true);
+  p.facing = facing;
 }
 
 /* ---------- the overlay def (YM-9..YM-16, YM-25) ---------- */
@@ -319,13 +367,21 @@ function rideBehaviour(base: CharacterDef): CharacterBehaviour {
       return 'ignored';
     },
     canGrabVine: () => false,
+    // The rider's own clear first (Samus, Peach, Arthur, the Warriors end their states), then off.
     onLevelClear: (p) => {
+      b.onLevelClear?.(p);
       const ride = RIDES.get(p);
       if (ride) dismount(p, ride.mount.world, 'flag');
     },
   };
+  // The rider's other hooks pass through (Attack and Special mapped as riderInput maps them).
   if (b.onPickup) behaviour.onPickup = b.onPickup;
   if (b.blocks) behaviour.blocks = b.blocks;
+  if (b.onRespawn) behaviour.onRespawn = b.onRespawn;
+  if (b.canJump) behaviour.canJump = b.canJump;
+  if (b.afterLifts) behaviour.afterLifts = b.afterLifts;
+  const rooted = b.rooted;
+  if (rooted) behaviour.rooted = (p, input) => rooted(p, riderInput(input, mountSpecial(base, p)));
   return behaviour;
 }
 
@@ -388,6 +444,10 @@ export function ridingDef(base: CharacterDef): CharacterDef {
     },
   };
   delete d.meleeStrikesBlocks;
+  // The pair is hit on its own 12 x 28 body (not the rider's hurt box at its feet) and steps
+  // Yoshi's 3-pose walk, not the rider's cycle.
+  delete d.hurtbox;
+  delete d.walkAnim;
   OVERLAYS.set(base, d);
   return d;
 }

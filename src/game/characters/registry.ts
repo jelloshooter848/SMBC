@@ -35,7 +35,7 @@ import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
-import { yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
+import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -53,6 +53,7 @@ installClassicRules({
     return applyOptionSpawns(map, spawns, options) || wide || water;
   },
   worldLoaded: yoshiWorldLoaded,
+  clearHop: yoshiClearHop,
 });
 
 /** Playable characters in select-screen order. */
