@@ -2,6 +2,7 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import { startHp, type CharacterDef } from './characters/character';
 import { heroFor } from './characters/registry';
+import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
  * Which rules the heroes play by (TG-9): 'current' is this game as it has always played;
@@ -54,6 +55,13 @@ export interface GameContext {
    * it once, in its constructor (World.rules).
    */
   rules?: Rules;
+  /**
+   * Classic mode's options (Settings.classic: More Settings, Customize Weapons), present only in a
+   * Classic mode run with Classic rules (Game.classicOptions); absent everywhere else (the
+   * campaign, Current rules, every hand-built context), where nothing reads them. A World reads it
+   * once, in its constructor (World.classic); absent there means the original's values.
+   */
+  classic?: ClassicSettings;
   /**
    * Classic SMBC's Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-1, a dev-only
    * toggle): 'on' lets the first power-up block of each allowed area hatch him, 'ride' also starts

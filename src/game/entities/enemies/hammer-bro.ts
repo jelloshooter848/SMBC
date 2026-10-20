@@ -58,6 +58,8 @@ export class HammerBro extends Enemy {
   private jumpFeet = 0;
   /** Which way it is pacing. Kept apart from vx, which a wall bump zeroes (`moveX`). */
   private paceDir: -1 | 1 = 1;
+  /** Its chase walk (CHASE_SPEED); Classic More Settings > Enemy Speed: Fast raises it. */
+  chaseSpeed = CHASE_SPEED;
 
   constructor(
     x: number,
@@ -98,7 +100,7 @@ export class HammerBro extends Enemy {
     // Horizontal: walk at a player on its left once chasing, otherwise pace around its spot.
     if (pl.x + pl.w < cx) {
       if (chase) {
-        b.vx = -CHASE_SPEED;
+        b.vx = -this.chaseSpeed;
         this.chasing = true;
       } else this.chasing = false;
       this.facing = -1;

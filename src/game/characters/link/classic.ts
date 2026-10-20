@@ -32,6 +32,7 @@ import {
   type ClassicDropTable,
   type ClassicPowerKit,
 } from '../classic/power';
+import { weaponOf } from '../classic/options';
 import {
   LINK_STRIKE,
   LinkBomb,
@@ -99,6 +100,9 @@ export const AMMO_MAX_UPGRADED = 40;
 /** Bombs the first Mushroom gives; the repeat Fire Flower's bombs (LK-C14, LK-C15). */
 export const FIRST_BOMBS = 3;
 export const REPEAT_BOMBS = 3;
+/** With the Bow and Arrow choice: the first Mushroom's and each repeat Flower's arrows (CLASSIC_BOW_AMMO_DEFAULT). */
+export const FIRST_ARROWS = 5;
+export const REPEAT_ARROWS = 5;
 
 /** Sword damage by power state (DamageValue.as: Lv 1, Lv 2, Magic Sword; LK-C24). */
 // LK-C42: fire Bowser (2400) takes 12 / 9 / 6 stabs, beams 12, bombs 3, arrows 7.
@@ -133,8 +137,17 @@ export function swordBox(p: Player, pose: keyof typeof SWORD_BOX): AABB {
 }
 
 const bombMax = (p: Player): number => (p.scratch.bombBag ? AMMO_MAX_UPGRADED : AMMO_MAX);
+const arrowMax = (p: Player): number => (p.scratch.quiver ? AMMO_MAX_UPGRADED : AMMO_MAX);
 const ownsBombs = (p: Player): boolean => !!p.scratch.bombsOwned;
+const ownsBow = (p: Player): boolean => !!p.scratch.bow;
 const fullKit = (p: Player): boolean => !!p.scratch.classicAll;
+/**
+ * Customize Weapons > Link (FU-7c; Link.classicWeaponSubWeaponType): the Mushroom's weapon is the
+ * Bomb (the original's default) or the Bow and Arrow, and his ammo, drops and HUD follow it.
+ */
+const bowChoice = (p: Player): boolean => weaponOf(p, 'link') === 'bow';
+/** He owns the chosen weapon (bombs, or the Bow). */
+const ownsWeapon = (p: Player): boolean => (bowChoice(p) ? ownsBow(p) : ownsBombs(p));
 
 /**
  * The kit each power state implies (LK-C13..LK-C16): the Mushroom state owns bombs (3 the first
@@ -142,7 +155,11 @@ const fullKit = (p: Player): boolean => !!p.scratch.classicAll;
  * the Magic Sword and the Magic Boomerang are read from it), so bombs, the bag and the quiver stay.
  */
 function claimKit(p: Player): void {
-  if ((p.powerState === 'big' || p.powerState === 'fire') && !ownsBombs(p)) {
+  const big = p.powerState === 'big' || p.powerState === 'fire';
+  if (big && bowChoice(p) && !ownsBow(p)) {
+    p.scratch.bow = 1;
+    p.scratch.arrows = Math.max(p.scratch.arrows ?? 0, FIRST_ARROWS);
+  } else if (big && !bowChoice(p) && !ownsBombs(p)) {
     p.scratch.bombsOwned = 1;
     p.scratch.bombs = Math.max(p.scratch.bombs ?? 0, FIRST_BOMBS);
   }
@@ -156,13 +173,20 @@ const KIT: ClassicPowerKit = {
   response: CLASSIC_HIT_RESPONSES.link as ClassicPowerKit['response'],
   gainBig: (p) => claimKit(p),
   gainFire: (p) => claimKit(p),
-  repeat: { key: 'bombs', max: bombMax, add: REPEAT_BOMBS },
+  repeat: {
+    key: (p) => (bowChoice(p) ? 'arrows' : 'bombs'),
+    max: (p) => (bowChoice(p) ? arrowMax(p) : bombMax(p)),
+    add: (p) => (bowChoice(p) ? REPEAT_ARROWS : REPEAT_BOMBS),
+  },
 };
 
 const DROPS: ClassicDropTable = {
   ...(CLASSIC_DROPS.link as ClassicDropTable),
   gate: ownsBombs,
 };
+/** With the Bow choice: arrows, once he owns the Bow (Link.updDrops: DROP_ARR_ARROWS). */
+const ARROW_DROPS: ClassicDropTable = { sources: DROPS.sources, items: [['arrow-pack', 1]], gate: ownsBow };
+const dropsFor = (p: Player): ClassicDropTable => (bowChoice(p) ? ARROW_DROPS : DROPS);
 
 /** The dev full kit's belt (TG-44, LK-C38): Select cycles, Special uses. */
 function tools(p: Player): ToolInfo[] {
@@ -229,7 +253,7 @@ function startsAction(p: Player, input: InputFrame): boolean {
   if (p.attackTimer > 0 || classicBusy(p)) return false;
   if (input.pressed('attack')) return true;
   if (input.pressed('special')) return true;
-  return input.pressed('select') && !fullKit(p) && ownsBombs(p);
+  return input.pressed('select') && !fullKit(p) && ownsWeapon(p);
 }
 
 function fireShot(p: Player, world: World, dir: ShotDir, arrow: boolean): void {
@@ -355,7 +379,10 @@ function update(p: Player, input: InputFrame, world: World): void {
       if (!t || t.id === 'boomerang') throwBoomerang(p, world, input);
       else if (t.id === 'bomb') placeBomb(p, world);
       else if (t.id === 'arrow') shootArrow(p, world, input);
-    } else if (!full && input.pressed('select')) placeBomb(p, world);
+    } else if (!full && input.pressed('select')) {
+      if (bowChoice(p)) shootArrow(p, world, input);
+      else placeBomb(p, world);
+    }
   }
 
   const pose = p.scratch._pose ?? 0;
@@ -535,13 +562,22 @@ export const LINK_CLASSIC: CharacterDef = {
   touchLabels: (p) =>
     fullKit(p)
       ? { attack: 'SWORD', special: toolButton(tools(p), p, TOOL_LABELS), select: 'TOOLS' }
-      : { attack: 'SWORD', special: 'BOOMERANG', select: ownsBombs(p) ? 'BOMB' : null },
+      : {
+          attack: 'SWORD',
+          special: 'BOOMERANG',
+          select: ownsWeapon(p) ? (bowChoice(p) ? 'BOW' : 'BOMB') : null,
+        },
   drawLook: (p, _frame, reduce) => classicLook(p, reduce, KIT.response.look),
   starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
-  drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, DROPS, 'enemy') : null),
-  blockDrop: (rng, p, source) => classicDrop(rng, p, DROPS, source),
-  // LK-C20: no hearts or meter; the bomb count once owned, and the power icon.
-  hudAmmo: (p) => (ownsBombs(p) && !fullKit(p) ? { icon: 'icon-bomb', count: p.scratch.bombs ?? 0 } : null),
+  drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, dropsFor(killer), 'enemy') : null),
+  blockDrop: (rng, p, source) => classicDrop(rng, p, dropsFor(p), source),
+  // LK-C20: no hearts or meter; the bomb count once owned (the arrows with the Bow), and the power icon.
+  hudAmmo: (p) => {
+    if (fullKit(p) || !ownsWeapon(p)) return null;
+    return bowChoice(p)
+      ? { icon: 'icon-arrow', count: p.scratch.arrows ?? 0 }
+      : { icon: 'icon-bomb', count: p.scratch.bombs ?? 0 };
+  },
   tools,
   // TG-44, LK-C38: the Flower state (main.ts), bombs, the Bow, full ammo, Select cycling.
   devKit: () => ({
@@ -581,8 +617,12 @@ export const LINK_CLASSIC: CharacterDef = {
     // LK-C40: the plain power-up, a 60-frame freeze going up a state (none for a Star or a repeat).
     onPowerUp: (p, kind, world) => classicOnPowerUp(p, kind, world, KIT),
     onHurt: (p, world, fromDir) => classicOnHurt(p, world, fromDir, KIT),
-    // Drops are bomb ammo only (LK-C19): the arrow drop needs the Bow choice, out of scope.
-    onPickup: (p, kind, world) => classicPickup(p, kind, world, { bomb: { key: 'bombs', max: bombMax } }),
+    // Drops are bomb ammo (LK-C19), or arrows with the Bow choice (FU-7c).
+    onPickup: (p, kind, world) =>
+      classicPickup(p, kind, world, {
+        bomb: { key: 'bombs', max: bombMax },
+        'arrow-pack': { key: 'arrows', max: arrowMax },
+      }),
     onRespawn: (p) => classicRespawn(p, {}),
     contactDamage: () => null,
   },

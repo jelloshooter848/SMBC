@@ -29,6 +29,7 @@ import {
   type ClassicHitResponse,
   type ClassicPowerKit,
 } from '../classic/power';
+import { weaponOf } from '../classic/options';
 import { MEGAMAN, MEGAMAN_PROFILE } from './index';
 import { MEGAMAN_CLASSIC_GUIDE } from './classic-guide';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
@@ -158,6 +159,11 @@ export interface ClassicMegaManOptions {
   charge?: { levels: ChargeLevels; weak: ProjectileSpec; full: ProjectileSpec } | null;
   /** The Fire Flower's weapon, or null for none. */
   flowerWeapon?: MMWeaponId | null;
+  /**
+   * The Customize Weapons row that picks the Fire Flower's weapon (FU-7c: Mega Man's or Bass's);
+   * it replaces `flowerWeapon`, which is then the original's default. Absent: `flowerWeapon`.
+   */
+  flowerSetting?: 'megaman' | 'bass';
   /** What the dev full kit grants (TG-44), in Select's order. */
   allWeapons?: readonly MMWeaponId[];
   /** Rush Coil on a Select tap. */
@@ -222,7 +228,12 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const buster = o.buster ?? { spec: MM_BUSTER, cap: MM_BUSTER_CAP };
   const charge =
     o.charge === undefined ? { levels: MM_CHARGE, weak: MM_CHARGE_WEAK, full: MM_CHARGE_FULL } : o.charge;
-  const flower = o.flowerWeapon === undefined ? CLASSIC_FLOWER_WEAPON : o.flowerWeapon;
+  const fixedFlower = o.flowerWeapon === undefined ? CLASSIC_FLOWER_WEAPON : o.flowerWeapon;
+  const setting = o.flowerSetting;
+  /** `p`'s Fire Flower weapon: the run's Customize Weapons choice, else the fixed one. */
+  const flowerOf = (p: Player): MMWeaponId | null =>
+    setting ? (weaponOf(p, setting) as MMWeaponId) : fixedFlower;
+  const flower = fixedFlower;
   const all = o.allWeapons ?? MM_WEAPONS.map((x) => x.id);
   const hasRush = o.rush ?? true;
   const rapid = o.rapid ?? null;
@@ -252,7 +263,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
       const b = belt(p);
       return (b[toolIndex(p, b)]?.id as MMWeaponId | 'rush' | undefined) ?? null;
     }
-    return p.powerState === 'fire' ? flower : null;
+    return p.powerState === 'fire' ? flowerOf(p) : null;
   }
   const heldWeapon = (p: Player): MMWeaponId | null => {
     const h = held(p);
@@ -531,9 +542,10 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const KIT: ClassicPowerKit = {
     response,
     gainFire(p) {
-      if (flower === 'charge-kick') p.scratch[KICK] = 1;
+      const f = flowerOf(p);
+      if (f === 'charge-kick') p.scratch[KICK] = 1;
       // The first Flower adds 40 units too (MM-C15).
-      if (flower) p.scratch[energyKey(flower)] = Math.min(WEAPON_UNITS, energy(p, flower) + 40);
+      if (f) p.scratch[energyKey(f)] = Math.min(WEAPON_UNITS, energy(p, f) + 40);
     },
     loseFire(p, world) {
       clearWeaponShots(p, world);
@@ -543,7 +555,15 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     loseBig(p) {
       p.scratch._chargeT = 0;
     },
-    ...(flower ? { repeat: { key: energyKey(flower), max: WEAPON_UNITS, add: 40 } } : {}),
+    ...(flower || setting
+      ? {
+          repeat: {
+            key: (p: Player) => energyKey(flowerOf(p) ?? (flower as MMWeaponId)),
+            max: WEAPON_UNITS,
+            add: 40,
+          },
+        }
+      : {}),
   };
 
   function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
@@ -767,6 +787,7 @@ export const MEGAMAN_CLASSIC: CharacterDef = {
       // R1: the select screen and the intro card show his Classic art.
       portraitArt: { sheet: 'megaman-classic', palette: 'megaman', frame: 'portrait' },
     },
+    flowerSetting: 'megaman',
   }),
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Dr. Light',

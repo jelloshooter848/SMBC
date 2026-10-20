@@ -34,6 +34,7 @@ import { SIMON_CLASSIC_GUIDE } from './classic-guide';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, walkPose } from '../classic/anim';
 import { SIMON_CLASSIC_FRAMES, SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
 import { startStopwatch, stopwatchRunning } from '../classic/freeze';
+import { weaponOf } from '../classic/options';
 import {
   ACTION_FRAMES,
   AXE_CLASSIC,
@@ -124,6 +125,12 @@ export const CLASSIC_SUB_WEAPONS: readonly ClassicSubWeapon[] = [
 export const START_WEAPON = 'hand-axe';
 export const EXTRA_WEAPON = 'cross';
 const weaponById = (id: string) => CLASSIC_SUB_WEAPONS.find((w) => w.id === id) as ClassicSubWeapon;
+/**
+ * The run's start and extra sub-weapons (Customize Weapons > Simon start / extra, FU-7c; the Axe
+ * and the Cross by default, START_WEAPON and EXTRA_WEAPON).
+ */
+const startWeapon = (p: Player) => weaponById(weaponOf(p, 'simonStart'));
+const extraWeapon = (p: Player) => weaponById(weaponOf(p, 'simonExtra'));
 
 /** The dev `&kit=full` key (TG-44): all five sub-weapons, Select picks C's. */
 const FULL_KIT = 'classicAll';
@@ -142,7 +149,7 @@ function tools(p: Player): ToolInfo[] {
 
 /** The weapon C uses: the start weapon, or with the full kit the one Select picked. */
 function specialWeapon(p: Player): ClassicSubWeapon {
-  if (!fullKit(p)) return weaponById(START_WEAPON);
+  if (!fullKit(p)) return startWeapon(p);
   return weaponById(activeTool(p, tools(p))?.id ?? START_WEAPON);
 }
 
@@ -312,8 +319,7 @@ function rooted(p: Player, input: InputFrame): boolean {
     return w.spec !== null && hasAmmo(p, 'hearts', w.cost) && (!world || shotsOut(p, world) < capOf(p));
   };
   if (input.pressed('special')) return starts(specialWeapon(p));
-  if (input.pressed('select') && !fullKit(p) && p.powerState === 'fire')
-    return starts(weaponById(EXTRA_WEAPON));
+  if (input.pressed('select') && !fullKit(p) && p.powerState === 'fire') return starts(extraWeapon(p));
   return false;
 }
 
@@ -372,11 +378,15 @@ export const SIMON_CLASSIC: CharacterDef = {
         select: beltButton(belt, 'TOOLS'),
       };
     }
-    const extra = weaponById(EXTRA_WEAPON);
+    const start = startWeapon(p);
+    const extra = extraWeapon(p);
     return {
       attack: 'WHIP',
-      special: hasAmmo(p, 'hearts', weaponById(START_WEAPON).cost) ? 'AXE' : null,
-      select: p.powerState === 'fire' && hasAmmo(p, 'hearts', extra.cost) ? 'CROSS' : null,
+      special: hasAmmo(p, 'hearts', start.cost) ? (SIMON_TOOL_LABELS[start.id] ?? null) : null,
+      select:
+        p.powerState === 'fire' && hasAmmo(p, 'hearts', extra.cost)
+          ? (SIMON_TOOL_LABELS[extra.id] ?? null)
+          : null,
     };
   },
   behaviour: {
@@ -413,7 +423,7 @@ export const SIMON_CLASSIC: CharacterDef = {
           world.audio.sfx('whip');
         } else if (input.pressed('special')) startThrow(p, specialWeapon(p), world);
         else if (input.pressed('select') && !fullKit(p) && p.powerState === 'fire')
-          startThrow(p, weaponById(EXTRA_WEAPON), world);
+          startThrow(p, extraWeapon(p), world);
       }
       const t = s._af ?? 0;
       if (s._act === WHIP) p.activeMelee = t >= WHIP_LIVE_FROM ? whipBox(p) : null;

@@ -76,6 +76,7 @@ import type { ClassicHitProps, DamageKind, DamageSource, Reaction } from '../rul
 import { classicRules, type BlockHit, type BlockStrike } from '../rules/hooks';
 import { shellKickSeqScore, stompScore } from '../rules/score';
 import { rulesOf, type GameContext, type GameState, type Rules } from '../context';
+import type { ClassicSettings } from '@engine/save/original-options';
 import { heroFor } from '../characters/registry';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
@@ -541,6 +542,11 @@ export class World {
    * the context's. A World never changes rules; a switch shows at the next World.
    */
   readonly rules: Rules;
+  /**
+   * Classic mode's options (GameContext.classic), read once when the World is built: only under
+   * Classic rules, else null. Every player of this World carries it (Player.classicOptions).
+   */
+  readonly classic: ClassicSettings | null;
   frame = 0;
   /** Timer in SMB1 units; null = no timer. */
   time: number | null;
@@ -739,6 +745,7 @@ export class World {
     this.audio = ctx.audio;
     this.assist = ctx.assist;
     this.rules = start.rules ?? rulesOf(ctx);
+    this.classic = this.rules === 'classic' ? (ctx.classic ?? null) : null;
     this.extraEntities = start.extraEntities;
     this.deathStyle = start.deathStyle ?? 'hop';
     this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
@@ -812,6 +819,7 @@ export class World {
       );
       p.profile = { ...def.movement, coyoteFrames: ctx.assist.coyoteFrames };
       p.index = i;
+      p.classicOptions = this.classic;
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') {
         p.body.y = px(-32) - px(i * 24);
@@ -962,6 +970,7 @@ export class World {
         level.id,
         this.players.map((p) => p.def),
         this.spawns,
+        this.classic,
       );
       // The Classic Yoshi mount's egg block and carried rider (YM-5, YM-7; nothing when it is off).
       classicRules().worldLoaded?.(this);
