@@ -31,7 +31,7 @@ import {
 } from '../classic/power';
 import { SIMON, SIMON_TOOL_LABELS } from './index';
 import { SIMON_CLASSIC_GUIDE } from './classic-guide';
-import { CLASSIC_HURT, CLASSIC_WALK, WALK_ABCB, walkPose } from '../classic/anim';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
 import {
   ACTION_FRAMES,
   AXE_CLASSIC,
@@ -330,7 +330,7 @@ export const SIMON_CLASSIC: CharacterDef = {
   meleeStrikesBlocks: true,
   sprite,
   // F2: the original's walk (4 poses at 115 ms) and HRect (30 standing, 25 tucked, 15.75 crouched).
-  walkAnim: CLASSIC_WALK.simon,
+  walkAnim: CLASSIC_WALK_ANIM.simon,
   hurtbox: (p) => ({
     w: CLASSIC_HURT.w,
     h: p.crouching ? CLASSIC_HURT.simon.crouch : tucked(p) ? CLASSIC_HURT.simon.jump : CLASSIC_HURT.simon.stand,

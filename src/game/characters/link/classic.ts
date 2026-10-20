@@ -45,7 +45,7 @@ import {
   sub,
   type ShotDir,
 } from './classic-weapons';
-import { CLASSIC_HURT, CLASSIC_WALK, LINK_FLIP_TICKS, WALK_ABAB, walkPose } from '../classic/anim';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, LINK_FLIP_TICKS, WALK_ABAB, walkPose } from '../classic/anim';
 
 /**
  * Classic SMBC Link (2026-10-07-link-classic-smbc-rules.md, LK-C1..LK-C45): the original's
@@ -476,7 +476,7 @@ export const LINK_CLASSIC: CharacterDef = {
   hitbox: () => ({ w: 12, h: 16 }),
   // F2: the original's HRect, 13.5 x 15 in every frame; its walk, 4 poses at 100 ms.
   hurtbox: () => ({ w: CLASSIC_HURT.w, h: CLASSIC_HURT.link }),
-  walkAnim: CLASSIC_WALK.link,
+  walkAnim: CLASSIC_WALK_ANIM.link,
   sprite,
   blockPowerUp: classicBlockPowerUp,
   powerIcon: true,

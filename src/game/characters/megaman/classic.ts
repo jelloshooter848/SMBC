@@ -31,7 +31,7 @@ import {
 } from '../classic/power';
 import { MEGAMAN, MEGAMAN_PROFILE } from './index';
 import { MEGAMAN_CLASSIC_GUIDE } from './classic-guide';
-import { CLASSIC_HURT, CLASSIC_WALK, WALK_ABCB, walkPose } from '../classic/anim';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
 import { ClassicRush } from './classic-rush';
 import {
   CLASSIC_FLOWER_WEAPON,
@@ -643,7 +643,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
             ? CLASSIC_HURT.megaman.stand
             : CLASSIC_HURT.megaman.jump,
     }),
-    walkAnim: CLASSIC_WALK.megaman,
+    walkAnim: CLASSIC_WALK_ANIM.megaman,
     attackKeepsMotion: true,
     sprite,
     blockPowerUp: classicBlockPowerUp,

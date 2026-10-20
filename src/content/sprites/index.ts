@@ -15,8 +15,8 @@ import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } fr
 import { simonPalettes, simonDef, simonClassicDef } from './simon';
 import { simonFlameDef } from './simon-flame';
 import { smbcShotPalettes, smbcShotsDef } from './smbc-shots';
-import { ryuPalettes, ryuDef, ryuWaveDef } from './ryu';
-import { billPalettes, billDef } from './bill';
+import { ryuPalettes, ryuDef, ryuWaveDef, ryuClassicDef } from './ryu';
+import { billPalettes, billDef, billClassicDef } from './bill';
 import { mapPalettes, mapDef } from './map';
 import { stationPalettes, stationDef } from './station';
 import { zebesPalettes, zebesDef } from './zebes';
@@ -110,6 +110,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'samus-classic': samusClassicDef,
   // Classic SMBC's shots in the original's colours and sizes (Samus's beams, Mario's fireball).
   'smbc-shots': smbcShotsDef,
+  'bill-classic': billClassicDef,
+  'ryu-classic': ryuClassicDef,
   'megaman-classic': megamanClassicDef,
   'simon-classic': simonClassicDef,
   'link-classic': linkClassicDef,

@@ -11,7 +11,7 @@ import type { Player } from '../../entities/player';
  * Simon 4 x 115 ms (ANIM_VERY_SLOW), Mega Man 4 x 100 ms after his step frame, Ryu 5 x 75 ms
  * (ANIM_MODERATE), Bill's legs 4 x 115 ms, Samus 3 x 50 ms (ANIM_MIN_FAST).
  */
-export const CLASSIC_WALK = {
+export const CLASSIC_WALK_ANIM = {
   link: { frames: 4, ticks: 6 },
   simon: { frames: 4, ticks: 6.9 },
   megaman: { frames: 4, ticks: 6 },
