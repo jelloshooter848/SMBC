@@ -10,6 +10,13 @@ import { LINK } from '../link';
 import { RYU } from '../ryu';
 import { BASS_CLASSIC } from '../bass/classic';
 import { QUICKMAN_CLASSIC } from '../bass/classic-quickman';
+import {
+  COSSACK_CLASSIC,
+  GEMINI_CLASSIC,
+  MRX_CLASSIC,
+  SKULLMAN_CLASSIC,
+  WILY_CLASSIC,
+} from '../bass/classic-looks';
 import { HAGGLEMAN_CLASSIC } from '../ryu/classic-haggleman';
 import { ZELDA_GB_CLASSIC, ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC } from '../link/classic-zelda';
 import { LUIGI3_CLASSIC, MARIO3_CLASSIC } from '../mario/classic-looks';
@@ -55,7 +62,16 @@ export const CLASSIC_SKIN_LISTS: Readonly<Record<string, readonly CharacterDef[]
   // Game Boy, in Link.SKIN_* order); Bass's Quick Man; Ryu's Haggle Man.
   mario: [MARIO, MARIO3_CLASSIC],
   link: [LINK, ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC, ZELDA_GB_CLASSIC],
-  bass: [BASS_CLASSIC, QUICKMAN_CLASSIC],
+  // Bass.SKIN_* order: Dr. Wily, Mr. X, Quick Man, Dr. Cossack, Gemini Man, Skull Man.
+  bass: [
+    BASS_CLASSIC,
+    WILY_CLASSIC,
+    MRX_CLASSIC,
+    QUICKMAN_CLASSIC,
+    COSSACK_CLASSIC,
+    GEMINI_CLASSIC,
+    SKULLMAN_CLASSIC,
+  ],
   ryu: [RYU, HAGGLEMAN_CLASSIC],
 };
 
@@ -131,4 +147,9 @@ export const CLASSIC_SKIN_GAMES: Readonly<Record<string, string>> = {
   'zelda-gb': "Link's Awakening",
   quickman: 'Mega Man 2',
   haggleman: 'Haggle Man',
+  wily: 'Mega Man 2',
+  mrx: 'Mega Man 6',
+  cossack: 'Mega Man 4',
+  gemini: 'Mega Man 3',
+  skullman: 'Mega Man 4',
 };

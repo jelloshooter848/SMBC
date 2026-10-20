@@ -23,6 +23,8 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Bass's other looks from the original, in our own art: **Dr. Wily**, **Mr. X**, **Dr. Cossack**, **Gemini
+  Man** and **Skull Man** (each plays as Bass).
 - Classic mode's select: a picked hero acts out a move in its cell (Mario hops, Link raises his arms, Mega
   Man teleports away, Bill flashes, and so on) for the original's wait before the game goes on; OK or BACK
   skips it, and Reduce flashing holds Bill's flash steady.

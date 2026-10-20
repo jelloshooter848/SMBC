@@ -41,7 +41,12 @@ describe('How to play lists the Classic extras', () => {
       'zelda-snes',
       'zelda-gb',
       'haggleman',
+      'wily',
+      'mrx',
       'quickman',
+      'cossack',
+      'gemini',
+      'skullman',
       'luigi3',
       'yoshi',
     ]);

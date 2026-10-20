@@ -21,7 +21,7 @@ import {
 } from './smbc-megaman-variants';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { megamanOrbsDef } from './megaman-orbs';
-import { heroLookPalettes, heroLookSheets } from './hero-looks';
+import { BASS_LOOKS, heroLookPalettes, heroLookSheets } from './hero-looks';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
 import { simonPalettes, simonDef } from './simon';
@@ -350,6 +350,7 @@ for (const sheet of Object.keys(MEGAMAN_VARIANT_SHEETS)) fallback(`${sheet}-rush
 // Classic mode's 0.5.0 looks (G-050..G-053): their hosts' Star colours.
 for (let i = 0; i < 4; i++) {
   fallback(`quickman-star-${i}`, `bass-star-${i}`);
+  for (const id of Object.keys(BASS_LOOKS)) fallback(`${id}-star-${i}`, `bass-star-${i}`);
   fallback(`haggleman-star-${i}`, `ryu-star-${i}`);
 }
 

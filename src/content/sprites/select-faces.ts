@@ -661,6 +661,16 @@ const zeldaSnes = recolour(peach, { l: 'd', d: 'f', i: '1', 8: 'j' });
 const zeldaGb = recolour(peach, { 0: '7', l: '7', d: '6', 8: '7', i: '6', 2: 'l', 3: '6', 4: '6', 1: 'l' });
 const quickman = recolour(bass, { h: '4' });
 const haggleman = recolour(ryu, { a: '5', 9: '4', 4: 'd' });
+/*
+ * Bass's other looks (owner addition): Dr. Wily, Mr. X and Dr. Cossack from the moustached face
+ * (grey hair over a white coat; a purple beret and coat; a brown fur hat and coat), Gemini Man and
+ * Skull Man from Bass's helmet (white and blue with a cyan crest; a white skull).
+ */
+const wily = recolour(mario, { 4: 'f', 1: 'f', c: 'f' });
+const mrx = recolour(mario, { 4: 'j', 1: 'j', c: 'h' });
+const cossack = recolour(mario, { 4: 'b', 1: 'c', c: 'b' });
+const gemini = recolour(bass, { h: '1', d: 'k' });
+const skullman = recolour(bass, { h: 'f', d: '1' });
 
 /** The faces by select-slot hero id (a frame each on the `select-faces` sheet). */
 export const SELECT_FACE_IDS = [
@@ -697,6 +707,11 @@ export const SELECT_FACE_IDS = [
   'zelda-gb',
   'quickman',
   'haggleman',
+  'wily',
+  'mrx',
+  'cossack',
+  'gemini',
+  'skullman',
 ];
 
 export const selectFacesDef: SpriteDef = {
@@ -735,5 +750,10 @@ export const selectFacesDef: SpriteDef = {
     'zelda-gb': zeldaGb,
     quickman,
     haggleman,
+    wily,
+    mrx,
+    cossack,
+    gemini,
+    skullman,
   },
 };

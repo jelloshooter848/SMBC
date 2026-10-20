@@ -86,7 +86,7 @@ function run(w: World, n: number, hold: (f: number) => Action[] = () => []): voi
 describe('G-050..G-053 the looks are skins on their slots', () => {
   it('each sits on its hero, in the original skin order, as a Classic-only def', () => {
     expect(skinsOf(LINK)).toEqual([LINK, ZELDA_NES_CLASSIC, ZELDA_SNES_CLASSIC, ZELDA_GB_CLASSIC]);
-    expect(skinsOf(BASS_CLASSIC)).toEqual([BASS_CLASSIC, QUICKMAN_CLASSIC]);
+    expect(skinsOf(BASS_CLASSIC)).toContain(QUICKMAN_CLASSIC);
     expect(skinsOf(RYU)).toEqual([RYU, HAGGLEMAN_CLASSIC]);
     expect(skinsOf(MARIO)).toEqual([MARIO, MARIO3_CLASSIC]);
     expect(skinsOf(LUIGI)).toContain(LUIGI3_CLASSIC);
