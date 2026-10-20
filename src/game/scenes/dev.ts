@@ -55,6 +55,18 @@ export class DevMenuScene extends MenuScene {
   }
 }
 
+/** A toggle row's label room beside an ON / OFF value (MenuScene: 24 columns less 4). */
+const TOGGLE_COLS = 20;
+
+/**
+ * "Classic: <hero>" for a hero's Dev menu toggle, with the HUD name when the full name does not fit
+ * the row beside its value ("CLASSIC: WARRIOR").
+ */
+export function classicHeroLabel(def: { name: string; hudName: string }): string {
+  const full = `Classic: ${def.name}`;
+  return full.length <= TOGGLE_COLS ? full : `Classic: ${def.hudName}`;
+}
+
 /** ON / OFF for a toggle row's value. */
 const onOff = (on: boolean): string => (on ? 'ON' : 'OFF');
 
@@ -75,7 +87,7 @@ export function classicToggleRows(game: Game): MenuItem[] {
   };
   const rows: MenuItem[] = [
     {
-      label: 'Yoshi mount',
+      label: 'Classic: Yoshi mount',
       value: () => onOff(s.classicDev.yoshiMount),
       adjust: mount,
       select: mount,
@@ -92,7 +104,7 @@ export function classicToggleRows(game: Game): MenuItem[] {
       save();
     };
     rows.push({
-      label: def.name,
+      label: classicHeroLabel(def),
       value: () => onOff(!s.classicDev.heroesOff.includes(def.id)),
       adjust: flip,
       select: flip,

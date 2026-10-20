@@ -236,7 +236,7 @@ Classic mode exists to play the original, and the original has no Yoshi. So **th
 
 The egg is the existing `YoshiEgg` (rise 32 f, wobble 48 f, crack 16 f, four shell bits, `entities/objects/yoshi-egg.ts`); under Classic its `hatch` hands over to a new hook `classicRules().hatchYoshi(world, cx, feet)`, which lets out a waiting Yoshi (YM-6). The campaign path (`yoshiUnlocked`, the 1-up) is untouched.
 
-**YM-6. Waiting Yoshi.** He sits (`sit`) where he hatched, facing the player; harmless, not hurt by enemies, carried by lifts; gone when 1 screen behind the camera or when the area unloads. Landing on his back (the rider's feet within his saddle box while falling) mounts (YM-10).
+**YM-6. Waiting Yoshi.** Hatched on top of his block, he first steps off it toward the nearest player at 1 px/f and drops to the ground (he waits where he is after 96 frames on a wide ledge; owner-approved change YM-D11, built 2026-10-19), then sits (`sit`), facing the player; harmless, not hurt by enemies, carried by lifts; gone when 1 screen behind the camera or when the area unloads. Landing on his back (the rider's feet within his saddle box while falling) mounts (YM-10).
 
 **YM-7. Carry-over (Super Mario World).** A ridden Yoshi stays with the rider through pipes and area changes within allowed areas, and into the next level at the flagpole. Entering a castle, water or bonus area while riding **benches** him: the rider goes on alone (the dismount is instant, no animation), and Yoshi comes back, ridden, at the start of the next allowed area of the run. Stored per player in the run state as `classicMount: 'riding' | 'benched' | null`; never in the campaign save.
 
@@ -302,7 +302,7 @@ Pits, lava and the timer still kill (PS-C24), Yoshi with the rider.
 
 ### B6. Art and the rest
 
-**YM-20. Drawing a rider.** The rider's own current frame (idle, jump, shoot, throw), **cut at the saddle line**: the top 11 rows of a 16 × 16 small plumber, the top 19 rows of a 16 × 32 hero, drawn 2 px left of Yoshi's cell with its bottom 17 px below the cell top, then Yoshi drawn over it (his head overlaps the rider's front). No new rider art is needed. Engine: an optional `SpriteSpec.under?: SpriteSpec & { cropH?: number }` drawn first by the player renderer.
+**YM-20. Drawing a rider.** The rider's own current frame (idle, jump, shoot, throw), **cut at the saddle line**: the top 11 rows of a 16 × 16 small plumber, the top 19 rows of a 16 × 32 hero, centred 4 px in from Yoshi's cell's back edge with its cut 16 px below the cell top, **drawn over Yoshi's back** (owner-approved change YM-D12, built 2026-10-19: drawn under him, his head hid the rider's face). No new rider art is needed. Engine: an optional `SpriteSpec.rider` drawn after the sprite by the player renderer.
 
 **YM-21. Flagpole.** The rider hops off at the pole and slides as usual; Yoshi stands at its base (`sit`); at the bottom the rider gets back on and the pair walks to the castle. Scores unchanged.
 
@@ -390,6 +390,8 @@ every time
 | YM-D8 | Show a benched Yoshi on the HUD | **A small head icon** | nothing |
 | YM-D9 | Use the mount for the campaign's Top Secret Area egg later | **Not now**: the campaign must not change; a separate campaign decision later (docs/ROADMAP.md) | reuse it in the same release behind a campaign unlock |
 | YM-D10 | Melee heroes on Yoshi | **Melee put away** (tongue on Attack) | Attack keeps the hero's own attack and Special is the tongue |
+| YM-D11 | Where a hatched Yoshi waits | **Owner-approved (2026-10-19): he steps off his block toward the player and waits on the ground** (YM-6), so a hero on the ground can get on | sits on top of the block |
+| YM-D12 | Rider layer | **Owner-approved (2026-10-19): the rider is drawn over Yoshi's back** (YM-20) | under Yoshi, his head over the rider's front |
 | **YO-D1** | Is the playable Yoshi a Classic extra? | **Yes**: `CLASSIC_EXTRAS`, second select row (owner decision 2026-10-19 for the wishlist) | |
 | YO-D2 | Flutter repeats | **Once per jump** | Yoshi's Island's repeatable flutter (each later one weaker) |
 | YO-D3 | Aim input | **Hold Special to aim, release to throw** (one gesture, good on touch) | press to aim, press to throw (Yoshi's Island's default) |

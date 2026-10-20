@@ -5,7 +5,7 @@ import { MARIO } from '@game/characters/mario';
 import { VICVIPER_CLASSIC } from '@game/characters/vicviper/classic';
 import { WARRIORS_CLASSIC } from '@game/characters/warriors/classic';
 import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
-import { DevMenuScene } from '@game/scenes/dev';
+import { DevMenuScene, classicHeroLabel } from '@game/scenes/dev';
 import { PauseScene } from '@game/scenes/pause';
 import type { MenuItem } from '@game/scenes/menu';
 import { urlYoshi } from '@game/dev-url';
@@ -61,10 +61,13 @@ describe('the Dev menu rows', () => {
   it('Yoshi mount (OFF) and one row per hero not in the original (ON), names the font can draw', () => {
     const { h } = devGame();
     const menu = new DevMenuScene(h.game);
-    expect(row(menu, 'Yoshi mount').value?.()).toBe('OFF');
+    expect(row(menu, 'Classic: Yoshi mount').value?.()).toBe('OFF');
     for (const d of CLASSIC_EXTRAS.filter((x) => x.notInOriginal)) {
-      const r = row(menu, d.name);
+      const r = row(menu, classicHeroLabel(d));
       expect(r.value?.()).toBe('ON');
+      expect(r.label.startsWith('Classic: ')).toBe(true);
+      // Fits the row beside OFF (MenuScene cuts labels at 20 columns there).
+      expect(r.label.length).toBeLessThanOrEqual(20);
       expect(fontText(r.label.toUpperCase()).length).toBe(r.label.length);
       expect(r.hint ?? '').not.toMatch(/\b(button|press)\s+[abc]\b/i);
     }
@@ -75,13 +78,13 @@ describe('the Dev menu rows', () => {
   it('toggling saves and changes what the game reads', () => {
     const { h, settings, apply } = devGame();
     const menu = new DevMenuScene(h.game);
-    row(menu, 'Yoshi mount').adjust?.(1);
+    row(menu, 'Classic: Yoshi mount').adjust?.(1);
     expect(settings.classicDev.yoshiMount).toBe(true);
     expect(apply).toHaveBeenCalled();
-    row(menu, 'Yoshi').select?.();
+    row(menu, 'Classic: Yoshi').select?.();
     expect(settings.classicDev.heroesOff).toEqual(['yoshi']);
-    expect(row(menu, 'Yoshi').value?.()).toBe('OFF');
-    row(menu, 'Yoshi').adjust?.(-1);
+    expect(row(menu, 'Classic: Yoshi').value?.()).toBe('OFF');
+    row(menu, 'Classic: Yoshi').adjust?.(-1);
     expect(settings.classicDev.heroesOff).toEqual([]);
   });
 
@@ -93,7 +96,7 @@ describe('the Dev menu rows', () => {
     expect(dev).toBeDefined();
     dev?.select?.();
     expect(h.game.scenes.top).toBeInstanceOf(DevMenuScene);
-    expect(items(h.game.scenes.top).some((i) => i.label === 'Yoshi mount')).toBe(true);
+    expect(items(h.game.scenes.top).some((i) => i.label === 'Classic: Yoshi mount')).toBe(true);
   });
 });
 
