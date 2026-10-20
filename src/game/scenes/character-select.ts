@@ -2,7 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
-import { heroFor, skinGame } from '../characters/registry';
+import { heroFor, heroGame, skinGame } from '../characters/registry';
 import type { Game } from './game';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
@@ -17,11 +17,12 @@ import { drawSelectHud } from '../hud/select-hud';
 import { SKY } from '../world/tile-render';
 import { decorPalette } from '../entities/objects/decoration';
 import {
+  BOX_FRAME,
   NAME_BOX,
   ORIGINAL_GRID,
   SELECT_GRID,
   type GridLayout,
-  SKIN_GRID,
+  type SkinLayout,
   drawCell,
   drawDownArrow,
   drawPanel,
@@ -104,8 +105,8 @@ const BOX_GROW = 6;
  * Look `look` of slot hero `host` as said: the look's name, then the hero's ("Break Man, Proto
  * Man"); a hero's own look is just its name (no repeat).
  */
-/** The name box's prompt fits this many 8 px characters inside its rivets (NAME_BOX.w less 12 px a side). */
-const PROMPT_CHARS = Math.floor((NAME_BOX.w - 24) / 8);
+/** The prompt under the name box fits this many 8 px characters on the screen (8 px a side). */
+const PROMPT_CHARS = Math.floor((256 - 16) / 8);
 
 /** `s` as a sentence: a full stop added unless it already ends one ("Super Mario Bros."). */
 function sentence(s: string): string {
@@ -396,14 +397,13 @@ export class CharacterSelectScene implements Scene {
     if (this.isRandom(i)) return 'Random';
     const c = this.chars[i];
     if (!c) return '';
-    return this.lookSay(c, this.game.skinFor(c));
+    return this.lookSay(c, this.game.skinFor(c), heroGame(c));
   }
 
-  /** Look `look` of slot hero `host` as said: lookName, then in Classic mode the look's game. */
-  private lookSay(host: CharacterDef, look: CharacterDef): string {
+  /** Look `look` of slot hero `host` as said: lookName, then in Classic mode `game` (the look's own by default; the select names the hero's). */
+  private lookSay(host: CharacterDef, look: CharacterDef, game = skinGame(look)): string {
     const name = lookName(host, look);
-    const game = this.classicLayout ? skinGame(look) : '';
-    return game ? `${name}, ${game}` : name;
+    return this.classicLayout && game ? `${name}, ${game}` : name;
   }
 
   /** The looks slot `i`'s hero can wear (FU-8; one when it has no other skins). */
@@ -426,7 +426,7 @@ export class CharacterSelectScene implements Scene {
     const skin = list[(at + 1) % list.length] ?? c;
     this.game.setSkin(c, skin);
     this.game.ctx.audio.sfx('select');
-    this.game.deps.announcer?.say(this.lookSay(c, skin));
+    this.game.deps.announcer?.say(this.lookSay(c, skin, heroGame(c)));
   }
 
   /** OK on slot `i` opens the skin menu: Classic mode, picking (not reviving), a hero with looks. */
@@ -456,9 +456,22 @@ export class CharacterSelectScene implements Scene {
     return sentence(this.lookSay(pk.host, skin));
   }
 
-  /** The skin menu's page (SKIN_GRID.cols x rows looks a page). */
+  /**
+   * The skin menu's layout (select-grid.ts skinLayout): the hero's own cell size (the original's
+   * skin preview), wide enough for its looks' longest name or game.
+   */
+  get pickerLayout(): SkinLayout | null {
+    const pk = this.picker;
+    if (!pk) return null;
+    const textW =
+      Math.max(0, ...pk.list.flatMap((d) => [fontText(d.name).length, fontText(skinGame(d)).length])) * 8;
+    return skinLayout(pk.list.length, pk.host.id, textW);
+  }
+
+  /** The skin menu's page (a layout's `per` looks a page). */
   private get pickerPage(): number {
-    return Math.floor((this.picker?.at ?? 0) / (SKIN_GRID.cols * SKIN_GRID.rows));
+    const L = this.pickerLayout;
+    return L ? Math.floor((this.picker?.at ?? 0) / L.per) : 0;
   }
 
   /** Moves the skin menu's cursor to look `to` (said; a bump where it cannot go). */
@@ -479,19 +492,21 @@ export class CharacterSelectScene implements Scene {
     const pk = this.picker;
     if (!pk) return;
     const tap = this.taps.shift();
+    const L = this.pickerLayout;
+    if (!L) return;
     if (tap) {
-      const per = SKIN_GRID.cols * SKIN_GRID.rows;
+      const per = L.per;
       const page = this.pickerPage;
       for (let k = 0; k < per && page * per + k < pk.list.length; k++) {
-        const c = skinCell(k, pk.list.length);
-        if (tap.x >= c.x && tap.x < c.x + SKIN_GRID.w && tap.y >= c.y && tap.y < c.y + SKIN_GRID.h) {
+        const c = skinCell(k, L);
+        if (tap.x >= c.x && tap.x < c.x + L.cw && tap.y >= c.y && tap.y < c.y + L.ch) {
           if (page * per + k === pk.at) this.choosePicked();
           else this.pickerTo(page * per + k);
           return;
         }
       }
     }
-    const cols = SKIN_GRID.cols;
+    const cols = L.cols;
     if (pressed('left')) this.pickerTo(pk.at === 0 ? pk.list.length - 1 : pk.at - 1);
     else if (pressed('right')) this.pickerTo((pk.at + 1) % pk.list.length);
     else if (pressed('up')) this.pickerTo(pk.at - cols);
@@ -1189,8 +1204,10 @@ export class CharacterSelectScene implements Scene {
     if (!host) return ['RANDOM'];
     const look = this.picker ? (this.pickerSkin ?? host) : this.game.skinFor(host);
     // CharNameBox.changeText: a look with a name of its own adds it in quotes on top; a hero's own
-    // look (no skin name) has the two lines only, and the box closes up.
-    const lines = [fontText(host.name), fontText(skinGame(look))];
+    // look (no skin name) has the two lines only, and the box closes up. The game is always the
+    // hero's first (changeNameBoxText: CharacterInfo's game), whatever the look; only the skin
+    // menu names a look's own game.
+    const lines = [fontText(host.name), fontText(heroGame(host))];
     return look === host ? lines : [`"${fontText(look.name)}"`, ...lines];
   }
 
@@ -1239,7 +1256,8 @@ export class CharacterSelectScene implements Scene {
       this.theme.hudFrame,
     );
     const pan = gridPanel(this.rows, this.grid);
-    const by = pan.y + pan.h + 4;
+    // The name box's top (CharNameBox at y 119), or under a taller grid (a third row).
+    const by = Math.max(NAME_BOX.y, pan.y + pan.h + 4);
     if (this.picker) {
       // The skin menu takes the select box's place (CharacterSelectBox opens CharacterSkinMenu
       // instead of itself), so no cell shows behind or under it.
@@ -1286,7 +1304,8 @@ export class CharacterSelectScene implements Scene {
       return;
     }
     const lines = this.nameBoxLines();
-    const boxH = NAME_BOX.h;
+    // As tall as its lines: three, or two for a hero's own look (the box keeps its top).
+    const boxH = lines.length >= 3 ? NAME_BOX.h : NAME_BOX.h2;
     // A new look (or hero) grows its box again.
     const key = lines.join('|');
     if (key !== this.boxFor) {
@@ -1299,29 +1318,27 @@ export class CharacterSelectScene implements Scene {
     const w = Math.round(NAME_BOX.w * Math.min(1, grow * 2));
     const hNow = grow < 0.5 ? 8 : Math.round(8 + (boxH - 8) * ((grow - 0.5) / 0.5));
     drawPanel(r, 128 - (w >> 1), by + ((boxH - hNow) >> 1), w, hNow, th);
-    // The hero's name in the menu font; the look's name and the game in the selected tint.
-    // The lines spread over the box as the original's (three, or two centred for a hero's own
-    // look), and our one prompt in its bottom row (named by ability, the real key when not on touch).
-    const top = lines.length >= 3 ? 12 : 20;
-    const step = lines.length >= 3 ? 15 : 16;
+    // The hero's name in the menu font; the look's name and the game in the selected tint, 14 px
+    // apart (CharNameBox LINE_SPACE 28). Our one prompt goes under the box, on the sky (named by
+    // ability, the real key when not on touch).
     if (grow >= 1) {
       lines.forEach((l, k) =>
         this.outlined(
           r,
           l,
-          by + top + k * step,
+          by + NAME_BOX.top + k * NAME_BOX.step,
           l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name',
         ),
       );
       const ok = abilityHint(this.game, 'OK', 'jump');
       const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
       const what = this._reviving ? `TO ${verb}` : this.skinsAt(this.index).length > 1 ? 'LOOKS' : 'TO PICK';
-      // The key hint goes when it would not fit inside the box's rivets (a long key name).
+      // The key hint goes when it would not fit on the screen (a long key name).
       const keyed = fontText(`${ok} ${what}`);
       const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
-      this.outlined(r, prompt, by + boxH - 14);
+      this.outlined(r, prompt, by + NAME_BOX.h + 4);
     }
-    const py = by + boxH + 4;
+    const py = by + NAME_BOX.h + 14;
     const sv = this.survival;
     if (this._reviving) {
       const leave = this.reviveLeave();
@@ -1426,37 +1443,34 @@ export class CharacterSelectScene implements Scene {
     const pk = this.picker;
     if (!pk) return;
     const assets = this.game.ctx.assets;
-    const P = skinLayout(pk.list.length);
+    const P = this.pickerLayout;
+    if (!P) return;
     const th = this.theme;
     drawPanel(r, P.x, P.y, P.w, P.h, th);
     const skin = pk.list[pk.at];
-    this.outlined(r, fontText(skin?.name ?? ''), P.y + 8);
-    const per = SKIN_GRID.cols * SKIN_GRID.rows;
+    this.outlined(r, fontText(skin?.name ?? ''), P.titleY);
+    const per = P.per;
     const page = this.pickerPage;
     for (let k = 0; k < per; k++) {
       const look = pk.list[page * per + k];
       if (!look) break;
-      const c = skinCell(k, pk.list.length);
-      drawCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, page * per + k === pk.at ? this.cursorNow() : null, th);
+      const c = skinCell(k, P);
+      drawCell(r, c.x, c.y, P.cw, P.ch, page * per + k === pk.at ? this.cursorNow() : null, th);
       const pt = this.artOf(look);
       const sheet = assets.sheet(pt.sheet, pt.palette);
       const f = sheet.frames.get(pt.frame);
       // Standing in its cell, feet 2 px above the bottom.
-      inCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, () =>
-        r.sprite(
-          sheet,
-          pt.frame,
-          c.x + ((SKIN_GRID.w - (f?.w ?? 16)) >> 1),
-          c.y + SKIN_GRID.h - 2 - (f?.h ?? 32),
-        ),
+      inCell(r, c.x, c.y, P.cw, P.ch, () =>
+        r.sprite(sheet, pt.frame, c.x + ((P.cw - (f?.w ?? 16)) >> 1), c.y + P.ch - 2 - (f?.h ?? 32)),
       );
     }
-    // More pages: down-arrows in the bottom corners.
+    // More pages: down-arrows at the ends of the game's row (GridMenuBox's scrolling indicators).
     if ((page + 1) * per < pk.list.length) {
-      drawDownArrow(r, P.x + 6, P.y + P.h - 10, th);
-      drawDownArrow(r, P.x + P.w - 13, P.y + P.h - 10, th);
+      drawDownArrow(r, P.x + BOX_FRAME + 2, P.gameY, th);
+      drawDownArrow(r, P.x + P.w - BOX_FRAME - 9, P.gameY, th);
     }
-    this.outlined(r, fontText(skin ? skinGame(skin) : ''), P.y + P.h - 16);
+    // Only the skin menu names the look's own game (CharacterSkinMenu.generateBottomText).
+    this.outlined(r, fontText(skin ? skinGame(skin) : ''), P.gameY);
   }
 
   /**

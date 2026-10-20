@@ -12,9 +12,12 @@ import { SELECT_FACE_IDS } from '@content/sprites/select-faces';
  * grid of the hero's looks, five across and three down a page, titled with the look's name over
  * its source game.
  *
- * The original's portraits are 52 px, 4 px apart, six to a row, on a 512 px stage; ours are halved
- * (ORIGINAL_GRID). A list longer than its twelve slots (Options > Expansion heroes: 15) takes the
- * wider SELECT_GRID, eight to a row, so it still leaves the name box and the ground room on 240 px.
+ * The original draws on a 512 x 480 stage; every size here is its own, halved (CharacterSelectBox,
+ * CharNameBox, GridMenuBox, MessageBox, TopScreenText). Its boxes are as big as what they hold
+ * (MessageBox.createGraphics sizes the fill to its content and puts a 7 px frame round it, here a
+ * bevel and rivets inside the same 7 px) and are centred on a fixed point. A list longer than the
+ * original's twelve slots (Options > Expansion heroes: 15) takes the wider SELECT_GRID, eight to a
+ * row.
  */
 
 /** A portrait grid: cells `cell` px square, `gap` px apart, `cols` to a row, its top-left at (x, y). */
@@ -31,29 +34,94 @@ function centredGrid(cols: number, cell: number, gap: number, y: number): GridLa
   return { cols, cell, gap, x: 128 - ((cols * cell + (cols - 1) * gap) >> 1), y };
 }
 
+/** A box's frame round its content (MessageBoxBackground's corner pieces, 14 px at 512). */
+export const BOX_FRAME = 7;
+
+/**
+ * The grid panel (CharacterSelectBox): centred on y 80 (Y_POS 160), its portraits 2 px in from
+ * the fill's top-left (SPACE_BETWEEN_PORTRAITS) with 2 px more on the right (resizeBox widthOfs 4)
+ * and 1 px for the fill (createGraphics +2); the fill is as tall as its rows (two: 56 px). Two
+ * rows: 185 x 70, its top at y 45 (80 - 70 / 2), so its cells start 9 px in (BOX_FRAME + 2) at y 54.
+ */
+export const PANEL = {
+  top: 45,
+  padLeft: BOX_FRAME + 2,
+  padTop: BOX_FRAME + 2,
+  padRight: BOX_FRAME + 3,
+  padBottom: BOX_FRAME,
+} as const;
+
 /**
  * The original's grid (CharacterSelectBox.as 41-42, 69-73: PORTRAIT_SIZE 52, SPACE_BETWEEN_PORTRAITS
- * 4, NUM_PORTS_PER_ROW_ARR [6, 6], halved): two rows of six, 26 px cells 2 px apart. With its roster
- * (Mario, Luigi, Link, Samus, Simon, Mega Man, Bass, Bill, Ryu, Sophia III, Random) it is a data
- * change: SELECT_GRID = ORIGINAL_GRID.
+ * 4, NUM_PORTS_PER_ROW_ARR [6, 6], halved): two rows of six, 26 px cells 2 px apart, inside the
+ * panel at y 45 (PANEL).
  */
-export const ORIGINAL_GRID: GridLayout = centredGrid(6, 26, 2, 36);
+export const ORIGINAL_GRID: GridLayout = centredGrid(6, 26, 2, PANEL.top + PANEL.padTop);
 
-/** The wider grid for more than twelve slots: eight to a row (Expansion heroes' 15 take two rows, up to 24 three). */
-export const SELECT_GRID: GridLayout = centredGrid(8, 26, 3, 36);
+/** The wider grid for more than twelve slots: eight to a row (Expansion heroes' 15 take two rows). */
+export const SELECT_GRID: GridLayout = centredGrid(8, 26, 3, PANEL.top + PANEL.padTop);
 
 /**
- * The name box: the original's CharNameBox (NAME_BOX_WIDTH 400, NAME_BOX_HEIGHT 150 at 512 px):
- * 200 x 72 here, centred, its lines spread over it; our one prompt line sits in its bottom row.
+ * The name box (CharNameBox): only as wide as its widest line and as tall as its lines. Its fill is
+ * sized to its placeholder ("The Legend of Zelda 2", 316 px at 512) and its three 28 px lines (72
+ * px), in the 7 px frame: 158 x 52, centred on y 145 (NAME_BOX_Y_POS 290), so its top is y 119. A
+ * hero's own look has two lines and the box closes up from the bottom (resizeBox keeps its top):
+ * 38 px. Its lines are 14 px apart from 8 px in. Our prompt goes under it, on the sky.
  */
-export const NAME_BOX = { x: 28, w: 200, h: 72 } as const;
-/** The panel round the grid starts this far above and left of it. */
-const PANEL_PAD = 6;
+export const NAME_BOX = { x: 49, y: 119, w: 158, h: 52, h2: 38, top: 8, step: 14 } as const;
 
-/** The skin menu's grid: at most `cols` x `rows` cells of `w` x `h` px a page, `gap` px apart. */
-export const SKIN_GRID = { cols: 5, rows: 3, w: 32, h: 36, gap: 3 } as const;
-/** The skin menu's panel top (it is sized to its looks, centred, as GridMenuBox sizes its own). */
-export const SKIN_PANEL_Y = 30;
+/** A select-slot hero's skin preview, in px (Character.SKIN_PREVIEW_SIZE, already 256-px units). */
+export interface SkinPreview {
+  readonly w: number;
+  readonly h: number;
+}
+
+/**
+ * The original's skin preview sizes by select-slot hero id (Character subclasses' SKIN_PREVIEW_SIZE).
+ * Luigi takes Mario's big size (MarioBase SKIN_PREVIEW_SIZE_BIG, 26 x 36) as Princess Peach stands
+ * tall; a hero not listed takes Bill's (35 x 38, the tallest).
+ */
+export const SKIN_PREVIEWS: Readonly<Record<string, SkinPreview>> = {
+  mario: { w: 26, h: 36 },
+  luigi: { w: 26, h: 36 },
+  link: { w: 21, h: 21 },
+  samus: { w: 30, h: 38 },
+  simon: { w: 23, h: 34 },
+  megaman: { w: 33, h: 33 },
+  bass: { w: 33, h: 33 },
+  bill: { w: 35, h: 38 },
+  ryu: { w: 30, h: 36 },
+  sophia: { w: 36, h: 24 },
+};
+const DEFAULT_PREVIEW: SkinPreview = { w: 35, h: 38 };
+
+/**
+ * The skin menu (GridMenuBox, halved): cells 1 px bigger than the preview on every side (setUpBorder:
+ * SCALE * 2), 2 px apart (spaceBetweenItems 4); as many to a row as fit 210 px (MAX_WIDTH_FOR_ROW
+ * 420), as many rows as fit 132 px (VERTICAL_SPACE_FOR_PORTRAITS_LIMIT 264). The look's name on
+ * top, the grid 16 px under it (ITEMS_MARGIN_Y 32), the game 8 px under the grid (
+ * BOTTOM_TEXT_MARGIN 16), centred on y 120 (STAGE_HEIGHT / 2).
+ */
+export const SKIN_MENU = {
+  rowWidth: 210,
+  rowsHeight: 132,
+  gap: 2,
+  gridTop: 16,
+  textUnder: 8,
+  centreY: 120,
+} as const;
+
+/** Hero `hostId`'s skin menu grid: its cells' size, how many to a row and how many rows a page. */
+export function skinGrid(hostId: string): { cols: number; rows: number; w: number; h: number; gap: number } {
+  const p = SKIN_PREVIEWS[hostId] ?? DEFAULT_PREVIEW;
+  const w = p.w + 2;
+  const h = p.h + 2;
+  const gap = SKIN_MENU.gap;
+  const cols = Math.max(1, Math.floor(SKIN_MENU.rowWidth / (w + gap)));
+  let rows = 1;
+  while ((rows + 1) * h + rows * gap <= SKIN_MENU.rowsHeight) rows++;
+  return { cols, rows, w, h, gap };
+}
 
 /**
  * A look for the select and its skin menu. In the original every menu colour comes from the
@@ -206,45 +274,82 @@ export function gridCell(i: number, g: GridLayout = SELECT_GRID): { x: number; y
   return { x: g.x + col * (g.cell + g.gap), y: g.y + row * (g.cell + g.gap) };
 }
 
-/** The select panel's box for `rows` rows of cells. */
+/** The select panel's box for `rows` rows of cells (PANEL's padding round the grid). */
 export function gridPanel(
   rows: number,
   g: GridLayout = SELECT_GRID,
 ): { x: number; y: number; w: number; h: number } {
   const w = g.cols * g.cell + (g.cols - 1) * g.gap;
   const h = rows * g.cell + (rows - 1) * g.gap;
-  return { x: g.x - PANEL_PAD, y: g.y - PANEL_PAD, w: w + 2 * PANEL_PAD, h: h + 2 * PANEL_PAD };
+  const P = PANEL;
+  return {
+    x: g.x - P.padLeft,
+    y: g.y - P.padTop,
+    w: w + P.padLeft + P.padRight,
+    h: h + P.padTop + P.padBottom,
+  };
 }
 
-/** The skin menu's panel and grid for `n` looks: its box, the grid's top-left and columns. */
-export function skinLayout(n: number): {
+/** The skin menu's panel, grid and text rows for its looks. */
+export interface SkinLayout {
   x: number;
   y: number;
   w: number;
   h: number;
+  /** The grid's top-left, its cells and how many a page. */
   gx: number;
   gy: number;
   cols: number;
-} {
-  const g = SKIN_GRID;
+  rows: number;
+  cw: number;
+  ch: number;
+  gap: number;
+  per: number;
+  /** The look's name and its game: their text rows. */
+  titleY: number;
+  gameY: number;
+}
+
+/**
+ * Hero `hostId`'s skin menu for `n` looks whose longest name or game is `textW` px: a box as wide
+ * as its grid or its text (GridMenuBox's fill fits its content, + 1), framed, centred on y 120.
+ */
+export function skinLayout(n: number, hostId = 'megaman', textW = 0): SkinLayout {
+  const g = skinGrid(hostId);
   const cols = Math.max(1, Math.min(g.cols, n));
   const rows = Math.max(1, Math.min(g.rows, Math.ceil(n / g.cols)));
   const gw = cols * g.w + (cols - 1) * g.gap;
   const gh = rows * g.h + (rows - 1) * g.gap;
-  // Wide enough for a look's name over it and its game under it.
-  const w = Math.max(gw + 20, 184);
-  const h = gh + 46;
+  const inW = Math.max(gw, textW) + 1;
+  const inH = SKIN_MENU.gridTop + gh + SKIN_MENU.textUnder + 8;
+  const w = inW + 2 * BOX_FRAME;
+  const h = inH + 2 * BOX_FRAME;
   const x = 128 - (w >> 1);
-  return { x, y: SKIN_PANEL_Y, w, h, gx: 128 - (gw >> 1), gy: SKIN_PANEL_Y + 19, cols };
+  const y = SKIN_MENU.centreY - (h >> 1);
+  const gy = y + BOX_FRAME + SKIN_MENU.gridTop;
+  return {
+    x,
+    y,
+    w,
+    h,
+    gx: 128 - (gw >> 1),
+    gy,
+    cols,
+    rows: g.rows,
+    cw: g.w,
+    ch: g.h,
+    gap: g.gap,
+    per: g.cols * g.rows,
+    titleY: y + BOX_FRAME,
+    gameY: gy + gh + SKIN_MENU.textUnder,
+  };
 }
 
-/** Skin menu cell `k` of a page's top-left, for a menu of `n` looks. */
-export function skinCell(k: number, n: number): { x: number; y: number } {
-  const g = SKIN_GRID;
-  const L = skinLayout(n);
+/** Skin menu cell `k` of a page's top-left (layout `L`). */
+export function skinCell(k: number, L: SkinLayout): { x: number; y: number } {
   const col = k % L.cols;
   const row = Math.floor(k / L.cols);
-  return { x: L.gx + col * (g.w + g.gap), y: L.gy + row * (g.h + g.gap) };
+  return { x: L.gx + col * (L.cw + L.gap), y: L.gy + row * (L.ch + L.gap) };
 }
 
 /** Draws `draw` clipped to a cell's inside (no clipping on renderers without it). */

@@ -5,8 +5,19 @@ import type { CharacterDef } from '../characters/character';
 import type { GameState } from '../context';
 import { faceAt } from '../scenes/select-grid';
 
-/** The HUD's face box over Classic mode's select: its top-left and size (white-framed). */
-export const HUD_FACE = { x: 0, y: 0, size: 26 } as const;
+/**
+ * The HUD's face box over Classic mode's select: its top-left and size (framed). The original's
+ * portrait sits at (6, 7) with its 1 px frame from (5, 6) (TopScreenText PORT_PNT: -10 + HUD_X_OFS
+ * 22, FIRST_ROW_Y 14, halved; portraitFrame 2 px up and left).
+ */
+export const HUD_FACE = { x: 5, y: 6, size: 26 } as const;
+
+/**
+ * The HUD's text columns (TopScreenText, halved): the name and score at 34 (NAME_TXT_PNT 45 + 22),
+ * the coin at 108 so its count starts at 116 (COIN_TXT_PNT 206 + 22, its coin 6 px before), WORLD
+ * at 154 (285 + 22) over the level at 162 (+ 16), TIME at 210 (398 + 22).
+ */
+export const HUD_TEXT = { name: 34, coins: 108, world: 154, level: 162, time: 210 } as const;
 
 /**
  * The HUD over Classic mode's select (the original 3.1.21's layout: the HUD stays on top): the
@@ -51,10 +62,11 @@ export function drawSelectHud(
       );
     }
   });
-  r.text(font, (shown ? shown.hudName : 'RANDOM').slice(0, 7), 32, 8);
-  r.text(font, String(state.score).padStart(7, '0'), 32, 16);
-  r.text(font, `$×${String(state.coins).padStart(2, '0')}`, 104, 16);
-  r.text(font, 'WORLD', 152, 8);
-  r.text(font, `${state.world}-${state.stage}`, 160, 16);
-  r.text(font, 'TIME', 208, 8);
+  const T = HUD_TEXT;
+  r.text(font, (shown ? shown.hudName : 'RANDOM').slice(0, 7), T.name, 8);
+  r.text(font, String(state.score).padStart(7, '0'), T.name, 16);
+  r.text(font, `$×${String(state.coins).padStart(2, '0')}`, T.coins, 16);
+  r.text(font, 'WORLD', T.world, 8);
+  r.text(font, `${state.world}-${state.stage}`, T.level, 16);
+  r.text(font, 'TIME', T.time, 8);
 }

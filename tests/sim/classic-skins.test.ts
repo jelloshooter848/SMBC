@@ -143,7 +143,8 @@ describe('FU-8: the skin picker on the Classic select', () => {
     h.tap('special');
     h.tap('special');
     h.tap('special');
-    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man 3');
+    // The select names the hero's own game (only the skin menu names the look's).
+    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man');
     expect(settings.classicSkins).toEqual({ megaman: 'breakman' });
     expect(h.game.skinFor(MEGAMAN)).toBe(BREAKMAN_CLASSIC);
     // OK opens the skin menu on Break Man; OK there starts the run as him: his HUD name and look.
@@ -174,7 +175,7 @@ describe('FU-8: the skin picker on the Classic select', () => {
     const settings = { ...defaultSettings(), classicSkins: { samus: 'darkpit' } };
     const { h, sel } = classicSelect(settings);
     cursorTo(h, sel, 'samus');
-    expect(h.said.at(-1)).toBe('Dark Pit, Samus, Kid Icarus: Uprising');
+    expect(h.said.at(-1)).toBe('Dark Pit, Samus, Metroid');
     h.tap('jump');
     h.tap('jump');
     h.until(() => h.top() instanceof LevelScene, 600);

@@ -21,23 +21,28 @@ under `## [Unreleased]`.
   rules, as in the original: Mega Man wears Rock, Proto Man, Break Man, Cut Man, Fire Man, Ice
   Man, Francesca, Doropie and Rokko Chan; Samus wears Pit and Dark Pit; Luigi wears Princess
   Peach. A save or a link naming a look that had its own slot plays on as that look, and a skin
-  chosen on an old slot (Proto Man's Break Man, Francesca's Doropie, Pit's Dark Pit) is kept.
+  chosen on an old slot (Proto Man's Break Man, Francesca's Doropie, Pit's Dark Pit) is kept. A
+  link or save naming an Expansion hero while Expansion heroes is off plays as Mario, so Survival
+  starts with a hero standing.
 - Classic mode's select and skin menu wear the original's default look: brick-orange panels with
   a light bevel and rivet corners, dark red cells, and a thin gold cursor ring that cycles (held
   still with Reduce flashing). The name box shows the hero in white and the look's name and its
-  game in pale pink, all outlined so they read on a phone, and it grows open as the original's
-  boxes do. A hero's own look has two lines, as in the original, and the box follows the skin
-  menu's cursor; it has the original's size, with our one short prompt in its bottom row ("OK
-  (Z) LOOKS"; the key is left out when it would not fit). Survival's lines and the lives are
-  outlined too. Each cell
-  and the HUD's framed box show the look's face: our own close-up for every hero, skin and
-  Expansion hero.
+  hero's first game in pale pink (only the skin menu names a look's own game), all outlined so
+  they read on a phone, and it grows open as the original's boxes do. Every box has the
+  original's size and place: the grid panel 185 x 70, the name box 158 wide and only as tall as
+  its lines (a hero's own look has two), the skin menu's cells each hero's own preview size
+  (Mega Man's 35 x 35, Samus's 32 x 40) in a box fitted to them, and the HUD's face inset with
+  its text after it. Our one short prompt sits under the name box ("OK (Z) LOOKS"; the key is
+  left out when it would not fit). Survival's lines and the lives are outlined too. Each cell and
+  the HUD's framed box show the look's face: our own close-up for every hero, skin and Expansion
+  hero.
 - Classic mode's select stands the hero at the centre on the next level's own sky, scenery and
   ground (1-1: blue sky, a hill and bushes over brick; 1-2: black and underground rock), as the
   original's select level does. The skin menu takes the grid's place while it is open.
-- Classic mode's select reads out the look, the hero and the game ("Break Man, Mega Man, Mega
-  Man 3"; a hero's own look once: "Mega Man, Mega Man"), also when SKIN changes the look; Down
-  in a one-row skin menu no longer moves the cursor.
+- Classic mode's select reads out the look, the hero and the hero's game ("Break Man, Mega Man,
+  Mega Man"; a hero's own look once: "Mega Man, Mega Man"), also when SKIN changes the look; the
+  skin menu reads the look's own game ("Break Man, Mega Man, Mega Man 3"). Down in a one-row skin
+  menu no longer moves the cursor.
 
 ## [0.4.64] - 2026-10-20
 
