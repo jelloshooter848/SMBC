@@ -333,7 +333,11 @@ export const SIMON_CLASSIC: CharacterDef = {
   walkAnim: CLASSIC_WALK_ANIM.simon,
   hurtbox: (p) => ({
     w: CLASSIC_HURT.w,
-    h: p.crouching ? CLASSIC_HURT.simon.crouch : tucked(p) ? CLASSIC_HURT.simon.jump : CLASSIC_HURT.simon.stand,
+    h: p.crouching
+      ? CLASSIC_HURT.simon.crouch
+      : tucked(p)
+        ? CLASSIC_HURT.simon.jump
+        : CLASSIC_HURT.simon.stand,
   }),
   blockPowerUp: classicBlockPowerUp,
   // No size change, so the HUD shows the Mushroom or Fire Flower (PS-C26).

@@ -29,6 +29,7 @@ import {
   type ClassicDropTable,
   type ClassicPowerKit,
 } from '../classic/power';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, SAMUS_FLIP_TICKS } from '../classic/anim';
 import {
   CLASSIC_MAX_BOMBS,
   CLASSIC_MAX_SHOTS,
@@ -135,6 +136,8 @@ const CROUCH_H = 15;
 const BALL_H = 12;
 
 const s = (p: Player) => p.scratch;
+/** Frames on the `samus-classic` sheet. */
+const CLASSIC_FRAME = /^(crouch|air|up-air|up-walk)/;
 export const inBall = (p: Player): boolean => (p.scratch._ball ?? 0) > 0;
 /** The crouch pose shows (a guide demo's `crouching` too). */
 export const crouchPose = (p: Player): boolean => (p.scratch._crouch ?? 0) > 0 || p.crouching;
@@ -390,6 +393,8 @@ export function classicSamus(
     gate: (p: Player) => !!p.scratch.missileUp,
   };
 
+  /** Samus herself (not a variant on its own sheet): the F2 poses, timing and hurt box. */
+  const own = opts.sheet === undefined;
   function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     let palette = p.powerState === 'fire' ? `${prefix}-varia` : prefix;
     const star = classicStarPaletteStep(p, frame, reduceFlashing);
@@ -408,11 +413,19 @@ export function classicSamus(
     } else if (crouchPose(p)) {
       name = shooting && !v.crouchWalk ? 'crouch-shoot' : 'crouch';
       offsetY = 32 - CROUCH_H;
-    } else if ((s(p)._aimUp ?? 0) > 0) name = 'aim-up';
-    else if (!b.onGround) name = flipping(p) ? `spin-${(frame >> 2) & 3}` : 'jump';
-    else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
+    } else if ((s(p)._aimUp ?? 0) > 0) {
+      // F2 (Samus herself): the original's `upJump` in the air and `upWalk` cycle walking.
+      if (own && !b.onGround) name = 'up-air';
+      else if (own && b.vx !== 0) name = `up-walk-${p.walkFrame % 3}`;
+      else name = 'aim-up';
+    } else if (!b.onGround) {
+      if (flipping(p)) name = `spin-${(own ? Math.floor(frame / SAMUS_FLIP_TICKS) : frame >> 2) & 3}`;
+      // F2: her knees-up `jump`, and `jumpShoot` while the shooting pose lasts.
+      else if (own) name = shooting ? 'air-shoot' : 'air';
+      else name = 'jump';
+    } else if (b.vx !== 0) name = shooting ? `walk-shoot-${p.walkFrame}` : `walk-${p.walkFrame}`;
     else name = shooting ? 'shoot' : 'idle';
-    const sheet = opts.sheet ?? (name.startsWith('crouch') ? 'samus-classic' : 'samus');
+    const sheet = opts.sheet ?? (CLASSIC_FRAME.test(name) ? 'samus-classic' : 'samus');
     return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
   }
 
@@ -427,6 +440,24 @@ export function classicSamus(
     canBreakBricks: () => false,
     headBumps: (p) => !inBall(p),
     hitbox: (p) => ({ w: 12, h: inBall(p) ? BALL_H : crouchPose(p) ? CROUCH_H : STAND_H }),
+    // F2 (Samus herself): the original's HRect (31 standing, 25 in the air, 15.5 crouched, 13 in
+    // the ball), walk (3 x 50 ms) and shooting while walking or jumping.
+    ...(own
+      ? {
+          hurtbox: (p: Player) => ({
+            w: CLASSIC_HURT.w,
+            h: inBall(p)
+              ? CLASSIC_HURT.samus.ball
+              : crouchPose(p)
+                ? CLASSIC_HURT.samus.crouch
+                : p.body.onGround
+                  ? CLASSIC_HURT.samus.stand
+                  : CLASSIC_HURT.samus.air,
+          }),
+          walkAnim: CLASSIC_WALK_ANIM.samus,
+          attackKeepsMotion: true,
+        }
+      : {}),
     sprite,
     blockPowerUp: classicBlockPowerUp,
     powerIcon: true,
