@@ -134,12 +134,9 @@ export class Crab extends GoombaKin {
 
   protected override onBounce(src: DamageSource, world: World): void {
     super.onBounce(src, world);
-    // gBounceHit: angry after the pop, keeping the direction the pop gave it.
-    if (!this.angry) {
-      const dir = Math.sign(this.body.vx) || -1;
-      this.anger(world);
-      this.body.vx = dir * Math.abs(this.body.vx);
-    }
+    // gBounceHit (Crab.as 121-128): a calm Crab pops angry, and its new speed points at the
+    // player, whatever way the pop turned it.
+    this.anger(world);
   }
 
   /** A hit it lives through: angry at 400 or fewer Classic hit points (any hit under Current). */

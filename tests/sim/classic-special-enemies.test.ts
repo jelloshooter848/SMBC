@@ -181,6 +181,34 @@ describe('G-021: Crab', () => {
     }
   });
 
+  it('the pop turns a calm crab towards the player, whichever way the block turned it (Crab.as 121-128)', () => {
+    for (const rules of ['classic', 'current'] as const)
+      for (const [heroCol, blockCol] of [
+        [2, 30],
+        [40, 10],
+      ] as const) {
+        const w = classicWorld(MARIO, testLevel(), rules);
+        stand(w, heroCol);
+        const crab = at(w, new Crab(0, 0), 20);
+        crab.hit({ kind: 'bump', amount: 1, owner: null, dirX: 1, fromX: px(blockCol * 16) }, w);
+        const toHero = heroCol < 20 ? -1 : 1;
+        expect(crab.body.vx, `${rules} hero ${heroCol}`).toBe(
+          toHero * Math.round(crab.walkSpeed * Crab.ANGRY_SPEED),
+        );
+      }
+  });
+
+  it('an angry crab keeps the turn the pop gives it', () => {
+    const w = classicWorld(MARIO);
+    stand(w, 2);
+    const crab = at(w, new Crab(0, 0), 20);
+    crab.anger(w);
+    const vx = crab.body.vx;
+    expect(vx).toBeLessThan(0);
+    crab.hit({ kind: 'bump', amount: 1, owner: null, dirX: 1, fromX: px(30 * 16) }, w);
+    expect(crab.body.vx).toBe(-vx);
+  });
+
   it('Current: the first hit angers it, the second defeats it', () => {
     const w = classicWorld(MARIO, testLevel(), 'current');
     const crab = at(w, new Crab(0, 0), 20);
