@@ -3853,6 +3853,8 @@ export class World {
           c.phase = 'walk';
           c.t = 0;
           p.facing = 1;
+          // Classic defs: down at the pole's foot, the walk starts on the ground (see 'walk').
+          if (this.rules === 'classic') b.onGround = true;
           // Scroll-back camera: MarioBase's flag-pole hop sets rightScrollPosOvRd to the hero's
           // screen x, so the screen follows the walk to the castle from there.
           if (this.camera.scrollBack && p.def.flagWalkFollow) c.camHold = p.centerX - this.camera.x;
@@ -3867,10 +3869,14 @@ export class World {
         if (b.vy > 0x04000) b.vy = 0x04000;
         const before = b.y;
         const feetRow = tileAt(b.y + b.h + velToSub(b.vy));
-        if (this.map.isSolid(tileAt(b.x + (b.w >> 1)), feetRow)) {
+        const landed = this.map.isSolid(tileAt(b.x + (b.w >> 1)), feetRow);
+        if (landed) {
           b.y = tileToSub(feetRow) - b.h;
           b.vy = 0;
         } else b.y = before + velToSub(b.vy);
+        // Classic defs pick their walk pose by onGround (an air pose otherwise: Samus's
+        // somersault crouch, Bill and Ryu falling): the scripted walk stands on the ground.
+        if (this.rules === 'classic') b.onGround = landed;
         if (c.camHold !== undefined && p.centerX - this.camera.x > c.camHold)
           this.camera.x = Math.min(this.camera.maxX, p.centerX - c.camHold);
         if (b.x >= c.walkTo) {

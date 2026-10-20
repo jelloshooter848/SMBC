@@ -30,6 +30,8 @@ under `## [Unreleased]`.
   upgrades (Mega Man's helmet, then a weapon; Samus's Varia Suit, then a beam), not the Classic
   Fire Flower's.
 - Classic Mega Man's shooting pose no longer shows a stray dark line under his buster.
+- Classic mode: after the flagpole, the heroes walk to the castle in their walking pose (Samus
+  no longer kneels, Bill and Ryu no longer fall, Simon and Sophia III no longer jump).
 - Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
   clear raises the flag at once, with no time tally (and no fireworks), as in the original.
 

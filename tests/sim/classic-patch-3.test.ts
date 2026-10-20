@@ -17,6 +17,7 @@ import { MARIO } from '@game/characters/mario';
 import { MEGAMAN } from '@game/characters/megaman';
 import { SAMUS } from '@game/characters/samus';
 import { applyRevivalBoost } from '@game/survival';
+import { CHARACTERS } from '@game/characters/registry';
 import { megamanSmbcDef } from '@content/sprites/smbc-megaman';
 import type { CharacterDef } from '@game/characters/character';
 import type { LevelData } from '@game/level/schema';
@@ -489,5 +490,45 @@ describe('13. Mega Man shoot frame: no stray dark line under the buster', () => 
       const tail = (rows[y] ?? '').slice(boot + 1);
       expect(tail.replace(/\./g, ''), `row ${y}: ${rows[y]}`).toBe('');
     }
+  });
+});
+
+describe('14. The walk to the castle after the flagpole uses the ground pose (Classic defs)', () => {
+  /** The frames shown during the clear's walk once the hero is down, and onGround meanwhile. */
+  function walkFrames(def: CharacterDef, rules: Rules) {
+    const w = world(getLevel('1-1'), null, def, rules, { x: 194, y: 12, mode: 'stand', time: 303 });
+    const frames = new Set<string>();
+    let grounded = 0;
+    let airborne = 0;
+    run(
+      w,
+      2000,
+      (f) => (f % 30 < 15 ? ['right', 'jump'] : ['right']),
+      (w) => {
+        if (phase(w) === 'walk' && w.player.body.vy === 0) {
+          if (w.player.body.onGround) grounded++;
+          else airborne++;
+          frames.add(String(w.player.def.sprite(w.player, w.frame, true).frame));
+        }
+        return phase(w) === 'countdown';
+      },
+    );
+    return { frames: [...frames], grounded, airborne };
+  }
+  const AIR = /jump|fall|air|flip|somersault|spin|crouch|kneel/i;
+
+  for (const id of ['samus', 'bill', 'ryu', 'simon', 'sophia']) {
+    it(`Classic ${id}: on the ground, in a ground pose, all the walk`, () => {
+      const def = CHARACTERS.find((c) => c.id === id) as CharacterDef;
+      const r = walkFrames(def, 'classic');
+      expect(r.grounded).toBeGreaterThan(10);
+      expect(r.airborne).toBe(0);
+      for (const f of r.frames) expect(f).not.toMatch(AIR);
+    });
+  }
+
+  it('Current rules: the walk is untouched (onGround is not set by it)', () => {
+    const r = walkFrames(MARIO, 'current');
+    expect(r.grounded).toBe(0);
   });
 });
