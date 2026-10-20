@@ -21,6 +21,23 @@ under `## [Unreleased]`.
   weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
   extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
   choice; the original's weapons are the default.
+- Classic Peach's last castle: Mario waits where the princess would, and greets her.
+
+### Fixed
+
+- Classic Yoshi mount: enemies hit the rider and Yoshi on the pair's whole body, not on the
+  small rider's feet, and the pair steps Yoshi's own walk.
+- Classic Yoshi mount: at the flagpole Yoshi waits on the ground at the pole's foot (not in the
+  air), and the rider hops back on and rides to the castle.
+- Classic Yoshi mount: the rider's own clear, respawn, jump and stand-still rules still apply on
+  the saddle (Arthur, Peach, Samus and the Warriors end their moves at the flagpole).
+- Classic Yoshi: a Lakitu he eats (playable or ridden) leaves his cloud drifting away instead
+  of vanishing with him.
+- Dev menu: leaving with Escape (START) on a Classic toggle row no longer flips that toggle.
+- Classic mode: the HUD's ammo and egg counters get the HUD's dark outline, so they read over
+  white clouds.
+- Classic Arthur: the gold armour's lightning stops a little under the HUD, clear of the power
+  icon.
 
 ## [0.4.60] - 2026-10-20
 

@@ -1196,7 +1196,7 @@ export class World {
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
-        return new Princess(s.x, s.y);
+        return new Princess(s.x, s.y, this.player.def.endingGreeter ?? null);
       case 'toad':
         return new Toad(s.x, s.y);
       case 'captive': {
@@ -3723,6 +3723,7 @@ export class World {
         if (c.t === 1) {
           b.x = tileToSub(c.pole.tx) + px(10);
           p.facing = -1;
+          if (this.rules === 'classic') classicRules().clearHop?.(this, p);
         }
         if (c.t >= 20) {
           c.phase = 'walk';
@@ -4069,7 +4070,13 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
+      // CharacterDef.endingGreeter: who stands in the princess's place greets the hero instead.
+      const greeter = end ? this.player.def.endingGreeter : undefined;
+      const news = greeter
+        ? [...greeter.news]
+        : end
+          ? ['YOUR QUEST IS OVER.']
+          : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });

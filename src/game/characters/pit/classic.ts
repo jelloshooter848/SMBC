@@ -120,6 +120,7 @@ export const DARKPIT_CLASSIC: CharacterDef = {
     guide: pitClassicGuide('Dark Pit'),
     jumpSfx: 'pit-jump',
   }),
-  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  // The castle text's name (PM-M8, BA-M13, PI-M5): Samus's Dark Pit skin, skin 11
+  // (BmdInfo.as:1147).
   rescueName: 'the Reaper',
 };
