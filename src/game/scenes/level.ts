@@ -29,6 +29,7 @@ import { rulesOf } from '../context';
 import { reconcileRules } from '../rules/reconcile';
 import { SCREEN_W } from '@engine/viewport';
 import { talkToCaptive } from './free-hero';
+import { isAmmoPickup } from '../cheats';
 import { endStageRound } from '../arena/stage-round';
 import { TutorialDirector } from '../tutorial/stage-tutorial';
 import { ExplainerBox } from '../tutorial/explainers';
@@ -338,9 +339,9 @@ export class LevelScene implements Scene {
       case 'tally':
         game.cheatTally?.(ev.stat);
         break;
-      // Every drop a hero picks up counts as an ammo pickup (StatManager.numAmmoPickupsCollected).
+      // An ammo pickup (StatManager.numAmmoPickupsCollected; Character.hitPickup's AMMO_DCT).
       case 'pickup':
-        if (this.world.rules === 'classic') game.cheatTally?.('ammoPickups');
+        if (this.world.rules === 'classic' && isAmmoPickup(ev.item)) game.cheatTally?.('ammoPickups');
         break;
       case 'talk':
         // A captive hero: the unlock flow plays over the paused level (scenes/free-hero.ts).

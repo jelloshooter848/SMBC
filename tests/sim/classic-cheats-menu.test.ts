@@ -18,6 +18,7 @@ import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { HammerBro } from '@game/entities/enemies/hammer-bro';
+import { Cheep } from '@game/entities/enemies/cheep';
 import { DEV_CODE } from '@game/scenes/cheat';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
 
@@ -163,7 +164,14 @@ describe('the Cheats page', () => {
     h.idle(8);
     for (let i = 0; i < labels(page).indexOf('Enter code'); i++) h.tap('down');
     h.tap('jump');
-    expect(h.said.at(-1)).toBe('Enter the code.');
+    expect(h.said.at(-1)).toBe('Enter the code. BACK to stop.');
+    // Touch: BACK is Select, the one button the code does not use.
+    expect(page.touchLabels().select).toBe('BACK');
+    expect(draw(page).texts.some((x) => x.str.startsWith('BACK'))).toBe(true);
+    h.tap('select');
+    expect(h.said.at(-1)).toBe('Back. Enter code.');
+    expect(page.touchLabels().select).not.toBe('BACK');
+    h.tap('jump');
     h.tap('up');
     h.tap('left');
     expect(h.said.at(-1)).toBe('Wrong code.');
@@ -296,6 +304,50 @@ describe('unlock goals', () => {
     h.idle(CARD_GUARD_FRAMES + 1);
     h.tap('jump');
     expect(inLevel(h)).toBe(true);
+  });
+
+  it('only ammo pickups count toward Infinite Ammo (PickupInfo.AMMO_DCT)', () => {
+    const h = classic();
+    h.game.classicGame(MARIO);
+    h.until(() => inLevel(h), 600);
+    const w = level(h).world;
+    for (const item of [
+      'bomb',
+      'heart-small',
+      'missile-pack',
+      'triple-ammo',
+      'weapon-large',
+      'ninpo-small',
+    ] as const)
+      w.events.push({ type: 'pickup', item, player: 0 });
+    for (const item of [
+      'health-small',
+      'energy-large',
+      'e-tank',
+      'capsule',
+      'pot-axe',
+      'power-capsule',
+    ] as const)
+      w.events.push({ type: 'pickup', item, player: 0 });
+    h.step();
+    expect(h.settings.classicCheats.stats.ammoPickups).toBe(6);
+  });
+
+  it('only leaping Cheep Cheeps count toward Water Mode (CheepFast)', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, '2-2');
+    h.until(() => inLevel(h), 600);
+    const w = level(h).world;
+    const swimmer = Cheep.swimmer(w.player.body.x + 4096 * 64, w.player.body.y, w.rng);
+    const leaper = new Cheep(w.player.body.x + 4096 * 80, w.player.body.y, 'red', true);
+    for (const c of [swimmer, leaper]) {
+      w.spawn(c);
+      c.hit({ kind: 'star', amount: 1, owner: w.player, dirX: 1 }, w);
+    }
+    h.step();
+    h.step();
+    expect(h.settings.classicCheats.stats.enemiesDefeated).toBe(2);
+    expect(h.settings.classicCheats.stats.cheepsDefeated).toBe(1);
   });
 
   it('beating a game: the counted goals, Super Mario Bros., and no continue (beatGameHandler)', () => {

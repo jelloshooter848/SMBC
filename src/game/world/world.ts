@@ -1417,7 +1417,8 @@ export class World {
       this.tally('enemiesDefeated');
       if (classicRules().armoured(e)) this.tally('armouredDefeated');
       if (e instanceof HammerBro) this.tally('hammerBrosDefeated');
-      if (e instanceof Cheep) this.tally('cheepsDefeated');
+      // StatManager.numCheepCheepsDefeated counts only the leaping ones (CheepFast.die).
+      if (e instanceof Cheep && e.flying) this.tally('cheepsDefeated');
     }
     let killer: Player | null = null;
     const o = src.owner;

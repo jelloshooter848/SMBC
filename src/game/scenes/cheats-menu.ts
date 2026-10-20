@@ -121,12 +121,19 @@ export class CheatsScene extends MenuScene {
   private beginCode(): void {
     this.code = new CheatCode(DEV_CODE);
     this.codeAt = 0;
-    this.game.deps.announcer?.say('Enter the code.');
+    this.backAction = 'select';
+    this.game.deps.announcer?.say('Enter the code. BACK to stop.');
+  }
+
+  private endCode(): void {
+    this.code = null;
+    this.backAction = 'attack';
   }
 
   override touchLabels(): TouchLabels {
     if (!this.code) return super.touchLabels();
-    return { ...NO_TOUCH_BUTTONS, jump: 'JUMP', attack: 'ATTACK' };
+    // Select is no part of the code: it is the way out (BACK), on touch too.
+    return { ...NO_TOUCH_BUTTONS, jump: 'JUMP', attack: 'ATTACK', select: 'BACK' };
   }
 
   override update(input: InputFrame): void {
@@ -139,10 +146,17 @@ export class CheatsScene extends MenuScene {
       ['up', 'down', 'left', 'right', 'jump', 'attack', 'special', 'start', 'select'] as const
     ).filter((a) => input.pressed(a));
     if (!pressed.length) return;
+    // Select (BACK) leaves the code entry, back to the menu (the code's B and A are Attack, Jump).
+    if (pressed.includes('select')) {
+      this.endCode();
+      this.game.ctx.audio.sfx('select');
+      this.game.deps.announcer?.say('Back. Enter code.');
+      return;
+    }
     // Any press off the code ends it (cancelCodeInput); the whole code unlocks every cheat.
     for (const a of pressed) {
       if (a !== DEV_CODE[this.codeAt]) {
-        this.code = null;
+        this.endCode();
         this.game.ctx.audio.sfx('bump');
         this.game.deps.announcer?.say('Wrong code.');
         return;
@@ -150,7 +164,7 @@ export class CheatsScene extends MenuScene {
       this.codeAt++;
     }
     if (this.codeAt < DEV_CODE.length) return;
-    this.code = null;
+    this.endCode();
     const c = this.store;
     if (c) {
       unlockAll(c);

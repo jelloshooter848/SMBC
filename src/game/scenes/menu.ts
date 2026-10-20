@@ -108,6 +108,8 @@ export class MenuScene implements Scene {
   protected t = 0;
   protected items: MenuItem[] = [];
   protected status = '';
+  /** The button the BACK line names (a subclass that reads Attack itself names another). */
+  protected backAction: 'attack' | 'select' = 'attack';
   /** Keeps a page of items scrolled into view. */
   private readonly visibleRows = 9;
 
@@ -231,7 +233,7 @@ export class MenuScene implements Scene {
         128 - Math.min(28, this.status.length) * 4,
         at.statusY,
       );
-    const back = this.onBack ? abilityHint(this.game, 'BACK', 'attack') : '';
+    const back = this.onBack ? abilityHint(this.game, 'BACK', this.backAction) : '';
     if (back && (this.t >> 5) % 2 === 0) r.text(font, back, 24, at.backY);
   }
 }

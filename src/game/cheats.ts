@@ -4,6 +4,7 @@ import {
   type ClassicCheatStat,
   type ClassicCheatsSettings,
 } from '@engine/save/settings';
+import type { PickupKind } from './entities/objects/pickup';
 
 /*
  * Classic mode's cheats (FU-7e): the original's Cheats menu (CheatMenu.as, Cheats.as) with its
@@ -11,6 +12,28 @@ import {
  * in the one hook it reads (World.cheats); this file holds their names, their goals and the
  * bookkeeping on settings.classicCheats. Classic only: the campaign never sees them.
  */
+
+/**
+ * The pickups the Infinite Ammo goal counts (Character.hitPickup: PickupInfo.AMMO_DCT): Link's
+ * bombs, Mega Man's weapon energy, Ryu's ninpo, Samus's missiles, Sophia III's two missile types
+ * and Simon's hearts. Health, energy, E-tanks and the extra heroes' pickups are not ammo.
+ */
+export const AMMO_PICKUPS: ReadonlySet<PickupKind> = new Set<PickupKind>([
+  'bomb',
+  'weapon-small',
+  'weapon-large',
+  'ninpo-small',
+  'ninpo-large',
+  'missile-pack',
+  'triple-ammo',
+  'homing-ammo',
+  'heart-small',
+  'heart-large',
+]);
+
+export function isAmmoPickup(kind: PickupKind): boolean {
+  return AMMO_PICKUPS.has(kind);
+}
 
 /** StatManager.as NUM_*_TO_*: the counts the goals ask for. */
 export const CHEAT_GOALS = {
