@@ -909,7 +909,10 @@ export class World {
     if (this.autoWalk) this.time = null;
     // Scroll-back camera: while the castle's axe is there the screen ends just past it
     // (Level.screenMaxRightScroll = bowserAxe.x + width/2 + BOWSER_AXE_SCREEN_SCROLL_OFFSET - SCREEN_WIDTH).
-    const axeAt = this.camera.scrollBack ? level.entities.find((e) => e.type === 'axe') : undefined;
+    // A hero with its own scroll (Vic Viper, heroScrollEnd) keeps its own axe end.
+    const ownScroll = this.players.some((p) => p.def.autoScroll);
+    const axeAt =
+      this.camera.scrollBack && !ownScroll ? level.entities.find((e) => e.type === 'axe') : undefined;
     if (axeAt) {
       this.preAxeMaxX = this.camera.maxX;
       this.camera.maxX = Math.max(0, Math.min(this.camera.maxX, px(axeAt.x * 16 + 8 + 4 - SCREEN_W)));
