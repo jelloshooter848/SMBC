@@ -414,8 +414,9 @@ export interface CharacterDef {
    */
   powerUpArt?(kind: PowerUpKind): { sheet: string; frames: readonly string[] } | null;
   /**
-   * The name Toad thanks after the castle axe ("THANK YOU <name>!"), when not `name` (Classic
-   * Warriors of Light: WARRIOR, WL-M13). Absent: `name`.
+   * The name Toad thanks after the castle axe ("THANK YOU <name>!"), when not `name`: the
+   * original's rule (ScreenManager.displayThankYouText), the look's short name (BmdInfo namesArr[1],
+   * Peach's TOADSTOOL), Sophia III's JASON, the Warriors of Light's WARRIOR (WL-M13). Absent: `name`.
    */
   thanksName?: string;
   /**
@@ -446,13 +447,6 @@ export interface CharacterDef {
    * princess" by ScreenManager.addTxtTmrHandler). Absent: "OUR PRINCESS", as today.
    */
   rescueName?: string;
-  /**
-   * Classic SMBC (patch-2 item 9, owner idea): who stands in the last castle's princess room in
-   * place of the princess (a 16-px-wide frame standing on her tile, facing the hero), and the
-   * castle lines said there after "THANK YOU <name>!" in place of "YOUR QUEST IS OVER." (Classic
-   * Peach: Mario greets her). Absent: the princess and today's lines.
-   */
-  endingGreeter?: { sheet: string; palette: string; frame: string; h: number; news: readonly string[] };
   /**
    * The walk cycle as the original steps it (Classic SMBC): `frames` poses (Player.walkFrame
    * 0..frames-1), one every `ticks` game frames (fractional: 6.9 is the original's 115 ms), at any

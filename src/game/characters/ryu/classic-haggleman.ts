@@ -13,6 +13,8 @@ export const HAGGLEMAN_CLASSIC: CharacterDef = {
   name: 'Haggle Man',
   hudName: 'HAGGLE',
   lookOf: 'ryu',
+  // BmdInfo Ryu skins 3, 4: namesArr ["Haggle Man", "Haggle Man", "Koume"].
+  rescueName: 'Koume',
   portrait: { sheet: 'ryu-classic', palette: 'haggleman', frame: 'portrait' },
   portraitArt: { sheet: 'ryu-classic', palette: 'haggleman', frame: 'portrait' },
   sprite: (p, frame, reduce) => {

@@ -76,15 +76,9 @@ export const PEACH_CLASSIC: CharacterDef = {
   hudName: 'PEACH',
   // The original's Peach skins name the Subcon as the one in another castle (BmdInfo.as namesArr[2]).
   rescueName: 'the Subcon',
-  // The last castle (patch-2 item 9, owner idea): big Mario waits in the princess's place and
-  // greets her after the usual "THANK YOU PEACH!". The original has no such greeting (owner to decide).
-  endingGreeter: {
-    sheet: 'mario',
-    palette: 'mario',
-    frame: 'big-idle',
-    h: 32,
-    news: ['THIS TIME YOU SAVED ME!', 'YOUR QUEST IS OVER.'],
-  },
+  // ScreenManager.displayThankYouText: the skin's short name, THANK YOU TOADSTOOL! (namesArr[1]);
+  // the last castle is the normal princess scene (owner decision, #179).
+  thanksName: 'Toadstool',
   portrait: { sheet: 'peach', palette: 'peach', frame: 'stand' },
   sprite: peachSprite,
   guide: plumberClassicGuide('Peach', 'Princess Peach: plays as Luigi, slippery, floats high'),

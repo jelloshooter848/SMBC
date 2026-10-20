@@ -34,9 +34,13 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic mode's castle text follows the original for every look: Toad thanks the look by its own short name
+  (THANK YOU ZELDA!, THANK YOU DR. WILY!, Sophia III's THANK YOU JASON!), and each look names its own captive in
+  another castle.
 - Classic mode's Princess Peach is now the original's Luigi look: she plays exactly as Luigi (his moves, jump,
   fireballs, springs and Bowser's hit points) with only her own look; her vegetables, float and riding are gone
-  from Classic. A run or save as Peach plays on as Luigi in her look.
+  from Classic, and her last castle is the original's: the princess, THANK YOU TOADSTOOL! and YOUR QUEST IS OVER. A
+  run or save as Peach plays on as Luigi in her look.
 - Classic Pit and Dark Pit, Samus's looks, now play Samus's music set and her hurt, hit and item sounds.
 - Classic Pit and Dark Pit now die as Samus does (they are her looks in the original): her six-piece burst, in
   their colours, and her death jingle.

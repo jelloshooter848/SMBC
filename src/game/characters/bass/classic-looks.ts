@@ -11,6 +11,7 @@ function bassLook(
   id: string,
   name: string,
   hudName: string,
+  rescueName: string,
   orbs: 'colour' | 'white' = 'white',
 ): CharacterDef {
   return {
@@ -22,13 +23,14 @@ function bassLook(
     ),
     lookOf: 'bass',
     guide: { ...BASS_CLASSIC.guide, tagline: `${name}: plays as Bass` },
-    rescueName: BASS_CLASSIC.rescueName ?? 'Dr. Wily',
+    // BmdInfo Bass skins 3-15: namesArr[2], who is in another castle.
+    rescueName,
   };
 }
 
 // Dr. Wily's orbs are the colour ones (BASS_COLOR_PARTICLE_SKIN_NUM 3, 4); the rest white.
-export const WILY_CLASSIC = bassLook('wily', 'Dr. Wily', 'WILY', 'colour');
-export const MRX_CLASSIC = bassLook('mrx', 'Mr. X', 'MR. X');
-export const COSSACK_CLASSIC = bassLook('cossack', 'Dr. Cossack', 'COSSACK');
-export const GEMINI_CLASSIC = bassLook('gemini', 'Gemini Man', 'GEMINI');
-export const SKULLMAN_CLASSIC = bassLook('skullman', 'Skull Man', 'SKULL');
+export const WILY_CLASSIC = bassLook('wily', 'Dr. Wily', 'WILY', 'Bass', 'colour');
+export const MRX_CLASSIC = bassLook('mrx', 'Mr. X', 'MR. X', 'Bass');
+export const COSSACK_CLASSIC = bassLook('cossack', 'Dr. Cossack', 'COSSACK', 'Kalinka');
+export const GEMINI_CLASSIC = bassLook('gemini', 'Gemini Man', 'GEMINI', 'Dr. Wily');
+export const SKULLMAN_CLASSIC = bassLook('skullman', 'Skull Man', 'SKULL', 'Dr. Cossack');

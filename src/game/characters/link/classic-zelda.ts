@@ -23,6 +23,8 @@ function zeldaLook(id: string, palette: string, game: string): CharacterDef {
     name: `Zelda (${game})`,
     hudName: 'ZELDA',
     lookOf: 'link',
+    // THANK YOU ZELDA! (BmdInfo Link skins 7, 15, 17: namesArr[1]).
+    thanksName: 'Zelda',
     rescueName: 'Link',
     portrait: { sheet: 'zelda-classic', palette, frame: 'idle' },
     portraitArt: { sheet: 'zelda-classic', palette, frame: 'idle' },

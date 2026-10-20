@@ -22,6 +22,8 @@ function plumberLook(
     id,
     name,
     lookOf: host.id,
+    // The original's SMB3 looks have no name of their own: THANK YOU MARIO! / LUIGI!
+    thanksName: host.name,
     smallCrouch: true,
     portrait: { sheet: 'mario', palette: palettes.normal, frame: 'small-idle' },
     sprite: (p, frame, reduce) => {

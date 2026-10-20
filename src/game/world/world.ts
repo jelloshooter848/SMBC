@@ -1297,7 +1297,7 @@ export class World {
         // A Classic mode run's ordinary castle (classicEnd, G-002): Toad waits, as in the
         // original's data (the converter put the NES princess in Lost Levels 8-4).
         if (this.classicEnd?.next) return new Toad(s.x, s.y);
-        return new Princess(s.x, s.y, this.player.def.endingGreeter ?? null);
+        return new Princess(s.x, s.y);
       case 'toad':
         return new Toad(s.x, s.y);
       case 'captive': {
@@ -4278,13 +4278,7 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      // CharacterDef.endingGreeter: who stands in the princess's place greets the hero instead.
-      const greeter = end ? this.player.def.endingGreeter : undefined;
-      const news = greeter
-        ? [...greeter.news]
-        : end
-          ? ['YOUR QUEST IS OVER.']
-          : anotherCastle(p.def.rescueName);
+      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
