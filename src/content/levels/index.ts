@@ -58,14 +58,30 @@ export function getLevel(id: string): LevelData {
   return level;
 }
 
-/** Level ids in natural order (1-1, 1-1-bonus, 1-2, ..., 1-10). */
-export function levelIds(): string[] {
+/** Ids in natural order (1-1, 1-1-bonus, 1-2, ..., 1-10). */
+function sortedIds(paths: string[]): string[] {
   const key = (id: string) =>
     id
       .split('-')
       .map((part) => (/^\d+$/.test(part) ? part.padStart(4, '0') : part))
       .join('-');
-  return Object.keys(sources)
+  return paths
     .map((p) => p.replace(/^.*\//, '').replace(/\.map$/, ''))
     .sort((a, b) => key(a).localeCompare(key(b)));
+}
+
+const isSpecial = (path: string): boolean => path.startsWith('../special-levels/');
+
+/**
+ * The campaign's level ids (SMB1's and The Lost Levels' maps, which the campaign, its map and its
+ * sweeps read) in natural order. Super Mario Bros. Special's are Classic mode's only: they are
+ * listed by specialLevelIds, and getLevel loads either.
+ */
+export function levelIds(): string[] {
+  return sortedIds(Object.keys(sources).filter((p) => !isSpecial(p)));
+}
+
+/** Super Mario Bros. Special's area ids (`sp-1-1` ...; G-020), in natural order. */
+export function specialLevelIds(): string[] {
+  return sortedIds(Object.keys(sources).filter(isSpecial));
 }

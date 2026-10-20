@@ -12,16 +12,7 @@ import type { World } from '../../world/world';
  * Special, G-022; world/special-items.ts) stay on theirs too (all handled in World.collisions).
  */
 export type PowerUpKind =
-  | 'mushroom'
-  | '1up'
-  | 'flower'
-  | 'star'
-  | 'poison'
-  | 'clock'
-  | 'bee'
-  | 'atom'
-  | 'hammer'
-  | 'wing';
+  'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock' | 'bee' | 'atom' | 'hammer' | 'wing';
 
 /** Items the World takes itself: never a hero's own power-up (CharacterBehaviour.onPowerUp). */
 export type WorldItem = 'poison' | 'clock' | 'bee' | 'atom' | 'hammer' | 'wing';

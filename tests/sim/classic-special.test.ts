@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { getLevel, levelIds } from '@content/levels';
+import { getLevel, levelIds, specialLevelIds } from '@content/levels';
 import { px } from '@engine/math/units';
 import { loadProgress } from '@engine/save/progress';
 import { SETTINGS_KEY, defaultSettings, loadSettings, type Settings } from '@engine/save/settings';
@@ -62,7 +62,7 @@ function choose(h: H, def: CharacterDef): void {
   h.tap('jump');
 }
 
-const special = () => levelIds().filter((id) => id.startsWith('sp-'));
+const special = () => specialLevelIds();
 const MAIN = Array.from({ length: 32 }, (_, i) => `sp-${Math.floor(i / 4) + 1}-${(i % 4) + 1}`);
 
 /** Every level id a zone of `l` leads to. */
@@ -123,6 +123,8 @@ const KNOWN = new Set([
 describe('G-020: the Special set loads and every area converts', () => {
   it('has its 32 levels, each with its areas, as `sp-` ids apart from the campaign maps', () => {
     const ids = special();
+    // Not among the campaign's ids (its map, captives, secret exits and sweeps read those).
+    expect(levelIds().some((id) => id.startsWith('sp-'))).toBe(false);
     for (const id of MAIN) expect(ids, id).toContain(id);
     expect(ids.length).toBeGreaterThan(MAIN.length);
     // Kept out of src/content/levels (the campaign's maps; their hashes are guarded).

@@ -12,7 +12,7 @@ import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
 import { loadSettings, saveSettings, type Settings } from '@engine/save/settings';
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
-import { getLevel as getBuiltinLevel, levelIds } from '@content/levels';
+import { getLevel as getBuiltinLevel, levelIds, specialLevelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
 import { decodeShare } from '@engine/share';
 import { linkCode } from '@game/save/save-code';
@@ -109,6 +109,7 @@ function boot(): void {
     getLevel,
     listLevels: () => [
       ...levelIds(),
+      ...specialLevelIds(),
       ...Object.keys(loadLibrary().levels)
         .sort()
         .map((n) => customLevelId(n)),

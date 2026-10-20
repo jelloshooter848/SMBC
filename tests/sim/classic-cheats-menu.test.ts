@@ -79,7 +79,7 @@ describe('settings.classicCheats', () => {
       'everyoneCanStomp',
     ]);
     expect(Object.values(c.stats).every((v) => v === 0)).toBe(true);
-    expect(c.beaten).toEqual({ smb: false, lost: false });
+    expect(c.beaten).toEqual({ smb: false, special: false, lost: false });
   });
 
   it('a file from before it gets the defaults; a partial one keeps its values (deep-merged)', () => {
@@ -122,7 +122,7 @@ describe('the Cheats page', () => {
     h.idle(8);
     h.tap('down');
     expect(h.said.at(-1)).toBe(
-      `Locked cheat. Beat The Lost Levels (in place of the original's Special maps).`, // All Hammer Bros
+      `Locked cheat. Beat the Super Mario Bros. Special map set.`, // All Hammer Bros (G-020)
     );
     h.tap('down');
     expect(h.said.at(-1)).toBe(
@@ -384,7 +384,10 @@ describe('unlock goals', () => {
       'infiniteLives',
     ]);
     expect(lockedText(c, 'alwaysBreakBricks')).toMatch(/Current count: 5\.$/);
+    // G-020: The Lost Levels no longer stand in; beating Special unlocks All Hammer Bros.
     c.beaten.lost = true;
+    expect(unlockEarned(c)).toEqual([]);
+    c.beaten.special = true;
     expect(unlockEarned(c)).toEqual(['allHammerBros']);
   });
 
