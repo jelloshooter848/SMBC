@@ -3663,11 +3663,6 @@ export class World {
 
   private startBossClear(axe: Axe, p: Player): void {
     axe.destroy();
-    // BowserAxe.axeEnd: bowserAxe = null, so the screen may scroll on to Toad.
-    if (this.preAxeMaxX !== null) {
-      this.camera.maxX = this.preAxeMaxX;
-      this.preAxeMaxX = null;
-    }
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
@@ -3690,6 +3685,12 @@ export class World {
    * centre.
    */
   private bossClearCamera(c: NonNullable<World['bossClear']>, p: Player): void {
+    // BowserAxe.axeEnd: bowserAxe = null, so the screen may scroll on to Toad (lifted here, after
+    // the frame the axe was taken in, so that frame's ordinary follow does not recentre the hero).
+    if (this.preAxeMaxX !== null) {
+      this.camera.maxX = this.preAxeMaxX;
+      this.preAxeMaxX = null;
+    }
     c.camRight ??= px(SCREEN_W - 4) - (p.body.w >> 1);
     if (c.stop !== undefined && !c.coast && c.camRight > SCROLL_BACK_CENTER)
       c.camRight = Math.max(SCROLL_BACK_CENTER, c.camRight - BOSS_PAN);

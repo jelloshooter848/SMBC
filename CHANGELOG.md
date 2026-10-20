@@ -12,12 +12,11 @@ under `## [Unreleased]`.
 
 - Classic rules: the camera now scrolls back left, as the original game does, keeping your hero in the middle of the
   screen both ways, back to the start of each area. Enemies you walk away from wait off screen and are still there when
-  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself. Auto-scrolling
+  you come back; defeated ones stay gone. Near Bowser the screen moves on toward the bridge by itself and stops just past the axe; after the axe it follows your hero on to Toad. Auto-scrolling
   stages and one-screen rooms keep their own camera, and the campaign's camera is unchanged.
 - Classic rules: an area you leave by a pipe, vine or pit is kept as you left it, as in the original: back from a bonus
   room, the bricks you broke, the blocks you used, the coins you took and the enemies you defeated stay that way, and
-  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After
-  the flagpole the screen follows your hero's walk to the castle. The campaign is unchanged.
+  the enemies still alive wait where they were. Losing a life or starting a new level brings everything back. After the flagpole the screen follows Mario's or Luigi's walk to the castle. The campaign is unchanged.
 
 ## [0.4.57] - 2026-10-19
 
