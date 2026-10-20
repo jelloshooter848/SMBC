@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import { clipped, type Renderer } from '@engine/gfx/renderer';
 import { px, tileAt, toPx, velToSub } from '@engine/math/units';
 import type { View } from '../../entities/entity';
 import { moveX, moveY } from '../../entities/body';
@@ -38,6 +38,11 @@ export const BOLT_FRAMES = 20;
 export const MAGIC_COOLDOWN = 90;
 export const BOLT_AHEAD = 56;
 export const BOLT_DAMAGE = 600;
+/**
+ * The column's top on the screen (px): 8 px under the HUD's rows, clear of the power icon at their
+ * left end (patch-2 item 7).
+ */
+export const BOLT_TOP = HUD_BOTTOM + 8;
 
 const STEEL_HIT = { blockedSfx: 'kick' } as const;
 const GOLD_HIT = { pierce: GOLD_PIERCE, blockedSfx: 'kick' } as const;
@@ -320,8 +325,13 @@ export class ArthurBolt extends Projectile {
     // The column flickers between two looks; with Reduce flashing it holds one.
     const alt = !view.reduceFlashing && ((this.age >> 1) & 1) === 1;
     const sheet = view.assets.sheet('arthur-fx', alt ? 'arthur-fx-alt' : 'arthur-fx');
-    // From under the HUD's rows down, so it never covers the HUD's text.
-    for (let i = 0, sy = y; sy < y + h; i++, sy += 16)
-      if (sy >= HUD_BOTTOM) r.sprite(sheet, 'bolt', x, sy, (i & 1) === 1);
+    // From the ground up to BOLT_TOP, the top piece cut there, so it never reaches the HUD.
+    const top = Math.max(y, BOLT_TOP);
+    const bottom = y + h;
+    if (bottom <= top) return;
+    clipped(r, x, top, 16, bottom - top, () => {
+      for (let i = 0, sy = bottom - 16; sy + 16 > top; i++, sy -= 16)
+        r.sprite(sheet, 'bolt', x, sy, (i & 1) === 1);
+    });
   }
 }

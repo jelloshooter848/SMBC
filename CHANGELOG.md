@@ -21,6 +21,8 @@ under `## [Unreleased]`.
 - Dev menu: leaving with Escape (START) on a Classic toggle row no longer flips that toggle.
 - Classic mode: the HUD's ammo and egg counters get the HUD's dark outline, so they read over
   white clouds.
+- Classic Arthur: the gold armour's lightning stops a little under the HUD, clear of the power
+  icon.
 
 ## [0.4.60] - 2026-10-20
 
