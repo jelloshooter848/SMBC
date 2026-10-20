@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, type Settings } from '@engine/save/settings';
-import { CharacterSelectScene } from '@game/scenes/character-select';
+import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { PICK_SHOWS, pickPose, pickShowFrames } from '@game/scenes/pick-show';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
