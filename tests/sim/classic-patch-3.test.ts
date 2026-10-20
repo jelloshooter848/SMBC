@@ -32,7 +32,9 @@ import { edible, mouthOf } from '@game/characters/classic/yoshi-tongue';
 import { SpikeTop } from '@game/entities/enemies/spike-top';
 import { Spiny } from '@game/entities/enemies/spiny';
 import { Rig, flatLevel } from './classic-plumber-harness';
-import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
+import type { CharacterSelectScene } from '@game/scenes/character-select';
+import { REVIVE_DONE_QUESTION, REVIVE_NEWS } from '@game/scenes/character-select';
 
 // Classic patch 3 (owner-approved review findings of #164-#167): one describe per item.
 
@@ -348,5 +350,65 @@ describe("8. The When hit hint speaks only the current value's meaning", () => {
     expect(optionItem(game, lives as never, () => undefined).hint).toBe(
       'Lives at the start and after each continue',
     );
+  });
+});
+
+describe("10. Survival's boxes on the select cover no hero", () => {
+  const survivalGame = () => {
+    const settings = {
+      ...defaultSettings(),
+      classic: { ...defaultClassicSettings(), gameMode: 'survival' as const },
+    };
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    return { ...h, settings };
+  };
+  /** The box's white frame (16, y, 224, h) and the heroes' sprites, as drawn. */
+  function layout(s: CharacterSelectScene) {
+    const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
+    const sprites: { y: number; h: number }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      rect(x: number, y: number, w: number, h: number, c: string): void {
+        rects.push({ x, y, w, h, c });
+      },
+      sprite(sh: SpriteSheet, frame: string, _x: number, y: number): void {
+        sprites.push({ y, h: sh.frames.get(frame)?.h ?? 0 });
+      },
+    });
+    s.render(r);
+    const box = rects.find((b) => b.x === 16 && b.w === 224 && b.c === '#fcfcfc');
+    return { box, bottom: Math.max(...sprites.map((sp) => sp.y + sp.h)) };
+  }
+
+  it('the DONE question sits under the last row of heroes, inside the screen', () => {
+    const h = survivalGame();
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    const s = h.top() as CharacterSelectScene;
+    h.idle(12);
+    h.tap('jump'); // revive Mario: DONE now asks
+    h.tap('attack');
+    expect(s.boxShown).toBe('finished');
+    const { box, bottom } = layout(s);
+    expect(box).toBeDefined();
+    const b = box as { y: number; h: number };
+    expect(b.y).toBeGreaterThanOrEqual(bottom);
+    expect(b.y).toBeGreaterThan(s.heroesBottom() + 4); // below the feet and the cursor's underline
+    expect(b.y + b.h).toBeLessThanOrEqual(240);
+    // Its lines fit inside it.
+    const texts = draw(s).texts.filter((t) => REVIVE_DONE_QUESTION.includes(t.str) || t.str === 'YES');
+    for (const t of texts) {
+      expect(t.y).toBeGreaterThan(b.y);
+      expect(t.y + 8).toBeLessThanOrEqual(b.y + b.h - 2);
+    }
+  });
+
+  it('every box size (the news, the question, four cheat lines) fits under the heroes', () => {
+    const h = survivalGame();
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    const s = h.top() as CharacterSelectScene;
+    for (const n of [REVIVE_NEWS.length, REVIVE_DONE_QUESTION.length, 4]) {
+      const { y, h: bh } = s.boxRect(n);
+      expect(y).toBeGreaterThan(s.heroesBottom() + 4);
+      expect(y + bh).toBeLessThanOrEqual(240);
+    }
   });
 });

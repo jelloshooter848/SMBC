@@ -22,6 +22,8 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic Survival: the news and DONE boxes on the select screen open under the heroes, so no
+  hero is covered.
 - Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
   clear raises the flag at once, with no time tally (and no fireworks), as in the original.
 
