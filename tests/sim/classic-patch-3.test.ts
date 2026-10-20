@@ -19,6 +19,11 @@ import { SAMUS } from '@game/characters/samus';
 import { applyRevivalBoost } from '@game/survival';
 import { CHARACTERS } from '@game/characters/registry';
 import { megamanSmbcDef } from '@content/sprites/smbc-megaman';
+import { marioClassicDef } from '@content/sprites/mario-classic';
+import { SPRITES } from '@content/sprites';
+import { LINK } from '@game/characters/link';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { CharacterDef } from '@game/characters/character';
 import type { LevelData } from '@game/level/schema';
 import { ScriptedInput } from '@game/sim/headless';
@@ -532,3 +537,73 @@ describe('14. The walk to the castle after the flagpole uses the ground pose (Cl
     expect(r.grounded).toBe(0);
   });
 });
+
+describe('15. Housekeeping: Link hurtbox, Link death clock, Classic Mario sizes', () => {
+  it("Link's hurtbox stays the original's 13.5 x 15 and fits inside his standing and walking art", () => {
+    const w = world(getLevel('1-1'), null, LINK, 'classic');
+    const p = w.player;
+    const hurt = p.def.hurtbox?.(p);
+    expect(hurt).toEqual({ w: 13.5, h: 15 });
+    // The standing and walking art (about the original's 15 x 16: 14-15 wide, 15-16 high).
+    for (const f of ['idle', 'walk-0', 'walk-1']) {
+      const art = SPRITES['link-classic']?.frames[f] as string[] | undefined;
+      expect(art, f).toBeDefined();
+      const { w: aw, h: ah } = box(art as string[]);
+      expect(aw, f).toBeGreaterThanOrEqual(14);
+      expect(ah, f).toBeGreaterThanOrEqual(15);
+      expect((hurt as { w: number }).w, f).toBeLessThanOrEqual(aw);
+      expect((hurt as { h: number }).h, f).toBeLessThanOrEqual(ah);
+    }
+  });
+
+  it("Link's death clock restarts after he is alive again (as Simon's)", () => {
+    const w = world(getLevel('1-1'), null, LINK, 'classic');
+    const p = w.player;
+    const frameAt = (f: number) => String(p.def.sprite(p, f, true).frame);
+    p.dead = true;
+    expect(frameAt(100)).toBe('die-front');
+    expect(frameAt(400)).toMatch(/^die-spark/);
+    p.dead = false;
+    frameAt(500);
+    p.dead = true;
+    // A new death at 600: the flash facing the screen again, not the old death's sparkle.
+    expect(frameAt(600)).toBe('die-front');
+    expect(frameAt(620)).toMatch(/^die-(right|back|left|front)$/);
+  });
+
+  it("the Classic Mario re-cuts' comments give the art's own sizes", () => {
+    const src = readFileSync(join(import.meta.dirname, '../../src/content/sprites/mario-classic.ts'), 'utf8');
+    const sizes: Record<string, string> = {};
+    for (const [name, rows] of Object.entries(marioClassicDef.frames)) {
+      const b = box(rows as string[]);
+      sizes[name] = `${b.w} x ${b.h}`;
+    }
+    expect(sizes).toEqual({
+      'small-walk-2': '11 x 16',
+      'small-skid': '14 x 16',
+      'small-die': '15 x 14',
+      'big-idle': '15 x 32',
+      'grow-mid': '15 x 24',
+    });
+    for (const s of Object.values(sizes)) expect(src).toContain(`(${s})`);
+    for (const s of Object.values(sizes)) expect(src).toContain(s.replace(' x ', 'x'));
+  });
+});
+
+/** The bounding box of a frame's drawn pixels. */
+function box(rows: readonly string[]): { w: number; h: number } {
+  let x0 = Infinity;
+  let x1 = -1;
+  let y0 = Infinity;
+  let y1 = -1;
+  rows.forEach((row, y) =>
+    [...row].forEach((c, x) => {
+      if (c === '.') return;
+      x0 = Math.min(x0, x);
+      x1 = Math.max(x1, x);
+      y0 = Math.min(y0, y);
+      y1 = Math.max(y1, y);
+    }),
+  );
+  return { w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
