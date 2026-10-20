@@ -14,6 +14,9 @@ under `## [Unreleased]`.
   (Lose everything, Previous state, Instant death), Attack, Item drops, Piranhas (Some or All
   pipes, green or red), Goombas (Buzzy Beetle or Spiny) and Enemy speed. Every row starts at the
   original's value; a changed row is marked, and Restore originals puts them back.
+- Classic mode: a Random slot (?) at the end of the select screen, and Options > Game mode:
+  All heroes (choose before every level and life, as before), Single hero (choose once) or
+  Single random (the game picks a hero for every level and life).
 
 ## [0.4.59] - 2026-10-20
 

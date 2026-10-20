@@ -42,7 +42,8 @@ export function recordClassicClear(levelId: string): void {
 function spokenItem(it: MenuItem | undefined): string {
   if (!it) return '';
   const v = it.value ? `: ${it.value()}` : '';
-  const line = `${it.label}${v}`;
+  // A changed option's `*` mark is drawn, not read (its hint says it is changed).
+  const line = `${it.label.replace(/\*$/, '')}${v}`;
   return it.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line;
 }
 
@@ -56,6 +57,12 @@ const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', cu
 export class ClassicMenuScene extends MenuScene {
   constructor(game: Game) {
     super(game, 'CLASSIC', [], () => game.showTitle());
+    this.build();
+  }
+
+  /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
+  private build(): void {
+    const game = this.game;
     const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = isOriginalClassic(game.deps.settings?.classic ?? defaultClassicSettings())
@@ -81,10 +88,11 @@ export class ClassicMenuScene extends MenuScene {
           game.scenes.push(
             new ClassicOptionsScene(game, () => {
               game.scenes.pop();
+              this.build();
               this.announce();
             }),
           ),
-        hint: 'Classic rules and all settings',
+        hint: 'Classic rules, game mode, more settings, weapons and all settings',
       },
       { label: 'Back', select: () => game.showTitle() },
     );
@@ -170,6 +178,10 @@ export class ClassicOptionsScene extends MenuScene {
 
   override enter(): void {
     this.game.deps.announcer?.say(`Classic options. ${spokenItem(this.items[this.index])}`);
+  }
+
+  protected override announce(): void {
+    this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 
   /**

@@ -78,7 +78,8 @@ function choose(h: H, def: CharacterDef): void {
   const sel = h.top();
   expect(sel).toBeInstanceOf(CharacterSelectScene);
   h.idle(12);
-  for (let i = 0; i < CHARACTERS.length && h.said.at(-1) !== def.name; i++) h.tap('right');
+  // One more step than heroes: Classic mode's Random slot ends the ring (FU-4).
+  for (let i = 0; i <= CHARACTERS.length && h.said.at(-1) !== def.name; i++) h.tap('right');
   expect(h.said.at(-1)).toBe(def.name);
   h.tap('jump');
 }
@@ -264,11 +265,12 @@ describe('a Classic run', () => {
     expect(t.some((s) => s.includes('TO FIND'))).toBe(false);
     h.idle(12);
     const names: string[] = [];
-    for (let i = 0; i < CHARACTERS.length; i++) {
+    // Every hero, and the Random slot that ends the ring (FU-4).
+    for (let i = 0; i <= CHARACTERS.length; i++) {
       h.tap('right');
       names.push(h.said.at(-1) ?? '');
     }
-    expect(new Set(names)).toEqual(new Set(CHARACTERS.map((c) => c.name)));
+    expect(new Set(names)).toEqual(new Set([...CHARACTERS.map((c) => c.name), 'Random']));
     choose(h, LINK);
     expect(h.top()).toBeInstanceOf(IntroScene);
     expect(h.said.at(-1)).toMatch(/^World 1-1\. 3 lives\.$/);
@@ -758,14 +760,18 @@ describe('the select screen: Classic extras on a second row', () => {
     const spacing = Math.min(64, 224 / CHARACTERS.length);
     const x0 = 128 - ((CHARACTERS.length - 1) * spacing) / 2;
     CHARACTERS.forEach((_, i) => expect(sel.slot(i)).toEqual({ x: Math.round(x0 + i * spacing), y: 120 }));
-    expect(sel.slot(CHARACTERS.length)).toEqual({ x: 128, y: 120 + SECOND_ROW_DY });
+    // The second row: the extra, then the Random slot (FU-4).
+    expect(sel.slot(CHARACTERS.length)).toEqual({ x: 96, y: 120 + SECOND_ROW_DY });
     h.idle(12);
+    h.tap('left');
+    expect(h.said.at(-1)).toBe('Random');
     h.tap('left');
     expect(h.said.at(-1)).toBe('Extra');
     const t = draw(sel).texts;
     const name = t.find((x) => x.str === 'EXTRA');
     expect(name?.y).toBe(144 + SECOND_ROW_DY);
     for (const x of t) expect(x.y + 8).toBeLessThanOrEqual(240);
+    h.tap('right');
     h.tap('right');
     expect(h.said.at(-1)).toBe(CHARACTERS[0]?.name);
   });

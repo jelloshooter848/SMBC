@@ -2,6 +2,7 @@ import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipH, swapColors } from '@engine/gfx/pixelart';
 import { mapIconFrames } from './map-icons';
+import { selectRandomFrames } from './select-random';
 import { topSecretItemFrames } from './top-secret';
 import { smbcBeamItemFrames } from './smbc-shots';
 
@@ -2261,6 +2262,7 @@ export const itemsDef: SpriteDef = {
     'icon-laser': iconLaser,
     'icon-flame-gun': iconFlameGun,
     ...mapIconFrames,
+    ...selectRandomFrames,
     // The Top Secret Area (0.4.10): the Yoshi egg, the cave Moblin and his fires, the cave mouth.
     ...topSecretItemFrames,
   },

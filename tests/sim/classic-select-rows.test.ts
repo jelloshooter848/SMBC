@@ -35,12 +35,13 @@ describe('two-row character select', () => {
           best = k;
       return best;
     };
-    const n = sel.chars.length;
+    // The second row ends with Classic mode's Random slot (FU-4): slot chars.length.
+    const n = sel.chars.length + 1;
     const first = sel.firstRow;
     const down = nearest(0, first, n);
     h.tap('down');
     expect(idx(sel)).toBe(down);
-    expect(h.said.at(-1)).toBe(`${sel.chars[down]?.name}, second row`);
+    expect(h.said.at(-1)).toBe(`${sel.chars[down]?.name ?? 'Random'}, second row`);
     h.tap('down');
     expect(idx(sel)).toBe(down);
     const up = nearest(down, 0, first);
@@ -58,8 +59,12 @@ describe('two-row character select', () => {
 
   it('Left and Right still walk the whole roster across the rows', () => {
     const { h, sel } = classicSelect();
+    // Left from the first hero: the Random slot (FU-4), then the last hero.
+    h.tap('left');
+    expect(idx(sel)).toBe(sel.chars.length);
     h.tap('left');
     expect(idx(sel)).toBe(sel.chars.length - 1);
+    h.tap('right');
     h.tap('right');
     expect(idx(sel)).toBe(0);
     for (let i = 0; i < sel.firstRow; i++) h.tap('right');

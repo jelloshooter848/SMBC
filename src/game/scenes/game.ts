@@ -10,7 +10,8 @@ import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
 import { LevelScene, type LevelStart } from './level';
-import { startTime } from '../world/world';
+import { freshSeed, startTime } from '../world/world';
+import { Rng } from '@engine/rng';
 import { GameOverScene } from './game-over';
 import { CharacterSelectScene } from './character-select';
 import type { LevelData } from '../level/schema';
@@ -151,6 +152,9 @@ function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Reco
 }
 
 /** Orchestrates scenes and carries GameState between levels. */
+
+/** Classic mode's random hero draw's seed when play is repeatable (tests: no freshSeeds). */
+const RANDOM_PICK_SEED = 0x5eed1;
 export class Game {
   readonly scenes = new SceneStack();
   /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
@@ -188,6 +192,13 @@ export class Game {
    * play: liveRules does that, and ignores it while a campaign file is open.
    */
   runRules: Rules = 'current';
+  /**
+   * Classic mode: the last hero choice was the select screen's Random slot (FU-4), so the next
+   * select starts on it again. Reset with each Classic mode run.
+   */
+  pickedRandom = false;
+  /** Classic mode's random hero picks (the Random slot, Single random): seeded per run. */
+  private pickRng = new Rng(RANDOM_PICK_SEED);
 
   /**
    * The map pages the rules read for this run (content/worldmap rulePages): the campaign's, whose
@@ -326,6 +337,33 @@ export class Game {
   get classicOptions(): ClassicSettings | undefined {
     if (!this.classicRun || this.liveRules !== 'classic') return undefined;
     return this.deps.settings?.classic;
+  }
+
+  /**
+   * The one place Classic mode decides how a hero is chosen (Options > Game mode; the original's
+   * CampaignModes): 'select' shows the select screen, 'keep' goes on with the hero playing,
+   * 'random' picks one (randomHero) with no select screen. `first` is the run's first choice.
+   * All heroes (the default): always 'select'. Single hero: 'select' once, then 'keep'. Single
+   * random: always 'random'. Survival adds its mode and its branch here.
+   */
+  classicHeroChoice(first: boolean): 'select' | 'keep' | 'random' {
+    switch (this.deps.settings?.classic.gameMode ?? 'all') {
+      case 'single':
+        return first ? 'select' : 'keep';
+      case 'single-random':
+        return 'random';
+      default:
+        return 'select';
+    }
+  }
+
+  /**
+   * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
+   * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
+   */
+  randomHero(): CharacterDef {
+    const heroes = this.roster.filter((c) => !this.heroLocked(c));
+    return this.pickRng.pick(heroes.length ? heroes : this.roster);
   }
 
   /** Lives at a Classic run's start and after its continues (More Settings > Lives; else 3). */
@@ -992,6 +1030,16 @@ export class Game {
   warpToLevel(levelId: string, start: LevelStart): void {
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
+    // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
+    if (this.classicRun) {
+      const choice = this.classicHeroChoice(false);
+      if (choice === 'keep') return go();
+      if (choice === 'random') {
+        const c = this.randomHero();
+        if (c !== s.character) this.setHero(0, c);
+        return go();
+      }
+    }
     const pick = (player: 0 | 1, then: () => void) => {
       const current = player === 1 ? (s.character2 as CharacterDef) : s.character;
       return new CharacterSelectScene(this, {
@@ -1001,6 +1049,7 @@ export class Game {
           if (c !== current) this.setHero(player, c);
           then();
         },
+        ...(this.classicRun ? { random: true } : {}),
       });
     };
     this.deps.ctx.audio.stopMusic();
@@ -1373,10 +1422,15 @@ export class Game {
     // extras on the very first select.
     this.campaign = null;
     this.runRules = this.classicRules;
+    this.pickedRandom = false;
+    this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
+    // Game mode Single random: no select screen at all (CampaignModes.SINGLE_RANDOM).
+    if (this.classicHeroChoice(true) === 'random') return this.classicGame(this.randomHero(), levelId);
     this.scenes.replace(
       new CharacterSelectScene(this, null, {
         begin: (c) => this.classicGame(c, levelId),
         back,
+        random: true,
       }),
     );
   }
@@ -1619,6 +1673,14 @@ export class Game {
     const s = this.state;
     const p2 = player === 1 && s.character2 !== null;
     const current = p2 ? (s.character2 as CharacterDef) : s.character;
+    // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
+    if (this.classicRun) {
+      const choice = this.classicHeroChoice(false);
+      if (choice !== 'select') {
+        this.setHero(0, choice === 'random' ? this.randomHero() : current);
+        return then();
+      }
+    }
     this.deps.ctx.audio.stopMusic();
     this.scenes.clear();
     this.scenes.push(
@@ -1631,6 +1693,7 @@ export class Game {
           this.setHero(p2 ? 1 : 0, c);
           then();
         },
+        ...(this.classicRun ? { random: true } : {}),
         // Campaign: back to the map as Pause → Quit to map (no clear; the life lost here is
         // already counted and saved, and the hero stays as the death left it).
         ...(this.campaign && !this.playtestDone ? { onMap: () => this.returnToMap() } : {}),
