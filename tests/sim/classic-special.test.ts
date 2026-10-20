@@ -323,7 +323,8 @@ describe('G-005 / G-020: beat status and the end of the game', () => {
     (h.game as unknown as { afterCredits(from: string): void }).afterCredits('sp-8-4-end4');
     expect(loadProgress().classicBeat?.special).toBe('hard');
     h.game.showClassicMenu();
-    expect(items(h.top())[1]?.hint).toMatch(/Beaten on Hard/);
+    const row = items(h.top()).find((i) => /Special/.test(String(i.label)));
+    expect(row?.hint).toMatch(/Beaten on Hard/);
   });
 });
 
