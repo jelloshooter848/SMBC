@@ -59,12 +59,20 @@ export class DevMenuScene extends MenuScene {
 const TOGGLE_COLS = 20;
 
 /**
- * "Classic: <hero>" for a hero's Dev menu toggle, with the HUD name when the full name does not fit
- * the row beside its value ("CLASSIC: WARRIOR").
+ * "Classic: <hero>" for a hero's Dev menu toggle, the name's last words left off while it does not
+ * fit the row beside its value ("CLASSIC: WARRIORS"). Names, never the HUD's short name.
  */
-export function classicHeroLabel(def: { name: string; hudName: string }): string {
-  const full = `Classic: ${def.name}`;
-  return full.length <= TOGGLE_COLS ? full : `Classic: ${def.hudName}`;
+export function classicHeroLabel(def: { name: string }): string {
+  const words = def.name.split(' ');
+  const cut = () => words.length > 1 && `Classic: ${words.join(' ')}`.length > TOGGLE_COLS;
+  let shortened = false;
+  while (cut()) {
+    words.pop();
+    shortened = true;
+  }
+  // Never end on a joining word ("WARRIORS OF").
+  while (shortened && words.length > 1 && /^(of|the|and)$/i.test(words.at(-1) ?? '')) words.pop();
+  return `Classic: ${words.join(' ')}`;
 }
 
 /** ON / OFF for a toggle row's value. */

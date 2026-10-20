@@ -75,7 +75,7 @@ describe('the Dev menu rows', () => {
     }
     for (const label of ['Bass', 'Pit', 'Mario'])
       expect(items(menu).some((i) => i.label.endsWith(label))).toBe(false);
-    expect(classicHeroLabel(WARRIORS_CLASSIC)).toBe('Classic: WARRIOR');
+    expect(classicHeroLabel(WARRIORS_CLASSIC)).toBe('Classic: Warriors');
     expect(classicHeroLabel(VICVIPER_CLASSIC)).toBe('Classic: Vic Viper');
     // Peach and Arthur (notInOriginal on their own branches) get rows too; Yoshi stays last.
     for (const label of ['Classic: Peach', 'Classic: Arthur', 'Classic: Yoshi']) row(menu, label);
