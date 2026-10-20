@@ -1,6 +1,6 @@
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipX, rotate } from './sophia-draw';
-import { anchored, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
+import { anchored, trimmed, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
 
 /**
  * Classic SMBC Sophia III and Jason at the original 3.1.21 sizes (R1 redraw; `sophia-classic`,
@@ -188,6 +188,8 @@ export const sophiaSmbcDef: SpriteDef = {
   palette: 'sophia',
   frames: {
     idle,
+    // The select screen's and the intro card's portrait: the tank, cropped.
+    portrait: trimmed(idle),
     'drive-0': idle,
     'drive-1': tankPose({ k: 1, bob: 1 }),
     'drive-2': tankPose({ k: 2 }),

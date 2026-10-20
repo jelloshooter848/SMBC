@@ -398,6 +398,8 @@ export const BILL_CLASSIC: CharacterDef = {
   name: BILL.name,
   hudName: BILL.hudName,
   portrait: BILL.portrait,
+  // R1: the select screen and the intro card show his Classic art.
+  portraitArt: { sheet: 'bill-classic', palette: 'bill', frame: 'portrait' },
   ...(BILL.music ? { music: BILL.music } : {}),
   rules: 'classic',
   movement: BILL_CLASSIC_PROFILE,

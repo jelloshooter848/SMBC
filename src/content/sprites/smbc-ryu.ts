@@ -1,6 +1,6 @@
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipH } from '@engine/gfx/pixelart';
-import { anchored, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
+import { anchored, trimmed, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
 
 /**
  * Classic SMBC Ryu at the original 3.1.21 sizes (R1 redraw; `ryu-classic`, his palettes: 0 outline,
@@ -414,6 +414,8 @@ export const ryuSmbcDef: SpriteDef = {
   palette: 'ryu',
   frames: {
     idle: standing(scarfDown),
+    // The select screen's and the intro card's portrait: the stand, cropped.
+    portrait: trimmed(standing(scarfDown)),
     'idle-1': standing(['....44', '.4444.', '44....']),
     'walk-0': running(legsRun0, 20),
     'walk-1': running(legsRun1, 22),

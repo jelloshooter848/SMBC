@@ -458,6 +458,8 @@ export const RYU_CLASSIC: CharacterDef = {
   rescueName: 'Irene',
   ...RYU,
   rules: 'classic',
+  // R1: the select screen and the intro card show his Classic art.
+  portraitArt: { sheet: 'ryu-classic', palette: 'ryu', frame: 'portrait' },
   movement: RYU_CLASSIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: false,

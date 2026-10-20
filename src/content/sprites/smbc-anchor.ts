@@ -52,6 +52,12 @@ export function canvasOffsets(
   return { offsetX: c.cx - bodyW / 2, offsetY: c.h - bodyH };
 }
 
+/** `rows` cropped to their drawn box: a portrait for the select screen and the intro card. */
+export function trimmed(rows: readonly string[]): string[] {
+  const b = drawnBox(rows);
+  return rows.slice(b.y, b.y + b.h).map((r) => r.slice(b.x, b.x + b.w).padEnd(b.w, '.'));
+}
+
 /** The drawn box of `rows` (no transparent border): x, y, w, h in the frame. */
 export function drawnBox(rows: readonly string[]): { x: number; y: number; w: number; h: number } {
   let x0 = Infinity;

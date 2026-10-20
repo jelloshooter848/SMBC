@@ -254,7 +254,8 @@ describe('Proto Man and Break Man: their own sheet', () => {
       frame: 'idle',
     });
     expect(PROTOMAN_CLASSIC.portrait.sheet).toBe('megaman');
-    expect(MEGAMAN_CLASSIC.portraitArt).toBeUndefined();
+    // R1: the select screen and the intro card show Classic Mega Man's own art.
+    expect(MEGAMAN_CLASSIC.portraitArt?.sheet).toBe('megaman-classic');
     const m = rig(MEGAMAN_CLASSIC);
     // R1 (owner decision 2026-10-20): Classic Mega Man draws from his own Classic sheet now.
     expect(MEGAMAN_CLASSIC.sprite(m.p, 0, true).sheet).toBe('megaman-classic');

@@ -14,7 +14,7 @@ under `## [Unreleased]`.
   3.1.21's sizes, pose by pose: Mega Man's run, arms-up jump, hurt, climb and slide, Ryu's
   breathing stand, run, flip, slashes and wall cling, Bill as a torso and legs with his rifle
   where his shots leave, prone and climbing, and Sophia III's lower hull with Jason's two frames.
-  The campaign's art is unchanged.
+  The select screen and the intro card show the new art; the campaign's art is unchanged.
 - Classic mode: Ryu's run shows four different poses (it showed one of them twice a loop).
 - Classic mode's Link, Samus and Simon are redrawn at the original 3.1.21's sizes: Link a small
   15 x 16 adventurer (no shield until the Mushroom), Samus a full 33 px suit with her arm cannon,

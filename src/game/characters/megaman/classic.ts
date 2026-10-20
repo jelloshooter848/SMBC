@@ -761,7 +761,13 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
 
 /** Classic SMBC Mega Man (TG-17: registry.ts's CLASSIC_CHARACTERS). */
 export const MEGAMAN_CLASSIC: CharacterDef = {
-  ...classicMegaMan({ base: MEGAMAN }),
+  ...classicMegaMan({
+    base: {
+      ...MEGAMAN,
+      // R1: the select screen and the intro card show his Classic art.
+      portraitArt: { sheet: 'megaman-classic', palette: 'megaman', frame: 'portrait' },
+    },
+  }),
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Dr. Light',
 };

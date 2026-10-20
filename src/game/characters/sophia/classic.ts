@@ -236,6 +236,8 @@ export const SOPHIA_CLASSIC: CharacterDef = {
   rescueName: 'your frog',
   ...SOPHIA,
   rules: 'classic',
+  // R1: the select screen and the intro card show her Classic art.
+  portraitArt: { sheet: 'sophia-classic', palette: 'sophia', frame: 'portrait' },
   // A tank never rides the Classic Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-3).
   rides: false,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },

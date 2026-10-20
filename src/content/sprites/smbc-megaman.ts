@@ -1,6 +1,6 @@
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipH } from '@engine/gfx/pixelart';
-import { anchored, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
+import { anchored, trimmed, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
 
 /**
  * Classic SMBC Mega Man at the original 3.1.21 sizes (R1 redraw; `megaman-classic`, his palettes:
@@ -286,6 +286,8 @@ export const megamanSmbcDef: SpriteDef = {
   palette: 'megaman',
   frames: {
     idle: at(...stand(head)),
+    // The select screen's and the intro card's portrait: the stand, cropped.
+    portrait: trimmed(at(...stand(head))),
     'idle-blink': at(...stand(headBlink)),
     // The original's charge is a palette flash only (CHARGE_START 550 ms), not a new pose.
     'charge-0': at(...stand(head)),

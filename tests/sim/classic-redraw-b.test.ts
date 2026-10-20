@@ -346,6 +346,16 @@ describe('the Classic heroes play on the new sheets', () => {
     expect([...new Set(bad)]).toEqual([]);
   });
 
+  it('the select screen and the intro card show the Classic art, cropped to the stand', () => {
+    for (const def of [MEGAMAN_CLASSIC, RYU_CLASSIC, BILL_CLASSIC, SOPHIA_CLASSIC]) {
+      const art = def.portraitArt;
+      expect(art?.sheet).toMatch(/-classic$/);
+      const rows = frame(art?.sheet ?? '', art?.frame ?? '');
+      const b = drawnBox(rows);
+      expect([b.x, b.y, b.w, b.h]).toEqual([0, 0, rows[0]?.length, rows.length]);
+    }
+  });
+
   it("Ryu's run: four distinct poses, 75 ms each (owner decision)", () => {
     expect(WALK_RYU).toEqual([0, 1, 2, 3]);
     expect(CLASSIC_WALK_ANIM.ryu).toEqual({ frames: 4, ticks: 4.5 });

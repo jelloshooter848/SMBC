@@ -1,6 +1,6 @@
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { flipH } from '@engine/gfx/pixelart';
-import { anchored, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
+import { anchored, trimmed, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
 
 /**
  * Classic SMBC Bill at the original 3.1.21 sizes (R1 redraw; `bill-classic`, his palettes: 0
@@ -371,6 +371,8 @@ export const billSmbcDef: SpriteDef = {
   palette: 'bill',
   frames: {
     idle: body([torsoLevel, -7, -18], stand(-6)),
+    // The select screen's and the intro card's portrait: the stand, cropped.
+    portrait: trimmed(body([torsoLevel, -7, -18], stand(-6))),
     shoot: body([torsoLevel, -7, -17], stand(-6), [flash, 15.5, -24]),
     'aim-up': body([torsoUp, -6, -28], stand(-6)),
     'aim-diag-up': body([torsoDiagUp, -5, -19], stand(-6)),
