@@ -206,8 +206,6 @@ export class Game {
    * play: liveRules does that, and ignores it while a campaign file is open.
    */
   runRules: Rules = 'current';
-  /** Continues used in this Classic run (StatManager.numContinuesUsed: Infinite Lives' goal). */
-  classicContinues = 0;
   /** Cheats unlocked and not yet shown: each gets its YOU UNLOCKED card (showCheatUnlocks). */
   cheatUnlocks: ClassicCheatId[] = [];
   /**
@@ -1591,7 +1589,8 @@ export class Game {
     const e: CheatEvent = { level: ev.level === true, castle: ev.castle === true };
     if (ev.beat) {
       c.beaten[ev.beat] = true;
-      e.noContinue = this.classicContinues === 0;
+      // StatManager.numContinuesUsed is saved: a continue in any earlier run still counts.
+      e.noContinue = c.continuesUsed === 0;
     }
     this.cheatsUnlocked(unlockEarned(c, e));
     saveSettings(s);
@@ -1644,7 +1643,6 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
-    this.classicContinues = 0;
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
     this.state = newGameState(character, character2, this.liveRules);
@@ -2107,7 +2105,12 @@ export class Game {
    * character select as for a new level.
    */
   continueGame(levelId: string | null, player = 0): void {
-    if (this.classicRun) this.classicContinues++;
+    // Infinite Lives' goal (StatManager.numContinuesUsed): counted over the save's life.
+    const cheats = this.deps.settings?.classicCheats;
+    if (cheats && this.cheatGoalsCount) {
+      cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
+      saveSettings(this.deps.settings as Settings);
+    }
     const old = this.state;
     this.state = newGameState(old.character, old.character2, this.liveRules);
     if (this.classicRun) this.classicStartLives();

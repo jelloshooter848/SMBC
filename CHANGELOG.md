@@ -12,6 +12,8 @@ under `## [Unreleased]`.
 
 - Classic mode's All Hammer Bros cheat: its goal says that beating The Lost Levels stands in
   for the original's Special maps, which Classic mode does not have.
+- Classic mode's Infinite Lives cheat: as in the original, a continue used in any Classic run
+  (not only the current one) keeps it locked, since the count is kept with the save.
 
 ### Fixed
 
