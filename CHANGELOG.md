@@ -8,6 +8,15 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Classic Yoshi mount: enemies hit the rider and Yoshi on the pair's whole body, not on the
+  small rider's feet, and the pair steps Yoshi's own walk.
+- Classic Yoshi mount: at the flagpole Yoshi waits on the ground at the pole's foot (not in the
+  air), and the rider hops back on and rides to the castle.
+- Classic Yoshi mount: the rider's own clear, respawn, jump and stand-still rules still apply on
+  the saddle (Arthur, Peach, Samus and the Warriors end their moves at the flagpole).
+
 ## [0.4.60] - 2026-10-20
 
 ### Added
