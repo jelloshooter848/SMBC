@@ -51,6 +51,8 @@ export class BackupCardScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
+    // None during the guard (0.5.0, the phone first-tap bug: buttons show from the frame a press counts).
+    if (this.t < CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS;
     return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: this.done ? 'DONE' : 'NOT NOW' };
   }
 

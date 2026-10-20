@@ -30,6 +30,7 @@ import {
   type ClassicPowerKit,
 } from '../classic/power';
 import { weaponOf } from '../classic/options';
+import { landSound } from '../classic/sounds';
 import { MEGAMAN, MEGAMAN_PROFILE } from './index';
 import { MEGAMAN_CLASSIC_GUIDE } from './classic-guide';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
@@ -756,6 +757,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
         : {}),
       update(p, input, world) {
         classicStartKit(p, START);
+        landSound(p, world, 'mm-land');
         if (!p.transition) delete p.scratch._fillFrom;
         // Hard Knuckle steers by the d-pad's up/down (classic-weapons KnuckleShot).
         p.scratch._ud = input.held('up') ? -1 : input.held('down') ? 1 : 0;

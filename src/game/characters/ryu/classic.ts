@@ -234,7 +234,9 @@ function spawnThrow(p: Player, input: InputFrame, world: World): void {
   const y = cy - px(spec.h >> 1);
   if (a.id === 'windmill') world.spawn(new WindmillShot(x, y, dir, p));
   else world.spawn(new Projectile(x, y, dir, spec, p));
-  world.audio.sfx(a.id === 'windmill' ? 'boomerang' : a.id === 'shuriken' ? 'buster' : 'magic');
+  // Each art's own sound (G-074; SFX_RYU_THROW_SMALL_STAR, _BIG_STAR, _ART_OF_FIRE_WHEEL,
+  // _FIRE_DRAGON_BALL).
+  world.audio.sfx(a.id === 'windmill' ? 'ng-windmill' : a.id === 'shuriken' ? 'ng-star' : 'ng-fire');
 }
 
 /** Special or Select with art `a` (RY-C1): a throw, or the Jump Slash in the air. */

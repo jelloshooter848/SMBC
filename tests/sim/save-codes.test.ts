@@ -143,6 +143,7 @@ const stored = () => new Map(store);
 describe('a resume link (#save=) at the title', () => {
   /** The title with a link's code waiting, up to the question. */
   function openLink(h: H, code: string) {
+    h.settings.dev = true; // 0.5.0 (G-101): resume links load in dev mode until Chapter 1 ships
     h.game.saveLink = code;
     h.game.showTitle();
     h.until(() => h.top() instanceof LoadCodeScene);

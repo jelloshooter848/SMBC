@@ -1,3 +1,5 @@
+import { OPEN_DEV_LOCK, type DevLock } from '../dev-lock';
+import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
@@ -116,6 +118,7 @@ import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
+import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
 export interface GameDeps {
@@ -141,6 +144,11 @@ export interface GameDeps {
   lastInput?: () => LastInput;
   /** Play the title's rift intro on the session's first title (main.ts; off in the headless sims). */
   titleIntro?: boolean;
+  /**
+   * The dev-mode lock (game/dev-lock.ts; main.ts builds it from the build's defines). Absent: open,
+   * as in local builds and the headless sims.
+   */
+  devLock?: DevLock;
   /**
    * A fresh world seed for every level visit (main.ts), so no two visits play out the same
    * (swimming Cheep Cheeps, leaping ones, timers). Off, every world keeps its level's fixed seed
@@ -390,6 +398,82 @@ export class Game {
       enumerable: true,
       configurable: true,
     });
+    // ctx.classicMode: a Classic mode run (either rules) outside a campaign file (G-060 to G-074).
+    Object.defineProperty(deps.ctx, 'classicMode', {
+      get: () => this.classicRun && this.campaign === null,
+      enumerable: true,
+      configurable: true,
+    });
+    // Classic mode's music sets (G-060): every song asked for goes through classicMusic, which
+    // leaves it alone outside a Classic mode run.
+    deps.ctx.audio.setMusicMap?.((id) => this.classicMusic(id));
+  }
+
+  /** A hero was just picked on the select screen open now (its choose jingle plays as it closes). */
+  private heroChosen = false;
+
+  /** Options > Music set's Random roll for each level scene (G-066): one per area, as it loads. */
+  private readonly musicRolls = new WeakMap<LevelScene, 'character' | 'map'>();
+
+  /**
+   * The song Classic mode plays for `id` (G-060, original-music.ts musicFor): the playing hero's
+   * set's, or the SMB set's, for the area being played. Unchanged outside a Classic mode run or
+   * with a campaign file open (the campaign's music is never touched).
+   */
+  classicMusic(id: string): string | null {
+    if (!this.classicRun || this.campaign !== null) return id;
+    const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const choice = this.deps.settings?.classic.musicSet ?? 'character';
+    let set: 'character' | 'map' = choice === 'map' ? 'map' : 'character';
+    if (choice === 'random') {
+      // MusicSets.RANDOM: Character or Map at random (GameSettings.getMusicSet), once per area.
+      const rolled = scene ? this.musicRolls.get(scene) : undefined;
+      set = rolled ?? (Math.random() < 0.5 ? 'map' : 'character');
+      if (scene && !rolled) this.musicRolls.set(scene, set);
+    }
+    return musicFor(id, {
+      hero: scene?.world.player.def.id ?? this.state.character.id,
+      level: scene?.level ?? null,
+      boss: scene?.bossMusic ?? false,
+      set,
+    });
+  }
+
+  /**
+   * A select screen opened (CharacterSelectScene.enter): Classic mode's has the SMB set's select
+   * music (G-061; the original's always comes from the map skin, SMB's here).
+   */
+  selectEntered(classic: boolean): void {
+    this.heroChosen = false;
+    if (classic && this.campaign === null) this.deps.ctx.audio.playMusic(SMB_SET.select);
+  }
+
+  /**
+   * A select screen closed (CharacterSelectScene.exit): in Classic mode the chosen hero's choose
+   * jingle plays over the WORLD card (G-062; CharacterSelect.as 191); Proto Man whistles instead
+   * (his pick sound), so his set has none. Anywhere else nothing.
+   */
+  selectLeft(classic: boolean): void {
+    // Only a pick plays it: Back (or any other way out) leaves in silence for the next scene's music.
+    const chosen = this.heroChosen;
+    this.heroChosen = false;
+    if (!classic || this.campaign !== null) return;
+    // Back without a pick: the select music stops (the CLASSIC menu is silent).
+    if (!chosen) return this.deps.ctx.audio.stopMusic();
+    this.playChooseJingle(this.state.character.id);
+  }
+
+  /**
+   * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
+   * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
+   * The one trigger of both: today the select's close after a pick (selectLeft) calls it.
+   */
+  playChooseJingle(id: string): void {
+    const song = setSong(heroSet(id), 'choose');
+    if (song) this.deps.ctx.audio.playJingle(song);
+    else this.deps.ctx.audio.stopMusic();
+    const sfx = CHOOSE_SFX[id];
+    if (sfx) this.deps.ctx.audio.sfx(sfx);
   }
 
   /**
@@ -1163,6 +1247,12 @@ export class Game {
     const code = this.saveLink;
     if (code === null) return false;
     this.saveLink = null;
+    // 0.5.0 (G-101): the campaign is closed outside dev mode. The card says so, and the link stays
+    // in the address (nothing is loaded or cleared), so it still works once Chapter 1 is out.
+    if (!this.campaignOpen) {
+      showChapter1Gate(this, CHAPTER1_LINK_CARD);
+      return true;
+    }
     this.scenes.push(
       new LoadCodeScene(this, readSaveCode(code, 1), {
         done: (slot) => {
@@ -1350,6 +1440,7 @@ export class Game {
         player,
         current,
         onPick: (c) => {
+          this.heroChosen = true;
           if (c !== current) this.setHero(player, c);
           then();
         },
@@ -1506,6 +1597,19 @@ export class Game {
 
   get devMode(): boolean {
     return this.deps.settings?.dev ?? false;
+  }
+
+  /** The dev-mode lock: open unless a release build gave one (0.5.0). */
+  get devLock(): DevLock {
+    return this.deps.devLock ?? OPEN_DEV_LOCK;
+  }
+
+  /**
+   * Whether the story campaign (Chapter 1) can be opened from the title or a resume link: only
+   * with dev mode on until Chapter 1 ships (0.5.0, G-100; scenes/chapter1-gate.ts).
+   */
+  get campaignOpen(): boolean {
+    return this.devMode;
   }
 
   /** The map rules' `unlockAll`: the file's "Unlock all" flag, only while dev mode is on. */
@@ -1918,7 +2022,10 @@ export class Game {
     }
     this.scenes.replace(
       new CharacterSelectScene(this, null, {
-        begin: (c) => this.classicGame(c, levelId),
+        begin: (c) => {
+          this.heroChosen = true;
+          this.classicGame(c, levelId);
+        },
         back,
         random: true,
       }),
@@ -2233,6 +2340,7 @@ export class Game {
         onPick: (c) => {
           // StatManager.playerDie resets the fallen hero to PS_NORMAL; a newly picked hero
           // starts from its default state too.
+          this.heroChosen = true;
           this.setHero(p2 ? 1 : 0, c);
           then();
         },

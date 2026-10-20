@@ -26,6 +26,7 @@ import { BILL } from './index';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
 import { BillShot, billShotsOut, CLASSIC_GUNS, clearBillShots, type ClassicGunId } from './classic-weapons';
 import { weaponOf } from '../classic/options';
+import { landSound } from '../classic/sounds';
 
 /**
  * Classic SMBC Bill (bug-reports/2026-10-07-bill-classic-smbc-rules.md, BI-C1..BI-C32): the
@@ -187,11 +188,12 @@ function spawn(
 }
 
 const SFX: Readonly<Record<ClassicGunId, string>> = {
-  rifle: 'buster',
-  mg: 'buster',
+  // His own guns' sounds (G-074): the rifle's and machine gun's pop, the flame gun's roar.
+  rifle: 'bill-shot',
+  mg: 'bill-shot',
   spread: 'spread',
   laser: 'laser',
-  flare: 'fireball',
+  flare: 'bill-flame',
 };
 
 /** Fires `gun` once with the current aim if its cap allows. True when anything was fired. */
@@ -450,6 +452,7 @@ export const BILL_CLASSIC: CharacterDef = {
   },
   behaviour: {
     update(p, input, world) {
+      landSound(p, world, 'bill-land');
       // BI-C4: a somersault from a jump or a spring launch until landing.
       if (p.body.onGround || p.vine) delete p.scratch._somersault;
       else if (p.jumping || p.launched) p.scratch._somersault = 1;

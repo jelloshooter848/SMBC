@@ -36,6 +36,7 @@ import {
 import { loadSave } from '@game/save/save-files';
 import { draw, makeGame, useStorage } from './heroes-harness';
 import { ALL_STORY } from './story-seen';
+import { openChapter1 } from './chapter1-open';
 
 // A new file's Chapter 1 start, end to end (0.4.23, docs/STORY.md 2.1-2.4): the real Game,
 // driven with button presses and a few shortcuts (Pause → Skip tutorial for 1-0, a level's exit
@@ -222,8 +223,10 @@ describe("Chapter 1's start on a new file (0.4.23, end to end)", () => {
     h.game.ctx.assist.invulnerable = true;
 
     // Title → Start game → slot 1: a new file opens on Peach's note.
+    openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
     h.game.showTitle();
     f.idle(8);
+    f.tap('down');
     f.tap('start');
     expect(top(f)).toBeInstanceOf(FileSelectScene);
     f.idle(8);

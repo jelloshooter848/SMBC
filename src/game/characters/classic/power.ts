@@ -5,6 +5,7 @@ import type { World } from '../../world/world';
 import type { CharacterBehaviour, HurtResult } from '../character';
 import type { PickupKind } from '../../entities/objects/pickup';
 import { dropOffset, optionsOf } from './options';
+import { heroSound, pickupSound } from './sounds';
 
 /**
  * Classic SMBC power states, hit response, drops and Star (`2026-10-07-classic-power-states.md`,
@@ -246,7 +247,8 @@ export function classicOnPowerUp(
       world.audio.playMusic('star');
       break;
     case '1up':
-      world.addLife(p.body.x, p.body.y - px(16));
+      // The hero's default pickup sound in place of the 1-up's (G-073; Mega Man's new life).
+      world.addLife(p.body.x, p.body.y - px(16), heroSound(p.def, 'item', '1up'));
       break;
   }
 }
@@ -276,7 +278,8 @@ export function classicOnHurt(
   p.sliding = 0;
   p.crouching = false;
   p.scratch._hurtAt = p.frame;
-  world.audio.sfx('pipe');
+  // The hero's own take-damage sound (G-071), else Mario's.
+  world.audio.sfx(heroSound(p.def, 'hurt', 'pipe'));
   startResponse(p, fromDir, kit, to === 'small');
   return 'hurt';
 }
@@ -450,7 +453,8 @@ export function classicPickup(
     const k = keyOf(a, p);
     p.scratch[k] = Math.min((p.scratch[k] ?? 0) + add, maxOf(a, p));
   }
-  world.audio.sfx('pickup');
+  // The hero's own pickup sound for this kind (G-073), else the shared one.
+  world.audio.sfx(pickupSound(p.def, kind));
   return true;
 }
 
