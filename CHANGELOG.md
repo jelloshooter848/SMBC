@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: the original's **Cheats** (CLASSIC > Options > Cheats): All Ground Is Bricks, All Hammer Bros, All
+  Weapons Pierce, Always Break Bricks, Bouncy Pits, Classic Scroll (no scrolling back left), Everyone Can Stomp, Evil
+  Hammer Bros, Extra Checkpoints, Infinite Ammo, Infinite Lives, Infinite Time, Invincible and Water Mode. All are off
+  by default and most start locked behind the original's goals (beat any level, beat a castle, beat a game, defeat
+  enough enemies, Hammer Bros or Cheep Cheeps, stomp enemies, break bricks, collect ammo); a locked cheat's row tells
+  its goal and count, and the original's secret code unlocks them all. Unlocks are told on the select screen after a
+  clear, or on a card at once mid-level. They play only in a Classic mode run with Classic rules, never in the
+  campaign. Developer mode opens every cheat from the Classic pause menu.
+- Classic mode's new enemy **Spike Top** (its own art): a Goomba-sized crawler with an armoured, spiked shell that
+  cannot be stomped, ready as a Replace Goombas choice.
+
 ## [0.4.59] - 2026-10-20
 
 ### Added
