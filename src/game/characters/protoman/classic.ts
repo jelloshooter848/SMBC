@@ -44,7 +44,10 @@ export const PROTOMAN_CLASSIC: CharacterDef = {
     sheet: 'protoman',
     palette: 'protoman',
     pickSfx: 'protoman-whistle',
+    // G-054: white orbs (skins 3-5 are not colour-particle skins).
+    orbs: 'white',
   }),
+  lookOf: 'megaman',
   // The castle text's name (PM-M8, BA-M13, PI-M5): Mega Man's Proto Man skin, skin 3
   // (BmdInfo.as:896).
   rescueName: 'Roll',
@@ -56,7 +59,10 @@ export const BREAKMAN_CLASSIC: CharacterDef = {
     base: identity('breakman', 'Break Man', 'BREAK', 'breakman'),
     sheet: 'protoman',
     palette: 'breakman',
+    // G-054: white orbs (skins 8, 9, 19 are not colour-particle skins).
+    orbs: 'white',
   }),
+  lookOf: 'megaman',
   // The castle text's name (PM-M8, BA-M13, PI-M5): Mega Man's Break Man skin, skin 8
   // (BmdInfo.as:916).
   rescueName: 'Roll',

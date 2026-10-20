@@ -61,11 +61,17 @@ export function wrapHanging(text: string, cols: number): string[] {
  * Classic-only extras); under Current it is deps.characters, unchanged.
  */
 export class GuideIndexScene extends MenuScene {
-  constructor(game: Game, onBack: () => void) {
+  /**
+   * `classic` (G-093): opened from Classic mode's menus, where no run plays yet; the list is the
+   * Classic select's heroes under Options > Classic rules. A Classic run lists its select's heroes.
+   */
+  constructor(game: Game, onBack: () => void, classic = false) {
     super(game, 'HOW TO PLAY', [], onBack);
-    const rules = game.liveRules;
+    const fromMenu = classic && !game.classicRun && game.campaign === null;
+    const rules = fromMenu ? (game.deps.settings?.classicRules ?? 'classic') : game.liveRules;
+    const heroes = fromMenu ? game.slotsFor(rules) : game.classicRun ? game.heroSlots : game.roster;
     this.setItems([
-      ...game.roster
+      ...heroes
         .map((hero) => heroFor(hero, rules))
         .map((c) => ({
           label: c.name,

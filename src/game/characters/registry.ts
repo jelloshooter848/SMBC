@@ -122,6 +122,14 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   PEACH_CLASSIC,
   // Sir Arthur (AR-2): after Peach.
   ARTHUR_CLASSIC,
+  // 0.5.0's looks (G-050..G-053): skins on Mario's, Link's, Ryu's, Bass's and Luigi's slots.
+  ...[
+    ...(CLASSIC_SKIN_LISTS.mario ?? []),
+    ...(CLASSIC_SKIN_LISTS.link ?? []),
+    ...(CLASSIC_SKIN_LISTS.ryu ?? []),
+    ...(CLASSIC_SKIN_LISTS.bass ?? []),
+  ].filter((d) => d.rules === 'classic' && d.id !== 'bass'),
+  ...(CLASSIC_SKIN_LISTS.luigi ?? []).filter((d) => d.rules === 'classic' && d.id !== 'peach'),
   // Yoshi (YO-2): last.
   YOSHI_CLASSIC,
 ];

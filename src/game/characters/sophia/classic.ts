@@ -247,6 +247,8 @@ function roll(p: Player, chance: number, r: { chance(p: number): boolean }): Pic
 export const SOPHIA_CLASSIC: CharacterDef = {
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'your frog',
+  // ScreenManager.displayThankYouText: Sophia III's skins thank Jason (THANK YOU JASON!).
+  thanksName: 'Jason',
   ...SOPHIA,
   rules: 'classic',
   // R1: the select screen and the intro card show her Classic art.

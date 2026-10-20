@@ -10,10 +10,23 @@ import { drawRulesTag } from '../hud/rules-tag';
 import { rulesOf } from '../context';
 import { heroFor } from '../characters/registry';
 import { shownPortrait } from '../characters/character';
+import type { InputFrame } from '@engine/input/input-manager';
+import { CARD_GUARD_FRAMES } from './message';
 
-/** The black "WORLD 1-1  × 3" card shown before a level, under the HUD row. */
+/** Frames the card stays up: the original's 2000 ms (PRELEVEL_DEFAULT_ALL_CHARS). */
+export const INTRO_FRAMES = 120;
+/** Single Character keeps the original's longer 2500 ms (DUR_TMR_PRE_LEVEL_DEFAULT). */
+export const INTRO_FRAMES_SINGLE = 150;
+
+/**
+ * The black "WORLD 1-1  × 3" card shown before a level, under the HUD row. It moves on by itself,
+ * as the original's InformativeBlackScreen does: the one written exception to "text never moves
+ * on without a press" (owner decision D4, G-090; docs/ACCESSIBILITY.md). It is announced, and in
+ * a Classic run (`opts.skippable`) a fresh JUMP, ATTACK or START press skips it.
+ */
 export class IntroScene implements Scene {
   private t = 0;
+  private done = false;
   /**
    * `time` is the clock the level will start with, shown in the HUD row across the top as the
    * original does (InformativeBlackScreen adds TopScreenText, and TopScreenText.initiateBlackScreen
@@ -23,14 +36,27 @@ export class IntroScene implements Scene {
     private readonly game: Game,
     private readonly next: () => void,
     private readonly time: number | null = null,
+    private readonly opts: { frames?: number; skippable?: boolean } = {},
   ) {}
 
+  /** A Classic run's card: a SKIP button once the guard is over (G-090, D4: a press skips it). */
   touchLabels(): TouchLabels {
-    return NO_TOUCH_BUTTONS;
+    return this.opts.skippable === true && this.t > CARD_GUARD_FRAMES
+      ? { ...NO_TOUCH_BUTTONS, jump: 'SKIP' }
+      : NO_TOUCH_BUTTONS;
   }
 
-  update(): void {
-    if (++this.t >= 120) this.next();
+  update(_input?: InputFrame, inputs: readonly InputFrame[] = []): void {
+    if (this.done) return;
+    const t = ++this.t;
+    const skip =
+      this.opts.skippable === true &&
+      t > CARD_GUARD_FRAMES &&
+      inputs.some((i) => i.pressed('jump') || i.pressed('attack') || i.pressed('start'));
+    if (skip || t >= (this.opts.frames ?? INTRO_FRAMES)) {
+      this.done = true;
+      this.next();
+    }
   }
 
   render(r: Renderer): void {

@@ -25,6 +25,11 @@ export const pitPalettes: Record<string, string[]> = {
   // Dark Pit: black wings and tunic, dark hair, a red bow and wreath.
   darkpit: [NES.black, NES.darkGray, NES.black, NES.skin, NES.gray, NES.redBright],
   'darkpit-varia': [NES.black, NES.gray, NES.black, NES.skin, NES.lightGray, NES.red],
+  // Missile mode (the Classic Samus cheat, G-040): a green tunic, our own pick.
+  'pit-missile': [NES.black, NES.greenLight, NES.brownDark, NES.skin, NES.lightGray, NES.yellow],
+  'pit-varia-missile': [NES.black, NES.greenLight, NES.brownDark, NES.skin, NES.white, NES.yellow],
+  'darkpit-missile': [NES.black, NES.greenDark, NES.black, NES.skin, NES.gray, NES.redBright],
+  'darkpit-varia-missile': [NES.black, NES.greenDark, NES.black, NES.skin, NES.lightGray, NES.red],
 };
 
 /* ---------- composition helpers ---------- */

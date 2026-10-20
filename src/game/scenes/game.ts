@@ -24,7 +24,14 @@ import {
 } from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
-import { IntroScene } from './intro';
+import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
+import {
+  clearClassicResume,
+  loadClassicResume,
+  resumeOf,
+  saveClassicResume,
+  type ClassicResume,
+} from '../run-resume';
 import { LevelScene, type LevelStart } from './level';
 import { freshSeed, startTime } from '../world/world';
 import { Rng } from '@engine/rng';
@@ -431,8 +438,10 @@ export class Game {
       set = rolled ?? (Math.random() < 0.5 ? 'map' : 'character');
       if (scene && !rolled) this.musicRolls.set(scene, set);
     }
+    // A look with no set of its own plays its hero's (CharacterDef.lookOf).
+    const def = scene?.world.player.def ?? this.state.character;
     return musicFor(id, {
-      hero: scene?.world.player.def.id ?? this.state.character.id,
+      hero: heroSet(def.id) ? def.id : (def.lookOf ?? def.id),
       level: scene?.level ?? null,
       boss: scene?.bossMusic ?? false,
       set,
@@ -456,17 +465,40 @@ export class Game {
   selectLeft(classic: boolean): void {
     // Only a pick plays it: Back (or any other way out) leaves in silence for the next scene's music.
     const chosen = this.heroChosen;
+    const sounded = this.chooseSounded;
     this.heroChosen = false;
+    this.chooseSounded = false;
     if (!classic || this.campaign !== null) return;
     // Back without a pick: the select music stops (the CLASSIC menu is silent).
     if (!chosen) return this.deps.ctx.audio.stopMusic();
-    this.playChooseJingle(this.state.character.id);
+    // Already played as the pick performance began (heroPicked), else now.
+    if (!sounded) this.playChooseJingle(this.chooseId(this.state.character));
+  }
+
+  /** The choose jingle was played (heroPicked) for this select. */
+  private chooseSounded = false;
+
+  /**
+   * A Classic select's pick performance begins (CharacterSelectScene.perform, G-055): the
+   * chosen hero's choose jingle (G-062) and its choose sound (G-070) play now, as the original's
+   * chooseCharacter plays them with the move, not when the select closes.
+   */
+  heroPicked(c: CharacterDef): void {
+    if (this.campaign !== null) return;
+    this.chooseSounded = true;
+    this.playChooseJingle(this.chooseId(c));
+  }
+
+  /** The id hero `c` chooses as: its own set's, else (a look with none) its hero's (lookOf). */
+  private chooseId(c: CharacterDef): string {
+    return heroSet(c.id) ? c.id : (c.lookOf ?? c.id);
   }
 
   /**
    * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
    * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
-   * The one trigger of both: today the select's close after a pick (selectLeft) calls it.
+   * The one trigger of both: the pick performance's start (heroPicked), else the select's close
+   * after a pick (selectLeft).
    */
   playChooseJingle(id: string): void {
     const song = setSong(heroSet(id), 'choose');
@@ -542,8 +574,23 @@ export class Game {
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
-    const roster = this.roster;
-    if (this.liveRules !== 'classic' || this.campaign !== null) return roster;
+    const slots = this.slotsFor(this.liveRules);
+    // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
+    // always keeping at least one (GeneralOptions.as: the last hero cannot be disabled).
+    if (!(this.classicRun || this.classicFlow) || this.campaign !== null) return slots;
+    const off = this.deps.settings?.classicHeroesOff ?? [];
+    if (off.length === 0) return slots;
+    const on = slots.filter((c) => !off.includes(c.id));
+    return on.length ? on : slots;
+  }
+
+  /**
+   * heroSlots for a run under `rules` (G-093: the Classic menu's How to play lists the heroes a
+   * Classic run would offer, though no run is playing yet).
+   */
+  slotsFor(rules: Rules): CharacterDef[] {
+    const roster = this.rosterFor(rules);
+    if (rules !== 'classic' || this.campaign !== null) return roster;
     const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
     const slots: CharacterDef[] = [];
     for (const id of ids) {
@@ -556,6 +603,12 @@ export class Game {
         slots.push(c);
     return slots.length ? slots : roster;
   }
+
+  /**
+   * Classic mode's menu flow is under way (classicSelect onward, until the run ends): its select
+   * and Random slot leave out the disabled heroes before classicRun is set (G-032).
+   */
+  private classicFlow = false;
 
   /** Options > Expansion heroes is on (the heroes the original never had are offered). */
   get expansionHeroes(): boolean {
@@ -776,6 +829,8 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
+    // G-008: a Classic run that reaches the credits is over; its resume slot goes.
+    if (this.classicRun && !this.classicDev) clearClassicResume();
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -1421,6 +1476,10 @@ export class Game {
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
     this.selectLevel = levelId;
+    // G-008: the next level is the run's place from here, as the original's file holds the level
+    // just reached (StatManager's current level moves on at the clear); quitting from the select
+    // between levels resumes there.
+    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
     // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
     // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
     if (pipe && this.survival) this.survival.reviveAllowed = true;
@@ -1972,6 +2031,7 @@ export class Game {
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     this.classicRun = false;
+    this.classicFlow = false;
     this.classicDev = false;
     this.survival = null;
   }
@@ -1987,6 +2047,91 @@ export class Game {
     } catch {
       return true;
     }
+  }
+
+  /** G-008: writes the resume slot for the WORLD card of `levelId`. */
+  private keepResume(levelId: string): void {
+    const sv = this.survival;
+    const survival = sv
+      ? {
+          fallen: this.heroSlots.map((c) => c.id).filter((id) => sv.isFallen(id)),
+          reviveAllowed: sv.reviveAllowed,
+        }
+      : undefined;
+    const r = resumeOf(levelId, this.state, this.liveRules, survival);
+    // The level's own world and stage (before its WORLD card the state still holds the last one's).
+    try {
+      const lv = this.deps.getLevel(levelId);
+      r.world = lv.world;
+      r.stage = lv.stage;
+    } catch {
+      /* a level that does not load: kept as the state has it */
+    }
+    saveClassicResume(r);
+  }
+
+  /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
+  classicResume(): ClassicResume | null {
+    const r = loadClassicResume();
+    if (!r) return null;
+    const hero = this.rosterFor(r.rules).find((c) => c.id === r.hero);
+    try {
+      this.deps.getLevel(r.levelId);
+    } catch {
+      return null;
+    }
+    return hero ? r : null;
+  }
+
+  /**
+   * CLASSIC > Continue (G-008): the run in the resume slot goes on from the WORLD card of the
+   * level it was in, with its lives, score, coins, hero, power and kit, under its own rules.
+   */
+  resumeClassic(): boolean {
+    const r = this.classicResume();
+    const hero = r ? this.rosterFor(r.rules).find((c) => c.id === r.hero) : undefined;
+    if (!r || !hero) return false;
+    this.tutorialRun = null;
+    this.campaign = null;
+    this.runRules = r.rules;
+    this.classicRun = true;
+    this.classicDev = false;
+    this.pickedRandom = false;
+    this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
+    // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
+    const played = this.restoreSlotHero(hero);
+    this.state = newGameState(played, null, this.liveRules);
+    const s = this.state;
+    s.score = r.score;
+    s.coins = r.coins;
+    s.lives = r.lives;
+    s.world = r.world;
+    s.stage = r.stage;
+    s.powerState = r.powerState;
+    s.hp = r.hp;
+    s.kit = { ...r.kit };
+    s.warped = r.warped;
+    s.checkpoint = r.checkpoint;
+    this.survival = null;
+    if (r.survival && this.survivalMode) {
+      const sv = this.newSurvival();
+      // A fallen look is its slot's hero (an older run kept Peach by her own id: Luigi's slot).
+      const roster = this.rosterFor(r.rules);
+      const fallen = r.survival.fallen.map((id) => {
+        const d = roster.find((c) => c.id === id);
+        return d ? this.slotOf(d).id : id;
+      });
+      for (const c of this.heroSlots) if (!fallen.includes(c.id)) sv.revive(c.id);
+      sv.reviveAllowed = r.survival.reviveAllowed;
+      this.survival = sv;
+    }
+    this.playtestDone = null;
+    this.quickRespawn = false;
+    this.backupDue = null;
+    this.pendingLevel = null;
+    this.deps.announcer?.say('Continue.');
+    this.goToLevel(r.levelId, { mode: 'stand' });
+    return true;
   }
 
   /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
@@ -2006,6 +2151,9 @@ export class Game {
     this.campaign = null;
     this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
+    // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
+    // applies before the run itself starts (heroSlots, G-032).
+    this.classicFlow = true;
     this.pickedRandom = false;
     this.selectLevel = levelId;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
@@ -2232,6 +2380,8 @@ export class Game {
       this.startLevel(level, start);
       return;
     }
+    // G-008: a Classic mode run keeps its resume slot at each WORLD card (never a dev run).
+    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
     this.deps.announcer?.say(
@@ -2242,7 +2392,14 @@ export class Game {
     const tutorial = levelTutorial(level);
     if (!tutorial) this.endTutorial();
     const time = tutorial ? null : startTime(level, this.state, start);
-    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time));
+    // A Classic run's card is skipped by a press and stays 2500 ms in Single Character (G-090).
+    const intro = this.classicRun
+      ? {
+          skippable: true,
+          frames: this.deps.settings?.classic.gameMode === 'single' ? INTRO_FRAMES_SINGLE : INTRO_FRAMES,
+        }
+      : {};
+    this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time, intro));
   }
 
   /**
@@ -2311,6 +2468,8 @@ export class Game {
    */
   respawn(levelId: string, start: LevelStart, player = 0): void {
     this.selectLevel = levelId;
+    // G-008: the slot follows the death (its lives) before the select, so quitting there resumes it.
+    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
     if (this.quickRespawn) {
       this.goToLevel(levelId, start);
       return;
@@ -2445,6 +2604,8 @@ export class Game {
    */
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
+    // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
+    if (this.classicRun && !this.classicDev) clearClassicResume();
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

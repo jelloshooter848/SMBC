@@ -193,7 +193,11 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     h.idle(12);
     for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++) h.tap('right');
     h.tap('jump');
+    // G-050, G-055 (0.5.0): Link's looks open first (OK keeps his own); the jingle starts with
+    // his pick performance.
+    if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
     expect(h.jingles).toContain('link-choose');
+    h.until(() => !(h.top() as CharacterSelectScene).performing, 300);
   });
 
   /** Classic mode's first select, then OK on hero `name`. */
@@ -209,6 +213,11 @@ describe('G-061, G-062: select music and the choose jingle', () => {
       expect(h.jingles).toEqual([]);
       h.tap('jump');
     }
+    // G-055 (0.5.0): the pick performance plays out.
+    h.until(
+      () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+      300,
+    );
     return h;
   };
 

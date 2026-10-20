@@ -68,7 +68,8 @@ export function resistsStop(e: Enemy): boolean {
 /** The enemy's full Classic HP (HP-C3, HP-C4), or null for one Classic leaves to Current. */
 export function classicMaxHp(e: Enemy, world: World): number | null {
   if (e instanceof Bowser) {
-    const lead = world.players[0]?.def.id;
+    const def = world.players[0]?.def;
+    const lead = def?.lookOf ?? def?.id;
     if (lead === 'mario' || lead === 'luigi') return CLASSIC_HP['bowser-mario'];
     return CLASSIC_HP[`bowser-${e.attack}`];
   }

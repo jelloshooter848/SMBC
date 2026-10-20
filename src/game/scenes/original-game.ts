@@ -10,6 +10,7 @@ import { MAP_DIFFICULTIES, type ClassicRules, type MapDifficulty } from '@engine
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
+import { ClassicHeroesScene } from './disable-heroes';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
@@ -22,6 +23,7 @@ import {
   rowsOriginal,
 } from './original-options';
 import type { Game } from './game';
+import { worldLabel } from '../hud/world-label';
 import type { Renderer } from '@engine/gfx/renderer';
 
 /**
@@ -203,11 +205,23 @@ export class ClassicMenuScene extends MenuScene {
     // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
     // the hint, drawn as BEATEN at the row's end (render).
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
-    const items: MenuItem[] = MAP_SETS.map((set) => ({
-      label: set.label,
-      select: () => game.classicSelect(set.start, back),
-      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
-    }));
+    const items: MenuItem[] = [];
+    // G-008: the run kept in the resume slot, from the level it was in (the map sets follow it).
+    const kept = game.classicResume();
+    this.firstSetRow = kept ? 1 : 0;
+    if (kept)
+      items.push({
+        label: 'Continue',
+        select: () => void game.resumeClassic(),
+        hint: `Your last run, from the start of ${kept.levelId.startsWith('ll-') ? 'Lost Levels ' : ''}World ${worldLabel(kept.world)}-${kept.stage} with ${kept.lives} ${kept.lives === 1 ? 'life' : 'lives'}`,
+      });
+    items.push(
+      ...MAP_SETS.map((set) => ({
+        label: set.label,
+        select: () => game.classicSelect(set.start, back),
+        hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
+      })),
+    );
     // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
     // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
     // as Normal, which the row shows and says (and it does not change).
@@ -241,6 +255,8 @@ export class ClassicMenuScene extends MenuScene {
 
   /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
   private beaten: boolean[] = [];
+  /** The menu row of the first map set (1 under the Continue row, G-008). */
+  private firstSetRow = 0;
 
   /**
    * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
@@ -255,7 +271,7 @@ export class ClassicMenuScene extends MenuScene {
           font,
           BEATEN_MARK,
           MENU_VALUE_RIGHT - BEATEN_MARK.length * 8,
-          CLASSIC_RULES_Y + i * MENU_ROW_H,
+          CLASSIC_RULES_Y + (i + this.firstSetRow) * MENU_ROW_H,
         );
     });
   }
@@ -319,6 +335,12 @@ export class ClassicOptionsScene extends MenuScene {
       },
       optionItem(game, MUSIC_SET_ROW, () => this.build()),
       {
+        label: 'Disable heroes',
+        value: () => String(game.deps.settings?.classicHeroesOff?.length ? 'Some off' : 'All on'),
+        select: () => game.scenes.push(new ClassicHeroesScene(game, () => this.back())),
+        hint: 'Leave heroes out of the select and Random',
+      },
+      {
         label: 'Cheats',
         select: () => game.scenes.push(new CheatsScene(game, () => this.back(), { all: game.devMode })),
         hint: game.devMode
@@ -327,7 +349,7 @@ export class ClassicOptionsScene extends MenuScene {
       },
       {
         label: 'All options',
-        select: () => game.scenes.push(new OptionsScene(game, () => this.back())),
+        select: () => game.scenes.push(new OptionsScene(game, () => this.back(), false, true)),
         hint: 'Video, audio, controls and more',
       },
       { label: 'Back', select: onBack },
