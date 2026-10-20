@@ -178,7 +178,7 @@ export class ClassicOptionsScene extends MenuScene {
       },
       {
         label: 'All options',
-        select: () => game.scenes.push(new OptionsScene(game, () => this.back())),
+        select: () => game.scenes.push(new OptionsScene(game, () => this.back(), false, true)),
         hint: 'Video, audio, controls and more',
       },
       { label: 'Back', select: onBack },

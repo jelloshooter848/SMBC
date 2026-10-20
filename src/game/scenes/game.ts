@@ -436,8 +436,16 @@ export class Game {
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
-    const roster = this.roster;
-    if (this.liveRules !== 'classic' || this.campaign !== null) return roster;
+    return this.slotsFor(this.liveRules);
+  }
+
+  /**
+   * heroSlots for a run under `rules` (G-093: the Classic menu's How to play lists the heroes a
+   * Classic run would offer, though no run is playing yet).
+   */
+  slotsFor(rules: Rules): CharacterDef[] {
+    const roster = this.rosterFor(rules);
+    if (rules !== 'classic' || this.campaign !== null) return roster;
     const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
     const slots: CharacterDef[] = [];
     for (const id of ids) {

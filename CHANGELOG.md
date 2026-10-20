@@ -19,6 +19,13 @@ under `## [Unreleased]`.
 - With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
   rules) is held steady: the hero stays drawn, see-through, instead of blinking.
 
+### Added
+
+- Classic mode's pause has a **Guide** row with the Classic hero's own How to play page, and How to play
+  from Classic mode's options lists the Classic select's heroes as Classic mode plays them.
+- Classic mode's pause has the original's **Cheats** row: turn your unlocked cheats on or off mid-run;
+  Invincible and the other assist-like cheats apply at once, and Water Mode floods the level at once.
+
 ## [Unreleased]
 
 ### Added

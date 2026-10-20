@@ -184,13 +184,14 @@ describe('the Cheats page', () => {
     expect(labels(page)).not.toContain('Enter code');
   });
 
-  it('the Classic pause has no Cheats row; in developer mode it opens every cheat, live', () => {
+  // G-031 (0.5.0): the Classic pause has the original's Cheats row (Pause > Options > Cheats).
+  it('the Classic pause has a Cheats row; in developer mode it opens every cheat, live', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     h.until(() => inLevel(h), 600);
     h.idle(4);
     h.tap('start');
-    expect(labels(h.top())).not.toContain('Cheats');
+    expect(labels(h.top())).toContain('Cheats');
     const d = classic({ dev: true });
     d.game.classicGame(MARIO);
     d.until(() => inLevel(d), 600);

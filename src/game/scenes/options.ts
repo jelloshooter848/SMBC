@@ -20,7 +20,8 @@ const step = (v: number, dir: number, lo: number, hi: number, by: number) =>
 
 /** Options root: video, audio, controls, assists and asset packs. Every change is applied and saved immediately. */
 export class OptionsScene extends MenuScene {
-  constructor(game: Game, onBack: () => void, translucent = false) {
+  /** `classic`: opened from Classic mode's menus (How to play then lists its heroes, G-093). */
+  constructor(game: Game, onBack: () => void, translucent = false, classic = false) {
     super(game, 'OPTIONS', [], onBack, translucent);
     this.setItems([
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
@@ -33,7 +34,7 @@ export class OptionsScene extends MenuScene {
       },
       {
         label: 'How to play',
-        select: () => this.push(new GuideIndexScene(game, () => this.pop())),
+        select: () => this.push(new GuideIndexScene(game, () => this.pop(), classic)),
         hint: 'Controls and power-ups for every hero',
       },
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
