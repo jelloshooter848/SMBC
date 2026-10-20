@@ -9,7 +9,7 @@ import { LINK } from '@game/characters/link';
 import { layeredLevel, layerFlags } from '@game/level/layers';
 import { isSwimLevel, type LevelData, type Zone } from '@game/level/schema';
 import { heroFor } from '@game/characters/registry';
-import { TileMap } from '@game/world/tilemap';
+import type { TileMap } from '@game/world/tilemap';
 import { FALL_IN_STEER_Y } from '@game/world/world';
 import type { WorldStart } from '@game/world/world';
 import { drops, dropSim } from './safety-floor-bot';

@@ -43,7 +43,15 @@ export function isWorldItem(kind: PowerUpKind): kind is WorldItem {
 }
 
 /** Items that stay on their block once out (plain Pickups in the original: defyGrav, vy = 0). */
-const STAYS: ReadonlySet<PowerUpKind> = new Set(['flower', 'clock', 'bee', 'atom', 'hammer', 'wing', 'rabbit']);
+const STAYS: ReadonlySet<PowerUpKind> = new Set([
+  'flower',
+  'clock',
+  'bee',
+  'atom',
+  'hammer',
+  'wing',
+  'rabbit',
+]);
 
 /** The kinds that are the original's Mushroom (red, ST_GREEN and ST_POISON), with its gBounceHit. */
 const MUSHROOMS: ReadonlySet<PowerUpKind> = new Set(['mushroom', '1up', 'poison']);
