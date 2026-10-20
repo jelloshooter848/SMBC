@@ -46,7 +46,7 @@ import {
   type ShotDir,
 } from './classic-weapons';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, LINK_FLIP_TICKS, WALK_ABAB, walkPose } from '../classic/anim';
-import { LINK_CLASSIC_SHIELD, LINK_CLASSIC_TOP } from '@content/sprites/link-classic';
+import { LINK_CLASSIC_TOP } from '@content/sprites/link-classic';
 
 /**
  * Classic SMBC Link (2026-10-07-link-classic-smbc-rules.md, LK-C1..LK-C45): the original's
@@ -465,10 +465,9 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
         name = 'idle';
     }
   }
-  if (p.powerState !== 'small' && LINK_CLASSIC_SHIELD.has(name)) name = `${name}-shield`;
   // The 12 x 16 body under the 16 x 16 art; a blade over the head makes the cell taller.
   return {
-    sheet: 'link-classic',
+    sheet: p.powerState === 'small' ? 'link-classic' : 'link-classic-shield',
     palette,
     frame: name,
     flip: p.facing < 0,

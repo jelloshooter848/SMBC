@@ -515,10 +515,10 @@ const SHIELD_AT: Record<string, [number, number]> = {
   'attack-2': [10, 7],
   'attack-air': [10, 8],
 };
-for (const [name, [x, y]] of Object.entries(SHIELD_AT)) {
-  const f = frames[name] as string[];
-  frames[`${name}-shield`] = paste(f, shieldSide, x, y);
-}
+/** With the shield: every frame, those in SHIELD_AT with it painted on (the same names). */
+const shielded: Record<string, string[]> = { ...frames };
+for (const [name, [x, y]] of Object.entries(SHIELD_AT))
+  shielded[name] = paste(frames[name] as string[], shieldSide, x, y);
 
 /** Rows of a frame above the body's top (a blade over the head), else 0. */
 export const LINK_CLASSIC_TOP: Record<string, number> = {
@@ -527,7 +527,7 @@ export const LINK_CLASSIC_TOP: Record<string, number> = {
   'up-thrust-0': UP_ROWS,
   'up-thrust-1': UP_ROWS,
 };
-export const LINK_CLASSIC_SHIELD = new Set(Object.keys(SHIELD_AT));
-export const LINK_CLASSIC_DOWN_ROWS = DOWN_ROWS;
 
 export const linkClassicDef: SpriteDef = { palette: 'link', frames };
+/** The Mushroom and Flower states' sheet (`link-classic-shield`): the same frames, shield in hand. */
+export const linkClassicShieldDef: SpriteDef = { palette: 'link', frames: shielded };

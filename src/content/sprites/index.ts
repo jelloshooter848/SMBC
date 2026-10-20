@@ -8,7 +8,7 @@ import { marioPalettes, marioDef } from './mario';
 import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { linkPalettes, linkDef } from './link';
-import { linkClassicDef, linkClassicPalettes } from './link-classic';
+import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
@@ -123,6 +123,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   'megaman-classic': megamanClassicDef,
   'simon-classic': simonClassicDef,
   'link-classic': linkClassicDef,
+  'link-classic-shield': linkClassicShieldDef,
   // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
   pit: pitDef,
   'pit-shots': pitShotsDef,

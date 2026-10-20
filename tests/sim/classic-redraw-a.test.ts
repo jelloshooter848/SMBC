@@ -266,7 +266,8 @@ describe('feet anchored', () => {
         ['up', 'attack'],
         ...Array.from({ length: 15 }, (): Action[] => ['up']),
       ]);
-      expect(seen.every((s) => s.startsWith('link-classic:'))).toBe(true);
+      expect(seen.filter((s) => !/^link-classic(-shield)?:/.test(s))).toEqual([]);
+      expect(seen.some((s) => s.startsWith('link-classic-shield:'))).toBe(power !== 'small');
       expect(new Set(seen).size).toBeGreaterThan(4);
     }
   });
@@ -310,6 +311,14 @@ describe('feet anchored', () => {
       const seen = standsOnFloor(def, 'big', [...walk, ...Array.from({ length: 60 }, (): Action[] => [])]);
       expect(seen).toContain('mario-classic:big-idle');
     }
+  });
+
+  it("Link's shield is drawn only with the Mushroom or Flower (the original's small Link has none)", () => {
+    const plain = SPRITES['link-classic']?.frames;
+    const shield = SPRITES['link-classic-shield']?.frames;
+    expect(Object.keys(shield ?? {})).toEqual(Object.keys(plain ?? {}));
+    expect(shield?.idle).not.toEqual(plain?.idle);
+    expect(plain?.idle?.join('')).not.toMatch(/a/);
   });
 
   it('the hurt and air poses keep the feet on the body floor too (bottom row of the cell)', () => {
