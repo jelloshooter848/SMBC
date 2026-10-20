@@ -4,7 +4,7 @@ import { worldLabel } from '../hud/world-label';
 import { HUD_BOTTOM, SCORE_MAX } from '../hud/hud';
 import { fontText, wrapText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
-import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
+import { OffsetRenderer, clipped, translucent, type Renderer } from '@engine/gfx/renderer';
 import { overlaps, type AABB } from '@engine/math/aabb';
 import { moveX, type Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
@@ -129,7 +129,7 @@ import { Larry, WAND_BLAST_POINTS, WandBlast } from '../entities/enemies/larry';
 import { Gull, ShieldJoe, TellyPort, Telly, Yoku } from '../entities/enemies/wily-sky';
 import { CANNON_PERIOD, Cannon, isCannonDir } from '../entities/enemies/cannon';
 import { RockyWrench } from '../entities/enemies/rocky-wrench';
-import { startHp, type CharacterDef } from '../characters/character';
+import { startHp, type CharacterDef, type SpriteSpec } from '../characters/character';
 import { damp } from '../characters/profile';
 import { castlePages, REMARK_CASTLES } from '../story/script';
 import { endMoved, FINALE } from '../story/finale';
@@ -999,7 +999,7 @@ export class World {
     }
     // Per-rules level variants (TG-45): Classic SMBC's cells (2-2's and 7-2's stepping stones for
     // floor jumpers, SW-C12; wide heroes' shafts, SO-48). Under Current the map is the level's own.
-    if (this.rules === 'classic')
+    if (this.rules === 'classic') {
       classicRules().levelEdits(
         this.map,
         level.id,
@@ -1007,6 +1007,9 @@ export class World {
         this.spawns,
         this,
       );
+      // The Classic Yoshi mount's egg block and carried rider (YM-5, YM-7; nothing when it is off).
+      classicRules().worldLoaded?.(this);
+    }
 
     // Static objects from the tile grid.
     for (let tx = 0; tx < level.width; tx++) {
@@ -3111,7 +3114,16 @@ export class World {
         // vertical speed alone, and the kick's no-hit window lets the player fall on through it.
         if (e instanceof Koopa && e.isStillShell) return this.kickShell(p, e);
         const r = e.hit({ kind: 'stomp', amount: 1, owner: null, dirX: p.facing }, this);
-        if (r === 'hurtAttacker') return this.hurtPlayer(p);
+        if (r === 'hurtAttacker') {
+          // CharacterDef.stompsSpiky (the Classic Yoshi mount's pair, YM-11): a Spiny is stomped.
+          if (p.def.stompsSpiky && e.kind === 'spiny') {
+            e.hit({ kind: 'star', amount: 1, owner: null, dirX: p.facing }, this);
+            this.scoreStomp(p, e);
+            p.stompBounce();
+            return;
+          }
+          return this.hurtPlayer(p);
+        }
         // A stomp on something that only shrugs it off (Larry Koopa in his shell): the player
         // bounces off unhurt, and it neither scores nor counts as a stomp.
         if (r === 'bounce') {
@@ -4776,6 +4788,27 @@ export class World {
     this.drawPlayer(r, view, p);
   }
 
+  /**
+   * SpriteSpec.rider (the Classic Yoshi mount's rider, YM-20): its frame centred on `cx`, cut at
+   * `top + dy`, the legs below the cut not drawn.
+   */
+  private drawRider(
+    r: Renderer,
+    view: View,
+    u: NonNullable<SpriteSpec['rider']>,
+    cx: number,
+    top: number,
+  ): void {
+    const sheet = view.assets.sheet(u.sheet, u.palette);
+    const f = sheet.frames.get(u.frame);
+    const w = f?.w ?? 16;
+    const h = f?.h ?? 16;
+    const keep = h - (h <= 16 ? 5 : 13);
+    const x = cx - (w >> 1);
+    const y = top + u.dy - keep;
+    clipped(r, x, y, w, keep, () => r.sprite(sheet, u.frame, x, y, u.flip));
+  }
+
   private drawPlayer(r: Renderer, view: View, p: Player): void {
     const s = p.def.sprite(p, view.frame, view.reduceFlashing);
     const sheet = view.assets.sheet(s.sheet, s.palette);
@@ -4793,6 +4826,14 @@ export class World {
     } else {
       const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
       r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+      if (s.rider)
+        this.drawRider(
+          r,
+          view,
+          s.rider,
+          s.flip ? x + w - s.rider.dx : x + s.rider.dx,
+          toPx(p.body.y) - s.offsetY,
+        );
     }
     if (this.coop && p.index > 0 && !p.dead) {
       // Small "2" tag above player two so both players can tell who is who.

@@ -68,6 +68,12 @@ export interface Settings {
    */
   classicRules: ClassicRules;
   /**
+   * Developer toggles for Classic mode (Dev menu; read only while dev mode is on, else the
+   * defaults): the Yoshi mount (off: Classic plays as the original) and the Classic heroes the
+   * original SMBC 3.1.21 did not have (`heroesOff`: their ids, hidden from the Classic select).
+   */
+  classicDev: ClassicDevToggles;
+  /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
    * into older files (every field defaults to the original's: all off, most locked).
@@ -128,6 +134,12 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
   };
 }
 
+/** Settings.classicDev. */
+export interface ClassicDevToggles {
+  yoshiMount: boolean;
+  heroesOff: string[];
+}
+
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
 export type ClassicRules = 'classic' | 'current';
 export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'current'];
@@ -181,6 +193,7 @@ export function defaultSettings(): Settings {
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
     classicCheats: defaultClassicCheats(),
+    classicDev: { yoshiMount: false, heroesOff: [] },
   };
 }
 
@@ -229,6 +242,7 @@ export function loadSettings(): Settings {
     const n = s.classicCheats.stats[k];
     s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
   }
+  s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

@@ -78,6 +78,11 @@ export interface ClassicRulesHooks {
   ): boolean;
   /** Armoured (HP-C12): the cheats' All Weapons Pierce goal counts these defeats. */
   armoured(e: Enemy): boolean;
+  /**
+   * The World of a Classic area is built (players placed, map edited): the Classic Yoshi mount's
+   * egg block and carried rider (2026-10-19-yoshi-build-classic-character.md YM-5, YM-7). Optional.
+   */
+  worldLoaded?(world: World): void;
 }
 
 let hooks: ClassicRulesHooks | null = null;
