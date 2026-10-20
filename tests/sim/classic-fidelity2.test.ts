@@ -67,7 +67,7 @@ describe('walk cycles (CharacterDef.walkAnim)', () => {
     [LINK_CLASSIC, { frames: 4, ticks: 6 }], // 100 ms
     [SIMON_CLASSIC, { frames: 4, ticks: 6.9 }], // 115 ms
     [MEGAMAN_CLASSIC, { frames: 4, ticks: 6 }], // 100 ms
-    [RYU_CLASSIC, { frames: 5, ticks: 4.5 }], // 75 ms
+    [RYU_CLASSIC, { frames: 4, ticks: 4.5 }], // 75 ms; R1 owner decision: 4 distinct run poses
     [BILL_CLASSIC, { frames: 4, ticks: 6.9 }], // 115 ms
     [SAMUS_CLASSIC, { frames: 3, ticks: 3 }], // 50 ms
   ];
@@ -108,8 +108,8 @@ describe('air states', () => {
     expect(seen.slice(0, 8).every((s) => s === 'link-classic:roll-0')).toBe(true);
     expect(seen[9]).toBe('link-classic:roll-1');
     expect(seen[17]).toBe('link-classic:roll-2');
-    expect(seen[26]).toBe('link:jump');
-    expect(seen[33]).toBe('link:jump');
+    expect(seen[26]).toBe('link-classic:jump');
+    expect(seen[33]).toBe('link-classic:jump');
     // It loops while airborne.
     const more = record(r, 10, ['jump']);
     if (!r.p.body.onGround) expect(more.some((s) => s.startsWith('link-classic:roll'))).toBe(true);
@@ -130,7 +130,7 @@ describe('air states', () => {
       rest.push(pose(j));
     }
     expect(rest.length).toBeGreaterThan(0);
-    expect(new Set(rest.slice(0, -1))).toEqual(new Set(['link:jump']));
+    expect(new Set(rest.slice(0, -1))).toEqual(new Set(['link-classic:jump']));
   });
 
   it('Simon tucks while rising and stands while falling, and after an air whip', () => {
@@ -140,12 +140,12 @@ describe('air states', () => {
     expect(pose(r)).toBe('simon-classic:jump-tuck');
     r.until(() => r.p.body.vy > 0, ['jump'], 120);
     r.step();
-    expect(pose(r)).toBe('simon:idle');
+    expect(pose(r)).toBe('simon-classic:idle');
     const w = rig(SIMON_CLASSIC);
     w.step(['jump']);
     w.step(['jump', 'attack']);
     w.until(() => !w.p.scratch._act, ['jump'], 60);
-    if (w.p.body.vy < 0) expect(pose(w)).toBe('simon:idle');
+    if (w.p.body.vy < 0) expect(pose(w)).toBe('simon-classic:idle');
     expect(w.p.scratch._airAtk).toBe(1);
   });
 
@@ -177,16 +177,17 @@ describe('air states', () => {
     const r = rig(RYU_CLASSIC);
     const seen = record(r, 30, ['jump']);
     expect(seen.slice(0, 10)).toEqual([
-      'ryu:jump',
-      'ryu:jump',
-      'ryu:spin-1',
-      'ryu:spin-1',
-      'ryu:spin-2',
-      'ryu:spin-2',
-      'ryu:spin-3',
-      'ryu:spin-3',
-      'ryu:spin-0',
-      'ryu:spin-0',
+      // R1: all on his Classic sheet
+      'ryu-classic:jump',
+      'ryu-classic:jump',
+      'ryu-classic:spin-1',
+      'ryu-classic:spin-1',
+      'ryu-classic:spin-2',
+      'ryu-classic:spin-2',
+      'ryu-classic:spin-3',
+      'ryu-classic:spin-3',
+      'ryu-classic:spin-0',
+      'ryu-classic:spin-0',
     ]);
     expect(seen[23]).not.toBe('ryu-classic:fall');
     expect(seen[24]).toBe('ryu-classic:fall');
@@ -204,7 +205,7 @@ describe('air states', () => {
     const r = rig(BILL_CLASSIC);
     r.step(['jump']);
     r.step(['jump']);
-    expect(pose(r)).toMatch(/^bill:spin-/);
+    expect(pose(r)).toMatch(/^bill-classic:spin-/); // R1: his Classic sheet
   });
 
   it('Samus: knees-up jump, air shot, air aim-up, walk aiming up, and a 33 ms somersault', () => {

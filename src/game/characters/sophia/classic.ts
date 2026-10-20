@@ -1,4 +1,6 @@
 import { px } from '@engine/math/units';
+import { JASON_SMBC_CANVAS, sophiaSmbcDef } from '@content/sprites/smbc-sophia';
+import { JASON_H } from './profile';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { TouchLabels } from '@engine/input/touch';
 import type { CharacterBehaviour, CharacterDef, HurtResult, SpriteSpec } from '../character';
@@ -135,11 +137,21 @@ const KIT: ClassicPowerKit = {
   },
 };
 
-/** The Classic Star cycle (PS-C19) on her hull; the rest of the look is the Current sprite's. */
+/** The frames her Classic sheet draws (R1); the rest (her blasts) stay on the campaign sheet. */
+const CLASSIC_FRAMES = new Set(Object.keys(sophiaSmbcDef.frames));
+
+/**
+ * The Classic Star cycle (PS-C19) on her hull; the poses are the Current sprite's, drawn from her
+ * Classic sheet at the original sizes (R1). Jason's 18-row frames stand on his box's bottom.
+ */
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const spec = currentSprite(p, frame, reduceFlashing);
   const step = p.transition || p.dead ? null : classicStarPaletteStep(p, frame, reduceFlashing);
   if (step !== null) spec.palette = `sophia-star-${step}`;
+  if (CLASSIC_FRAMES.has(spec.frame)) {
+    spec.sheet = 'sophia-classic';
+    if (spec.frame.startsWith('jason-')) spec.offsetY = JASON_SMBC_CANVAS.h - JASON_H;
+  }
   return spec;
 }
 
@@ -237,6 +249,8 @@ export const SOPHIA_CLASSIC: CharacterDef = {
   rescueName: 'your frog',
   ...SOPHIA,
   rules: 'classic',
+  // R1: the select screen and the intro card show her Classic art.
+  portraitArt: { sheet: 'sophia-classic', palette: 'sophia', frame: 'portrait' },
   // A tank never rides the Classic Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-3).
   rides: false,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },

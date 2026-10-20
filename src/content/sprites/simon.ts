@@ -418,29 +418,3 @@ export const simonDef: SpriteDef = {
     'crouch-whip-star': crouchStrike(lashStar),
   },
 };
-
-/* ---------- Classic SMBC's tucked jump (F2) ---------- */
-
-// Knees pulled up level with the hips and pointing forward, the shins folded under them with the
-// boots off the floor (6 rows).
-const legsTuck = [
-  '....044444444440',
-  '....044444444440',
-  '....000000044400',
-  '..........04440.',
-  '.........044440.',
-  '.........000000.',
-];
-
-/**
- * Classic SMBC Simon's rising jump (F2; the original's `jump`, a knees-tucked squat about 23 of
- * his 30 px, shown while rising: Simon.as 655-679), on a sheet of its own (`simon-classic`, his
- * palettes) so the campaign's `simon` sheet keeps its frame set. The whole figure sits 6 px lower
- * than standing: head, the arms-out torso, the tucked legs.
- */
-export const simonClassicDef: SpriteDef = {
-  palette: 'simon',
-  frames: {
-    'jump-tuck': compose(W, H, [head, 0, 9], [torsoArmsOut, 0, 19], [legsTuck, 0, 26], [coil, 1, 27]),
-  },
-};

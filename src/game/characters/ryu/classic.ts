@@ -1,4 +1,6 @@
 import type { InputFrame } from '@engine/input/input-manager';
+import { RYU_SMBC_CANVAS } from '@content/sprites/smbc-ryu';
+import { canvasOffsets } from '@content/sprites/smbc-anchor';
 import type { AABB } from '@engine/math/aabb';
 import { px, velToSub } from '@engine/math/units';
 import type { CharacterDef, SpriteSpec } from '../character';
@@ -424,40 +426,50 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const palette = star === null ? 'ryu' : `ryu-star-${star}`;
   const b = p.body;
   const t = p.attackTimer;
+  // R1: every pose from his Classic sheet at the original sizes (smbc-ryu.ts).
   let name: string;
-  let sheet = 'ryu';
   if (p.dead) name = 'die';
   else if (p.anim === 'hurt') name = 'hurt';
-  else if (p.scratch._jslash) name = `spin-${(frame >> 1) & 3}`;
-  else if ((p.scratch._throwT ?? 0) > 0) name = p.wall ? 'cling' : 'throw';
+  else if (p.scratch._jslash) name = `jslash-${(frame >> 1) & 3}`;
+  else if ((p.scratch._throwT ?? 0) > 0) name = p.wall ? 'cling-throw' : 'throw';
   else if (p.wall) name = 'cling';
+  // On a vine or the flagpole: the pole climb (climbPoleStart / climbPole-2), 115 ms a pose.
+  else if (p.anim === 'climb') name = `climb-${Math.floor(frame / RYU_CLIMB_TICKS) & 1}`;
   else if (t > 0 && t <= LIVE_FROM && t >= LIVE_TO && p.powerState !== 'small') {
     // The Sword Extension's wave on the hit frames (RY-C25); Reduce flashing holds its shimmer.
     const shimmer = reduceFlashing ? 0 : (frame >> 1) & 1;
     name = `${p.crouching ? 'crouch-slash-wave' : 'slash-wave'}-${shimmer}`;
-    sheet = 'ryu-wave';
-  } else if (t > 0) name = p.crouching ? 'crouch-slash' : t > LIVE_FROM ? 'slash-0' : 'slash-1';
-  else if (p.crouching) name = 'crouch';
-  else if (!b.onGround) {
-    name = ryuAirPose(p);
-    if (name === 'fall') sheet = 'ryu-classic';
-  } else if (p.anim === 'walk') name = `walk-${walkPose(p, WALK_RYU)}`;
-  else name = 'idle';
+  } else if (t > 0) {
+    const windUp = t > LIVE_FROM;
+    name = p.crouching ? (windUp ? 'crouch-slash-0' : 'crouch-slash') : windUp ? 'slash-0' : 'slash-1';
+  } else if (p.crouching) name = 'crouch';
+  else if (!b.onGround) name = ryuAirPose(p);
+  else if (p.anim === 'walk') name = `walk-${walkPose(p, WALK_RYU)}`;
+  // standStart..standEnd at ANIM_SLOWEST 130 ms: the breath held on the middle three.
+  else name = Math.floor(frame / RYU_BREATH_TICKS) % 5 >= 2 ? 'idle-1' : 'idle';
+  const box = RYU_CLASSIC.hitbox(p);
   return {
-    sheet,
+    sheet: 'ryu-classic',
     palette,
     frame: name,
     flip: p.facing < 0,
-    offsetX: 2,
-    offsetY: p.crouching ? 16 : 8,
+    ...canvasOffsets(RYU_SMBC_CANVAS, box.w, box.h),
   };
 }
+
+/** The pole climb's 115 ms per pose (ANIM_VERY_SLOW): 6.9 game frames. */
+const RYU_CLIMB_TICKS = 6.9;
+
+/** The idle's 130 ms per frame (ANIM_SLOWEST, Ryu.as): 7.8 game frames. */
+const RYU_BREATH_TICKS = 7.8;
 
 export const RYU_CLASSIC: CharacterDef = {
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Irene',
   ...RYU,
   rules: 'classic',
+  // R1: the select screen and the intro card show his Classic art.
+  portraitArt: { sheet: 'ryu-classic', palette: 'ryu', frame: 'portrait' },
   movement: RYU_CLASSIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: false,
@@ -468,7 +480,7 @@ export const RYU_CLASSIC: CharacterDef = {
   meleeStrikesBlocks: true,
   // Ryu does not grow (RY-C18): Current's 12 x 24 body, 12 x 16 crouched.
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
-  // F2: the original's HRect (27 standing, 25 in the air, 15.75 crouched) and run (5 x 75 ms).
+  // F2: the original's HRect (27 standing, 25 in the air, 15.75 crouched) and run (4 poses x 75 ms, R1).
   hurtbox: (p) => ({
     w: CLASSIC_HURT.w,
     h: p.crouching

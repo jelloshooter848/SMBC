@@ -5,16 +5,19 @@ import { fontPalettes, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
+import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { spikeTopDef } from './spike-top';
-import { linkPalettes, linkDef, linkClassicDef } from './link';
+import { linkPalettes, linkDef } from './link';
+import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
-import { simonPalettes, simonDef, simonClassicDef } from './simon';
+import { simonPalettes, simonDef } from './simon';
+import { simonClassicDef } from './simon-classic';
 import { simonFlameDef } from './simon-flame';
 import { smbcShotPalettes, smbcShotsDef } from './smbc-shots';
 import { ryuPalettes, ryuDef, ryuWaveDef, ryuClassicDef } from './ryu';
@@ -26,7 +29,7 @@ import { smb3Palettes, smb3Def } from './smb3';
 import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
-import { sophiaPalettes, sophiaDef } from './sophia';
+import { sophiaPalettes, sophiaDef, sophiaClassicDef } from './sophia';
 import { vicviperPalettes, vicviperDef } from './vicviper';
 import { yoshiDef, yoshiPalettes } from './yoshi';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
@@ -103,6 +106,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   items: itemsDef,
   decor: decorDef,
   mario: marioDef,
+  // Classic SMBC Mario and Luigi's re-cut frames at the original's sizes (R1).
+  'mario-classic': marioClassicDef,
   enemies: enemiesDef,
   // Classic mode's Spike Top (Replace Goombas), drawn with the enemy palettes.
   'spike-top': spikeTopDef,
@@ -121,6 +126,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   'megaman-classic': megamanClassicDef,
   'simon-classic': simonClassicDef,
   'link-classic': linkClassicDef,
+  'link-classic-shield': linkClassicShieldDef,
   // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
   pit: pitDef,
   'pit-shots': pitShotsDef,
@@ -154,6 +160,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'title-logo': titleLogoDef,
   'title-rift': titleRiftDef,
   sophia: sophiaSheet,
+  // R1: Classic SMBC Sophia III and Jason at the original sizes (characters/sophia/classic.ts).
+  'sophia-classic': sophiaClassicDef,
   // Vic Viper, a Classic-only hero (characters/vicviper/classic.ts).
   vicviper: vicviperDef,
   // Yoshi, a Classic-only hero and the Classic mount (characters/yoshi/classic.ts).
@@ -218,6 +226,7 @@ const defaults: Record<string, readonly string[]> = {
   ...marioPalettes,
   ...enemyPalettes,
   ...linkPalettes,
+  ...linkClassicPalettes,
   ...megamanPalettes,
   ...bassPalettes,
   ...protomanPalettes,

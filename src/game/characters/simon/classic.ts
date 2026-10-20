@@ -1,4 +1,4 @@
-import { px } from '@engine/math/units';
+import { px, toPx } from '@engine/math/units';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { CharacterDef, SpriteSpec } from '../character';
 import { CLASSIC_POWER_STATES } from '../character';
@@ -32,7 +32,8 @@ import {
 } from '../classic/power';
 import { SIMON, SIMON_TOOL_LABELS } from './index';
 import { SIMON_CLASSIC_GUIDE } from './classic-guide';
-import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
+import { CLASSIC_HURT, CLASSIC_WALK_ANIM, walkPose } from '../classic/anim';
+import { SIMON_CLASSIC_FRAMES, SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
 import { startStopwatch, stopwatchRunning } from '../classic/freeze';
 import { weaponOf } from '../classic/options';
 import {
@@ -229,43 +230,60 @@ export function tucked(p: Player): boolean {
   return !p.body.onGround && p.body.vy < 0 && !p.scratch._airAtk && !p.crouching;
 }
 
+/** Simon's four walk poses (walkStart, walk-2, walk-3, walkEnd: 115 ms each). */
+const WALK_4: readonly number[] = [0, 1, 2, 3];
+/** When each dead Simon was first drawn dead (a draw-only clock). */
+const diedAt = new WeakMap<Player, number>();
+/** dieStart (on his knees) for this many frames, then dieEnd (lying flat). */
+const KNEEL_FRAMES = 24;
+
+/**
+ * R1: every pose on his own sheet (`simon-classic`) at the original 3.1.21's sizes (SimonMc:
+ * stand 16x30, whip 24x30 / 16x30 / 22x29, crouch 16x23, tucked jump 16x23, climb 13x34, death
+ * 16x21 then 32x15), feet on the body's floor; the whip's three steps hang, wave and strike with
+ * the lash of his state (leather, chain, the long Flame Whip on `simon-flame`).
+ */
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const star = classicStarPaletteStep(p, frame, reduceFlashing);
   const palette = star === null ? 'simon' : `simon-star-${star}`;
   const act = p.scratch._act ?? 0;
   const t = p.scratch._af ?? 0;
+  const step = t < 7 ? 0 : t < WHIP_LIVE_FROM ? 1 : 2;
   let name: string;
-  let sheet = 'simon';
-  if (p.dead) name = 'die';
-  else if (p.anim === 'hurt' || p.hurtLock) name = 'hurt';
-  else if (act === THROW) name = p.crouching ? 'crouch' : 'throw';
+  let sheet = 'simon-classic';
+  if (!p.dead) diedAt.delete(p);
+  if (p.dead) {
+    let at = diedAt.get(p);
+    if (at === undefined || at > frame) diedAt.set(p, (at = frame));
+    name = frame - at < KNEEL_FRAMES ? 'die-0' : 'die-1';
+  } else if (p.anim === 'hurt' || p.hurtLock) name = 'hurt';
+  else if (act === THROW) name = `${p.crouching ? 'crouch-' : ''}throw-${step}`;
   else if (act === WHIP) {
-    // Whip hangs behind, waves, then strikes; the art closest to each reach.
-    if (t < 7) name = 'whip-0';
-    else if (t < WHIP_LIVE_FROM) name = 'whip-1';
+    const crouch = p.scratch._ac ? 'crouch-' : '';
+    if (step < 2) name = `${crouch}whip-${step}`;
     else if (p.powerState === 'fire') {
-      // The Flame Whip's own 64-wide strike, reaching its full 51 px (sprites/simon-flame.ts).
+      // The Flame Whip's long strike, reaching its full 51 px (sprites/simon-flame.ts).
       sheet = 'simon-flame';
-      name = p.scratch._ac ? 'crouch-whip-flame' : 'whip-flame';
-    } else name = (p.scratch._ac ? 'crouch-' : '') + (p.powerState === 'small' ? 'whip-chain' : 'whip-star');
+      name = `${crouch}whip-flame`;
+    } else name = `${crouch}${p.powerState === 'small' ? 'whip-leather' : 'whip-chain'}`;
   } else if (p.crouching) name = 'crouch';
-  else if (p.anim === 'swim') name = `swim-${(frame >> 3) & 1}`;
+  else if (p.anim === 'climb') name = `climb-${(frame >> 3) & 1}`;
+  else if (p.anim === 'swim') name = `walk-${(frame >> 3) & 3}`;
   else if (!p.body.onGround) {
     // F2 (Simon.as 655-679): the tucked `jump` while rising, the standing pose (`fall`) while
     // falling and for the rest of the air time after a whip or throw up there.
-    if (tucked(p)) {
-      name = 'jump-tuck';
-      sheet = 'simon-classic';
-    } else name = 'idle';
-  } else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${walkPose(p, WALK_ABCB)}`;
+    name = tucked(p) ? 'jump-tuck' : 'idle';
+  } else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${walkPose(p, WALK_4)}`;
   else name = 'idle';
+  const rows = SIMON_CLASSIC_FRAMES[name];
+  const b = p.body;
   return {
     sheet,
     palette,
     frame: name,
     flip: p.facing < 0,
-    offsetX: 2,
-    offsetY: p.crouching ? 16 : 8,
+    offsetX: (SIMON_CLASSIC_ORIGIN[name] ?? 8) - (toPx(b.w) >> 1),
+    offsetY: (rows?.length ?? 32) - toPx(b.h),
   };
 }
 
@@ -321,6 +339,8 @@ export const SIMON_CLASSIC: CharacterDef = {
   rescueName: 'your friend',
   ...SIMON,
   rules: 'classic',
+  // R1: the select screen and the intro card show his Classic art.
+  portraitArt: { sheet: 'simon-classic', palette: 'simon', frame: 'idle' },
   movement: SIMON_CLASSIC_PROFILE,
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   stomps: false,

@@ -2,6 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
+import { heroFor } from '../characters/registry';
 import type { Game } from './game';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
@@ -164,7 +165,8 @@ export class CharacterSelectScene implements Scene {
    * (CharacterDef.portraitFor: the Warriors of Light's remembered class), else `portrait`.
    */
   private portraitOf(c: CharacterDef): CharacterDef['portrait'] {
-    if (!c.portraitFor) return shownPortrait(c);
+    // A Classic run shows each hero's Classic art (R1: drawn at the original's sizes).
+    if (!c.portraitFor) return shownPortrait(heroFor(c, this.game.liveRules));
     const s = this.game.state;
     const second = this.pick?.player === 1 && s.character2 !== null;
     const mine = second ? s.character2 : s.character;

@@ -1,4 +1,6 @@
 import { px } from '@engine/math/units';
+import { BILL_SMBC_CANVAS } from '@content/sprites/smbc-bill';
+import { canvasOffsets } from '@content/sprites/smbc-anchor';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { CharacterDef, CharacterGuide, SpriteSpec } from '../character';
 import { CLASSIC_POWER_STATES } from '../character';
@@ -326,36 +328,35 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const b = p.body;
   const ax = p.scratch.aimX ?? p.facing;
   const ay = p.scratch.aimY ?? 0;
+  const shooting = p.attackTimer > 0;
+  // R1: every pose from his Classic sheet at the original sizes (smbc-bill.ts).
   let name: string;
-  let offsetY = 8;
-  let sheet = 'bill';
   if (p.dead) name = 'die';
-  else if (p.crouching) {
-    name = 'prone';
-    offsetY = 17; // the 32-px frame over the 15-px prone hitbox
-  } else if (!b.onGround) {
+  else if (p.crouching) name = 'prone';
+  else if (p.anim === 'climb') name = `climb-${(frame >> 3) & 1}`;
+  else if (!b.onGround) {
     if (p.scratch._somersault)
-      name =
-        p.attackTimer > 0 && ay !== 0
-          ? ay < 0
-            ? 'aim-diag-up'
-            : 'aim-diag-down'
-          : `spin-${(frame >> 2) & 3}`;
+      name = shooting && ay !== 0 ? (ay < 0 ? 'aim-diag-up' : 'aim-diag-down') : `spin-${(frame >> 2) & 3}`;
     else if (ay < 0) name = ax === 0 ? 'aim-up' : 'aim-diag-up';
     else if (ay > 0) name = 'aim-diag-down';
     else if (p.inWater) name = 'shoot';
-    else {
-      // F2: a walk off a ledge falls upright, legs split (the original's torso and legs `fall`).
-      name = 'fall';
-      sheet = 'bill-classic';
-    }
+    // F2: a walk off a ledge falls upright, legs split (the original's torso and legs `fall`).
+    else name = shooting ? 'fall-shoot' : 'fall';
   } else if (ay < 0 && ax === 0) name = 'aim-up';
   else if (ay < 0) name = 'aim-diag-up';
   else if (ay > 0)
     name = 'aim-diag-down'; // walking with Down + a direction
-  else if (p.anim === 'walk' || p.anim === 'skid') name = `walk-${walkPose(p, WALK_ABCB)}`;
-  else name = p.attackTimer > 0 ? 'shoot' : 'idle';
-  return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY };
+  else if (p.anim === 'walk' || p.anim === 'skid')
+    name = `${shooting ? 'walk-shoot' : 'walk'}-${walkPose(p, WALK_ABCB)}`;
+  else name = shooting ? 'shoot' : 'idle';
+  const box = BILL_CLASSIC.hitbox(p);
+  return {
+    sheet: 'bill-classic',
+    palette,
+    frame: name,
+    flip: p.facing < 0,
+    ...canvasOffsets(BILL_SMBC_CANVAS, box.w, box.h),
+  };
 }
 
 /* ---------- guide and touch (TG-22, BI-C31) ---------- */
@@ -401,6 +402,8 @@ export const BILL_CLASSIC: CharacterDef = {
   name: BILL.name,
   hudName: BILL.hudName,
   portrait: BILL.portrait,
+  // R1: the select screen and the intro card show his Classic art.
+  portraitArt: { sheet: 'bill-classic', palette: 'bill', frame: 'portrait' },
   ...(BILL.music ? { music: BILL.music } : {}),
   rules: 'classic',
   movement: BILL_CLASSIC_PROFILE,

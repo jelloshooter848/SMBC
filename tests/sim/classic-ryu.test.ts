@@ -585,7 +585,7 @@ describe('Fire Wheel stops on what it does not kill; art (RY-C25, RY-C29, RY-C30
     const a = RYU_CLASSIC.sprite(r.p, 0, true).frame;
     const b = RYU_CLASSIC.sprite(r.p, 2, true).frame;
     expect(a).toBe('slash-wave-0');
-    expect(RYU_CLASSIC.sprite(r.p, 0, true).sheet).toBe('ryu-wave');
+    expect(RYU_CLASSIC.sprite(r.p, 0, true).sheet).toBe('ryu-classic'); // R1: his Classic sheet draws the wave now
     expect(b).toBe(a);
     expect(RYU_CLASSIC.sprite(r.p, 2, false).frame).toBe('slash-wave-1');
     expect(SPRITES['ryu-wave']?.frames['slash-wave-0']?.[0]?.length).toBe(56);

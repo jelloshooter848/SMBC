@@ -525,34 +525,11 @@ export const ryuDef: SpriteDef = {
   },
 };
 
-/* ---------- Classic SMBC's fall (F2) ---------- */
-
-// Legs hanging apart on the way down: the front one reaching for the floor, the back one bent
-// a little behind (10 rows).
-const legsFall = [
-  '.....0211110....',
-  '....02100110....',
-  '....0210.0110...',
-  '...0210...0110..',
-  '...0210...0110..',
-  '...0440...0440..',
-  '...0440...0440..',
-  '..0220....02220.',
-  '..000.....00000.',
-  '................',
-];
-
 /**
- * Classic SMBC Ryu's upright fall (F2; the original's `fall`, 17 x 31, after the 400 ms flip of
- * every jump and for every walk off a ledge: Ryu.as 658-661, 1093-1104), on a sheet of its own
- * (`ryu-classic`, his palettes). His flip itself is the `ryu` sheet's tuck and spin frames.
+ * Classic SMBC Ryu's own sheet (`ryu-classic`, his palettes): every pose redrawn at the original
+ * 3.1.21 sizes (R1; smbc-ryu.ts), the Sword Extension's wave frames with them.
  */
-export const ryuClassicDef: SpriteDef = {
-  palette: 'ryu',
-  frames: {
-    fall: compose(W, H, [scarfBack, 0, 10], [head, 0, 3], [torsoJump, 0, 13], [legsFall, 0, 22]),
-  },
-};
+export { ryuSmbcDef as ryuClassicDef } from './smbc-ryu';
 
 /**
  * The Sword Extension's slash frames (Classic SMBC Ryu, RY-C25), on their own sheet `ryu-wave`

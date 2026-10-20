@@ -48,6 +48,7 @@ import {
   type ShotDir,
 } from './classic-weapons';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, LINK_FLIP_TICKS, WALK_ABAB, walkPose } from '../classic/anim';
+import { LINK_CLASSIC_TOP } from '@content/sprites/link-classic';
 
 /**
  * Classic SMBC Link (2026-10-07-link-classic-smbc-rules.md, LK-C1..LK-C45): the original's
@@ -443,7 +444,9 @@ function update(p: Player, input: InputFrame, world: World): void {
 
 /**
  * LK-C21: green, blue (`link-blue`) and red tunics by state. LK-C39: the shield is only drawn (no
- * `blocks` hook, no block pose).
+ * `blocks` hook, no block pose), and only with the Mushroom or the Flower (the original's small
+ * Link has none). R1: every pose on his own 1x sheet (`link-classic`), at the original 3.1.21's
+ * sizes (LinkMc: stand 15x16, walk 14x15 / 15x16, rolls 15x14 / 14x15), feet on the body's floor.
  */
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   let palette = p.powerState === 'fire' ? 'link-red' : p.powerState === 'big' ? 'link-blue' : 'link';
@@ -452,20 +455,30 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   if (star !== null) palette = `link-star-${star}`;
   else if (hurt !== null) palette = `link-star-${hurt}`;
   const pose = p.scratch._pose ?? 0;
+  const t = p.attackTimer;
   let name: string;
-  if (p.dead) name = 'die';
-  else if (p.anim === 'hurt') name = 'hurt';
-  else if (p.attackTimer > 0 && pose === UP) name = 'up-thrust';
-  else if (p.attackTimer > 0 && pose === DOWN) name = 'down-thrust';
-  else if ((p.attackTimer > 0 && pose === THROW) || (p.scratch.throwT ?? 0) > 0) name = 'throw';
-  else if (p.attackTimer > 0)
-    name = p.attackTimer > 10 ? 'attack-0' : p.attackTimer > LIVE_ABOVE - 1 ? 'attack-1' : 'attack-2';
-  else if (p.scratch._thrust === 1) name = 'down-thrust';
-  else if (p.scratch._thrust === 2) name = 'up-thrust';
+  if (p.dead) {
+    const d = linkDeath(p, frame, reduceFlashing);
+    name = d.frame;
+    if (d.palette) palette = d.palette;
+  } else if (p.attackTimer > 0 && (pose === UP || pose === DOWN)) {
+    // attackUpStart / attackDownStart while the sword is live, then the held pose.
+    name = `stab-${pose === UP ? 'up' : 'down'}-${t > LIVE_ABOVE ? 0 : 1}`;
+  } else if ((p.attackTimer > 0 && pose === THROW) || (p.scratch.throwT ?? 0) > 0) name = 'throw';
+  else if (p.attackTimer > 0) {
+    // attackStart for the 9 live frames, attack-2 for 2, then attackEndGround (attackEndJump).
+    if (t > LIVE_ABOVE) name = 'attack-0';
+    else if (t > LIVE_ABOVE - 2) name = 'attack-1';
+    else name = p.body.onGround ? 'attack-2' : 'attack-air';
+  } else if (p.scratch._thrust === 1 || p.scratch._thrust === 2) {
+    // dwnThrustStart / upThrustStart for a frame pair (ANIM_FAST 33 ms), then the End pose.
+    const step = (p.scratch._thrustT ?? 0) > 2 ? 1 : 0;
+    name = `${p.scratch._thrust === 1 ? 'down' : 'up'}-thrust-${step}`;
+  } else if (p.anim === 'hurt') name = 'jump';
   else {
     switch (p.anim) {
       case 'walk':
-        name = `walk-${walkPose(p, WALK_ABAB)}`;
+        name = `walk-${walkPose(p, WALK_ABAB) === 0 ? 0 : 1}`;
         break;
       case 'jump':
         name = linkAirPose(p);
@@ -480,9 +493,41 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
         name = 'idle';
     }
   }
-  // The 12 × 16 body (LK-C4) with the 24 px tall art drawn bottom-aligned on it.
-  const sheet = name.startsWith('roll-') ? 'link-classic' : 'link';
-  return { sheet, palette, frame: name, flip: p.facing < 0, offsetX: 2, offsetY: 16 };
+  // The 12 x 16 body under the 16 x 16 art; a blade over the head makes the cell taller.
+  return {
+    sheet: p.powerState === 'small' ? 'link-classic' : 'link-classic-shield',
+    palette,
+    frame: name,
+    flip: p.facing < 0,
+    offsetX: 2,
+    offsetY: LINK_CLASSIC_TOP[name] ?? 0,
+  };
+}
+
+/** When each dead Link was first drawn dead (a draw-only clock: the World's is private). */
+const diedAt = new WeakMap<Player, number>();
+/** The death's beats (Link.as: ANIM_MODERATE 75 ms for the spin), in frames from the death. */
+const DIE_FLASH = 16;
+const DIE_SPIN_STEP = 4.5;
+const DIE_SPINS = 3;
+const DIE_GREY = 16;
+const DIE_SPIN = ['die-front', 'die-right', 'die-back', 'die-left'] as const;
+
+/**
+ * The original's death (LinkMc dieFlash-1/2, dieDwn/Rht/Up/Lft, dieGray, dieCross-1/2): a flash
+ * facing the screen, three spins, grey, then the sparkle. Reduce flashing: no flash or twinkle.
+ */
+export function linkDeath(p: Player, frame: number, reduce: boolean): { frame: string; palette?: string } {
+  let at = diedAt.get(p);
+  if (at === undefined || at > frame) diedAt.set(p, (at = frame));
+  const t = frame - at;
+  if (t < DIE_FLASH)
+    return { frame: 'die-front', ...(!reduce && (t >> 2) & 1 ? { palette: 'link-star-3' } : {}) };
+  const spin = Math.floor((t - DIE_FLASH) / DIE_SPIN_STEP);
+  if (spin < DIE_SPINS * 4) return { frame: DIE_SPIN[spin % 4] as string };
+  const after = t - DIE_FLASH - DIE_SPINS * 4 * DIE_SPIN_STEP;
+  if (after < DIE_GREY) return { frame: 'die-front', palette: 'link-classic-grey' };
+  return { frame: reduce ? 'die-spark-1' : `die-spark-${(after >> 3) & 1}`, palette: 'link-classic-grey' };
 }
 
 export const LINK_CLASSIC: CharacterDef = {
@@ -491,7 +536,9 @@ export const LINK_CLASSIC: CharacterDef = {
   id: LINK.id,
   name: LINK.name,
   hudName: LINK.hudName,
+  // R1: the select screen and the intro card show his Classic art.
   portrait: LINK.portrait,
+  portraitArt: { sheet: 'link-classic', palette: 'link', frame: 'idle' },
   ...(LINK.music !== undefined ? { music: LINK.music } : {}),
   rules: 'classic',
   movement: LINK_CLASSIC_PROFILE,
