@@ -25,7 +25,7 @@ import { smb3Palettes, smb3Def } from './smb3';
 import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
-import { sophiaPalettes, sophiaDef } from './sophia';
+import { sophiaPalettes, sophiaDef, sophiaClassicDef } from './sophia';
 import { vicviperPalettes, vicviperDef } from './vicviper';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
@@ -150,6 +150,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'title-logo': titleLogoDef,
   'title-rift': titleRiftDef,
   sophia: sophiaSheet,
+  // R1: Classic SMBC Sophia III and Jason at the original sizes (characters/sophia/classic.ts).
+  'sophia-classic': sophiaClassicDef,
   // Vic Viper, a Classic-only hero (characters/vicviper/classic.ts).
   vicviper: vicviperDef,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).

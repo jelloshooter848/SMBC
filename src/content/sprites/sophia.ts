@@ -1342,3 +1342,9 @@ export const sophiaDef: SpriteDef = {
     'ladder-top': ladder(true),
   },
 };
+
+/**
+ * Classic SMBC Sophia III and Jason's own sheet (`sophia-classic`, her palettes): redrawn at the
+ * original 3.1.21 sizes (R1; smbc-sophia.ts). Frames it lacks (the blasts, shots) stay on `sophia`.
+ */
+export { sophiaSmbcDef as sophiaClassicDef } from './smbc-sophia';
