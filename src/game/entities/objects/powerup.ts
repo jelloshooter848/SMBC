@@ -167,7 +167,7 @@ export class PowerUp extends Entity {
     // them on their first frame.
     const moderate = view.reduceFlashing ? 0 : Math.floor(view.frame / 4) & 1;
     if (this.item === 'atom') frame = `atom-${moderate}`;
-    // The full power-up: drawn as the Fire Flower (the original's art is its maker's logo).
+    // The full power-up (the Exploding Rabbit).
     if (this.item === 'rabbit') {
       // Classic mode: the original's Exploding Rabbit logo (the named art exception,
       // sprites/rabbit-logo.ts), four frames on ANIM_MODERATE_TMR (75 ms); otherwise our own

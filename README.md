@@ -18,12 +18,12 @@ versions is kept, untouched, for when it opens. The plan is in [docs/ROADMAP.md]
 0.5.0 the Classic remake, 0.6 to 0.9 new heroes (the Expansion heroes option), 1.0 Chapter 1.
 
 **This is an unaffiliated fan project.** It contains no Nintendo, Capcom, Konami or other
-third-party art, music or code. All sprites and tiles are original pixel art stored as text in
-`src/content/sprites`, and all music is original chiptune synthesized at runtime from
-`src/content/music`. Character names are used only to describe gameplay styles. One named
-exception, not a precedent (docs/ART_EXCEPTIONS.md): Classic mode's full power-up shows the
-original game's Exploding Rabbit logo. Exploding Rabbit logo © Jay Pavlina / Exploding Rabbit,
-used as a tribute in Classic mode; will be replaced on request.
+third-party art, music or code. The sprites and tiles are original pixel art stored as text in
+`src/content/sprites`, with one named exception, not a precedent (docs/ART_EXCEPTIONS.md):
+Classic mode's full power-up shows the original game's Exploding Rabbit logo. Exploding Rabbit
+logo © Jay Pavlina / Exploding Rabbit, used as a tribute in Classic mode; will be replaced on
+request. All music is original chiptune synthesized at runtime from `src/content/music`.
+Character names are used only to describe gameplay styles.
 
 ## Play
 

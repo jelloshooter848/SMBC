@@ -299,7 +299,7 @@ const THEME_MUSIC = {
 };
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6). A Clock in a `?` block is
-// `Q` (see tileChar); in a brick or hidden block (none on normal difficulty) it stays a coin.
+// `Q` (see tileChar); in a brick or hidden block it is a `block-item` (blockItemOf, below).
 const ITEM_BRICK = {
   Coin: 'E',
   MultiCoin: 'C',
