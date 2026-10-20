@@ -8,14 +8,14 @@ import type { Player } from '../../entities/player';
 
 /**
  * Walk cycles (CharacterDef.walkAnim): poses and game frames per pose. Link 4 x 100 ms (ANIM_SLOW),
- * Simon 4 x 115 ms (ANIM_VERY_SLOW), Mega Man 4 x 100 ms after his step frame, Ryu 5 x 75 ms
+ * Simon 4 x 115 ms (ANIM_VERY_SLOW), Mega Man 4 x 100 ms after his step frame, Ryu 4 x 75 ms
  * (ANIM_MODERATE), Bill's legs 4 x 115 ms, Samus 3 x 50 ms (ANIM_MIN_FAST).
  */
 export const CLASSIC_WALK_ANIM = {
   link: { frames: 4, ticks: 6 },
   simon: { frames: 4, ticks: 6.9 },
   megaman: { frames: 4, ticks: 6 },
-  ryu: { frames: 5, ticks: 4.5 },
+  ryu: { frames: 4, ticks: 4.5 },
   bill: { frames: 4, ticks: 6.9 },
   samus: { frames: 3, ticks: 3 },
 } as const;
@@ -24,8 +24,11 @@ export const CLASSIC_WALK_ANIM = {
 export const WALK_ABCB: readonly number[] = [0, 1, 2, 1];
 /** Link's two alternating poses (walkStart / walk-2 / walk-3 / walkEnd: A, B, A, B). */
 export const WALK_ABAB: readonly number[] = [0, 2, 0, 2];
-/** Ryu's five run frames over our three poses. */
-export const WALK_RYU: readonly number[] = [0, 1, 2, 1, 0];
+/**
+ * Ryu's run (owner decision, R1): four distinct poses, one per drawn frame of the original's
+ * walkStart..walkEnd (its walk-4 is an empty frame), 75 ms each.
+ */
+export const WALK_RYU: readonly number[] = [0, 1, 2, 3];
 
 /** The sheet's walk pose for this frame of the cycle (`walk-<n>`). */
 export function walkPose(p: Player, poses: readonly number[]): number {

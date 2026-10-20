@@ -67,7 +67,7 @@ describe('walk cycles (CharacterDef.walkAnim)', () => {
     [LINK_CLASSIC, { frames: 4, ticks: 6 }], // 100 ms
     [SIMON_CLASSIC, { frames: 4, ticks: 6.9 }], // 115 ms
     [MEGAMAN_CLASSIC, { frames: 4, ticks: 6 }], // 100 ms
-    [RYU_CLASSIC, { frames: 5, ticks: 4.5 }], // 75 ms
+    [RYU_CLASSIC, { frames: 4, ticks: 4.5 }], // 75 ms; R1 owner decision: 4 distinct run poses
     [BILL_CLASSIC, { frames: 4, ticks: 6.9 }], // 115 ms
     [SAMUS_CLASSIC, { frames: 3, ticks: 3 }], // 50 ms
   ];

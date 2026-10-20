@@ -5,7 +5,7 @@ import { anchored, type SmbcCanvas, type SmbcLayer } from './smbc-anchor';
 /**
  * Classic SMBC Ryu at the original 3.1.21 sizes (R1 redraw; `ryu-classic`, his palettes: 0 outline,
  * 1 suit, 2 suit shade and mask, 3 skin, 4 wraps and scarf, 5 blade). New art drawn by hand to the
- * measured per-frame sizes and feet anchors (RyuMc, NES px): stand 17x32, run 20-22x31, fall
+ * measured per-frame sizes and feet anchors (RyuMc, NES px): stand 17x32, run 20-22x31 (four poses), fall
  * 17x31, flip 20x16 / 16x22, slash 18x31 then 26x29 with the 14x7 sword layer, crouch 17x24,
  * crouch slash 18x23 then 25x23, throw 26x29, wall cling 15x31 (throw 21x31), jump slash 22x23 /
  * 24x25, hurt and die 16x22. Poses on the ground stand on the canvas's bottom edge.
@@ -136,6 +136,21 @@ const legsRun2 = [
   '.0220......00000....',
   '.02220..............',
   '.00000..............',
+];
+// The run's last pose (walkEnd): passing again, the other knee coming through behind.
+const legsRun3 = [
+  '.......0211110........',
+  '.......0211110........',
+  '......021001110.......',
+  '.....0210...0110......',
+  '....01110...0110......',
+  '...0440.....0440......',
+  '..0440......0440......',
+  '..0220......0440......',
+  '..00........0440......',
+  '............0440......',
+  '............02220.....',
+  '............00000.....',
 ];
 // Falling: legs hanging apart (12 rows).
 const legsFall = [
@@ -413,6 +428,7 @@ export const ryuSmbcDef: SpriteDef = {
     'walk-0': running(legsRun0, 20),
     'walk-1': running(legsRun1, 22),
     'walk-2': running(legsRun2, 20),
+    'walk-3': running(legsRun3, 20),
     fall: at(...pose(-9.5, -31, [scarfBack, 0, 7], [head, 4, 0], [torso, 0, 10], [legsFall, 0, 19])),
     // The flip (flipStart..flipEnd): side, up, side turned over, up turned over, up.
     jump: at([tuckSide, -9.5, -19]),

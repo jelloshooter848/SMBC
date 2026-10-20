@@ -35,6 +35,15 @@ under `## [Unreleased]`.
   walls. Gold armour makes every weapon stronger and armour-piercing, and adds **MAGIC** (Special): lightning on both
   sides after a short wind-up. The HUD names the weapon he holds, and a new weapon is announced.
 
+### Changed
+
+- Classic mode: Mega Man, Ryu, Bill and Sophia III (with Jason) are redrawn at the original
+  3.1.21's sizes, pose by pose: Mega Man's run, arms-up jump, hurt, climb and slide, Ryu's
+  breathing stand, run, flip, slashes and wall cling, Bill as a torso and legs with his rifle
+  where his shots leave, prone and climbing, and Sophia III's lower hull with Jason's two frames.
+  The campaign's art is unchanged.
+- Classic mode: Ryu's run shows four different poses (it showed one of them twice a loop).
+
 ## [0.4.58] - 2026-10-20
 
 ### Added

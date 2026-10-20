@@ -468,7 +468,7 @@ export const RYU_CLASSIC: CharacterDef = {
   meleeStrikesBlocks: true,
   // Ryu does not grow (RY-C18): Current's 12 x 24 body, 12 x 16 crouched.
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
-  // F2: the original's HRect (27 standing, 25 in the air, 15.75 crouched) and run (5 x 75 ms).
+  // F2: the original's HRect (27 standing, 25 in the air, 15.75 crouched) and run (4 poses x 75 ms, R1).
   hurtbox: (p) => ({
     w: CLASSIC_HURT.w,
     h: p.crouching
