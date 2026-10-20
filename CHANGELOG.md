@@ -8,6 +8,36 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode's All Hammer Bros cheat: its goal says that beating The Lost Levels stands in
+  for the original's Special maps, which Classic mode does not have.
+- Classic mode's Infinite Lives cheat: as in the original, a continue used in any Classic run
+  (not only the current one) keeps it locked, since the count is kept with the save.
+- Classic mode with Current rules: nothing counts toward the cheats' goals any more (not even a
+  clear or a game beaten), as the cheats play only with Classic rules.
+- Classic mode's More settings list their rows in the original's order: Lives, Attack, When
+  hit, Item drops, Piranhas, Goombas, Enemy speed.
+- Classic mode's More settings: the When hit row tells only what its chosen value does.
+
+### Fixed
+
+- Classic Survival: the news and DONE boxes on the select screen open under the heroes, so no
+  hero is covered.
+- Classic Survival: in revive mode the screen reader says "OK to power up" on a standing hero,
+  as the screen shows.
+- Classic Survival with Current rules: powering up a standing hero gives two of that hero's own
+  upgrades (Mega Man's helmet, then a weapon; Samus's Varia Suit, then a beam), not the Classic
+  Fire Flower's.
+- Classic Mega Man's shooting pose no longer shows a stray dark line under his buster.
+- Classic mode: after the flagpole, the heroes walk to the castle in their walking pose (Samus
+  no longer kneels, Bill and Ryu no longer fall, Simon and Sophia III no longer jump).
+- Classic mode's Infinite Time cheat: the HUD and the card before a level hide the time's
+  digits (the TIME label stays), and a clear raises the flag at once, with no time tally (and no
+  fireworks), as in the original.
+- Classic Link: a revived or respawned Link no longer starts his death animation part-way
+  through.
+
 ## [0.4.62] - 2026-10-20
 
 ### Added

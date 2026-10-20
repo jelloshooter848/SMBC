@@ -8,6 +8,7 @@ import type { Enemy } from '../../entities/enemies/enemy';
 import { Goomba } from '../../entities/enemies/goomba';
 import { Koopa } from '../../entities/enemies/koopa';
 import { Spiny } from '../../entities/enemies/spiny';
+import { SpikeTop } from '../../entities/enemies/spike-top';
 import { Cheep } from '../../entities/enemies/cheep';
 import { Blooper } from '../../entities/enemies/blooper';
 import { Lakitu } from '../../entities/enemies/lakitu';
@@ -42,10 +43,14 @@ export type Edible = 'mouth' | 'swallow' | 'shell' | null;
 /**
  * The edible table (YO-16): the playable hero keeps any catch in his mouth (no Spinies: spiked);
  * the mount swallows Goombas, Spinies, Cheep Cheeps and Lakitu at once and holds Koopas and
- * Buzzy Beetles as shells. Everything else (Hammer Bros, Piranhas, Bullet Bills, Podoboos,
+ * Buzzy Beetles as shells. Everything else (Spike Tops, Hammer Bros, Piranhas, Bullet Bills, Podoboos,
  * Bowser, fire bars) is inedible.
  */
 export function edible(e: Enemy, form: 'hero' | 'mount'): Edible {
+  // Spike Top (Classic's Replace Goombas choice): its spiked shell is inedible to both forms, as a
+  // Spiny is to the hero. It is not a Goomba (entities/enemies/spike-top.ts), so it must never
+  // fall into the Goomba row below.
+  if (e instanceof SpikeTop) return null;
   if (e instanceof Koopa) return form === 'hero' ? 'mouth' : 'shell';
   if (e instanceof Spiny) return form === 'hero' ? null : 'swallow';
   if (e instanceof Blooper) return form === 'hero' ? 'mouth' : null;

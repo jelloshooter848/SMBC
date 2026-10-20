@@ -2,8 +2,10 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
 
 /**
  * Classic SMBC Mario and Luigi's re-cut frames (R1): the few poses whose size on the campaign's
- * `mario` sheet is more than 1 px off the original 3.1.21's MarioMc (ANIMATION_CATALOGUE: small
- * walk-3 11x16, skid 13x16, die 14x14; big stand 16x32, the grow's mid pose 16x24). Our own art,
+ * `mario` sheet is more than 1 px off the original 3.1.21's MarioMc. Drawn here (the original's
+ * size from ANIMATION_CATALOGUE in brackets, each within 1 px): small walk-3 11x16 (11x16), skid
+ * 14x16 (13x16), die 15x14 (14x14); big stand 15x32 (16x32), the grow's mid pose 15x24 (16x24).
+ * Our own art,
  * the `mario` sheet's palette roles (1 hair / boots, 2 skin, 3 cap & shirt, 4 overalls, 5
  * buttons), 16-wide cells with the feet on the bottom row as there; every other pose stays on
  * `mario` (the campaign's frames are untouched).
@@ -30,7 +32,7 @@ export const marioClassicDef: SpriteDef = {
       '....1111111.....',
       '.....11111......',
     ],
-    // Skidding (13 x 16): leaning back against the turn.
+    // Skidding (14 x 16): leaning back against the turn.
     'small-skid': [
       '.....333333.....',
       '....33333533....',
@@ -49,7 +51,7 @@ export const marioClassicDef: SpriteDef = {
       '.1111..11111....',
       '.1111..11111....',
     ],
-    // The death pose (14 x 14): facing out, arms thrown up.
+    // The death pose (15 x 14): facing out, arms thrown up.
     'small-die': [
       '................',
       '................',
@@ -68,7 +70,7 @@ export const marioClassicDef: SpriteDef = {
       '...1111.1111....',
       '...1111.1111....',
     ],
-    // Big standing (16 x 32): the shoulders and boots a pixel wider each side.
+    // Big standing (15 x 32): the shoulders and boots a pixel wider each side.
     'big-idle': [
       '.....333333.....',
       '....33333333....',
@@ -103,7 +105,7 @@ export const marioClassicDef: SpriteDef = {
       '.1111111.1111111',
       '.1111111.1111111',
     ],
-    // The grow's mid pose (16 x 24), as wide as the big stand.
+    // The grow's mid pose (15 x 24), as wide as the big stand.
     'grow-mid': [
       ...Array.from({ length: 8 }, () => '................'),
       '.....333333.....',

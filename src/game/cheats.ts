@@ -90,7 +90,8 @@ export const CHEATS: readonly CheatInfo[] = [
     name: 'All Hammer Bros',
     what: 'Every enemy but Bowser is a Hammer Bro',
     goal: { kind: 'beat-lost' },
-    goalText: 'Beat The Lost Levels.',
+    // The original asks for its Special map set, which Classic mode does not have (FU-7e).
+    goalText: "Beat The Lost Levels (in place of the original's Special maps).",
   },
   {
     id: 'allWeaponsPierce',

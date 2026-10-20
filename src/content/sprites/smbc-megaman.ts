@@ -97,7 +97,9 @@ const shootBody = [
   '..02201111111110.....',
   '.022201111111110.....',
   '.02220022222220......',
-  ...standBody.slice(7),
+  // The belt row without the lowered front hand's outline (that hand is up at the buster).
+  '.0000.011101110......',
+  ...standBody.slice(8),
 ];
 
 /* ---------- the step and the run ---------- */

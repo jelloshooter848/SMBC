@@ -477,8 +477,8 @@ describe('More Settings menu (CLASSIC > Options > More settings)', () => {
     expect(m).toBeInstanceOf(ClassicOptionRowsScene);
     expect(labels(m)).toEqual([
       'Lives',
-      'When hit',
       'Attack',
+      'When hit',
       'Item drops',
       'Piranhas',
       'Goombas',
@@ -505,6 +505,7 @@ describe('More Settings menu (CLASSIC > Options > More settings)', () => {
     expect(h.settings.classic.lives).toBe(1);
     h.tap('left');
     expect(h.settings.classic.lives).toBe(10);
+    h.tap('down');
     h.tap('down');
     h.tap('right');
     expect(h.settings.classic.whenHit).toBe('previous-state');
