@@ -412,3 +412,26 @@ describe("10. Survival's boxes on the select cover no hero", () => {
     }
   });
 });
+
+describe('11. Revive mode on a standing hero says "OK to power up", as the screen does', () => {
+  it('fallen: OK to revive; standing (after NO to the question): OK to power up', () => {
+    const settings = {
+      ...defaultSettings(),
+      classic: { ...defaultClassicSettings(), gameMode: 'survival' as const },
+    };
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    const s = h.top() as CharacterSelectScene;
+    h.idle(12);
+    expect(h.said.at(-1)).toMatch(/Mario: revive\. .* OK to revive\./);
+    h.tap('jump'); // Mario revived: he stands, the cursor stays on him
+    h.tap('attack');
+    expect(s.boxShown).toBe('finished');
+    h.tap('jump'); // NO: back to revive mode, read out again
+    expect(s.boxShown).toBeNull();
+    const line = h.said.at(-1) ?? '';
+    expect(line).toMatch(/Mario: power up\. .* OK to power up\./);
+    expect(line).not.toMatch(/OK to revive/);
+    expect(draw(s).texts.map((t) => t.str)).toContain('OK (Z) TO POWER UP');
+  });
+});

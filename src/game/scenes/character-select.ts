@@ -364,6 +364,11 @@ export class CharacterSelectScene implements Scene {
     return this.fallen(i) ? 'Revive' : 'Power up';
   }
 
+  /** What OK does in revive mode, as the screen says it: REVIVE, or POWER UP on a standing hero. */
+  private reviveVerb(i: number): 'revive' | 'power up' {
+    return this.isRandom(i) || this.fallen(i) ? 'revive' : 'power up';
+  }
+
   /** DONE (attack) in revive mode: the question; BACK at a new game's select with every hero fallen. */
   private reviveLeave(): string | null {
     if (!this.survival?.allFallen) return 'DONE';
@@ -376,7 +381,7 @@ export class CharacterSelectScene implements Scene {
     const how = leave === 'DONE' ? ' DONE when finished.' : leave === 'BACK' ? ' BACK to leave.' : '';
     this.game.deps.announcer?.say(
       `Revive your heroes: each costs one life. ${this.livesLeft()}. ${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}. ` +
-        `Left and right to choose,${this.rowsHint()} OK to revive.${how}` +
+        `Left and right to choose,${this.rowsHint()} OK to ${this.reviveVerb(this.index)}.${how}` +
         this.fallenNote(),
     );
   }
@@ -751,7 +756,7 @@ export class CharacterSelectScene implements Scene {
     r.text(font, action, 128 - action.length * 4, 158 + low);
     const goY = 170 + low;
     // What OK does under the cursor: a standing hero is powered up instead.
-    const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+    const verb = this.reviveVerb(this.index).toUpperCase();
     const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`);
     r.text(font, ok, 128 - ok.length * 4, goY);
     const leave = this.reviveLeave();

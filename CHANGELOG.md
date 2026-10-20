@@ -24,6 +24,8 @@ under `## [Unreleased]`.
 
 - Classic Survival: the news and DONE boxes on the select screen open under the heroes, so no
   hero is covered.
+- Classic Survival: in revive mode the screen reader says "OK to power up" on a standing hero,
+  as the screen shows.
 - Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
   clear raises the flag at once, with no time tally (and no fireworks), as in the original.
 
