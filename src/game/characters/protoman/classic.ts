@@ -45,7 +45,8 @@ export const PROTOMAN_CLASSIC: CharacterDef = {
     palette: 'protoman',
     pickSfx: 'protoman-whistle',
   }),
-  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  // The castle text's name (PM-M8, BA-M13, PI-M5): Mega Man's Proto Man skin, skin 3
+  // (BmdInfo.as:896).
   rescueName: 'Roll',
 };
 
@@ -56,6 +57,7 @@ export const BREAKMAN_CLASSIC: CharacterDef = {
     sheet: 'protoman',
     palette: 'breakman',
   }),
-  // The castle text's name (PM-M8, BA-M13, PI-M5): the original's default skin (BmdInfo.as).
+  // The castle text's name (PM-M8, BA-M13, PI-M5): Mega Man's Break Man skin, skin 8
+  // (BmdInfo.as:916).
   rescueName: 'Roll',
 };
