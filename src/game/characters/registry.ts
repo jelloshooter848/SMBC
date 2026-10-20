@@ -30,6 +30,7 @@ import { ARTHUR_CLASSIC } from './arthur/classic';
 import { YOSHI_CLASSIC } from './yoshi/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
+import { heroSound } from './classic/sounds';
 import { classicEnemySpawned, classicHit, classicHitSfx, isArmoured } from '../rules/classic-enemies';
 import { applyCheatEdits } from '../rules/classic-cheats';
 import { classicStrikeBlock } from '../rules/classic-bricks';
@@ -50,6 +51,7 @@ import {
 installClassicRules({
   enemyHit: classicHit,
   hitSfx: classicHitSfx,
+  deathSfx: (def) => heroSound(def, 'death'),
   enemySpawned: classicEnemySpawned,
   // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
   strikeBlock: (world, tx, ty, p, breakBricks, hit) =>

@@ -437,8 +437,6 @@ export const BILL_CLASSIC: CharacterDef = {
   // BI-C13: the original Bill has no DROP_ARR.
   drop: () => null,
   deathThrow: DEATH_THROW,
-  // His own death sound (G-065; Bill.as 982).
-  deathSound: 'contra-death',
   tools: kitTools,
   devKit: () => ({ classicAll: 1 }),
   guide: BILL_CLASSIC_GUIDE,

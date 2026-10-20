@@ -19,6 +19,12 @@ export interface ClassicHeroSounds {
   hit?: string;
   /** An enemy defeated by the hero's attack (none shared). */
   kill?: string;
+  /**
+   * The hero's death sound, in place of the `death` jingle with the music stopped (G-065; Link.as
+   * 1400, MegaManBase.as 2561, Bill.as 982, Sophia.as 2238). Simon's and Ryu's death is music
+   * (scenes/original-music.ts), Samus's her burst's jingle.
+   */
+  death?: string;
   /** Picking up a drop, by kind (in place of `pickup`). */
   pickups?: Partial<Record<PickupKind, string>>;
   /**
@@ -34,6 +40,7 @@ const MEGAMAN: ClassicHeroSounds = {
   hurt: 'mm-hurt',
   hit: 'mm-hit',
   kill: 'mm-kill',
+  death: 'mm-death',
   pickups: { 'weapon-small': 'mm-energy', 'weapon-large': 'mm-energy' },
   item: 'mm-1up',
 };
@@ -44,6 +51,7 @@ export const CLASSIC_HERO_SOUNDS: Readonly<Record<string, ClassicHeroSounds>> = 
     hurt: 'link-hurt',
     hit: 'link-hit',
     kill: 'link-kill',
+    death: 'link-death',
     pickups: {
       'heart-small': 'link-heart',
       'heart-large': 'link-heart',
@@ -70,7 +78,8 @@ export const CLASSIC_HERO_SOUNDS: Readonly<Record<string, ClassicHeroSounds>> = 
     item: 'cv-weapon',
   },
   // Bill's hit is an electric shock (Bill.as 899, SFX_BILL_ELECTRECUTE).
-  bill: { hurt: 'bill-shock', item: 'bill-item' },
+  bill: { hurt: 'bill-shock', death: 'contra-death', item: 'bill-item' },
+  sophia: { death: 'sophia-die' },
   ryu: {
     hurt: 'ng-hurt',
     hit: 'ng-hit',
@@ -116,5 +125,14 @@ export function landSound(p: Player, world: World, id: string): void {
   }
   if (!p.scratch._landAir) return;
   delete p.scratch._landAir;
+  if (quietLanding(p, world)) return;
   world.audio.sfx(id);
+}
+
+/**
+ * A landing with no sound (Samus.as 524, Bill.as 927: landOnGround): down the flagpole, or onto a
+ * springboard.
+ */
+export function quietLanding(p: Player, world: World): boolean {
+  return world.clearPhase !== null || world.onSpring(p);
 }

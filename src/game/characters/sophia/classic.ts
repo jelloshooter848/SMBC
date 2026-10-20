@@ -256,8 +256,6 @@ export const SOPHIA_CLASSIC: CharacterDef = {
   damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
   blockPowerUp: classicBlockPowerUp,
   jumpSfx: () => SOUNDS.jump,
-  // Her own death sound (G-065; Sophia.as 2238).
-  deathSound: 'sophia-die',
   sprite,
   behaviour,
   guide: SOPHIA_CLASSIC_GUIDE,

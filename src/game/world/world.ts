@@ -1812,18 +1812,23 @@ export class World {
   }
 
   /**
+   * The sound of hit `src` taking an enemy's hit points: `hurt-enemy`, or in a Classic mode run
+   * (either rules) the hero's own (G-072, rules/classic-enemies.ts classicHitSfx).
+   */
+  hitSound(src: DamageSource): string {
+    return (this.ctx.classicMode ? classicRules().hitSfx?.(src) : undefined) ?? 'hurt-enemy';
+  }
+
+  /** Is `p` riding a springboard now (pressed into it, before the launch)? */
+  onSpring(p: Player): boolean {
+    return this.entities.some((e) => e instanceof Spring && e.alive && e.ridBy(p));
+  }
+
+  /**
    * Score a hit if it killed the enemy, by how it died (Enemy.as: takeDamage scores ATTACK,
    * hitCharacter with a star STAR, gBounceHit BELOW). Hit-point kills count once the last point goes.
    * Public for Classic weapons that hit by hand (Link's bomb blast).
    */
-  /**
-   * The sound of hit `src` taking an enemy's hit points: `hurt-enemy`, or under Classic rules the
-   * hero's own (G-072, rules/classic-enemies.ts classicHitSfx).
-   */
-  hitSound(src: DamageSource): string {
-    return (this.rules === 'classic' ? classicRules().hitSfx?.(src) : undefined) ?? 'hurt-enemy';
-  }
-
   scoreKill(e: Enemy, kind: DamageKind, r: Reaction): void {
     if (r === 'kill' || r === 'flip' || (r === 'hp' && !e.alive))
       this.addScore(e.scoreFor(kind), e.body.x, e.body.y);
@@ -3415,7 +3420,8 @@ export class World {
     }
     if (this.activePlayers().length === 0) {
       this.audio.setTempoScale(1);
-      const own = p.def.deathSound;
+      // A Classic mode run (either rules): the hero's own death sound (G-065).
+      const own = this.ctx.classicMode ? classicRules().deathSfx?.(p.def) : undefined;
       if (own) {
         this.audio.stopMusic();
         this.audio.sfx(own);

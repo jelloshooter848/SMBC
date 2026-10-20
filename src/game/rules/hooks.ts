@@ -97,6 +97,11 @@ export interface ClassicRulesHooks {
    * or undefined for the shared `hurt-enemy`. Optional.
    */
   hitSfx?(src: DamageSource): string | undefined;
+  /**
+   * Hero `def`'s own death sound, played in place of the `death` jingle with the music stopped
+   * (G-065), or undefined for the jingle. Optional.
+   */
+  deathSfx?(def: CharacterDef): string | undefined;
 }
 
 let hooks: ClassicRulesHooks | null = null;

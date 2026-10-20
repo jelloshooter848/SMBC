@@ -563,8 +563,6 @@ export const LINK_CLASSIC: CharacterDef = {
   blockPowerUp: classicBlockPowerUp,
   powerIcon: true,
   jumpSfx: LINK.jumpSfx,
-  // His own death sound (G-065; Link.as 1400): the spin's falling chime.
-  deathSound: 'link-death',
   // LK-C11: springs unchanged (spring.ts keys its numbers by hero id). LK-C44: every count and
   // timer is per player (scratch, bombsOut, countProjectiles by owner); bombs never hurt players.
 

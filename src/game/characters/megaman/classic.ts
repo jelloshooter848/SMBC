@@ -706,8 +706,6 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     blockPowerUp: classicBlockPowerUp,
     powerIcon: true,
     jumpSfx: () => 'jump-small',
-    // His burst's sound in place of Mario's death jingle (G-065; MegaManBase.as 2561).
-    deathSound: 'mm-death',
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, response.look),
     starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
     drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, drops, 'enemy') : null),

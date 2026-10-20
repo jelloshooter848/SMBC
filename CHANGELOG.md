@@ -33,10 +33,12 @@ under `## [Unreleased]`.
   their own sound, Simon and Ryu to their own death music (G-065). Mega Man and Bill land with a
   sound, Mega Man teleports out and Bill is shocked when chosen, and Samus walks, lands, curls into
   the morph ball and spins the Screw Attack with hers (G-070). Link, Mega Man, Samus, Simon, Ryu
-  and Bill have their own hurt sounds (G-071), hit and defeat sounds, blasts included (G-072), and
-  pickup sounds, Mega Man's 1-up among them (G-073). Link's arrows and
-  bombs, each of Samus's beams and her bombs, Simon's sub-weapons, Ryu's arts, Mega Man's Metal
-  Blade and Bill's rifle, machine gun and flame gun no longer borrow other heroes' sounds (G-074).
+  and Bill have their own hurt and pickup sounds, Mega Man's 1-up among them (G-071, G-073); Link,
+  Mega Man, Samus, Simon and Ryu their own hit sounds, blasts included, and all but Samus their own
+  defeat sounds (G-072). Link's arrows and bombs, each of Samus's beams and her bombs, Simon's
+  sub-weapons, Ryu's arts, Mega Man's Metal Blade and Bill's rifle, machine gun and flame gun no
+  longer borrow other heroes' sounds (G-074). The music and the hit and death sounds play in
+  Classic mode under either rules.
 
 ### Changed
 

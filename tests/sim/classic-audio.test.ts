@@ -6,13 +6,21 @@ import { sfx } from '@content/sfx/sfx';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { normaliseClassic, defaultClassicSettings } from '@engine/save/original-options';
 import type { AudioSink } from '@engine/audio/audio-manager';
-import { CHARACTERS, CLASSIC_CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
+import { CHARACTERS } from '@game/characters/registry';
 import type { CharacterDef } from '@game/characters/character';
 import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
 import { SIMON } from '@game/characters/simon';
 import { SAMUS } from '@game/characters/samus';
-import { CLASSIC_HERO_SOUNDS, heroSound, pickupSound } from '@game/characters/classic/sounds';
+import {
+  CLASSIC_HERO_SOUNDS,
+  heroSound,
+  landSound,
+  pickupSound,
+  quietLanding,
+} from '@game/characters/classic/sounds';
+import type { Player } from '@game/entities/player';
+import type { World } from '@game/world/world';
 import { Bowser } from '@game/entities/enemies/bowser';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
@@ -63,6 +71,7 @@ function audioGame(
     onEnd?.();
   });
   a.sfx = vi.fn((id: string) => void sounds.push(id));
+  a.stopMusic = vi.fn(() => void music.push('(stop)'));
   return { ...h, music, jingles, sounds };
 }
 
@@ -208,7 +217,7 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     expect(pickOn('Mario').jingles.at(-1)).toBe('smb-transition');
   });
 
-  it('BACK from the select plays no choose jingle (and no teleport) over the CLASSIC menu', () => {
+  it('BACK from the select stops its music and plays no choose jingle (or teleport) over the CLASSIC menu', () => {
     const h = audioGame();
     h.game.showClassicMenu();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
@@ -219,6 +228,11 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
     expect(h.jingles).toEqual([]);
     expect(h.sounds).not.toContain('mm-teleport');
+    // The select tune stopped, and nothing started after it.
+    const at = h.music.lastIndexOf('smb-select');
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(h.music.slice(at + 1)).toContain('(stop)');
+    expect(h.music.slice(at + 1).every((x) => x === '(stop)')).toBe(true);
   });
 
   it('a select outside Classic mode stays silent as before', () => {
@@ -273,12 +287,15 @@ describe('G-064: the boss trigger', () => {
 
 describe('G-065: hero death music and sounds', () => {
   it('Link, Mega Man, Bass, Bill and Sophia III die to their own sound; Simon and Ryu to their music', () => {
-    const def = (id: string) =>
-      (CLASSIC_CHARACTERS[id] ?? CLASSIC_EXTRAS.find((d) => d.id === id)) as CharacterDef | undefined;
-    expect(def('link')?.deathSound).toBe('link-death');
-    expect(def('megaman')?.deathSound).toBe('mm-death');
-    expect(def('bill')?.deathSound).toBe('contra-death');
-    expect(def('sophia')?.deathSound).toBe('sophia-die');
+    for (const [id, sound] of [
+      ['link', 'link-death'],
+      ['megaman', 'mm-death'],
+      ['bass', 'mm-death'],
+      ['bill', 'contra-death'],
+      ['sophia', 'sophia-die'],
+    ] as const)
+      expect(heroSound({ id }, 'death'), id).toBe(sound);
+    expect(heroSound({ id: 'simon' }, 'death')).toBeUndefined();
     for (const id of ['link-death', 'mm-death', 'contra-death', 'sophia-die'])
       expect(SFX_IDS.has(id)).toBe(true);
     expect(musicFor('death', moment({ hero: 'simon' }))).toBe('cv-die');
@@ -368,6 +385,74 @@ describe('G-070 to G-074: the heroes’ own sounds', () => {
     h.until(() => w.player.body.onGround, 120);
     h.idle(2);
     expect(h.sounds).toContain('mm-land');
+  });
+
+  it('no landing sound down the flagpole or onto a springboard (G-070; Samus.as 524, Bill.as 927)', () => {
+    const sounds: string[] = [];
+    const world = (clearPhase: string | null, spring: boolean) =>
+      ({
+        clearPhase,
+        onSpring: () => spring,
+        audio: { sfx: (id: string) => sounds.push(id) },
+      }) as unknown as World;
+    const land = (w: World) => {
+      const p = { body: { onGround: false }, scratch: {} } as unknown as Player;
+      landSound(p, w, 'bill-land');
+      p.body.onGround = true;
+      landSound(p, w, 'bill-land');
+    };
+    land(world('slide', false));
+    land(world(null, true));
+    expect(sounds).toEqual([]);
+    land(world(null, false));
+    expect(sounds).toEqual(['bill-land']);
+    expect(quietLanding({} as Player, world('hop', false))).toBe(true);
+  });
+
+  it("Samus's footsteps are muted in the walk-in to a pipe (G-070; Samus.as 1404)", () => {
+    const h = audioGame();
+    h.game.devClassicGame(SAMUS, '1-2-intro', 'classic');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    expect(w.autoWalk).toBe(true);
+    h.sounds.length = 0;
+    const x0 = w.player.body.x;
+    for (let i = 0; i < 40 && h.top() instanceof LevelScene && (h.top() as LevelScene).world === w; i++)
+      h.step();
+    // She walked (the walk-in moves her right), in silence.
+    expect(w.player.body.x).toBeGreaterThan(x0);
+    expect(h.sounds).not.toContain('samus-step');
+  });
+
+  it('Classic mode under Current rules: the hero music, hit and death sounds still play (G-060, G-065, G-072)', () => {
+    const h = audioGame({ classicRules: 'current' });
+    h.game.devClassicGame(LINK, '1-1', 'current');
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    expect(w.rules).toBe('current');
+    expect(h.music.at(-1)).toBe('zelda2-field');
+    expect(w.hitSound({ kind: 'sword', amount: 1, owner: w.player, dirX: 1 })).toBe('link-hit');
+    w.kill(w.player);
+    expect(h.sounds).toContain('link-death');
+    expect(h.jingles).not.toContain('death');
+    // Music set Map: the SMB set, under Current rules too.
+    const classic = { ...defaultClassicSettings(), musicSet: 'map' as const };
+    const m = audioGame({ classicRules: 'current', classic });
+    m.game.devClassicGame(LINK, '1-1', 'current');
+    m.until(() => m.top() instanceof LevelScene, 600);
+    expect(m.music.at(-1)).toBe('overworld');
+  });
+
+  it('Classic rules outside Classic mode (dev free play): the shared hit and death sounds', () => {
+    const h = audioGame();
+    h.game.newGame(LINK, '1-1', null, { rules: 'classic' });
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    expect(w.rules).toBe('classic');
+    expect(w.hitSound({ kind: 'sword', amount: 1, owner: w.player, dirX: 1 })).toBe('hurt-enemy');
+    w.kill(w.player);
+    expect(h.jingles).toContain('death');
+    expect(h.sounds).not.toContain('link-death');
   });
 
   it('Samus walks with footsteps every 150 ms (G-070; Samus.as STEP_TMR)', () => {

@@ -356,6 +356,12 @@ export class Game {
       enumerable: true,
       configurable: true,
     });
+    // ctx.classicMode: a Classic mode run (either rules) outside a campaign file (G-060 to G-074).
+    Object.defineProperty(deps.ctx, 'classicMode', {
+      get: () => this.classicRun && this.campaign === null,
+      enumerable: true,
+      configurable: true,
+    });
     // Classic mode's music sets (G-060): every song asked for goes through classicMusic, which
     // leaves it alone outside a Classic mode run.
     deps.ctx.audio.setMusicMap?.((id) => this.classicMusic(id));
@@ -409,7 +415,9 @@ export class Game {
     // Only a pick plays it: Back (or any other way out) leaves in silence for the next scene's music.
     const chosen = this.heroChosen;
     this.heroChosen = false;
-    if (!chosen || !classic || this.campaign !== null) return;
+    if (!classic || this.campaign !== null) return;
+    // Back without a pick: the select music stops (the CLASSIC menu is silent).
+    if (!chosen) return this.deps.ctx.audio.stopMusic();
     const id = this.state.character.id;
     const song = setSong(heroSet(id), 'choose');
     if (song) this.deps.ctx.audio.playJingle(song);

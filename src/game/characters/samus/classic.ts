@@ -30,6 +30,7 @@ import {
   type ClassicPowerKit,
 } from '../classic/power';
 import { weaponOf } from '../classic/options';
+import { quietLanding } from '../classic/sounds';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, SAMUS_FLIP_TICKS } from '../classic/anim';
 import {
   CLASSIC_MAX_BOMBS,
@@ -381,11 +382,12 @@ function trackJump(p: Player, input: InputFrame, world: World, v: ClassicSamusVa
   }
   if (b.onGround) {
     // Her landing (G-070; Samus.as 517): back on the ground after a frame in the air.
-    if (s(p)._air && v.suitSounds && !inBall(p)) world.audio.sfx('samus-land');
+    if (s(p)._air && v.suitSounds && !inBall(p) && !quietLanding(p, world)) world.audio.sfx('samus-land');
     delete s(p)._air;
     // Her footsteps (G-070; Samus.as 1086-1093, STEP_TMR 150 ms): one every 9 frames while she
     // walks on the ground, the first 9 frames after she starts.
-    if (b.vx !== 0 && v.suitSounds && !inBall(p)) {
+    // Muted in a walk-in to a pipe (Samus.as 1404: activateWatchModeEnterPipe).
+    if (b.vx !== 0 && v.suitSounds && !inBall(p) && !world.autoWalk) {
       const step = (s(p)._step ?? 0) + 1;
       s(p)._step = step >= SAMUS_STEP_FRAMES ? 0 : step;
       if (step >= SAMUS_STEP_FRAMES) world.audio.sfx('samus-step');
