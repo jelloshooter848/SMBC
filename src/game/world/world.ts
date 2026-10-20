@@ -603,6 +603,14 @@ export class World {
   readonly areaMemory: AreaMemory | null;
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
+  /** The clock ran out here (the heroes died of it: Classic mode's TIME UP card, G-030). */
+  timedOut = false;
+  /**
+   * Classic SMBC's PitVacuums (G-013), worked out on first use: per column, how its pit pulls
+   * (PULL_RIGHT, PULL_DOWN, PULL_LEFT; 0 none), or null in an area that does not start under
+   * water (the Water Mode cheat adds none: Level._initialWaterLevel).
+   */
+  private pitVacuums: Int8Array | null | undefined;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
@@ -734,6 +742,14 @@ export class World {
    * classic, dev, arena and play-test levels, which keep their old text and behaviour.
    */
   storyMode = false;
+  /**
+   * A Classic mode run (set by LevelScene from Game.classicCastle, G-001/G-002): an exit marked
+   * `next=end` (Lost Levels 8-4's castle, 9-4's flag) leads on to `next`, a castle with Toad's
+   * "another castle" news; with `next` null the castle is the map set's last and says the quest
+   * is over (Lost Levels D-4 too, as SMB 8-4). Null elsewhere: the Lost Levels' 8-4, 9-4 and D-4
+   * keep the NES rules, their castles saying nothing (the endings' cards do).
+   */
+  classicEnd: { next: string | null } | null = null;
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
@@ -1243,6 +1259,9 @@ export class World {
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
+        // A Classic mode run's ordinary castle (classicEnd, G-002): Toad waits, as in the
+        // original's data (the converter put the NES princess in Lost Levels 8-4).
+        if (this.classicEnd?.next) return new Toad(s.x, s.y);
         return new Princess(s.x, s.y, this.player.def.endingGreeter ?? null);
       case 'toad':
         return new Toad(s.x, s.y);
@@ -1911,6 +1930,9 @@ export class World {
           ? p.body.y > this.waterTop - px(8)
           : p.body.y + (p.body.h >> 1) >= this.waterTop;
       p.aboveWater = !p.inWater && this.waterTop !== Infinity;
+      // PitVacuum.updateStats pulls whether or not the hero is under water (G-013): only the area
+      // (one that starts under water) and the hero (SwimProfile.pitPull) decide.
+      p.pitPull = p.profile.swim?.pitPull ? this.pitPullOn(p) : null;
       this.grabVines(p, input);
       this.grabStairs(p, input);
       const spring = this.springUnder(p);
@@ -2590,6 +2612,7 @@ export class World {
       }
       if (this.time <= 0) {
         this.time = 0;
+        this.timedOut = true;
         for (const p of this.activePlayers()) this.kill(p);
       }
     }
@@ -3950,7 +3973,7 @@ export class World {
         if (c.t >= (c.fireworks > 0 ? 1 + c.fireworks * FIREWORK_FRAMES + 60 : 90)) {
           c.phase = 'done';
           const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-          this.events.push({ type: 'exit', next: exit?.next ?? 'end' });
+          this.events.push({ type: 'exit', next: this.exitNext(exit?.next) });
         }
         break;
       }
@@ -4194,9 +4217,11 @@ export class World {
     // The Lost Levels' last castles (8-4, 9-4, D-4) say nothing themselves: the ending's card
     // (Game.showLostEnding) is the thanks, over the level, when Toad's thanks would start, so
     // no line is said twice.
-    const next = exit?.next ?? 'end';
+    // A Classic mode run (classicEnd, G-001/G-002): a castle marked `next=end` that is not its
+    // map set's last is an ordinary one, on to the next world; the last says the quest is over.
+    const next = this.exitNext(exit?.next);
     const s = c.t - c.stop;
-    if (next === 'end' && (this.level.parent ?? this.level.id).startsWith('ll-')) {
+    if (next === 'end' && !this.classicEnd && (this.level.parent ?? this.level.id).startsWith('ll-')) {
       if (s >= 30) {
         this.events.push({ type: 'exit', next });
         c.t = -100000;
@@ -4239,6 +4264,39 @@ export class World {
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
     } else if (ok) leave();
+  }
+
+  /**
+   * The pull of the pits under `p` this frame (PitVacuum.updateStats: any vacuum whose column the
+   * hitbox overlaps, edges touching, at any height): sideways toward each pit's middle, left and
+   * right at most once each (Character.pulledLeft/pulledRight), or null over no pit.
+   */
+  private pitPullOn(p: Player): -1 | 0 | 1 | null {
+    if (this.pitVacuums === undefined)
+      this.pitVacuums = isSwimLevel(this.level) ? pitVacuumColumns(this.map) : null;
+    const vac = this.pitVacuums;
+    if (!vac) return null;
+    const b = p.body;
+    let left = false;
+    let right = false;
+    let any = false;
+    for (let tx = Math.max(0, tileAt(b.x - 1)); tx <= tileAt(b.x + b.w) && tx < vac.length; tx++) {
+      const v = vac[tx];
+      if (!v) continue;
+      any = true;
+      if (v === PULL_LEFT) left = true;
+      else if (v === PULL_RIGHT) right = true;
+    }
+    if (!any) return null;
+    return ((right ? 1 : 0) - (left ? 1 : 0)) as -1 | 0 | 1;
+  }
+
+  /**
+   * Where an exit marked `marked` leads: a Classic mode run's way on in place of `end` at an
+   * ordinary castle or flagpole (classicEnd: Lost Levels 8-4 and 9-4, G-001/G-002).
+   */
+  private exitNext(marked = 'end'): string {
+    return marked === 'end' ? (this.classicEnd?.next ?? marked) : marked;
   }
 
   private renderCastleText(r: Renderer, view: View): void {
@@ -4908,4 +4966,33 @@ export function anotherCastle(rescueName?: string): string[] {
   const first = `BUT ${fontText(rescueName)} IS IN`;
   if (first.length <= CASTLE_COLS) return [first, 'ANOTHER CASTLE!'];
   return wrapText(`${first} ANOTHER CASTLE!`, CASTLE_COLS);
+}
+
+/** A PitVacuum's pull (PitVacuum.setVacDir): "down-right", "down", "down-left". */
+const PULL_RIGHT = 1;
+const PULL_DOWN = 2;
+const PULL_LEFT = 3;
+
+/**
+ * Classic SMBC's PitVacuums (G-013; Level.as 762-777 and setUpPitVacs): one on every empty tile of
+ * the bottom row; a run of them is one pit, whose left half pulls right, its middle tile straight
+ * down and its right half left, toward the middle.
+ */
+export function pitVacuumColumns(map: TileMap): Int8Array {
+  const out = new Int8Array(map.width);
+  const row = map.height - 1;
+  const empty = (tx: number) => tx < map.width && map.collisionAt(tx, row) === 'none';
+  for (let start = 0; start < map.width;) {
+    if (!empty(start)) {
+      start++;
+      continue;
+    }
+    let end = start;
+    while (empty(end + 1)) end++;
+    const mid = (start + end) / 2;
+    for (let tx = start; tx <= end; tx++)
+      out[tx] = tx < mid ? PULL_RIGHT : tx === mid ? PULL_DOWN : PULL_LEFT;
+    start = end + 1;
+  }
+  return out;
 }

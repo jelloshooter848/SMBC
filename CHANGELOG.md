@@ -10,6 +10,13 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode: **every map set is open from the start**. The CLASSIC menu offers Super Mario
+  Bros. and The Lost Levels right away, and each line says whether that set has been beaten and
+  on which difficulty. Old Classic SMB clears count as beaten on Normal.
+- Classic mode: a **TIME UP** card when the clock runs out, as in the original. It is read out and
+  waits for OK, then the death goes on as usual.
+- Classic mode: in water areas the **pits pull Mario and Luigi in** (down and toward the pit's
+  middle), as in the original. Other heroes and the campaign are not pulled.
 - Classic mode: **each hero's own music** (G-060), our own songs in the mood of the hero's game:
   Link, Mega Man (and Bass and Proto Man), Samus, Simon, Ryu, Bill and Sophia III each have their
   own overworld, underground, castle, boss, coin heaven and more, reusing the campaign's hero tunes
@@ -30,6 +37,15 @@ under `## [Unreleased]`.
   pickup sounds, Mega Man's 1-up among them (G-073). Link's arrows and
   bombs, each of Samus's beams and her bombs, Simon's sub-weapons, Ryu's arts, Mega Man's Metal
   Blade and Bill's rifle, machine gun and flame gun no longer borrow other heroes' sounds (G-074).
+
+### Changed
+
+- Classic mode: **The Lost Levels run straight on from World 1 to World D**, as in the original.
+  8-4 is an ordinary castle with Toad and goes on to World 9 whatever warps were used; 9-4 goes on
+  to World A; D-4 says "YOUR QUEST IS OVER." and rolls the credits. The campaign and free play
+  keep their own Lost Levels endings.
+- Classic mode: after the credits, any cheats the win unlocked are shown one card at a time, then
+  the game returns to the title (the Lost Levels no longer follow straight on from SMB).
 
 ## [0.4.64] - 2026-10-20
 

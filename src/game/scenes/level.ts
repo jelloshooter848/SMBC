@@ -136,6 +136,8 @@ export class LevelScene implements Scene {
   bossMusic = false;
   /** This level was an arena round's stage and its exit ended the round (arena/stage-round.ts). */
   private roundOver = false;
+  /** Classic mode's TIME UP card was shown for this death (G-030). */
+  private timeUpShown = false;
   /** Back from scenes pushed over the level: the press that closed them must not jump. */
   private swallowJump = false;
   /**
@@ -178,6 +180,8 @@ export class LevelScene implements Scene {
       };
     // The campaign's story (src/game/story): entities and the world check it.
     this.world.storyMode = storyOn(game);
+    // Classic mode: every castle but the map set's last is an ordinary one (G-001/G-002).
+    this.world.classicEnd = game.classicCastle?.(level.parent ?? level.id) ?? null;
     // Campaign play (as the story's): each hero's own items from the power blocks.
     if (this.world.storyMode) this.world.useHeroItems(level.heroItems ?? []);
     // The hero's remark at a fake Bowser's axe (story/castle-remark.ts, 0.4.23).
@@ -497,6 +501,13 @@ export class LevelScene implements Scene {
       case 'died': {
         if (game.playtestDone) {
           game.playtestDone();
+          return;
+        }
+        // Classic mode (G-030): a death by the clock shows TIME UP first (EventManager
+        // dieDurTmrLsr -> ScreenManager.showTimeUpScreen), then the death goes on as any other.
+        if (game.classicRun && this.world.timedOut && !this.timeUpShown) {
+          this.timeUpShown = true;
+          game.showTimeUp(() => this.handle(ev));
           return;
         }
         // Aboard Larry's airship a death costs no life: TRY AGAIN? YES / NO (scenes/airship.ts).
