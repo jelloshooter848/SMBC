@@ -3,7 +3,7 @@ import { defaultSettings, type Settings } from '@engine/save/settings';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { PICK_SHOWS, pickPose, pickShowFrames } from '@game/scenes/pick-show';
-import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // G-055: on Classic mode's select a picked hero acts out its move (CharacterSelect.as 55, 189;
 // each hero's chooseCharacter) and the select waits its CHAR_SEL_END_DUR before the game goes on.
@@ -55,6 +55,16 @@ describe('G-055 pick performances', () => {
     expect(h.top()).toBe(sel);
     h.until(() => h.top() instanceof LevelScene, 600);
     expect(h.game.state.character.id).toBe('simon');
+  });
+
+  it('shows only SKIP on touch and no prompt while it plays', () => {
+    const h = classic();
+    const sel = selectSimon(h);
+    h.tap('jump');
+    expect(sel.performing).toBe(true);
+    expect(sel.touchLabels()).toMatchObject({ jump: 'SKIP', special: null, attack: null });
+    const texts = draw(sel).texts.map((x) => x.str);
+    expect(texts.some((x) => /TO PICK|LOOKS/.test(x))).toBe(false);
   });
 
   it('a fresh press skips it', () => {

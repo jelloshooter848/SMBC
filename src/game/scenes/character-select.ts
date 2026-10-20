@@ -936,6 +936,8 @@ export class CharacterSelectScene implements Scene {
 
   /** Touch drives player 1, who can also make player 2's pick (one device sets up both). */
   touchLabels(): TouchLabels {
+    // G-055: the pick performance shows only SKIP (no SKIN, no BACK).
+    if (this.show) return { jump: 'SKIP', attack: null, special: null, start: null, select: null };
     if (this.box) return menuTouchLabels(false);
     if (this.picker) return { jump: 'OK', attack: 'BACK', special: null, start: null, select: null };
     if (this._reviving)
@@ -1152,7 +1154,7 @@ export class CharacterSelectScene implements Scene {
     }
     if (!this._reviving) this.renderCheatNews(r, font);
     // The skin picker's hint (FU-8), named by ability with the real key when not on touch.
-    if (this.skinPicker && !this.cheatNews.length && !this.box) {
+    if (this.skinPicker && !this.cheatNews.length && !this.box && !this.show) {
       const hint = fontText(`${abilityHint(this.game, 'SKIN', 'special')} CHANGES LOOK`);
       r.text(font, hint, 128 - hint.length * 4, 42);
     }
@@ -1407,7 +1409,8 @@ export class CharacterSelectScene implements Scene {
       // The key hint goes when it would not fit on the screen (a long key name).
       const keyed = fontText(`${ok} ${what}`);
       const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
-      this.outlined(r, prompt, GROUND_TEXT_Y);
+      // G-055: no prompt while the picked hero acts out its pick.
+      if (!this.show) this.outlined(r, prompt, GROUND_TEXT_Y);
     }
     const py = GROUND_TEXT_Y + 10;
     const sv = this.survival;

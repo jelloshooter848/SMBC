@@ -63,6 +63,20 @@ describe('G-008 the Classic resume slot', () => {
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-3/);
   });
 
+  it('quitting from the select between levels resumes at the next level (QA nit)', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, '1-1');
+    h.until(() => inLevel(h), 600);
+    h.game.state.score = 777;
+    h.game.levelExitTo('1-2');
+    expect(h.top()?.constructor.name).toBe('CharacterSelectScene');
+    expect(loadClassicResume()).toMatchObject({ levelId: expect.stringMatching(/^1-2/), world: 1, stage: 2, score: 777 });
+    h.game.showTitle();
+    expect(h.game.resumeClassic()).toBe(true);
+    h.until(() => inLevel(h), 600);
+    expect((h.top() as LevelScene).world.level.id).toMatch(/^1-2/);
+  });
+
   it('a game over clears it', () => {
     const h = classic();
     h.game.classicGame(MARIO);

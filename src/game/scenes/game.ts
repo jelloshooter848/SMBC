@@ -1417,6 +1417,10 @@ export class Game {
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
     this.selectLevel = levelId;
+    // G-008: the next level is the run's place from here, as the original's file holds the level
+    // just reached (StatManager's current level moves on at the clear); quitting from the select
+    // between levels resumes there.
+    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
     // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
     // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
     if (pipe && this.survival) this.survival.reviveAllowed = true;
@@ -1956,7 +1960,16 @@ export class Game {
           reviveAllowed: sv.reviveAllowed,
         }
       : undefined;
-    saveClassicResume(resumeOf(levelId, this.state, this.liveRules, survival));
+    const r = resumeOf(levelId, this.state, this.liveRules, survival);
+    // The level's own world and stage (before its WORLD card the state still holds the last one's).
+    try {
+      const lv = this.deps.getLevel(levelId);
+      r.world = lv.world;
+      r.stage = lv.stage;
+    } catch {
+      /* a level that does not load: kept as the state has it */
+    }
+    saveClassicResume(r);
   }
 
   /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
@@ -2330,6 +2343,8 @@ export class Game {
    */
   respawn(levelId: string, start: LevelStart, player = 0): void {
     this.selectLevel = levelId;
+    // G-008: the slot follows the death (its lives) before the select, so quitting there resumes it.
+    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
     if (this.quickRespawn) {
       this.goToLevel(levelId, start);
       return;

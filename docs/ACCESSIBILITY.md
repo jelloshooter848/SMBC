@@ -13,8 +13,9 @@ here as an exception, with the owner decision behind it.
 - **Reduce flashing** (Options > Video) is respected everywhere: blinks are held steady or slowed, and flashes are
   dimmed. This holds under both Classic rules and Current rules.
 - **No level numbers in hints** (the story's hint lines name places, never level numbers).
-- **Remapping** never leaves two actions on one key: a key already bound to another action is refused, and the
-  options screen asks for another key (G-091).
+- **Remapping** never leaves two actions on one key (G-091): a key that is another action's only key is refused,
+  and the Controls screen says whose it is and asks for another; a spare key of another action (most have two or
+  three) moves over to the new one instead.
 
 ## Exceptions
 
@@ -24,8 +25,9 @@ The black "WORLD 1-1 × 3" card before each level moves on by itself, as the ori
 screen does: 2 seconds (2.5 seconds in the Single Character game mode). It is the one card that does not wait for
 a press. To keep it accessible:
 
-- it is announced (the hero, the level and the lives) as it opens;
-- in a Classic run a fresh JUMP, ATTACK or START press skips it at once (after a short guard, so a press meant for
+- it is announced as it opens: the level and the lives ("World 1-1. 3 lives."), with the hero's name first when no
+  select screen named it (Single random: "Bass. World 1-1. 3 lives.");
+- in a Classic run a fresh JUMP, ATTACK or START press (on touch, the SKIP button) skips it at once (after a short guard, so a press meant for
   the level before does not skip it);
 - it shows nothing the player must read to play: the same level, hero and lives are in the HUD and in the
   announcement.
