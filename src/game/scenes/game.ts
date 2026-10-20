@@ -431,11 +431,18 @@ export class Game {
     if (!classic || this.campaign !== null) return;
     // Back without a pick: the select music stops (the CLASSIC menu is silent).
     if (!chosen) return this.deps.ctx.audio.stopMusic();
-    const id = this.state.character.id;
+    this.playChooseJingle(this.state.character.id);
+  }
+
+  /**
+   * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
+   * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
+   * The one trigger of both: today the select's close after a pick (selectLeft) calls it.
+   */
+  playChooseJingle(id: string): void {
     const song = setSong(heroSet(id), 'choose');
     if (song) this.deps.ctx.audio.playJingle(song);
     else this.deps.ctx.audio.stopMusic();
-    // Mega Man and Bass teleport out as they are chosen (G-070; MegaMan.as 157).
     const sfx = CHOOSE_SFX[id];
     if (sfx) this.deps.ctx.audio.sfx(sfx);
   }

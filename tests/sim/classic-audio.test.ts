@@ -203,6 +203,12 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     h.idle(12);
     for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== name; i++) h.tap('right');
     h.tap('jump');
+    // A hero with other looks (Mega Man: Proto Man) opens the look menu first: OK takes the
+    // highlighted (own) look, and only that is the pick.
+    if (h.said.at(-1)?.startsWith('Choose a look')) {
+      expect(h.jingles).toEqual([]);
+      h.tap('jump');
+    }
     return h;
   };
 
