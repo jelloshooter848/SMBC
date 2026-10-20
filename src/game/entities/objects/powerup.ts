@@ -8,12 +8,39 @@ import type { World } from '../../world/world';
 /**
  * `poison` (Lost Levels) slides like a mushroom but hurts on touch; `clock` (Lost Levels) stays
  * on its block like a flower and adds time; `bee` (the Hudson Bee, Classic Hard layers, G-023)
- * stays on its block and is worth 8000 points (all handled in World.collisions).
+ * stays on its block and is worth 8000 points; `atom`, `hammer` and `wing` (Super Mario Bros.
+ * Special, G-022; world/special-items.ts) stay on theirs too (all handled in World.collisions).
  */
-export type PowerUpKind = 'mushroom' | '1up' | 'flower' | 'star' | 'poison' | 'clock' | 'bee';
+export type PowerUpKind =
+  | 'mushroom'
+  | '1up'
+  | 'flower'
+  | 'star'
+  | 'poison'
+  | 'clock'
+  | 'bee'
+  | 'atom'
+  | 'hammer'
+  | 'wing';
+
+/** Items the World takes itself: never a hero's own power-up (CharacterBehaviour.onPowerUp). */
+export type WorldItem = 'poison' | 'clock' | 'bee' | 'atom' | 'hammer' | 'wing';
+/** A power-up a hero takes as its own. */
+export type HeroPowerUp = Exclude<PowerUpKind, WorldItem>;
+const WORLD_ITEMS: ReadonlySet<PowerUpKind> = new Set<WorldItem>([
+  'poison',
+  'clock',
+  'bee',
+  'atom',
+  'hammer',
+  'wing',
+]);
+export function isWorldItem(kind: PowerUpKind): kind is WorldItem {
+  return WORLD_ITEMS.has(kind);
+}
 
 /** Items that stay on their block once out (plain Pickups in the original: defyGrav, vy = 0). */
-const STAYS: ReadonlySet<PowerUpKind> = new Set(['flower', 'clock', 'bee']);
+const STAYS: ReadonlySet<PowerUpKind> = new Set(['flower', 'clock', 'bee', 'atom', 'hammer', 'wing']);
 
 /** The kinds that are the original's Mushroom (red, ST_GREEN and ST_POISON), with its gBounceHit. */
 const MUSHROOMS: ReadonlySet<PowerUpKind> = new Set(['mushroom', '1up', 'poison']);
@@ -123,6 +150,9 @@ export class PowerUp extends Entity {
     if (this.item === 'star') frame = `star-${(view.frame >> 2) & 3}`;
     if (this.item === 'poison') frame = 'poison-mushroom';
     if (this.item === 'bee') frame = `bee-${(view.frame >> 3) & 1}`;
+    // Atom and Wing animate on ANIM_MODERATE_TMR (75 ms: about 4 frames).
+    if (this.item === 'atom') frame = `atom-${Math.floor(view.frame / 4) & 1}`;
+    if (this.item === 'wing') frame = `wing-${Math.floor(view.frame / 4) & 1}`;
     r.sprite(sheet, frame, this.screenX(view), this.screenY());
   }
 }

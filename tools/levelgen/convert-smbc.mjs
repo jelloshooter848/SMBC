@@ -784,8 +784,8 @@ function convertArea(level, area, id, levels, profile) {
             break;
           // Scenery anchors in the original sit on the centre column; ours use the bottom-left tile.
           case 'hillMedium':
-          // Special's taller hill (no art of its own: the big hill).
           case 'hillBig':
+            // hillBig: Special's taller hill (no art of its own: the big hill).
             b.dec('hill-big', x - 2, y);
             break;
           case 'hillSmall':

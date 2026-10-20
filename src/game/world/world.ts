@@ -37,6 +37,7 @@ import { Blooper } from '../entities/enemies/blooper';
 import { Podoboo } from '../entities/enemies/podoboo';
 import { HammerBro } from '../entities/enemies/hammer-bro';
 import { SpikeTop } from '../entities/enemies/spike-top';
+import { Barrel, Crab, FireEnemy, Fly, Icicle } from '../entities/enemies/special-enemies';
 import { LakituZone } from '../entities/enemies/lakitu';
 import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
@@ -61,7 +62,8 @@ import {
   TeleportPad,
   type TeleportZone,
 } from '../entities/objects/teleporter';
-import { PowerUp, type PowerUpKind } from '../entities/objects/powerup';
+import { PowerUp, isWorldItem, type HeroPowerUp, type PowerUpKind } from '../entities/objects/powerup';
+import { isSpecialItem, takeSpecialItem, type SpecialItem } from './special-items';
 import { isPickupKind, Pickup, type PickupKind } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
@@ -1290,6 +1292,17 @@ export class World {
       // Classic mode's Replace Goombas: Spike Top (rules/classic-goombas.ts).
       case 'spike-top':
         return new SpikeTop(x + px(2), y + px(2));
+      // Super Mario Bros. Special's enemies (G-021; entities/enemies/special-enemies.ts).
+      case 'icicle':
+        return new Icicle(x + px(3), y + px(1), s.x, s.y);
+      case 'crab':
+        return new Crab(x + px(2), y + px(2));
+      case 'fly':
+        return new Fly(x + px(2), y + px(2));
+      case 'barrel':
+        return new Barrel(x + px(2), y + px(2));
+      case 'fire-enemy':
+        return new FireEnemy(x + px(2), y + px(2));
       case 'bullet-bill':
         return new BulletBill(x + px(1), y + px(2), -1);
       case 'lakitu':
@@ -1539,6 +1552,23 @@ export class World {
     this.dryWaterTop ??= this.waterTop;
     this.waterTop = on ? WATER_MODE_TOP : this.dryWaterTop;
   }
+
+  /**
+   * Special's Wing (G-022; Character.as 1655-1665, Level.forceWaterLevel): the area swims for
+   * `frames` (a new Wing starts the time again), then dries unless it is a water area or the
+   * Water Mode cheat is on (wingTimerHandler: `!level.initialWaterLevel && !Cheats.waterMode`).
+   */
+  wingSwim(frames: number): void {
+    this.setWaterMode(true);
+    this.wingFrames = frames;
+  }
+  /** Frames of a Wing's swim left (0: none). */
+  wingFrames = 0;
+
+  private tickWing(): void {
+    if (this.wingFrames <= 0 || --this.wingFrames > 0) return;
+    if (!this.cheats.waterMode) this.setWaterMode(false);
+  }
   /** The area's own water line, kept while Water Mode floods it. */
   private dryWaterTop: number | undefined;
 
@@ -1666,6 +1696,7 @@ export class World {
       if (e instanceof PowerUp) {
         if (e.item === 'clock') this.collectClock(e);
         else if (e.item === 'bee') this.collectBee(e);
+        else if (isSpecialItem(e.item)) takeSpecialItem(this, p, e as PowerUp & { item: SpecialItem });
         else if (e.item !== 'poison') this.powerUp(p, e.item);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
@@ -2056,6 +2087,7 @@ export class World {
     if (!this.pipeAnim && !this.leaving && !this.trickSpin) this.checkTeleports();
     this.checkZones();
     this.tickPath();
+    this.tickWing();
     this.checkLoops();
     this.flyingCheeps();
     this.flyingBullets();
@@ -2428,7 +2460,7 @@ export class World {
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(
     target: { level: string; x: number; y: number },
-    mode: 'climb' | 'fall' | 'spin' | 'up',
+    mode: 'climb' | 'fall' | 'spin' | 'up' | 'none',
     chain = false,
   ): void {
     if (this.leaving) return;
@@ -2453,7 +2485,8 @@ export class World {
           on = this.vineBlockAt(v.x, v.y) ?? this.placedVineAt(v.x, v.y);
           return on?.centerX === p.vine?.x;
         });
-        if (z) this.transfer(z.target, 'climb', on?.art === 'chain');
+        // A vine to an area with none to climb on arrives as that area starts (its `exit=`).
+        if (z) this.transfer(z.target, z.target.exitDir ?? 'climb', on?.art === 'chain');
         else b.y = -b.h; // nowhere to go: hang at the top
       }
       return;
@@ -2855,8 +2888,12 @@ export class World {
         if (id === T.Q_CLOCK && !item) restore = T.Q_COIN;
         break;
       case 'bee':
-        // The Hudson Bee rises out like any item (Brick.normalItemExitBrickStart, G-023).
-        this.spawn(new PowerUp(tx, ty, 'bee'));
+      case 'atom':
+      case 'hammer':
+      case 'wing':
+        // The Hudson Bee rises out like any item (Brick.normalItemExitBrickStart, G-023), and
+        // Super Mario Bros. Special's Atom, Hammer and Wing likewise (G-022).
+        this.spawn(new PowerUp(tx, ty, content));
         this.audio.sfx('powerup-appear');
         break;
       case 'vine':
@@ -2991,7 +3028,7 @@ export class World {
     // onPowerUp scores its own 1000.
     if (id === null) {
       const kind = e.entries === GROW_BLOCK ? 'mushroom' : p.def.blockPowerUp(p);
-      if (kind !== 'poison' && kind !== 'clock' && kind !== 'bee') p.def.behaviour.onPowerUp(p, kind, this);
+      if (!isWorldItem(kind)) p.def.behaviour.onPowerUp(p, kind, this);
       return;
     }
     this.addScore(1000, p.body.x, p.body.y - px(16));
@@ -3013,7 +3050,7 @@ export class World {
    * Samus took the Varia Suit from a Mushroom before any Energy Tank): a small hero their grow item,
    * else the Mushroom their next one, the Fire Flower their default power. Else its onPowerUp.
    */
-  powerUp(p: Player, kind: Exclude<PowerUp['item'], 'poison' | 'clock' | 'bee'>): void {
+  powerUp(p: Player, kind: HeroPowerUp): void {
     if ((kind === 'mushroom' || kind === 'flower') && itemRules(p.def.id) && isFound(p)) {
       const id = blockItem(p, null, kind === 'mushroom' ? 'mushroom' : 'powerup');
       if (id !== null) return this.takeHeroItem(p, new HeroItem(0, 0, id, p.def.id));
@@ -3110,6 +3147,7 @@ export class World {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
           } else if (e.item === 'clock') this.collectClock(e);
           else if (e.item === 'bee') this.collectBee(e);
+          else if (isSpecialItem(e.item)) takeSpecialItem(this, p, e as PowerUp & { item: SpecialItem });
           else this.powerUp(p, e.item);
         }
       } else if (e instanceof HeroItem) {

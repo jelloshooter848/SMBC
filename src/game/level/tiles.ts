@@ -35,6 +35,13 @@ export type BlockContent =
    * spawn puts it (or a lone Clock) in the map's block there (World.blockItems).
    */
   | 'bee'
+  /**
+   * Super Mario Bros. Special's Atom, Hammer and Wing (G-022; world/special-items.ts), put in a
+   * block by `block-item` spawns as the Hudson Bee is.
+   */
+  | 'atom'
+  | 'hammer'
+  | 'wing'
   | 'none';
 
 export interface TileDef {

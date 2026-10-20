@@ -11,8 +11,8 @@ under `## [Unreleased]`.
 ### Added
 
 - Classic mode: **every map set is open from the start**. The CLASSIC menu offers Super Mario
-  Bros. and The Lost Levels right away, and each line says whether that set has been beaten and
-  on which difficulty. Old Classic SMB clears count as beaten on Normal.
+  Bros., Super Mario Bros. Special and The Lost Levels right away, and each line says whether that
+  set has been beaten and on which difficulty. Old Classic SMB clears count as beaten on Normal.
 - Classic mode: a **TIME UP** card when the clock runs out, as in the original. It is read out and
   waits for OK, then the death goes on as usual.
 - Classic mode: in water areas the **pits pull Mario and Luigi in** (down and toward the pit's
@@ -31,6 +31,17 @@ under `## [Unreleased]`.
 - Classic mode: the **Level Select cheat**. Beat every map set on Hard (or enter the cheat code) to
   unlock it. It is on the Cheats page and the pause menu, and lets you pick a map set, a difficulty,
   a world (A to D too) and a level.
+- Classic mode: the original's third map set, **Super Mario Bros. Special** (SMB Special on the
+  CLASSIC menu, between the other two): 32 levels, built for each hero and each Map Difficulty like
+  the others, ending with the credits and the title as Super Mario Bros. does.
+- Classic mode: Special's **new enemies**, with our own art: Icicles that drop when you come near
+  or bump their brick, Crabs that get angry and faster when hit, hopping Flies, rolling armoured
+  Barrels and living Flames that only a Star or the Hammer can put out. None of them can be
+  stomped. They are on Normal in Special, and on Hard in Super Mario Bros. and The Lost Levels.
+- Classic mode: Special's **new items**, in blocks: the **Atom** defeats every enemy on screen, the
+  **Hammer** swings over and in front of you for ten seconds and defeats any enemy it touches, and
+  the **Wing** lets you swim through the air for ten seconds. Each is worth 1000 points and says
+  what it does when you take it.
 
 ### Changed
 
@@ -40,6 +51,8 @@ under `## [Unreleased]`.
   keep their own Lost Levels endings.
 - Classic mode: after the credits, any cheats the win unlocked are shown one card at a time, then
   the game returns to the title (the Lost Levels no longer follow straight on from SMB).
+- Classic mode: the **All Hammer Bros** cheat is unlocked by beating Super Mario Bros. Special, as
+  in the original, no longer by beating The Lost Levels. Anyone who already unlocked it keeps it.
 
 ## [0.4.64] - 2026-10-20
 

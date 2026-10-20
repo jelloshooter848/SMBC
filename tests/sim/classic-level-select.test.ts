@@ -108,7 +108,8 @@ describe('G-007: the Level Select cheat', () => {
 
   it('opens once every map set is beaten on Hard (StatManager.allMapPacksBeatOnHard)', () => {
     const h = classic();
-    let p = recordBeat(loadProgress(), 'smb', 'hard');
+    // Every set but the last: SMB and (G-020) Super Mario Bros. Special.
+    let p = recordBeat(recordBeat(loadProgress(), 'smb', 'hard'), 'special', 'hard');
     saveProgress(p);
     p = loadProgress();
     // The last set is beaten on Hard at the end of a Classic run: its card follows.
@@ -145,6 +146,7 @@ describe('G-007: the Level Select cheat', () => {
     expect(labels(page)).toEqual(['Map set', 'Difficulty', 'World', 'Level', 'Go', 'Back']);
     expect(h.said.at(-1)).toMatch(/^Level select\. Map set: SMB/);
     h.idle(8);
+    h.tap('right'); // Super Mario Bros. Special (G-020)
     h.tap('right'); // The Lost Levels
     expect(items(page)[0]?.value?.()).toBe('Lost Levels');
     h.tap('down');

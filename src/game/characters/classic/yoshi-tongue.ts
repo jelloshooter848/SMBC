@@ -12,7 +12,7 @@ import { SpikeTop } from '../../entities/enemies/spike-top';
 import { Cheep } from '../../entities/enemies/cheep';
 import { Blooper } from '../../entities/enemies/blooper';
 import { Lakitu } from '../../entities/enemies/lakitu';
-import { PowerUp } from '../../entities/objects/powerup';
+import { PowerUp, isWorldItem } from '../../entities/objects/powerup';
 import { Pickup } from '../../entities/objects/pickup';
 import { T, tileDef } from '../../level/tiles';
 
@@ -175,7 +175,7 @@ export function tongueTick(p: Player, world: World, form: 'hero' | 'mount'): voi
   for (const e of world.entities) {
     if (!e.alive || !overlaps(tip, e.body)) continue;
     if (e instanceof PowerUp) {
-      if (e.item === 'poison' || e.item === 'clock' || e.item === 'bee') continue;
+      if (isWorldItem(e.item)) continue;
       e.destroy();
       world.powerUp(p, e.item);
       return retract(p);

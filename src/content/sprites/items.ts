@@ -5,6 +5,7 @@ import { mapIconFrames } from './map-icons';
 import { selectRandomFrames } from './select-random';
 import { topSecretItemFrames } from './top-secret';
 import { smbcBeamItemFrames } from './smbc-shots';
+import { specialItemFrames } from './special';
 
 /**
  * Item palette roles:
@@ -2119,6 +2120,8 @@ export const itemsDef: SpriteDef = {
     clock,
     'bee-0': bee0,
     'bee-1': bee1,
+    // Super Mario Bros. Special's Atom, Hammer (and the hammer held) and Wing (G-022).
+    ...specialItemFrames,
     'flower-0': flower0,
     'flower-1': swapColors(flower0, { '7': '2', '5': '6', '6': '5' }),
     'star-0': star0,

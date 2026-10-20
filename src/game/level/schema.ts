@@ -352,7 +352,17 @@ export type Zone =
       campaign?: boolean;
     }
   /** A vine brick at (x, y): climbing its vine off the top of the screen leads to `target` (climb mode). */
-  | { kind: 'vine'; x: number; y: number; target: { level: string; x: number; y: number } }
+  | {
+      kind: 'vine';
+      x: number;
+      y: number;
+      /**
+       * Where the top of the vine leads. `exitDir`: how the hero arrives there when that area has
+       * no vine to climb on (Special 4-1 and 4-3's coin heavens: `up` out of a pipe, `fall`, or
+       * `none` to stand); left out, he climbs up an arrival vine.
+       */
+      target: { level: string; x: number; y: number; exitDir?: 'up' | 'fall' | 'none' };
+    }
   /**
    * A teleport pad lying in tile (x, y) (on the floor of the tile below): a player who stands on
    * it is beamed up and arrives in `target` (`exitDir`: 'beam' by default, beamed down; 'fall'
