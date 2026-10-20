@@ -19,6 +19,8 @@ under `## [Unreleased]`.
 - Classic Yoshi: a Lakitu he eats (playable or ridden) leaves his cloud drifting away instead
   of vanishing with him.
 - Dev menu: leaving with Escape (START) on a Classic toggle row no longer flips that toggle.
+- Classic mode: the HUD's ammo and egg counters get the HUD's dark outline, so they read over
+  white clouds.
 
 ## [0.4.60] - 2026-10-20
 
