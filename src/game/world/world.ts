@@ -140,6 +140,8 @@ import { CostumePile } from '../entities/effects/costume-pile';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
+/** The hurt blink held steady with Reduce flashing (G-092): the hero at 65 %, as Classic heroes are. */
+export const HURT_STEADY_ALPHA = 0.65;
 /** What goes on from the castle's text (OK): JUMP or ATTACK. MENU still pauses. */
 const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
 /** How long an item's name shows under the HUD when first found (docs/POWERUPS.md 3.3). */
@@ -4817,6 +4819,9 @@ export class World {
       if (look.visible) translucent(r, look.alpha, () => this.drawPlayer(r, view, p));
       return;
     }
+    // G-092: with Reduce flashing the hurt blink is held steady, the hero drawn see-through.
+    if (view.reduceFlashing && p.invuln > 0 && p.def.noHurtBlink !== true)
+      return translucent(r, HURT_STEADY_ALPHA, () => this.drawPlayer(r, view, p));
     if (!p.visible(view.frame)) return;
     this.drawPlayer(r, view, p);
   }

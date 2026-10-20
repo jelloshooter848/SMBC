@@ -14,6 +14,11 @@ under `## [Unreleased]`.
   JUMP, ATTACK or START press now skips it. It is the one written exception to "text never moves on by itself"
   (docs/ACCESSIBILITY.md).
 
+### Fixed
+
+- With Reduce flashing, the hurt blink under Current rules (the campaign, and Classic mode set to Current
+  rules) is held steady: the hero stays drawn, see-through, instead of blinking.
+
 ## [Unreleased]
 
 ### Added
