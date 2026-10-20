@@ -2,6 +2,7 @@ import { loadProgress, saveProgress } from '@engine/save/progress';
 import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
+import { CheatsScene } from './cheats-menu';
 import type { Game } from './game';
 import type { Renderer } from '@engine/gfx/renderer';
 
@@ -106,6 +107,13 @@ export class ClassicOptionsScene extends MenuScene {
         value: () => (this.drawing ? '' : this.rulesLabel),
         adjust: step,
         hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
+      },
+      {
+        label: 'Cheats',
+        select: () => game.scenes.push(new CheatsScene(game, () => this.back(), { all: game.devMode })),
+        hint: game.devMode
+          ? 'The original cheats; developer mode opens them all'
+          : 'The original cheats; play to unlock them',
       },
       {
         label: 'All options',

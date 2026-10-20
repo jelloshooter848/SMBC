@@ -75,7 +75,16 @@ import { WandPoof } from '../entities/effects/wand-poof';
 import type { ClassicHitProps, DamageKind, DamageSource, Reaction } from '../rules/damage';
 import { classicRules, type BlockHit, type BlockStrike } from '../rules/hooks';
 import { shellKickSeqScore, stompScore } from '../rules/score';
-import { rulesOf, type GameContext, type GameState, type Rules } from '../context';
+import {
+  cheatAssist,
+  NO_CHEATS,
+  rulesOf,
+  type CheatFlags,
+  type GameContext,
+  type GameState,
+  type Rules,
+} from '../context';
+import type { ClassicCheatStat } from '@engine/save/settings';
 import { heroFor } from '../characters/registry';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
@@ -164,6 +173,11 @@ export type WorldEvent =
       };
     }
   | { type: 'exit'; next: string }
+  /**
+   * Classic rules only: one more of a cheat goal's count (cheats.ts; StatManager's num* setters):
+   * an enemy defeated (and an armoured one, a Hammer Bro, a Cheep Cheep), a stomp, a brick broken.
+   */
+  | { type: 'tally'; stat: ClassicCheatStat }
   /** `player`: index of the player whose death ended the attempt (they pick the next hero). */
   | { type: 'died'; player?: number }
   | { type: 'checkpoint'; x: number; y: number }
@@ -380,6 +394,15 @@ export const PATH_STEP_FRAMES = 6;
 /** Level.HW_ENEMY_REMOVAL_DIST = TILE_SIZE*6: enemies closer than this (px, horizontally) go. */
 const ENEMY_REMOVAL_PX = 6 * 16;
 /**
+ * Bouncy Pits (Classic cheat): AnimatedObject.VY_BOUNCY_PITS_DEF -1000 px/s on the original's
+ * 32-px tiles, so 500 px/s here: 8.33 px/f. A leaping Cheep Cheep's is CheepFast.FLYING_JUMP_PWR
+ * 555 px/s: 4.63 px/f.
+ */
+const BOUNCY_PIT_VY = 0x08555;
+const BOUNCY_PIT_CHEEP_VY = 0x04a00;
+/** Water Mode (Classic cheat): the swimming line above the top of any map. */
+const WATER_MODE_TOP = px(-1024);
+/**
  * The vine you arrive on in a sky area (Vine.growFromStgBot): it grows from the screen bottom
  * (GLOB_STG_BOT) until its top is 5 tiles up, at riseSpeed 60 Flash px/s (0.5 px a frame).
  */
@@ -541,6 +564,18 @@ export class World {
    * the context's. A World never changes rules; a switch shows at the next World.
    */
   readonly rules: Rules;
+  /**
+   * Classic mode's cheats that are on (cheats.ts, FU-7e): the context's live view in a Classic
+   * World, NO_CHEATS in every Current one (so Current play never reads a cheat).
+   */
+  get cheats(): CheatFlags {
+    return this.rules === 'classic' ? (this.ctx.classicCheats ?? NO_CHEATS) : NO_CHEATS;
+  }
+  /**
+   * Extra Checkpoints (Classic cheat): the original's halfway points of the levels whose
+   * checkpoint it locks (LOCKED_CP: castles, World 8), added by the cheat's level-load edit.
+   */
+  readonly cheatCheckpoints: { x: number; y: number }[] = [];
   frame = 0;
   /** Timer in SMB1 units; null = no timer. */
   time: number | null;
@@ -568,7 +603,7 @@ export class World {
   private cheepNoRight = 0;
   /** Flying-bill respawn timer in frames (0 = stopped) and the one bill it has out. */
   private bulletTimer = 0;
-  private flyingBill: BulletBill | null = null;
+  private flyingBill: Enemy | null = null;
   /** Bowser's long-range flames (`bowser-fire` zone), or null. */
   private readonly bowserFire: BowserFire | null;
   /** Castle maze: lead player's centre x last frame (px) and the loop checkpoints passed. */
@@ -737,8 +772,10 @@ export class World {
     start: WorldStart = {},
   ) {
     this.audio = ctx.audio;
-    this.assist = ctx.assist;
     this.rules = start.rules ?? rulesOf(ctx);
+    // Classic mode's Infinite Lives, Infinite Time and Invincible cheats are the assists' own
+    // (cheatAssist); a Current World has the context's assists as they are.
+    this.assist = this.rules === 'classic' ? cheatAssist(ctx.assist, () => this.cheats) : ctx.assist;
     this.extraEntities = start.extraEntities;
     this.deathStyle = start.deathStyle ?? 'hop';
     this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
@@ -766,8 +803,13 @@ export class World {
     this.camera.allowLeftScroll = ctx.assist.allowLeftScroll;
     // Classic SMBC: SMBC 3.1.21's default camera scrolls back left (Cheats.classicScreenScroll
     // off). Free, locked and auto-scroll cameras keep their own rules.
+    // The Classic Screen Scroll cheat turns that off (Level.changeScreenScrollsLeftSetting).
     this.camera.scrollBack =
-      this.rules === 'classic' && !this.camera.free && !this.camera.locked && !this.camera.auto;
+      this.rules === 'classic' &&
+      !this.cheats.classicScreenScroll &&
+      !this.camera.free &&
+      !this.camera.locked &&
+      !this.camera.auto;
     this.areaMemory = this.rules === 'classic' ? (start.areaMemory ?? new Map()) : null;
     this.rng = new Rng(start.seed ?? levelSeed(level));
     // A transfer within the same stage (bonus room, detour, sky) keeps the running clock.
@@ -962,6 +1004,7 @@ export class World {
         level.id,
         this.players.map((p) => p.def),
         this.spawns,
+        this,
       );
 
     // Static objects from the tile grid.
@@ -1363,6 +1406,12 @@ export class World {
 
   /** An enemy just died: the character that killed it may get a drop. */
   enemyKilled(e: Enemy, src: DamageSource): void {
+    if (this.rules === 'classic') {
+      this.tally('enemiesDefeated');
+      if (classicRules().armoured(e)) this.tally('armouredDefeated');
+      if (e instanceof HammerBro) this.tally('hammerBrosDefeated');
+      if (e instanceof Cheep) this.tally('cheepsDefeated');
+    }
     let killer: Player | null = null;
     const o = src.owner;
     if (o instanceof Player) killer = o;
@@ -1374,6 +1423,50 @@ export class World {
     if (this.megamanShip) this.placeDrop(drop);
     this.spawn(drop);
   }
+
+  /** Classic rules: one more of a cheat goal's count (the level passes it on: Game.cheatTally). */
+  private tally(stat: ClassicCheatStat): void {
+    if (this.rules === 'classic') this.events.push({ type: 'tally', stat });
+  }
+
+  /**
+   * Bouncy Pits (Classic cheat; Character.die with fellInPit, AnimatedObject.activateBouncyPit):
+   * a player falling out of the bottom is thrown back up, feet half a body below the bottom, at
+   * the original's 1000 px/s. False when the cheat is off.
+   */
+  private bouncePlayer(p: Player): boolean {
+    if (!this.cheats.bouncyPits) return false;
+    const b = p.body;
+    b.y = px(this.heightPx) - (b.h >> 1);
+    b.vy = -BOUNCY_PIT_VY;
+    b.onGround = false;
+    return true;
+  }
+
+  /**
+   * Bouncy Pits for an enemy (AnimatedObject.checkStgPos): falling past the bottom, its feet go
+   * back to the bottom edge and it is thrown up (a leaping Cheep Cheep at its own jump, 555 px/s;
+   * a flying Paratroopa never).
+   */
+  private bounceEnemy(e: Enemy): void {
+    const b = e.body;
+    if (b.vy < 0 || b.y + b.h <= px(this.heightPx)) return;
+    if (e instanceof Koopa && e.wings) return;
+    b.y = px(this.heightPx) - b.h;
+    b.vy = -(e instanceof Cheep && e.flying ? BOUNCY_PIT_CHEEP_VY : BOUNCY_PIT_VY);
+    b.onGround = false;
+  }
+
+  /**
+   * Water Mode (Classic cheat; Level.forceWaterLevel / forceNonwaterLevel): every row of the area
+   * swims, or the area's own water again. A water level stays one either way.
+   */
+  setWaterMode(on: boolean): void {
+    this.dryWaterTop ??= this.waterTop;
+    this.waterTop = on ? WATER_MODE_TOP : this.dryWaterTop;
+  }
+  /** The area's own water line, kept while Water Mode floods it. */
+  private dryWaterTop: number | undefined;
 
   /**
    * Mega Man's airship (0.4.39: the level laid with his `[variant megaman]` sections, level/
@@ -1700,6 +1793,7 @@ export class World {
     }
     this.seqHit(stompScore(p.combo, e.scores.stomp, double), e.body.x, e.body.y - px(8));
     this.feats.stomps++;
+    this.tally('enemiesStomped');
   }
 
   /** Kick a still shell (KoopaGreen.kickShell), scored by when in the shell's rest it happens. */
@@ -1794,6 +1888,7 @@ export class World {
         p.anim = 'jump';
         return;
       }
+      p.cheatAmmo = this.cheats.infiniteAmmo; // Infinite Ammo (Classic cheat; classic/power.ts freeAmmo)
       p.update(input, this.playerMap(p), this.audio, (tx, ty) => this.hitBlock(tx, ty, p));
       // No attacks, tools or thrusts on a vine: every hero's checkState returns on ST_VINE (e.g.
       // Link.checkState on "vine", MarioBase.checkState) and pressAtkBtn / pressSpcBtn return there.
@@ -1849,6 +1944,7 @@ export class World {
       }
       e.levelHeightPx = this.heightPx;
       e.update(this);
+      if (e instanceof Enemy && e.alive && this.cheats.bouncyPits) this.bounceEnemy(e);
     }
     this.resolveLifts();
     this.rideEnemies();
@@ -1928,7 +2024,7 @@ export class World {
             (z.w === undefined || p.body.x < tileToSub(z.x + z.w)),
         );
         if (pit) this.transfer(pit.target, 'fall');
-        else if (!this.catchFall(p)) this.kill(p);
+        else if (!this.catchFall(p) && !this.bouncePlayer(p)) this.kill(p);
       }
     }
     this.cull();
@@ -2386,7 +2482,9 @@ export class World {
       (z) => z.kind === 'cheeps' && lead.body.x >= tileToSub(z.x) && lead.body.x < tileToSub(z.x + z.w),
     );
     let flying = 0;
-    for (const e of this.entities) if (e instanceof Cheep && e.alive && e.flying) flying++;
+    for (const e of this.entities)
+      if (e.alive && ((e instanceof Cheep && e.flying) || (e instanceof HammerBro && e.spawner === 'cheep')))
+        flying++;
     if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < 3) {
       const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
       const target = {
@@ -2394,7 +2492,12 @@ export class World {
         vx: lead.body.vx,
         marioWalk: marioType ? lead.profile.maxWalk : null,
       };
-      this.spawn(Cheep.leaper(this.rng, this.camera.x, SCREEN_H, target, this.cheepNoRight >= 120));
+      const cheep = Cheep.leaper(this.rng, this.camera.x, SCREEN_H, target, this.cheepNoRight >= 120);
+      // All Hammer Bros (Classic cheat; CheepFast): a Hammer Bro leaps out in its place.
+      const b = cheep.body;
+      this.spawn(
+        this.cheats.allHammerBros ? HammerBro.launched(b.x, b.y - px(8), b.vx, b.vy, 'cheep') : cheep,
+      );
       flying++;
     }
     if (inZone && flying < 3 && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
@@ -2423,7 +2526,11 @@ export class World {
       let bottom = Math.round(feet / 16) * 16 + (this.rng.int(5) - 2) * 16;
       while (bottom > SCREEN_H - 16) bottom -= 16;
       while (bottom < 3 * 16) bottom += 16;
-      const bill = new BulletBill(this.camera.right, px(bottom - 14), -1);
+      // All Hammer Bros (Classic cheat; BulletBillSpawner): a Hammer Bro flies in at the top
+      // instead (`curBulBill.y = GLOB_STG_TOP + TILE_SIZE*3`), at the Bullet Bill's speed.
+      const bill = this.cheats.allHammerBros
+        ? HammerBro.launched(this.camera.right, px(3 * 16 - 22), -BULLET_SPEED, 0, 'bullets')
+        : new BulletBill(this.camera.right, px(bottom - 14), -1);
       bill.body.vx = -BULLET_SPEED;
       this.flyingBill = bill;
       this.spawn(bill);
@@ -2604,6 +2711,7 @@ export class World {
         this.addScore(50);
         this.audio.sfx('break');
         this.feats.bricks++;
+        this.tally('bricksBroken');
         this.blockDrop(tx, ty, p, 'brick');
       } else {
         this.bump(tx, ty, 'brick', id);
@@ -2991,7 +3099,8 @@ export class World {
     if (e instanceof Blooper && p.def.seaFloorSafe === true && pb.onGround && feet === px(this.heightPx - 32))
       return;
     if (fromAbove && e.stompable && !stompBarred) {
-      if (p.def.stomps) {
+      // Everyone Can Stomp (Classic cheat; Character.canStomp): any hero stomps.
+      if (p.def.stomps || this.cheats.everyoneCanStomp) {
         // Landing on a still shell kicks it; it is not a stomp, so it neither scores nor advances
         // the stomp sequence (KoopaGreen.stomp returns early for a shell, hitCharacter kicks it).
         // Nor does it bounce: Character.hitEnemy does nothing for a shell, leaving the player's
@@ -3577,6 +3686,14 @@ export class World {
         best = { x: z.x, y: z.y ?? 12 };
       }
     }
+    // Extra Checkpoints (Classic cheat): the locked levels' halfway points count as checkpoints.
+    for (const c of this.cheatCheckpoints)
+      if (
+        c.x > this.lastCheckpointX &&
+        (!best || c.x > best.x) &&
+        this.players.some((p) => p.body.x >= tileToSub(c.x))
+      )
+        best = { x: c.x, y: c.y };
     if (best) {
       this.lastCheckpointX = best.x;
       this.events.push({ type: 'checkpoint', x: best.x, y: best.y });

@@ -28,6 +28,7 @@ import {
   spendAmmo,
   type ClassicAmmo,
   type ClassicPowerKit,
+  freeAmmo,
 } from '../classic/power';
 import { SIMON, SIMON_TOOL_LABELS } from './index';
 import { SIMON_CLASSIC_GUIDE } from './classic-guide';
@@ -135,7 +136,7 @@ function tools(p: Player): ToolInfo[] {
     id: w.id,
     icon: w.icon,
     count: h,
-    usable: p.star > 0 || h >= w.cost,
+    usable: freeAmmo(p) || h >= w.cost,
   }));
 }
 

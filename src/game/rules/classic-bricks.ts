@@ -40,7 +40,10 @@ export function classicStrikeBlock(
   }
   if (block.kind === 'brick' && block.content === 'none') {
     let breaks: boolean;
-    if (hit.source === 'head') breaks = breakBricks;
+    // Always Break Bricks (Classic cheat; Brick.bounce: `if (Cheats.alwaysBreakBricks && item ==
+    // null) breakBrick()`): any strike breaks a plain brick.
+    if (world.cheats.alwaysBreakBricks) breaks = true;
+    else if (hit.source === 'head') breaks = breakBricks;
     else if (hit.source === 'melee')
       breaks = true; // BR-C6: one hit, whatever its damage
     else {

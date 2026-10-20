@@ -67,6 +67,65 @@ export interface Settings {
    * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
    */
   classicRules: ClassicRules;
+  /**
+   * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
+   * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
+   * into older files (every field defaults to the original's: all off, most locked).
+   */
+  classicCheats: ClassicCheatsSettings;
+}
+
+/** The original's cheats (Cheats.as), minus its no-ops (Classic Samus, Classic Simon) and Level Select. */
+export const CLASSIC_CHEAT_IDS = [
+  'allGroundIsBricks',
+  'allHammerBros',
+  'allWeaponsPierce',
+  'alwaysBreakBricks',
+  'bouncyPits',
+  'classicScreenScroll',
+  'everyoneCanStomp',
+  'evilHammerBros',
+  'extraCheckpoints',
+  'infiniteAmmo',
+  'infiniteLives',
+  'infiniteTime',
+  'invincible',
+  'waterMode',
+] as const;
+export type ClassicCheatId = (typeof CLASSIC_CHEAT_IDS)[number];
+
+/** The counts the unlock goals read (StatManager.as num*), kept across runs. */
+export const CLASSIC_CHEAT_STATS = [
+  'enemiesDefeated',
+  'enemiesStomped',
+  'armouredDefeated',
+  'bricksBroken',
+  'ammoPickups',
+  'cheepsDefeated',
+  'hammerBrosDefeated',
+] as const;
+export type ClassicCheatStat = (typeof CLASSIC_CHEAT_STATS)[number];
+
+export interface ClassicCheatsSettings {
+  on: Record<ClassicCheatId, boolean>;
+  unlocked: Record<ClassicCheatId, boolean>;
+  stats: Record<ClassicCheatStat, number>;
+  /** The games beaten in Classic mode (StatManager.beatGame): SMB, The Lost Levels. */
+  beaten: { smb: boolean; lost: boolean };
+}
+
+/** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
+const OPEN_CHEATS: readonly ClassicCheatId[] = ['classicScreenScroll', 'everyoneCanStomp'];
+
+export function defaultClassicCheats(): ClassicCheatsSettings {
+  const flags = (v: (id: ClassicCheatId) => boolean) =>
+    Object.fromEntries(CLASSIC_CHEAT_IDS.map((id) => [id, v(id)])) as Record<ClassicCheatId, boolean>;
+  return {
+    on: flags(() => false),
+    unlocked: flags((id) => OPEN_CHEATS.includes(id)),
+    stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
+    beaten: { smb: false, lost: false },
+  };
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
@@ -121,6 +180,7 @@ export function defaultSettings(): Settings {
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
+    classicCheats: defaultClassicCheats(),
   };
 }
 
@@ -165,6 +225,10 @@ export function loadSettings(): Settings {
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
+  for (const k of CLASSIC_CHEAT_STATS) {
+    const n = s.classicCheats.stats[k];
+    s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+  }
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

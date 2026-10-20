@@ -31,6 +31,7 @@ import {
   spendAmmo,
   type ClassicDropTable,
   type ClassicPowerKit,
+  freeAmmo,
 } from '../classic/power';
 import {
   LINK_STRIKE,
@@ -170,8 +171,8 @@ function tools(p: Player): ToolInfo[] {
   const arrows = p.scratch.arrows ?? 0;
   return [
     { id: 'boomerang', icon: 'icon-boomerang', count: null, usable: true },
-    { id: 'bomb', icon: 'icon-bomb', count: bombs, usable: bombs > 0 || p.star > 0 },
-    { id: 'arrow', icon: 'icon-arrow', count: arrows, usable: arrows > 0 || p.star > 0 },
+    { id: 'bomb', icon: 'icon-bomb', count: bombs, usable: bombs > 0 || freeAmmo(p) },
+    { id: 'arrow', icon: 'icon-arrow', count: arrows, usable: arrows > 0 || freeAmmo(p) },
   ];
 }
 const TOOL_LABELS: Record<string, string> = { boomerang: 'BOOMERANG', bomb: 'BOMB', arrow: 'BOW' };

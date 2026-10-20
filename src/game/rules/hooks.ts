@@ -66,8 +66,18 @@ export interface ClassicRulesHooks {
    * The level-load edits for these heroes (TG-45: rules/classic-water.ts,
    * rules/classic-level-variants.ts); true when any applied. `spawns` is the World's own list of
    * the area's spawns (a copy of the level's), which an edit may change before they spawn.
+   * `world` is the World being built (the level-edit cheats, rules/classic-cheats.ts, read
+   * World.cheats and set its water line and extra checkpoints).
    */
-  levelEdits(map: TileMap, levelId: string, defs: readonly CharacterDef[], spawns?: EntitySpawn[]): boolean;
+  levelEdits(
+    map: TileMap,
+    levelId: string,
+    defs: readonly CharacterDef[],
+    spawns?: EntitySpawn[],
+    world?: World,
+  ): boolean;
+  /** Armoured (HP-C12): the cheats' All Weapons Pierce goal counts these defeats. */
+  armoured(e: Enemy): boolean;
 }
 
 let hooks: ClassicRulesHooks | null = null;

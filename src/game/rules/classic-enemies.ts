@@ -150,7 +150,9 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
     e.stopFrames = src.freezeFrames;
     return 'stun';
   }
-  if (isArmoured(e) && (src.pierce ?? 0) < ARMOUR_STRENGTH) {
+  // All Weapons Pierce (Classic cheat; Character.landAttack, Projectile.confirmedHit): armour
+  // never stops a hit.
+  if (isArmoured(e) && (src.pierce ?? 0) < ARMOUR_STRENGTH && !world.cheats.allWeaponsPierce) {
     if (src.blockedSfx) world.audio.sfx(src.blockedSfx);
     return 'blocked';
   }

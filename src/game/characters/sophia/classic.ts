@@ -16,6 +16,7 @@ import {
   classicRespawn,
   classicStarPaletteStep,
   type ClassicPowerKit,
+  freeAmmo,
 } from '../classic/power';
 import { SOPHIA, cannonLevel, muzzle, raised, settle, sprite as currentSprite } from './index';
 import { holdsAway } from './drive';
@@ -82,7 +83,7 @@ function fireCannon(p: Player, st: SophiaState, world: World): void {
 function fireMissile(p: Player, st: SophiaState, world: World): void {
   const sub = selectedMissile(p);
   if (!sub) return;
-  const free = p.star > 0;
+  const free = freeAmmo(p);
   const m = muzzle(p, st, raised(st));
   if (sub === 'triple') {
     if (!free && (p.scratch.triple ?? 0) < TRIPLE_COST) return;
@@ -136,7 +137,7 @@ function touchLabels(p: Player): TouchLabels {
   const sub = selectedMissile(p);
   const usable =
     sub !== null &&
-    (p.star > 0 ||
+    (freeAmmo(p) ||
       (sub === 'triple' ? (p.scratch.triple ?? 0) >= TRIPLE_COST : (p.scratch.homing ?? 0) >= 1));
   return {
     attack: 'SHOOT',

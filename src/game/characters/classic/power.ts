@@ -379,7 +379,7 @@ export function classicStarPaletteStep(p: Player, frame: number, reduceFlashing:
  * then needs no ammo); else true and spent when there is enough, false otherwise.
  */
 export function spendAmmo(p: Player, key: string, cost: number): boolean {
-  if (p.star > 0) return true;
+  if (freeAmmo(p)) return true;
   const have = p.scratch[key] ?? 0;
   if (have < cost) return false;
   p.scratch[key] = have - cost;
@@ -388,7 +388,15 @@ export function spendAmmo(p: Player, key: string, cost: number): boolean {
 
 /** Whether a weapon costing `cost` of `key` can fire (always under Star, PS-C18). */
 export function hasAmmo(p: Player, key: string, cost: number): boolean {
-  return p.star > 0 || (p.scratch[key] ?? 0) >= cost;
+  return freeAmmo(p) || (p.scratch[key] ?? 0) >= cost;
+}
+
+/**
+ * Weapons spend no ammo now: under Star (PS-C18), or with Classic mode's Infinite Ammo cheat
+ * (Cheats.infiniteAmmo: Character.hasEnoughAmmo and setAmmo).
+ */
+export function freeAmmo(p: Player): boolean {
+  return p.star > 0 || p.cheatAmmo;
 }
 
 /** What each Classic ammo pickup gives (PS-C16); Mega Man's energy is in the original's units (112 = full). */

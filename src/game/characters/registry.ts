@@ -29,7 +29,8 @@ import { PEACH_CLASSIC } from './peach/classic';
 import { ARTHUR_CLASSIC } from './arthur/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
-import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
+import { classicEnemySpawned, classicHit, isArmoured } from '../rules/classic-enemies';
+import { applyCheatEdits } from '../rules/classic-cheats';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
@@ -41,11 +42,14 @@ installClassicRules({
   enemyHit: classicHit,
   enemySpawned: classicEnemySpawned,
   strikeBlock: classicStrikeBlock,
-  levelEdits: (map, id, defs, spawns) => {
-    // Both tables apply.
+  levelEdits: (map, id, defs, spawns, world) => {
+    // Both tables apply, then Classic mode's level-edit cheats (rules/classic-cheats.ts).
     const water = applyClassicLevelEdits(map, id, defs);
-    return applyWideVariants(map, id, defs, spawns) || water;
+    const wide = applyWideVariants(map, id, defs, spawns);
+    const cheats = world && spawns ? applyCheatEdits(map, id, spawns, world) : false;
+    return wide || water || cheats;
   },
+  armoured: isArmoured,
 });
 
 /** Playable characters in select-screen order. */
