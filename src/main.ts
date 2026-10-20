@@ -145,6 +145,12 @@ function boot(): void {
           ? 'gamepad'
           : 'keyboard',
   });
+  // Classic mode's cheat counts are saved in batches (Game.flushCheatStats): keep the latest ones
+  // when the page goes to the background or is closed.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') game.flushCheatStats();
+  });
+  window.addEventListener('pagehide', () => game.flushCheatStats());
 
   // Sharing and the clipboard run inside the confirm key's or touch button's own event (iOS
   // allows them only there; engine/input/gesture.ts): a key on its way down, a touch button as it

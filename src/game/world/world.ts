@@ -3776,7 +3776,9 @@ export class World {
     // StatManager.touchFlag keeps the HUD time (timeLeftBeatLevel); when the tally ends,
     // timeScoreConverterTmrLsr sets off that many fireworks if its last digit is 1, 3 or 6.
     const digit = (this.time ?? 0) % 10;
-    const fireworks = digit === 1 || digit === 3 || digit === 6 ? digit : 0;
+    // Infinite Time (Classic cheat): StatManager.convertTimeToScore raises the flag at once, with
+    // no tally and no fireworks.
+    const fireworks = !this.cheats.infiniteTime && (digit === 1 || digit === 3 || digit === 6) ? digit : 0;
     this.clear = { phase: 'slide', t: 0, pole, walkTo, player: p, fireworks };
     this.time ??= 0;
   }
@@ -3854,6 +3856,8 @@ export class World {
           c.phase = 'walk';
           c.t = 0;
           p.facing = 1;
+          // Classic defs: down at the pole's foot, the walk starts on the ground (see 'walk').
+          if (this.rules === 'classic') b.onGround = true;
           // Scroll-back camera: MarioBase's flag-pole hop sets rightScrollPosOvRd to the hero's
           // screen x, so the screen follows the walk to the castle from there.
           if (this.camera.scrollBack && p.def.flagWalkFollow) c.camHold = p.centerX - this.camera.x;
@@ -3868,15 +3872,24 @@ export class World {
         if (b.vy > 0x04000) b.vy = 0x04000;
         const before = b.y;
         const feetRow = tileAt(b.y + b.h + velToSub(b.vy));
-        if (this.map.isSolid(tileAt(b.x + (b.w >> 1)), feetRow)) {
+        const landed = this.map.isSolid(tileAt(b.x + (b.w >> 1)), feetRow);
+        if (landed) {
           b.y = tileToSub(feetRow) - b.h;
           b.vy = 0;
         } else b.y = before + velToSub(b.vy);
+        // Classic defs pick their walk pose by onGround (an air pose otherwise: Samus's
+        // somersault crouch, Bill and Ryu falling) and by vx (standing still at 0: Samus, Sophia
+        // III): the scripted walk stands on the ground and moves at its 1 px a frame.
+        if (this.rules === 'classic') {
+          b.onGround = landed;
+          b.vx = 0x01000;
+        }
         if (c.camHold !== undefined && p.centerX - this.camera.x > c.camHold)
           this.camera.x = Math.min(this.camera.maxX, p.centerX - c.camHold);
         if (b.x >= c.walkTo) {
           c.phase = 'countdown';
           c.t = 0;
+          if (this.rules === 'classic') b.vx = 0;
           p.anim = 'idle';
           p.hidden = true;
         }
@@ -3888,7 +3901,7 @@ export class World {
         // 30 fps (GameSettings.FRAME_RATE_LOCKED), 3.1.21 measures about 30 units a second.
         // Deliberately faster here (owner feedback: a full clock took over 13 s): TALLY_PER_FRAME
         // units a frame (400 in about 3.3 s), and JUMP finishes it at once for the same points.
-        if (this.time && this.time > 0) {
+        if (this.time && this.time > 0 && !this.cheats.infiniteTime) {
           if (inputs.some((f) => f.pressed('jump'))) {
             this.addScore(this.time * TIME_POINTS);
             this.time = 0;

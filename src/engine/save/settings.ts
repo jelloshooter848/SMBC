@@ -131,6 +131,11 @@ export interface ClassicCheatsSettings {
   stats: Record<ClassicCheatStat, number>;
   /** The games beaten in Classic mode (StatManager.beatGame): SMB, The Lost Levels. */
   beaten: { smb: boolean; lost: boolean };
+  /**
+   * Continues used in Classic mode over the save's whole life (StatManager.numContinuesUsed is a
+   * saved stat): Infinite Lives unlocks only while it is 0 when a game is beaten.
+   */
+  continuesUsed: number;
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
@@ -144,6 +149,7 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
     unlocked: flags((id) => OPEN_CHEATS.includes(id)),
     stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
     beaten: { smb: false, lost: false },
+    continuesUsed: 0,
   };
 }
 
@@ -256,6 +262,8 @@ export function loadSettings(): Settings {
     const n = s.classicCheats.stats[k];
     s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
   }
+  const used = s.classicCheats.continuesUsed;
+  s.classicCheats.continuesUsed = Number.isFinite(used) ? Math.max(0, Math.floor(used)) : 0;
   s.classic = normaliseClassic(s.classic);
   s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
   // The merge keeps only keys the defaults have, so the skin choices are copied over here.

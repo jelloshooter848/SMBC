@@ -546,7 +546,8 @@ describe('with Classic mode cheats (merged with the cheats branch)', () => {
     expect(h.said.at(-1)).toMatch(/^You unlocked these cheats: .*Extra Checkpoints.*! OK to go on\.$/);
     const texts = () => draw(s).texts.map((t) => t.str);
     expect(texts()).toEqual(
-      expect.arrayContaining(['CHEATS UNLOCKED!', 'EXTRA CHECKPOINTS', '1 OF 9 HEROES STANDING']),
+      // Classic mode's grid: the box takes the name box's place, under the cells.
+      expect.arrayContaining(['CHEATS UNLOCKED!', 'EXTRA CHECKPOINTS']),
     );
     // Drawn in the box only: not over the counts under the heading.
     expect(draw(s).texts.filter((t) => t.str === 'CHEATS UNLOCKED!' && t.y < 80)).toEqual([]);

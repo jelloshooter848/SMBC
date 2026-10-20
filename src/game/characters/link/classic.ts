@@ -457,6 +457,9 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   const pose = p.scratch._pose ?? 0;
   const t = p.attackTimer;
   let name: string;
+  // Alive again (a respawn of the same Player, a revive): the next death starts its clock afresh
+  // (as Simon's does), whatever World frame it comes at.
+  if (!p.dead) diedAt.delete(p);
   if (p.dead) {
     const d = linkDeath(p, frame, reduceFlashing);
     name = d.frame;
@@ -549,7 +552,9 @@ export const LINK_CLASSIC: CharacterDef = {
   crouches: false,
   canBreakBricks: () => false,
   hitbox: () => ({ w: 12, h: 16 }),
-  // F2: the original's HRect, 13.5 x 15 in every frame; its walk, 4 poses at 100 ms.
+  // F2: the original's HRect, 13.5 x 15 in every frame; its walk, 4 poses at 100 ms. Decided
+  // (owner, #166 review): the hurtbox stays 13.5 x 15 with the redrawn art (the original's
+  // 15 x 16 standing size, 14-15 x 15-16 here), which it fits inside (classic-patch-3.test.ts).
   hurtbox: () => ({ w: CLASSIC_HURT.w, h: CLASSIC_HURT.link }),
   walkAnim: CLASSIC_WALK_ANIM.link,
   sprite,

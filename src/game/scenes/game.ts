@@ -160,10 +160,10 @@ function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Reco
   return out;
 }
 
-/** Orchestrates scenes and carries GameState between levels. */
-
 /** Classic mode's random hero draw's seed when play is repeatable (tests: no freshSeeds). */
 const RANDOM_PICK_SEED = 0x5eed1;
+
+/** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
   /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
@@ -206,8 +206,6 @@ export class Game {
    * play: liveRules does that, and ignores it while a campaign file is open.
    */
   runRules: Rules = 'current';
-  /** Continues used in this Classic run (StatManager.numContinuesUsed: Infinite Lives' goal). */
-  classicContinues = 0;
   /** Cheats unlocked and not yet shown: each gets its YOU UNLOCKED card (showCheatUnlocks). */
   cheatUnlocks: ClassicCheatId[] = [];
   /**
@@ -393,10 +391,6 @@ export class Game {
   }
 
   /**
-   * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
-   * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
-   */
-  /**
    * Game mode Single random's pick, said with the next lives card ("Sophia III. World 1-1. 3
    * lives."), as no select screen names it. Cleared once said.
    */
@@ -409,6 +403,10 @@ export class Game {
     return c;
   }
 
+  /**
+   * A random hero for Classic mode (the Random slot, Single random): any hero of the run's roster
+   * that can be picked, from this run's seeded draw (fixed in tests; fresh in play).
+   */
   randomHero(among?: readonly CharacterDef[]): CharacterDef {
     // Survival: never a fallen hero (CharacterSelectBox: only standing heroes are selectable);
     // revive mode passes its own list (`among`).
@@ -761,6 +759,7 @@ export class Game {
   }
 
   showTitle(): void {
+    this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
     this.deps.ctx.audio.stopMusic();
@@ -1618,10 +1617,18 @@ export class Game {
     ),
   ) as CheatFlags;
 
-  /** Play counts toward the cheats' goals: a Classic run not started from developer mode. */
+  /**
+   * Play counts toward the cheats' goals: a Classic run with Classic rules, not started from
+   * developer mode. Cheats play only with Classic rules, so under Current rules nothing counts:
+   * no kill, no clear, no game beaten, no continue.
+   */
   get cheatGoalsCount(): boolean {
     return (
-      this.classicRun && this.campaign === null && !this.classicDev && !!this.deps.settings?.classicCheats
+      this.classicRun &&
+      this.campaign === null &&
+      !this.classicDev &&
+      this.liveRules === 'classic' &&
+      !!this.deps.settings?.classicCheats
     );
   }
 
@@ -1630,8 +1637,25 @@ export class Game {
     const c = this.deps.settings?.classicCheats;
     if (!c || !this.cheatGoalsCount) return;
     addCheatStat(c, stat);
-    this.cheatsUnlocked(unlockEarned(c));
-    saveSettings(this.deps.settings as Settings);
+    const unlocked = unlockEarned(c);
+    this.cheatsUnlocked(unlocked);
+    // Saved in batches (per area, per clear: flushCheatStats), not on every kill; an unlock at once.
+    this.cheatStatsDirty = true;
+    if (unlocked.length) this.flushCheatStats();
+  }
+
+  /** Counts tallied since the last save (cheatTally), written by flushCheatStats. */
+  private cheatStatsDirty = false;
+
+  /**
+   * Saves the cheats' counts if any changed since the last save: at each area's start
+   * (startLevel), a clear (cheatEvent), a game over, the title, and when the page is hidden
+   * (main.ts), so a run's kills are kept without a settings write per kill.
+   */
+  flushCheatStats(): void {
+    if (!this.cheatStatsDirty) return;
+    this.cheatStatsDirty = false;
+    if (this.deps.settings) saveSettings(this.deps.settings);
   }
 
   /**
@@ -1645,9 +1669,11 @@ export class Game {
     const e: CheatEvent = { level: ev.level === true, castle: ev.castle === true };
     if (ev.beat) {
       c.beaten[ev.beat] = true;
-      e.noContinue = this.classicContinues === 0;
+      // StatManager.numContinuesUsed is saved: a continue in any earlier run still counts.
+      e.noContinue = c.continuesUsed === 0;
     }
     this.cheatsUnlocked(unlockEarned(c, e));
+    this.cheatStatsDirty = false;
     saveSettings(s);
   }
 
@@ -1698,7 +1724,6 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
-    this.classicContinues = 0;
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
     this.state = newGameState(character, character2, this.liveRules);
@@ -1953,6 +1978,7 @@ export class Game {
    * other level ends a run aboard. A dev airship round's levels replace each other over its list.
    */
   startLevel(level: LevelData, start: LevelStart): void {
+    this.flushCheatStats();
     if (this.chapterBlocked(level.id)) return this.chapterGateBack();
     const run = this.airship;
     if (!isAirshipArea(level.id)) {
@@ -2139,6 +2165,7 @@ export class Game {
    * (progress kept) and NO to the title.
    */
   gameOver(levelId: string | null = null, player = 0): void {
+    this.flushCheatStats();
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives
@@ -2161,7 +2188,12 @@ export class Game {
    * character select as for a new level.
    */
   continueGame(levelId: string | null, player = 0): void {
-    if (this.classicRun) this.classicContinues++;
+    // Infinite Lives' goal (StatManager.numContinuesUsed): counted over the save's life.
+    const cheats = this.deps.settings?.classicCheats;
+    if (cheats && this.cheatGoalsCount) {
+      cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
+      saveSettings(this.deps.settings as Settings);
+    }
     const old = this.state;
     this.state = newGameState(old.character, old.character2, this.liveRules);
     if (this.classicRun) this.classicStartLives();

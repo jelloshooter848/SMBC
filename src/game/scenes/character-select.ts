@@ -85,6 +85,10 @@ export const THIRD_ROW_DY = 34;
 /** The most slots a row past the first holds before the rest move to a third row. */
 export const ROW_MAX = 11;
 
+/** Survival's box: its line height and its padding (CharacterSelectScene.boxRect). */
+const BOX_LINE = 10;
+const BOX_PAD = 6;
+
 /** Classic Survival's box over the select: the revive news, or the "finished?" question. */
 type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; yes: boolean };
 
@@ -701,6 +705,11 @@ export class CharacterSelectScene implements Scene {
     return this.fallen(i) ? 'Revive' : 'Power up';
   }
 
+  /** What OK does in revive mode, as the screen says it: REVIVE, or POWER UP on a standing hero. */
+  private reviveVerb(i: number): 'revive' | 'power up' {
+    return this.isRandom(i) || this.fallen(i) ? 'revive' : 'power up';
+  }
+
   /** DONE (attack) in revive mode: the question; BACK at a new game's select with every hero fallen. */
   private reviveLeave(): string | null {
     if (!this.survival?.allFallen) return 'DONE';
@@ -713,7 +722,7 @@ export class CharacterSelectScene implements Scene {
     const how = leave === 'DONE' ? ' DONE when finished.' : leave === 'BACK' ? ' BACK to leave.' : '';
     this.game.deps.announcer?.say(
       `Revive your heroes: each costs one life. ${this.livesLeft()}. ${this.slotName(this.index)}: ${this.reviveAction(this.index).toLowerCase()}. ` +
-        `Left and right to choose,${this.rowsHint()} OK to revive.${how}` +
+        `Left and right to choose,${this.rowsHint()} OK to ${this.reviveVerb(this.index)}.${how}` +
         this.fallenNote(),
     );
   }
@@ -1048,9 +1057,10 @@ export class CharacterSelectScene implements Scene {
           if (tight) r.rect(x - 8, feet + 2, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
           else r.text(font, '>', x - 20, feet - 8 - h / 2);
         }
-        // The name of the look chosen for it (FU-8: a skin's own name).
+        // The name of the look chosen for it (FU-8: a skin's own name). Survival's box takes the
+        // lines under the heroes while it shows (boxRect).
         const name = this.game.skinFor(c).name;
-        r.text(font, name.toUpperCase(), 128 - (name.length * 8) / 2, L.name);
+        if (!this.box) r.text(font, name.toUpperCase(), 128 - (name.length * 8) / 2, L.name);
       }
       if (this.p2 && i === this.index2)
         r.text(font, '2', tight ? x - 4 : x + 12, tight ? feet - h - 10 : feet - 8 - h / 2);
@@ -1071,7 +1081,7 @@ export class CharacterSelectScene implements Scene {
             r.rect(x - 8, feet + 2, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
           else r.text(font, '>', x - 20, feet - 8 - h / 2);
         }
-        r.text(font, 'RANDOM', 128 - 24, L.name);
+        if (!this.box) r.text(font, 'RANDOM', 128 - 24, L.name);
       }
     }
     if (this._reviving) this.renderRevive(r);
@@ -1164,8 +1174,13 @@ export class CharacterSelectScene implements Scene {
         r.sprite(sheet, pt.frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + 2);
       });
     }
-    // The name box under it.
+    // The name box under it (Survival's box takes its place while it shows: boxRect).
     const by = pan.y + pan.h + 4;
+    if (this.box) {
+      // The box sits under the grid, over the name box, prompts and ground (boxRect).
+      this.renderBox(r, this.box);
+      return;
+    }
     drawPanel(r, 24, by, 208, 40);
     const lines = this.nameBoxLines();
     lines.forEach((l, k) => {
@@ -1203,7 +1218,14 @@ export class CharacterSelectScene implements Scene {
         centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 10);
       }
     }
-    // The ground, and the hero (or look) standing on it.
+    this.renderClassicGround(r, shown);
+    if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
+    if (this.picker) this.renderPicker(r);
+  }
+
+  /** The ground, and the hero (or look) standing on it, left of the prompts. */
+  private renderClassicGround(r: Renderer, shown: CharacterDef | null): void {
+    const assets = this.game.ctx.assets;
     const tiles = assets.sheet('tiles');
     for (let x = 0; x < 256; x += 16) {
       r.sprite(tiles, 'ground', x, 208);
@@ -1216,9 +1238,6 @@ export class CharacterSelectScene implements Scene {
       // Left of the prompts, so a tall hero never stands in their lines.
       r.sprite(sheet, pt.frame, 28 - ((f?.w ?? 16) >> 1), 208 - (f?.h ?? 32));
     }
-    if ((this.pick || sv) && !this._reviving) r.text(font, `×  ${this.game.state.lives}`, 200, 196);
-    if (this.picker) this.renderPicker(r);
-    if (this.box) this.renderBox(r, this.box);
   }
 
   /** The skin menu (CharacterSkinMenu): the look's name, a page of looks, its source game. */
@@ -1272,11 +1291,13 @@ export class CharacterSelectScene implements Scene {
     const n = this.game.state.lives;
     const lives = `${n} ${n === 1 ? 'LIFE' : 'LIVES'} LEFT`;
     r.text(font, lives, 128 - lives.length * 4, 66);
+    // The box takes the place of the lines under the heroes (boxRect), so no hero is covered.
+    if (this.box) return this.renderBox(r, this.box);
     const action = this.reviveAction(this.index).toUpperCase();
     r.text(font, action, 128 - action.length * 4, L.under);
     const goY = L.ok;
     // What OK does under the cursor: a standing hero is powered up instead.
-    const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+    const verb = this.reviveVerb(this.index).toUpperCase();
     const ok = fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`);
     r.text(font, ok, 128 - ok.length * 4, goY);
     const leave = this.reviveLeave();
@@ -1286,28 +1307,49 @@ export class CharacterSelectScene implements Scene {
       );
       r.text(font, line, 128 - line.length * 4, L.leave);
     }
-    if (this.box) this.renderBox(r, this.box);
+  }
+
+  /**
+   * Where Survival's box goes for `lines` text lines (and its prompt row): under the heroes, from
+   * just below the lowest row's feet (and the cursor's underline), so no hero is covered. The
+   * lines it covers there (the name, what OK does, DONE) are left out while it shows.
+   */
+  boxRect(lines: number): { y: number; h: number } {
+    const h = (lines + 2) * BOX_LINE + BOX_PAD * 2 - 4;
+    const y = Math.min(238 - h, this.heroesBottom() + 6);
+    return { y, h };
+  }
+
+  /** The lowest row's feet (every slot of a row stands on the same line). */
+  heroesBottom(): number {
+    // Classic mode's grid: its panel's bottom (a cell's portrait may reach past its cell).
+    if (this.classicLayout) {
+      const pan = gridPanel(this.rows);
+      return pan.y + pan.h;
+    }
+    return this.slot(Math.max(0, this.total - 1)).y;
   }
 
   /** Survival's box (the revive news, or the "finished?" question with NO and YES). */
   private renderBox(r: Renderer, box: SurvivalBox): void {
     const font = this.game.ctx.assets.sheet('font');
+    const names = this.cheatNews.map((n) => n.toUpperCase());
     const lines =
       box.kind === 'cheats'
         ? [
             this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!',
-            ...this.cheatNews.map((n) => n.toUpperCase()),
+            // Two names at most, as under the heading (renderCheatNews); all are read out.
+            ...names.slice(0, 2),
+            ...(names.length > 2 ? [`AND ${names.length - 2} MORE`] : []),
           ]
         : box.kind === 'news'
           ? REVIVE_NEWS
           : REVIVE_DONE_QUESTION;
-    const rows = lines.length + 2;
-    const h = rows * 12 + 12;
-    const y = 120 - (h >> 1);
+    const { y, h } = this.boxRect(lines.length);
     r.rect(16, y, 224, h, '#fcfcfc');
     r.rect(18, y + 2, 220, h - 4, '#000000');
-    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + 8 + i * 12));
-    const last = y + 8 + (lines.length + 1) * 12;
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + BOX_PAD + i * BOX_LINE));
+    const last = y + BOX_PAD + (lines.length + 1) * BOX_LINE;
     if (box.kind !== 'finished') {
       const ok = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
       r.text(font, ok, 128 - ok.length * 4, last);

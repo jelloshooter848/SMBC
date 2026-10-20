@@ -28,6 +28,11 @@ export interface OptionRow<T extends string | number> {
   name(v: T): string;
   /** A value this row may not take now (a weapon pair's other half). */
   taken?(s: ClassicSettings, v: T): boolean;
+  /**
+   * What the current value means, shown and spoken instead of `hint` (When hit: only the chosen
+   * value's meaning, not all three).
+   */
+  valueHint?(v: T): string;
 }
 
 type AnyRow = OptionRow<string> | OptionRow<number>;
@@ -98,6 +103,13 @@ export function optionName(v: string | number): string {
   return typeof v === 'number' ? String(v) : (NAMES[v] ?? v);
 }
 
+/** What each When hit value does (MORE_SETTINGS_ROWS: the row speaks only the chosen one's). */
+const WHEN_HIT_HINTS: Record<string, string> = {
+  'lose-everything': 'Any hit leaves you small',
+  'previous-state': 'A hit takes one power-up away: Fire goes to big, big to small',
+  'instant-death': 'Any hit defeats you',
+};
+
 /** The Game Mode value names, fuller than a row has room for in the menu (spoken in hints). */
 const GAME_MODE_NAMES: Record<string, string> = {
   all: 'All heroes',
@@ -124,15 +136,22 @@ function row<K extends keyof typeof CLASSIC_ROW_VALUES>(
   };
 }
 
-/** More Settings (DifficultySettingsMenu under Classic power-ups), in the original's order. */
+/**
+ * More Settings (DifficultySettingsMenu under Classic power-ups), in the original's order:
+ * loadItems' Lives, Attack Strength, Damage Response (the classic one), Item Drop Rate, Piranhas,
+ * Replace Goombas, Enemy Speed (Start With Mushroom is left out in classic mode).
+ */
 export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
   row('lives', 'Lives', 'Lives at the start and after each continue'),
-  row(
-    'whenHit',
-    'When hit',
-    'Lose everything: any hit leaves you small. Previous state: Fire goes to big. Instant death: any hit defeats you',
-  ),
   row('attack', 'Attack', "Every hero's attack strength"),
+  {
+    ...row(
+      'whenHit',
+      'When hit',
+      'Lose everything: any hit leaves you small. Previous state: Fire goes to big. Instant death: any hit defeats you',
+    ),
+    valueHint: (v: string) => WHEN_HIT_HINTS[v] ?? '',
+  },
   row('drops', 'Item drops', 'How often enemies and blocks drop ammo'),
   row('piranhas', 'Piranhas', 'Which pipes have Piranha Plants, and their colour'),
   row('goombas', 'Goombas', 'Every Goomba becomes this enemy'),
@@ -204,6 +223,7 @@ export function optionItem(game: Game, r: AnyRow, after: () => void): MenuItem {
   const rr = r as OptionRow<string>;
   const s = game.deps.settings?.classic ?? defaultClassicSettings();
   const changed = rr.get(s) !== rr.get(defaultClassicSettings());
+  const hint = rr.valueHint?.(rr.get(s)) || rr.hint;
   return {
     label: changed ? `${rr.label}*` : rr.label,
     value: () => rr.name(rr.get(game.deps.settings?.classic ?? defaultClassicSettings())),
@@ -214,9 +234,7 @@ export function optionItem(game: Game, r: AnyRow, after: () => void): MenuItem {
       game.deps.applySettings?.();
       after();
     },
-    hint: changed
-      ? `${rr.hint}. Changed from the original: ${rr.name(rr.get(defaultClassicSettings()))}`
-      : rr.hint,
+    hint: changed ? `${hint}. Changed from the original: ${rr.name(rr.get(defaultClassicSettings()))}` : hint,
   };
 }
 
