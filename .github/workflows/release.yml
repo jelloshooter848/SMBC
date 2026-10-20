@@ -56,6 +56,16 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      # The dev-mode lock (docs/RELEASING.md): only the passphrase's salted hash reaches the build,
+      # as DEV_MODE_HASH in $GITHUB_ENV. The secret is never echoed; with no secret (or a tag from
+      # before the lock) nothing is written and the build has no way into dev mode.
+      - name: Dev-mode lock (the passphrase's hash only)
+        env:
+          DEV_MODE_PASSPHRASE: ${{ secrets.DEV_MODE_PASSPHRASE }}
+        run: |
+          if [ -f tools/release/dev-lock-hash.mjs ]; then
+            node tools/release/dev-lock-hash.mjs >> "$GITHUB_ENV"
+          fi
       - run: pnpm build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/

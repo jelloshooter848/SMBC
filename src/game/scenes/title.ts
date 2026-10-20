@@ -17,6 +17,7 @@ import { OptionsScene } from './options';
 import { FileSelectScene } from './file-select';
 import { showChapter1Gate } from './chapter1-gate';
 import { CheatCode, DEV_CODE } from './cheat';
+import { PassphraseScene } from './passphrase';
 import type { Game } from './game';
 import { Player } from '../entities/player';
 import type { CharacterDef } from '../characters/character';
@@ -370,16 +371,15 @@ export class TitleScene extends MenuScene {
     if (this.phase === 'ready' && titleNotice(this.game)) return;
     if (this.unlockedFlash > 0) this.unlockedFlash--;
     if (this.cheat.feed(input)) {
-      const s = this.game.deps.settings;
-      if (s && !s.dev) {
-        s.dev = true;
-        this.game.deps.applySettings?.();
+      // 0.5.0 (game/dev-lock.ts): a release build asks for the owner's passphrase first, and one
+      // built without it has no way in (the code does nothing at all).
+      const lock = this.game.devLock;
+      if (lock.mode === 'closed') return;
+      if (lock.mode === 'locked' && !this.game.devMode) {
+        this.game.scenes.push(new PassphraseScene(this.game, lock, () => this.unlockDev(lock.hash)));
+        return;
       }
-      this.rebuild();
-      this.index = this.items.length - 1; // land on the new Dev mode entry
-      this.unlockedFlash = 120;
-      this.game.ctx.audio.sfx('1up');
-      this.game.deps.announcer?.say('Developer mode unlocked.');
+      this.unlockDev('');
       return; // the final press of the code must not also activate a menu item
     }
     if (this.phase === 'drop' && Actions.some((a) => input.pressed(a))) this.finish();
@@ -388,6 +388,21 @@ export class TitleScene extends MenuScene {
       return;
     }
     super.update(input);
+  }
+
+  /** Dev mode on (the code, or the passphrase on a release build: `unlock` its lock's hash). */
+  private unlockDev(unlock: string): void {
+    const s = this.game.deps.settings;
+    if (s && (!s.dev || (unlock && s.devUnlock !== unlock))) {
+      s.dev = true;
+      if (unlock) s.devUnlock = unlock;
+      this.game.deps.applySettings?.();
+    }
+    this.rebuild();
+    this.index = this.items.length - 1; // land on the new Dev mode entry
+    this.unlockedFlash = 120;
+    this.game.ctx.audio.sfx('1up');
+    this.game.deps.announcer?.say('Developer mode unlocked.');
   }
 
   // ------------------------------------------------------------ drawing

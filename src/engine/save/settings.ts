@@ -52,6 +52,11 @@ export interface Settings {
   /** Developer mode (level select and test tools), unlocked with the title-screen code or ?dev=1. */
   dev: boolean;
   /**
+   * The dev-mode lock this browser opened with the passphrase (its hash, game/dev-lock.ts): a
+   * release build keeps `dev` only when it matches its own lock. '' when none was opened.
+   */
+  devUnlock: string;
+  /**
    * After each castle's first clear, a card offers to back up the file as a save code (Options >
    * Save files > Backup reminders, 0.4.44). On by default; older settings files get it on.
    */
@@ -208,6 +213,7 @@ export function defaultSettings(): Settings {
     packs: [],
     announce: true,
     dev: false,
+    devUnlock: '',
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',

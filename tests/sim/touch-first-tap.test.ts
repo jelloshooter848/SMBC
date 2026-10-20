@@ -212,7 +212,12 @@ interface Overlay {
   readonly ready: boolean;
 }
 
-function checkOverlay(make: () => Overlay, state: (o: Overlay) => string, frames: number): number {
+function checkOverlay(
+  make: () => Overlay,
+  state: (o: Overlay) => string,
+  frames: number,
+  pressHidden?: (o: Overlay) => boolean,
+): number {
   let firstReady = -1;
   for (let k = 0; k < frames; k++) {
     const a = make();
@@ -222,9 +227,13 @@ function checkOverlay(make: () => Overlay, state: (o: Overlay) => string, frames
       b.update([NO_INPUT]);
     }
     const ready = a.ready;
+    const hiddenOk = pressHidden?.(a) ?? false;
     a.update([press('jump')]);
     b.update([NO_INPUT]);
-    expect(state(a) !== state(b), `frame ${k}: ready ${ready}`).toBe(ready);
+    const moved = state(a) !== state(b);
+    // Shown => the press works. Hidden => it does nothing, except where `pressHidden` allows it
+    // (the gate's misfire, which a key or pad press hurries on with no button on screen).
+    if (ready || !hiddenOk) expect(moved, `frame ${k}: ready ${ready}`).toBe(ready);
     if (ready && firstReady < 0) firstReady = k;
   }
   return firstReady;
@@ -264,9 +273,7 @@ const gate = () =>
   );
 const gateState = (o: Overlay) => {
   const g = o as GateScene;
-  // `ready` too: a press on the misfire's last frame hurries it onto the page the misfire was
-  // about to reach anyway, which then starts its own guard (the press is still taken).
-  return `${String(g.cutaway)} ${JSON.stringify(g.lines)} ${String(g.ready)}`;
+  return `${String(g.cutaway)} ${JSON.stringify(g.lines)}`;
 };
 
 describe("touch: Toad's map pages and the gate's cutaway show OK only when it works", () => {
@@ -275,7 +282,8 @@ describe("touch: Toad's map pages and the gate's cutaway show OK only when it wo
   });
 
   it("the gate: ready <=> OK hurries the misfire or turns Bowser's page, at every frame", () => {
-    expect(checkOverlay(gate, gateState, GATE_MISFIRE_FRAMES + 120)).toBeGreaterThan(0);
+    const misfire = (o: Overlay) => (o as GateScene).cutaway && (o as GateScene).lines === null;
+    expect(checkOverlay(gate, gateState, GATE_MISFIRE_FRAMES + 120, misfire)).toBeGreaterThan(0);
   });
 
   it("the gate's buttons never blink off between the misfire and Bowser's first page", () => {
@@ -289,6 +297,15 @@ describe("touch: Toad's map pages and the gate's cutaway show OK only when it wo
     expect(first).toBeGreaterThan(0);
     expect(seen.slice(first).every(Boolean)).toBe(true);
     expect(g.lines).not.toBeNull(); // still on Bowser's first page, waiting for OK
+  });
+
+  it("Bowser's first page keeps its guard: a key press right as it opens does not turn it", () => {
+    const g = gate();
+    while (g.lines === null) g.update([NO_INPUT]);
+    const first = JSON.stringify(g.lines);
+    for (let i = 0; i < CARD_GUARD_FRAMES - 1; i++) g.update([press(i % 2 ? 'jump' : null)]);
+    expect(JSON.stringify(g.lines)).toBe(first);
+    expect(g.ready).toBe(false);
   });
 });
 

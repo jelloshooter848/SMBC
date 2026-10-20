@@ -128,11 +128,12 @@ export class GateScene {
   }
 
   /**
-   * OK or SKIP does something now: the misfire (hurried on) or one of Bowser's pages, once its
-   * guard is over. The map's touch buttons show only then (0.5.0, the phone "first tap" bug).
+   * One of Bowser's pages takes OK or SKIP now (its guard is over): the map's touch buttons show
+   * only then (0.5.0, the phone "first tap" bug). Not during the misfire: a key or pad press can
+   * still hurry it on, but buttons shown there would blink off for the first page's guard.
    */
   get ready(): boolean {
-    return (this.phase === 'misfire' || this.phase === 'page') && this.t >= CARD_GUARD_FRAMES;
+    return this.phase === 'page' && this.t >= CARD_GUARD_FRAMES;
   }
 
   /** The cutaway is over the map (opening, open or closing). */
@@ -178,14 +179,7 @@ export class GateScene {
           this.showPage(0);
           return;
         }
-        if (this.t >= GATE_MISFIRE_FRAMES) {
-          // OK and SKIP were already on screen (`ready`): the page takes them at once, so the
-          // buttons don't blink off for its guard (no press is under way: it would have hurried
-          // the misfire on).
-          const shown = this.ready;
-          this.showPage(0);
-          if (shown) this.t = CARD_GUARD_FRAMES;
-        }
+        if (this.t >= GATE_MISFIRE_FRAMES) this.showPage(0);
         return;
       case 'page':
         if (cardContinues(this.t, inputs, SKIP_KEYS)) {

@@ -110,6 +110,26 @@ public site, `SITE_URL` in `src/engine/site.ts`, never on its file:// address.
 or link. Play-test it from disk before a release by opening `dist-offline/index.html` in a
 browser (no `pnpm preview`): the title, the save note, a level, and a reload keeping the save.
 
+### One-time setup: the dev-mode passphrase
+
+Release builds open developer mode only with the owner's passphrase (`src/game/dev-lock.ts`):
+the title's developer code opens a prompt, and `?dev=1` does nothing. Local and other non-release
+builds (`pnpm dev`, CI, branches) keep dev mode open as before. Set the passphrase once:
+
+1. On GitHub: the repository's **Settings → Secrets and variables → Actions → New repository
+   secret**.
+2. Name: `DEV_MODE_PASSPHRASE`. Secret: the passphrase. The prompt offers A-Z, 0-9 and `-`, and
+   checks entries in capitals with outer spaces trimmed, so use only those (case doesn't matter).
+3. **Add secret.** The next release build uses it.
+
+The workflow's "Dev-mode lock" step (`tools/release/dev-lock-hash.mjs`) turns the secret into its
+salted SHA-256 and passes only that to the build (`DEV_MODE_HASH`); the passphrase itself is never
+printed, committed or bundled. Without the secret a release build has **no** way into dev mode
+(the code does nothing). A dev flag saved by an earlier version is turned off on a release build
+until the passphrase is entered there. To change the passphrase, update the secret and release
+again; the old one stops working with that build. The lock is a gate for players, not security:
+the hash is in the bundle, so a long passphrase is best.
+
 ### One-time setup: let tags deploy
 
 GitHub's `github-pages` environment usually allows deployments only from the default branch. In
@@ -129,6 +149,12 @@ deploys it and creates or updates its GitHub Release. Use this to:
   that commit's own version string (v0.1.0 shows `V0.1.0-62F9AB0`).
 
 With the GitHub CLI: `gh workflow run release.yml -f tag=v0.1.0`.
+
+Re-running a tag from before 0.5.0 with today's workflow names its zips the new way: the run
+uploads `smbc-remix-vX.Y.Z.zip` and `smbc-remix-vX.Y.Z-offline.zip` **beside** the release's
+original `smbc-vX.Y.Z.zip` and `smbc-vX.Y.Z-offline.zip` (`--clobber` replaces only files of the
+same name). Both pairs hold the same build; delete the one you don't want from the release page
+if it matters.
 
 **Run it from a `main` commit that hasn't been deployed yet.** GitHub Pages labels each deployment
 with the commit the workflow runs from (not the tag), and it ignores a deployment whose label it

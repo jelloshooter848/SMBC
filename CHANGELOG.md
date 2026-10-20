@@ -36,6 +36,12 @@ under `## [Unreleased]`.
 - The release downloads are now `smbc-remix-vX.Y.Z.zip` and `smbc-remix-vX.Y.Z-offline.zip`.
 - The README, the download's README.txt, the roadmap and the release notes describe the new plan:
   0.5.0 the Classic remake, 0.6 to 0.9 new heroes, 1.0 Chapter 1.
+- Developer mode is for the game's developer on the released site: the title's code there asks
+  for a passphrase ("Wrong passphrase" when it isn't right), `?dev=1` does nothing, and a dev mode
+  left on from an earlier version is turned off. Local and development builds are unchanged.
+- Outside developer mode, a `?level=` link opens no campaign content: an SMB or Lost Levels level
+  starts a Classic mode run there, a custom level plays as before, and anything else opens the
+  title.
 
 ### Fixed
 
@@ -44,6 +50,8 @@ under `## [Unreleased]`.
   holds the game, BACK UP YOUR GAME?, LOAD THIS SAVE?, the shop's BUY? card, the bonus items'
   note and the Home Screen guide now appear only once the card takes a press (it ignores presses for its
   first half second, so a press meant for the level can't skip it).
+- Phones and tablets: a thumb still held on a button when a card opens (JUMP, say) no longer
+  skips the card when its OK appears under it; lift and tap again.
 
 ## [0.4.64] - 2026-10-20
 

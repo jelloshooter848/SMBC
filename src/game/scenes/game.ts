@@ -1,3 +1,4 @@
+import { OPEN_DEV_LOCK, type DevLock } from '../dev-lock';
 import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
@@ -127,6 +128,11 @@ export interface GameDeps {
   lastInput?: () => LastInput;
   /** Play the title's rift intro on the session's first title (main.ts; off in the headless sims). */
   titleIntro?: boolean;
+  /**
+   * The dev-mode lock (game/dev-lock.ts; main.ts builds it from the build's defines). Absent: open,
+   * as in local builds and the headless sims.
+   */
+  devLock?: DevLock;
   /**
    * A fresh world seed for every level visit (main.ts), so no two visits play out the same
    * (swimming Cheep Cheeps, leaping ones, timers). Off, every world keeps its level's fixed seed
@@ -1428,6 +1434,11 @@ export class Game {
 
   get devMode(): boolean {
     return this.deps.settings?.dev ?? false;
+  }
+
+  /** The dev-mode lock: open unless a release build gave one (0.5.0). */
+  get devLock(): DevLock {
+    return this.deps.devLock ?? OPEN_DEV_LOCK;
   }
 
   /**

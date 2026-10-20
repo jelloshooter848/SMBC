@@ -238,7 +238,9 @@ level editor's SHARE) open the website, never a file on your disk. To build it y
 
 Enter up, up, down, down, left, right, left, right, attack, jump on the title screen (or open the game
 with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu. It also opens
-**Chapter 1** (the campaign) and resume links until 1.0:
+**Chapter 1** (the campaign) and resume links until 1.0. That is on local and development builds
+(`pnpm dev`); the released game keeps dev mode for its developer: the code asks for a passphrase
+there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). In dev mode:
 
 - **Level select**: any built-in or custom level, any character, starting power, a full kit
   (all tools, ammo and magic) and 99 lives.
