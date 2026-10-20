@@ -14,12 +14,16 @@ import { askTraining, needsTraining } from '../tutorial/training';
 import { MIN_LIVES_FOR_REVIVAL, type Survival } from '../survival';
 import { menuTouchLabels } from '../touch-labels';
 import { drawSelectHud } from '../hud/select-hud';
+import { SKY } from '../world/tile-render';
 import {
   SELECT_GRID,
   SKIN_GRID,
   drawCell,
   drawDownArrow,
   drawPanel,
+  cursorColour,
+  DEFAULT_SELECT_THEME,
+  type SelectTheme,
   faceAt,
   gridCell,
   gridPanel,
@@ -1160,13 +1164,28 @@ export class CharacterSelectScene implements Scene {
   }
 
   /** Classic mode's select, in the original 3.1.21's layout (select-grid.ts). */
+  /**
+   * The select's look (select-grid.ts SELECT_THEMES): the original's default, SMB NES, until the
+   * owner chooses (the original follows the map skin).
+   */
+  get theme(): SelectTheme {
+    return DEFAULT_SELECT_THEME;
+  }
+
+  /** The cursor ring's colour now (revive mode's own cycle). */
+  private cursorNow(): string {
+    const th = this.theme;
+    return cursorColour(this._reviving ? th.reviveCursor : th.cursor, this.t, this.game.ctx.reduceFlashing);
+  }
+
   private renderClassic(r: Renderer): void {
-    r.clear('#000');
+    // The next level's sky (the original's select is a level themed like the one ahead).
+    r.clear(SKY[this.groundTheme()] ?? '#000000');
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
-    drawSelectHud(r, assets, this.game.state, shown, shown ? this.artOf(shown) : null);
+    drawSelectHud(r, assets, this.game.state, shown, shown ? this.artOf(shown) : null, this.theme.hudFrame);
     const pan = gridPanel(this.rows);
     const by = pan.y + pan.h + 4;
     if (this.picker) {
@@ -1177,11 +1196,13 @@ export class CharacterSelectScene implements Scene {
       return;
     }
     // The portrait grid: each hero's face, our standing art doubled (the original's close-ups).
-    drawPanel(r, pan.x, pan.y, pan.w, pan.h);
+    const th = this.theme;
+    drawPanel(r, pan.x, pan.y, pan.w, pan.h, th);
     const cell = SELECT_GRID.cell;
+    const ring = this.cursorNow();
     for (let i = 0; i < this.total; i++) {
       const at = gridCell(i);
-      drawCell(r, at.x, at.y, cell, cell, i === this.index);
+      drawCell(r, at.x, at.y, cell, cell, i === this.index ? ring : null, th);
       inCell(r, at.x, at.y, cell, cell, () => {
         if (this.isRandom(i)) {
           // The Random cell: our own "?" (held still with Reduce flashing).
@@ -1208,8 +1229,11 @@ export class CharacterSelectScene implements Scene {
     }
     const lines = this.nameBoxLines();
     const boxH = 12 + lines.length * 10;
-    drawPanel(r, 24, by, 208, boxH);
-    lines.forEach((l, k) => this.outlined(r, l, by + 7 + k * 10));
+    drawPanel(r, 24, by, 208, boxH, th);
+    // The hero's name in the menu font; the look's name and the game in the selected tint.
+    lines.forEach((l, k) =>
+      this.outlined(r, l, by + 7 + k * 10, l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name'),
+    );
     // The prompts, named by ability (with the real key when not on touch).
     const py = by + boxH + 4;
     const sv = this.survival;
@@ -1247,12 +1271,14 @@ export class CharacterSelectScene implements Scene {
   }
 
   /**
-   * Text on the periwinkle panels: white with a black outline, as the original's is outlined.
-   * White on periwinkle alone is about 3.1:1; the outline (black on periwinkle 6.5:1, white on
-   * black 20:1) is what keeps it readable on a phone.
+   * Text on the select's panels, in the look's font (`name`, or the `tint` of the look and game
+   * lines) with its shadow, over a 1 px black outline: the panels' fills are mid colours (white on
+   * SMB NES's brick is 4.5:1, on Zelda II's blue 2.9:1), and the outline keeps every letter's edge
+   * readable on a phone (black on brick 4.5:1, on blue 7.3:1).
    */
-  private outlined(r: Renderer, str: string, y: number): void {
+  private outlined(r: Renderer, str: string, y: number, kind: 'name' | 'tint' = 'name'): void {
     const assets = this.game.ctx.assets;
+    const th = this.theme;
     const x = 128 - str.length * 4;
     const dark = assets.sheet('font', fxPalette('font', 'silhouette'));
     for (const [dx, dy] of [
@@ -1262,7 +1288,8 @@ export class CharacterSelectScene implements Scene {
       [0, 1],
     ] as const)
       r.text(dark, str, x + dx, y + dy);
-    r.text(assets.sheet('font'), str, x, y);
+    r.text(assets.sheet('font', th.shadowFont), str, x + 1, y + 1);
+    r.text(assets.sheet('font', kind === 'tint' ? th.tintFont : th.nameFont), str, x, y);
   }
 
   /**
@@ -1291,8 +1318,10 @@ export class CharacterSelectScene implements Scene {
       const pt = this.artOf(shown);
       const sheet = assets.sheet(pt.sheet, pt.palette);
       const f = sheet.frames.get(pt.frame);
-      // Left of the prompts, so a tall hero never stands in their lines.
-      r.sprite(sheet, pt.frame, 28 - ((f?.w ?? 16) >> 1), 208 - (f?.h ?? 32));
+      // At the screen's centre, as the original's (CharacterSelect.PLAYER_X_POS); in revive mode,
+      // whose prompts run three lines, at the left.
+      const cx = this._reviving ? 28 : 128;
+      r.sprite(sheet, pt.frame, cx - ((f?.w ?? 16) >> 1), 208 - (f?.h ?? 32));
     }
   }
 
@@ -1302,7 +1331,8 @@ export class CharacterSelectScene implements Scene {
     if (!pk) return;
     const assets = this.game.ctx.assets;
     const P = skinLayout(pk.list.length);
-    drawPanel(r, P.x, P.y, P.w, P.h);
+    const th = this.theme;
+    drawPanel(r, P.x, P.y, P.w, P.h, th);
     const skin = pk.list[pk.at];
     this.outlined(r, fontText(skin?.name ?? ''), P.y + 8);
     const per = SKIN_GRID.cols * SKIN_GRID.rows;
@@ -1311,7 +1341,7 @@ export class CharacterSelectScene implements Scene {
       const look = pk.list[page * per + k];
       if (!look) break;
       const c = skinCell(k, pk.list.length);
-      drawCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, page * per + k === pk.at);
+      drawCell(r, c.x, c.y, SKIN_GRID.w, SKIN_GRID.h, page * per + k === pk.at ? this.cursorNow() : null, th);
       const pt = this.artOf(look);
       const sheet = assets.sheet(pt.sheet, pt.palette);
       const f = sheet.frames.get(pt.frame);
@@ -1327,8 +1357,8 @@ export class CharacterSelectScene implements Scene {
     }
     // More pages: down-arrows in the bottom corners.
     if ((page + 1) * per < pk.list.length) {
-      drawDownArrow(r, P.x + 6, P.y + P.h - 10);
-      drawDownArrow(r, P.x + P.w - 13, P.y + P.h - 10);
+      drawDownArrow(r, P.x + 6, P.y + P.h - 10, th);
+      drawDownArrow(r, P.x + P.w - 13, P.y + P.h - 10, th);
     }
     this.outlined(r, fontText(skin ? skinGame(skin) : ''), P.y + P.h - 16);
   }

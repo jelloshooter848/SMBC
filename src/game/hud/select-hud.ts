@@ -20,10 +20,11 @@ export function drawSelectHud(
   state: GameState,
   shown: CharacterDef | null,
   art: { sheet: string; palette: string; frame: string } | null,
+  frame = '#fcfcfc',
 ): void {
   const font = assets.sheet('font');
   const B = HUD_FACE;
-  r.rect(B.x, B.y, B.size, B.size, '#fcfcfc');
+  r.rect(B.x, B.y, B.size, B.size, frame);
   r.rect(B.x + 1, B.y + 1, B.size - 2, B.size - 2, '#000000');
   clipped(r, B.x + 1, B.y + 1, B.size - 2, B.size - 2, () => {
     if (art) {
