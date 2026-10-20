@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode Options: More settings, as in the original: Lives (1, 3, 5, 7, 10), When hit
+  (Lose everything, Previous state, Instant death), Attack, Item drops, Piranhas (Some or All
+  pipes, green or red), Goombas (Buzzy Beetle or Spiny) and Enemy speed. Every row starts at the
+  original's value; a changed row is marked, and Restore originals puts them back.
+
 ## [0.4.59] - 2026-10-20
 
 ### Added

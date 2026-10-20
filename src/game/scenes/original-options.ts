@@ -124,7 +124,7 @@ function row<K extends keyof typeof CLASSIC_ROW_VALUES>(
 
 /** More Settings (DifficultySettingsMenu under Classic power-ups), in the original's order. */
 export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
-  row('lives', 'Lives', 'Lives at the start and after a continue'),
+  row('lives', 'Lives', 'Lives at the start and after each continue'),
   row(
     'whenHit',
     'When hit',
@@ -212,7 +212,9 @@ export function optionItem(game: Game, r: AnyRow, after: () => void): MenuItem {
       game.deps.applySettings?.();
       after();
     },
-    hint: changed ? `${rr.hint}. Changed from the original: ${rr.name(rr.get(defaultClassicSettings()))}` : rr.hint,
+    hint: changed
+      ? `${rr.hint}. Changed from the original: ${rr.name(rr.get(defaultClassicSettings()))}`
+      : rr.hint,
   };
 }
 

@@ -207,7 +207,14 @@ describe('the title and the CLASSIC menu', () => {
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
     expect(opts).toBeInstanceOf(ClassicOptionsScene);
-    expect(labels(opts)).toEqual(['Classic rules', 'Game mode', 'More settings', 'Weapons', 'All options', 'Back']);
+    expect(labels(opts)).toEqual([
+      'Classic rules',
+      'Game mode',
+      'More settings',
+      'Weapons',
+      'All options',
+      'Back',
+    ]);
     expect(h.said.at(-1)).toMatch(/^Classic options\. Classic rules: Classic SMBC\./);
     // Drawn in full: the label, and the value right-aligned on its row.
     let t = draw(opts).texts.map((x) => x.str);

@@ -52,7 +52,9 @@ export function applyOptionSpawns(
   const p = opts.piranhas;
   if (p === 'all' || p === 'green-all' || p === 'red-all') {
     const has = new Set(
-      spawns.filter((s) => s.type === PIRANHA || s.type === PIRANHA_DOWN).map((s) => `${s.type},${s.x},${s.y}`),
+      spawns
+        .filter((s) => s.type === PIRANHA || s.type === PIRANHA_DOWN)
+        .map((s) => `${s.type},${s.x},${s.y}`),
     );
     for (let y = 0; y < map.height; y++)
       for (let x = 0; x < map.width; x++) {
@@ -63,7 +65,8 @@ export function applyOptionSpawns(
         changed = true;
       }
   }
-  const red = p === 'red-some' || p === 'red-all' ? true : p === 'green-some' || p === 'green-all' ? false : null;
+  const red =
+    p === 'red-some' || p === 'red-all' ? true : p === 'green-some' || p === 'green-all' ? false : null;
   if (red !== null)
     for (let i = 0; i < spawns.length; i++) {
       const s = spawns[i] as EntitySpawn;

@@ -21,7 +21,10 @@ export function optionsOf(p: Player | null | undefined): Readonly<ClassicSetting
 }
 
 /** The Customize Weapons choice `key` for `p` (the original's weapon when none is set). */
-export function weaponOf<K extends keyof ClassicWeapons>(p: Player | null | undefined, key: K): ClassicWeapons[K] {
+export function weaponOf<K extends keyof ClassicWeapons>(
+  p: Player | null | undefined,
+  key: K,
+): ClassicWeapons[K] {
   return optionsOf(p).weapons[key];
 }
 

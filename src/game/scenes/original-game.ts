@@ -2,7 +2,7 @@ import { loadProgress, saveProgress } from '@engine/save/progress';
 import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
-import { defaultClassicSettings } from '@engine/save/original-options';
+import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
   GAME_MODE_ROW,
@@ -57,18 +57,22 @@ export class ClassicMenuScene extends MenuScene {
   constructor(game: Game) {
     super(game, 'CLASSIC', [], () => game.showTitle());
     const back = () => game.showClassicMenu();
+    // A run that will not play as the original says so (FU-7: never silently non-original).
+    const own = isOriginalClassic(game.deps.settings?.classic ?? defaultClassicSettings())
+      ? ''
+      : '. Your own Classic options are on';
     const items: MenuItem[] = [
       {
         label: 'Super Mario Bros.',
         select: () => game.classicSelect('1-1', back),
-        hint: 'The original game with every hero',
+        hint: `The original game with every hero${own}`,
       },
     ];
     if (lostLevelsOpen())
       items.push({
         label: 'The Lost Levels',
         select: () => game.classicSelect('ll-1-1', back),
-        hint: 'The harder second quest',
+        hint: `The harder second quest${own}`,
       });
     items.push(
       {
