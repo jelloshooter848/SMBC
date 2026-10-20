@@ -129,7 +129,7 @@ describe('FU-8: the skin picker on the Classic select', () => {
     expect(h.game.skinFor(PROTOMAN_CLASSIC)).toBe(BREAKMAN_CLASSIC);
     h.tap('special');
     expect(h.said.at(-1)).toBe('Proto Man, skin Proto Man');
-    expect(settings.classicSkins).toBeUndefined();
+    expect(settings.classicSkins).toEqual({ protoman: 'protoman' });
     h.tap('special');
     // OK starts the run as Break Man: his HUD name and look.
     h.tap('jump');
@@ -199,6 +199,28 @@ describe('FU-8: the skin picker on the Classic select', () => {
 });
 
 describe('FU-8: the saved choice', () => {
+  it('a run begun as a skin with no choice saved keeps that look at the next pick', () => {
+    for (const skin of [BREAKMAN_CLASSIC, DARKPIT_CLASSIC, DOROPIE_CLASSIC]) {
+      const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
+      h.game.classicSelect('1-1', () => {});
+      h.game.state.character = skin;
+      const host = skinHost(skin);
+      expect(h.game.skinFor(host), skin.id).toBe(skin);
+      const pick = new CharacterSelectScene(h.game, {
+        player: 0,
+        current: skin,
+        onPick: () => {},
+        random: true,
+      });
+      pick.enter();
+      expect(pick.chars[pick.cursor]).toBe(host);
+      expect(h.said.at(-1)).toContain(`skin ${skin.name}`);
+      // A saved choice of its own look wins over the skin playing.
+      h.game.setSkin(host, host);
+      expect(h.game.skinFor(host)).toBe(host);
+    }
+  });
+
   it('loadSettings keeps the string entries of classicSkins (deep-merged files)', () => {
     const s = defaultSettings();
     s.classicSkins = { protoman: 'breakman', pit: 'darkpit' };
@@ -454,6 +476,20 @@ describe('FU-3: the variants are Classic Mega Man with their own rules', () => {
     };
     expect(hurt(FIREMAN_CLASSIC)).toBe('big');
     expect(hurt(MEGAMAN_CLASSIC)).toBe('small');
+  });
+
+  it("a firebar's anchor ball passes through Fire Man too; it hurts Mega Man", () => {
+    const anchor = (def: CharacterDef) => {
+      const w = world(def, testLevel(), { powerState: 'big' }, true);
+      drive(w, 4);
+      const tx = (toPx(w.player.body.x) + 6) >> 4;
+      // A one-ball bar: only the anchor, at his chest.
+      w.spawn(new Firebar(tx, 11, 1, 1));
+      drive(w, 30);
+      return w.player.powerState;
+    };
+    expect(anchor(FIREMAN_CLASSIC)).toBe('big');
+    expect(anchor(MEGAMAN_CLASSIC)).toBe('small');
   });
 
   it('Fire Man is pushed back twice as far as Mega Man', () => {

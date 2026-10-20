@@ -166,8 +166,8 @@ export const megamanVariantPalettes: Record<string, string[]> = {
   ...suit('rokko', [NES.black, NES.pink, NES.red, NES.skin, NES.white, NES.brownLight]),
   // Francesca: purple and deep blue, golden hair.
   ...suit('francesca', [NES.black, NES.purple, NES.blueDark, NES.skin, NES.white, NES.yellowLight]),
-  // Doropie, her other look: pink and red, the same golden hair.
-  ...suit('doropie', [NES.black, NES.pink, NES.redDark, NES.skin, NES.white, NES.yellowLight]),
+  // Doropie, her other look: green and teal (apart from Rokko Chan's pink), the same golden hair.
+  ...suit('doropie', [NES.black, NES.greenLight, NES.teal, NES.skin, NES.white, NES.yellowLight]),
 };
 
 /** The suit palettes above, for the Star and Rush fallbacks (sprites/index.ts). */

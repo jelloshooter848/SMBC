@@ -442,7 +442,14 @@ export class Game {
   /** Slot hero `c` in its chosen look (Settings.classicSkins; its own when none is chosen). */
   skinFor(c: CharacterDef): CharacterDef {
     const id = this.deps.settings?.classicSkins?.[c.id];
-    if (!id || id === c.id) return c;
+    if (!id) {
+      // No choice saved (a run begun before the picker, as Break Man, Dark Pit or Doropie): the
+      // look playing now, when it is one of this hero's skins.
+      const s = this.state;
+      const now = [s.character, s.character2].find((d) => d && d !== c && this.slotOf(d) === c);
+      return now ?? c;
+    }
+    if (id === c.id) return c;
     return skinsOf(c).find((d) => d.id === id && this.roster.includes(d)) ?? c;
   }
 
@@ -456,11 +463,8 @@ export class Game {
   setSkin(c: CharacterDef, skin: CharacterDef): void {
     const s = this.deps.settings;
     if (!s) return;
-    const skins = { ...(s.classicSkins ?? {}) };
-    if (skin === c) delete skins[c.id];
-    else skins[c.id] = skin.id;
-    if (Object.keys(skins).length) s.classicSkins = skins;
-    else delete s.classicSkins;
+    // Its own look is saved too, so it outlasts a skin still playing (skinFor's fallback).
+    s.classicSkins = { ...(s.classicSkins ?? {}), [c.id]: skin.id };
     this.deps.applySettings?.();
   }
 
