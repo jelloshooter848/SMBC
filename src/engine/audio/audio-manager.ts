@@ -26,7 +26,15 @@ export interface AudioSink {
   setTempoScale(scale: number): void;
   pause(): void;
   resume(): void;
+  /**
+   * Classic mode's music sets (0.5.0, G-060): every playMusic / playJingle id goes through `map`
+   * first (null from it: silence). Null removes the map. Without one every id plays as given.
+   */
+  setMusicMap?(map: MusicMap | null): void;
 }
+
+/** A song id to the song to play in its place (null: none). */
+export type MusicMap = (id: string) => string | null;
 
 export const NULL_AUDIO: AudioSink = {
   playMusic() {},
@@ -75,6 +83,8 @@ export class AudioManager implements AudioSink {
   private readonly overrides = new Map<string, Blob>();
   private readonly decoded = new Map<string, AudioBuffer>();
   private fileMusic: AudioBufferSourceNode | null = null;
+  /** AudioSink.setMusicMap's map, or null. */
+  private musicMap: MusicMap | null = null;
 
   get unlocked(): boolean {
     return this.ctx !== null;
@@ -302,7 +312,13 @@ export class AudioManager implements AudioSink {
     return cs;
   }
 
-  playMusic(id: string): void {
+  setMusicMap(map: MusicMap | null): void {
+    this.musicMap = map;
+  }
+
+  playMusic(asked: string): void {
+    const id = this.musicMap ? this.musicMap(asked) : asked;
+    if (id === null) return this.stopMusic();
     if (!this.seq) {
       this.pendingMusic = id;
       return;
@@ -353,8 +369,10 @@ export class AudioManager implements AudioSink {
     } else g.setValueAtTime(1, now);
   }
 
-  playJingle(id: string, onEnd?: () => void): void {
-    if (!this.seq) {
+  playJingle(asked: string, onEnd?: () => void): void {
+    const id = this.musicMap ? this.musicMap(asked) : asked;
+    if (id === null) this.stopMusic();
+    if (!this.seq || id === null) {
       onEnd?.();
       return;
     }

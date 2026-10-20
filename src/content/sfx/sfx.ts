@@ -7,6 +7,7 @@ import { sophiaSfx } from './sophia';
 import { deathSfx } from './deaths';
 import { heroItemSfx } from './hero-items';
 import { townSfx } from './town';
+import { heroSfx } from './hero-sounds';
 
 /**
  * Original sound effects. At the default 150 bpm one tick is ~8.3 ms, so l64 = 25 ms,
@@ -243,6 +244,8 @@ export const sfx: Sfx[] = [
   // 0.4.33: each hero item's own pickup cue (hero-items.ts).
   ...heroItemSfx,
   ...townSfx,
+  // Classic mode's heroes' own sounds (0.5.0).
+  ...heroSfx,
   // Classic-only extras (2026-10-07-protoman-build-classic-character.md PM-18, pit report PI-22).
   // Proto Man's pick: a short whistled call, up a sixth and gently back down (about 1.3 s).
   { id: 'protoman-whistle', pulse: '@2 v10 q7 x0 l16 o5 e g o6 c8 r32 o5 b a g8 x1 e4' },

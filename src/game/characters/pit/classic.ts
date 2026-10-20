@@ -23,6 +23,8 @@ export const PIT_VARIANT: Partial<ClassicSamusVariant> = {
   morphBall: false,
   standShotHeight: 11,
   beamSfx: 'pit-shoot',
+  // Samus's suit sounds are hers, not Pit's (G-070).
+  suitSounds: false,
 };
 
 /** Samus's shot frames and their arrow twins on the `pit-shots` sheet (PI-21: arrows, art only). */
