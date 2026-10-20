@@ -5,15 +5,18 @@ import { fontPalettes, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
+import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
-import { linkPalettes, linkDef, linkClassicDef } from './link';
+import { linkPalettes, linkDef } from './link';
+import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
 import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
-import { simonPalettes, simonDef, simonClassicDef } from './simon';
+import { simonPalettes, simonDef } from './simon';
+import { simonClassicDef } from './simon-classic';
 import { simonFlameDef } from './simon-flame';
 import { smbcShotPalettes, smbcShotsDef } from './smbc-shots';
 import { ryuPalettes, ryuDef, ryuWaveDef, ryuClassicDef } from './ryu';
@@ -102,6 +105,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   items: itemsDef,
   decor: decorDef,
   mario: marioDef,
+  // Classic SMBC Mario and Luigi's re-cut frames at the original's sizes (R1).
+  'mario-classic': marioClassicDef,
   enemies: enemiesDef,
   link: linkDef,
   megaman: megamanDef,
@@ -118,6 +123,7 @@ export const SPRITES: Record<string, SpriteDef> = {
   'megaman-classic': megamanClassicDef,
   'simon-classic': simonClassicDef,
   'link-classic': linkClassicDef,
+  'link-classic-shield': linkClassicShieldDef,
   // Classic SMBC's Pit and Dark Pit (characters/pit/classic.ts) and their arrows.
   pit: pitDef,
   'pit-shots': pitShotsDef,
@@ -217,6 +223,7 @@ const defaults: Record<string, readonly string[]> = {
   ...marioPalettes,
   ...enemyPalettes,
   ...linkPalettes,
+  ...linkClassicPalettes,
   ...megamanPalettes,
   ...bassPalettes,
   ...protomanPalettes,

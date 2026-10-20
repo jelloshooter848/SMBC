@@ -16,6 +16,14 @@ under `## [Unreleased]`.
   where his shots leave, prone and climbing, and Sophia III's lower hull with Jason's two frames.
   The campaign's art is unchanged.
 - Classic mode: Ryu's run shows four different poses (it showed one of them twice a loop).
+- Classic mode's Link, Samus and Simon are redrawn at the original 3.1.21's sizes: Link a small
+  15 x 16 adventurer (no shield until the Mushroom), Samus a full 33 px suit with her arm cannon,
+  crouch, somersault and morph ball, Simon with four walk poses, the whip hanging, waving and
+  striking (leather, chain, the long Flame Whip), and his own crouch, climb and death. Link's
+  death spins, greys and sparkles. The select screen and the intro card show the new art.
+- Classic Mario and Luigi's few poses that were off the original's size are re-cut.
+- Classic Mario grows at the original speed.
+- Classic Samus's upward missile is drawn at its 8 x 10 size.
 
 ## [0.4.60] - 2026-10-20
 

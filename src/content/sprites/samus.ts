@@ -1,5 +1,6 @@
 import { NES } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
+import { SAMUS_CLASSIC_FRAMES } from './samus-classic';
 
 /**
  * Original "armoured bounty hunter" character for the arm-cannon-and-morph-ball ("samus") role.
@@ -194,25 +195,6 @@ const jump = shooting(legsJump);
 
 // Standing with the cannon pointing straight up past the helmet.
 const aimUp = compose(W, H, [head, -1, 4], [torsoShoot, -1, 14], [legsStand, -1, 25], [cannonUp, 12, 4]);
-
-// Crouch (Classic SMBC, SA-C4), the body in the bottom 15 rows: helmet, shoulder pads and knees
-// folded under; `crouch-shoot` holds the cannon level at helmet height (the crouched muzzle).
-const legsCrouch = [
-  '..0222111122220.',
-  '.02221100112220.',
-  '.0222100.022210.',
-  '022222000222220.',
-  '0000000.0000000.',
-];
-const crouch = compose(W, H, [head, 0, 17], [torso.slice(0, 4), 0, 24], [legsCrouch, 0, 27]);
-const crouchShoot = compose(
-  W,
-  H,
-  [head, -2, 17],
-  [torsoShoot.slice(0, 4), -2, 24],
-  [legsCrouch, -1, 27],
-  [cannonFwd, 11, 18],
-);
 
 // Knockback: head thrown back, cannon arm flung up and out, legs splayed.
 const hurt = compose(
@@ -424,44 +406,15 @@ const bootRight = [
 const bootLeft = bootRight.map((r) => r.split('').reverse().join(''));
 const GUTS = [helmetRight, padRight, bootRight, helmetLeft, padLeft, bootLeft];
 
-/* ---------- Classic SMBC's air and aim poses (F2) ---------- */
-
-// Knees pulled up in front for the jump, shins folded under, boots off the floor (6 rows).
-const legsTuck = [
-  '....011111110...',
-  '....0111111110..',
-  '....0000002210..',
-  '.........02210..',
-  '........022210..',
-  '........000000..',
-];
-/** The whole figure 2 px lower than standing, over the tucked legs. */
-const airBody = (shoot: boolean): string[] =>
-  shoot
-    ? compose(W, H, [head, -1, 6], [torsoShoot, -1, 16], [legsTuck, -1, 26], [cannonFwd, 11, 19])
-    : compose(W, H, [head, 0, 6], [torso, 0, 16], [legsTuck, 0, 26]);
-/** Aiming up over `legs` placed at row `ly` (head and torso `dy` from standing). */
-const aimingUp = (legs: readonly string[], ly: number, dy = 0): string[] =>
-  compose(W, H, [head, -1, 4 + dy], [torsoShoot, -1, 14 + dy], [legs, -1, ly], [cannonUp, 12, 4 + dy]);
-
 /**
- * Classic SMBC Samus's extra frames (SA-C4: `crouch`, `crouch-shoot`; SA-C32: `guts-<1..6>-<0|1>`),
- * a sheet of their own (`samus-classic`, the same palettes) so the Current sheet keeps its
- * documented frame set.
+ * Classic SMBC Samus's sheet (`samus-classic`, the same palettes): every pose redrawn at the
+ * original 3.1.21's sizes (R1, samus-classic.ts) and her death's pieces (SA-C32,
+ * `guts-<1..6>-<0|1>`), so the Current sheet keeps its documented frame set.
  */
 export const samusClassicDef: SpriteDef = {
   palette: 'samus',
   frames: {
-    crouch,
-    'crouch-shoot': crouchShoot,
-    // F2: the original's `jump` (knees up), `jumpShoot`, `upJump` and `upWalk-1..3`, drawn at
-    // today's scale.
-    air: airBody(false),
-    'air-shoot': airBody(true),
-    'up-air': aimingUp(legsTuck, 26, 2),
-    'up-walk-0': aimingUp(legsWalk0, 25),
-    'up-walk-1': aimingUp(legsWalk1, 24, -1),
-    'up-walk-2': aimingUp(legsWalk2, 25),
+    ...SAMUS_CLASSIC_FRAMES,
     ...Object.fromEntries(
       GUTS.flatMap((g, i) => [
         [`guts-${i + 1}-0`, g],
