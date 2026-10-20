@@ -20,7 +20,7 @@ function zeldaLook(id: string, palette: string, game: string): CharacterDef {
   return {
     ...LINK_CLASSIC,
     id,
-    name: 'Zelda',
+    name: `Zelda (${game})`,
     hudName: 'ZELDA',
     lookOf: 'link',
     rescueName: 'Link',
@@ -40,7 +40,7 @@ function zeldaLook(id: string, palette: string, game: string): CharacterDef {
     },
     guide: {
       ...LINK_CLASSIC_GUIDE,
-      tagline: `Princess Zelda (${game}): a weaker sword, stronger arrows`,
+      tagline: 'Princess Zelda: a weaker sword, stronger arrows',
     },
     behaviour: {
       ...LINK_CLASSIC.behaviour,

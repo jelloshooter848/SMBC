@@ -20,6 +20,7 @@ function plumberLook(
   return {
     ...host,
     id,
+    name,
     lookOf: host.id,
     smallCrouch: true,
     portrait: { sheet: 'mario', palette: palettes.normal, frame: 'small-idle' },
@@ -30,7 +31,7 @@ function plumberLook(
         s.palette === `${host.id}-fire` ? palettes.fire : s.palette === host.id ? palettes.normal : s.palette;
       return pal === undefined ? s : { ...s, palette: pal };
     },
-    guide: { ...plumberClassicGuide(name, tagline) },
+    guide: { ...plumberClassicGuide(host.name, tagline) },
   };
 }
 
@@ -38,7 +39,7 @@ export const MARIO3_CLASSIC: CharacterDef = plumberLook(
   MARIO_CLASSIC,
   'mario3',
   { normal: 'mario3', fire: 'mario3-fire', star: 'mario-star' },
-  'Mario',
+  'SMB3 Mario',
   'a sharp rocket jump; small, he can duck',
 );
 
@@ -46,6 +47,6 @@ export const LUIGI3_CLASSIC: CharacterDef = plumberLook(
   LUIGI_CLASSIC,
   'luigi3',
   { normal: 'luigi3', fire: 'luigi3-fire', star: 'mario-star' },
-  'Luigi',
+  'SMB3 Luigi',
   'slippery, floats high; small, he can duck',
 );

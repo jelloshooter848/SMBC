@@ -23,6 +23,9 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode's select: a picked hero acts out a move in its cell (Mario hops, Link raises his arms, Mega
+  Man teleports away, Bill flashes, and so on) for the original's wait before the game goes on; OK or BACK
+  skips it, and Reduce flashing holds Bill's flash steady.
 - Classic mode's new looks, each a skin with the original's rules and our own art: **Princess Zelda** on
   Link (NES, SNES and Game Boy looks: a weaker sword, 400-damage arrows that go on through what they defeat),
   **Quick Man** on Bass (faster, the high jump, no double jump or dash), **Haggle Man** on Ryu (his sword hits

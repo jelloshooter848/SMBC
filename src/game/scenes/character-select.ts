@@ -4,6 +4,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
 import { heroFor, skinGame } from '../characters/registry';
 import type { Game } from './game';
+import { PICK_SHOW_GUARD, pickPose, pickShowFrames, pickShowOf } from './pick-show';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
@@ -518,6 +519,37 @@ export class CharacterSelectScene implements Scene {
     this.confirm(skin);
   }
 
+  /** G-055: the picked hero's performance in its cell (pick-show.ts), then `go`; null when none. */
+  private show: { c: CharacterDef; slot: number; t: number; frames: number; go: () => void } | null = null;
+
+  /** Whether a pick performance is playing (G-055). */
+  get performing(): boolean {
+    return this.show !== null;
+  }
+
+  /**
+   * Classic mode's select: hero `c` acts out its pick in cell `slot` for its wait, then `go`
+   * (G-055). Anywhere else (the campaign, revive mode): `go` at once.
+   */
+  private perform(c: CharacterDef, go: () => void): void {
+    if (!this.classicLayout || this._reviving) return go();
+    const slotId = this.game.slotOf(c).id;
+    this.show = { c, slot: this.index, t: 0, frames: pickShowFrames(slotId), go };
+  }
+
+  /** A frame of the performance: it ends after its wait, or at a fresh OK or BACK press. */
+  private updateShow(pressed: (a: Action) => boolean): void {
+    const sh = this.show;
+    if (!sh) return;
+    sh.t++;
+    const skip =
+      sh.t > PICK_SHOW_GUARD &&
+      (pressed('jump') || pressed('start') || pressed('attack') || pressed('select'));
+    if (!skip && sh.t < sh.frames) return;
+    this.show = null;
+    sh.go();
+  }
+
   /** OK takes hero `c` (a slot's, in its look): the pick's or the new game's next step. */
   private confirm(c: CharacterDef): void {
     const pick = this.pick;
@@ -527,12 +559,13 @@ export class CharacterSelectScene implements Scene {
       // Campaign: the first pick of a hero on the file asks about training first.
       if (pick.training !== false && needsTraining(this.game, c))
         askTraining(this.game, c, pick.player, () => pick.onPick(c), pick.music);
-      else pick.onPick(c);
+      else this.perform(c, () => pick.onPick(c));
       return;
     }
     if (this.start) this.game.pickedRandom = false;
     if (c.pickSfx) this.game.ctx.audio.sfx(c.pickSfx);
-    if (this.start) this.start.begin(c);
+    const start = this.start;
+    if (start) this.perform(c, () => start.begin(c));
     else this.game.newGame(c, '1-1', null);
   }
 
@@ -890,6 +923,11 @@ export class CharacterSelectScene implements Scene {
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     this.t++;
+    // G-055: a pick performance plays out (or is skipped) before anything else moves.
+    if (this.show) {
+      this.updateShow((a) => inputs.some((f) => f.pressed(a)));
+      return;
+    }
     const chars = this.chars;
     const n = this.total;
     // Left/right step to the next hero that is not locked (wrapping); with every other hero
@@ -998,7 +1036,7 @@ export class CharacterSelectScene implements Scene {
         const pick = this.pick;
         if (pick.training !== false && needsTraining(this.game, c))
           askTraining(this.game, c, pick.player, () => pick.onPick(c), pick.music);
-        else pick.onPick(c);
+        else this.perform(c, () => pick.onPick(c));
       } else if (this.pick.onCancel && (pressed('select') || pressed('attack'))) {
         this.game.ctx.audio.sfx('select');
         this.pick.onCancel();
@@ -1029,7 +1067,8 @@ export class CharacterSelectScene implements Scene {
       const c2 = this.p2 ? (chars[this.index2] ?? null) : null;
       if (c) {
         if (c.pickSfx) this.game.ctx.audio.sfx(c.pickSfx);
-        if (this.start) this.start.begin(c);
+        const start = this.start;
+        if (start) this.perform(c, () => start.begin(c));
         else this.game.newGame(c, '1-1', c2);
       }
       return;
@@ -1038,6 +1077,25 @@ export class CharacterSelectScene implements Scene {
       if (this.start) this.start.back();
       else this.game.showTitle();
     }
+  }
+
+  /** G-055: the picked hero's standing art in its cell (x, y), moved by its pick move. */
+  private renderShow(
+    r: Renderer,
+    sh: NonNullable<CharacterSelectScene['show']>,
+    x: number,
+    y: number,
+    cell: number,
+  ): void {
+    const art = this.artOf(sh.c);
+    const pose = pickPose(pickShowOf(this.game.slotOf(sh.c).id).move, sh.t, this.game.ctx.reduceFlashing);
+    if (!pose.shown) return;
+    const sheet = this.game.ctx.assets.sheet(art.sheet, art.palette);
+    const frame = pose.pose === 'raise' && sheet.frames.get('raise-arms') ? 'raise-arms' : art.frame;
+    const f = sheet.frames.get(frame);
+    const w = f?.w ?? 16;
+    const h = f?.h ?? 32;
+    r.sprite(sheet, frame, x + ((cell - w) >> 1) + pose.dx, y + cell - 2 - h + pose.dy);
   }
 
   render(r: Renderer): void {
@@ -1264,6 +1322,8 @@ export class CharacterSelectScene implements Scene {
           r.sprite(items, frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + ((cell - (f?.h ?? 20)) >> 1));
           return;
         }
+        // G-055: the picked hero acting out its pick, in this cell.
+        if (this.show && this.show.slot === i) return this.renderShow(r, this.show, at.x, at.y, cell);
         const c = this.chars[i];
         if (!c) return;
         const look = this.game.skinFor(c);
