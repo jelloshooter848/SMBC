@@ -5,8 +5,9 @@ import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { makeGame } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
-// The two-row select (Classic extras on a second row): Up / Down move between the rows to the
-// nearest column and say so; Left / Right still walk the whole roster; one row is unchanged.
+// Classic mode's select rows (the original's grid, the Classic extras after the usual heroes): Up /
+// Down move between the rows to the nearest column and say so; Left / Right still walk the whole
+// roster; the free-play select's one row is unchanged.
 
 isolateClassicRegistry();
 
@@ -42,8 +43,8 @@ describe('two-row character select', () => {
     h.tap('down');
     expect(idx(sel)).toBe(down);
     expect(h.said.at(-1)).toMatch(new RegExp(`^${sel.chars[down]?.name ?? 'Random'}(, .*)?, second row$`));
-    // FU-3: with Mega Man's variants the Classic-only heroes split over two rows, so a third row
-    // follows: Down goes on to it, then bumps; Up comes back.
+    // The original's grid holds the roster in rows of nine, three of them with Mega Man's variants
+    // (FU-3): Down goes on to the third, then bumps; Up comes back.
     h.tap('down');
     const third = idx(sel);
     expect(sel.slot(third).y).toBeGreaterThan(sel.slot(down).y);
