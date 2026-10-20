@@ -244,6 +244,7 @@ export function unlockEarned(c: ClassicCheatsSettings, ev: CheatEvent = {}): Cla
 /** The Enter code row's code (CheatMenu.CORRECT_INPUT): unlocks every cheat. */
 export function unlockAll(c: ClassicCheatsSettings): void {
   for (const id of CLASSIC_CHEAT_IDS) c.unlocked[id] = true;
+  c.levelSelect = true;
 }
 
 export function allUnlocked(c: ClassicCheatsSettings): boolean {

@@ -414,7 +414,12 @@ function parsePieceLine(
   if (zones && parts[0] === 'start') {
     // `start x y mode`: the area's start for this layer.
     const [, xs, ys, mode] = parts;
-    if (!/^\d+$/.test(xs ?? '') || !/^\d+$/.test(ys ?? '') || !START_MODES.includes(mode ?? '') || parts.length > 4)
+    if (
+      !/^\d+$/.test(xs ?? '') ||
+      !/^\d+$/.test(ys ?? '') ||
+      !START_MODES.includes(mode ?? '') ||
+      parts.length > 4
+    )
       throw new Error(`expected "start x y mode" (${START_MODES.join(', ')})`);
     v.start = { x: Number(xs), y: Number(ys), mode: mode as LevelData['startMode'] };
     return [];

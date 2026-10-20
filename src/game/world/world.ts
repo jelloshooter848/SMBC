@@ -10,7 +10,15 @@ import { moveX, type Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import type { EntitySpawn, HeroItemEntry, LevelData, MapDifficulty, PipeDir, TransferMode, Zone } from '../level/schema';
+import type {
+  EntitySpawn,
+  HeroItemEntry,
+  LevelData,
+  MapDifficulty,
+  PipeDir,
+  TransferMode,
+  Zone,
+} from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T, type BlockContent } from '../level/tiles';
 import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';

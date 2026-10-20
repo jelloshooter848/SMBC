@@ -147,6 +147,12 @@ export interface ClassicCheatsSettings {
    * saved stat): Infinite Lives unlocks only while it is 0 when a game is beaten.
    */
   continuesUsed: number;
+  /**
+   * The Level Select cheat (G-007; the original's 17th cheat, Cheats.as:47): unlocked by beating
+   * every map set on Hard (StatManager.allMapPacksBeatOnHard) or by the code. Not a rule: it opens
+   * the LEVEL SELECT page from the Cheats page and the Classic pause menu.
+   */
+  levelSelect: boolean;
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
@@ -161,6 +167,7 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
     stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
     beaten: { smb: false, lost: false },
     continuesUsed: 0,
+    levelSelect: false,
   };
 }
 

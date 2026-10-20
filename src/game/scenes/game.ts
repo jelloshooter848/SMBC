@@ -2,7 +2,13 @@ import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
-import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
+import {
+  allSetsBeaten,
+  loadProgress,
+  lostLettersOpen,
+  recordLostGameBeaten,
+  saveProgress,
+} from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
 import { CLASSIC_EXTRAS, heroFor, skinHost, skinsOf } from '../characters/registry';
@@ -101,7 +107,7 @@ import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
-import { ClassicMenuScene, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
+import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { applyRevivalBoost, Survival } from '../survival';
 
 export interface GameDeps {
@@ -197,6 +203,8 @@ export class Game {
    * rules.
    */
   classicDifficulty: MapDifficulty = 'normal';
+  /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
+  private levelSelectUnlocked = false;
   /**
    * Classic mode's Survival (Options > Game mode): which heroes have fallen and whether the next
    * select may revive (survival.ts). Null in every other run, the campaign's included.
@@ -667,6 +675,21 @@ export class Game {
       if (this.classicDev) return this.showTitle();
       const set = mapSetOf(from).id;
       recordClassicBeat(set, this.classicDifficulty);
+      // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
+      const cheats = this.deps.settings?.classicCheats;
+      if (
+        cheats &&
+        !cheats.levelSelect &&
+        allSetsBeaten(
+          loadProgress(),
+          'hard',
+          MAP_SETS.map((m) => m.id),
+        )
+      ) {
+        cheats.levelSelect = true;
+        this.levelSelectUnlocked = true;
+        saveSettings(this.deps.settings as Settings);
+      }
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler). The
       // Special set's goal (All Hammer Bros) comes with that set (G-020).
       if (set === 'smb' || set === 'lost') this.cheatEvent({ beat: set });
@@ -1765,6 +1788,25 @@ export class Game {
     this.goToLevel(id, { mode: 'stand' });
   }
 
+  /**
+   * The Level Select cheat's Go (G-007; LevelSelectMenu GO_TO_WORLD): `levelId` on `difficulty`.
+   * In a Classic run (its pause menu) the run goes on there, with its lives and score; from the
+   * menus a new Classic run starts there (the select screen first).
+   */
+  classicLevelSelect(levelId: string, difficulty: MapDifficulty): void {
+    if (
+      this.classicRun &&
+      this.campaign === null &&
+      this.scenes.find((s) => s instanceof LevelScene) !== undefined
+    ) {
+      this.classicDifficulty = difficulty;
+      this.state.checkpoint = null;
+      this.goToLevel(levelId, { mode: 'stand' });
+      return;
+    }
+    this.classicSelect(levelId, () => this.showClassicMenu(), difficulty);
+  }
+
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     this.classicRun = false;
@@ -1852,6 +1894,20 @@ export class Game {
    */
   private showClassicUnlocks(): void {
     const id = this.cheatUnlocks.shift();
+    if (!id && this.levelSelectUnlocked) {
+      // The Level Select cheat (G-007): its own card, last (MessageBoxMessages UNLOCKED_CHEAT_).
+      this.levelSelectUnlocked = false;
+      const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
+      this.deps.ctx.audio.sfx('1up');
+      this.deps.announcer?.say(`You unlocked the Level Select cheat! ${ok}.`);
+      this.scenes.clear();
+      this.scenes.push(
+        new MessageScene(this, ['YOU UNLOCKED', 'LEVEL SELECT', 'CHEAT!', '', ok], () =>
+          this.showClassicUnlocks(),
+        ),
+      );
+      return;
+    }
     if (!id) return this.showTitle();
     const lines = unlockedLines(id);
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
@@ -2071,7 +2127,11 @@ export class Game {
   levelScene(level: LevelData, start: LevelStart): LevelScene {
     const played = this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level;
     const heroes = [this.state.character.id, ...(this.state.character2 ? [this.state.character2.id] : [])];
-    const scene = new LevelScene(this, heroVariant(played, heroes, this.campaign !== null, this.liveRules === 'classic'), start);
+    const scene = new LevelScene(
+      this,
+      heroVariant(played, heroes, this.campaign !== null, this.liveRules === 'classic'),
+      start,
+    );
     // The secret house during a village visit: the blocks already opened stay used.
     if (this.town && level.id === SECRET_HOUSE_LEVEL) layUsedBlocks(scene.world, this.town.used);
     return scene;

@@ -17,6 +17,20 @@ under `## [Unreleased]`.
   waits for OK, then the death goes on as usual.
 - Classic mode: in water areas the **pits pull Mario and Luigi in** (down and toward the pit's
   middle), as in the original. Other heroes and the campaign are not pulled.
+- Classic mode: **each level is built for the hero playing it**, as in the original. Heroes with a
+  shorter reach (Link, Samus, Simon, Mega Man, Bill, Ryu, Sophia III and others) get the extra
+  lifts, blocks and steps the original lays for them, heroes who swim badly get stepping stones in
+  water levels of both games, and Simon and Ryu get extra blocks before Bowser. The campaign maps
+  are unchanged.
+- Classic mode: **Map Difficulty Easy, Normal or Hard**. Press left or right on a map set in the
+  CLASSIC menu to change it. Each difficulty plays the original's own version of every level
+  (other enemies and blocks), and Easy and Hard give the castles their checkpoints. Lakitu comes
+  back sooner and throws more Spinies on Hard, and more flying Cheep Cheeps leap at once. A beaten
+  set remembers the difficulty it was beaten on.
+- Classic mode: the **Hudson Bee**, a hidden item worth 8000 points, on Hard.
+- Classic mode: the **Level Select cheat**. Beat every map set on Hard (or enter the cheat code) to
+  unlock it. It is on the Cheats page and the pause menu, and lets you pick a map set, a difficulty,
+  a world (A to D too) and a level.
 
 ### Changed
 

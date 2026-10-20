@@ -6,7 +6,7 @@ import {
   type BeatStatus,
   type MapSetId,
 } from '@engine/save/progress';
-import type { ClassicRules } from '@engine/save/settings';
+import { MAP_DIFFICULTIES, type ClassicRules, type MapDifficulty } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
@@ -96,8 +96,8 @@ export function beatHint(status: BeatStatus): string {
 
 /**
  * A Classic mode run beat map set `set` (StatManager.beatGameHandler: setBeatGameStatus):
- * kept in the global progress store, never a campaign save file. Every run is on Normal until
- * Map Difficulty comes (G-006).
+ * kept in the global progress store, never a campaign save file, with the run's Map Difficulty
+ * (G-006).
  */
 export function recordClassicBeat(set: MapSetId, difficulty: BeatDifficulty = 'normal'): void {
   const p = loadProgress();
@@ -118,6 +118,13 @@ function spokenItem(it: MenuItem | undefined): string {
   const line = `${it.label.replace(/\*$/, '')}${v}`;
   return it.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line;
 }
+
+/** Map Difficulty names as menus show and read them (data/MapDifficulty.as). */
+export const DIFFICULTY_NAMES: Record<MapDifficulty, string> = {
+  easy: 'Easy',
+  normal: 'Normal',
+  hard: 'Hard',
+};
 
 /** Where the Classic rules value is drawn: right edge, and the first full-screen menu row's y. */
 const CLASSIC_RULES_RIGHT = 248;
@@ -148,11 +155,28 @@ export class ClassicMenuScene extends MenuScene {
     const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
-    // Every map set from the start (G-003, D3), each with its beat status (G-005).
+    // Every map set from the start (G-003, D3), each with its beat status (G-005). Left and
+    // right on a map set change the Map Difficulty (G-006; the original's New Game row), shown
+    // on the status line and read with the row; the run is built for it.
+    const s = game.deps.settings;
+    const difficulty = () => s?.classicMapDifficulty ?? 'normal';
+    this.status = `Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}`;
     const items: MenuItem[] = MAP_SETS.map((set) => ({
       label: set.label,
       select: () => game.classicSelect(set.start, back),
-      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
+      ...(s
+        ? {
+            adjust: (d: -1 | 1) => {
+              const all = MAP_DIFFICULTIES;
+              s.classicMapDifficulty = all[
+                (all.indexOf(difficulty()) + d + all.length) % all.length
+              ] as MapDifficulty;
+              game.deps.applySettings?.();
+              this.build();
+            },
+          }
+        : {}),
+      hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}. Map difficulty: ${DIFFICULTY_NAMES[difficulty()]}, left or right to change`,
     }));
     items.push(
       {
