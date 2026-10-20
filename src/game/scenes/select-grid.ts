@@ -312,7 +312,8 @@ export interface SkinLayout {
 
 /**
  * Hero `hostId`'s skin menu for `n` looks whose longest name or game is `textW` px: a box as wide
- * as its grid or its text (GridMenuBox's fill fits its content, + 1), framed, centred on y 120.
+ * as its grid or its text (GridMenuBox's fill fits its content, + 1), framed, centred on y 120;
+ * the grid from the fill's left edge, the text centred over it.
  */
 export function skinLayout(n: number, hostId = 'megaman', textW = 0): SkinLayout {
   const g = skinGrid(hostId);
@@ -332,7 +333,8 @@ export function skinLayout(n: number, hostId = 'megaman', textW = 0): SkinLayout
     y,
     w,
     h,
-    gx: 128 - (gw >> 1),
+    // Left-aligned in the fill (GridMenuBox.setUpText: items from x 0, ITEMS_MARGIN_X 0).
+    gx: x + BOX_FRAME,
     gy,
     cols,
     rows: g.rows,

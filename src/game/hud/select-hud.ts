@@ -4,6 +4,7 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { CharacterDef } from '../characters/character';
 import type { GameState } from '../context';
 import { faceAt } from '../scenes/select-grid';
+import { CLASSIC_HUD_COLUMNS } from './hud';
 
 /**
  * The HUD's face box over Classic mode's select: its top-left and size (framed). The original's
@@ -12,12 +13,8 @@ import { faceAt } from '../scenes/select-grid';
  */
 export const HUD_FACE = { x: 5, y: 6, size: 26 } as const;
 
-/**
- * The HUD's text columns (TopScreenText, halved): the name and score at 34 (NAME_TXT_PNT 45 + 22),
- * the coin at 108 so its count starts at 116 (COIN_TXT_PNT 206 + 22, its coin 6 px before), WORLD
- * at 154 (285 + 22) over the level at 162 (+ 16), TIME at 210 (398 + 22).
- */
-export const HUD_TEXT = { name: 34, coins: 108, world: 154, level: 162, time: 210 } as const;
+/** The HUD's text columns: a Classic run's level HUD's (hud.ts CLASSIC_HUD_COLUMNS), so nothing moves. */
+export const HUD_TEXT = CLASSIC_HUD_COLUMNS;
 
 /**
  * The HUD over Classic mode's select (the original 3.1.21's layout: the HUD stays on top): the

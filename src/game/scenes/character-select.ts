@@ -106,8 +106,15 @@ const BOX_GROW = 6;
  * Look `look` of slot hero `host` as said: the look's name, then the hero's ("Break Man, Proto
  * Man"); a hero's own look is just its name (no repeat).
  */
-/** The prompt under the name box fits this many 8 px characters on the screen (8 px a side). */
+/** The prompt fits this many 8 px characters on the screen (8 px a side). */
 const PROMPT_CHARS = Math.floor((256 - 16) / 8);
+
+/**
+ * The prompt's row, and the Survival lines' under it: on the ground, 4 px under the hero's feet
+ * (y 208), so no hero's head is under them (Bill stands 34 px tall, his head at y 174, and the name
+ * box ends at y 171: no row fits between).
+ */
+export const GROUND_TEXT_Y = 212;
 
 /** `s` as a sentence: a full stop added unless it already ends one ("Super Mario Bros."). */
 function sentence(s: string): string {
@@ -1379,8 +1386,8 @@ export class CharacterSelectScene implements Scene {
     const hNow = grow < 0.5 ? 8 : Math.round(8 + (boxH - 8) * ((grow - 0.5) / 0.5));
     drawPanel(r, 128 - (w >> 1), by + ((boxH - hNow) >> 1), w, hNow, th);
     // The hero's name in the menu font; the look's name and the game in the selected tint, 14 px
-    // apart (CharNameBox LINE_SPACE 28). Our one prompt goes under the box, on the sky (named by
-    // ability, the real key when not on touch).
+    // apart (CharNameBox LINE_SPACE 28). Our one prompt goes on the ground under the hero (named by
+    // ability, the real key when not on touch), clear of every hero's head.
     if (grow >= 1) {
       lines.forEach((l, k) =>
         this.outlined(
@@ -1396,9 +1403,9 @@ export class CharacterSelectScene implements Scene {
       // The key hint goes when it would not fit on the screen (a long key name).
       const keyed = fontText(`${ok} ${what}`);
       const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
-      this.outlined(r, prompt, by + NAME_BOX.h + 4);
+      this.outlined(r, prompt, GROUND_TEXT_Y);
     }
-    const py = by + NAME_BOX.h + 14;
+    const py = GROUND_TEXT_Y + 10;
     const sv = this.survival;
     if (this._reviving) {
       const leave = this.reviveLeave();

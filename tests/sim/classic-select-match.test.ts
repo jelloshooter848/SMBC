@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings, normaliseSkins } from '@engine/save/settings';
 import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
-import { CharacterSelectScene, lookName } from '@game/scenes/character-select';
+import { CharacterSelectScene, GROUND_TEXT_Y, lookName } from '@game/scenes/character-select';
+import { IntroScene } from '@game/scenes/intro';
+import { LevelScene } from '@game/scenes/level';
+import { CLASSIC_HUD_COLUMNS } from '@game/hud/hud';
+import { shownPortrait } from '@game/characters/character';
+import { heroFor, skinsOf } from '@game/characters/registry';
 import { MEGAMAN } from '@game/characters/megaman';
 import { SAMUS } from '@game/characters/samus';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
@@ -370,12 +375,95 @@ describe('the original\u2019s rows, box and faces', () => {
   it("the HUD's face is inset as the original's, its text after it", () => {
     // TopScreenText: PORT_PNT (12, 14) with its frame 2 px out; NAME_TXT_PNT x 67; halved.
     expect(HUD_FACE).toEqual({ x: 5, y: 6, size: 26 });
-    expect(HUD_TEXT).toEqual({ name: 34, coins: 108, world: 154, level: 162, time: 210 });
+    expect(HUD_TEXT).toBe(CLASSIC_HUD_COLUMNS);
+    expect(HUD_TEXT).toMatchObject({ name: 34, coins: 110, world: 154, level: 162, time: 210, timeNum: 216 });
     const { sel } = classicSelect();
     const t = draw(sel).texts;
     expect(t.find((x) => x.str === 'MARIO')?.x).toBe(34);
     expect(t.find((x) => x.str === 'WORLD')?.x).toBe(154);
     expect(t.find((x) => x.str === 'TIME')?.x).toBe(210);
+  });
+
+  it("a Classic run's HUD stays where its select's was: the intro card and the level", () => {
+    // One TopScreenText for the select and its levels: nothing moves on the cut.
+    const { h, sel } = classicSelect();
+    const at = (t: { str: string; x: number; y: number }[]) => {
+      const find = (f: (s: string) => boolean) => t.find((x) => x.y < 24 && f(x.str));
+      return {
+        name: find((s) => s.trim() === 'MARIO')?.x,
+        score: find((s) => /^\d{7}$/.test(s))?.x,
+        coins: find((s) => s.startsWith('$×'))?.x,
+        world: find((s) => s === 'WORLD')?.x,
+        level: find((s) => s === '1-1')?.x,
+        time: find((s) => s === 'TIME')?.x,
+      };
+    };
+    const onSelect = at(draw(sel).texts);
+    expect(onSelect).toEqual({ name: 34, score: 34, coins: 110, world: 154, level: 162, time: 210 });
+    h.game.classicGame(sel.chars[0]!, '1-1');
+    const intro = h.top();
+    expect(intro).toBeInstanceOf(IntroScene);
+    expect(at(draw(intro as IntroScene).texts)).toEqual(onSelect);
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const level = draw(h.top() as LevelScene).texts;
+    expect(at(level)).toEqual(onSelect);
+    expect(level.find((x) => /^\d{3}$/.test(x.str) && x.y === 16)?.x).toBe(216);
+  });
+
+  it('the campaign HUD keeps its own columns', () => {
+    const h = makeGame();
+    h.game.newGame(h.game.roster[0]!, '1-1', null);
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const t = draw(h.top() as LevelScene).texts;
+    expect(t.find((x) => x.str === 'WORLD')?.x).toBe(144);
+    expect(t.find((x) => x.str === 'TIME')?.x).toBe(200);
+  });
+
+  it('no text covers any hero standing on the ground, Expansion heroes on too', () => {
+    const settings = defaultSettings();
+    settings.classic.expansion = 'on';
+    const { h, sel } = classicSelect(settings);
+    let checked = 0;
+    for (const slot of sel.chars)
+      for (const look of skinsOf(slot)) {
+        if (!h.game.roster.includes(look) && look !== slot) continue;
+        h.game.setSkin(slot, look);
+        cursorTo(h, sel, slot.id);
+        h.idle(12);
+        const pt = shownPortrait(heroFor(look, h.game.liveRules));
+        const rows = SPRITES[pt.sheet]?.frames[pt.frame] ?? [];
+        const top = rows.findIndex((r) => /[^. ]/.test(r));
+        const d = draw(sel);
+        const hero = d.sprites.find((s) => s.frame === pt.frame && s.y + rows.length === 208);
+        expect(hero, look.id).toBeDefined();
+        if (!hero) continue;
+        const w = rows[0]?.length ?? 16;
+        // Each text with its 1 px outline stays off the hero's drawn rows.
+        for (const t of d.texts) {
+          const hit =
+            t.x - 1 < hero.x + w &&
+            t.x + t.str.length * 8 + 1 > hero.x &&
+            t.y - 1 < 208 &&
+            t.y + 9 > hero.y + top;
+          expect(hit, `${look.id} under "${t.str}"`).toBe(false);
+        }
+        checked++;
+      }
+    expect(checked).toBeGreaterThanOrEqual(26);
+    // The prompt is on the ground row.
+    expect(draw(sel).texts.some((x) => x.y === GROUND_TEXT_Y && /^OK\b/.test(x.str))).toBe(true);
+  });
+
+  it("the skin menu's grid starts at the fill's left edge, as the original's", () => {
+    // GridMenuBox.setUpText: gridItem.x = column * (itemWidth + space), from x 0 in the fill.
+    const samus = skinLayout(3, 'samus', 160);
+    expect(samus.gx).toBe(samus.x + 7);
+    expect(samus.gx + 3 * samus.cw + 2 * samus.gap).toBeLessThan(samus.x + samus.w - 7);
+    const { h, sel } = classicSelect();
+    cursorTo(h, sel, 'megaman');
+    h.tap('jump');
+    const L = sel.pickerLayout;
+    expect(L?.gx).toBe((L?.x ?? 0) + 7);
   });
 
   it("the skin menu's cells are each hero's preview size, 2 px apart, the panel fitted to them", () => {
