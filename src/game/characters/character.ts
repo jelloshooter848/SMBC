@@ -40,13 +40,13 @@ export interface SpriteSpec {
    */
   rotate?: 0 | 90 | 180 | 270;
   /**
-   * A layer drawn before this sprite (Classic Yoshi's rider, 2026-10-19-yoshi-build-classic-
+   * A rider drawn over this sprite (the Classic Yoshi mount, 2026-10-19-yoshi-build-classic-
    * character.md YM-20): another frame whose centre line is `dx` px from this sprite's left edge
    * (mirrored with `flip`) and whose cut line is `dy` px below this sprite's top. Only the rows
    * above the cut show: a frame 16 px tall or less loses its bottom 5 rows, a taller one its bottom
-   * 13 (the legs, behind the saddle). Absent: nothing under (every Current sprite).
+   * 13 (the legs, behind the saddle). Absent: nothing (every Current sprite).
    */
-  under?: { sheet: string; palette: string; frame: string; flip: boolean; dx: number; dy: number };
+  rider?: { sheet: string; palette: string; frame: string; flip: boolean; dx: number; dy: number };
 }
 
 export type HurtResult = 'dead' | 'hurt' | 'ignored';

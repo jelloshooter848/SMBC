@@ -4388,13 +4388,13 @@ export class World {
   }
 
   /**
-   * SpriteSpec.under (the Classic Yoshi mount's rider, YM-20): its frame centred on `cx`, cut at
+   * SpriteSpec.rider (the Classic Yoshi mount's rider, YM-20): its frame centred on `cx`, cut at
    * `top + dy`, the legs below the cut not drawn.
    */
-  private drawUnder(
+  private drawRider(
     r: Renderer,
     view: View,
-    u: NonNullable<SpriteSpec['under']>,
+    u: NonNullable<SpriteSpec['rider']>,
     cx: number,
     top: number,
   ): void {
@@ -4424,15 +4424,15 @@ export class World {
       r.sprite(sheet, s.frame, cx - (bw >> 1), cy - (bh >> 1), s.flip, s.flipY, s.rotate ?? 0);
     } else {
       const x = toPx(p.body.x) - view.camX - (s.flip ? w - toPx(p.body.w) - s.offsetX : s.offsetX);
-      if (s.under)
-        this.drawUnder(
+      r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
+      if (s.rider)
+        this.drawRider(
           r,
           view,
-          s.under,
-          s.flip ? x + w - s.under.dx : x + s.under.dx,
+          s.rider,
+          s.flip ? x + w - s.rider.dx : x + s.rider.dx,
           toPx(p.body.y) - s.offsetY,
         );
-      r.sprite(sheet, s.frame, x, toPx(p.body.y) - s.offsetY, s.flip);
     }
     if (this.coop && p.index > 0 && !p.dead) {
       // Small "2" tag above player two so both players can tell who is who.

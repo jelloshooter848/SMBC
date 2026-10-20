@@ -100,6 +100,10 @@ function hatchAndRide(r: MRig): YoshiMount {
   r.run(EGG_HATCH_FRAME + 2);
   const y = mounts(r.world)[0] as YoshiMount;
   expect(y).toBeDefined();
+  // He steps off his block and drops to the floor, then waits.
+  for (let i = 0; i < 200 && y.state !== 'wait'; i++) r.step();
+  expect(y.state).toBe('wait');
+  expect(y.body.y + y.body.h).toBe(px(208));
   // Drop the hero onto his back.
   r.p.body.x = y.body.x;
   r.p.body.y = y.body.y - px(40);
@@ -173,7 +177,7 @@ describe('YM-4, YM-5: egg blocks', () => {
     expect(r.world.map.get(tx, ty)).not.toBe(T.Q_POWERUP);
     r.run(EGG_HATCH_FRAME + 2);
     expect(mounts(r.world)).toHaveLength(1);
-    expect((mounts(r.world)[0] as YoshiMount).state).toBe('wait');
+    expect((mounts(r.world)[0] as YoshiMount).state).toBe('walk');
     expect(powerUps(r.world)).toHaveLength(0);
   });
 
@@ -211,7 +215,7 @@ describe('YM-4, YM-5: egg blocks', () => {
 });
 
 describe('YM-9..YM-16: riding', () => {
-  it('landing on his back mounts: the overlay def, a 12 x 28 box, Yoshi drawn with the rider under him', () => {
+  it('landing on his back mounts: the overlay def, a 12 x 28 box, Yoshi drawn with the rider on his back', () => {
     const r = new MRig(LINK, blockLevel(), 'on');
     hatchAndRide(r);
     expect(r.p.body.h).toBe(px(PAIR_H));
@@ -219,7 +223,7 @@ describe('YM-9..YM-16: riding', () => {
     expect(r.p.scratch[RIDE_KEY]).toBe(1);
     const s = r.p.def.sprite(r.p, 0, true);
     expect(s.sheet).toBe('yoshi');
-    expect(s.under?.sheet).toBe(heroFor(LINK, 'classic').sprite(r.p, 0, true).sheet);
+    expect(s.rider?.sheet).toBe(heroFor(LINK, 'classic').sprite(r.p, 0, true).sheet);
   });
 
   it('Link: Attack licks (no sword) and swallows a Goomba; Special throws the boomerang', () => {

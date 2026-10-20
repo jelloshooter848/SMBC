@@ -54,6 +54,8 @@ export const HIT_INVULN = 120;
 export const FLEE_SPEED = 0x02000;
 /** A shell held this long is swallowed (YM-15). */
 export const SHELL_HOLD = 600;
+/** A freshly hatched Yoshi steps off his block at 1 px/f (tuning). */
+export const WALK_OFF = 0x01000;
 /** Kit key: 1 riding, 2 benched. */
 export const RIDE_KEY = 'yoshiRide';
 
@@ -322,7 +324,10 @@ function rideBehaviour(base: CharacterDef): CharacterBehaviour {
   return behaviour;
 }
 
-/** The pair's look (YM-20): Yoshi, with the rider's own frame cut at the saddle drawn under him. */
+/**
+ * The pair's look (YM-20): Yoshi, with the rider's own frame cut at the saddle drawn over his back
+ * (drawn over, not under him as the report has it, so the rider's face stays in front of his neck).
+ */
 function pairSprite(base: CharacterDef, p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   if (p.dead) return base.sprite(p, frame, reduceFlashing);
   const rider = base.sprite(p, frame, reduceFlashing);
@@ -338,14 +343,15 @@ function pairSprite(base: CharacterDef, p: Player, frame: number, reduceFlashing
     flip: p.facing < 0,
     offsetX: 3,
     offsetY: 32 - PAIR_H,
-    // The saddle's middle is 7 px in from the cell's back edge; the cut 17 px under the cell top.
-    under: {
+    // Over the saddle: the rider's middle 4 px in from the cell's back edge, the cut 16 px under the
+    // cell top (tuning).
+    rider: {
       sheet: rider.sheet,
       palette: rider.palette,
       frame: rider.frame,
       flip: rider.flip,
-      dx: 7,
-      dy: 17,
+      dx: 4,
+      dy: 16,
     },
   };
 }
@@ -386,9 +392,12 @@ export function ridingDef(base: CharacterDef): CharacterDef {
 /** Yoshi off the saddle (YM-6, YM-8, YM-17, YM-19). */
 export class YoshiMount extends Entity {
   readonly kind = 'yoshi-mount';
-  state: 'wait' | 'ridden' | 'flee' | 'drop' | 'gone' = 'wait';
+  state: 'wait' | 'walk' | 'ridden' | 'flee' | 'drop' | 'gone' = 'wait';
   rider: Player | null = null;
   fleeDir: -1 | 1 = 1;
+  /** Frames walking after the hatch, and the drop's carried speed (stepping off the block). */
+  private walkT = 0;
+  private stepVx = 0;
   constructor(
     x: number,
     feet: number,
@@ -420,13 +429,26 @@ export class YoshiMount extends Entity {
       moveX(b, world.map, velToSub(b.vx));
       if (b.hitWall !== 0) this.fleeDir = -this.fleeDir as -1 | 1;
       this.facing = this.fleeDir;
+    } else if (this.state === 'walk' || (this.state === 'drop' && this.stepVx !== 0)) {
+      // Fresh from the egg on top of its block: he steps off toward the player and drops down,
+      // so a hero on the ground can get on (tuning; he waits after 96 frames on a wide ledge).
+      b.vx = this.state === 'walk' ? this.facing * WALK_OFF : this.stepVx;
+      moveX(b, world.map, velToSub(b.vx));
+      if (b.hitWall !== 0) this.facing = -this.facing as -1 | 1;
+      if (this.state === 'walk' && ++this.walkT > 96) this.state = 'wait';
     }
-    // Gravity (wait, drop, flee).
+    // Gravity (wait, walk, drop, flee).
     b.vy = Math.min(b.vy + 0x00355, 0x04000);
     moveY(b, world.map, b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy));
     if (b.onGround) {
       b.vy = 0;
-      if (this.state === 'drop') this.state = 'wait';
+      if (this.state === 'drop') {
+        this.state = 'wait';
+        this.stepVx = 0;
+      }
+    } else if (this.state === 'walk') {
+      this.state = 'drop';
+      this.stepVx = b.vx;
     }
     // Into a pit, or off the screen: lost (YM-8).
     const camL = world.camera.x - px(this.state === 'wait' ? 256 : 16);
@@ -450,7 +472,14 @@ export class YoshiMount extends Entity {
   render(r: Renderer, view: View): void {
     if (this.state === 'ridden' || this.state === 'gone') return;
     const sheet = view.assets.sheet('yoshi');
-    const frame = this.state === 'flee' ? 'tongue' : this.state === 'drop' ? 'jump' : 'sit';
+    const frame =
+      this.state === 'flee'
+        ? 'tongue'
+        : this.state === 'drop'
+          ? 'jump'
+          : this.state === 'walk'
+            ? `walk-${(view.frame >> 3) % 3}`
+            : 'sit';
     const x = this.screenX(view);
     const flip = this.facing < 0;
     const fx = flip ? toPx(this.body.x) - view.camX - (24 - 12 - 3) : x;
@@ -476,6 +505,7 @@ export class MountEgg extends YoshiEgg {
     this.destroy();
     const y = new YoshiMount(cx - px(6), feet, world);
     y.facing = world.nearestPlayer(cx).centerX < cx ? -1 : 1;
+    y.state = 'walk';
     world.spawn(y);
     world.audio.sfx('yoshi-hatch');
     say(world, 'Yoshi hatched');
