@@ -8,6 +8,20 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode's select screen and skin menu now match the original's default look: brick-orange
+  panels with a light bevel and rivet corners, dark red cells, and a thin gold cursor ring that
+  cycles (held still with Reduce flashing). The name box shows the hero in white and the look's
+  name and its game in pale pink, all outlined so they read on a phone. A hero's own look has two
+  lines, as in the original, and the box follows the skin menu's cursor. Each cell and the HUD's
+  framed box show the hero's face (the Random slot's "?" in the HUD too); eight cells to a row
+  fit the 24 slots on screen. The hero stands at the centre on the next level's sky and ground
+  (underground levels: black and underground rock). The skin menu takes the grid's place.
+- Classic mode's select reads out the look, the hero and the game ("Break Man, Proto Man, Mega
+  Man 3"; a hero's own look once: "Proto Man, Mega Man 3"), also when SKIN changes the look; Down
+  in a one-row skin menu no longer moves the cursor.
+
 ### Added
 
 - Classic mode's select screen in the original's layout (our own art): the HUD on top with the
