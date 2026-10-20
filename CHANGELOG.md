@@ -29,6 +29,8 @@ under `## [Unreleased]`.
 
 - Classic mode: the **All Hammer Bros** cheat is unlocked by beating Super Mario Bros. Special, as
   in the original, no longer by beating The Lost Levels. Anyone who already unlocked it keeps it.
+- Classic mode: a shared level link (to a Super Mario Bros., Special or Lost Levels level) now
+  counts toward the cheats' goals and a map set's BEATEN mark, as a Level Select start does.
 - The credits are read out to screen readers, the whole roll at once as it starts (the Classic
   and the campaign credits alike).
 

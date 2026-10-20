@@ -311,7 +311,8 @@ function boot(): void {
     const c1 = roster.find((c) => c.id === params.get('char')) ?? (roster[0] as (typeof roster)[0]);
     const c2 = roster.find((c) => c.id === params.get('char2')) ?? null;
     // Classic mode is one player: `char2` is for free play only.
-    if (classic) game.devClassicGame(c1, level, rules);
+    // A link on a release build (dev mode off) counts toward goals and BEATEN; a dev run never.
+    if (classic) game.devClassicGame(c1, level, rules, settings.dev);
     else game.newGame(c1, level, c2, { rules });
     // The full kit of the def played under the run's rules (TG-8).
     const hero = heroFor(c1, game.liveRules);

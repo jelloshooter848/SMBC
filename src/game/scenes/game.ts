@@ -1773,12 +1773,17 @@ export class Game {
   }
 
   /**
-   * `?dev=1&mode=classic&level=..` (main.ts): a Classic run from any level with the URL's hero
-   * and rules, one player (the village and the stage tutorials start 1-1 instead).
+   * A `?level=` link's Classic run (main.ts): from that level with the URL's hero and rules, one
+   * player (the village and the stage tutorials start 1-1 instead). `dev`: dev mode is on
+   * (`?dev=1&mode=classic`), and the run counts for nothing (classicDev). With dev mode off (a
+   * shared link on a release build) it counts as any Classic run does, as the original counts a
+   * run that its Level Select started anywhere (LevelSelectMenu.as 115-131 only sets the map pack
+   * and difficulty and creates the level; StatManager.beatGameHandler 506-529 asks nothing of
+   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect).
    */
-  devClassicGame(character: CharacterDef, levelId: string, rules: Rules): void {
+  devClassicGame(character: CharacterDef, levelId: string, rules: Rules, dev = true): void {
     this.pendingLevel = null;
-    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, true);
+    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, dev);
   }
 
   /**
