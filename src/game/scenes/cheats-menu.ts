@@ -173,8 +173,11 @@ export class CheatsScene extends MenuScene {
   override enter(): void {
     this.rebuild();
     const it = this.items[this.index];
-    const first = it ? `${it.label === HIDDEN_CHEAT ? 'Locked cheat' : it.label}` : '';
-    this.game.deps.announcer?.say(`Cheats. ${first}`);
+    if (!it) return;
+    const v = it.value ? `: ${it.value()}` : '';
+    const line =
+      it.label === HIDDEN_CHEAT ? (it.hint ?? 'Locked cheat') : `${it.label}${v}. ${it.hint ?? ''}`;
+    this.game.deps.announcer?.say(`Cheats. ${line.trim()}`);
   }
 
   /** Reads a locked row as "Locked cheat", never as its question marks. */

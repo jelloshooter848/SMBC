@@ -406,6 +406,6 @@ export class CharacterSelectScene implements Scene {
     const names = this.cheatNews.map((n) => n.toUpperCase());
     lines.push(...names.slice(0, 2));
     if (names.length > 2) lines.push(`AND ${names.length - 2} MORE`);
-    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 46 + i * 10));
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 47 + i * 10));
   }
 }
