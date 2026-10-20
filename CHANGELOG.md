@@ -10,6 +10,16 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode: character select before every new level, as in the original's default
+  All Characters mode (the same hero keeps its power; OK goes straight on).
+- Classic mode heroes animate with the original 3.1.21's timing and states: per-hero walk
+  cycles, Link's somersault on every jump and walk-off, Simon's tucked rising jump, Mega Man's
+  arms-up jump, Ryu's 400 ms flip then upright fall, Bill's upright walk-off fall, Samus's
+  faster somersault and her air shot, air aim-up and walking aim-up poses, and Mario's grow and
+  shrink flicker. Shots in the air or on the move keep the jump or walk pose.
+- Classic mode heroes are hit on the original's body boxes (their HRect sizes), and Samus's
+  beams, Wave Beam and missiles and Mario's fireball take the original's sizes and colours.
+
 - Classic mode: **Bass** joins, first on the select screen's second row (Classic mode and developer Classic runs
   only, never the campaign). Hold Attack for rapid fire, three shots at a time (four with the Mushroom), aimed up,
   up at an angle or down at an angle; on the ground he stands still while firing. He double jumps, dashes with
