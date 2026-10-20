@@ -14,6 +14,7 @@ import type { CharacterDef } from '../characters/character';
 import { makeBody, moveX, moveY, type Body, type MoveYOptions } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
+import type { ClassicSettings } from '@engine/save/original-options';
 import { placeOnStairs, STAIR_LOCK, STAIR_SPEED, type StairLine, type StairRide } from './objects/stairs';
 
 /**
@@ -247,6 +248,13 @@ export class Player {
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
   scratch: Record<string, number> = {};
+  /**
+   * Classic mode's options for this run (World.classic: More Settings, Customize Weapons), set by
+   * the World that plays the hero; null outside a Classic run with Classic rules. Only the
+   * Classic defs' helpers read it (characters/classic/options.ts), as the original's values when
+   * null.
+   */
+  classicOptions: ClassicSettings | null = null;
 
   constructor(x: number, y: number, def: CharacterDef, powerState: string, hp: number) {
     this.def = def;

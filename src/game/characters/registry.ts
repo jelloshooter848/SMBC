@@ -35,7 +35,8 @@ import { applyCheatEdits } from '../rules/classic-cheats';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
-import { yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
+import { applyOptionSpawns } from '../rules/classic-options-level';
+import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 
 // The Classic rules' doors in Enemy.hit, World.strikeBlock and the World's level load (TG-24,
 // TG-25, TG-45; rules/hooks.ts): installed here because this is the one non-classic file allowed
@@ -46,15 +47,18 @@ installClassicRules({
   // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
   strikeBlock: (world, tx, ty, p, breakBricks, hit) =>
     yoshiEggStrike(world, tx, ty, p) ?? classicStrikeBlock(world, tx, ty, p, breakBricks, hit),
-  levelEdits: (map, id, defs, spawns, world) => {
-    // Both tables apply, then Classic mode's level-edit cheats (rules/classic-cheats.ts).
+  levelEdits: (map, id, defs, spawns, options, world) => {
+    // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas) and its
+    // level-edit cheats (rules/classic-cheats.ts).
     const water = applyClassicLevelEdits(map, id, defs);
     const wide = applyWideVariants(map, id, defs, spawns);
+    const opts = applyOptionSpawns(map, spawns, options);
     const cheats = world && spawns ? applyCheatEdits(map, id, spawns, world) : false;
-    return wide || water || cheats;
+    return opts || wide || water || cheats;
   },
   armoured: isArmoured,
   worldLoaded: yoshiWorldLoaded,
+  clearHop: yoshiClearHop,
 });
 
 /** Playable characters in select-screen order. */

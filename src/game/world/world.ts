@@ -86,6 +86,7 @@ import {
   type Rules,
 } from '../context';
 import type { ClassicCheatStat } from '@engine/save/settings';
+import type { ClassicSettings } from '@engine/save/original-options';
 import { heroFor } from '../characters/registry';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
@@ -577,6 +578,11 @@ export class World {
    * checkpoint it locks (LOCKED_CP: castles, World 8), added by the cheat's level-load edit.
    */
   readonly cheatCheckpoints: { x: number; y: number }[] = [];
+  /**
+   * Classic mode's options (GameContext.classic), read once when the World is built: only under
+   * Classic rules, else null. Every player of this World carries it (Player.classicOptions).
+   */
+  readonly classic: ClassicSettings | null;
   frame = 0;
   /** Timer in SMB1 units; null = no timer. */
   time: number | null;
@@ -777,6 +783,7 @@ export class World {
     // Classic mode's Infinite Lives, Infinite Time and Invincible cheats are the assists' own
     // (cheatAssist); a Current World has the context's assists as they are.
     this.assist = this.rules === 'classic' ? cheatAssist(ctx.assist, () => this.cheats) : ctx.assist;
+    this.classic = this.rules === 'classic' ? (ctx.classic ?? null) : null;
     this.extraEntities = start.extraEntities;
     this.deathStyle = start.deathStyle ?? 'hop';
     this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
@@ -855,6 +862,7 @@ export class World {
       );
       p.profile = { ...def.movement, coyoteFrames: ctx.assist.coyoteFrames };
       p.index = i;
+      p.classicOptions = this.classic;
       Object.assign(p.scratch, i === 0 ? state.kit : state.kit2);
       if (mode === 'fall') {
         p.body.y = px(-32) - px(i * 24);
@@ -1005,6 +1013,7 @@ export class World {
         level.id,
         this.players.map((p) => p.def),
         this.spawns,
+        this.classic,
         this,
       );
       // The Classic Yoshi mount's egg block and carried rider (YM-5, YM-7; nothing when it is off).
@@ -1234,7 +1243,7 @@ export class World {
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
-        return new Princess(s.x, s.y);
+        return new Princess(s.x, s.y, this.player.def.endingGreeter ?? null);
       case 'toad':
         return new Toad(s.x, s.y);
       case 'captive': {
@@ -1417,8 +1426,8 @@ export class World {
       this.tally('enemiesDefeated');
       if (classicRules().armoured(e)) this.tally('armouredDefeated');
       if (e instanceof HammerBro) this.tally('hammerBrosDefeated');
-      // StatManager.numCheepCheepsDefeated counts only the leaping ones (CheepFast.die).
-      if (e instanceof Cheep && e.flying) this.tally('cheepsDefeated');
+      // StatManager.numCheepCheepsDefeated: every Cheep Cheep (CheepFast.die, outside `if (flying)`).
+      if (e instanceof Cheep) this.tally('cheepsDefeated');
     }
     let killer: Player | null = null;
     const o = src.owner;
@@ -3836,6 +3845,7 @@ export class World {
         if (c.t === 1) {
           b.x = tileToSub(c.pole.tx) + px(10);
           p.facing = -1;
+          if (this.rules === 'classic') classicRules().clearHop?.(this, p);
         }
         if (c.t >= 20) {
           c.phase = 'walk';
@@ -4182,7 +4192,13 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
+      // CharacterDef.endingGreeter: who stands in the princess's place greets the hero instead.
+      const greeter = end ? this.player.def.endingGreeter : undefined;
+      const news = greeter
+        ? [...greeter.news]
+        : end
+          ? ['YOUR QUEST IS OVER.']
+          : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });

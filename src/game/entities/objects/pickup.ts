@@ -30,7 +30,9 @@ export type PickupKind =
   | 'pot-lance'
   | 'pot-dagger'
   | 'pot-torch'
-  | 'pot-axe';
+  | 'pot-axe'
+  /** Classic Link's arrows (Customize Weapons: Bow and Arrow; LINK_ARROW_AMMO): 2 arrows. */
+  | 'arrow-pack';
 
 /** A pickup kind's name, as a map's `pickup x y item=<kind>` gives it. */
 export function isPickupKind(v: unknown): v is PickupKind {
@@ -61,6 +63,7 @@ const FRAMES: Record<PickupKind, { frame: string; size: number; sheet?: string }
   'pot-dagger': { frame: 'pot-dagger', size: 16, sheet: 'arthur-fx' },
   'pot-torch': { frame: 'pot-torch', size: 16, sheet: 'arthur-fx' },
   'pot-axe': { frame: 'pot-axe', size: 16, sheet: 'arthur-fx' },
+  'arrow-pack': { frame: 'icon-arrow', size: 8 },
 };
 
 export const PICKUP_LIFETIME = 480;

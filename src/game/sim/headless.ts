@@ -1,4 +1,5 @@
 import type { Action } from '@engine/input/actions';
+import type { ClassicSettings } from '@engine/save/original-options';
 import type { InputFrame } from '@engine/input/input-manager';
 import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
@@ -82,6 +83,8 @@ export interface SimOptions {
    * `runSim({ character: LINK, rules: 'classic', … })` plays Classic Link.
    */
   rules?: Rules;
+  /** Classic mode's options for the context (GameContext.classic; read only under Classic rules). */
+  classic?: ClassicSettings;
 }
 
 export interface SimResult {
@@ -109,6 +112,7 @@ export function runSim(opts: SimOptions): SimResult {
       assist: { ...DEFAULT_ASSIST, ...opts.assist },
       reduceFlashing: true,
       ...(opts.rules ? { rules } : {}),
+      ...(opts.classic ? { classic: opts.classic } : {}),
     },
     state,
     { ...opts.start, seed: opts.start?.seed ?? opts.seed ?? levelSeed(opts.level) },

@@ -39,6 +39,11 @@ export interface HeroPick {
    * the file's training answers). Default: the first pick of a freed hero asks (needsTraining).
    */
   training?: boolean;
+  /**
+   * Classic mode (FU-4): a Random slot ("?") after the last hero; OK on it picks a random hero
+   * (Game.randomHero) and goes on as if that hero was chosen.
+   */
+  random?: boolean;
 }
 
 /**
@@ -49,6 +54,8 @@ export interface NewGamePick {
   /** Starts the run (one player: Classic mode has no co-op, so player two cannot join). */
   begin: (c: CharacterDef) => void;
   back: () => void;
+  /** The Random slot (HeroPick.random). */
+  random?: boolean;
 }
 
 /** The second row of heroes (heroes past the first row's) sits this far below the first. */
@@ -84,10 +91,34 @@ export class CharacterSelectScene implements Scene {
     return n === 0 ? chars.length : n;
   }
 
-  /** Where hero `i` stands: its slot's centre x and its feet y. */
-  slot(i: number): { x: number; y: number } {
-    const n = this.chars.length;
+  /** Classic mode's Random slot is shown: it is slot `chars.length`, after the last hero. */
+  get hasRandom(): boolean {
+    return (this.pick?.random ?? this.start?.random) === true;
+  }
+
+  /** Every slot: the heroes, then the Random slot when shown. */
+  private get total(): number {
+    return this.chars.length + (this.hasRandom ? 1 : 0);
+  }
+
+  /**
+   * Slots on the first row: the usual heroes when a second row holds the extras (the Random slot
+   * then ends the second row), else every slot.
+   */
+  private get firstRowSlots(): number {
     const first = this.firstRow;
+    return first < this.chars.length ? first : this.total;
+  }
+
+  /** Slot `i` is the Random slot. */
+  private isRandom(i: number): boolean {
+    return this.hasRandom && i === this.chars.length;
+  }
+
+  /** Where slot `i` stands (a hero, or the Random slot): its centre x and its feet y. */
+  slot(i: number): { x: number; y: number } {
+    const n = this.total;
+    const first = this.firstRowSlots;
     const row = i < first ? 0 : 1;
     const len = row === 0 ? first : n - first;
     const k = row === 0 ? i : i - first;
@@ -98,8 +129,22 @@ export class CharacterSelectScene implements Scene {
 
   /** Hero `i` is a brainwashed captive on this campaign file: drawn as a silhouette, skipped. */
   private locked(i: number): boolean {
+    if (this.isRandom(i)) return false;
     const c = this.chars[i];
     return !c || this.game.heroLocked(c);
+  }
+
+  /** What slot `i` is called (spoken): its hero's name, or Random. */
+  private slotName(i: number): string {
+    return this.isRandom(i) ? 'Random' : (this.chars[i]?.name ?? '');
+  }
+
+  /** The hero OK on slot `i` gives: its own, or for the Random slot a random one. */
+  private heroAt(i: number): CharacterDef | undefined {
+    if (!this.isRandom(i)) return this.chars[i];
+    const c = this.game.randomHero();
+    this.game.deps.announcer?.say(`Random: ${c.name}.`);
+    return c;
   }
 
   /** An unlocked index: `i` itself, else the first hero (Mario), else the first unlocked one. */
@@ -128,7 +173,7 @@ export class CharacterSelectScene implements Scene {
 
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   private rowsHint(): string {
-    return this.firstRow < this.chars.length ? ' up and down for the other row,' : '';
+    return this.firstRowSlots < this.total ? ' up and down for the other row,' : '';
   }
 
   /** " 7 heroes still to be found." in campaign play while any are locked, else nothing. */
@@ -166,8 +211,10 @@ export class CharacterSelectScene implements Scene {
           chars.findIndex((c) => c.id === pick.current.id),
         ),
       );
+      // The last pick was the Random slot: the cursor starts there again.
+      if (this.hasRandom && this.game.pickedRandom) this.index = chars.length;
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
-      const name = chars[this.index]?.name ?? pick.current.name;
+      const name = this.slotName(this.index) || pick.current.name;
       this.game.deps.announcer?.say(
         `${who} your hero. ${name}. Left and right to choose,${this.rowsHint()} OK to confirm.` +
           (pick.onMap ? ' Down for return to map.' : '') +
@@ -195,7 +242,7 @@ export class CharacterSelectScene implements Scene {
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
     this.t++;
     const chars = this.chars;
-    const n = chars.length;
+    const n = this.total;
     // Left/right step to the next hero that is not locked (wrapping); with every other hero
     // locked the cursor stays put.
     const move = (idx: number, f: InputFrame): number => {
@@ -204,20 +251,20 @@ export class CharacterSelectScene implements Scene {
       let to = (idx + d) % n;
       while (to !== idx && this.locked(to)) to = (to + d) % n;
       this.game.ctx.audio.sfx(to === idx ? 'bump' : 'select');
-      const c = chars[to];
-      if (c) this.game.deps.announcer?.say(c.name);
+      const name = this.slotName(to);
+      if (name) this.game.deps.announcer?.say(name);
       return to;
     };
     // Two rows (the Classic extras): Up / Down go to the other row's nearest unlocked hero by
     // column; Up on the first row or Down on the second bumps (Down there is left to RETURN TO
     // MAP when the pick has it). One row: null, nothing changes (today's select).
-    const rows = this.firstRow < n;
+    const rows = this.firstRowSlots < n;
     const rowMove = (idx: number, f: InputFrame): number | null => {
       if (!rows) return null;
       const up = f.pressed('up');
       const down = f.pressed('down');
       if (up === down) return null;
-      const first = this.firstRow;
+      const first = this.firstRowSlots;
       const row = idx < first ? 0 : 1;
       const to = up ? 0 : 1;
       if (to === row) {
@@ -241,8 +288,8 @@ export class CharacterSelectScene implements Scene {
         return idx;
       }
       this.game.ctx.audio.sfx('select');
-      const c = chars[best];
-      if (c) this.game.deps.announcer?.say(`${c.name}, ${to === 0 ? 'first' : 'second'} row`);
+      const name = this.slotName(best);
+      if (name) this.game.deps.announcer?.say(`${name}, ${to === 0 ? 'first' : 'second'} row`);
       return best;
     };
     if (this.pick) {
@@ -267,11 +314,12 @@ export class CharacterSelectScene implements Scene {
       } else if (this.onMapRow && pressed('up')) {
         this.onMapRow = false;
         this.game.ctx.audio.sfx('select');
-        const h = chars[this.index];
-        if (h) this.game.deps.announcer?.say(h.name);
+        const name = this.slotName(this.index);
+        if (name) this.game.deps.announcer?.say(name);
       }
-      const c = chars[this.index];
       const ok = this.t > 10 && (pressed('start') || pressed('jump'));
+      const c = ok && !this.onMapRow ? this.heroAt(this.index) : chars[this.index];
+      if (ok && !this.onMapRow) this.game.pickedRandom = this.isRandom(this.index);
       if (onMap && (pressed('select') || pressed('attack') || (ok && this.onMapRow))) {
         this.game.ctx.audio.sfx('select');
         onMap();
@@ -302,7 +350,8 @@ export class CharacterSelectScene implements Scene {
       }
     }
     if (this.t > 10 && (input.pressed('start') || input.pressed('jump'))) {
-      const c = chars[this.index];
+      const c = this.heroAt(this.index);
+      if (this.start) this.game.pickedRandom = this.isRandom(this.index);
       const c2 = this.p2 ? (chars[this.index2] ?? null) : null;
       if (c) {
         if (c.pickSfx) this.game.ctx.audio.sfx(c.pickSfx);
@@ -333,13 +382,14 @@ export class CharacterSelectScene implements Scene {
     }
     this.renderCheatNews(r, font);
     const chars = this.chars;
-    const first = this.firstRow;
+    const first = this.firstRowSlots;
+    const total = this.total;
     // A second row of heroes moves the lines under the heroes down by its height.
-    const below = first < chars.length ? SECOND_ROW_DY : 0;
+    const below = first < total ? SECOND_ROW_DY : 0;
+    const spacingOf = (i: number) => Math.min(64, 224 / Math.max(1, i < first ? first : total - first));
     chars.forEach((c, i) => {
       const { x, y: feet } = this.slot(i);
-      const row = i < first ? first : chars.length - first;
-      const spacing = Math.min(64, 224 / Math.max(1, row));
+      const spacing = spacingOf(i);
       const locked = this.locked(i);
       const pt = this.portraitOf(c);
       const sheet = assets.sheet(pt.sheet, locked ? fxPalette(pt.palette, 'silhouette') : pt.palette);
@@ -374,6 +424,25 @@ export class CharacterSelectScene implements Scene {
       if (this.p2 && i === this.index2)
         r.text(font, '2', tight ? x - 4 : x + 12, tight ? feet - h - 10 : feet - 8 - h / 2);
     });
+    if (this.hasRandom) {
+      // The Random slot (FU-4): our own "?" art, the height of a small hero; it blinks slowly
+      // (held still with Reduce flashing).
+      const i = chars.length;
+      const { x, y: feet } = this.slot(i);
+      const items = assets.sheet('items');
+      const frame =
+        !this.game.ctx.reduceFlashing && (this.t >> 4) % 2 === 1 ? 'select-random-1' : 'select-random-0';
+      const h = items.frames.get(frame)?.h ?? 20;
+      r.sprite(items, frame, x - 8, feet - h);
+      if (i === this.index) {
+        if (!this.onMapRow) {
+          if (spacingOf(i) < 40)
+            r.rect(x - 8, feet + 2, 16, 2, (this.t >> 3) % 2 === 0 ? '#fcfcfc' : '#f8d878');
+          else r.text(font, '>', x - 20, feet - 8 - h / 2);
+        }
+        r.text(font, 'RANDOM', 128 - 24, 144 + below);
+      }
+    }
     // With a second row the lines below close up a little so everything fits the screen.
     const low = below ? below - 2 : 0;
     if (this.pick) {

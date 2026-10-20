@@ -2,9 +2,13 @@ import type { DamageSource, Reaction } from './damage';
 import type { CharacterDef } from '../characters/character';
 import type { Enemy } from '../entities/enemies/enemy';
 import { Koopa } from '../entities/enemies/koopa';
+import { Goomba } from '../entities/enemies/goomba';
+import { Spiny } from '../entities/enemies/spiny';
+import { HammerBro } from '../entities/enemies/hammer-bro';
 import { Bowser } from '../entities/enemies/bowser';
 import { Cheep } from '../entities/enemies/cheep';
 import type { World } from '../world/world';
+import { attackMult } from '../characters/classic/options';
 
 /**
  * Classic SMBC enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24):
@@ -82,6 +86,27 @@ export function classicMaxHp(e: Enemy, world: World): number | null {
  */
 export function classicEnemySpawned(e: Enemy, world: World): void {
   e.classicHp ??= classicMaxHp(e, world);
+  if (world.classic?.enemySpeed === 'fast') speedUp(e);
+}
+
+/** ENEMY_WALK_SPEED_FAST / ENEMY_WALK_SPEED_NORMAL: More Settings > Enemy Speed: Fast (90 / 65). */
+export const FAST_ENEMY_MULT = 90 / 65;
+
+/**
+ * Enemy Speed: Fast (Enemy.overwriteInitialStats: defaultWalkSpeed 90 instead of 65): the
+ * enemies that walk at the default speed (Goomba and its kin Spiny, Koopas and Buzzy Beetles,
+ * flying ones too, and the Hammer Bro's chase) walk ×90/65; a walk already under way keeps its
+ * direction at the new speed.
+ */
+function speedUp(e: Enemy): void {
+  if (e instanceof HammerBro) {
+    e.chaseSpeed = Math.round(e.chaseSpeed * FAST_ENEMY_MULT);
+    return;
+  }
+  if (!(e instanceof Goomba || e instanceof Koopa || e instanceof Spiny)) return;
+  const old = e.walkSpeed;
+  e.walkSpeed = Math.round(old * FAST_ENEMY_MULT);
+  if (Math.abs(e.body.vx) === old) e.body.vx = Math.sign(e.body.vx) * e.walkSpeed;
 }
 
 /**
@@ -101,11 +126,12 @@ export function attackerDef(src: DamageSource): CharacterDef | null {
 
 /**
  * A hit's damage in the original's units (HP-C5): `amount` from a Classic def's weapon, Current
- * points × CURRENT_POINT_DAMAGE from anything else, then × CLASSIC_ATTACK_MULT, floored.
+ * points × CURRENT_POINT_DAMAGE from anything else, then × CLASSIC_ATTACK_MULT and `mult` (More
+ * Settings > Attack Strength, DamageValue.dmgMult: 1 at Normal), floored.
  */
-export function classicDamage(src: DamageSource): number {
+export function classicDamage(src: DamageSource, mult = 1): number {
   const units = attackerDef(src)?.rules === 'classic' ? src.amount : src.amount * CURRENT_POINT_DAMAGE;
-  return Math.floor(units * CLASSIC_ATTACK_MULT);
+  return Math.floor(units * CLASSIC_ATTACK_MULT * mult);
 }
 
 /**
@@ -158,7 +184,7 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
     if (src.blockedSfx) world.audio.sfx(src.blockedSfx);
     return 'blocked';
   }
-  const dmg = classicDamage(src);
+  const dmg = classicDamage(src, attackMult(world.classic));
   e.classicHp -= dmg;
   // Hit effects (HP-C16): a new stop replaces a running one only if it leaves more time.
   const stops = !!src.stopFrames && !resistsStop(e);

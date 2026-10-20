@@ -2,6 +2,7 @@ import type { PaletteMode } from '../gfx/palette';
 import type { PlayerBindings } from '../input/bindings';
 import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
+import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
 
 export type TouchMode = 'auto' | 'on' | 'off';
 /** Touch d-pad: drawn at a fixed spot, or a stick that centres under the thumb. */
@@ -67,6 +68,12 @@ export interface Settings {
    * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
    */
   classicRules: ClassicRules;
+  /**
+   * Classic mode's options (title > CLASSIC > Options: Game Mode, More Settings, Customize
+   * Weapons; save/original-options.ts), every one defaulting to the original's. Files saved
+   * before them get the defaults (the deep merge, then normaliseClassic).
+   */
+  classic: ClassicSettings;
   /**
    * Developer toggles for Classic mode (Dev menu; read only while dev mode is on, else the
    * defaults): the Yoshi mount (off: Classic plays as the original) and the Classic heroes the
@@ -193,6 +200,7 @@ export function defaultSettings(): Settings {
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
     classicCheats: defaultClassicCheats(),
+    classic: defaultClassicSettings(),
     classicDev: { yoshiMount: false, heroesOff: [] },
   };
 }
@@ -242,6 +250,7 @@ export function loadSettings(): Settings {
     const n = s.classicCheats.stats[k];
     s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
   }
+  s.classic = normaliseClassic(s.classic);
   s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));

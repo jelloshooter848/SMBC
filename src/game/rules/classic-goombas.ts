@@ -17,7 +17,7 @@ export interface GoombaReplacement {
 
 /** The choices this file adds to the row, in the original's order (after Buzzy Beetle, Spiny). */
 export const EXTRA_GOOMBA_REPLACEMENTS: readonly GoombaReplacement[] = [
-  { id: 'spikeTop', label: 'Spike Top', spawn: 'spike-top' },
+  { id: 'spike-top', label: 'Spike Top', spawn: 'spike-top' },
 ];
 
 /** Hands each extra choice to the Replace Goombas row (`add` appends it to the row's values). */

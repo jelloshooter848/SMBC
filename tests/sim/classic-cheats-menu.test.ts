@@ -220,6 +220,7 @@ describe('cheats are Classic only', () => {
   it('play under them only in a Classic run under Classic rules', () => {
     const h = classic();
     h.settings.classicCheats.on.invincible = true;
+    h.settings.classicCheats.unlocked.invincible = true;
     expect(h.game.ctx.classicCheats).toBeUndefined();
     h.game.classicGame(MARIO);
     expect(h.game.ctx.classicCheats?.invincible).toBe(true);
@@ -232,6 +233,26 @@ describe('cheats are Classic only', () => {
     // Free play with Classic rules (dev Level select's Free play): no cheats.
     h.game.newGame(MARIO, '1-1', null, { rules: 'classic' });
     expect(h.game.ctx.classicCheats).toBeUndefined();
+  });
+
+  it('outside developer mode only unlocked cheats play (one turned on from the dev pause stops)', () => {
+    // Invincible turned on from the dev pause while still locked, then dev mode off.
+    const h = classic({ dev: true });
+    h.settings.classicCheats.on.invincible = true;
+    h.game.classicGame(MARIO);
+    h.until(() => inLevel(h), 600);
+    expect(level(h).world.assist.invulnerable).toBe(true);
+    h.settings.dev = false;
+    expect(h.game.ctx.classicCheats?.invincible).toBe(false);
+    expect(level(h).world.cheats.invincible).toBe(false);
+    expect(level(h).world.assist.invulnerable).toBe(false);
+    // A new run with dev mode off: still off until it is unlocked; then it plays.
+    h.game.showTitle();
+    h.game.classicGame(MARIO);
+    h.until(() => inLevel(h), 600);
+    expect(level(h).world.assist.invulnerable).toBe(false);
+    h.settings.classicCheats.unlocked.invincible = true;
+    expect(level(h).world.assist.invulnerable).toBe(true);
   });
 
   it('a campaign file never has them, whatever is on', () => {
@@ -333,7 +354,7 @@ describe('unlock goals', () => {
     expect(h.settings.classicCheats.stats.ammoPickups).toBe(6);
   });
 
-  it('only leaping Cheep Cheeps count toward Water Mode (CheepFast)', () => {
+  it('every Cheep Cheep, swimming or leaping, counts toward Water Mode (CheepFast.die)', () => {
     const h = classic();
     h.game.classicGame(MARIO, '2-2');
     h.until(() => inLevel(h), 600);
@@ -347,7 +368,7 @@ describe('unlock goals', () => {
     h.step();
     h.step();
     expect(h.settings.classicCheats.stats.enemiesDefeated).toBe(2);
-    expect(h.settings.classicCheats.stats.cheepsDefeated).toBe(1);
+    expect(h.settings.classicCheats.stats.cheepsDefeated).toBe(2);
   });
 
   it('beating a game: the counted goals, Super Mario Bros., and no continue (beatGameHandler)', () => {

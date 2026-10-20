@@ -64,6 +64,7 @@ export const BASS_CLASSIC: CharacterDef = {
     busterCapSmall: BASS_CAP_SMALL,
     charge: null,
     flowerWeapon: 'water-shield',
+    flowerSetting: 'bass',
     rush: false,
     guide: BASS_CLASSIC_GUIDE,
     rapid: {

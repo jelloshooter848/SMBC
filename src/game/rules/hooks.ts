@@ -5,6 +5,7 @@ import type { World } from '../world/world';
 import type { TileMap } from '../world/tilemap';
 import type { CharacterDef } from '../characters/character';
 import type { EntitySpawn } from '../level/schema';
+import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
  * The Classic rules' doors into the shared systems (umbrella report TG-24, TG-25, TG-45).
@@ -66,6 +67,7 @@ export interface ClassicRulesHooks {
    * The level-load edits for these heroes (TG-45: rules/classic-water.ts,
    * rules/classic-level-variants.ts); true when any applied. `spawns` is the World's own list of
    * the area's spawns (a copy of the level's), which an edit may change before they spawn.
+   * `options` is the World's Classic mode options (World.classic: Replace Goombas, Piranhas).
    * `world` is the World being built (the level-edit cheats, rules/classic-cheats.ts, read
    * World.cheats and set its water line and extra checkpoints).
    */
@@ -74,6 +76,7 @@ export interface ClassicRulesHooks {
     levelId: string,
     defs: readonly CharacterDef[],
     spawns?: EntitySpawn[],
+    options?: Readonly<ClassicSettings> | null,
     world?: World,
   ): boolean;
   /** Armoured (HP-C12): the cheats' All Weapons Pierce goal counts these defeats. */
@@ -83,6 +86,12 @@ export interface ClassicRulesHooks {
    * egg block and carried rider (2026-10-19-yoshi-build-classic-character.md YM-5, YM-7). Optional.
    */
   worldLoaded?(world: World): void;
+  /**
+   * The flagpole's clear sequence just hopped `p` off the pole's foot (World.updateClear 'hop'):
+   * a Classic Yoshi mount rider gets back on the Yoshi waiting there and rides to the castle
+   * (YM-21). Optional.
+   */
+  clearHop?(world: World, p: Player): void;
 }
 
 let hooks: ClassicRulesHooks | null = null;

@@ -10,6 +10,18 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Classic mode Options: More settings, as in the original: Lives (1, 3, 5, 7, 10), When hit
+  (Lose everything, Previous state, Instant death), Attack, Item drops, Piranhas (Some or All
+  pipes, green or red), Goombas (Buzzy Beetle or Spiny) and Enemy speed. Every row starts at the
+  original's value; a changed row is marked, and Restore originals puts them back.
+- Classic mode: a Random slot (?) at the end of the select screen, and Options > Game mode:
+  All heroes (choose before every level and life, as before), Single hero (choose once) or
+  Single random (the game picks a hero for every level and life).
+- Classic mode Options > Weapons (Customize Weapons, as in the original): each hero's power-up
+  weapon (Mega Man, Bass, Link's Bomb or Bow and Arrow, Samus's beam, Simon's and Ryu's start and
+  extra weapons, Bill's two guns, Sophia III's missile). Drops, ammo and the HUD follow the
+  choice; the original's weapons are the default.
+- Classic Peach's last castle: Mario waits where the princess would, and greets her.
 - Classic mode: the original's **Cheats** (CLASSIC > Options > Cheats): All Ground Is Bricks, All Hammer Bros, All
   Weapons Pierce, Always Break Bricks, Bouncy Pits, Classic Scroll (no scrolling back left), Everyone Can Stomp, Evil
   Hammer Bros, Extra Checkpoints, Infinite Ammo, Infinite Lives, Infinite Time, Invincible and Water Mode. All are off
@@ -19,7 +31,23 @@ under `## [Unreleased]`.
   clear, or on a card at once mid-level. They play only in a Classic mode run with Classic rules, never in the
   campaign. Developer mode opens every cheat from the Classic pause menu.
 - Classic mode's new enemy **Spike Top** (its own art): a Goomba-sized crawler with an armoured, spiked shell that
-  cannot be stomped, ready as a Replace Goombas choice.
+  cannot be stomped: Options > More settings > Goombas: Spike Top.
+
+### Fixed
+
+- Classic Yoshi mount: enemies hit the rider and Yoshi on the pair's whole body, not on the
+  small rider's feet, and the pair steps Yoshi's own walk.
+- Classic Yoshi mount: at the flagpole Yoshi waits on the ground at the pole's foot (not in the
+  air), and the rider hops back on and rides to the castle.
+- Classic Yoshi mount: the rider's own clear, respawn, jump and stand-still rules still apply on
+  the saddle (Arthur, Peach, Samus and the Warriors end their moves at the flagpole).
+- Classic Yoshi: a Lakitu he eats (playable or ridden) leaves his cloud drifting away instead
+  of vanishing with him.
+- Dev menu: leaving with Escape (START) on a Classic toggle row no longer flips that toggle.
+- Classic mode: the HUD's ammo and egg counters get the HUD's dark outline, so they read over
+  white clouds.
+- Classic Arthur: the gold armour's lightning stops a little under the HUD, clear of the power
+  icon.
 
 ## [0.4.60] - 2026-10-20
 

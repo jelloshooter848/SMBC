@@ -48,6 +48,7 @@ import {
   type ClassicAmmo,
   type ClassicPowerKit,
 } from '../classic/power';
+import { weaponOf } from '../classic/options';
 
 /**
  * Classic SMBC Ryu (2026-10-07-ryu-classic-smbc-rules.md, RY-C1..RY-C38). Constants from Ryu.as
@@ -135,11 +136,15 @@ function tools(p: Player): ToolInfo[] {
 /** The main art (Special, Attack on a wall): the default, or the full kit's selected one. */
 export function classicMainArt(p: Player): ClassicArt {
   if (fullKit(p)) return CLASSIC_ARTS[toolIndex(p, tools(p))] as ClassicArt;
-  return art(CLASSIC_MAIN_ART);
+  // Customize Weapons > Ryu start (FU-7c): CLASSIC_MAIN_ART by default.
+  return art(weaponOf(p, 'ryuStart'));
 }
-/** The extra art on Select: only with the Fire Flower, and not with the full kit (Select cycles). */
+/**
+ * The extra art on Select: only with the Fire Flower, and not with the full kit (Select cycles).
+ * Customize Weapons > Ryu extra (FU-7c): CLASSIC_EXTRA_ART by default.
+ */
 function extraArt(p: Player): ClassicArt | null {
-  return p.powerState === 'fire' && !fullKit(p) ? art(CLASSIC_EXTRA_ART) : null;
+  return p.powerState === 'fire' && !fullKit(p) ? art(weaponOf(p, 'ryuExtra')) : null;
 }
 
 const NINPO_AMMO: ClassicAmmo = { key: 'ninpo', max: classicNinpoMax };

@@ -15,6 +15,12 @@ import {
   type GoombaReplacement,
 } from '@game/rules/classic-goombas';
 import { allHammerBros } from '@game/rules/classic-cheats';
+import { applyOptionSpawns, GOOMBA_SPAWNS } from '@game/rules/classic-options-level';
+import { CLASSIC_ROW_VALUES, defaultClassicSettings } from '@engine/save/original-options';
+import { defaultSettings } from '@engine/save/settings';
+import { TileMap } from '@game/world/tilemap';
+import { LevelScene } from '@game/scenes/level';
+import { makeGame } from './heroes-harness';
 import type { EntitySpawn } from '@game/level/schema';
 import type { World } from '@game/world/world';
 import { classicWorld, step, testLevel } from './classic-harness';
@@ -114,7 +120,7 @@ describe('Replace Goombas: Spike Top', () => {
   it('is offered to the More Settings row through registerGoombaReplacements', () => {
     const got: GoombaReplacement[] = [];
     registerGoombaReplacements((r) => got.push(r));
-    expect(got).toEqual([{ id: 'spikeTop', label: 'Spike Top', spawn: 'spike-top' }]);
+    expect(got).toEqual([{ id: 'spike-top', label: 'Spike Top', spawn: 'spike-top' }]);
     expect(EXTRA_GOOMBA_REPLACEMENTS).toEqual(got);
   });
 
@@ -130,6 +136,31 @@ describe('Replace Goombas: Spike Top', () => {
     const w = classicWorld(MARIO, level);
     step(w, 2);
     expect(w.entities.some((e) => e instanceof SpikeTop)).toBe(true);
+  });
+
+  it("is the More Settings row's fourth Goombas value, and a Classic run's 1-1 spawns Spike Tops", () => {
+    expect(CLASSIC_ROW_VALUES.goombas).toEqual(['off', 'buzzy', 'spiny', 'spike-top']);
+    expect(GOOMBA_SPAWNS['spike-top']).toBe('spike-top');
+    const level = getLevel('1-1');
+    const spawns: EntitySpawn[] = level.entities.map((e) => ({ ...e }));
+    const n = spawns.filter((s) => s.type === 'goomba').length;
+    expect(
+      applyOptionSpawns(new TileMap(level), spawns, { ...defaultClassicSettings(), goombas: 'spike-top' }),
+    ).toBe(true);
+    expect(spawns.filter((s) => s.type === 'spike-top')).toHaveLength(n);
+    // Through the Game: CLASSIC with Goombas: Spike Top, 1-1's first Goomba is a Spike Top.
+    const settings = {
+      ...defaultSettings(),
+      classic: { ...defaultClassicSettings(), goombas: 'spike-top' as const },
+    };
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    h.game.classicGame(MARIO);
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const w = (h.top() as LevelScene).world;
+    w.player.body.x = px(40 * 16);
+    h.idle(30);
+    expect(w.entities.some((e) => e instanceof SpikeTop)).toBe(true);
+    expect(w.entities.some((e) => e.kind === 'goomba')).toBe(false);
   });
 
   it('All Hammer Bros turns a Spike Top into a Hammer Bro too', () => {

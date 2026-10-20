@@ -3,6 +3,15 @@ import type { ClassicRules } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
+import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
+import {
+  ClassicOptionRowsScene,
+  GAME_MODE_ROW,
+  MORE_SETTINGS_ROWS,
+  WEAPON_ROWS,
+  optionItem,
+  rowsOriginal,
+} from './original-options';
 import type { Game } from './game';
 import type { Renderer } from '@engine/gfx/renderer';
 
@@ -34,7 +43,8 @@ export function recordClassicClear(levelId: string): void {
 function spokenItem(it: MenuItem | undefined): string {
   if (!it) return '';
   const v = it.value ? `: ${it.value()}` : '';
-  const line = `${it.label}${v}`;
+  // A changed option's `*` mark is drawn, not read (its hint says it is changed).
+  const line = `${it.label.replace(/\*$/, '')}${v}`;
   return it.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line;
 }
 
@@ -44,23 +54,41 @@ const CLASSIC_RULES_Y = 64;
 
 const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
 
+/**
+ * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
+ * Current rules only Game mode applies (More settings and Weapons are Classic rules only).
+ */
+export function classicOptionsOn(game: Game): boolean {
+  const c = game.deps.settings?.classic ?? defaultClassicSettings();
+  if ((game.deps.settings?.classicRules ?? 'classic') === 'classic') return !isOriginalClassic(c);
+  return c.gameMode !== defaultClassicSettings().gameMode;
+}
+
 /** The CLASSIC menu: Super Mario Bros., The Lost Levels (once open), Options, Back. */
 export class ClassicMenuScene extends MenuScene {
   constructor(game: Game) {
     super(game, 'CLASSIC', [], () => game.showTitle());
+    this.build();
+  }
+
+  /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
+  private build(): void {
+    const game = this.game;
     const back = () => game.showClassicMenu();
+    // A run that will not play as the original says so (FU-7: never silently non-original).
+    const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     const items: MenuItem[] = [
       {
         label: 'Super Mario Bros.',
         select: () => game.classicSelect('1-1', back),
-        hint: 'The original game with every hero',
+        hint: `The original game with every hero${own}`,
       },
     ];
     if (lostLevelsOpen())
       items.push({
         label: 'The Lost Levels',
         select: () => game.classicSelect('ll-1-1', back),
-        hint: 'The harder second quest',
+        hint: `The harder second quest${own}`,
       });
     items.push(
       {
@@ -69,10 +97,11 @@ export class ClassicMenuScene extends MenuScene {
           game.scenes.push(
             new ClassicOptionsScene(game, () => {
               game.scenes.pop();
+              this.build();
               this.announce();
             }),
           ),
-        hint: 'Classic rules and all settings',
+        hint: 'Classic rules, game mode, more settings, weapons and all settings',
       },
       { label: 'Back', select: () => game.showTitle() },
     );
@@ -95,18 +124,48 @@ export class ClassicOptionsScene extends MenuScene {
 
   constructor(game: Game, onBack: () => void) {
     super(game, 'CLASSIC OPTIONS', [], onBack);
+    this.build();
+  }
+
+  /** The rows (rebuilt after a change, so the Game mode row's `*` mark follows). */
+  private build(): void {
+    const game = this.game;
     const step = () => {
       const s = game.deps.settings;
       if (!s) return;
       s.classicRules = s.classicRules === 'classic' ? 'current' : 'classic';
       game.deps.applySettings?.();
     };
+    const menu = (title: string, spoken: string, rows: Parameters<typeof rowsOriginal>[0]) => () =>
+      game.scenes.push(
+        new ClassicOptionRowsScene(game, title, rows, spoken, () => {
+          game.scenes.pop();
+          this.build();
+          this.announce();
+        }),
+      );
+    const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
+      rowsOriginal(rows, game.deps.settings?.classic ?? defaultClassicSettings()) ? 'Original' : 'Changed';
+    const onBack = this.onBack ?? (() => {});
     this.setItems([
       {
         label: 'Classic rules',
         value: () => (this.drawing ? '' : this.rulesLabel),
         adjust: step,
         hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
+      },
+      optionItem(game, GAME_MODE_ROW, () => this.build()),
+      {
+        label: 'More settings',
+        value: state(MORE_SETTINGS_ROWS),
+        select: menu('MORE SETTINGS', 'More settings', MORE_SETTINGS_ROWS),
+        hint: 'Lives, when hit, attack, item drops, piranhas, goombas and enemy speed, with Classic SMBC rules',
+      },
+      {
+        label: 'Weapons',
+        value: state(WEAPON_ROWS),
+        select: menu('CUSTOMIZE WEAPONS', 'Customize weapons', WEAPON_ROWS),
+        hint: "Each hero's weapons, with Classic SMBC rules",
       },
       {
         label: 'Cheats',
@@ -135,6 +194,10 @@ export class ClassicOptionsScene extends MenuScene {
 
   override enter(): void {
     this.game.deps.announcer?.say(`Classic options. ${spokenItem(this.items[this.index])}`);
+  }
+
+  protected override announce(): void {
+    this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 
   /**
