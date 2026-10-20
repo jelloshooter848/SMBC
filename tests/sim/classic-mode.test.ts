@@ -14,7 +14,7 @@ import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
 import { CharacterSelectScene } from '@game/scenes/character-select';
-import { CreditsScene } from '@game/scenes/credits';
+import { CREDITS, CreditsScene, creditsSpeech } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
@@ -456,7 +456,8 @@ describe('a Classic run', () => {
     const credits = h.top();
     expect(credits).toBeInstanceOf(CreditsScene);
     // The classic credits, not the campaign's "the story is not over" lines.
-    expect(h.said.at(-1)).toBe('Credits.');
+    // (The roll is read out, owner decision 0.5.0: its own lines only.)
+    expect(h.said.at(-1)).toBe(creditsSpeech(CREDITS));
     h.until(() => (credits as CreditsScene).touchLabels().jump === 'OK', 6000);
     h.tap('jump');
     // The cheats the clear and the game unlocked (All Ground Is Bricks among them): a card each,

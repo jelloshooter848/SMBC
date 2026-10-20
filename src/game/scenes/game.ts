@@ -52,7 +52,6 @@ import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
-import { STORY_NOT_OVER } from '../story/script';
 import { FINALE } from '../story/finale';
 import { WorldMapScene, showChapterGate, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId, WorldMapPage } from '../map/types';
@@ -786,9 +785,7 @@ export class Game {
     // the end. 8-4 until Bowser's Castle comes (story/finale.ts FINALE).
     const story = storyOn(this) && from === FINALE.castle;
     // The castle's lines were read out as they showed (World.updateBossClear), so the credits
-    // do not read them a second time.
-    const said = story ? ` ${STORY_NOT_OVER.filter(Boolean).join(' ')}` : '';
-    this.deps.announcer?.say(`Credits.${said}`);
+    // do not read them a second time; the scene reads the whole roll, the story lines with it.
     this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world, creditsLines(story)));
   }
 
@@ -915,7 +912,6 @@ export class Game {
     } else if (from === 'll-13-4') {
       then = () => {
         const head = world ? world.castleText.splice(0) : card;
-        this.deps.announcer?.say('Credits.');
         this.scenes.pop(); // the card; the level (if any) stays beneath the credits
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
