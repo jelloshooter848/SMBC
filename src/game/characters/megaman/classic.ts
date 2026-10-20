@@ -64,6 +64,8 @@ import {
   type ShotPad,
 } from './classic-weapons';
 import { MMShot } from './classic-weapons';
+import { MEGAMAN_SMBC_CANVAS } from '@content/sprites/smbc-megaman';
+import { canvasOffsets } from '@content/sprites/smbc-anchor';
 
 /**
  * Classic SMBC Mega Man (bug-reports/2026-10-07-megaman-classic-smbc-rules.md, MM-C1..MM-C36):
@@ -214,6 +216,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   const chargeSmall = o.chargeWithoutMushroom === true;
   const drops = o.drops ?? CLASSIC_DROPS.megaman;
   const sheet = o.sheet ?? 'megaman';
+  /** R1: Mega Man himself draws every pose from his Classic sheet at the original sizes. */
+  const own = o.sheet === undefined;
   const suit = o.palette ?? 'megaman';
   const buster = o.buster ?? { spec: MM_BUSTER, cap: MM_BUSTER_CAP };
   const charge =
@@ -560,11 +564,10 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     if (star !== null) palette = `${suit}-star-${star}`;
     const shooting = p.attackTimer > 0;
     let name: string;
-    let air = false;
     if (p.dead || p.anim === 'hurt') name = 'hurt';
     else if (p.sliding > 0) name = o.slideFrame ?? 'slide';
     else if (rapid && p.anim !== 'climb') name = rapidPose(p, rapid);
-    else if (p.stepT > 0 && p.body.onGround) name = 'walk-0';
+    else if (p.stepT > 0 && p.body.onGround) name = own ? 'step' : 'walk-0';
     else {
       switch (p.anim) {
         case 'walk':
@@ -572,9 +575,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
           name = shooting ? `walk-shoot-${walkPose(p, WALK_ABCB)}` : `walk-${walkPose(p, WALK_ABCB)}`;
           break;
         case 'jump':
+          // F2: the original's arms-up jump, rising and falling alike.
           name = shooting ? 'jump-shoot' : 'jump';
-          // F2: Mega Man's own arms-up jump (the original's, rising and falling alike).
-          if (sheet === 'megaman') air = true;
           break;
         case 'climb':
           name = `climb-${(frame >> 3) & 1}`;
@@ -586,8 +588,19 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
           name = shooting ? 'shoot' : charging ? 'charge-0' : (frame & 255) < 8 ? 'idle-blink' : 'idle';
       }
     }
+    if (own) {
+      // R1: the canvas's origin (feet centre) under the hitbox's bottom centre.
+      const box = def.hitbox(p);
+      return {
+        sheet: 'megaman-classic',
+        palette,
+        frame: name,
+        flip: p.facing < 0,
+        ...canvasOffsets(MEGAMAN_SMBC_CANVAS, box.w, box.h),
+      };
+    }
     return {
-      sheet: air ? 'megaman-classic' : sheet,
+      sheet,
       palette,
       frame: name,
       flip: p.facing < 0,
