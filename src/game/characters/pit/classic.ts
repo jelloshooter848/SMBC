@@ -68,9 +68,13 @@ function arrows(sheet: string): (spec: ProjectileSpec, up: boolean) => Projectil
       const one = frames[0];
       if (frames.length === 1 && one && /^light-arrow(-up)?-0$/.test(one))
         frames.push(one.replace(/0$/, '1'));
+      // His heavy arrow keeps its 16 x 8 body (8 x 16 fired up).
+      const heavy = frames[0]?.startsWith('heavy-arrow');
+      const size = heavy ? (frames[0] === 'heavy-arrow-up' ? { w: 8, h: 16 } : { w: 16, h: 8 }) : null;
       look = {
         ...rest,
         ...(spec.drawOffset ? { w: 8, h: 8 } : {}),
+        ...size,
         sheet,
         frames,
         ...(spec.burstFrame ? { burstFrame: 'burst' } : {}),

@@ -310,9 +310,9 @@ describe('shots: the original sizes and colours', () => {
       expect(rows[0]).toMatch(/^\.\.0000\.\.$/);
       expect(rows.join('')).toContain('5'); // Varia's pink
     }
-    expect([MISSILE_CLASSIC.w, MISSILE_CLASSIC.h]).toEqual([16, 8]);
+    expect([MISSILE_CLASSIC.w, MISSILE_CLASSIC.h]).toEqual([10, 8]);
     expect(drawn(MISSILE_CLASSIC.sheet, 'missile')).toEqual([11, 8]);
-    expect([MISSILE_UP_CLASSIC.w, MISSILE_UP_CLASSIC.h]).toEqual([8, 16]);
+    expect([MISSILE_UP_CLASSIC.w, MISSILE_UP_CLASSIC.h]).toEqual([8, 10]);
     // One Wave Beam frame (no strobe), and the Ice Beam is the plain beam's 4 x 5 bolt.
     expect(WAVE_BEAM_CLASSIC.frames).toHaveLength(1);
     expect([ICE_BEAM_CLASSIC.w, ICE_BEAM_CLASSIC.h]).toEqual([4, 5]);

@@ -135,7 +135,7 @@ const missile = [
   '.022777770.',
   '..00000660.',
   '.......00..',
-].map((r) => r.padEnd(16, '.'));
+];
 
 // The Fire Flower ball, 8 x 8, filling its cell: a white heart, orange, a red rim; the bright
 // spot turns a quarter each frame.

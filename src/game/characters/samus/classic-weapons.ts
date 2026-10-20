@@ -111,8 +111,9 @@ export const ICE_BEAM_CLASSIC: ProjectileSpec = {
 /** A missile (SA-C18): 400, pierces armour, ends in its explosion at once (no held burst). */
 export const MISSILE_CLASSIC: ProjectileSpec = {
   ...MISSILE,
-  // F2: the original's `missile` art, 11 x 8 with cyan fins, in the 16 x 8 cell (the body stays
-  // 16 x 8: Pit's heavy arrow shares the spec's numbers).
+  // F2: the original's `missile`, 11 x 8 (HRect 10 x 7.5), its fins cyan.
+  w: 10,
+  h: 8,
   sheet: 'smbc-shots',
   frames: ['missile'],
   burstFrame: 'missile-burst',
@@ -130,7 +131,7 @@ export const MISSILE_CLASSIC: ProjectileSpec = {
 export const MISSILE_UP_CLASSIC: ProjectileSpec = {
   ...MISSILE_CLASSIC,
   w: 8,
-  h: 16,
+  h: 10,
   frames: ['missile-up'],
 };
 
