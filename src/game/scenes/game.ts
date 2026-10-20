@@ -21,6 +21,7 @@ import {
   type ClassicCheatId,
   type ClassicCheatStat,
   type ClassicDevToggles,
+  type MapDifficulty,
   type Settings,
 } from '@engine/save/settings';
 import { addCheatStat, cheatInfo, unlockedLines, unlockEarned, type CheatEvent } from '../cheats';
@@ -190,6 +191,13 @@ export class Game {
    */
   classicRun = false;
   /**
+   * The Classic run's Map Difficulty (G-006): set as the run starts (the CLASSIC menu's Map
+   * difficulty row, settings.classicMapDifficulty, or the Level Select cheat's row), Normal for
+   * a dev run. GameContext.mapDifficulty is a live view of it while a Classic run plays Classic
+   * rules.
+   */
+  classicDifficulty: MapDifficulty = 'normal';
+  /**
    * Classic mode's Survival (Options > Game mode): which heroes have fallen and whether the next
    * select may revive (survival.ts). Null in every other run, the campaign's included.
    */
@@ -345,6 +353,12 @@ export class Game {
     // ctx.classic likewise: Classic mode's options, only while a Classic run plays Classic rules.
     Object.defineProperty(deps.ctx, 'classic', {
       get: () => this.classicOptions,
+      enumerable: true,
+      configurable: true,
+    });
+    // ctx.mapDifficulty: the Classic run's Map Difficulty (G-006), only while it plays Classic rules.
+    Object.defineProperty(deps.ctx, 'mapDifficulty', {
+      get: () => (this.classicRun && this.liveRules === 'classic' ? this.classicDifficulty : undefined),
       enumerable: true,
       configurable: true,
     });
@@ -652,7 +666,7 @@ export class Game {
       // A developer-started run counts for nothing: the title, as free play.
       if (this.classicDev) return this.showTitle();
       const set = mapSetOf(from).id;
-      recordClassicBeat(set);
+      recordClassicBeat(set, this.classicDifficulty);
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler). The
       // Special set's goal (All Hammer Bros) comes with that set (G-020).
       if (set === 'smb' || set === 'lost') this.cheatEvent({ beat: set });
@@ -1479,6 +1493,7 @@ export class Game {
     this.runRules = opts.rules ?? 'current';
     this.classicRun = classic;
     this.classicDev = classic;
+    this.classicDifficulty = 'normal';
     const rules = this.liveRules;
     const hero = heroFor(character, rules);
     this.state = newGameState(character, null, rules);
@@ -1781,10 +1796,11 @@ export class Game {
    * Classic mode: the select screen with every hero, then a new game of `levelId`. Back goes to
    * `back` (the CLASSIC menu; the title after the SMB ending).
    */
-  classicSelect(levelId: string, back: () => void): void {
+  classicSelect(levelId: string, back: () => void, difficulty?: MapDifficulty): void {
     // The run's rules are set before the pick, so the roster (Game.roster) offers the Classic
     // extras on the very first select.
     this.campaign = null;
+    this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
@@ -2055,7 +2071,7 @@ export class Game {
   levelScene(level: LevelData, start: LevelStart): LevelScene {
     const played = this.campaign ? campaignLevel(level, undefined, this.mapProgress.secrets) : level;
     const heroes = [this.state.character.id, ...(this.state.character2 ? [this.state.character2.id] : [])];
-    const scene = new LevelScene(this, heroVariant(played, heroes, this.campaign !== null), start);
+    const scene = new LevelScene(this, heroVariant(played, heroes, this.campaign !== null, this.liveRules === 'classic'), start);
     // The secret house during a village visit: the blocks already opened stay used.
     if (this.town && level.id === SECRET_HOUSE_LEVEL) layUsedBlocks(scene.world, this.town.used);
     return scene;

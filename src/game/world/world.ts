@@ -12,7 +12,7 @@ import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import type { EntitySpawn, HeroItemEntry, LevelData, MapDifficulty, PipeDir, TransferMode, Zone } from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
-import { tileDef, T } from '../level/tiles';
+import { tileDef, T, type BlockContent } from '../level/tiles';
 import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';
 import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
@@ -318,6 +318,9 @@ export interface AreaSnapshot {
 export type AreaMemory = Map<string, AreaSnapshot>;
 
 /** The fixed seed headless runs use for a level unless they pass their own. */
+/** Flying Cheep Cheeps out at once, by map difficulty (FlyingCheepSpawner.as MAX_CHEEP_*). */
+const FLYING_CHEEP_CAP: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 3, hard: 4 };
+
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
 
 let visits = 0;
@@ -795,6 +798,8 @@ export class World {
    * level as given.
    */
   readonly level: LevelData;
+  /** Blocks holding another item than their tile's (`block-item` spawns), by "x,y". */
+  private readonly blockItems = new Map<string, BlockContent>();
   /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
   readonly mapDifficulty: MapDifficulty;
 
@@ -871,6 +876,12 @@ export class World {
       .map((e) => Cheep.placeSwimmer(e, this.rng))
       .filter((e) => !(mode === 'climb' && (e.type === 'vine' || e.type === 'chain') && e.x === sx))
       .sort((a, b) => a.x - b.x);
+    // `block-item x y item=...` (the Classic layers' Hudson Bee and lone Clocks, G-023): no
+    // entity; the block at x y holds that item instead of its own (bumpBlock).
+    for (const s of this.spawns)
+      if (s.type === 'block-item' && typeof s.props?.item === 'string')
+        this.blockItems.set(`${s.x},${s.y}`, s.props.item as BlockContent);
+    this.spawns = this.spawns.filter((s) => s.type !== 'block-item');
     // Stairs are scenery spanning several columns (a `ul` flight reaches left of its x): built
     // with the world, never despawned.
     for (const st of this.spawns.filter((e) => e.type === 'stairs')) {
@@ -1646,6 +1657,7 @@ export class World {
     for (const e of carried) {
       if (e instanceof PowerUp) {
         if (e.item === 'clock') this.collectClock(e);
+        else if (e.item === 'bee') this.collectBee(e);
         else if (e.item !== 'poison') this.powerUp(p, e.item);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
@@ -2524,7 +2536,7 @@ export class World {
 
   /**
    * Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps`
-   * zone (FlyingCheepSpawner.as). With fewer than MAX_CHEEP_NORMAL = 3 out and no spawn pending it
+   * zone (FlyingCheepSpawner.as). With fewer than its cap out (FLYING_CHEEP_CAP: 3 on Normal) and no spawn pending it
    * waits a random 600-1050 ms (36-63 frames) and then launches one if still in the zone and below
    * the limit. Fish may only fly left once the lead has not moved right for 2 s
    * (CAN_REVERSE_DIRECTION_DELAY = 2000).
@@ -2541,7 +2553,9 @@ export class World {
     for (const e of this.entities)
       if (e.alive && ((e instanceof Cheep && e.flying) || (e instanceof HammerBro && e.spawner === 'cheep')))
         flying++;
-    if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < 3) {
+    // MAX_CHEEP_EASY / NORMAL / HARD (FlyingCheepSpawner.as:17-19, 37-50; G-006): 2, 3 or 4.
+    const cap = FLYING_CHEEP_CAP[this.mapDifficulty];
+    if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < cap) {
       const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
       const target = {
         centerX: lead.centerX,
@@ -2556,7 +2570,7 @@ export class World {
       );
       flying++;
     }
-    if (inZone && flying < 3 && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
+    if (inZone && flying < cap && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
   }
 
   /**
@@ -2759,7 +2773,12 @@ export class World {
       else this.audio.sfx('bump');
       return;
     }
-    const { kind, content } = def.block;
+    const { kind } = def.block;
+    // A `block-item` spawn's item replaces the block's own (the Hudson Bee, a lone Clock).
+    const key = `${tx},${ty}`;
+    const item = this.blockItems.get(key);
+    if (item) this.blockItems.delete(key);
+    const content = item ?? def.block.content;
     const frame = kind === 'brick' ? 'brick' : 'used';
     if (kind === 'brick' && content === 'none') {
       if (breakBricks) {
@@ -2785,7 +2804,6 @@ export class World {
         this.blockDrop(tx, ty, p, 'coin');
         break;
       case 'coins10': {
-        const key = `${tx},${ty}`;
         let c = this.coinBlocks.get(key);
         if (!c) {
           // The original's ground/Brick.as: COIN_BRICK_MAX_COINS = 15 and a coinBrickTmrDur =
@@ -2823,7 +2841,13 @@ export class World {
         // The Clock comes out of its block; the coin block on the same cell is next (T.Q_CLOCK).
         this.spawn(new PowerUp(tx, ty, 'clock'));
         this.audio.sfx('powerup-appear');
-        restore = T.Q_COIN;
+        // A lone Clock (a `block-item`) leaves a used block.
+        if (id === T.Q_CLOCK && !item) restore = T.Q_COIN;
+        break;
+      case 'bee':
+        // The Hudson Bee rises out like any item (Brick.normalItemExitBrickStart, G-023).
+        this.spawn(new PowerUp(tx, ty, 'bee'));
+        this.audio.sfx('powerup-appear');
         break;
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
@@ -2957,7 +2981,7 @@ export class World {
     // onPowerUp scores its own 1000.
     if (id === null) {
       const kind = e.entries === GROW_BLOCK ? 'mushroom' : p.def.blockPowerUp(p);
-      if (kind !== 'poison' && kind !== 'clock') p.def.behaviour.onPowerUp(p, kind, this);
+      if (kind !== 'poison' && kind !== 'clock' && kind !== 'bee') p.def.behaviour.onPowerUp(p, kind, this);
       return;
     }
     this.addScore(1000, p.body.x, p.body.y - px(16));
@@ -2979,7 +3003,7 @@ export class World {
    * Samus took the Varia Suit from a Mushroom before any Energy Tank): a small hero their grow item,
    * else the Mushroom their next one, the Fire Flower their default power. Else its onPowerUp.
    */
-  powerUp(p: Player, kind: Exclude<PowerUp['item'], 'poison' | 'clock'>): void {
+  powerUp(p: Player, kind: Exclude<PowerUp['item'], 'poison' | 'clock' | 'bee'>): void {
     if ((kind === 'mushroom' || kind === 'flower') && itemRules(p.def.id) && isFound(p)) {
       const id = blockItem(p, null, kind === 'mushroom' ? 'mushroom' : 'powerup');
       if (id !== null) return this.takeHeroItem(p, new HeroItem(0, 0, id, p.def.id));
@@ -2992,6 +3016,15 @@ export class World {
    * Clock.TIME_TO_ADD = 100 on the timer; back above the hurry time, the hurry tune ends
    * (StatManager.checkCancelSecondsLeft).
    */
+  /**
+   * The Hudson Bee (G-023; Character.as:1612-1618): 8000 points shown where it was, and the
+   * power-up sound.
+   */
+  private collectBee(e: PowerUp): void {
+    this.addScore(8000, e.body.x, e.body.y);
+    this.audio.sfx('powerup');
+  }
+
   private collectClock(e: PowerUp): void {
     this.addScore(1000, e.body.x, e.body.y);
     this.audio.sfx('powerup');
@@ -3066,6 +3099,7 @@ export class World {
           if (e.item === 'poison') {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
           } else if (e.item === 'clock') this.collectClock(e);
+          else if (e.item === 'bee') this.collectBee(e);
           else this.powerUp(p, e.item);
         }
       } else if (e instanceof HeroItem) {

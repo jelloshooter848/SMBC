@@ -396,6 +396,8 @@ export const BILL_CLASSIC_GUIDE: CharacterGuide = {
 /* ---------- the def ---------- */
 
 export const BILL_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Bill.as:192-193. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, vert: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'your buddy',
   id: BILL.id,

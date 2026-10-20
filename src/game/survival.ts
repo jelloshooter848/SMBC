@@ -145,7 +145,7 @@ export function applyRevivalBoost(p: Player, world: World, heroId: string): void
     // power block gives it now (blockPowerUp: Mega Man's helmet then weapons, Samus's Varia Suit
     // then beams, Mario's Mushroom then Flower), through World.powerUp, not the Classic Flower.
     const kind = world.rules === 'current' ? p.def.blockPowerUp(p) : 'flower';
-    if (kind === 'poison' || kind === 'clock') continue;
+    if (kind === 'poison' || kind === 'clock' || kind === 'bee') continue;
     if (world.rules === 'current') quiet.powerUp(p, kind);
     else p.def.behaviour.onPowerUp(p, kind, quiet);
   }

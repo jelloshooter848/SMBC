@@ -21,7 +21,7 @@
 // BadSwimmer, WideCharacter, poorBowserFighter), as layers over the map (see areaLayers). It never
 // touches a .map file, so the maps (and every hand edit in them) stay byte for byte as they are.
 //
-//   node tools/levelgen/convert-smbc.mjs --layers tools/levelgen/source/levelDataSmb.xml src/content/levels/world1 1-1 1-2 1-3 1-4
+//   node tools/levelgen/convert-smbc.mjs --layers --maps=src/content/levels/world1 tools/levelgen/source/levelDataSmb.xml src/content/level-layers/world1 1-1 1-2 1-3 1-4
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { MapBuilder } from './lib.mjs';
@@ -30,7 +30,10 @@ import { applyNesFixes } from './nes-fixes.mjs';
 const args = process.argv.slice(2);
 const PREFIX = (args.find((a) => a.startsWith('--prefix='))?.slice(9) ?? '').trim();
 const LAYERS = args.includes('--layers');
+/** With --layers: where the maps are (to check the layers against them); default the out dir. */
+const MAPS_ARG = args.find((a) => a.startsWith('--maps='))?.slice(7);
 const [xmlPath, outDir, ...ids] = args.filter((a) => !a.startsWith('--'));
+const MAPS_DIR = MAPS_ARG ?? outDir;
 if (!xmlPath || !outDir || !ids.length) {
   console.error('usage: convert-smbc.mjs [--prefix=ll-] [--layers] <levelData.xml> <outDir> <levelId>...');
   process.exit(2);
@@ -276,11 +279,15 @@ const ITEM_BRICK = {
   Vine: 'V',
   PoisonMushroom: '5',
   Clock: 'E',
-  // Hard only (G-023): the Hudson Bee, 8000 points (pickups/HudsonBee.as).
-  HudsonBee: 'I',
 };
 const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: 'Q' };
-const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2', HudsonBee: 'J' };
+const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2' };
+/**
+ * Items no tile holds: the block is a coin brick or hidden coin block (`E` / `2`) and a
+ * `block-item` spawn puts the item in it (World.blockItems). The Hudson Bee (G-023; Hard only,
+ * pickups/HudsonBee.as) in any block.
+ */
+const BLOCK_ITEMS = { HudsonBee: 'bee' };
 const MARKERS = {
   enemyGoomba: 'g',
   enemyKoopaGreen: 'k',
@@ -579,9 +586,16 @@ function convertArea(level, area, id, levels, profile) {
           // Two `?` blocks on one cell (Lost Levels 9-1, 24,9 on normal: a Clock block and a
           // coin block; Level.as builds one ItemBlock per token): `Q` is that pair.
           if (ch === '?' && b.rows[y][x] === 'Q') continue;
-          // A Clock block on its own (Easy and Hard layers): `e`, used once the Clock is out.
+          // A Clock block on its own (Easy and Hard layers): a `?` holding the Clock (`Q` is the
+          // Clock-and-coin pair).
           const solo = ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?');
-          b.set(x, y, solo ? 'e' : ch);
+          b.set(x, y, solo ? '?' : ch);
+          if (solo) b.entity('block-item', x, y, { item: 'clock' });
+          const item = BLOCK_ITEMS[params.ContainedItem];
+          if (item && (name === 'brick' || name === 'itemBlockInvisible' || name === 'itemBlock')) {
+            b.set(x, y, name === 'brick' ? 'E' : name === 'itemBlock' ? '?' : '2');
+            b.entity('block-item', x, y, { item });
+          }
           if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
           continue;
         }
@@ -1206,7 +1220,7 @@ function writeLayers(levelId, levels) {
     writeFileSync(file, layersText(areaId, layers));
     // The layers lay over the committed map: report the cells and spawns where it is not the
     // original's base (its own hand edits), which a layer would overwrite or miss.
-    const map = readMap(join(outDir, `${areaId}.map`));
+    const map = readMap(join(MAPS_DIR, `${areaId}.map`));
     const base = states.get(profileKey(BASE)).get(areaId);
     let cells = 0;
     let spawns = 0;

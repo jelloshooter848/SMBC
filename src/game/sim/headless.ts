@@ -4,7 +4,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { toPx } from '@engine/math/units';
-import type { LevelData } from '../level/schema';
+import type { LevelData, MapDifficulty } from '../level/schema';
 import { levelSeed, World, type WorldEvent, type WorldStart } from '../world/world';
 import { DEFAULT_ASSIST, newGameState, type AssistOptions, type GameState, type Rules } from '../context';
 import type { CharacterDef } from '../characters/character';
@@ -85,6 +85,8 @@ export interface SimOptions {
   rules?: Rules;
   /** Classic mode's options for the context (GameContext.classic; read only under Classic rules). */
   classic?: ClassicSettings;
+  /** Classic mode's Map Difficulty for the context (GameContext.mapDifficulty; Classic rules only). */
+  mapDifficulty?: MapDifficulty;
 }
 
 export interface SimResult {
@@ -113,6 +115,7 @@ export function runSim(opts: SimOptions): SimResult {
       reduceFlashing: true,
       ...(opts.rules ? { rules } : {}),
       ...(opts.classic ? { classic: opts.classic } : {}),
+      ...(opts.mapDifficulty ? { mapDifficulty: opts.mapDifficulty } : {}),
     },
     state,
     { ...opts.start, seed: opts.start?.seed ?? opts.seed ?? levelSeed(opts.level) },
