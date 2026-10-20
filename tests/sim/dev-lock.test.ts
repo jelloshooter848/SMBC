@@ -139,7 +139,17 @@ describe('the lock for a build', () => {
       expect(r.out).toBe(`DEV_MODE_HASH=${await hashPassphrase(ok)}\n`);
       expect(r.out + r.err).not.toContain(ok);
     }
+    // A pasted secret: surrounding spaces and newlines are trimmed, and it hashes as the bare one.
+    const bare = await hashPassphrase('abcd-1234');
+    for (const pasted of ['  abcd-1234\n', '\nABCD-1234\r\n', '\tabcd-1234  ']) {
+      const r = run(pasted);
+      expect(r.code, JSON.stringify(pasted)).toBe(0);
+      expect(r.out).toBe(`DEV_MODE_HASH=${bare}\n`);
+    }
+    expect(await hashPassphrase('  abcd-1234\n')).toBe(bare);
     const bad = {
+      'an inner space (padded)': '  OPEN SESAME\n',
+      'only spaces': '   \n',
       'too short': 'ABC-123',
       'too long': 'A'.repeat(33),
       'a space': 'OPEN SESAME',
