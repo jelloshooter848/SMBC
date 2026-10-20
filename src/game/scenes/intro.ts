@@ -39,8 +39,11 @@ export class IntroScene implements Scene {
     private readonly opts: { frames?: number; skippable?: boolean } = {},
   ) {}
 
+  /** A Classic run's card: a SKIP button once the guard is over (G-090, D4: a press skips it). */
   touchLabels(): TouchLabels {
-    return NO_TOUCH_BUTTONS;
+    return this.opts.skippable === true && this.t > CARD_GUARD_FRAMES
+      ? { ...NO_TOUCH_BUTTONS, jump: 'SKIP' }
+      : NO_TOUCH_BUTTONS;
   }
 
   update(_input?: InputFrame, inputs: readonly InputFrame[] = []): void {

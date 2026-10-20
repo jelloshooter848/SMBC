@@ -45,4 +45,14 @@ describe('G-090 WORLD card', () => {
     for (let t = 0; t < 300; t++) s.update(press('jump'), [press('jump')]);
     expect(n).toBe(1);
   });
+
+  it('on touch, a SKIP button shows after the guard in a Classic run; the campaign card has none', () => {
+    const s = new IntroScene({} as Game, () => undefined, null, { skippable: true });
+    expect(s.touchLabels().jump).toBeNull();
+    for (let t = 0; t <= CARD_GUARD_FRAMES; t++) s.update(press(null), [press(null)]);
+    expect(s.touchLabels().jump).toBe('SKIP');
+    const c = new IntroScene({} as Game, () => undefined, null);
+    for (let t = 0; t <= CARD_GUARD_FRAMES; t++) c.update(press(null), [press(null)]);
+    expect(c.touchLabels().jump).toBeNull();
+  });
 });
