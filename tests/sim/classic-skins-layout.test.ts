@@ -36,11 +36,12 @@ describe('the original layout: grid, name box, ground', () => {
       expect(c.x + SELECT_GRID.cell).toBeLessThanOrEqual(256);
       expect(c.y + SELECT_GRID.cell).toBeLessThan(140);
     }
-    expect(sel.nameBoxLines()).toEqual(['', 'MARIO', 'SUPER MARIO BROS.']);
+    // A hero's own look: the hero and its game only (CharNameBox.changeText with no skin name).
+    expect(sel.nameBoxLines()).toEqual(['MARIO', 'SUPER MARIO BROS.']);
     const t = draw(sel).texts;
     for (const x of t) expect(x.y + 8).toBeLessThanOrEqual(240);
     // The HUD on top names the hero under the cursor.
-    expect(t.find((x) => x.y === 8 && x.x === 24)?.str).toBe('MARIO');
+    expect(t.find((x) => x.y === 8 && x.x === 32)?.str).toBe('MARIO');
   });
 
   it("a skin's name in quotes over its hero, and the hero's game", () => {
@@ -48,8 +49,8 @@ describe('the original layout: grid, name box, ground', () => {
     const { h, sel } = classicSelect(settings);
     cursorTo(h, sel, 'protoman');
     expect(sel.nameBoxLines()).toEqual(['"BREAK MAN"', 'PROTO MAN', 'MEGA MAN 3']);
-    expect(h.said.at(-1)).toBe('Proto Man, skin Break Man, Mega Man 3');
-    expect(draw(sel).texts.find((x) => x.y === 8 && x.x === 24)?.str).toBe('BREAK');
+    expect(h.said.at(-1)).toBe('Break Man, Proto Man, Mega Man 3');
+    expect(draw(sel).texts.find((x) => x.y === 8 && x.x === 32)?.str).toBe('BREAK');
   });
 
   it('the Random cell is held still with Reduce flashing', () => {
@@ -80,7 +81,7 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     // The panel: titled with the look, the HUD follows it.
     const t = draw(sel).texts;
     expect(t.some((x) => x.str === 'BREAK MAN' && x.y === SKIN_PANEL_Y + 7)).toBe(true);
-    expect(t.find((x) => x.y === 8 && x.x === 24)?.str).toBe('BREAK');
+    expect(t.find((x) => x.y === 8 && x.x === 32)?.str).toBe('BREAK');
     h.tap('attack');
     expect(sel.pickerOpen).toBe(false);
     expect(settings.classicSkins).toBeUndefined();

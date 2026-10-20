@@ -138,9 +138,8 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     expect(sel).toBeInstanceOf(CharacterSelectScene);
     expect(sel.firstRow).toBe(CHARACTERS.length);
     expect(sel.chars[CHARACTERS.length]).toBe(BASS_CLASSIC);
-    // The original's grid: the usual heroes fill its first row, Bass starts the second.
+    // The original's grid: Bass follows the usual heroes, on a row below the first.
     expect(sel.slot(CHARACTERS.length).y).toBeGreaterThan(sel.slot(0).y);
-    expect(sel.slot(CHARACTERS.length).x).toBe(sel.slot(0).x);
     expect(h.game.heroLocked(BASS_CLASSIC)).toBe(false);
     h.idle(12);
     // Classic mode's select says the hero, then its game (the original's name box).

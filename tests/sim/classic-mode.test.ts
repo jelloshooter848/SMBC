@@ -13,7 +13,7 @@ import { HeroItem } from '@game/entities/objects/hero-item';
 import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
-import { SELECT_GRID } from '@game/scenes/select-grid';
+import { SELECT_GRID, gridCell } from '@game/scenes/select-grid';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
@@ -768,19 +768,12 @@ describe('the select screen: Classic extras on a second row', () => {
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.firstRow).toBe(CHARACTERS.length);
-    // Cells SELECT_GRID.cell px square, nine to a row (the original's CharacterSelectBox, fitted).
-    const step = SELECT_GRID.cell + SELECT_GRID.gap;
-    CHARACTERS.forEach((_, i) =>
-      expect(sel.slot(i)).toEqual({
-        x: SELECT_GRID.x + i * step + SELECT_GRID.cell / 2,
-        y: SELECT_GRID.y + SELECT_GRID.cell,
-      }),
-    );
-    // The second row: the extra, then the Random slot (FU-4).
-    expect(sel.slot(CHARACTERS.length)).toEqual({
-      x: SELECT_GRID.x + SELECT_GRID.cell / 2,
-      y: SELECT_GRID.y + step + SELECT_GRID.cell,
-    });
+    // Cells SELECT_GRID.cell px square, SELECT_GRID.cols to a row (the original's
+    // CharacterSelectBox, fitted to 240 px); the extra follows the usual heroes, then Random (FU-4).
+    for (let i = 0; i <= CHARACTERS.length + 1; i++) {
+      const c = gridCell(i);
+      expect(sel.slot(i)).toEqual({ x: c.x + SELECT_GRID.cell / 2, y: c.y + SELECT_GRID.cell });
+    }
     h.idle(12);
     h.tap('left');
     expect(h.said.at(-1)).toBe('Random');
