@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
-import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from '@game/characters/protoman/classic';
+import type { CharacterDef } from '@game/characters/character';
+import { MEGAMAN } from '@game/characters/megaman';
+import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { SELECT_GRID, SKIN_PANEL_Y, gridCell, skinCell } from '@game/scenes/select-grid';
@@ -45,11 +47,11 @@ describe('the original layout: grid, name box, ground', () => {
   });
 
   it("a skin's name in quotes over its hero, and the hero's game", () => {
-    const settings = { ...defaultSettings(), classicSkins: { protoman: 'breakman' } };
+    const settings = { ...defaultSettings(), classicSkins: { megaman: 'breakman' } };
     const { h, sel } = classicSelect(settings);
-    cursorTo(h, sel, 'protoman');
-    expect(sel.nameBoxLines()).toEqual(['"BREAK MAN"', 'PROTO MAN', 'MEGA MAN 3']);
-    expect(h.said.at(-1)).toBe('Break Man, Proto Man, Mega Man 3');
+    cursorTo(h, sel, 'megaman');
+    expect(sel.nameBoxLines()).toEqual(['"BREAK MAN"', 'MEGA MAN', 'MEGA MAN 3']);
+    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man 3');
     expect(draw(sel).texts.find((x) => x.y === 8 && x.x === 32)?.str).toBe('BREAK');
   });
 
@@ -69,47 +71,52 @@ describe('the original layout: grid, name box, ground', () => {
 describe('the skin menu (CharacterSkinMenu)', () => {
   it('OK on a hero with looks opens it; arrows choose, said; BACK returns unchanged', () => {
     const { h, sel, settings } = classicSelect();
-    cursorTo(h, sel, 'protoman');
+    cursorTo(h, sel, 'megaman');
     h.tap('jump');
     expect(sel.pickerOpen).toBe(true);
-    expect(sel.pickerSkin).toBe(PROTOMAN_CLASSIC);
-    expect(h.said.at(-1)).toMatch(/^Choose a look for Proto Man\. Proto Man, Mega Man 3\. 2 looks\./);
+    expect(sel.pickerSkin).toBe(MEGAMAN);
+    expect(h.said.at(-1)).toMatch(/^Choose a look for Mega Man\. Mega Man, Mega Man\. 10 looks\./);
     expect(sel.touchLabels()).toMatchObject({ jump: 'OK', attack: 'BACK' });
+    // The original's skin order: Mega Man, Rock, Proto Man, Break Man, ...
+    h.tap('right');
+    h.tap('right');
     h.tap('right');
     expect(sel.pickerSkin).toBe(BREAKMAN_CLASSIC);
-    expect(h.said.at(-1)).toBe('Break Man, Proto Man, Mega Man 3.');
+    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man 3.');
     // The panel: titled with the look, the HUD follows it.
     const t = draw(sel).texts;
     expect(t.some((x) => x.str === 'BREAK MAN' && x.y === SKIN_PANEL_Y + 7)).toBe(true);
     expect(t.find((x) => x.y === 8 && x.x === 32)?.str).toBe('BREAK');
     h.tap('attack');
     expect(sel.pickerOpen).toBe(false);
-    expect(settings.classicSkins).toBeUndefined();
+    expect(settings.classicSkins?.megaman).toBeUndefined();
     expect(h.top()).toBe(sel);
   });
 
   it('OK in it remembers the look and starts the run as it', () => {
     const { h, sel, settings } = classicSelect();
-    cursorTo(h, sel, 'protoman');
+    cursorTo(h, sel, 'megaman');
     h.tap('jump');
     h.tap('right');
+    h.tap('right');
+    h.tap('right');
     h.tap('jump');
-    expect(settings.classicSkins).toEqual({ protoman: 'breakman' });
+    expect(settings.classicSkins).toEqual({ megaman: 'breakman' });
     h.until(() => h.top() instanceof LevelScene, 600);
     expect(h.game.state.character).toBe(BREAKMAN_CLASSIC);
   });
 
   it('touch: a tap moves to a cell, a tap on the cursor cell is OK; in the menu the same', () => {
     const { h, sel } = classicSelect();
-    const at = sel.chars.indexOf(PROTOMAN_CLASSIC);
-    const c = gridCell(at);
+    const at = sel.chars.findIndex((x) => x.id === 'megaman');
+    const c = gridCell(at, sel.grid);
     expect(sel.tapAt(c.x + 4, c.y + 4)).toBe(true);
     h.step();
     expect(sel.cursor).toBe(at);
     sel.tapAt(c.x + 4, c.y + 4);
     h.step();
     expect(sel.pickerOpen).toBe(true);
-    const k = skinCell(1, 2);
+    const k = skinCell(3, h.game.skinsFor(MEGAMAN).length);
     sel.tapAt(k.x + 4, k.y + 4);
     h.step();
     expect(sel.pickerSkin).toBe(BREAKMAN_CLASSIC);
@@ -119,9 +126,10 @@ describe('the skin menu (CharacterSkinMenu)', () => {
     expect(h.game.state.character).toBe(BREAKMAN_CLASSIC);
   });
 
-  it('a hero with one look: OK picks at once', () => {
+  it('a hero with one look (Mario): OK picks at once', () => {
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'megaman');
+    cursorTo(h, sel, 'mario');
+    expect(h.game.skinsFor(sel.chars[sel.cursor] as CharacterDef)).toHaveLength(1);
     h.tap('jump');
     expect(sel.pickerOpen).toBe(false);
   });

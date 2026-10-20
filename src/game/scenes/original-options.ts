@@ -62,6 +62,8 @@ const NAMES: Record<string, string> = {
   buzzy: 'Buzzy Beetle',
   spiny: 'Spiny',
   'spike-top': 'Spike Top',
+  // Expansion heroes
+  on: 'On',
   // Game Mode
   single: 'Single hero',
   'single-random': 'Single random',
@@ -157,6 +159,17 @@ export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
   row('goombas', 'Goombas', 'Every Goomba becomes this enemy'),
   row('enemySpeed', 'Enemy speed', 'Walking enemies move faster when fast'),
 ] as AnyRow[];
+
+/**
+ * The Expansion heroes row: our own (the original has no such heroes). Off, the Classic select is
+ * the original's; on, it also offers the heroes SMBC 3.1.21 never had. The Dev menu's own toggles
+ * still leave any of them out.
+ */
+export const EXPANSION_ROW = row(
+  'expansion',
+  'Expansion heroes',
+  'Off: the original SMBC heroes only. On: also the heroes the original never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi)',
+) as AnyRow;
 
 /** The Game Mode row (NewGameOptionsMenu's GAME_MODE under Classic mode). */
 export const GAME_MODE_ROW = row(

@@ -3,8 +3,10 @@ import { defaultSettings } from '@engine/save/settings';
 import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from '@game/characters/protoman/classic';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { lookName } from '@game/scenes/character-select';
+import { MEGAMAN } from '@game/characters/megaman';
 import {
   DEFAULT_SELECT_THEME,
+  SKIN_GRID,
   SELECT_THEMES,
   cursorColour,
   faceOf,
@@ -69,36 +71,37 @@ describe('the name box (CharNameBox) and the announcer', () => {
   it("item 3: a hero's own look has two lines; another look adds its name in quotes", () => {
     const { h, sel } = classicSelect();
     expect(sel.nameBoxLines()).toEqual(['MARIO', 'SUPER MARIO BROS.']);
-    cursorTo(h, sel, 'protoman');
-    expect(sel.nameBoxLines()).toEqual(['PROTO MAN', 'MEGA MAN 3']);
+    cursorTo(h, sel, 'megaman');
+    expect(sel.nameBoxLines()).toEqual(['MEGA MAN', 'MEGA MAN']);
   });
 
   it('items 2, 4: it follows the skin menu cursor, with the look’s game', () => {
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'pit');
+    cursorTo(h, sel, 'samus');
     h.tap('jump');
     expect(sel.pickerOpen).toBe(true);
-    expect(sel.nameBoxLines()).toEqual(['PIT', 'KID ICARUS']);
+    expect(sel.nameBoxLines()).toEqual(['SAMUS', 'METROID']);
     h.tap('right');
-    expect(sel.nameBoxLines()).toEqual(['"DARK PIT"', 'PIT', 'KID ICARUS: UPRISING']);
-    expect(h.said.at(-1)).toBe('Dark Pit, Pit, Kid Icarus: Uprising.');
+    expect(sel.nameBoxLines()).toEqual(['"PIT"', 'SAMUS', 'KID ICARUS']);
+    expect(h.said.at(-1)).toBe('Pit, Samus, Kid Icarus.');
   });
 
   it('item 7: look, hero, game; no repeat for a hero’s own look; the Skin key says the game', () => {
-    expect(lookName(PROTOMAN_CLASSIC, PROTOMAN_CLASSIC)).toBe('Proto Man');
-    expect(lookName(PROTOMAN_CLASSIC, BREAKMAN_CLASSIC)).toBe('Break Man, Proto Man');
+    expect(lookName(MEGAMAN, MEGAMAN)).toBe('Mega Man');
+    expect(lookName(MEGAMAN, BREAKMAN_CLASSIC)).toBe('Break Man, Mega Man');
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'protoman');
-    expect(h.said.at(-1)).toBe('Proto Man, Mega Man 3');
+    cursorTo(h, sel, 'megaman');
+    expect(h.said.at(-1)).toBe('Mega Man, Mega Man');
     h.tap('special');
-    expect(h.said.at(-1)).toBe('Break Man, Proto Man, Mega Man 3');
+    // SKIN steps to the next look in the original's skin order (Rock).
+    expect(h.said.at(-1)).toBe('Rock, Mega Man, Mega Man');
   });
 });
 
 describe('the skin menu', () => {
   it('item 6: it takes the grid’s place, so no cell shows behind or under it', () => {
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'protoman');
+    cursorTo(h, sel, 'megaman');
     expect(draw(sel).sprites.some((s) => s.frame.startsWith('select-random'))).toBe(true);
     h.tap('jump');
     expect(draw(sel).sprites.some((s) => s.frame.startsWith('select-random'))).toBe(false);
@@ -106,26 +109,27 @@ describe('the skin menu', () => {
 
   it('item 8: Down on a single row bumps, not moves right', () => {
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'protoman');
+    cursorTo(h, sel, 'megaman');
     h.tap('jump');
-    expect(sel.pickerSkin).toBe(PROTOMAN_CLASSIC);
+    expect(sel.pickerSkin).toBe(MEGAMAN);
+    // Mega Man's looks fill two rows, so Down moves a row; on the last it bumps.
+    const rows = Math.ceil(h.game.skinsFor(MEGAMAN).length / SKIN_GRID.cols);
+    for (let i = 0; i < rows - 1; i++) h.tap('down');
+    const last = sel.pickerSkin;
     h.tap('down');
-    expect(sel.pickerSkin).toBe(PROTOMAN_CLASSIC);
-    h.tap('right');
-    h.tap('down');
-    expect(sel.pickerSkin).toBe(BREAKMAN_CLASSIC);
+    expect(sel.pickerSkin).toBe(last);
   });
 });
 
 describe('item 5: faces', () => {
   it("the HUD and the cells show a hero's head doubled, its top inside the box; Random a ?", () => {
     const { h, sel } = classicSelect();
-    cursorTo(h, sel, 'protoman');
+    cursorTo(h, sel, 'megaman');
     h.tap('special');
     const d = draw(sel).sprites;
-    const face = faceOf('protoman', 'idle');
+    const face = faceOf('megaman-classic', 'portrait');
     // The HUD face: Break Man's head's top row 1 px inside the box (not his feet, not a strip).
-    const hud = d.find((s) => s.frame === 'idle' && s.y === HUD_FACE.y + 2 - face.top * 2);
+    const hud = d.find((s) => s.frame === 'portrait' && s.y === HUD_FACE.y + 2 - face.top * 2);
     expect(hud).toBeDefined();
     h.tap('left');
     while (!sel.chars[sel.cursor]) h.tap('right');
@@ -134,9 +138,11 @@ describe('item 5: faces', () => {
     const r = draw(sel).sprites.filter((s) => s.frame === 'select-random-0' && s.y < 24);
     expect(r.length).toBe(1);
     // Cells: the same doubled head.
-    const at = sel.chars.indexOf(PROTOMAN_CLASSIC);
-    const c = gridCell(at);
-    expect(draw(sel).sprites.some((s) => s.frame === 'idle' && s.y === c.y + 2 - face.top * 2)).toBe(true);
+    const at = sel.chars.findIndex((x) => x.id === 'megaman');
+    const c = gridCell(at, sel.grid);
+    expect(draw(sel).sprites.some((s) => s.frame === 'portrait' && s.y === c.y + 2 - face.top * 2)).toBe(
+      true,
+    );
   });
 });
 

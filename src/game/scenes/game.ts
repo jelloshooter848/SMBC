@@ -5,7 +5,15 @@ import type { LastInput } from '@engine/input/touch-logic';
 import { loadProgress, lostLettersOpen, recordLostGameBeaten, saveProgress } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
-import { CLASSIC_EXTRAS, heroFor, skinHost, skinsOf } from '../characters/registry';
+import {
+  CLASSIC_EXTRAS,
+  CLASSIC_SLOTS,
+  EXPANSION_HEROES,
+  heroFor,
+  isSkin,
+  skinHost,
+  skinsOf,
+} from '../characters/registry';
 import { startHp, type CharacterDef } from '../characters/character';
 import { TitleScene } from './title';
 import { IntroScene } from './intro';
@@ -422,24 +430,48 @@ export class Game {
   }
 
   /**
-   * The select screen's heroes (FU-8): the roster with every hero's other skins folded into its
-   * slot (registry CLASSIC_SKINS: Break Man into Proto Man's, Dark Pit into Pit's). A skin whose
-   * slot hero is not on the roster keeps a slot of its own.
+   * The select screen's slots: in a Classic-rules run, the original's eleven heroes in its order
+   * (registry CLASSIC_SLOTS), then, with Options > Expansion heroes on, the heroes the original
+   * never had; every other look is a skin on one of them. Any other run (the campaign, Current
+   * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
     const roster = this.roster;
-    const slots = roster.filter((c) => {
-      const host = skinHost(c);
-      return host === c || !roster.includes(host);
-    });
-    // Nothing folded (the campaign, Current rules): the roster itself.
-    return slots.length === roster.length ? roster : slots;
+    if (this.liveRules !== 'classic' || this.campaign !== null) return roster;
+    const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
+    const slots: CharacterDef[] = [];
+    for (const id of ids) {
+      const def = roster.find((c) => c.id === id && !isSkin(c));
+      if (def) slots.push(def);
+    }
+    // A hero the lists do not name (a test's stand-in extra) keeps a slot of its own, after them.
+    for (const c of roster)
+      if (!slots.includes(c) && !isSkin(c) && !ids.includes(c.id) && !EXPANSION_HEROES.includes(c.id))
+        slots.push(c);
+    return slots.length ? slots : roster;
+  }
+
+  /** Options > Expansion heroes is on (the heroes the original never had are offered). */
+  get expansionHeroes(): boolean {
+    return this.deps.settings?.classic.expansion === 'on';
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
   slotOf(c: CharacterDef): CharacterDef {
     const host = skinHost(c);
     return host !== c && this.roster.includes(host) ? host : c;
+  }
+
+  /**
+   * A hero from an old save or a run begun before the slots changed (a skin that had its own slot:
+   * Peach, Pit, Proto Man, the Mega Man variants): its slot's hero, with the skin remembered as
+   * that slot's look, so the run goes on looking and playing as it did. Any other hero is itself.
+   */
+  restoreSlotHero(c: CharacterDef): CharacterDef {
+    const host = this.slotOf(c);
+    if (host === c) return c;
+    if (this.deps.settings && this.deps.settings.classicSkins?.[host.id] !== c.id) this.setSkin(host, c);
+    return c;
   }
 
   /** Slot hero `c` in its chosen look (Settings.classicSkins; its own when none is chosen). */

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
 import { CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
-import { SELECT_GRID } from '@game/scenes/select-grid';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { makeGame } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
@@ -27,12 +26,12 @@ describe('two-row character select', () => {
   it('Down goes to the nearest hero on the next row, Up back; the edges bump', () => {
     expect(CLASSIC_EXTRAS.length).toBeGreaterThan(1);
     const { h, sel } = classicSelect();
-    expect(sel.firstRow).toBe(CHARACTERS.length);
     expect(h.said.some((t) => t.includes('up and down for the other row'))).toBe(true);
     expect(idx(sel)).toBe(0);
     const n = sel.chars.length + 1;
     // The original's grid: rows of SELECT_GRID.cols cells, the Random slot (FU-4) last.
-    const rowOf = (k: number) => Math.floor(k / SELECT_GRID.cols);
+    const cols = sel.grid.cols;
+    const rowOf = (k: number) => Math.floor(k / cols);
     const nearest = (from: number, row: number) => {
       let best = -1;
       for (let k = 0; k < n; k++)
@@ -45,7 +44,7 @@ describe('two-row character select', () => {
       return best;
     };
     const rows = sel.rows;
-    expect(rows).toBe(Math.ceil(n / SELECT_GRID.cols));
+    expect(rows).toBe(Math.ceil(n / cols));
     const names = ['first', 'second', 'third', 'fourth'];
     let at = 0;
     for (let r = 1; r < rows; r++) {
@@ -68,10 +67,10 @@ describe('two-row character select', () => {
     h.tap('up');
     expect(idx(sel)).toBe(at);
     // From the first row's right end, Down lands on the nearest column.
-    for (let i = 0; i < SELECT_GRID.cols - 1 - at; i++) h.tap('right');
-    expect(idx(sel)).toBe(SELECT_GRID.cols - 1);
+    for (let i = 0; i < cols - 1 - at; i++) h.tap('right');
+    expect(idx(sel)).toBe(cols - 1);
     h.tap('down');
-    expect(idx(sel)).toBe(nearest(SELECT_GRID.cols - 1, 1));
+    expect(idx(sel)).toBe(nearest(cols - 1, 1));
   });
 
   it('Left and Right still walk the whole roster across the rows', () => {

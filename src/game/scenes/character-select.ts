@@ -17,6 +17,7 @@ import { drawSelectHud } from '../hud/select-hud';
 import { SKY } from '../world/tile-render';
 import {
   NAME_BOX,
+  ORIGINAL_GRID,
   SELECT_GRID,
   type GridLayout,
   SKIN_GRID,
@@ -1180,7 +1181,9 @@ export class CharacterSelectScene implements Scene {
    * ORIGINAL_GRID, is a data change with its roster.
    */
   get grid(): GridLayout {
-    return SELECT_GRID;
+    // The original's two rows of six hold its eleven heroes and Random; a longer list (Options >
+    // Expansion heroes, a test's stand-in) uses the wider grid, so it still fits two or three rows.
+    return this.total <= ORIGINAL_GRID.cols * 2 ? ORIGINAL_GRID : SELECT_GRID;
   }
 
   /** The cursor ring's colour now (revive mode's own cycle). */

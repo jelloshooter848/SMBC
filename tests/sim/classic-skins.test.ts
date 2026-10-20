@@ -6,6 +6,11 @@ import { T } from '@game/level/tiles';
 import { runSim, ScriptedInput } from '@game/sim/headless';
 import type { CharacterDef } from '@game/characters/character';
 import { CHARACTERS, CLASSIC_EXTRAS, CLASSIC_SKINS, skinHost, skinsOf } from '@game/characters/registry';
+import { LUIGI } from '@game/characters/luigi';
+import { MARIO } from '@game/characters/mario';
+import { MEGAMAN } from '@game/characters/megaman';
+import { SAMUS } from '@game/characters/samus';
+import { PEACH_CLASSIC } from '@game/characters/peach/classic';
 import { MEGAMAN_CLASSIC } from '@game/characters/megaman/classic';
 import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from '@game/characters/protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from '@game/characters/pit/classic';
@@ -83,18 +88,31 @@ function cursorTo(h: ReturnType<typeof makeGame>, sel: CharacterSelectScene, id:
 }
 
 describe('FU-8: skins in the registry', () => {
-  it('Break Man, Dark Pit and Doropie are skins of Proto Man, Pit and Francesca', () => {
-    expect(skinsOf(PROTOMAN_CLASSIC)).toEqual([PROTOMAN_CLASSIC, BREAKMAN_CLASSIC]);
-    expect(skinsOf(PIT_CLASSIC)).toEqual([PIT_CLASSIC, DARKPIT_CLASSIC]);
-    expect(skinsOf(FRANCESCA_CLASSIC)).toEqual([FRANCESCA_CLASSIC, DOROPIE_CLASSIC]);
-    expect(skinHost(BREAKMAN_CLASSIC)).toBe(PROTOMAN_CLASSIC);
-    expect(skinHost(DARKPIT_CLASSIC)).toBe(PIT_CLASSIC);
-    expect(skinHost(DOROPIE_CLASSIC)).toBe(FRANCESCA_CLASSIC);
-    expect(skinsOf(MEGAMAN_CLASSIC)).toEqual([MEGAMAN_CLASSIC]);
-    expect(skinHost(ROCK_CLASSIC)).toBe(ROCK_CLASSIC);
-    // Every skin is a Classic-only def (never a campaign hero).
+  it("every variant is a skin on its hero's slot, in the original's skin order", () => {
+    // MegaMan.SKIN_ORDER: Mega Man, Rock, Proto Man, Break Man, Cut Man, Fire Man, Ice Man,
+    // Francesca, Doropie, Rokko Chan; Samus's: Pit, Dark Pit; Luigi's: Peach.
+    expect(skinsOf(MEGAMAN)).toEqual([
+      MEGAMAN,
+      ROCK_CLASSIC,
+      PROTOMAN_CLASSIC,
+      BREAKMAN_CLASSIC,
+      CUTMAN_CLASSIC,
+      FIREMAN_CLASSIC,
+      ICEMAN_CLASSIC,
+      FRANCESCA_CLASSIC,
+      DOROPIE_CLASSIC,
+      ROKKO_CLASSIC,
+    ]);
+    expect(skinsOf(SAMUS)).toEqual([SAMUS, PIT_CLASSIC, DARKPIT_CLASSIC]);
+    expect(skinsOf(LUIGI)).toEqual([LUIGI, PEACH_CLASSIC]);
+    for (const d of [BREAKMAN_CLASSIC, PROTOMAN_CLASSIC, ROCK_CLASSIC, ROKKO_CLASSIC])
+      expect(skinHost(d)).toBe(MEGAMAN);
+    expect(skinHost(DARKPIT_CLASSIC)).toBe(SAMUS);
+    expect(skinHost(PEACH_CLASSIC)).toBe(LUIGI);
+    expect(skinsOf(MARIO)).toEqual([MARIO]);
+    // Every look past the slot's own is a Classic-only def (never a campaign hero).
     for (const list of Object.values(CLASSIC_SKINS))
-      for (const d of list) {
+      for (const d of list.slice(1)) {
         expect(CHARACTERS).not.toContain(d);
         expect(CLASSIC_EXTRAS).toContain(d);
       }
@@ -102,13 +120,11 @@ describe('FU-8: skins in the registry', () => {
 
   it('one select slot per hero; the roster keeps every skin (old saves, ?char=)', () => {
     const { h, sel } = classicSelect();
-    expect(sel.chars).not.toContain(BREAKMAN_CLASSIC);
-    expect(sel.chars).not.toContain(DARKPIT_CLASSIC);
-    expect(sel.chars).not.toContain(DOROPIE_CLASSIC);
-    for (const d of [PROTOMAN_CLASSIC, PIT_CLASSIC, FRANCESCA_CLASSIC, ROCK_CLASSIC, ROKKO_CLASSIC])
-      expect(sel.chars).toContain(d);
+    const skins = [BREAKMAN_CLASSIC, PROTOMAN_CLASSIC, DARKPIT_CLASSIC, DOROPIE_CLASSIC, ROCK_CLASSIC];
+    for (const d of skins) expect(sel.chars).not.toContain(d);
+    for (const d of [MEGAMAN, SAMUS, LUIGI]) expect(sel.chars).toContain(d);
     const roster = h.game.roster;
-    for (const d of [BREAKMAN_CLASSIC, DARKPIT_CLASSIC, DOROPIE_CLASSIC]) {
+    for (const d of skins) {
       expect(roster).toContain(d);
       expect(h.game.slotOf(d)).toBe(skinHost(d));
     }
@@ -116,21 +132,20 @@ describe('FU-8: skins in the registry', () => {
 });
 
 describe('FU-8: the skin picker on the Classic select', () => {
-  it('Skin on Proto Man cycles Break Man and back, said, saved, drawn and picked', () => {
+  it("Skin on Mega Man's slot steps his looks, said, saved, drawn and picked", () => {
     const { h, sel, settings } = classicSelect();
     expect(h.said.at(-1)).toContain("Skin to change a hero's look.");
-    cursorTo(h, sel, 'protoman');
-    expect(h.said.at(-1)).toBe('Proto Man, Mega Man 3');
+    cursorTo(h, sel, 'megaman');
+    expect(h.said.at(-1)).toBe('Mega Man, Mega Man');
     expect(sel.skinPicker).toBe(true);
     expect(sel.touchLabels().special).toBe('SKIN');
+    // The original's order: Rock, then Proto Man, then Break Man.
     h.tap('special');
-    expect(h.said.at(-1)).toBe('Break Man, Proto Man, Mega Man 3');
-    expect(settings.classicSkins).toEqual({ protoman: 'breakman' });
-    expect(h.game.skinFor(PROTOMAN_CLASSIC)).toBe(BREAKMAN_CLASSIC);
     h.tap('special');
-    expect(h.said.at(-1)).toBe('Proto Man, Mega Man 3');
-    expect(settings.classicSkins).toEqual({ protoman: 'protoman' });
     h.tap('special');
+    expect(h.said.at(-1)).toBe('Break Man, Mega Man, Mega Man 3');
+    expect(settings.classicSkins).toEqual({ megaman: 'breakman' });
+    expect(h.game.skinFor(MEGAMAN)).toBe(BREAKMAN_CLASSIC);
     // OK opens the skin menu on Break Man; OK there starts the run as him: his HUD name and look.
     h.tap('jump');
     expect(sel.pickerOpen).toBe(true);
@@ -146,7 +161,7 @@ describe('FU-8: the skin picker on the Classic select', () => {
 
   it('a hero with no other skin: no SKIN button, Skin does nothing', () => {
     const { h, sel, settings } = classicSelect();
-    cursorTo(h, sel, 'megaman');
+    cursorTo(h, sel, 'mario');
     expect(sel.skinPicker).toBe(false);
     expect(sel.touchLabels().special).toBeNull();
     const n = h.said.length;
@@ -156,10 +171,10 @@ describe('FU-8: the skin picker on the Classic select', () => {
   });
 
   it('a saved choice is shown and picked; a death with Break Man returns the cursor to Proto Man', () => {
-    const settings = { ...defaultSettings(), classicSkins: { pit: 'darkpit' } };
+    const settings = { ...defaultSettings(), classicSkins: { samus: 'darkpit' } };
     const { h, sel } = classicSelect(settings);
-    cursorTo(h, sel, 'pit');
-    expect(h.said.at(-1)).toBe('Dark Pit, Pit, Kid Icarus: Uprising');
+    cursorTo(h, sel, 'samus');
+    expect(h.said.at(-1)).toBe('Dark Pit, Samus, Kid Icarus: Uprising');
     h.tap('jump');
     h.tap('jump');
     h.until(() => h.top() instanceof LevelScene, 600);
@@ -172,19 +187,19 @@ describe('FU-8: the skin picker on the Classic select', () => {
       random: true,
     });
     pick.enter();
-    expect(pick.chars[pick.cursor]).toBe(PIT_CLASSIC);
+    expect(pick.chars[pick.cursor]).toBe(SAMUS);
   });
 
   it('the Random slot comes in the chosen skin', () => {
-    const settings = { ...defaultSettings(), classicSkins: { protoman: 'breakman', pit: 'darkpit' } };
+    const settings = { ...defaultSettings(), classicSkins: { megaman: 'breakman', samus: 'darkpit' } };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
     h.game.classicSelect('1-1', () => {});
     for (let i = 0; i < 60; i++) {
       const c = h.game.randomHero();
-      expect(c).not.toBe(PROTOMAN_CLASSIC);
-      expect(c).not.toBe(PIT_CLASSIC);
+      expect(c).not.toBe(MEGAMAN);
+      expect(c).not.toBe(SAMUS);
     }
-    expect(h.game.randomHero([PROTOMAN_CLASSIC])).toBe(BREAKMAN_CLASSIC);
+    expect(h.game.randomHero([MEGAMAN])).toBe(BREAKMAN_CLASSIC);
   });
 
   it('Survival counts a hero once, whatever its skin', () => {
@@ -195,10 +210,10 @@ describe('FU-8: the skin picker on the Classic select', () => {
     const sv = h.game.survival;
     expect(sv).not.toBeNull();
     const ids = sv?.standing().length === 0 ? h.game.heroSlots.map((c) => c.id) : [];
-    expect(ids).toContain('protoman');
+    expect(ids).toContain('megaman');
     expect(ids).not.toContain('breakman');
     h.game.reviveHero(BREAKMAN_CLASSIC);
-    expect(sv?.isFallen('protoman')).toBe(false);
+    expect(sv?.isFallen('megaman')).toBe(false);
   });
 });
 
@@ -227,9 +242,9 @@ describe('FU-8: the saved choice', () => {
 
   it('loadSettings keeps the string entries of classicSkins (deep-merged files)', () => {
     const s = defaultSettings();
-    s.classicSkins = { protoman: 'breakman', pit: 'darkpit' };
+    s.classicSkins = { megaman: 'breakman', samus: 'darkpit' };
     saveSettings(s);
-    expect(loadSettings().classicSkins).toEqual({ protoman: 'breakman', pit: 'darkpit' });
+    expect(loadSettings().classicSkins).toEqual({ megaman: 'breakman', samus: 'darkpit' });
     expect(normaliseSkins({ a: 'b', c: 3, d: null })).toEqual({ a: 'b' });
     expect(normaliseSkins([1])).toBeUndefined();
     saveSettings(defaultSettings());
@@ -237,10 +252,10 @@ describe('FU-8: the saved choice', () => {
   });
 
   it('an unknown or foreign skin id falls back to the hero itself', () => {
-    const settings = { ...defaultSettings(), classicSkins: { protoman: 'darkpit', pit: 'nobody' } };
+    const settings = { ...defaultSettings(), classicSkins: { megaman: 'darkpit', samus: 'nobody' } };
     const { h } = classicSelect(settings);
-    expect(h.game.skinFor(PROTOMAN_CLASSIC)).toBe(PROTOMAN_CLASSIC);
-    expect(h.game.skinFor(PIT_CLASSIC)).toBe(PIT_CLASSIC);
+    expect(h.game.skinFor(MEGAMAN)).toBe(MEGAMAN);
+    expect(h.game.skinFor(SAMUS)).toBe(SAMUS);
   });
 });
 
@@ -284,7 +299,7 @@ describe('FU-8: a cosmetic skin plays exactly as its hero', () => {
     });
 });
 
-describe('FU-3: the variants are Classic Mega Man with their own rules', () => {
+describe('FU-3: the variants are Classic Mega Man with their own rules, as skins on his slot', () => {
   const VARIANTS = [
     ROCK_CLASSIC,
     CUTMAN_CLASSIC,
@@ -294,10 +309,11 @@ describe('FU-3: the variants are Classic Mega Man with their own rules', () => {
     ROKKO_CLASSIC,
   ];
 
-  it('each has its own slot, art, palettes, guide and castle name; never in the campaign', () => {
+  it('each is one of his looks, with its own art, palettes, guide and castle name; never in the campaign', () => {
     const { h, sel } = classicSelect();
+    expect(sel.chars).not.toContain(ROCK_CLASSIC);
     for (const d of VARIANTS) {
-      expect(sel.chars).toContain(d);
+      expect(h.game.skinsFor(MEGAMAN)).toContain(d);
       expect(d.rules).toBe('classic');
       const pt = d.portraitArt;
       expect(pt && SPRITES[pt.sheet]?.frames[pt.frame], d.id).toBeDefined();
