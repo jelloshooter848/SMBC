@@ -82,7 +82,8 @@ export const WAVE_BEAM_CLASSIC: ProjectileSpec = {
   // F2: the original's `wave`, 8 x 8 with a black outline, bursting as `waveEnd`; it comes only
   // with the Flower, whose Varia palette row turns the orange pink.
   sheet: 'smbc-shots',
-  frames: ['wave-varia-0', 'wave-varia-1'],
+  // One frame, as the original's `wave` (no strobe).
+  frames: ['wave-varia-0'],
   burstFrame: 'wave-varia-burst',
   classicHit: SHOT_HIT,
 };
@@ -94,6 +95,13 @@ export const WAVE_BEAM_CLASSIC: ProjectileSpec = {
 export const ICE_BEAM_CLASSIC: ProjectileSpec = {
   ...ICE_BEAM,
   ...beamBase,
+  // F2: the original's `ice`, the plain beam's 4 x 5 bolt (and 7 x 8 burst) in ice colours.
+  w: 4,
+  h: 5,
+  frames: ['classic-ice-beam-0', 'classic-ice-beam-1'],
+  burstFrame: 'classic-ice-beam-burst',
+  burstMirrors: false,
+  drawOffset: { x: -2, y: -1 },
   kind: 'samus-shot',
   amount: 125,
   lifetime: null,
@@ -103,9 +111,8 @@ export const ICE_BEAM_CLASSIC: ProjectileSpec = {
 /** A missile (SA-C18): 400, pierces armour, ends in its explosion at once (no held burst). */
 export const MISSILE_CLASSIC: ProjectileSpec = {
   ...MISSILE,
-  // F2: the original's `missile`, 11 x 8 (HRect 10 x 7.5), its fins cyan.
-  w: 10,
-  h: 8,
+  // F2: the original's `missile` art, 11 x 8 with cyan fins, in the 16 x 8 cell (the body stays
+  // 16 x 8: Pit's heavy arrow shares the spec's numbers).
   sheet: 'smbc-shots',
   frames: ['missile'],
   burstFrame: 'missile-burst',
@@ -123,7 +130,7 @@ export const MISSILE_CLASSIC: ProjectileSpec = {
 export const MISSILE_UP_CLASSIC: ProjectileSpec = {
   ...MISSILE_CLASSIC,
   w: 8,
-  h: 10,
+  h: 16,
   frames: ['missile-up'],
 };
 

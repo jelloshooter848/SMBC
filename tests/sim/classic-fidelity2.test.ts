@@ -12,6 +12,7 @@ import { MEGAMAN } from '@game/characters/megaman';
 import { RYU_CLASSIC } from '@game/characters/ryu/classic';
 import { SAMUS_CLASSIC } from '@game/characters/samus/classic';
 import {
+  ICE_BEAM_CLASSIC,
   LONG_BEAM_CLASSIC,
   MISSILE_CLASSIC,
   MISSILE_UP_CLASSIC,
@@ -22,6 +23,8 @@ import { SIMON_CLASSIC } from '@game/characters/simon/classic';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM } from '@game/characters/classic/anim';
 import { Rig, flatLevel } from './classic-plumber-harness';
 import { useStorage } from './heroes-harness';
+import { PIT_CLASSIC } from '@game/characters/pit/classic';
+import { Projectile } from '@game/entities/projectiles/projectile';
 
 // F2 fidelity (the original 3.1.21's numbers, measured from its SWF and source): walk timing per
 // hero, the air states and their conditions, hurt boxes (HRect) and shot sizes. Classic only;
@@ -307,9 +310,13 @@ describe('shots: the original sizes and colours', () => {
       expect(rows[0]).toMatch(/^\.\.0000\.\.$/);
       expect(rows.join('')).toContain('5'); // Varia's pink
     }
-    expect([MISSILE_CLASSIC.w, MISSILE_CLASSIC.h]).toEqual([10, 8]);
+    expect([MISSILE_CLASSIC.w, MISSILE_CLASSIC.h]).toEqual([16, 8]);
     expect(drawn(MISSILE_CLASSIC.sheet, 'missile')).toEqual([11, 8]);
-    expect([MISSILE_UP_CLASSIC.w, MISSILE_UP_CLASSIC.h]).toEqual([8, 10]);
+    expect([MISSILE_UP_CLASSIC.w, MISSILE_UP_CLASSIC.h]).toEqual([8, 16]);
+    // One Wave Beam frame (no strobe), and the Ice Beam is the plain beam's 4 x 5 bolt.
+    expect(WAVE_BEAM_CLASSIC.frames).toHaveLength(1);
+    expect([ICE_BEAM_CLASSIC.w, ICE_BEAM_CLASSIC.h]).toEqual([4, 5]);
+    for (const f of ICE_BEAM_CLASSIC.frames) expect(drawn(ICE_BEAM_CLASSIC.sheet, f)).toEqual([4, 5]);
   });
 
   it('the palette is the original red rim, orange, green core, Varia pink and missile cyan', () => {
@@ -323,6 +330,16 @@ describe('shots: the original sizes and colours', () => {
       '#00e8d8',
       '#fc9838',
     ]);
+  });
+
+  it("Pit's arrows keep their own 8 x 8 cell, drawn at the body (Pit is not in the original)", () => {
+    const r = new Rig(PIT_CLASSIC, flatLevel(), 'classic', 'big');
+    r.settle();
+    r.step(['attack']);
+    const shot = r.world.entities.find((e): e is Projectile => e instanceof Projectile && e.owner === r.p);
+    expect(shot?.spec.sheet).toBe('pit-shots');
+    expect([shot?.spec.w, shot?.spec.h]).toEqual([8, 8]);
+    expect(shot?.spec.drawOffset).toBeUndefined();
   });
 
   it("Mario's Fire Flower ball fills its 8 x 8 and bursts 16 x 16", () => {

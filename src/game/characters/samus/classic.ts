@@ -255,8 +255,10 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
     else h = v.standShotHeight;
     cy = p.feetY - px(h);
   }
-  const x = cx - px(spec.w / 2);
-  const y = cy - px(spec.h / 2);
+  // The shot as drawn and sized (ClassicSamusVariant.shotLook: Pit's arrows), centred on the muzzle.
+  const look = v.shotLook ? v.shotLook(spec, up) : spec;
+  const x = cx - px(look.w / 2);
+  const y = cy - px(look.h / 2);
   let waveSign: -1 | 1 = 1;
   if (spec.wave) {
     // SA-C22: each Wave shot starts the other way (the first of a level down, or right).
@@ -267,7 +269,7 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
     Math.round(x),
     Math.round(y),
     p.facing,
-    v.shotLook ? v.shotLook(spec, up) : spec,
+    look,
     p,
     up ? { vx: 0, vy: -spec.speed, waveSign } : { waveSign },
   );

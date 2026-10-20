@@ -77,11 +77,18 @@ const beamBurstItems = [
   '...2....',
 ];
 
+/** The Ice Beam in the `items` roles e (blue rim), a (light blue), 1 (white head). */
+const iceItems = (rows: readonly string[]): string[] =>
+  rows.map((r) => r.replace(/[2745]/g, (c) => ({ '2': 'e', '7': 'a', '4': 'a', '5': 'a' })[c] as string));
+
 /** Classic Samus's beam frames for the `items` sheet. */
 export const smbcBeamItemFrames: Record<string, string[]> = {
   'classic-beam-0': beam0,
   'classic-beam-1': beam1,
   'classic-beam-burst': beamBurstItems,
+  'classic-ice-beam-0': iceItems(beam0),
+  'classic-ice-beam-1': iceItems(beam1),
+  'classic-ice-beam-burst': iceItems(beamBurstItems),
 };
 
 // The Wave Beam's burst (this sheet's roles).
@@ -128,7 +135,7 @@ const missile = [
   '.022777770.',
   '..00000660.',
   '.......00..',
-];
+].map((r) => r.padEnd(16, '.'));
 
 // The Fire Flower ball, 8 x 8, filling its cell: a white heart, orange, a red rim; the bright
 // spot turns a quarter each frame.
