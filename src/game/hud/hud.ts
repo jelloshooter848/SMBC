@@ -48,8 +48,8 @@ export interface HudOptions {
    */
   keyHolder?: number | null;
   /**
-   * Classic mode's Infinite Time cheat (TopScreenText.hideTime): no TIME column at all, neither
-   * the label nor the digits. Only a Classic run sets it; the campaign's assist keeps TIME.
+   * Classic mode's Infinite Time cheat (TopScreenText.hideTime): the TIME label stays, its digits
+   * (and the low-time blink) go. Only a Classic run sets it; the campaign's assist is unchanged.
    */
   noTime?: boolean;
 }
@@ -152,7 +152,7 @@ export function drawHud(
       const [a, b] = hudAreaLines(place);
       text(a, 144, 8);
       if (b) text(b, 144 + (((a.length - b.length) * 8) >> 1), 16);
-      if (!opts.noTime) text('TIME', TIME_X_PLACE, 8);
+      text('TIME', TIME_X_PLACE, 8);
       if (time !== null && !opts.noTime) text(pad(time, 3), TIME_X_PLACE + 8, 16);
     } else {
       text('WORLD', 144, 8);
@@ -161,7 +161,7 @@ export function drawHud(
         152,
         16,
       );
-      if (!opts.noTime) text('TIME', 200, 8);
+      text('TIME', 200, 8);
       if (time !== null && !opts.noTime) text(pad(time, 3), 208, 16);
     }
   }

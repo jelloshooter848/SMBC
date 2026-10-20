@@ -32,8 +32,11 @@ under `## [Unreleased]`.
 - Classic Mega Man's shooting pose no longer shows a stray dark line under his buster.
 - Classic mode: after the flagpole, the heroes walk to the castle in their walking pose (Samus
   no longer kneels, Bill and Ryu no longer fall, Simon and Sophia III no longer jump).
-- Classic mode's Infinite Time cheat: the HUD and the card before a level show no TIME, and a
-  clear raises the flag at once, with no time tally (and no fireworks), as in the original.
+- Classic mode's Infinite Time cheat: the HUD and the card before a level hide the time's
+  digits (the TIME label stays), and a clear raises the flag at once, with no time tally (and no
+  fireworks), as in the original.
+- Classic Link: a revived or respawned Link no longer starts his death animation part-way
+  through.
 
 ## [0.4.62] - 2026-10-20
 

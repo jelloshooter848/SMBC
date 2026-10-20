@@ -159,7 +159,7 @@ export class ClassicOptionsScene extends MenuScene {
         label: 'More settings',
         value: state(MORE_SETTINGS_ROWS),
         select: menu('MORE SETTINGS', 'More settings', MORE_SETTINGS_ROWS),
-        hint: 'Lives, when hit, attack, item drops, piranhas, goombas and enemy speed, with Classic SMBC rules',
+        hint: 'Lives, attack, when hit, item drops, piranhas, goombas and enemy speed, with Classic SMBC rules',
       },
       {
         label: 'Weapons',

@@ -128,12 +128,16 @@ function flagRun(cheats: Flags | null) {
   };
 }
 
-describe('1. Infinite Time: no TIME on the HUD or the card, no tally', () => {
-  it('drawHud with noTime leaves out the label and the digits; without it both show', () => {
+describe("1. Infinite Time: TIME's digits hidden on the HUD and the card (label kept), no tally", () => {
+  it('drawHud with noTime keeps the TIME label and leaves out the digits and the blink', () => {
     expect(hudTexts(400, false)).toEqual(expect.arrayContaining(['TIME', '400']));
     const t = hudTexts(400, true);
-    expect(t).not.toContain('TIME');
+    expect(t.filter((x) => x === 'TIME')).toHaveLength(1);
     expect(t).not.toContain('400');
+    // Low time: no second (blinking) TIME draw and no digits.
+    const low = hudTexts(50, true);
+    expect(low.filter((x) => x === 'TIME')).toHaveLength(1);
+    expect(low).not.toContain('050');
   });
 
   it('a clear with the cheat on skips the time tally and the fireworks; off, both play', () => {
@@ -149,7 +153,7 @@ describe('1. Infinite Time: no TIME on the HUD or the card, no tally', () => {
     expect(on.fireworks).toBe(0);
   });
 
-  it('the card before a level shows no TIME with the cheat on; the campaign assist keeps the label', () => {
+  it('the card before a level keeps the TIME label and hides its digits with the cheat on, as the assist does', () => {
     const card = (classicCheats: CheatFlags | undefined, infiniteTime: boolean): string[] => {
       const game = {
         ctx: {
@@ -170,7 +174,7 @@ describe('1. Infinite Time: no TIME on the HUD or the card, no tally', () => {
     };
     expect(card(undefined, true)).toContain('TIME');
     const on = card({ ...NO_CHEATS, infiniteTime: true }, true);
-    expect(on).not.toContain('TIME');
+    expect(on).toContain('TIME');
     expect(on).not.toContain('400');
     expect(card({ ...NO_CHEATS }, false)).toEqual(expect.arrayContaining(['TIME', '400']));
   });
