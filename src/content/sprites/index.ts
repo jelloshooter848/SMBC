@@ -23,7 +23,7 @@ import { samusPalettes, samusDef, samusClassicDef } from './samus';
 import { megamanOrbsDef } from './megaman-orbs';
 import { BASS_LOOKS, heroLookPalettes, heroLookSheets } from './hero-looks';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
-import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
+import { peachDef, peachPalettes } from './peach';
 import { simonPalettes, simonDef } from './simon';
 import { simonClassicDef } from './simon-classic';
 import { simonFlameDef } from './simon-flame';
@@ -151,7 +151,6 @@ export const SPRITES: Record<string, SpriteDef> = {
   'warriors-fx': warriorsFxDef,
   // Princess Peach, a Classic-only hero (PE-24, PE-25), and her plucks.
   peach: peachDef,
-  'peach-items': peachItemsDef,
   // Sir Arthur, a Classic-only hero (AR-29), his weapons and their Gold armour look.
   arthur: arthurDef,
   'arthur-fx': arthurFxDef,
@@ -254,7 +253,6 @@ const defaults: Record<string, readonly string[]> = {
   ...pitShotPalettes,
   ...warriorsPalettes,
   ...peachPalettes,
-  ...peachItemPalettes,
   ...arthurPalettes,
   ...simonPalettes,
   ...ryuPalettes,

@@ -510,12 +510,6 @@ export interface CharacterDef {
     dir(p: Player): -1 | 1;
   };
   /**
-   * Landing on enemy `e` from above stands on it as on a moving floor (Classic Peach's riding,
-   * PE-11): no stomp and no hurt; the enemy's movement carries the hero (World.rideEnemies), who
-   * can walk, jump and lift from there. Contact from the side or below is as usual. Absent: never.
-   */
-  standsOnEnemies?(p: Player, e: Enemy): boolean;
-  /**
    * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
    * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level
    * load reads `wide` (rules/classic-level-variants.ts). No Current def sets it.

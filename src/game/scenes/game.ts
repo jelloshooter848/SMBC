@@ -2008,7 +2008,9 @@ export class Game {
     this.classicDev = false;
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
-    this.state = newGameState(hero, null, this.liveRules);
+    // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
+    const played = this.restoreSlotHero(hero);
+    this.state = newGameState(played, null, this.liveRules);
     const s = this.state;
     s.score = r.score;
     s.coins = r.coins;
@@ -2023,7 +2025,13 @@ export class Game {
     this.survival = null;
     if (r.survival && this.survivalMode) {
       const sv = this.newSurvival();
-      for (const c of this.heroSlots) if (!r.survival.fallen.includes(c.id)) sv.revive(c.id);
+      // A fallen look is its slot's hero (an older run kept Peach by her own id: Luigi's slot).
+      const roster = this.rosterFor(r.rules);
+      const fallen = r.survival.fallen.map((id) => {
+        const d = roster.find((c) => c.id === id);
+        return d ? this.slotOf(d).id : id;
+      });
+      for (const c of this.heroSlots) if (!fallen.includes(c.id)) sv.revive(c.id);
       sv.reviveAllowed = r.survival.reviveAllowed;
       this.survival = sv;
     }

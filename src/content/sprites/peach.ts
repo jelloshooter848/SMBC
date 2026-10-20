@@ -37,20 +37,6 @@ export const peachPalettes: Record<string, string[]> = {
   'peach-star-3': P(NES.white, NES.red, NES.blueMid),
 };
 
-/** Her plucks (sheet `peach-items`). 0 outline 1 white 2 light grey 3 green 4 dark green 5 red 6 yellow 7 blue 8 sky 9 brown. */
-const peachItemPalette: string[] = [
-  NES.black,
-  NES.white,
-  NES.lightGray,
-  NES.greenMid,
-  NES.greenDark,
-  NES.redBright,
-  NES.yellow,
-  NES.blueMid,
-  NES.skyLight,
-  NES.brown,
-];
-
 /* ---------- helpers ---------- */
 
 const blank = (w: number, h: number): string[] => Array.from({ length: h }, () => '.'.repeat(w));
@@ -379,70 +365,3 @@ export const peachDef: SpriteDef = {
     'small-climb-1': sCarryWalk1,
   },
 };
-
-/* ---------- items (Peach's plucks) ---------- */
-
-const turnip = [
-  '....00....00....',
-  '...0330..0330...',
-  '....03300330....',
-  '.....043340.....',
-  '......0440......',
-  '....00111100....',
-  '...0111111110...',
-  '..011111111210..',
-  '..011111112210..',
-  '..011111112210..',
-  '...0111112210...',
-  '....01112210....',
-  '.....011210.....',
-  '......0110......',
-  '.......00.......',
-  '................',
-];
-/** The leaves left showing in the ground for a moment after a pluck (cosmetic). */
-const sprout = ['.0..0...', '0330330.', '.03430..', '..040...'];
-/** Rare pluck: the POW block (PE-14). */
-const pow = [
-  '0000000000000000',
-  '0777777777777770',
-  '0788888888888870',
-  '0781111111111870',
-  '0781117171711870',
-  '0781717171711870',
-  '0781117171711870',
-  '0781711717171870',
-  '0781711711711870',
-  '0781111111111870',
-  '0781111111111870',
-  '0788888888888870',
-  '0777777777777770',
-  '0777777777777770',
-  '0000000000000000',
-  '................',
-];
-/** Rare pluck: the stopwatch (PE-14), 16x16 so it reads when carried. */
-const watch = [
-  '......0000......',
-  '......0660......',
-  '....00000000....',
-  '...0222222220...',
-  '..022111111220..',
-  '..021111011120..',
-  '.021111101111120',
-  '.021111100011120',
-  '.021111111111120',
-  '..021111111120..',
-  '..022111111220..',
-  '...0222222220...',
-  '....00000000....',
-  '................',
-  '................',
-  '................',
-];
-export const peachItemsDef: SpriteDef = {
-  palette: 'peach-items',
-  frames: { turnip, sprout, pow, watch },
-};
-
-export const peachItemPalettes: Record<string, string[]> = { 'peach-items': peachItemPalette };
