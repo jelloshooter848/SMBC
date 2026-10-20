@@ -1,12 +1,12 @@
 import { gainCoins } from '../items/wallet';
 import type { InputFrame } from '@engine/input/input-manager';
 import { worldLabel } from '../hud/world-label';
-import { SCORE_MAX } from '../hud/hud';
+import { HUD_BOTTOM, SCORE_MAX } from '../hud/hud';
 import { fontText, wrapText } from '../hud/text';
 import { NO_INPUT } from '@engine/input/input-manager';
 import { OffsetRenderer, translucent, type Renderer } from '@engine/gfx/renderer';
 import { overlaps, type AABB } from '@engine/math/aabb';
-import type { Body } from '../entities/body';
+import { moveX, type Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -52,7 +52,7 @@ import {
   TeleportPad,
   type TeleportZone,
 } from '../entities/objects/teleporter';
-import { PowerUp } from '../entities/objects/powerup';
+import { PowerUp, type PowerUpKind } from '../entities/objects/powerup';
 import { isPickupKind, Pickup, type PickupKind } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
@@ -1645,7 +1645,8 @@ export class World {
       }
       let input = inputs[i] ?? NO_INPUT;
       if (this.fallingIn.has(p)) {
-        if (p.body.onGround || p.body.y >= px(FALL_IN_STEER_Y)) this.fallingIn.delete(p);
+        // A hero that flies never lands: steered at once (CharacterDef.flies).
+        if (p.body.onGround || p.body.y >= px(FALL_IN_STEER_Y) || p.def.flies) this.fallingIn.delete(p);
         else input = withoutSteering(input);
       }
       if (this.autoWalk) input = AUTO_WALK_INPUT;
@@ -1762,7 +1763,9 @@ export class World {
     }
 
     const lead = this.rightmost();
+    const heroScroll = this.camera.auto ? 0 : this.heroScrollSpeed();
     if (this.camera.auto) this.autoScroll();
+    else if (heroScroll) this.autoScroll(heroScroll);
     else if (lead) {
       const before = this.camera.x;
       // A hero may lead the camera from an eased anchor (CharacterDef.cameraX: Classic Sophia III).
@@ -1805,10 +1808,11 @@ export class World {
    * SMB3 (whatever the assists: there is no way out, as with a pit). The frames the world stands
    * still (pause, a death with no one left, pipes, growing) never get here, so the scroll holds.
    */
-  private autoScroll(): void {
+  private autoScroll(heroSpeed = 0): void {
     // A transfer under way, or the players still climbing in (a vine or anchor-chain arrival).
     if (this.leaving || this.arriving) return;
-    this.camera.scroll();
+    if (heroSpeed) this.heroScroll(heroSpeed);
+    else this.camera.scroll();
     for (const p of this.activePlayers()) {
       if (p.body.x >= this.camera.x || p.frozen || p.hidden) continue;
       // Pushed by the screen's edge, a player on stairs is knocked off them and pushed like
@@ -1817,9 +1821,57 @@ export class World {
       const blocked = this.solidRows(p);
       p.body.x = this.camera.x;
       if (p.body.vx < 0) p.body.vx = 0;
-      if (this.squashed(p, blocked)) this.kill(p);
+      if (!this.squashed(p, blocked)) continue;
+      // A hero whose own scroll pins it (CharacterDef.autoScroll.pinned 'eject': Vic Viper, as
+      // the original's hit test pushes the ship out of the ground it was shoved into) is put free
+      // where there is room; with none it is squashed like anyone else.
+      if (p.def.autoScroll?.pinned === 'eject' && this.eject(p)) continue;
+      this.kill(p);
     }
   }
+
+  /**
+   * The speed (velocity units) of a hero's own auto-scroll (CharacterDef.autoScroll: Vic Viper,
+   * VV-9, VV-M14): while any player still in the level plays such a hero; 0 otherwise, and the
+   * camera follows as usual.
+   */
+  private heroScrollSpeed(): number {
+    for (const p of this.players) if (!p.out && p.def.autoScroll) return p.def.autoScroll.speed;
+    return 0;
+  }
+
+  /**
+   * Where a hero's auto-scroll ends for good (VV-12): the camera's end, or in a castle with an axe
+   * the screen that has the axe a tile in from its right edge (the original's axe limit), so the
+   * fight with Bowser is on a fixed screen.
+   */
+  private heroScrollEnd(): number {
+    const axe = this.level.entities.find((e) => e.type === 'axe');
+    if (!axe) return this.camera.maxX;
+    return Math.min(this.camera.maxX, Math.max(0, tileToSub(axe.x + 2) - px(SCREEN_W)));
+  }
+
+  /**
+   * One frame of a hero's auto-scroll (VV-9, VV-10, VV-12): the camera moves right by `speed` up to
+   * its end (where it stays), whatever the players do, and carries every player whose hero scrolls
+   * (CharacterDef.autoScroll) by the same amount; anyone else is only pushed by the left edge.
+   */
+  private heroScroll(speed: number): void {
+    this.heroScrolled = false;
+    if (this.camera.locked) return;
+    const before = this.camera.x;
+    const end = this.heroScrollEnd();
+    if (before >= end) return;
+    this.camera.x = Math.min(end, before + velToSub(speed));
+    const dx = this.camera.x - before;
+    if (dx <= 0) return;
+    this.heroScrolled = true;
+    for (const p of this.activePlayers())
+      if (p.def.autoScroll && !p.frozen && !p.hidden) moveX(p.body, this.playerMap(p), dx);
+  }
+
+  /** The hero's auto-scroll moved the camera on this frame (CharacterDef.autoScroll). */
+  heroScrolled = false;
 
   /** The tile rows (of the side probe's span) in which the body already overlaps a solid tile. */
   private solidRows(p: Player): Set<number> {
@@ -2411,7 +2463,8 @@ export class World {
         break;
       }
       case 'powerup':
-        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(new PowerUp(tx, ty, p.def.blockPowerUp(p)));
+        if (!this.spawnHeroItem(tx, ty, p, content))
+          this.spawn(this.blockItem(tx, ty, p.def.blockPowerUp(p), p));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;
@@ -2442,7 +2495,7 @@ export class World {
         // The Top Secret Area: always this item, whatever the hero's power (its onPowerUp gives
         // the hero's own flower or mushroom power). Campaign: the hero's own grow item from `R`,
         // their entry or default power from `W`.
-        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(new PowerUp(tx, ty, content));
+        if (!this.spawnHeroItem(tx, ty, p, content)) this.spawn(this.blockItem(tx, ty, content, p));
         this.audio.sfx('powerup-appear');
         this.feats.powerBlocks++;
         break;
@@ -2521,6 +2574,14 @@ export class World {
   /** Campaign play: blocks give each hero their own items from `entries` (the level's `[hero-items]`). */
   useHeroItems(entries: readonly HeroItemEntry[]): void {
     this.heroItems = new Map(entries.map((e) => [`${e.x},${e.y}`, e.items]));
+  }
+
+  /** A block's power-up for `p`, drawn with `p`'s own art for it if the def has one (powerUpArt). */
+  private blockItem(tx: number, ty: number, kind: PowerUpKind, p: Player): PowerUp {
+    const u = new PowerUp(tx, ty, kind);
+    const art = p.def.powerUpArt?.(kind);
+    if (art) u.art = art;
+    return u;
   }
 
   /**
@@ -3055,7 +3116,8 @@ export class World {
 
   private checkPipes(p: Player, input: InputFrame): void {
     const b = p.body;
-    if (!b.onGround) return;
+    // A hero that flies enters pipes in mid-air too (CharacterDef.pipesAirborne, VV-27).
+    if (!b.onGround && !p.def.pipesAirborne) return;
     for (const z of this.level.zones) {
       // A sleeping pipe (`campaign`, woken only by the campaign variant) is no way in.
       if (z.kind !== 'pipe' || z.campaign) continue;
@@ -3714,7 +3776,7 @@ export class World {
       }
       return;
     }
-    const thanks = `THANK YOU ${fontText(p.def.name)}!`;
+    const thanks = `THANK YOU ${fontText(p.def.thanksName ?? p.def.name)}!`;
     if (s === 30) this.castleText = [thanks];
     const ok = c.at !== undefined && cardContinues(s - c.at, inputs, CASTLE_OK_KEYS);
     const leave = () => {
@@ -4104,6 +4166,29 @@ export class World {
     if (y === b.y || this.overlapsSolid({ x: b.x, y, w: b.w, h: b.h })) return;
     b.y = y;
     if (b.vy < 0) b.vy = 0;
+  }
+
+  /**
+   * A body pinned against a wall by the scroll's left edge moved to the nearest free place: up or
+   * down (the nearer, up first, at most two tiles), else just past the wall. False if none.
+   */
+  private eject(p: Player): boolean {
+    const b = p.body;
+    const at = (x: number, y: number) => ({ x, y, w: b.w, h: b.h });
+    for (let d = 1; d <= 32; d++)
+      for (const dy of [-d, d]) {
+        const y = b.y + px(dy);
+        if (y >= this.camera.y + px(HUD_BOTTOM) && !this.overlapsSolid(at(b.x, y))) {
+          b.y = y;
+          return true;
+        }
+      }
+    for (let x = b.x; x < this.camera.right - b.w; x += px(1))
+      if (!this.overlapsSolid(at(x, b.y))) {
+        b.x = x;
+        return true;
+      }
+    return false;
   }
 
   /** Whether a box overlaps a solid tile. */

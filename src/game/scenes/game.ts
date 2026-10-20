@@ -139,6 +139,16 @@ export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 /** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
 export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
 
+/**
+ * The keys of `kit` a death keeps for `def` (CharacterDef.keepOnDeath: Classic Warriors of Light's
+ * class), outside the campaign; empty for every other hero.
+ */
+function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const k of def.keepOnDeath ?? []) if (kit[k] !== undefined) out[k] = kit[k];
+  return out;
+}
+
 /** Orchestrates scenes and carries GameState between levels. */
 export class Game {
   readonly scenes = new SceneStack();
@@ -1595,21 +1605,22 @@ export class Game {
   resetAfterDeath(): void {
     const s = this.state;
     const rules = this.liveRules;
-    const fresh = (c: CharacterDef): HeroPower => {
+    const fresh = (c: CharacterDef, kit: Record<string, number>): HeroPower => {
       if (this.campaign) return heroStart(c);
       const d = heroFor(c, rules); // the def played under the run's rules (TG-17a)
-      return { powerState: defaultPower(d), hp: startHp(d), kit: {} };
+      return { powerState: defaultPower(d), hp: startHp(d), kit: keptKit(d, kit) };
     };
-    const p1 = fresh(s.character);
+    const p1 = fresh(s.character, s.kit);
+    const kit2 = s.kit2;
     s.powerState = p1.powerState;
     s.hp = p1.hp;
     s.kit = p1.kit;
     s.kit2 = {};
     if (s.character2) {
-      const p2 = fresh(s.character2);
+      const p2 = fresh(s.character2, kit2);
       s.powerState2 = p2.powerState;
       s.hp2 = p2.hp;
-      s.kit2 = this.campaign ? p2.kit : {};
+      s.kit2 = p2.kit;
     }
   }
 
@@ -1659,16 +1670,17 @@ export class Game {
     // The default of the def played under the run's rules (TG-17a).
     const d = heroFor(c, this.liveRules);
     const power = defaultPower(d);
+    // The same hero picked again keeps what a death keeps (CharacterDef.keepOnDeath).
     if (player === 1) {
+      s.kit2 = s.character2 === c ? keptKit(d, s.kit2) : {};
       s.character2 = c;
       s.powerState2 = power;
       s.hp2 = startHp(d);
-      s.kit2 = {};
     } else {
+      s.kit = s.character === c ? keptKit(d, s.kit) : {};
       s.character = c;
       s.powerState = power;
       s.hp = startHp(d);
-      s.kit = {};
     }
   }
 

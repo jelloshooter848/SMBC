@@ -100,7 +100,7 @@ export class GuideScene implements Scene {
     this.pages = this.buildPages();
     const power = def.damage.kind === 'powerup' ? 'fire' : 'full';
     this.demo = new Player(px(64), px(112), def, power, def.damage.kind === 'hp' ? def.damage.max : 0);
-    Object.assign(this.demo.scratch, def.devKit?.() ?? {});
+    Object.assign(this.demo.scratch, def.guideKit?.() ?? def.devKit?.() ?? {});
     if (def.damage.kind === 'hp' && this.demo.scratch.maxHp) this.demo.hp = this.demo.scratch.maxHp;
     this.demo.body.onGround = true;
     this.demo.refitHitbox();

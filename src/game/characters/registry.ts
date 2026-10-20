@@ -23,6 +23,8 @@ import { SOPHIA_CLASSIC } from './sophia/classic';
 import { BASS_CLASSIC } from './bass/classic';
 import { BREAKMAN_CLASSIC, PROTOMAN_CLASSIC } from './protoman/classic';
 import { DARKPIT_CLASSIC, PIT_CLASSIC } from './pit/classic';
+import { VICVIPER_CLASSIC } from './vicviper/classic';
+import { WARRIORS_CLASSIC } from './warriors/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
 import { classicEnemySpawned, classicHit } from '../rules/classic-enemies';
@@ -77,6 +79,8 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   BREAKMAN_CLASSIC,
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
+  VICVIPER_CLASSIC,
+  WARRIORS_CLASSIC,
 ];
 
 /**

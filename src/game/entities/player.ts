@@ -11,7 +11,7 @@ import {
   type SwimProfile,
 } from '../characters/profile';
 import type { CharacterDef } from '../characters/character';
-import { makeBody, moveX, moveY, type Body } from './body';
+import { makeBody, moveX, moveY, type Body, type MoveYOptions } from './body';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import { placeOnStairs, STAIR_LOCK, STAIR_SPEED, type StairLine, type StairRide } from './objects/stairs';
@@ -522,7 +522,10 @@ export class Player {
     moveX(b, map, velToSub(b.vx));
     this.fallSpeed = b.onGround ? 0 : b.vy;
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
-    moveY(b, map, dy, onHeadBump ? { onHeadBump } : {});
+    const yOpts: MoveYOptions = onHeadBump ? { onHeadBump } : {};
+    // A head that passes hidden blocks (CharacterDef.passesHiddenBlocks; Classic Warriors of Light).
+    if (this.def.passesHiddenBlocks) yOpts.ignoreHidden = true;
+    moveY(b, map, dy, yOpts);
     if (gapSpeed && !b.onGround) this.crossSmallGap(map);
     // MovementProfile.wallClimb (Classic Ryu RY-C10): airborne last frame and this one, pressing
     // into a wall beside a probe.

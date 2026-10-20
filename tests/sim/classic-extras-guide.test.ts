@@ -17,7 +17,15 @@ const rows = (s: unknown) =>
 
 describe('How to play lists the Classic extras', () => {
   it('in a Classic run: every extra, in roster order, with its Classic guide tagline', () => {
-    expect(CLASSIC_EXTRAS.map((c) => c.id)).toEqual(['bass', 'protoman', 'breakman', 'pit', 'darkpit']);
+    expect(CLASSIC_EXTRAS.map((c) => c.id)).toEqual([
+      'bass',
+      'protoman',
+      'breakman',
+      'pit',
+      'darkpit',
+      'vicviper',
+      'warriors',
+    ]);
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
     expect(h.game.liveRules).toBe('classic');

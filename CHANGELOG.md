@@ -23,8 +23,25 @@ under `## [Unreleased]`.
 - Classic mode: **Pit** and **Dark Pit** join the second row too. They play as Classic Samus, but walk and jump while
   crouched (and fit one-tile gaps), tuck into a crouch in the air, can't walk while aiming up, fire no beam from the
   crouch (missiles still fire), shoot lower, and have no morph ball or bombs. Each has its own beam and jump sounds.
+- Classic mode: **Vic Viper**, the starfighter cut from the original, joins the second row. The screen scrolls right by
+  itself and carries the ship; it flies freely in eight directions with no gravity, shoots straight ahead through
+  walls (breaking bricks and bumping blocks), enters pipes in mid-air, and cannot stomp or bump blocks from below.
+  Pinned against a wall by the scrolling screen, the ship is pushed free (up, down or past the wall); only with no room
+  anywhere is it crushed. Power capsules (from power-up blocks after the
+  Mushroom, and from defeated enemies) light a Gradius-style power bar on the HUD; POWER takes the lit power-up:
+  Speed Up, a ground Missile that breaks armour, Double, Laser, up to four Options and a front Shield. The Mushroom
+  turns the trim blue. Current play is unchanged.
+- Classic mode: the **Warriors of Light** close the second row, the original game's unfinished party of four classes,
+  finished here with new art. The **Fighter** swings a strong sword, the **Thief** a weak dagger, the **Black Mage**
+  casts Fire, Ice (down) and a full-height Bolt (up) after a short wind-up, through walls and bricks, and the **White
+  Mage** swings a staff and, when small, casts **Cure** (down) once a level to bring back the Mushroom. Change class at
+  any time with CLASS (Special) and a direction: up Fighter, right Black Mage, down Thief, left White Mage; the class
+  is announced, shown on the HUD and kept when you lose a life. They walk and stop at once, jump one fixed height, stand
+  still while attacking, cannot stomp, and blocks do nothing when hit from below. The Fire Flower gives every class a
+  new outfit.
 - Classic mode: the castle's "another castle" line names each Classic-only hero's own rescue: Dr. Wily for Bass,
   Roll for Proto Man and Break Man, Palutena for Pit and the Reaper for Dark Pit.
+  Vic Viper and the Warriors of Light keep the usual line.
 
 ## [0.4.57] - 2026-10-19
 

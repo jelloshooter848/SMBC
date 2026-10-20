@@ -92,6 +92,15 @@ describe('Classic-only heroes: castle text names their rescue', () => {
     for (const line of classic.text) expect(line.length * 8, line).toBeLessThanOrEqual(SCREEN_W - 32);
   });
 
+  it.each(['vicviper', 'warriors'])('%s has no rescue name: the castle keeps the shared line', (id) => {
+    const def = CLASSIC_EXTRAS.find((d) => d.id === id);
+    expect(def, id).toBeDefined();
+    expect((def as CharacterDef).rescueName).toBeUndefined();
+    const classic = castleNews(def as CharacterDef, 'classic');
+    expect(classic.text.slice(1)).toEqual(['', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!']);
+    expect(classic.say[0]).toContain('BUT OUR PRINCESS IS IN ANOTHER CASTLE!');
+  });
+
   it('Current is unaffected: no campaign hero carries a name and the line stays shared', () => {
     for (const def of CHARACTERS) expect(def.rescueName, def.id).toBeUndefined();
     for (const def of CHARACTERS.slice(0, 2)) {

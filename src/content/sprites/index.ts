@@ -22,6 +22,7 @@ import { cryptPalettes, cryptDef } from './crypt';
 import { ninjaPalettes, ninjaDef } from './ninja';
 import { contraPalettes, contraDef } from './contra';
 import { sophiaPalettes, sophiaDef } from './sophia';
+import { vicviperPalettes, vicviperDef } from './vicviper';
 import { bmDungeonDef, bmDungeonPalettes } from './bm-dungeon';
 import { partnersPalettes, partnersDef } from './partners';
 import { npcsPalettes, npcsDef } from './npcs';
@@ -66,6 +67,7 @@ import {
 import { titleLogoDef, titleLogoPalettes, titleRiftDef } from './title-logo';
 import { withSideFrames } from '@game/topdown/frames';
 import { colorblindPalettes } from './colorblind';
+import { warriorsDef, warriorsFxDef, warriorsPalettes } from './warriors';
 import { HERO_FX, mapShadeFx } from './palette-fx';
 
 /** `rows` cropped to its drawn pixels (no transparent border). */
@@ -101,6 +103,9 @@ export const SPRITES: Record<string, SpriteDef> = {
   bass: bassDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  // The Warriors of Light, a Classic-only hero (WL-26), and their spells.
+  warriors: warriorsDef,
+  'warriors-fx': warriorsFxDef,
   simon: simonDef,
   'simon-flame': simonFlameDef,
   ryu: ryuDef,
@@ -120,6 +125,8 @@ export const SPRITES: Record<string, SpriteDef> = {
   'title-logo': titleLogoDef,
   'title-rift': titleRiftDef,
   sophia: sophiaSheet,
+  // Vic Viper, a Classic-only hero (characters/vicviper/classic.ts).
+  vicviper: vicviperDef,
   // Sophia's overhead dungeon for the top-down kit (north-edge walls and doors, turned like Link's).
   'bm-dungeon': withSideFrames(bmDungeonDef),
   partners: partnersDef,
@@ -183,6 +190,7 @@ const defaults: Record<string, readonly string[]> = {
   ...megamanPalettes,
   ...bassPalettes,
   ...samusPalettes,
+  ...warriorsPalettes,
   ...simonPalettes,
   ...ryuPalettes,
   ...billPalettes,
@@ -198,6 +206,7 @@ const defaults: Record<string, readonly string[]> = {
   ...contraPalettes,
   ...titleLogoPalettes,
   ...sophiaPalettes,
+  ...vicviperPalettes,
   ...bmDungeonPalettes,
   ...partnersPalettes,
   ...npcsPalettes,

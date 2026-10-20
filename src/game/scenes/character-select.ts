@@ -113,6 +113,18 @@ export class CharacterSelectScene implements Scene {
     );
   }
 
+  /**
+   * The portrait for hero `c`: the picking player's own hero shows its carried kit's look
+   * (CharacterDef.portraitFor: the Warriors of Light's remembered class), else `portrait`.
+   */
+  private portraitOf(c: CharacterDef): CharacterDef['portrait'] {
+    if (!c.portraitFor) return c.portrait;
+    const s = this.game.state;
+    const second = this.pick?.player === 1 && s.character2 !== null;
+    const mine = second ? s.character2 : s.character;
+    return mine === c ? c.portraitFor(second ? s.kit2 : s.kit) : c.portrait;
+  }
+
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   private rowsHint(): string {
     return this.firstRow < this.chars.length ? ' up and down for the other row,' : '';
@@ -307,28 +319,26 @@ export class CharacterSelectScene implements Scene {
       const row = i < first ? first : chars.length - first;
       const spacing = Math.min(64, 224 / Math.max(1, row));
       const locked = this.locked(i);
-      const sheet = assets.sheet(
-        c.portrait.sheet,
-        locked ? fxPalette(c.portrait.palette, 'silhouette') : c.portrait.palette,
-      );
-      const f = sheet.frames.get(c.portrait.frame);
+      const pt = this.portraitOf(c);
+      const sheet = assets.sheet(pt.sheet, locked ? fxPalette(pt.palette, 'silhouette') : pt.palette);
+      const f = sheet.frames.get(pt.frame);
       const h = f?.h ?? 32;
       // Centred on its slot (a 16 px hero at x - 8; Sophia III's tank is wider).
       const left = x - ((f?.w ?? 16) >> 1);
       if (locked) {
         // A captive still to be found: a black silhouette with a grey rim (so it reads on the
         // black screen) and ??? for its name.
-        const rim = assets.sheet(c.portrait.sheet, fxPalette(c.portrait.palette, 'rim'));
+        const rim = assets.sheet(pt.sheet, fxPalette(pt.palette, 'rim'));
         for (const [dx, dy] of [
           [-1, 0],
           [1, 0],
           [0, -1],
           [0, 1],
         ] as const)
-          r.sprite(rim, c.portrait.frame, left + dx, feet - h + dy);
+          r.sprite(rim, pt.frame, left + dx, feet - h + dy);
         r.text(font, '???', x - 12, feet + 8);
       }
-      r.sprite(sheet, c.portrait.frame, left, feet - h);
+      r.sprite(sheet, pt.frame, left, feet - h);
       // With a full roster the heroes stand close together, so the cursor becomes an underline.
       const tight = spacing < 40;
       if (i === this.index) {
