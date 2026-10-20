@@ -5,7 +5,7 @@ import { MEGAMAN } from '@game/characters/megaman';
 import { BREAKMAN_CLASSIC } from '@game/characters/protoman/classic';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
-import { SELECT_GRID, SKIN_PANEL_Y, gridCell, skinCell } from '@game/scenes/select-grid';
+import { SELECT_GRID, SKIN_PANEL_Y, skinCell } from '@game/scenes/select-grid';
 import { draw, makeGame, useStorage } from './heroes-harness';
 
 // Classic mode's select in the original 3.1.21's layout (CharacterSelectBox.as, CharacterSkinMenu.as;
@@ -33,7 +33,7 @@ describe('the original layout: grid, name box, ground', () => {
     expect(sel.classicLayout).toBe(true);
     expect(sel.rows).toBe(Math.ceil((sel.chars.length + 1) / SELECT_GRID.cols));
     for (let i = 0; i <= sel.chars.length; i++) {
-      const c = gridCell(i);
+      const c = sel.cellOf(i);
       expect(c.x).toBeGreaterThanOrEqual(0);
       expect(c.x + SELECT_GRID.cell).toBeLessThanOrEqual(256);
       expect(c.y + SELECT_GRID.cell).toBeLessThan(140);
@@ -109,7 +109,7 @@ describe('the skin menu (CharacterSkinMenu)', () => {
   it('touch: a tap moves to a cell, a tap on the cursor cell is OK; in the menu the same', () => {
     const { h, sel } = classicSelect();
     const at = sel.chars.findIndex((x) => x.id === 'megaman');
-    const c = gridCell(at, sel.grid);
+    const c = sel.cellOf(at);
     expect(sel.tapAt(c.x + 4, c.y + 4)).toBe(true);
     h.step();
     expect(sel.cursor).toBe(at);

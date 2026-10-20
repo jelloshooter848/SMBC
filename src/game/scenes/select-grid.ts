@@ -1,6 +1,7 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import { clipped } from '@engine/gfx/renderer';
 import { SPRITES } from '@content/sprites';
+import { SELECT_FACE_IDS } from '@content/sprites/select-faces';
 
 /**
  * Classic mode's select screen in the original 3.1.21's layout and colours (CharacterSelectBox.as,
@@ -41,8 +42,11 @@ export const ORIGINAL_GRID: GridLayout = centredGrid(6, 26, 2, 36);
 /** The grid in use: eight to a row, so our roster's 24 slots fit three rows on 240 px. */
 export const SELECT_GRID: GridLayout = centredGrid(8, 26, 3, 36);
 
-/** The name box: 200 px wide, centred (the original's NAME_BOX_WIDTH 400 at 512 px). */
-export const NAME_BOX = { x: 28, w: 200 } as const;
+/**
+ * The name box: the original's CharNameBox (NAME_BOX_WIDTH 400, NAME_BOX_HEIGHT 150 at 512 px):
+ * 200 x 72 here, centred, its lines spread over it; our one prompt line sits in its bottom row.
+ */
+export const NAME_BOX = { x: 28, w: 200, h: 72 } as const;
 /** The panel round the grid starts this far above and left of it. */
 const PANEL_PAD = 6;
 
@@ -257,6 +261,14 @@ export function drawDownArrow(
 ): void {
   for (let i = 0; i < 4; i++) r.rect(x + i + 1, y + i + 1, 7 - 2 * i, 1, th.arrowShadow);
   for (let i = 0; i < 4; i++) r.rect(x + i, y + i, 7 - 2 * i, 1, th.arrow);
+}
+
+/**
+ * Look `id`'s own drawn face on the `select-faces` sheet (24 x 24), when it has one: each select
+ * slot hero's own look. Any other look: null (its standing art's head, doubled: faceAt).
+ */
+export function drawnFace(id: string): { sheet: string; palette: string; frame: string } | null {
+  return SELECT_FACE_IDS.includes(id) ? { sheet: 'select-faces', palette: 'select-faces', frame: id } : null;
 }
 
 const faces = new Map<string, { cx: number; top: number }>();

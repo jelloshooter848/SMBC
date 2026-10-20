@@ -6,7 +6,7 @@ import type { GameState } from '../context';
 import { faceAt } from '../scenes/select-grid';
 
 /** The HUD's face box over Classic mode's select: its top-left and size (white-framed). */
-export const HUD_FACE = { x: 0, y: 0, size: 24 } as const;
+export const HUD_FACE = { x: 0, y: 0, size: 26 } as const;
 
 /**
  * The HUD over Classic mode's select (the original 3.1.21's layout: the HUD stays on top): the
@@ -27,7 +27,16 @@ export function drawSelectHud(
   r.rect(B.x, B.y, B.size, B.size, frame);
   r.rect(B.x + 1, B.y + 1, B.size - 2, B.size - 2, '#000000');
   clipped(r, B.x + 1, B.y + 1, B.size - 2, B.size - 2, () => {
-    if (art) {
+    if (art?.sheet === 'select-faces') {
+      // A drawn face fills the box as it is.
+      const f = assets.sheet(art.sheet, art.palette).frames.get(art.frame);
+      r.sprite(
+        assets.sheet(art.sheet, art.palette),
+        art.frame,
+        B.x + ((B.size - (f?.w ?? 24)) >> 1),
+        B.y + ((B.size - (f?.h ?? 24)) >> 1),
+      );
+    } else if (art) {
       const sheet = assets.sheet(art.sheet, art.palette);
       const at = faceAt(art.sheet, art.frame, B.x + 1, B.y + 1, B.size - 2, 2, 1);
       r.sprite(sheet, art.frame, at.x, at.y, false, false, 0, 2);

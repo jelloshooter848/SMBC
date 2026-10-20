@@ -28,8 +28,8 @@ import {
   cursorColour,
   DEFAULT_SELECT_THEME,
   type SelectTheme,
+  drawnFace,
   faceAt,
-  gridCell,
   gridPanel,
   inCell,
   skinCell,
@@ -274,8 +274,13 @@ export class CharacterSelectScene implements Scene {
   private get rowStarts(): number[] {
     const n = this.total;
     if (this.classicLayout) {
-      const starts: number[] = [];
-      for (let i = 0; i < n; i += this.grid.cols) starts.push(i);
+      const cols = this.grid.cols;
+      // CharacterSelectBox.alignPortraits: the top row holds half the cells (rounded up, the
+      // Random slot counted), one fewer with no map-skin cell (`col == numTopRow - 1` when
+      // enabledSkinSetCount == 1), so the eleven slots break 5 / 6.
+      const top = this.grid === ORIGINAL_GRID ? Math.min(cols, Math.ceil((n + 1) / 2) - 1) : cols;
+      const starts: number[] = [0];
+      for (let i = top; i < n; i += cols) starts.push(i);
       starts.push(n);
       return starts;
     }
@@ -284,6 +289,14 @@ export class CharacterSelectScene implements Scene {
     const rest = n - first;
     if (rest <= ROW_MAX) return [0, first, n];
     return [0, first, first + Math.ceil(rest / 2), n];
+  }
+
+  /** Classic mode's grid: cell `i`'s top-left (each row starts at the grid's left). */
+  cellOf(i: number): { x: number; y: number } {
+    const g = this.grid;
+    const r = this.rowOf(i);
+    const k = i - (this.rowStarts[r] as number);
+    return { x: g.x + k * (g.cell + g.gap), y: g.y + r * (g.cell + g.gap) };
   }
 
   /** How many rows the select has (1 to 3). */
@@ -318,7 +331,7 @@ export class CharacterSelectScene implements Scene {
    */
   slot(i: number): { x: number; y: number } {
     if (this.classicLayout) {
-      const c = gridCell(i, this.grid);
+      const c = this.cellOf(i);
       return { x: c.x + this.grid.cell / 2, y: c.y + this.grid.cell };
     }
     const starts = this.rowStarts;
@@ -529,7 +542,7 @@ export class CharacterSelectScene implements Scene {
   private slotAt(x: number, y: number): number {
     const n = this.total;
     for (let i = 0; i < n; i++) {
-      const c = gridCell(i, this.grid);
+      const c = this.cellOf(i);
       const n = this.grid.cell;
       if (x >= c.x && x < c.x + n && y >= c.y && y < c.y + n) return i;
     }
@@ -1206,7 +1219,17 @@ export class CharacterSelectScene implements Scene {
     const font = assets.sheet('font');
     const centred = (str: string, y: number) => r.text(font, str, 128 - str.length * 4, y);
     const shown = this.shownHero();
-    drawSelectHud(r, assets, this.game.state, shown, shown ? this.artOf(shown) : null, this.theme.hudFrame);
+    // The HUD's face: the shown look's drawn face, else its art (doubled there).
+    const host = shown ? this.game.slotOf(shown) : null;
+    const face = shown && host === shown ? drawnFace(shown.id) : null;
+    drawSelectHud(
+      r,
+      assets,
+      this.game.state,
+      shown,
+      face ?? (shown ? this.artOf(shown) : null),
+      this.theme.hudFrame,
+    );
     const pan = gridPanel(this.rows, this.grid);
     const by = pan.y + pan.h + 4;
     if (this.picker) {
@@ -1222,7 +1245,7 @@ export class CharacterSelectScene implements Scene {
     const cell = this.grid.cell;
     const ring = this.cursorNow();
     for (let i = 0; i < this.total; i++) {
-      const at = gridCell(i, this.grid);
+      const at = this.cellOf(i);
       drawCell(r, at.x, at.y, cell, cell, i === this.index ? ring : null, th);
       inCell(r, at.x, at.y, cell, cell, () => {
         if (this.isRandom(i)) {
@@ -1236,11 +1259,18 @@ export class CharacterSelectScene implements Scene {
         }
         const c = this.chars[i];
         if (!c) return;
-        const pt = this.artOf(this.game.skinFor(c));
+        const look = this.game.skinFor(c);
         // Survival's fallen heroes are greyed (CharacterSelectBox.markPortraitFallen: desaturate).
-        const sheet = assets.sheet(pt.sheet, this.fallen(i) ? fxPalette(pt.palette, 'fallen') : pt.palette);
+        const grey = (p: string) => (this.fallen(i) ? fxPalette(p, 'fallen') : p);
+        // Its own drawn face (head and shoulders filling the cell), else its art's head doubled.
+        const face = look === c ? drawnFace(c.id) : null;
+        if (face) {
+          r.sprite(assets.sheet(face.sheet, grey(face.palette)), face.frame, at.x + 1, at.y + 1);
+          return;
+        }
+        const pt = this.artOf(look);
         const f = faceAt(pt.sheet, pt.frame, at.x + 1, at.y + 1, cell - 2, 2, 1);
-        r.sprite(sheet, pt.frame, f.x, f.y, false, false, 0, 2);
+        r.sprite(assets.sheet(pt.sheet, grey(pt.palette)), pt.frame, f.x, f.y, false, false, 0, 2);
       });
     }
     // The name box under it (Survival's box takes its place while it shows: boxRect).
@@ -1249,7 +1279,7 @@ export class CharacterSelectScene implements Scene {
       return;
     }
     const lines = this.nameBoxLines();
-    const boxH = 12 + lines.length * 10;
+    const boxH = NAME_BOX.h;
     // A new look (or hero) grows its box again.
     const key = lines.join('|');
     if (key !== this.boxFor) {
@@ -1263,40 +1293,51 @@ export class CharacterSelectScene implements Scene {
     const hNow = grow < 0.5 ? 8 : Math.round(8 + (boxH - 8) * ((grow - 0.5) / 0.5));
     drawPanel(r, 128 - (w >> 1), by + ((boxH - hNow) >> 1), w, hNow, th);
     // The hero's name in the menu font; the look's name and the game in the selected tint.
-    if (grow >= 1)
+    // The lines spread over the box as the original's (three, or two centred for a hero's own
+    // look), and our one prompt in its bottom row (named by ability, the real key when not on touch).
+    const top = lines.length >= 3 ? 12 : 20;
+    const step = lines.length >= 3 ? 15 : 16;
+    if (grow >= 1) {
       lines.forEach((l, k) =>
-        this.outlined(r, l, by + 7 + k * 10, l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name'),
+        this.outlined(
+          r,
+          l,
+          by + top + k * step,
+          l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name',
+        ),
       );
-    // The prompts, named by ability (with the real key when not on touch).
+      const ok = abilityHint(this.game, 'OK', 'jump');
+      const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+      const prompt = this._reviving
+        ? `${ok} TO ${verb}`
+        : this.skinsAt(this.index).length > 1
+          ? `${ok} TO CHOOSE A LOOK`
+          : `${ok} TO PICK`;
+      this.outlined(r, fontText(prompt), by + boxH - 14);
+    }
     const py = by + boxH + 4;
     const sv = this.survival;
     if (this._reviving) {
-      const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
-      centred(fontText(`${abilityHint(this.game, 'OK', 'jump')} TO ${verb}`), py);
       const leave = this.reviveLeave();
       if (leave)
         centred(
           fontText(
             `${abilityHint(this.game, leave, 'attack')} ${leave === 'DONE' ? 'WHEN FINISHED' : 'TO LEAVE'}`,
           ),
-          py + 10,
+          py,
         );
       if (sv) {
         const n = this.chars.filter((_, i) => !this.locked(i)).length;
-        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 20);
+        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 10);
       }
     } else {
-      const steady = this.game.ctx.reduceFlashing || (this.t >> 5) % 2 === 0;
-      const ok = abilityHint(this.game, 'OK', 'jump');
-      const line = this.skinsAt(this.index).length > 1 ? `${ok} TO CHOOSE A LOOK` : `PRESS ${ok}`;
-      if (steady) centred(fontText(line), py);
       if (this.cheatNews.length) {
         const news = [this.cheatNews.length === 1 ? 'CHEAT UNLOCKED!' : 'CHEATS UNLOCKED!'];
         news.push(...this.cheatNews.slice(0, 1).map((n) => n.toUpperCase()));
-        news.forEach((l, k) => centred(fontText(l), py + 10 + k * 10));
+        news.forEach((l, k) => centred(fontText(l), py + k * 10));
       } else if (sv) {
         const n = this.chars.filter((_, i) => !this.locked(i)).length;
-        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py + 10);
+        centred(`${sv.standing().length} OF ${n} HEROES STANDING`, py);
       }
     }
     this.renderClassicGround(r, shown);

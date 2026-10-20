@@ -13,7 +13,6 @@ import { HeroItem } from '@game/entities/objects/hero-item';
 import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
-import { gridCell } from '@game/scenes/select-grid';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
@@ -778,7 +777,7 @@ describe('the select screen: Classic extras on a second row', () => {
     // CharacterSelectBox, fitted to 240 px); the stand-in extra follows, then Random (FU-4).
     const g = sel.grid;
     for (let i = 0; i < sel.chars.length + 1; i++) {
-      const c = gridCell(i, g);
+      const c = sel.cellOf(i);
       expect(sel.slot(i)).toEqual({ x: c.x + g.cell / 2, y: c.y + g.cell });
     }
     h.idle(12);

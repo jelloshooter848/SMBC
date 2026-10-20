@@ -12,7 +12,6 @@ import {
   SELECT_THEMES,
   cursorColour,
   faceOf,
-  gridCell,
 } from '@game/scenes/select-grid';
 import { HUD_FACE } from '@game/hud/select-hud';
 import { draw, makeGame, useStorage } from './heroes-harness';
@@ -141,7 +140,7 @@ describe('item 5: faces', () => {
     expect(r.length).toBe(1);
     // Cells: the same doubled head.
     const at = sel.chars.findIndex((x) => x.id === 'megaman');
-    const c = gridCell(at, sel.grid);
+    const c = sel.cellOf(at);
     expect(draw(sel).sprites.some((s) => s.frame === 'portrait' && s.y === c.y + 2 - face.top * 2)).toBe(
       true,
     );
@@ -189,7 +188,7 @@ describe('the original roster, Expansion heroes and old saves', () => {
     expect(sel.grid.cols).toBe(6);
     expect(sel.rows).toBe(2);
     for (let i = 0; i <= sel.chars.length; i++) {
-      const c = gridCell(i, sel.grid);
+      const c = sel.cellOf(i);
       expect(c.x).toBeGreaterThanOrEqual(0);
       expect(c.x + sel.grid.cell).toBeLessThanOrEqual(256);
     }
@@ -254,5 +253,50 @@ describe("the select's backdrop and its name box", () => {
     expect(boxW()).toBeLessThan(NAME_BOX.w);
     h.idle(10);
     expect(boxW()).toBe(NAME_BOX.w);
+  });
+});
+
+describe('the original\u2019s rows, box and faces', () => {
+  it('row 1 is Mario, Luigi, Link, Samus, Simon; row 2 Mega Man, Bass, Bill, Ryu, Sophia III and Random', () => {
+    const { sel } = classicSelect();
+    const row = (i: number) => sel.slot(i).y;
+    for (let i = 1; i < 5; i++) expect(row(i)).toBe(row(0));
+    for (let i = 5; i <= sel.chars.length; i++) expect(row(i)).toBe(row(5));
+    expect(row(5)).toBeGreaterThan(row(0));
+    // Each row starts at the grid's left (alignPortraits).
+    expect(sel.cellOf(5).x).toBe(sel.cellOf(0).x);
+    expect(sel.chars[5]?.id).toBe('megaman');
+  });
+
+  it('the name box is the original\u2019s 200 x 72 (400 x 150 halved), with our prompt in its bottom row', () => {
+    const { sel } = classicSelect();
+    const box = rects(sel).filter((x) => x.w === NAME_BOX.w && x.h === NAME_BOX.h);
+    expect(box.length).toBeGreaterThan(0);
+    const t = draw(sel).texts.map((x) => x.str);
+    expect(t.some((x) => x.includes('TO PICK'))).toBe(true);
+  });
+
+  it('every slot hero has its own drawn face in its cell and the HUD box', () => {
+    const { h, sel } = classicSelect();
+    const faces = () => draw(sel).sprites.filter((x) => x.key.startsWith('select-faces'));
+    expect(faces().map((x) => x.frame)).toEqual(
+      expect.arrayContaining([
+        'mario',
+        'luigi',
+        'link',
+        'samus',
+        'simon',
+        'megaman',
+        'bass',
+        'bill',
+        'ryu',
+        'sophia',
+      ]),
+    );
+    // The HUD box (the cursor's hero) too: Mario in it and in his cell.
+    expect(faces().filter((x) => x.frame === 'mario').length).toBe(2);
+    // A look of its own (Break Man) shows its art's head instead.
+    h.game.setSkin(MEGAMAN, BREAKMAN_CLASSIC);
+    expect(faces().some((x) => x.frame === 'megaman')).toBe(false);
   });
 });
