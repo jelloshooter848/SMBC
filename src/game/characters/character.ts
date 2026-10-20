@@ -246,6 +246,11 @@ export interface CharacterDef {
   /** The kit the How to play page's live demo uses (Classic Vic Viper: none). Absent: `devKit`. */
   guideKit?(): Record<string, number>;
   /**
+   * The power state the How to play page's live demo shows (Classic Peach: 'big', her own dress
+   * rather than the Flower's white one). Absent: 'fire' for a power-up hero, as today.
+   */
+  guidePower?: string;
+  /**
    * Reserve energy tanks drawn as small boxes above the EN number (Samus, NES Metroid style):
    * `full` of `total` hold energy, `bar` is the number shown. Null with no tanks.
    */
@@ -296,6 +301,8 @@ export interface CharacterDef {
    * out tools, meter, hudExtra, reserve, startHp and drop unless their report asks (TG-22).
    */
   rules?: 'classic';
+  /** hero not in SMBC 3.1.21's final release; dev menu can toggle it */
+  notInOriginal?: true;
   /**
    * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
    * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame
@@ -455,6 +462,12 @@ export interface CharacterDef {
     maxFrames: number;
     dir(p: Player): -1 | 1;
   };
+  /**
+   * Landing on enemy `e` from above stands on it as on a moving floor (Classic Peach's riding,
+   * PE-11): no stomp and no hurt; the enemy's movement carries the hero (World.rideEnemies), who
+   * can walk, jump and lift from there. Contact from the side or below is as usual. Absent: never.
+   */
+  standsOnEnemies?(p: Player, e: Enemy): boolean;
   /**
    * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
    * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. The Classic level

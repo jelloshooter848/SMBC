@@ -25,6 +25,8 @@ describe('How to play lists the Classic extras', () => {
       'darkpit',
       'vicviper',
       'warriors',
+      'peach',
+      'arthur',
     ]);
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });

@@ -105,6 +105,8 @@ export type ClassicHitResponse =
 export const CLASSIC_HIT_RESPONSES: Readonly<Record<string, ClassicHitResponse>> = {
   mario: { kind: 'freeze', frames: CLASSIC_FREEZE_FRAMES, invuln: 150, look: { alpha: true } },
   luigi: { kind: 'freeze', frames: CLASSIC_FREEZE_FRAMES, invuln: 150, look: { alpha: true } },
+  // Classic-only Peach (PE-16): Mario's row.
+  peach: { kind: 'freeze', frames: CLASSIC_FREEZE_FRAMES, invuln: 150, look: { alpha: true } },
   link: {
     kind: 'push',
     vx: 0x042ab,
@@ -156,6 +158,17 @@ export const CLASSIC_HIT_RESPONSES: Readonly<Record<string, ClassicHitResponse>>
     vx: 0x01400,
     from: 'source',
     vy: 0x03355,
+    faceSource: true,
+    lock: { untilLand: true },
+    invuln: CLASSIC_PUSH_INVULN,
+    look: { alpha: true, from: 'land' },
+  },
+  // Sir Arthur, a Classic-only extra (AR-16): GnG's backward hop, vy 3 px/f (a tuning value).
+  arthur: {
+    kind: 'push',
+    vx: 0x01400,
+    from: 'source',
+    vy: 0x03000,
     faceSource: true,
     lock: { untilLand: true },
     invuln: CLASSIC_PUSH_INVULN,
