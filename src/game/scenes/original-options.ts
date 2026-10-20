@@ -101,9 +101,9 @@ export function optionName(v: string | number): string {
 /** The Game Mode value names, fuller than a row has room for in the menu (spoken in hints). */
 const GAME_MODE_NAMES: Record<string, string> = {
   all: 'All heroes',
+  survival: 'Survival',
   single: 'Single hero',
   'single-random': 'Single random',
-  survival: 'Survival',
 };
 
 function row<K extends keyof typeof CLASSIC_ROW_VALUES>(
@@ -143,7 +143,7 @@ export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
 export const GAME_MODE_ROW = row(
   'gameMode',
   'Game mode',
-  'All heroes: choose before every level and life. Single hero: choose once. Single random: the game picks your hero every level and life. Survival: each hero has one life; spend lives to revive heroes at the start and after each castle',
+  'All heroes: choose before every level and life. Survival: each hero has one life; spend lives to revive heroes at the start and after each castle. Single hero: choose once. Single random: the game picks your hero every level and life',
   (v) => GAME_MODE_NAMES[v] ?? v,
 ) as AnyRow;
 

@@ -29,6 +29,10 @@ export class Survival {
   /**
    * Heroes strengthened in revive mode and not yet played: their two power-ups (two
    * Character.hitRandomUpgrade) and revivalBoost ammo are given when they next start a level.
+   * Known limit (owner-approved): Classic mode keeps no power for a hero set aside (Game.setHero
+   * gives a newly picked hero its default), so a strengthened hero that is not the one playing
+   * gets its two steps from small (small → Fire). The original keeps each hero's upgrades, so a
+   * Big hero set aside would go Fire plus the repeat Fire Flower bonus.
    */
   private readonly boosts = new Set<string>();
   /** StatManager._allowCharacterRevival. */

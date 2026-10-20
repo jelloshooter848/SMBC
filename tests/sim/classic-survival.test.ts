@@ -86,8 +86,8 @@ function playing(h: H, revive: string[] = [MARIO.id]): void {
 }
 
 describe('the Game mode row: Survival added, the other modes unchanged', () => {
-  it('Survival is a Game mode value (CampaignModes.as 7, 13), named Survival, explained in the hint', () => {
-    expect(CLASSIC_GAME_MODES).toEqual(['all', 'single', 'single-random', 'survival']);
+  it('Survival is the second Game mode value, as in CampaignModeMenu.as 21-24 (CampaignModes.as 7, 13), named Survival, explained in the hint', () => {
+    expect(CLASSIC_GAME_MODES).toEqual(['all', 'survival', 'single', 'single-random']);
     expect((GAME_MODE_ROW.name as (v: string) => string)('survival')).toBe('Survival');
     expect(GAME_MODE_ROW.hint).toMatch(/Survival: each hero has one life/);
     // The original's default is All Characters (GameSettings.as 88).
