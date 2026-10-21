@@ -29,7 +29,8 @@ import { wrapPrompt } from './stage-prompts';
  * The words are the original's, changed only where our rules ask: they name abilities ({JUMP},
  * {ATTACK}, ...: filled in with the ability and the real key or pad button, input-aware, as every
  * hint is) instead of keys, and drop what is not true here (the pause menu's save and load and
- * its music consoles, the Exploding Rabbit website and forum).
+ * its save and load); the owner removed the gamepad page's Exploding Rabbit website and forum
+ * sentences (docs/classic/TUTORIAL_DEVIATIONS.md).
  */
 
 /** The generic ability names a box's words use, by placeholder: the ability shown, and its action. */
@@ -138,7 +139,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
     'Note that [[!yoshi|Mario and Luigi]][[yoshi|Mario, Luigi and Yoshi]] are the only characters that can jump on enemies. For some characters, you can press {SPECIAL} for an alternate attack and {TOOLS} to change weapons.',
     'You can pause the game by pressing {MENU}. In the pause menu, you can change several options. If the game runs slowly, try changing music consoles or turn the music off.',
-    'Also, playing with a gamepad is highly recommended. See the Exploding Rabbit website for info on setting that up. If you have questions about the game, feel free to ask them in the Super Mario Bros. Crossover forum.',
+    'Also, playing with a gamepad is highly recommended.',
   ],
   survival: [
     'Survival mode:\nWhen a character dies in this mode, they will be unusable until you revive them. Reviving a character costs one life. To revive a character, select the character and press {OK}.',
