@@ -8,7 +8,7 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelSelectScene } from '@game/scenes/level-select-cheat';
 import type { MenuItem } from '@game/scenes/menu';
 import { MAP_SETS, mapSetOf, type ClassicMenuScene } from '@game/scenes/original-game';
-import { ClassicOverwriteScene, ClassicSetScene, openClassicSet } from '@game/scenes/classic-set-prompt';
+import { ClassicOverwriteScene, ClassicSetScene, openClassicSet } from '@game/scenes/original-saves';
 import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume, resumeSetOf } from '@game/run-resume';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 

@@ -23,7 +23,7 @@ import {
   rowsOriginal,
 } from './original-options';
 import type { Game } from './game';
-import { openClassicSet, savedRunSpoken } from './classic-set-prompt';
+import { openClassicSet, savedRunSpoken } from './original-saves';
 import type { Renderer } from '@engine/gfx/renderer';
 
 /**
@@ -219,7 +219,7 @@ export class ClassicMenuScene extends MenuScene {
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
     const items: MenuItem[] = [];
     // Per-set saves (O-07, G-008): each set keeps its own run; picking a set that has one asks
-    // CONTINUE / NEW GAME (classic-set-prompt.ts), one with none starts a new game as before.
+    // CONTINUE / NEW GAME (original-saves.ts), one with none starts a new game as before.
     items.push(
       ...MAP_SETS.map((set) => {
         const kept = game.classicResume(set.id);

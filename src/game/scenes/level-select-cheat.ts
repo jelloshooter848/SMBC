@@ -3,7 +3,7 @@ import { MenuScene } from './menu';
 import { LevelScene } from './level';
 import type { Game } from './game';
 import { MAP_SETS, mapDifficultyItem, mapSetOf, type MapSet } from './original-game';
-import { ClassicOverwriteScene } from './classic-set-prompt';
+import { ClassicOverwriteScene } from './original-saves';
 
 /*
  * The Level Select cheat (G-007): the original's 17th cheat (Cheats.as:47), unlocked by beating

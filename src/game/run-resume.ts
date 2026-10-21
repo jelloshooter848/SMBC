@@ -10,7 +10,7 @@ import type { GameState, Rules } from './context';
  * Ours stands in with one slot per map set (SMB1, Special, The Lost Levels), written each time a
  * Classic mode run of that set shows a level's WORLD card (so it always holds the start of the
  * level being played, with its checkpoint), and offered as CONTINUE when the set is picked on the
- * CLASSIC menu (classic-set-prompt.ts). A game over, or the run's end at the credits, clears it. It keeps what the
+ * CLASSIC menu (original-saves.ts). A game over, or the run's end at the credits, clears it. It keeps what the
  * original's file keeps for the hero playing: the level, lives, score, coins, power and kit;
  * Survival's fallen heroes; the rules the run plays; and, as the original's file keeps them with
  * the run (GameSettings.as 407-414), its Map Difficulty and Game mode (RC-002). Developer runs and
