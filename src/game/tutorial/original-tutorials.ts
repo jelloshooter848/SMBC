@@ -9,10 +9,10 @@ import type { Game } from '../scenes/game';
 import type { World } from '../world/world';
 import type { Player } from '../entities/player';
 import { abilityHint } from '../scenes/hints';
-import { CARD_GUARD_FRAMES, cardContinues } from '../scenes/message';
+import { BOX_FRAME, BOX_GROW_PER_FRAME, DEFAULT_SELECT_THEME, drawScaledPanel } from '../scenes/select-grid';
 import { fontText } from '../hud/text';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
-import { drawPromptBox, wrapPrompt } from './stage-prompts';
+import { wrapPrompt } from './stage-prompts';
 
 /*
  * Classic mode's Tutorials (O-15 / G-042): the original's TutorialManager (managers/
@@ -341,27 +341,52 @@ export const TUTORIAL_NEXT_KEYS: readonly Action[] = ['jump', 'special', 'start'
 /** The press that skips the box's remaining pages (they stay seen). */
 export const TUTORIAL_SKIP_KEYS: readonly Action[] = ['attack'];
 
-/** Columns of a box's line (the full-width prompt box). */
-export const TUTORIAL_COLS = 28;
+/**
+ * The box's text block (PlainMessageBox): MessageBox END_WIDTH 400 at 512, halved, in 8 px
+ * columns, left-aligned (DEFAULT_ALIGN), one line every 12 px (the menu font's 16 px and
+ * TXT_LEADING 7, halved and rounded up).
+ */
+export const TUTORIAL_COLS = 25;
+export const TUTORIAL_LINE = 12;
+/**
+ * Frames before a page takes a press: MessageBox's cancel timer (CANCEL_TMR_DUR 1000 ms) from the
+ * moment it opens; it has finished growing by then.
+ */
+export const TUTORIAL_GUARD_FRAMES = 60;
+
+/** Where a page stands: growing open, open (it waits for a press), or shrinking shut. */
+type Phase = 'grow' | 'open' | 'shrink';
 
 /**
- * One box (MessageBoxManager.tutorialStart's PlainMessageBox series): a page at a time over the
- * frozen scene beneath, each read out and gone on with a press, never by itself. SKIP closes the
- * box at once. After the last page the scene beneath is read out again.
+ * One box (MessageBoxManager.tutorialStart's PlainMessageBox series): a page at a time, in a
+ * MessageBox in the select's and menus' look (the SMB NES map skin: brick fill, bevel, rivets),
+ * centred on the screen (DEF_POS_PNT, the stage centre) and as big as its words. Each page grows
+ * open from its centre and shrinks shut after the press that closes it (MessageBox.grow, shrink;
+ * the next page then grows); with Reduce flashing it simply appears and goes. There is no page
+ * count or press mark on it, as on the original's. Each page is read out and waits for a press,
+ * never a timer; SKIP closes the box at once. After the last page the scene beneath is read out
+ * again.
  */
 export class TutorialBoxScene implements Scene {
   readonly translucent = true;
   private page = 0;
   private t = 0;
   private said = false;
+  private phase: Phase = 'grow';
+  private scale = 0.01;
+  /** After this page shrinks: the next page (false) or the box closes (true). */
+  private closing = false;
   /** What the screen beneath had last read out (it is read again when the box closes). */
   private before = '';
 
   constructor(
     private readonly game: Game,
     readonly pages: readonly string[],
-    private readonly world: World | null,
-  ) {}
+    /** The level beneath, if any (the box is centred over it either way). */
+    readonly world: World | null,
+  ) {
+    if (game.ctx.reduceFlashing) this.openNow();
+  }
 
   /** The page's lines: its heading (the original's "Name:\n") on a line of its own, then wrapped. */
   get lines(): string[] {
@@ -372,6 +397,30 @@ export class TutorialBoxScene implements Scene {
   /** The page shown now (tests). */
   get pageIndex(): number {
     return this.page;
+  }
+
+  /** How open the box is, 0 to 1 (tests). */
+  get openness(): number {
+    return this.scale;
+  }
+
+  /** The page takes a press now: open, and its guard is over. */
+  get interactive(): boolean {
+    return this.phase === 'open' && this.t > TUTORIAL_GUARD_FRAMES;
+  }
+
+  /** The panel at full size: its fill as big as the words (+1 px, createGraphics), the frame round it. */
+  get panel(): { x: number; y: number; w: number; h: number } {
+    const lines = this.lines;
+    const textW = Math.max(1, ...lines.map((l) => l.length)) * 8;
+    const w = textW + 2 + 2 * BOX_FRAME;
+    const h = lines.length * TUTORIAL_LINE - 2 + 2 * BOX_FRAME;
+    return { x: (SCREEN_W - w) >> 1, y: (SCREEN_H - h) >> 1, w, h };
+  }
+
+  private openNow(): void {
+    this.phase = 'open';
+    this.scale = 1;
   }
 
   private say(): void {
@@ -385,7 +434,7 @@ export class TutorialBoxScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
-    if (this.t <= CARD_GUARD_FRAMES) return NO_TOUCH_BUTTONS;
+    if (!this.interactive) return NO_TOUCH_BUTTONS;
     const more = this.page < this.pages.length - 1;
     return { ...NO_TOUCH_BUTTONS, jump: 'OK', ...(more ? { attack: 'SKIP' } : {}) };
   }
@@ -399,15 +448,38 @@ export class TutorialBoxScene implements Scene {
       this.say();
     }
     this.t++;
-    if (cardContinues(this.t, inputs, TUTORIAL_SKIP_KEYS)) return this.close();
-    if (!cardContinues(this.t, inputs, TUTORIAL_NEXT_KEYS)) return;
-    if (this.page < this.pages.length - 1) {
-      this.page++;
-      this.t = 0;
-      this.say();
+    const instant = this.game.ctx.reduceFlashing;
+    if (this.phase === 'grow') {
+      this.scale = instant ? 1 : Math.min(1, this.scale + BOX_GROW_PER_FRAME);
+      if (this.scale >= 1) this.phase = 'open';
       return;
     }
-    this.close();
+    if (this.phase === 'shrink') {
+      this.scale = instant ? 0 : this.scale - BOX_GROW_PER_FRAME;
+      if (this.scale <= 0) this.next();
+      return;
+    }
+    if (this.t <= TUTORIAL_GUARD_FRAMES) return;
+    const pressed = (keys: readonly Action[]) => inputs.some((i) => keys.some((k) => i.pressed(k)));
+    if (pressed(TUTORIAL_SKIP_KEYS)) this.closing = true;
+    else if (pressed(TUTORIAL_NEXT_KEYS)) this.closing = this.page >= this.pages.length - 1;
+    else return;
+    this.phase = 'shrink';
+    if (instant) {
+      this.scale = 0;
+      this.next();
+    }
+  }
+
+  /** The page has shrunk shut: the next one grows open, or the box closes. */
+  private next(): void {
+    if (this.closing || this.page >= this.pages.length - 1) return this.close();
+    this.page++;
+    this.t = 0;
+    this.phase = 'grow';
+    this.scale = 0.01;
+    if (this.game.ctx.reduceFlashing) this.openNow();
+    this.say();
   }
 
   private close(): void {
@@ -416,11 +488,20 @@ export class TutorialBoxScene implements Scene {
   }
 
   render(r: Renderer): void {
-    const lines = this.lines;
-    const h = lines.length * 10 + 10;
-    const y = this.world ? 40 : Math.max(8, (SCREEN_H - h) >> 1);
-    const n = this.pages.length > 1 ? `${this.page + 1}/${this.pages.length}` : '';
-    const foot = this.t > CARD_GUARD_FRAMES ? fontText(abilityHint(this.game, 'OK', 'jump')) : '';
-    drawPromptBox(r, this.game.ctx.assets.sheet('font'), lines, { x: 8, w: SCREEN_W - 16, y, tag: n, foot });
+    if (this.scale <= 0) return;
+    const P = this.panel;
+    drawScaledPanel(r, P.x + P.w / 2, P.y + P.h / 2, P.w, P.h, this.scale);
+    // The words show once the box is open (they are not scaled with it).
+    if (this.phase !== 'open') return;
+    const assets = this.game.ctx.assets;
+    const th = DEFAULT_SELECT_THEME;
+    const shadow = assets.sheet('font', th.shadowFont);
+    const font = assets.sheet('font', th.nameFont);
+    const x = P.x + BOX_FRAME + 1;
+    this.lines.forEach((l, k) => {
+      const y = P.y + BOX_FRAME + 1 + k * TUTORIAL_LINE;
+      r.text(shadow, l, x + 1, y + 1);
+      r.text(font, l, x, y);
+    });
   }
 }

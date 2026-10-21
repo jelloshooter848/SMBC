@@ -6,6 +6,9 @@ import { LINK } from '@game/characters/link';
 import { MEGAMAN } from '@game/characters/megaman';
 import { RYU } from '@game/characters/ryu';
 import { fontText } from '@game/hud/text';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import { SCREEN_H, SCREEN_W } from '@engine/viewport';
+import { BOX_FRAME, BOX_GROW_PER_FRAME, DEFAULT_SELECT_THEME } from '@game/scenes/select-grid';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CARD_GUARD_FRAMES } from '@game/scenes/message';
 import { LevelScene } from '@game/scenes/level';
@@ -15,11 +18,13 @@ import {
   fillAbilities,
   TUTORIAL_IDS,
   TUTORIAL_TEXT,
+  TUTORIAL_COLS,
+  TUTORIAL_GUARD_FRAMES,
   TutorialBoxScene,
   upgradeTutorials,
 } from '@game/tutorial/original-tutorials';
 import type { Announcer } from '@engine/a11y/announcer';
-import { file, makeGame, useStorage, type H } from './heroes-harness';
+import { draw, file, makeGame, useStorage, type H } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
 // O-15 / G-042: Classic mode's Tutorials, the original's TutorialManager.as (41-258, 276-341)
@@ -54,7 +59,7 @@ function readBox(h: H): string[] {
   expect(b, 'a Tutorials box is up').not.toBeNull();
   const pages = [...(b as TutorialBoxScene).pages];
   for (let i = 0; i < 40 && box(h) === b; i++) {
-    h.idle(CARD_GUARD_FRAMES + 1);
+    h.idle(TUTORIAL_GUARD_FRAMES + 1);
     h.tap('jump');
   }
   expect(box(h)).not.toBe(b);
@@ -265,6 +270,8 @@ describe('each box waits for a press, is read out and works with touch (O-15)', 
     h.step();
     expect(h.said.at(-1)).toMatch(/^Tutorial, page 1 of 6\. Each character controls/);
     expect(b.touchLabels().jump).toBeNull();
+    // Still inside the original's 1000 ms cancel timer (MessageBox CANCEL_TMR_DUR): ignored.
+    h.idle(TUTORIAL_GUARD_FRAMES - 10);
     h.tap('jump');
     expect(b.pageIndex).toBe(0);
     h.idle(2000);
@@ -282,13 +289,13 @@ describe('each box waits for a press, is read out and works with touch (O-15)', 
     const h = game(true);
     play(h);
     const b = untilBox(h) as TutorialBoxScene;
-    h.idle(CARD_GUARD_FRAMES + 1);
+    h.idle(TUTORIAL_GUARD_FRAMES + 1);
     h.tap('special');
     expect(b.pageIndex).toBe(1);
-    h.idle(CARD_GUARD_FRAMES + 1);
+    h.idle(TUTORIAL_GUARD_FRAMES + 1);
     h.tap('start');
     expect(b.pageIndex).toBe(2);
-    h.idle(CARD_GUARD_FRAMES + 1);
+    h.idle(TUTORIAL_GUARD_FRAMES + 1);
     h.tap('attack');
     expect(box(h)).toBeNull();
     expect(h.top()).toBeInstanceOf(LevelScene);
@@ -308,6 +315,109 @@ describe('each box waits for a press, is read out and works with touch (O-15)', 
           expect(fontText(part).length, `${id}: ${part}`).toBe(part.toUpperCase().length);
       }
     }
+  });
+});
+
+describe("the box looks like the original's (PlainMessageBox in the SMB NES map skin, O-15)", () => {
+  /** Every rect a render fills, with its colour. */
+  function rects(scene: {
+    render(r: Renderer): void;
+  }): { x: number; y: number; w: number; h: number; c: string }[] {
+    const out: { x: number; y: number; w: number; h: number; c: string }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      rect(x: number, y: number, w: number, h: number, c: string): void {
+        out.push({ x, y, w, h, c });
+      },
+    });
+    scene.render(r);
+    return out;
+  }
+
+  it("the menus' panel: brick fill, pink bevel with a black shadow, rivets; centred; no page count or press mark", () => {
+    const h = game(true);
+    play(h);
+    const b = untilBox(h) as TutorialBoxScene;
+    h.idle(TUTORIAL_GUARD_FRAMES + 1);
+    const P = b.panel;
+    // Centred on the stage (MessageBox DEF_POS_PNT), as big as its words plus the 7 px frame.
+    expect(P.x + P.w / 2).toBeCloseTo(SCREEN_W / 2, 0);
+    expect(P.y + P.h / 2).toBeCloseTo(SCREEN_H / 2, 0);
+    const longest = Math.max(...b.lines.map((l) => l.length));
+    expect(P.w).toBe(longest * 8 + 2 + 2 * BOX_FRAME);
+    const th = DEFAULT_SELECT_THEME;
+    const fills = rects(b).map((x) => x.c);
+    expect(fills).toContain('#c84c0c');
+    expect(fills).toContain('#fcbcb0');
+    expect(fills).toContain('#000000');
+    expect(th.fill).toBe('#c84c0c');
+    // Left-aligned words inside the frame, and nothing else: no "1/6" tab, no "OK" mark.
+    const t = draw(b).texts;
+    const words = new Set(b.lines);
+    for (const x of t) {
+      expect(words.has(x.str), x.str).toBe(true);
+      expect(x.x === P.x + BOX_FRAME + 1 || x.x === P.x + BOX_FRAME + 2).toBe(true);
+    }
+    expect(t.some((x) => /\d\/\d/.test(x.str))).toBe(false);
+  });
+
+  it('every page of every box fits the 256 x 240 screen (the phone shows the same screen)', () => {
+    const h = game(true);
+    for (const id of TUTORIAL_IDS) {
+      const b = new TutorialBoxScene(
+        h.game,
+        (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(h.game, t)),
+        null,
+      );
+      for (let k = 0; k < b.pages.length; k++) {
+        (b as unknown as { page: number }).page = k;
+        const P = b.panel;
+        expect(
+          b.lines.every((l) => l.length <= TUTORIAL_COLS),
+          id,
+        ).toBe(true);
+        expect(P.x, id).toBeGreaterThanOrEqual(0);
+        expect(P.y, id).toBeGreaterThanOrEqual(0);
+        expect(P.x + P.w, id).toBeLessThanOrEqual(SCREEN_W);
+        expect(P.y + P.h, id).toBeLessThanOrEqual(SCREEN_H);
+      }
+    }
+  });
+
+  it('grows open from its centre and shrinks shut (MessageBox.grow, shrink), the next page growing after', () => {
+    const h = game(true);
+    h.game.ctx.reduceFlashing = false;
+    play(h);
+    const b = untilBox(h) as TutorialBoxScene;
+    expect(b.openness).toBeLessThan(1);
+    // No words while it grows.
+    expect(draw(b).texts).toEqual([]);
+    const frames = Math.ceil(1 / BOX_GROW_PER_FRAME);
+    h.idle(frames);
+    expect(b.openness).toBe(1);
+    expect(draw(b).texts.length).toBe(2 * b.lines.length); // each line over its shadow
+    h.idle(TUTORIAL_GUARD_FRAMES);
+    h.tap('jump');
+    expect(b.pageIndex).toBe(0);
+    expect(b.openness).toBeLessThan(1);
+    h.idle(frames);
+    expect(b.pageIndex).toBe(1);
+    expect(b.openness).toBeLessThan(1);
+    expect(h.said.at(-1)).toMatch(/^Tutorial, page 2 of 6\./);
+    h.idle(frames);
+    expect(b.openness).toBe(1);
+  });
+
+  it('with Reduce flashing the box is simply there, and goes at once', () => {
+    const h = game(true);
+    expect(h.game.ctx.reduceFlashing).toBe(true);
+    play(h);
+    const b = untilBox(h) as TutorialBoxScene;
+    expect(b.openness).toBe(1);
+    expect(draw(b).texts.length).toBe(2 * b.lines.length); // each line over its shadow
+    h.idle(TUTORIAL_GUARD_FRAMES + 1);
+    h.tap('jump');
+    expect(b.pageIndex).toBe(1);
+    expect(b.openness).toBe(1);
   });
 });
 
