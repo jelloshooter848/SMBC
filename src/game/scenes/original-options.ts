@@ -305,6 +305,7 @@ export class ClassicOptionRowsScene extends MenuScene {
   override render(r: Renderer): void {
     if (!this.over) return super.render(r);
     renderBoxedMenu(r, this.game, {
+      backAction: this.backAction,
       header: this.title,
       items: this.items,
       index: this.index,

@@ -20,6 +20,8 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic: a box's BACK hint names the key that goes back on that page. While the boxed Cheats
+  page takes the code, it names SELECT's key, not ATTACK's (a code input there).
 - The REMIX title's rift intro is heard again (BUG-13). When the browser has not started the
   sound yet, the first title waits behind PRESS ANY KEY (TAP TO START on touch); that press
   starts the sound and the intro from its first frame without skipping it. A later press skips

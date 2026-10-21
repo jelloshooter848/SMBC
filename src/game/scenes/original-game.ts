@@ -508,6 +508,7 @@ export class ClassicOptionsScene extends MenuScene {
   override render(r: Renderer): void {
     if (this.over) {
       renderBoxedMenu(r, this.game, {
+        backAction: this.backAction,
         header: 'Options',
         items: this.items,
         index: this.index,
