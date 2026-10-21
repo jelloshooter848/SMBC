@@ -24,6 +24,8 @@ under `## [Unreleased]`.
   campaign is closed, instead of the campaign's guides.
 - Classic's hero select no longer draws an OK prompt under the hero, as the original; revive mode
   keeps its lines. Its spoken line names the highlighted hero and says what OK does (looks or play).
+- Classic's hero select moves as the original's: Left and Right wrap within the row, and Up or Down
+  from either row goes to the other row.
 
 ## [0.4.67] - 2026-10-21
 

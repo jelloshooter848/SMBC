@@ -141,7 +141,9 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     expect(sel.slot(6).y).toBeGreaterThan(sel.slot(0).y);
     expect(h.game.heroLocked(BASS_CLASSIC)).toBe(false);
     h.idle(12);
-    // Classic mode's select says the hero, then its game (the original's name box).
+    // Classic mode's select says the hero, then its game (the original's name box). RC-006: Left
+    // wraps within a row, so Down to Bass's row first.
+    h.tap('down');
     for (let i = 0; i < sel.chars.length && h.said.at(-1) !== 'Bass, Mega Man 10'; i++) h.tap('left');
     expect(h.said.at(-1)).toBe('Bass, Mega Man 10');
     h.tap('jump');

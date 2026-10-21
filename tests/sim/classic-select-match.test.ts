@@ -45,7 +45,8 @@ function classicSelect(settings = defaultSettings()) {
 }
 
 const cursorTo = (h: ReturnType<typeof makeGame>, sel: CharacterSelectScene, id: string) => {
-  for (let i = 0; i < 40 && sel.chars[sel.cursor]?.id !== id; i++) h.tap('right');
+  // RC-006: Right wraps within a row, so Down moves on to the next row every 12 steps.
+  for (let i = 0; i < 40 && sel.chars[sel.cursor]?.id !== id; i++) h.tap(i % 12 === 11 ? 'down' : 'right');
   expect(sel.chars[sel.cursor]?.id).toBe(id);
 };
 

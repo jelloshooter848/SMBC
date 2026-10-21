@@ -82,7 +82,9 @@ function choose(h: H, def: CharacterDef): void {
   // One more step than heroes: Classic mode's Random slot ends the ring (FU-4).
   // Classic mode's select says the hero, then its game (the name box): "Link, The Legend of Zelda".
   const said = () => h.said.at(-1)?.split(', ')[0];
-  for (let i = 0; i <= CHARACTERS.length && said() !== def.name; i++) h.tap('right');
+  // RC-006: Right wraps within a row, so Down moves on to the next row every 12 steps.
+  for (let i = 0; i <= 3 * CHARACTERS.length && said() !== def.name; i++)
+    h.tap(i % 12 === 11 ? 'down' : 'right');
   expect(said()).toBe(def.name);
   h.tap('jump');
   // G-050..G-055 (0.5.0): a hero with looks opens them first (OK keeps his own), and the pick
@@ -299,9 +301,10 @@ describe('a Classic run', () => {
     expect(t.some((s) => s.includes('TO FIND'))).toBe(false);
     h.idle(12);
     const names: string[] = [];
-    // Every hero, and the Random slot that ends the ring (FU-4).
-    for (let i = 0; i <= CHARACTERS.length; i++) {
-      h.tap('right');
+    // Every hero, and the Random slot that ends the ring (FU-4); RC-006: each row wraps, so Down
+    // to the second row half way.
+    for (let i = 0; i < 24; i++) {
+      h.tap(i === 11 ? 'down' : 'right');
       names.push(h.said.at(-1)?.split(', ')[0] ?? '');
     }
     expect(new Set(names)).toEqual(new Set([...CHARACTERS.map((c) => c.name), 'Random']));
@@ -799,6 +802,8 @@ describe('the select screen: Classic extras on a second row', () => {
       expect(sel.slot(i)).toEqual({ x: c.x + g.cell / 2, y: c.y + g.cell });
     }
     h.idle(12);
+    // RC-006: Left wraps within the row, so Down to the Random slot's row first.
+    h.tap('down');
     h.tap('left');
     expect(h.said.at(-1)).toBe('Random');
     h.tap('left');
@@ -809,6 +814,8 @@ describe('the select screen: Classic extras on a second row', () => {
     for (const x of t) expect(x.y + 8).toBeLessThanOrEqual(240);
     h.tap('right');
     h.tap('right');
+    // Back on the second row's first cell; Up goes to the first row's, Mario.
+    h.tap('up');
     expect(h.said.at(-1)?.split(', ')[0]).toBe(CHARACTERS[0]?.name);
   });
 

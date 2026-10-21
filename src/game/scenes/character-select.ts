@@ -974,19 +974,27 @@ export class CharacterSelectScene implements Scene {
     const n = this.total;
     // Left/right step to the next hero that is not locked (wrapping); with every other hero
     // locked the cursor stays put.
+    // RC-006: Classic's grid wraps within the row, as the original's (CharacterSelectBox
+    // .determineSelection: Simon's Right goes to Mario, not to the next row).
+    const own = this.classicLayout && this.rows > 1;
     const move = (idx: number, f: InputFrame): number => {
-      const d = f.pressed('left') ? n - 1 : f.pressed('right') ? 1 : 0;
-      if (!d) return idx;
-      let to = (idx + d) % n;
-      while (to !== idx && this.skipped(to)) to = (to + d) % n;
+      const right = f.pressed('right');
+      if (!f.pressed('left') && !right) return idx;
+      const r = own ? this.rowOf(idx) : 0;
+      const lo = own ? (this.rowStarts[r] as number) : 0;
+      const len = own ? (this.rowStarts[r + 1] as number) - lo : n;
+      const d = right ? 1 : len - 1;
+      const step = (i: number) => lo + ((i - lo + d) % len);
+      let to = step(idx);
+      while (to !== idx && this.skipped(to)) to = step(to);
       this.game.ctx.audio.sfx(to === idx ? 'bump' : 'select');
       const name = this.sayName(to);
       if (name) this.game.deps.announcer?.say(name);
       return to;
     };
     // Two rows (the Classic extras): Up / Down go to the other row's nearest unlocked hero by
-    // column; Up on the first row or Down on the second bumps (Down there is left to RETURN TO
-    // MAP when the pick has it). One row: null, nothing changes (today's select).
+    // column; outside Classic's grid Up on the first row or Down on the last bumps (Down there is
+    // left to RETURN TO MAP when the pick has it). One row: null, nothing changes (today's select).
     const rows = this.rows > 1;
     const starts = this.rowStarts;
     const ROW_NAMES = ['first', 'second', 'third'];
@@ -996,8 +1004,10 @@ export class CharacterSelectScene implements Scene {
       const down = f.pressed('down');
       if (up === down) return null;
       const row = this.rowOf(idx);
-      const to = up ? row - 1 : row + 1;
-      if (to < 0 || to >= this.rows) {
+      // RC-006: in Classic's grid Up or Down from either row goes to the other row
+      // (CharacterSelectBox.getNearestPortrait); elsewhere the edges bump.
+      const to = own ? (row + (up ? this.rows - 1 : 1)) % this.rows : up ? row - 1 : row + 1;
+      if (to < 0 || to >= this.rows || (own && down && row === this.rows - 1 && this.pick?.onMap)) {
         if (down && this.pick?.onMap) return null;
         this.game.ctx.audio.sfx('bump');
         return idx;

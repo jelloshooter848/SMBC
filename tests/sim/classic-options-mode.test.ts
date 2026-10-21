@@ -58,6 +58,8 @@ describe('FU-4: the Random slot', () => {
     const h = classic();
     const sel = select(h);
     expect(sel.hasRandom).toBe(true);
+    // RC-006: Left wraps within the row, so Down to the second row first.
+    h.tap('down');
     h.tap('left');
     expect(idx(sel)).toBe(sel.chars.length);
     expect(h.said.at(-1)).toBe('Random');
@@ -67,8 +69,9 @@ describe('FU-4: the Random slot', () => {
     const q = sel.slot(sel.chars.length);
     const last = sel.slot(sel.chars.length - 1);
     expect(q.y > last.y || (q.y === last.y && q.x > last.x)).toBe(true);
-    // Right wraps back to the first hero.
+    // Right wraps back to the row's first hero; Up to the first row's.
     h.tap('right');
+    h.tap('up');
     expect(idx(sel)).toBe(0);
   });
 
@@ -76,6 +79,7 @@ describe('FU-4: the Random slot', () => {
     const run = () => {
       const h = classic();
       select(h);
+      h.tap('down');
       h.tap('left');
       h.tap('jump');
       // G-055 (0.5.0): the pick performance plays first.
@@ -96,6 +100,7 @@ describe('FU-4: the Random slot', () => {
   it('after a death the select starts on the Random slot again; picking a hero there clears it', () => {
     const h = classic();
     select(h);
+    h.tap('down');
     h.tap('left');
     h.tap('jump');
     die(h);
@@ -105,7 +110,8 @@ describe('FU-4: the Random slot', () => {
     expect(idx(sel)).toBe(sel.chars.length);
     expect(h.said.at(-1)).toMatch(/^Choose your hero\. Random\./);
     h.idle(12);
-    h.tap('right'); // Mario
+    h.tap('right'); // the row's first hero (RC-006: each row wraps)
+    h.tap('up'); // Mario
     h.tap('jump');
     expect(h.game.state.character).toBe(MARIO);
     expect(h.game.pickedRandom).toBe(false);
