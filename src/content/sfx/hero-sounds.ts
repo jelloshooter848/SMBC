@@ -118,6 +118,10 @@ export const heroSfx: Sfx[] = [
   { id: 'bill-flame', pulse: '@0 v8 q8 x1 p-5 o4 e32', noise: 'v10 x1 l64 n4 n6 n8' },
   // An item (G-073; SFX_BILL_GET_ITEM, his default pickup sound): a rising fanfare blip.
   { id: 'bill-item', pulse: '@2 v11 q8 x0 l64 o5 e b o6 e x1 o6 b32' },
+  // A shot landing (G-072; SFX_BILL_SHOT_HIT): a hard metallic tick.
+  { id: 'bill-hit', pulse: '@1 v10 q8 x1 p5 o5 a64', noise: 'v10 x1 l64 n2 n6' },
+  // A foe destroyed (G-072; SFX_BILL_ENEMY_EXPLODE): a short low blast that rumbles out.
+  { id: 'bill-kill', pulse: '@0 v9 q8 x1 p-12 o3 g16', noise: 'v13 x1 l64 n6 n8 n10 n12 n14 n15' },
   // Taking a hit (G-070, G-071; Bill.as 899): an electric shock, a buzzing crackle.
   {
     id: 'bill-shock',
