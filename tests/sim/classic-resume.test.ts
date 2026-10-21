@@ -130,12 +130,12 @@ describe('G-008 the Classic resume slot', () => {
     expect(on.game.state.character.id).toBe('yoshi');
   });
 
-  it('a game over clears it', () => {
+  it('a game over keeps it, at its continue point (BUG-05: no longer cleared)', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     expect(loadClassicResume()).not.toBeNull();
     h.game.gameOver('1-1');
-    expect(loadClassicResume()).toBeNull();
+    expect(loadClassicResume()).toMatchObject({ levelId: expect.stringMatching(/^1-1/), score: 0 });
   });
 
   it('a developer Classic run never writes it', () => {

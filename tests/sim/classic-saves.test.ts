@@ -212,13 +212,17 @@ describe('per-set saves: the overwrite warning', () => {
 });
 
 describe('per-set saves: writing and clearing', () => {
-  it('a game over clears only its own set’s slot', () => {
+  it('a game over writes only its own set’s slot, at its continue point (BUG-05)', () => {
     const h = classic();
     playTo(h, 'll-1-1');
-    playTo(h, '1-1');
-    h.game.gameOver('1-1');
-    expect(loadClassicResume('smb')).toBeNull();
-    expect(loadClassicResume('lost')).not.toBeNull();
+    const lost = store.get(classicResumeKey('lost'));
+    playTo(h, '1-3');
+    h.game.gameOver('1-3');
+    expect(loadClassicResume('smb')).toMatchObject({
+      levelId: expect.stringMatching(/^1-1/),
+      continued: true,
+    });
+    expect(store.get(classicResumeKey('lost'))).toBe(lost);
   });
 
   it('the ending clears only its own set’s slot', () => {
@@ -428,12 +432,13 @@ describe('per-set saves: the Level Select cheat', () => {
     // Release review of #191: set A's slot stays exactly as its last WORLD card wrote it.
     expect(store.get(classicResumeKey('smb'))).toBe(smb);
     expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
-    // From then on the run writes set B's slot, and its game over clears only B's.
+    // From then on the run writes set B's slot, and its game over writes only B's (BUG-05: at
+    // its continue point, the world's first level).
     h.game.goToLevel('ll-3-2', { mode: 'stand' });
     expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-2/);
     expect(store.get(classicResumeKey('smb'))).toBe(smb);
     h.game.gameOver('ll-3-2');
-    expect(loadClassicResume('lost')).toBeNull();
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
     expect(store.get(classicResumeKey('smb'))).toBe(smb);
   });
 

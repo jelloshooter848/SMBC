@@ -10,6 +10,9 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic: a game over offers CONTINUE and MAIN MENU, and both keep the run. Its map set's save
+  holds the continue point (the world's first level, starting lives, score 0, power-ups gone, as
+  the original's continue gives), so the set's Continue later goes on from there, not 1-1 (BUG-05).
 - Classic: CONTINUE on a map set opens the hero select first, as the original's Load Game does;
   the run goes on at the saved level with its lives and score and the hero picked, and BACK
   returns to the set's CONTINUE / NEW GAME box (BUG-03).
