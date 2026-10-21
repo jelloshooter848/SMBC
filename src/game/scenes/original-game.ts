@@ -295,7 +295,7 @@ export class ClassicMenuScene extends MenuScene {
               this.announce();
             }),
           ),
-        hint: `${game.devMode ? 'Classic rules, game mode' : 'Game mode'}, more settings, weapons, music set, and video, audio and controls`,
+        hint: 'Game mode, more settings, weapons, music set, and video, audio and controls',
       },
       { label: 'Back', select: () => this.leave() },
     );

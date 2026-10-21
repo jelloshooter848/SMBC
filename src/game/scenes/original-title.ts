@@ -108,7 +108,7 @@ export class ClassicTitleScene implements Scene {
               this.announce();
             }),
           ),
-        hint: 'Classic rules, game mode, more settings, weapons, music set and all settings',
+        hint: 'Game mode, more settings, weapons, music set and all settings',
       },
       { label: 'Back', select: () => game.showTitle(), hint: 'To the title' },
     ];

@@ -25,6 +25,8 @@ under `## [Unreleased]`.
   rules value is ignored and kept as it was; the dev start page's Rules row is unchanged.
 - Docs: the release zips' rename is dated 0.4.66, the title's row is Campaign, and the dev menu
   pages (Level select, Toggle heroes) are described as they now are (RC-021).
+- Classic: the Options hints on the CLASSIC title's Start box and the CLASSIC menu no longer name
+  Classic rules (RC-041).
 
 ## [0.4.68] - 2026-10-21
 
