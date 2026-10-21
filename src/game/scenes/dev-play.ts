@@ -4,7 +4,7 @@ import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
-import { heroFor, skinsOf } from '../characters/registry';
+import { CLASSIC_EXTRAS, heroFor, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
 import { levelSelectTarget, worldName } from './level-select-cheat';
@@ -44,29 +44,39 @@ export interface DevPick {
 /** Where the last dev start is kept (this browser only; dev mode only reads it). */
 export const DEV_LAST_KEY = 'smbc.devLast';
 
-/** The last dev start, if one was kept and still names a level and a hero this build has. */
+/** The last dev start, if one was kept and can start now (resolveDevPick). */
 export function loadDevPick(game: Game): DevPick | null {
-  const p = loadJson<Partial<DevPick>>(DEV_LAST_KEY);
-  if (!p || typeof p !== 'object') return null;
+  const r = resolveDevPick(game, loadJson<Partial<DevPick>>(DEV_LAST_KEY));
+  return typeof r === 'string' ? null : r;
+}
+
+/**
+ * Kept pick `p` as it can start now, or why it cannot: it must name a level this build has and a
+ * hero the START page offers now (Game.slotsFor, so expansionHeroOffered: a hero set back to
+ * Release or to Off is not), with one of that hero's looks. A power the played def does not have
+ * falls back to its first state.
+ */
+export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
+  if (!p || typeof p !== 'object') return 'No start was kept';
   const { branch, level, name, hero, look, power, rules, difficulty } = p;
-  if (branch !== 'classic' && branch !== 'campaign') return null;
-  if (typeof level !== 'string' || typeof name !== 'string' || typeof power !== 'string') return null;
-  if (rules !== 'classic' && rules !== 'current') return null;
-  if (!MAP_DIFFICULTIES.includes(difficulty as MapDifficulty)) return null;
+  if (branch !== 'classic' && branch !== 'campaign') return 'The kept start is unreadable';
+  if (typeof level !== 'string' || typeof name !== 'string' || typeof power !== 'string')
+    return 'The kept start is unreadable';
+  if (rules !== 'classic' && rules !== 'current') return 'The kept start is unreadable';
+  if (!MAP_DIFFICULTIES.includes(difficulty as MapDifficulty)) return 'The kept start is unreadable';
   if (level !== DEV_VILLAGE) {
     try {
       game.deps.getLevel(level);
     } catch {
-      return null;
+      return `${name} is not in this build`;
     }
   }
-  // The hero must be one the START page offers now (a hero back on Release is not), and the look
-  // one of its looks; a power its played def does not have falls back to its first state.
   const offered = branch === 'campaign' ? game.deps.characters : game.slotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
-  if (!slot) return null;
+  const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
+  if (!slot) return `${named} is not offered now. Dev mode, Classic heroes sets who is`;
   const def = devLooks(game, slot, rules).find((c) => c.id === look);
-  if (!def || (branch === 'campaign' && def !== slot)) return null;
+  if (!def || (branch === 'campaign' && def !== slot)) return `That look of ${slot.name} is not offered now`;
   const states = powerStatesOf(def, rules);
   return {
     branch,
@@ -97,16 +107,17 @@ function devLooks(game: Game, hero: CharacterDef, rules: Rules): readonly Charac
   return list.length ? list : [hero];
 }
 
-/** Starts `pick` (and keeps it for Again). */
-export function playDevPick(game: Game, pick: DevPick): void {
+/** Starts `pick` (and keeps it for Again); false, starting nothing, when its look is not on the roster. */
+export function playDevPick(game: Game, pick: DevPick): boolean {
   const def = game.rosterFor(pick.rules).find((c) => c.id === pick.look);
-  if (!def) return;
+  if (!def) return false;
   saveJson(DEV_LAST_KEY, pick);
   game.devStart(pick.level, def, pick.power, pick.kit, undefined, {
     rules: pick.rules,
     classic: pick.classicRun,
     difficulty: pick.difficulty,
   });
+  return true;
 }
 
 /** The Again row's short value and its spoken line. */
@@ -129,7 +140,14 @@ export function devAgainItem(game: Game): MenuItem | null {
   return {
     label: 'Again',
     value: () => s.value,
-    select: () => playDevPick(game, p),
+    // Resolved again on the press: Dev mode, Classic heroes may have changed who is offered since.
+    select: () => {
+      const now = resolveDevPick(game, p);
+      if (typeof now !== 'string' && playDevPick(game, now)) return;
+      const why = typeof now === 'string' ? now : `${s.value} cannot start now`;
+      game.ctx.audio.sfx('bump');
+      game.deps.announcer?.say(`Again cannot start. ${why}.`);
+    },
     hint: `Starts the last pick again: ${s.said}`,
   };
 }
@@ -163,6 +181,19 @@ function push(game: Game, page: MenuScene, translucent: boolean): void {
 }
 
 const back = (game: Game): MenuItem => ({ label: 'Back', select: () => game.scenes.pop() });
+
+/**
+ * Area `id` as its row shows and says it: its set's prefix off, the world as the menus name it
+ * (A-D), the rest as words ("ll-10-2-intro" is "A-2 intro", "2-top-secret" "2 top secret").
+ */
+export function areaName(id: string, prefix: string): string {
+  const parts = (id.startsWith(prefix) ? id.slice(prefix.length) : id).split('-');
+  const w = Number(parts[0]);
+  const world = Number.isInteger(w) && w > 0 ? worldName(w) : (parts[0] ?? '');
+  const level = parts[1] !== undefined && /^\d+$/.test(parts[1]) ? `${world}-${parts[1]}` : null;
+  const rest = parts.slice(level ? 2 : 1);
+  return [level ?? world, ...rest].join(' ');
+}
 
 /** Every listed area of level `id` (itself first, then its rooms: `1-2-intro`, `1-2-bonus`). */
 export function areasOf(game: Game, id: string): string[] {
@@ -200,7 +231,8 @@ export class DevWorldScene extends DevPage {
         select: () => push(game, new DevLevelPage(game, branch, set, w, translucent), translucent),
       });
     items.push(back(game));
-    super(game, branch === 'classic' ? (SET_NAMES[set.id] ?? 'World') : 'Story level', items, translucent);
+    const story = `Story: ${set.id === 'lost' ? 'Lost Levels' : 'SMB'} worlds`;
+    super(game, branch === 'classic' ? (SET_NAMES[set.id] ?? 'World') : story, items, translucent);
   }
 }
 
@@ -221,33 +253,62 @@ export class DevLevelPage extends DevPage {
         hint: 'Start page: hero, power and more',
       });
     }
+    // Each level's rooms, then the world's other areas (8-5, 2-top-secret, 1-0-pipe): every listed
+    // area of the world is reached from here.
+    const rooms = (label: string, title: string, areas: string[], hint: string): MenuItem => ({
+      label,
+      select: () =>
+        push(
+          game,
+          new DevPage(
+            game,
+            title,
+            [
+              ...areas.map((a) => ({
+                label: areaName(a, prefix),
+                select: () =>
+                  push(
+                    game,
+                    new DevStartScene(game, { branch, level: a, name: areaName(a, prefix) }),
+                    translucent,
+                  ),
+              })),
+              back(game),
+            ],
+            translucent,
+          ),
+          translucent,
+        ),
+      hint,
+    });
+    const covered = new Set<string>();
     for (let l = 1; l <= 4; l++) {
       const id = `${prefix}${world}-${l}`;
       const areas = areasOf(game, id);
+      for (const a of areas) covered.add(a);
       if (areas.length < 2) continue;
-      items.push({
-        label: `${worldName(world)}-${l} areas`,
-        select: () =>
-          push(
-            game,
-            new DevPage(
-              game,
-              'Areas',
-              [
-                ...areas.map((a) => ({
-                  label: a,
-                  select: () =>
-                    push(game, new DevStartScene(game, { branch, level: a, name: a }), translucent),
-                })),
-                back(game),
-              ],
-              translucent,
-            ),
-            translucent,
-          ),
-        hint: "Start in one of this level's rooms",
-      });
+      const level = `${worldName(world)}-${l}`;
+      items.push(
+        rooms(
+          `${level} areas`,
+          `${setName ?? 'World'} ${level} areas`,
+          areas,
+          "Start in one of this level's rooms",
+        ),
+      );
     }
+    const others = (game.deps.listLevels?.() ?? []).filter(
+      (a) => a.startsWith(`${prefix}${world}-`) && !covered.has(a),
+    );
+    if (others.length)
+      items.push(
+        rooms(
+          'Other rooms',
+          `${setName ?? 'World'} ${worldName(world)} other rooms`,
+          others,
+          'Areas of this world outside its four levels',
+        ),
+      );
     items.push(back(game));
     super(game, `${setName ?? 'World'} ${worldName(world)}`, items, translucent);
   }
