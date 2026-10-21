@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.68] - 2026-10-21
+
 ### Added
 
 - Dev mode: the Level select is now a set of pages (O-05). **Classic** goes map set, world, level
@@ -1835,7 +1837,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.67...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.68...HEAD
+[0.4.68]: https://github.com/jelloshooter848/SMBC/compare/v0.4.67...v0.4.68
 [0.4.67]: https://github.com/jelloshooter848/SMBC/compare/v0.4.66...v0.4.67
 [0.4.66]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...v0.4.66
 [0.4.64]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...v0.4.64
