@@ -226,6 +226,34 @@ const megaman = [
   'a888888888a99a888888888a',
 ];
 
+/** Bass: his orange helmet (as his sprite's) with the two tall gold fins, the angry brows and smirk, the dark suit and its gold gem. */
+const bass = [
+  '.pp..................pp.',
+  'pdlp................pldp',
+  'pdldp..............pdldp',
+  '.pdldp..pppppppp..pdldp.',
+  '..pdldppnggggggnppdldp..',
+  '..pddpnggggggggggnpddp..',
+  '...ppnggggggggggggnpp...',
+  '..pnggggggooooggggggnp..',
+  '..pggggop22oo22poggggp..',
+  '..pgggop22222222pogggp..',
+  '..pggpoo22222222oopggp..',
+  '..pggp22oo2222oo22pggp..',
+  '..pggp210222222012pggp..',
+  '..pggp200222222002pggp..',
+  '..pggop2222332222poggp..',
+  '..pgggop22222222pogggp..',
+  '...pgggop2oooo3pogggp...',
+  '...pggggop3333ooggggp...',
+  '....ppppppoooopppppp....',
+  '...hhhhhhhpppphhhhhhh...',
+  '..hheeeehhhhhhhheeeehh..',
+  '.heeehhhhhhhhhhhhhheeeh.',
+  'heeehhhhhhddddhhhhhheeeh',
+  'heehhhhhhhhddhhhhhhhheeh',
+];
+
 /** Bill: dark hair under the red bandana (its knot and tails to his right), heavy brows, a stubbled jaw, bare shoulders and his strap. */
 const bill = [
   '.....cccccccccccccc.....',
@@ -254,6 +282,34 @@ const bill = [
   'on322222cb222222222223no',
 ];
 
+/** Sophia III head on, in her sprite's colours: the blue canopy, the pink hull and its headlights, the aerial, the grey wheels. */
+const sophia = [
+  '...e....................',
+  '...f....................',
+  '...f....................',
+  '...f....aaaaaaaa........',
+  '...f..aa98888889aa......',
+  '...e.a988m88888889a.....',
+  '...ea9988mm88888899a....',
+  '...ea99999999999999a....',
+  '..ssssssssssssssssssss..',
+  '.stttttttttttttttttttts.',
+  'strrrrrrrrrrrrrrrrrrrrts',
+  'srlldrrrrrrrrrrrrrrdllrs',
+  'srddrrrrshhhhhhsrrrrddrs',
+  'srrrrrrrrrrrrrrrrrrrrrrs',
+  'ssssssssssssssssssssssss',
+  '.hhhhh.shhhhhhhhs.hhhhh.',
+  'hfffffh.hhhhhhhh.hfffffh',
+  'hfeeefh..........hfeeefh',
+  'hfehefh..........hfehefh',
+  'hfeeefh..........hfeeefh',
+  'hfffffh..........hfffffh',
+  '.hhhhh............hhhhh.',
+  '........................',
+  '........................',
+];
+
 /** Princess Zelda: light brown hair down to her shoulders, the gold circlet and its red jewel, the pointed ears, the pink gown. */
 const zelda = [
   '........................',
@@ -280,6 +336,34 @@ const zelda = [
   'buuubiiiiiiiiiiiiiibuuub',
   'buubiiiiiiiiiiiiiiiibuub',
   'bubviiiiiiiiiiiiiiiivbub',
+];
+
+/** Quick Man: Bass's helmet in red with his gold boomerang crest instead of the fins. */
+const quickman = [
+  '......pp........pp......',
+  '.....pldp......pdlp.....',
+  '......pldp....pdlp......',
+  '.......pldppppdlp.......',
+  '......ppwpddddpwpp......',
+  '.....pw4444444444wp.....',
+  '....pw444444444444wp....',
+  '..pw4444445555444444wp..',
+  '..p44445p225522p54444p..',
+  '..p4445p22222222p5444p..',
+  '..p44p552222222255p44p..',
+  '..p44p225522225522p44p..',
+  '..p44p210222222012p44p..',
+  '..p44p200222222002p44p..',
+  '..p445p2222332222p544p..',
+  '..p4445p22222222p5444p..',
+  '...p4445p255553p5444p...',
+  '...p44445p3333554444p...',
+  '....pppppp5555pppppp....',
+  '...5555555pppp5555555...',
+  '..55444455555555444455..',
+  '.5444555555555555554445.',
+  '5444555555dddd5555554445',
+  '54455555555dd55555555445',
 ];
 
 /** The moustached template (Dr. Wily's, Mr. X's and Dr. Cossack's looks are built on it). */
@@ -338,8 +422,8 @@ const helmeted = [
   '.0888888888099990888888888',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
-/** Bass: the black helmet with its tall fins and gold stripe, the dark eyes, a smirk. */
-const bass = [
+/** The finned-helmet template (Gemini Man's and Skull Man's looks are built on it). */
+const finned = [
   '..00.................00.',
   '.0dd0...............0dd0',
   '.0ddd0.............0ddd0',
@@ -392,34 +476,6 @@ const ryu = [
   '.0aaa999999aaaaa999999aa00',
   '0aaa9999999aaaaa9999999aa0',
   '0aa99999999aaaaa99999999a0',
-].map((r) => r.slice(0, 24).padEnd(24, '.'));
-
-/** Sophia III: the tank head on, its blue canopy, the hull lights and the front wheels. */
-const sophia = [
-  '........................',
-  '.......0000000000.......',
-  '.....009999999999900....',
-  '....09988888888889990...',
-  '...0998811888888889990..',
-  '...0988188888888888890..',
-  '..00000000000000000000..',
-  '.0ffffffffffffffffffff0.',
-  '0ffeeeeeeeeeeeeeeeeeeff0',
-  '0fe44efffffffffffe44eef0',
-  '0fe44effffffffffffe44ef0',
-  '0feeeeeeeeeeeeeeeeeeeef0',
-  '0ffffffffffffffffffffff0',
-  '.0eeeeeeeeeeeeeeeeeeee0.',
-  '.00000000000000000000000',
-  '0hhhh00..........00hhhh0',
-  'hhffhh0..........0hhffhh',
-  'hffffh0..........0hffffh',
-  'hfeefh0..........0hfeefh',
-  'hfeefh0..........0hfeefh',
-  'hffffh0..........0hffffh',
-  'hhffhh0..........0hhffhh',
-  '0hhhh00..........00hhhh0',
-  '.0000............0000...',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
 /* ---------- the skins and the Expansion heroes ---------- */
@@ -764,8 +820,7 @@ const yoshi = [
  * 0.5.0's looks (G-050..G-053), each face redrawn in its own colours from one of ours: Mario's
  * and Luigi's Super Mario Bros. 3 looks (black hair, dark blue straps), Princess Zelda's three
  * from her own face (light brown hair and a red jewel; gold hair, a silver circlet and a white
- * gown; Game Boy greens), Quick Man from Bass's helmet in red with its gold crest, Haggle Man from Ryu's hood in
- * red.
+ * gown; Game Boy greens), Haggle Man from Ryu's hood in red. Quick Man has his own face (above).
  */
 const mario3 = rimmed(
   [...recolour(mario.slice(0, 19), { c: '0', b: 'h' }), ...recolour(mario.slice(19), { b: '9', c: 'a' })],
@@ -778,18 +833,17 @@ const luigi3 = rimmed(
 const zeldaNes = zelda;
 const zeldaSnes = recolour(zelda, { d: 'f', u: 'd', i: '1', t: '1', v: 'j', 4: 'j' });
 const zeldaGb = recolour(zelda, { u: '7', b: '7', d: 'x', i: 'q', t: 'q', v: '6', 4: '6' });
-const quickman = recolour(bass, { h: '4' });
 const haggleman = recolour(ryu, { a: '5', 9: '4', 4: 'd' });
 /*
  * Bass's other looks (owner addition): Dr. Wily, Mr. X and Dr. Cossack from the moustached face
  * (grey hair over a white coat; a purple beret and coat; a brown fur hat and coat), Gemini Man and
- * Skull Man from Bass's helmet (white and blue with a cyan crest; a white skull).
+ * Skull Man from the finned helmet (white and blue with a cyan crest; a white skull).
  */
 const wily = recolour(moustached, { 4: 'f', 1: 'f', c: 'f' });
 const mrx = recolour(moustached, { 4: 'j', 1: 'j', c: 'h' });
 const cossack = recolour(moustached, { 4: 'b', 1: 'c', c: 'b' });
-const gemini = recolour(bass, { h: '1', d: 'k' });
-const skullman = recolour(bass, { h: 'f', d: '1' });
+const gemini = recolour(finned, { h: '1', d: 'k' });
+const skullman = recolour(finned, { h: 'f', d: '1' });
 
 /** The faces by select-slot hero id (a frame each on the `select-faces` sheet). */
 export const SELECT_FACE_IDS = [
