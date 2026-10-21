@@ -189,6 +189,8 @@ export class Player {
   private launchGravity = 0;
   /** MovementProfile.stompHeld: the bounce's tier until its apex or a landing (null: none). */
   private stompTier: JumpTier | null = null;
+  /** The stomp bounce's JUMP was let go (or its apex passed): its fall gravity holds to the landing. */
+  private stompReleased = false;
   private runTimer = 0;
   private tier: JumpTier;
   /** `tier` is a floor jumper's water tier (SwimProfile.floorJumpOnly). */
@@ -580,7 +582,7 @@ export class Player {
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
-      this.stompTier = null;
+      this.endStompBounce();
       this.combo = 0;
       b.vy = 0;
       this.jumpReleased = false;
@@ -799,7 +801,7 @@ export class Player {
     }
     if (b.onGround) {
       this.jumping = false;
-      this.stompTier = null;
+      this.endStompBounce();
       this.combo = 0;
       b.vy = 0;
       this.riseY0 = null;
@@ -1530,18 +1532,27 @@ export class Player {
   }
 
   /**
-   * MovementProfile.stompHeld's gravity this frame while its bounce rises (null when none: the
-   * path's own). The bounce ends at its apex, a landing, a jump or a launch.
+   * MovementProfile.stompHeld's gravity this frame from its bounce to the landing (null when none:
+   * the path's own): the tier's held gravity until JUMP is let go, then its fall gravity. A jump
+   * or a launch ends it.
    */
   private stompGravity(input: InputFrame): number | null {
     const t = this.stompTier;
     if (!t) return null;
-    const b = this.body;
-    if (b.onGround || b.vy >= 0 || this.launched || this.rising || this.jumping) {
-      this.stompTier = null;
+    if (this.body.onGround || this.launched || this.rising || this.jumping) {
+      this.endStompBounce();
       return null;
     }
-    return input.held('jump') ? t.holdGravity : t.fallGravity;
+    // SMB1's JumpSwimSub: A not held while rising, or the rise over, stores VerticalForceDown in
+    // VerticalForce, and nothing in the air sets it back: the fall force holds to the landing, so a
+    // second press adds no height.
+    if (!input.held('jump') || this.body.vy >= 0) this.stompReleased = true;
+    return this.stompReleased ? t.fallGravity : t.holdGravity;
+  }
+
+  private endStompBounce(): void {
+    this.stompTier = null;
+    this.stompReleased = false;
   }
 
   /**
@@ -1551,7 +1562,7 @@ export class Player {
    */
   stompBounce(fixedVy?: number): void {
     const b = this.body;
-    this.stompTier = null;
+    this.endStompBounce();
     const held = fixedVy === undefined ? this.profile.stompHeld : undefined;
     if (held) {
       // SMB1's bounce (BUG-07): no rise, no rise lines or soft cut from the last jump; the
@@ -1561,6 +1572,7 @@ export class Player {
       // The tier the speed picks (pickJumpTier's rule).
       const a = Math.abs(b.vx);
       this.stompTier = held.tiers.find((t) => a < t.maxVx) ?? held.tiers[held.tiers.length - 1] ?? null;
+      this.stompReleased = false;
       this.jumping = false;
       this.rising = false;
       this.launched = false;

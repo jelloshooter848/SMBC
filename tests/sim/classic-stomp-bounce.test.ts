@@ -80,6 +80,35 @@ function bounce(def: CharacterDef, held: boolean): { vy: number; rise: number } 
   return { vy, rise: top - peak };
 }
 
+/**
+ * The hero falls onto a still Goomba holding `pre`, then from the stomp holds `after(frame)`: the
+ * bounce's peak above the stomp point.
+ */
+function riseWith(def: CharacterDef, pre: Action[], after: (f: number) => Action[]): number {
+  const w = world(def);
+  const input = new ScriptedInput({ steps: [] });
+  const step = (keys: Action[]) => {
+    input.setHeld(keys);
+    input.next();
+    w.update([input]);
+  };
+  step([]);
+  const g = w.entities.find((e) => e instanceof Goomba) as Goomba;
+  g.walkSpeed = 0;
+  g.body.vx = 0;
+  g.body.x = w.player.body.x;
+  for (let f = 0; f < 200 && w.feats.stomps === 0; f++) step(pre);
+  expect(w.feats.stomps).toBe(1);
+  const b = w.player.body;
+  const top = b.y;
+  let peak = b.y;
+  for (let f = 0; f < 120 && b.vy < 0; f++) {
+    step(after(f));
+    peak = Math.min(peak, b.y);
+  }
+  return top - peak;
+}
+
 /** Yoshi pounds a Goomba from above, `keys` held: the bounce's first vy and its peak. */
 function poundBounce(keys: Action[]): { vy: number; rise: number } {
   const w = world(YOSHI_CLASSIC);
@@ -153,6 +182,19 @@ describe('BUG-07: the Classic stomp bounce', () => {
       expect(free.vy).toBe(-0x04000);
       expect(held.vy).toBe(-0x04000);
       expect(held.rise).toBeGreaterThan(free.rise * 2);
+    });
+  }
+
+  for (const id of ['mario', 'luigi']) {
+    const d = heroFor(CHARACTERS.find((c) => c.id === id) as CharacterDef, 'classic');
+    it(`${id}: a release latches the fall gravity; pressing JUMP again adds no height`, () => {
+      const held = riseWith(d, ['jump'], () => ['jump']);
+      const released = riseWith(d, ['jump'], (f) => (f < 4 ? ['jump'] : []));
+      const again = riseWith(d, ['jump'], (f) => (f < 4 || f >= 8 ? ['jump'] : []));
+      expect(again).toBe(released);
+      expect(released).toBeLessThan(held);
+      // Not held at the stomp: the fall gravity from the start, a press later adds nothing.
+      expect(riseWith(d, [], (f) => (f >= 3 ? ['jump'] : []))).toBe(riseWith(d, [], () => []));
     });
   }
 
