@@ -33,6 +33,9 @@ under `## [Unreleased]`.
   no longer cut off by their cell; and they are the real moves: Mario hits a ? block, Simon cracks
   his whip, Ryu clings to a wall and Jason hops out of Sophia.
 - Classic: Bill's shots have their own hit and kill sounds.
+- Classic: the last weapons that borrowed another hero's sound have their own: Mega Man's Hard
+  Knuckle, Pharaoh Shot, Flame Blast, Magma Bazooka, Water Shield, Screw Crusher, Rush and Super
+  Arm, Samus's bomb blast and Ryu's sword.
 
 ### Fixed
 

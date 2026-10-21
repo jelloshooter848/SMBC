@@ -394,7 +394,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     if (out) out.dismiss();
     else {
       ClassicRush.summon(p, world, input.held('up'));
-      world.audio.sfx('kick');
+      world.audio.sfx('mm-rush'); // G-074 (was Mario's `kick`)
     }
   }
 
