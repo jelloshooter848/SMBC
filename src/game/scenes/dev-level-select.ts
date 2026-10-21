@@ -7,7 +7,8 @@ import type { Rules } from '../context';
 import { heroFor } from '../characters/registry';
 
 /** The Rules row's values and hint (dev Classic starts, TG rules model). */
-export const RULES_LABELS: Record<Rules, string> = { current: 'Current', classic: 'Classic SMBC' };
+// Owner decision: the 'current' rules are shown and said as "Campaign" (the value stays).
+export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
 export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
 
 const POWER_UP_STATES = ['small', 'big', 'fire'];

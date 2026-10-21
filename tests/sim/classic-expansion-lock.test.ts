@@ -140,6 +140,9 @@ describe('O-12 in developer mode', () => {
     expect(labels(o)).toContain('Expansion heroes');
     expect(h.game.classicRules).toBe('current');
     expect(h.game.expansionHeroes).toBe(true);
+    // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
+    for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id), id).toBe(false);
+    h.settings.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: [...EXPANSION_HEROES] };
     const slots = h.game.slotsFor('classic').map((c) => c.id);
     for (const id of EXPANSION_HEROES) expect(slots).toContain(id);
   });

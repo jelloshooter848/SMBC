@@ -17,15 +17,19 @@ under `## [Unreleased]`.
   games. **Again** replays the last start in one press. The one-page list stays as Level select.
 - Dev mode: a **Classic heroes** page (O-06) in place of the Dev menu's Classic toggles: each
   Expansion hero is Release (what players get), On (always shown in dev mode) or Off, with an All
-  row, and the Yoshi mount is Off, On or Ride. None of it applies outside dev mode.
+  row, and the Yoshi mount is Off, On or Ride. In dev mode the Expansion heroes option no longer
+  offers all four by itself: Release shows exactly what players get. None of it applies outside
+  dev mode.
 
 ### Changed
 
 - Classic mode plays the original's rules and heroes only: the Classic rules switch and the
   Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
   Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
-  by an earlier version is kept but has no effect; a Continue run kept under Current rules goes on
+  by an earlier version is kept but has no effect; a Continue run kept under Campaign rules goes on
   under Classic rules with its level, lives, score and coins.
+- The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
+  "Current") wherever it is shown or read out.
 
 ### Fixed
 

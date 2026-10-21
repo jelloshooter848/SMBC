@@ -210,6 +210,8 @@ describe('the original roster, Expansion heroes and old saves', () => {
     for (const id of ['vicviper', 'warriors', 'arthur', 'yoshi'])
       expect(sel.chars.some((c) => c.id === id)).toBe(false);
     settings.classic.expansion = 'on';
+    // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
+    settings.classicDev.heroesOn = ['vicviper', 'warriors', 'arthur', 'yoshi'];
     h.game.classicSelect('1-1', () => {});
     const on = h.top() as CharacterSelectScene;
     expect(on.chars.slice(10).map((c) => c.id)).toEqual(['vicviper', 'warriors', 'arthur', 'yoshi']);

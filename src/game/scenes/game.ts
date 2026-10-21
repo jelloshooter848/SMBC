@@ -649,13 +649,12 @@ export class Game {
   }
 
   /**
-   * Expansion hero `id` with no dev override (O-06's Release): with Options > Expansion heroes in
-   * force, a released hero (RELEASED_EXPANSION_HEROES), which is all release players ever get; in
-   * developer mode, where that row is a dev tool, every one, as O-12 set it.
+   * What release players get for Expansion hero `id` (O-12), and so O-06's Release in dev mode
+   * too: released (RELEASED_EXPANSION_HEROES, whose first id brings the player row back) with
+   * Options > Expansion heroes on. Dev > Classic heroes' On shows an unreleased hero in dev mode.
    */
   heroReleased(id: string): boolean {
-    if (!this.expansionHeroes) return false;
-    return this.devMode || expansionReleased(id);
+    return expansionReleased(id) && this.deps.settings?.classic.expansion === 'on';
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */

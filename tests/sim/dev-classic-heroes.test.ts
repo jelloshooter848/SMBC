@@ -75,13 +75,18 @@ describe('O-06: Dev > Classic heroes', () => {
     expect(ids(h)).not.toContain('arthur');
     row(page, 'Yoshi').adjust?.(1); // Off
     expect(ids(h)).not.toContain('yoshi');
+    // The dev Expansion heroes row no longer offers all four: Release is what players get, and
+    // with nothing in RELEASED_EXPANSION_HEROES (0.5.0) that is none of them.
     settings.classic.expansion = 'on';
-    expect(h.game.heroReleased('yoshi')).toBe(true);
+    for (const id of EXPANSION_HEROES)
+      expect(h.game.heroReleased(id), id).toBe(RELEASED_EXPANSION_HEROES.includes(id));
     expect(ids(h)).not.toContain('yoshi');
-    expect(ids(h)).toContain('arthur');
+    expect(ids(h)).not.toContain('arthur');
     row(page, 'Yoshi').adjust?.(1); // Release
+    expect(ids(h)).not.toContain('yoshi');
+    expect(row(page, 'Yoshi').hint).toMatch(/hidden now; not released to players/);
+    row(page, 'Yoshi').adjust?.(1); // On
     expect(ids(h)).toContain('yoshi');
-    expect(row(page, 'Yoshi').hint).toMatch(/shown now; not released to players/);
   });
 
   it('All: Release, All on, All off, and Mixed when the heroes differ', () => {

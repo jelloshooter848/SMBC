@@ -140,7 +140,7 @@ export const DIFFICULTY_NAMES: Record<MapDifficulty, string> = {
 };
 
 /** The status line while Current rules leave every map on Normal (it fits the 28 columns). */
-export const CURRENT_RULES_NORMAL = 'Current rules: always Normal';
+export const CURRENT_RULES_NORMAL = 'Campaign rules: always Normal';
 
 /**
  * A Map difficulty row (G-006): its value, changed with left and right (and OK / CHANGE on a
@@ -164,7 +164,7 @@ export function mapDifficultyItem(
     get hint() {
       return classic()
         ? 'Easy, Normal or Hard: each plays the original version of every level'
-        : 'Classic rules only: with Current rules every level plays as Normal';
+        : 'Classic rules only: with Campaign rules every level plays as Normal';
     },
   };
 }
@@ -186,7 +186,8 @@ function settingsDifficulty(game: Game): { get(): MapDifficulty; set(d: MapDiffi
 const CLASSIC_RULES_RIGHT = 248;
 const CLASSIC_RULES_Y = 64;
 
-const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
+// Owner decision: the 'current' rules are shown and said as "Campaign" (the saved value stays).
+const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Campaign' };
 
 /**
  * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
@@ -329,7 +330,7 @@ export class ClassicOptionsScene extends MenuScene {
       label: 'Classic rules',
       value: () => (this.drawing ? '' : this.rulesLabel),
       adjust: step,
-      hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
+      hint: 'Classic SMBC plays the heroes as the original did; Campaign as the campaign does',
     };
     this.setItems([
       ...(game.devMode ? [rulesRow] : []),

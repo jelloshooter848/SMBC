@@ -197,7 +197,7 @@ export class DevClassicHeroesScene extends MenuScene {
         select: () => this.picked(() => flip(1)),
         get hint() {
           const players = expansionReleased(def.id) ? 'released to players' : 'not released to players';
-          return `Release: follows Expansion heroes, ${released(def)} now; ${players}. On: always in dev mode. Off: hidden`;
+          return `Release: as players get it, ${released(def)} now; ${players}. On: always in dev mode. Off: hidden`;
         },
       });
     }
