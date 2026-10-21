@@ -189,6 +189,19 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     });
   });
 
+  it("a dev start from a Classic run's pause takes no kits from that run", () => {
+    const h = classic();
+    marioRun(h);
+    const g = h.game;
+    g.state.powerState = 'fire';
+    g.setHero(0, LINK);
+    expect(g.classicKits.mario?.powerState).toBe('fire');
+    g.devStart('1-1', LINK, 'small', false, undefined, { rules: 'classic', classic: true });
+    expect(g.classicKits).toEqual({});
+    g.setHero(0, MARIO);
+    expect(g.state.powerState).toBe('small');
+  });
+
   it('outside a Classic run (free play) a new hero still starts from its default', () => {
     const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
     const g = h.game;

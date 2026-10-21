@@ -580,6 +580,7 @@ export class Player {
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
+      this.stompTier = null;
       this.combo = 0;
       b.vy = 0;
       this.jumpReleased = false;
@@ -798,6 +799,7 @@ export class Player {
     }
     if (b.onGround) {
       this.jumping = false;
+      this.stompTier = null;
       this.combo = 0;
       b.vy = 0;
       this.riseY0 = null;

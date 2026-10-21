@@ -1841,6 +1841,8 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic;
     this.linkRun = false;
+    // BUG-06: a dev start is a new run; no hero keeps a kit from the run it left.
+    this.classicKits = {};
     // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
