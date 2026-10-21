@@ -27,6 +27,9 @@ import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
 export const PROMPT_BLINK = 30;
 /** Where the prompt sits (TitleLevel.as CLICK_SCREEN_TXT_Y_POS: about half the stage, under CLASSIC). */
 const PROMPT_Y = 138;
+/** The prompt's dark strip: its margin around the words, and its colour. */
+const PROMPT_PAD = 3;
+export const PROMPT_STRIP = 'rgba(0,0,0,0.6)';
 /** The logo's drop from the REMIX title's place (TitleLevel.as TITLE_Y_POS 60: our 30). */
 const LOGO_DY = 22;
 /** The boxes' centre (screen px). */
@@ -88,8 +91,8 @@ export class ClassicTitleScene implements Scene {
     this.phase = phase;
     // With Reduce flashing it is simply in place: no fall, no shake, no flying chips.
     this.smashing = smash && !game.ctx.reduceFlashing;
-    // START in place of NEW GAME and LOAD GAME: each map set keeps its own run, and the map set
-    // menu asks CONTINUE or NEW GAME for a set that has one. No LINKS (nothing to link to).
+    // START in place of NEW GAME and LOAD GAME: it opens the map set menu, where a run is
+    // started or continued. No LINKS (nothing to link to).
     this.items = [
       {
         label: 'Start',
@@ -329,8 +332,18 @@ export class ClassicTitleScene implements Scene {
   render(r: Renderer): void {
     this.renderBackdrop(r);
     if (this.promptShown()) {
+      // Over everything the demo draws, on a dark strip so a hero or a block behind it never
+      // breaks it up (the logo has its own black outline).
       const p = this.prompt;
-      this.shadowText(r, p, Math.round(128 - (p.length * 8) / 2), PROMPT_Y);
+      const x = Math.round(128 - (p.length * 8) / 2);
+      r.rect(
+        x - PROMPT_PAD,
+        PROMPT_Y - PROMPT_PAD,
+        p.length * 8 + PROMPT_PAD * 2,
+        8 + PROMPT_PAD * 2,
+        PROMPT_STRIP,
+      );
+      this.shadowText(r, p, x, PROMPT_Y);
     }
     // The Start box, while it is up and no menu is over it.
     if (this.phase === 'start' && this.game.scenes.top === this) {

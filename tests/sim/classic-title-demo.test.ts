@@ -12,7 +12,13 @@ import {
   WAKE_AHEAD,
   demoDef,
 } from '@game/scenes/title-demo';
-import { CLASSIC_AT, ClassicTitleScene, PROMPT_BLINK, SMASH } from '@game/scenes/original-title';
+import {
+  CLASSIC_AT,
+  ClassicTitleScene,
+  PROMPT_BLINK,
+  PROMPT_STRIP,
+  SMASH,
+} from '@game/scenes/original-title';
 import {
   BOX_GROW,
   boxGrowth,
@@ -23,6 +29,9 @@ import {
   type BoxRow,
 } from '@game/scenes/menu-box';
 import type { Scene } from '@engine/scene';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import { CheatsScene } from '@game/scenes/cheats-menu';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -535,4 +544,70 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
     expect(h.audio.sfx.mock.calls.length).toBe(sfx);
     expect(h.audio.playMusic.mock.calls.length).toBe(music);
   }, 120000);
+});
+
+describe('O-04 release review: no title left behind, the logo and prompt over the demo', () => {
+  const stack = (h: H) => (h.game.scenes as unknown as { stack: Scene[] }).stack;
+
+  it('Options > Cheats > Level select > Go, then BACK, several times: one title, one listener', () => {
+    const live = new Set<unknown>();
+    const canvas = {
+      addEventListener: (_: string, f: unknown) => live.add(f),
+      removeEventListener: (_: string, f: unknown) => live.delete(f),
+    } as unknown as HTMLCanvasElement;
+    const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {}, canvas } });
+    h.game.showClassicTitle('start');
+    for (let trip = 0; trip < 4; trip++) {
+      // The Start box's OPTIONS, its Cheats, then the Level Select cheat's Go (G-007).
+      const title = stack(h).find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene;
+      h.game.scenes.push(new ClassicOptionsScene(h.game, () => h.game.scenes.pop()));
+      h.game.scenes.push(new CheatsScene(h.game, () => h.game.scenes.pop(), { all: true }));
+      h.game.classicLevelSelect('1-1', 'normal');
+      expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+      // The select replaced the title and everything opened over it: nothing of them is left.
+      expect(stack(h)).toHaveLength(1);
+      expect(live.size).toBe(0);
+      expect(title).toBeDefined();
+      h.idle(12);
+      h.tap('attack');
+      expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+      expect(stack(h).filter((s) => s instanceof ClassicTitleScene)).toHaveLength(1);
+      expect(stack(h)).toHaveLength(2);
+      expect(live.size).toBe(1);
+    }
+  });
+
+  it('the logo and the prompt draw over everything the demo draws; the prompt on its dark strip', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = true;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    h.idle(MARIO_WAIT + PROMPT_BLINK + 2);
+    expect(ct.promptShown()).toBe(true);
+    const ops: { kind: string; what: string }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite(sheet: SpriteSheet, frame: string): void {
+        ops.push({ kind: 'sprite', what: `${sheet.id}:${frame}` });
+      },
+      text(_f: SpriteSheet, str: string): void {
+        ops.push({ kind: 'text', what: str });
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, c: string): void {
+        ops.push({ kind: 'rect', what: c });
+      },
+    });
+    ct.render(r);
+    const firstLogo = ops.findIndex((o) => o.what.startsWith('title-logo:'));
+    const lastDemo = ops.reduce(
+      (k, o, i) => (o.kind === 'sprite' && !o.what.startsWith('title-logo:') ? i : k),
+      -1,
+    );
+    expect(firstLogo).toBeGreaterThan(-1);
+    expect(lastDemo).toBeGreaterThan(-1);
+    expect(firstLogo).toBeGreaterThan(lastDemo);
+    const strip = ops.findIndex((o) => o.kind === 'rect' && o.what === PROMPT_STRIP);
+    const words = ops.findIndex((o) => o.kind === 'text' && o.what === ct.prompt);
+    expect(strip).toBeGreaterThan(lastDemo);
+    expect(words).toBeGreaterThan(strip);
+  });
 });
