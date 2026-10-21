@@ -146,6 +146,11 @@ export class ClassicSetScene extends MenuScene {
     actions: SetActions,
   ) {
     super(game, set.label.toUpperCase(), [], actions.onBack, demo !== null);
+    // RC-040: the box's moves and BACK sound as the Start box's (MessageBoxSounds).
+    if (demo) {
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     const items: MenuItem[] = [
       {
         label: 'Continue',
@@ -222,6 +227,10 @@ export class ClassicOverwriteScene extends MenuScene {
     readonly jump = false,
   ) {
     super(game, 'OVERWRITE SAVE?', [], onCancel, demo !== null);
+    if (demo) {
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.setItems([
       { label: 'Cancel', select: onCancel, hint: 'Keep the saved run' },
       jump

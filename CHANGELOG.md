@@ -10,6 +10,11 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic: CLASSIC > Options and the pages it opens (More settings, Weapons, Disable heroes,
+  Cheats) are boxes over the CLASSIC title's demo, like the Start and map set boxes, each page's
+  name on its top row; Video, audio, controls stays the full Options page (BUG-01).
+- Classic: the map set box, CONTINUE / NEW GAME, the overwrite warning and the Options boxes
+  move and go back with the original's sounds, as the Start box does (RC-040).
 - Classic: a game over offers CONTINUE and MAIN MENU, and both keep the run. Its map set's save
   holds the continue point (the world's first level, starting lives, score 0, power-ups gone, as
   the original's continue gives), so the set's Continue later goes on from there, not 1-1 (BUG-05).

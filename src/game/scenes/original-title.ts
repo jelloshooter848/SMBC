@@ -73,6 +73,8 @@ export type ClassicTitlePhase = 'demo' | 'start';
 
 export class ClassicTitleScene implements Scene {
   readonly translucent = false;
+  /** The backdrop every CLASSIC box is drawn over (original-box-menu.ts demoUnder). */
+  readonly classicBackdrop = true as const;
   readonly demo: ClassicDemo;
   phase: ClassicTitlePhase;
   /** Frames since the scene opened. */

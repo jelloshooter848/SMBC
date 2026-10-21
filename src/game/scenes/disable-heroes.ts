@@ -1,5 +1,8 @@
 import { saveSettings } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
+import type { InputFrame } from '@engine/input/input-manager';
+import type { Renderer } from '@engine/gfx/renderer';
+import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Game } from './game';
 
 /**
@@ -9,9 +12,35 @@ import type { Game } from './game';
  * last hero on cannot be turned off, as the original keeps one. Saved at once.
  */
 export class ClassicHeroesScene extends MenuScene {
+  /** BUG-01: the CLASSIC title it is a box over (null: a full-screen page). */
+  private readonly over = demoUnder(this.game);
+
   constructor(game: Game, onBack: () => void) {
     super(game, 'DISABLE HEROES', [], onBack);
+    if (this.over) {
+      this.translucent = true;
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.build();
+  }
+
+  /** The demo under the box plays on while it is up. */
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
+  }
+
+  override render(r: Renderer): void {
+    if (!this.over) return super.render(r);
+    renderBoxedMenu(r, this.game, {
+      header: this.title,
+      items: this.items,
+      index: this.index,
+      t: this.t,
+      status: this.status,
+      age: this.t,
+    });
   }
 
   private get off(): string[] {

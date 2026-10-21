@@ -24,6 +24,7 @@ import {
 } from './original-options';
 import type { Game } from './game';
 import { openClassicSet, savedRunSpoken } from './original-saves';
+import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { ClassicTitleScene } from './original-title';
@@ -247,6 +248,11 @@ export class ClassicMenuScene extends MenuScene {
   ) {
     super(game, 'CLASSIC', [], () => this.leave(), over !== null);
     this.boxAt = grow ? 0 : null;
+    // RC-040: the box's moves and BACK sound as the Start box's (MessageBoxSounds).
+    if (over) {
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.build();
     // Back from a set's select: on that set's row again.
     if (focus)
@@ -390,10 +396,23 @@ const MENU_ROW_H = 14;
 export class ClassicOptionsScene extends MenuScene {
   /** While drawing: the Classic rules row draws its own value (it needs the full row). */
   private drawing = false;
+  /** BUG-01: the CLASSIC title it is a box over (null: a full-screen page). */
+  private readonly over = demoUnder(this.game);
 
   constructor(game: Game, onBack: () => void) {
     super(game, 'CLASSIC OPTIONS', [], onBack);
+    if (this.over) {
+      this.translucent = true;
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.build();
+  }
+
+  /** The demo under the box plays on while it is up. */
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
   }
 
   /** The rows (rebuilt after a change, so the Game mode row's `*` mark follows). */
@@ -487,6 +506,17 @@ export class ClassicOptionsScene extends MenuScene {
    * drawn right-aligned to the screen's edge (the menu is full screen, its first row unscrolled).
    */
   override render(r: Renderer): void {
+    if (this.over) {
+      renderBoxedMenu(r, this.game, {
+        header: 'Options',
+        items: this.items,
+        index: this.index,
+        t: this.t,
+        status: this.status,
+        age: this.t,
+      });
+      return;
+    }
     this.drawing = true;
     try {
       super.render(r);
