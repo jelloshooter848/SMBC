@@ -201,12 +201,13 @@ const HERO_SET_OF: Readonly<Record<string, string>> = {
 };
 
 /**
- * A sound with the choose jingle, by hero id: Mega Man and Bass teleport out (MegaMan.as 157),
- * Bill is electrocuted (Bill.as chooseCharacter 1087).
+ * A sound with the choose jingle, by hero id: Mega Man teleports out (MegaMan.as 157), Bill is
+ * electrocuted (Bill.as chooseCharacter 1087). Bass dash-jumps and Proto Man stands, so neither
+ * teleports (RC-032; Bass.as and ProtoMan.as play no teleport). Played once, at the pick
+ * (Game.heroPicked), never again by the pick show.
  */
 export const CHOOSE_SFX: Readonly<Record<string, string>> = {
   megaman: 'mm-teleport',
-  bass: 'mm-teleport',
   bill: 'bill-shock',
 };
 

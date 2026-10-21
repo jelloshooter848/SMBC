@@ -10,13 +10,14 @@ import { shownPortrait, type CharacterDef } from '../characters/character';
 import { heroFor, heroGame, skinGame } from '../characters/registry';
 import type { Game } from './game';
 import {
-  BLOCK_HOP,
-  CLING_WALL_DX,
+  GROUND_Y,
   PICK_SHOW_GUARD,
   type PickFrame,
-  pickPose,
+  pickShow,
   pickShowFrames,
   pickShowOf,
+  type ShowFrame,
+  type ShowProp,
 } from './pick-show';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
@@ -590,7 +591,7 @@ export class CharacterSelectScene implements Scene {
   private perform(c: CharacterDef, go: () => void): void {
     if (!this.classicLayout || this._reviving) return go();
     const slotId = this.game.slotOf(c).id;
-    this.show = { c, slot: this.index, t: 0, frames: pickShowFrames(slotId), go };
+    this.show = { c, slot: this.index, t: 0, frames: pickShowFrames(slotId, this.game.skinFor(c).id), go };
     // The choose jingle and teleport start with the move (G-062, G-070).
     this.game.heroPicked(c);
   }
@@ -600,6 +601,9 @@ export class CharacterSelectScene implements Scene {
     const sh = this.show;
     if (!sh) return;
     sh.t++;
+    // The move's own sounds (a brick breaking, Mario's block, Simon's whip).
+    const sfx = this.showFrame(sh).sfx;
+    if (sfx) this.game.ctx.audio.sfx(sfx);
     const skip =
       sh.t > PICK_SHOW_GUARD &&
       (pressed('jump') || pressed('start') || pressed('attack') || pressed('select'));
@@ -1165,56 +1169,79 @@ export class CharacterSelectScene implements Scene {
     }
   }
 
+  /** The show of picked hero `c` this frame (its look's own move, else its slot's). */
+  private showFrame(sh: NonNullable<CharacterSelectScene['show']>): ShowFrame {
+    const move = pickShowOf(this.game.slotOf(sh.c).id, this.game.skinFor(sh.c).id).move;
+    return pickShow(move, sh.t, this.game.ctx.reduceFlashing);
+  }
+
   /**
-   * G-055, RC-007: the picked hero acting out its pick on the ground, centred on `cx` (feet on
-   * y 208), whole and in its own frames (pick-show.ts), with the block, wall or Jason its move has.
+   * G-055, RC-007: the picked hero acting out the original's pick move on the ground, centred on
+   * `cx` (feet on y 208), whole and in its own frames, with the props its chooseCharacter adds
+   * (pick-show.ts). The select and name boxes are closed meanwhile, as in the original.
    */
   private renderShow(r: Renderer, sh: NonNullable<CharacterSelectScene['show']>, cx: number): void {
     const assets = this.game.ctx.assets;
     const art = this.artOf(sh.c);
-    const pose = pickPose(pickShowOf(this.game.slotOf(sh.c).id).move, sh.t, this.game.ctx.reduceFlashing);
-    const sheet = assets.sheet(art.sheet, art.palette);
-    const has = (f: string) => sheet.frames.has(f);
-    // The move's frame in this hero's sheet: `jump` follows the standing frame's size prefix.
-    const prefix = /^(small|big)-/.exec(art.frame)?.[0] ?? '';
-    const want: Record<PickFrame, string> = {
-      jump: `${prefix}jump`,
-      'whip-0': 'whip-0',
-      'whip-1': 'whip-1',
-      whip: 'whip-leather',
-      cling: 'cling',
-      teleport: 'teleport-0',
-      open: 'open',
-    };
-    let frame = art.frame;
-    if (pose.pose === 'raise' && has('raise-arms')) frame = 'raise-arms';
-    else if (pose.frame && has(want[pose.frame])) frame = want[pose.frame];
+    const pose = this.showFrame(sh);
+    const palette =
+      pose.flash !== undefined && art.palette === 'bill' ? `bill-star-${pose.flash}` : art.palette;
+    const sheet = assets.sheet(art.sheet, palette);
+    const has = (n: string) => sheet.frames.has(n);
+    const frame = this.showSheetFrame(art.frame, pose.frame, has);
     const f = sheet.frames.get(frame);
     const h = f?.h ?? 32;
     // Every frame stands on the ground with the hero's body centred on cx (showAnchor).
     const left = cx - showAnchor(art.sheet, frame, f?.w ?? 16);
-    const top = 208 - h;
-    const tiles = assets.sheet('tiles', `tiles-${this.groundTheme()}`);
-    if (pose.block) {
-      // A ? block over Mario's head at the top of his hop; used once hit, bumped up.
-      const by = top - BLOCK_HOP - 16 + pose.block.dy;
-      r.sprite(tiles, pose.block.used ? 'used' : 'question-0', cx - 8, by);
-    }
-    if (pose.wall) {
-      // Three blocks of wall to Ryu's right, standing on the ground.
-      for (let k = 1; k <= 3; k++) r.sprite(tiles, 'hard', cx + CLING_WALL_DX, 208 - 16 * k);
-    }
+    const top = GROUND_Y - h;
+    const theme = this.groundTheme();
+    const tiles = assets.sheet('tiles', `tiles-${theme}`);
+    const prop = (p: ShowProp) => {
+      switch (p.kind) {
+        case 'tile':
+          return r.sprite(tiles, p.frame, p.x, p.y);
+        case 'piece':
+          return r.sprite(assets.sheet('items'), 'brick-piece', p.x, p.y);
+        case 'meat':
+          return r.sprite(assets.sheet('crypt'), 'meat', p.x, p.y);
+        case 'plank':
+          return r.sprite(assets.sheet('items'), 'plank', p.x, p.y);
+        case 'hole':
+          return r.rect(p.x, p.y, p.w, p.h, SKY[theme] ?? '#000000');
+        case 'jason': {
+          const jf = p.air && has('jason-jump') ? 'jason-jump' : 'jason-stand';
+          if (has(jf)) r.sprite(sheet, jf, p.x - 8, p.y - (sheet.frames.get(jf)?.h ?? 16));
+          return;
+        }
+      }
+    };
+    pose.behind.forEach(prop);
     if (pose.shown) {
       const draw = () => r.sprite(sheet, frame, left + pose.dx, top + pose.dy);
-      // Samus sinks on her platform: only what is above the ground shows.
-      if (pose.clip) clipped(r, 0, 0, 256, 208, draw);
+      if (pose.clipY !== undefined) clipped(r, 0, 0, 256, pose.clipY, draw);
       else draw();
     }
-    if (pose.jason) {
-      const j = pose.jason;
-      const jf = j.air && has('jason-jump') ? 'jason-jump' : 'jason-stand';
-      if (has(jf)) r.sprite(sheet, jf, cx - 8 + j.dx, top + 8 + j.dy - (sheet.frames.get(jf)?.h ?? 16));
-    }
+    pose.front.forEach(prop);
+  }
+
+  /**
+   * The sheet frame for a show's `want` (pick-show.ts PickFrame) where the hero's sheet has one,
+   * else its standing frame `stand`: `jump` and `walk-N` follow the standing frame's size prefix
+   * (`small-jump`), the whip's lash is the leather one, and a missing walk pose is the first.
+   */
+  private showSheetFrame(stand: string, want: PickFrame | undefined, has: (n: string) => boolean): string {
+    if (!want) return stand;
+    const pre = /^(small|big)-/.exec(stand)?.[0] ?? '';
+    const names: Record<string, string[]> = {
+      jump: [`${pre}jump`, 'jump', 'jump-tuck', 'fall'],
+      whip: ['whip-leather'],
+      'crouch-whip': ['crouch-whip-leather'],
+      teleport: ['teleport-0'],
+      raise: ['raise-arms', 'up-thrust-0'],
+    };
+    const walk = /^walk-(\d+)$/.exec(want);
+    const list = walk ? [`${pre}walk-${walk[1]}`, `${pre}walk-0`] : (names[want] ?? [want]);
+    return list.find(has) ?? stand;
   }
 
   render(r: Renderer): void {
@@ -1417,6 +1444,9 @@ export class CharacterSelectScene implements Scene {
       face ?? (shown ? this.artOf(shown) : null),
       this.theme.hudFrame,
     );
+    // G-055: a pick closes the select and name boxes while the hero acts it out
+    // (CharacterSelectBox: cancel(), nameBox.cancel()).
+    if (this.show) return;
     const pan = gridPanel(this.rows, this.grid);
     // The name box's top (CharNameBox at y 119), or under a taller grid (a third row).
     const by = Math.max(NAME_BOX.y, pan.y + pan.h + 4);

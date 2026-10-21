@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
-import { PICK_SHOWS, pickPose, pickShowFrames } from '@game/scenes/pick-show';
+import { PICK_SHOWS, pickShow, pickShowFrames } from '@game/scenes/pick-show';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // G-055: on Classic mode's select a picked hero acts out its move (CharacterSelect.as 55, 189;
@@ -78,12 +78,14 @@ describe('G-055 pick performances', () => {
   });
 
   it('Bill flashes, held steady with Reduce flashing; Mega Man beams away', () => {
-    const flashes = [0, 4, 8, 12].map((t) => pickPose('flash', t, false).shown);
-    expect(flashes).toContain(false);
-    expect([0, 4, 8, 12].every((t) => pickPose('flash', t, true).shown)).toBe(true);
-    expect(pickPose('teleport', 10, false).dy).toBe(0);
-    expect(pickPose('teleport', 50, false).shown).toBe(false);
-    expect(pickPose('raise', 10, false).pose).toBe('raise');
+    // Bill (Bill.as 1084-1092, now electrocuted: G-055 QA): star-power colours, none with Reduce
+    // flashing.
+    const flashes = [0, 2, 4, 6].map((t) => pickShow('shock', t, false).flash);
+    expect(new Set(flashes).size).toBeGreaterThan(1);
+    expect([0, 2, 4, 6].every((t) => pickShow('shock', t, true).flash === undefined)).toBe(true);
+    expect(pickShow('teleport', 10, false).dy).toBe(0);
+    expect(pickShow('teleport', 120, false).shown).toBe(false);
+    expect(pickShow('raise', 10, false).frame).toBe('raise');
   });
 
   it('the campaign select picks at once', () => {
