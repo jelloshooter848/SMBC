@@ -254,6 +254,61 @@ describe('per-set saves: writing and clearing', () => {
   });
 });
 
+describe('per-set saves: Continue says what it restores (owner decision)', () => {
+  const slot = (extra: Record<string, unknown>) =>
+    JSON.stringify({
+      v: 1,
+      levelId: 'll-5-1',
+      rules: 'classic',
+      hero: 'mario',
+      score: 0,
+      coins: 0,
+      lives: 2,
+      world: 5,
+      stage: 1,
+      powerState: 'small',
+      hp: 0,
+      kit: {},
+      warped: false,
+      checkpoint: null,
+      ...extra,
+    });
+
+  it('a Lost slot with Hard and Survival: "Continue. Survival, Hard." as the run resumes', () => {
+    store.set(classicResumeKey('lost'), slot({ difficulty: 'hard', gameMode: 'survival' }));
+    const h = classic();
+    pick(h, 'lost');
+    h.idle(8);
+    h.tap('jump');
+    h.until(() => inLevel(h), 600);
+    const line = h.said.find((t) => t.startsWith('Continue.'));
+    expect(line).toMatch(/^Continue\. Survival, Hard\. World 5-1\. \d lives?\.$/);
+    // Said after Continue wrote them back into the settings (RC-002).
+    expect(h.settings.classic.gameMode).toBe('survival');
+    expect(h.settings.classicMapDifficulty).toBe('hard');
+  });
+
+  it('said whenever the slot carries them, even when the settings already match', () => {
+    store.set(classicResumeKey('lost'), slot({ difficulty: 'normal', gameMode: 'all' }));
+    const h = classic();
+    expect(h.game.resumeClassic('lost')).toBe(true);
+    h.until(() => inLevel(h), 600);
+    expect(h.said.find((t) => t.startsWith('Continue.'))).toMatch(
+      /^Continue\. All heroes, Normal\. World 5-1/,
+    );
+  });
+
+  it('an old slot (neither kept) says just "Continue."', () => {
+    store.set(classicResumeKey('lost'), slot({}));
+    const h = classic();
+    expect(h.game.resumeClassic('lost')).toBe(true);
+    h.until(() => inLevel(h), 600);
+    const line = h.said.find((t) => t.startsWith('Continue.'));
+    expect(line).toMatch(/^Continue\. World 5-1/);
+    expect(line).not.toMatch(/Normal|Hard|Easy|Survival|All heroes|Single/);
+  });
+});
+
 describe('per-set saves: RC-002 difficulty and game mode, per slot', () => {
   it('each slot keeps its own run’s difficulty and mode; the prompt shows and reads them', () => {
     const h = classic();

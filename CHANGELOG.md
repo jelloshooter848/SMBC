@@ -89,6 +89,8 @@ under `## [Unreleased]`.
   saved run, from the menus or from a run's pause. When a run's Level Select takes it into another
   set, the set it leaves keeps its save as it was, and the run saves into the new set from then on.
   A run saved by an earlier version moves into its set's save.
+- Classic mode: **Continue says what it restores**: the run's game mode and Map Difficulty are read
+  out as it resumes ("Continue. Survival, Hard."), for every save that keeps them.
 
 ### Fixed
 

@@ -31,6 +31,16 @@ export function savedRunHow(r: ClassicResume): string {
     .join(', ');
 }
 
+/**
+ * What Continue restores with the run (owner decision; RC-002): its game mode, then its map
+ * difficulty, "Survival, Hard"; empty for a slot from before they were kept.
+ */
+export function savedRunRestores(r: ClassicResume): string {
+  return [r.gameMode && GAME_MODE_NAMES[r.gameMode], r.difficulty && DIFFICULTY_NAMES[r.difficulty]]
+    .filter(Boolean)
+    .join(', ');
+}
+
 /** The saved run in full, as read out: "World 4-2, 3 lives, Hard, Survival". */
 export function savedRunSpoken(r: ClassicResume): string {
   const how = savedRunHow(r);

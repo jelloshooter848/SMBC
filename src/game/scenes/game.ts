@@ -133,6 +133,7 @@ import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
+import { savedRunRestores } from './original-saves';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -575,6 +576,9 @@ export class Game {
    * lives."), as no select screen names it. Cleared once said.
    */
   private sayHero: string | null = null;
+
+  /** Said at the start of the next lives card's line, then cleared (Continue's, owner decision). */
+  private sayFirst: string | null = null;
 
   /** Single random: a random hero, to be named on the next lives card. */
   private singleRandomHero(): CharacterDef {
@@ -2158,6 +2162,7 @@ export class Game {
     this.linkRun = false;
     this.survival = null;
     this.resumeSet = null;
+    this.sayFirst = null;
   }
 
   /**
@@ -2306,7 +2311,11 @@ export class Game {
     this.quickRespawn = false;
     this.backupDue = null;
     this.pendingLevel = null;
-    this.deps.announcer?.say('Continue.');
+    // Continue says what it restored (owner decision): "Continue. Survival, Hard." whenever the
+    // slot carries them (just "Continue." for an older one), as the start of the WORLD card's line
+    // that follows, so a screen reader hears it rather than having it replaced in the same frame.
+    const restores = savedRunRestores(r);
+    this.sayFirst = restores ? `Continue. ${restores}.` : 'Continue.';
     this.goToLevel(r.levelId, { mode: 'stand' });
     return true;
   }
@@ -2618,8 +2627,10 @@ export class Game {
     if (this.keepsResume) this.keepResume(levelId);
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
+    const first = this.sayFirst ? `${this.sayFirst} ` : '';
+    this.sayFirst = null;
     this.deps.announcer?.say(
-      `${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
+      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
