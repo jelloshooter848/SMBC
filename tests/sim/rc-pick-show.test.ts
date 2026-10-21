@@ -6,6 +6,7 @@ import type { CharacterSelectScene } from '@game/scenes/character-select';
 import {
   LUIGI_COLUMN_X,
   MARIO_BLOCK,
+  STAND_X,
   PICK_SHOWS,
   RYU_WALL_X,
   SIMON_BRICK_X,
@@ -152,10 +153,9 @@ describe("G-055: the original's own moves", () => {
     }
   });
 
-  it('Ryu: jumps to a wall from the top of the screen to the ground and clings to it', () => {
+  it('Ryu: jumps to a wall from the top of the screen to the ground', () => {
     const { d, f } = all('ryu');
     expect(f).toContain('jump');
-    expect(f).toContain('cling');
     const wall = d[20]!.sprites.filter((s) => s.frame === 'hard' && s.x === RYU_WALL_X);
     expect(Math.min(...wall.map((w) => w.y))).toBeLessThanOrEqual(0);
     expect(Math.max(...wall.map((w) => w.y))).toBe(192);
@@ -166,12 +166,62 @@ describe("G-055: the original's own moves", () => {
     for (const x of ['open', 'jason-jump', 'jason-stand']) expect(f).toContain(x);
   });
 
-  it('Mega Man teleports once (the choose sound only); Bass and Proto Man never teleport (RC-032)', () => {
+  it('Mega Man and his skins Proto Man and Break Man teleport once; Bass never does (RC-032)', () => {
     expect(all('megaman').sounds.filter((s) => s === 'mm-teleport')).toHaveLength(1);
     expect(all('bass').sounds).not.toContain('mm-teleport');
-    const proto = all('megaman', 'protoman');
-    expect(proto.sounds).not.toContain('mm-teleport');
-    expect(pickShowFrames('megaman', 'protoman')).toBe(102);
-    expect(pickShow('stand', 50, false)).toMatchObject({ dx: 0, dy: 0, shown: true });
+    for (const look of ['protoman', 'breakman']) {
+      const p = all('megaman', look);
+      expect(
+        p.sounds.filter((s) => s === 'mm-teleport'),
+        look,
+      ).toHaveLength(1);
+      // The beam: he rises out of sight.
+      const ys = p.d.map((x) =>
+        x.sprites.filter((s) => s.y > 32 && s.key.includes('megaman')).map((s) => s.y),
+      );
+      expect(ys.at(-1)!.length, look).toBe(0);
+    }
+    // Proto Man's whistle stands in for the choose music.
+    expect(all('megaman', 'protoman').sounds).toContain('protoman-whistle');
+  });
+
+  it('Luigi clears the column and lands on top of it', () => {
+    const tops = Array.from({ length: pickShowFrames('luigi') }, (_, t) => pickShow('column', t, false));
+    const on = tops.find((x) => x.dy === -80 && STAND_X + x.dx + 6 > LUIGI_COLUMN_X && x.frame !== 'jump');
+    expect(on).toBeDefined();
+  });
+
+  it('Ryu climbs the wall after grabbing it, up and out of sight', () => {
+    const { f } = all('ryu');
+    expect(f).toContain('climb-0');
+    expect(f).toContain('climb-1');
+    // 120 px/s (Ryu.as 554-563): a pixel a frame, steadily up the wall.
+    const at = (t: number) => pickShow('cling', t, false).dy;
+    expect(at(80) - at(60)).toBe(-20);
+    expect(at(pickShowFrames('ryu') - 1)).toBeLessThan(at(40));
+  });
+
+  it('Bass holds right and jumps twice (his double jump)', () => {
+    const { sounds } = all('bass');
+    expect(sounds.filter((s) => s === 'jump-small')).toHaveLength(2);
+    const xs = Array.from({ length: 60 }, (_, t) => pickShow('dashjump', t, false).dx);
+    expect(xs[59]!).toBeGreaterThan(xs[10]!);
+  });
+
+  it('a Random pick shows the picked hero in the HUD during its show', () => {
+    const settings = defaultSettings();
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    const sel = h.top() as CharacterSelectScene;
+    h.idle(12);
+    h.tap('down');
+    h.tap('left');
+    h.tap('jump');
+    expect(sel.performing).toBe(true);
+    const texts = draw(sel).texts.map((t) => t.str);
+    expect(texts).not.toContain('RANDOM');
+    const picked = h.said.find((x) => x.startsWith('Random: '))?.slice(8, -1) ?? '';
+    expect(picked).not.toBe('');
+    expect(texts).toContain(picked.toUpperCase());
   });
 });

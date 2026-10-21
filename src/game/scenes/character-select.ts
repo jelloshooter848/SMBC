@@ -1365,6 +1365,8 @@ export class CharacterSelectScene implements Scene {
 
   /** The hero shown in the HUD and on the ground: the skin menu's look, else the slot's in its look. */
   private shownHero(): CharacterDef | null {
+    // A pick's show (a Random pick too): the picked hero, in its look.
+    if (this.show) return this.show.c;
     if (this.picker) return this.pickerSkin;
     if (this.isRandom(this.index)) return null;
     const c = this.chars[this.index];

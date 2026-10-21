@@ -55,10 +55,11 @@ under `## [Unreleased]`.
   to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
   Continue holds the run.
 - Classic's pick performances are the original's own: the select and name boxes close and the
-  hero acts on the ground, whole. Mario jumps into a hidden block, Luigi jumps at a brick column,
-  Simon whips two bricks open and walks onto a pork chop, Samus sinks through the ground, Bill is
-  electrocuted (no colour flash with Reduce flashing), Ryu clings to a wall, Jason hops out of
-  Sophia. Bass and Proto Man no longer teleport (Mega Man's teleport plays once).
+  hero acts on the ground, whole. Mario jumps into a hidden block, Luigi jumps over a brick column
+  onto its top, Simon whips two bricks open and walks onto a pork chop, Samus sinks through the
+  ground, Bill is electrocuted (no colour flash with Reduce flashing), Ryu climbs a wall,
+  Jason hops out of Sophia, Bass double-jumps, and Mega Man, Proto Man and Break Man teleport
+  away (Proto Man to his whistle). Bass no longer plays a teleport. A Random pick shows its hero.
 - Classic: Bill's shots have their own hit and kill sounds.
 - Classic: the last weapons that borrowed another hero's sound have their own: Mega Man's Hard
   Knuckle, Pharaoh Shot, Flame Blast, Magma Bazooka, Water Shield, Screw Crusher, Rush and Super

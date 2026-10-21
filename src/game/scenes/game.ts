@@ -517,7 +517,8 @@ export class Game {
 
   /**
    * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
-   * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
+   * sound (G-070: Mega Man and his skins teleport out, MegaMan.as 157; Bill is shocked, Bill.as
+   * 1087; CHOOSE_SFX).
    * The one trigger of both: the pick performance's start (heroPicked), else the select's close
    * after a pick (selectLeft).
    */
