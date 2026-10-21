@@ -20,7 +20,6 @@ import {
   CLASSIC_SLOTS,
   EXPANSION_HEROES,
   expansionReleased,
-  RELEASED_EXPANSION_HEROES,
   heroFor,
   isSkin,
   skinHost,
@@ -602,8 +601,8 @@ export class Game {
 
   /**
    * The select screen's slots: in a Classic-rules run, the original's eleven heroes in its order
-   * (registry CLASSIC_SLOTS), then, with Options > Expansion heroes on, the heroes the original
-   * never had; every other look is a skin on one of them. Any other run (the campaign, Current
+   * (registry CLASSIC_SLOTS), then the released heroes the original never had
+   * (expansionHeroOffered); every other look is a skin on one of them. Any other run (the campaign, Current
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
@@ -644,23 +643,9 @@ export class Game {
   private classicFlow = false;
 
   /**
-   * Options > Expansion heroes is on and in force (the heroes the original never had are offered).
-   * O-12: outside developer mode only once a hero is released (RELEASED_EXPANSION_HEROES), so a
-   * setting saved by an earlier version is ignored, never rewritten.
-   */
-  get expansionHeroes(): boolean {
-    return this.expansionRowShown && this.deps.settings?.classic.expansion === 'on';
-  }
-
-  /** O-12: the Options > Expansion heroes row shows (developer mode, or a hero released). */
-  get expansionRowShown(): boolean {
-    return this.devMode || RELEASED_EXPANSION_HEROES.length > 0;
-  }
-
-  /**
-   * O-12 / O-06: the one place that decides whether Expansion hero `id` gets a select slot (so the
-   * select, Random, Survival, Disable heroes, the guides and the dev START page):
-   * `devMode ? (override ?? release) : release`. The override is Dev > Classic heroes' On or Off;
+   * O-12 / O-06 / BUG-08: the one place that decides whether Expansion hero `id` gets a select slot
+   * (so the select, Random, Survival, Disable heroes, the guides and the dev START page):
+   * `devMode ? (override ?? release) : release`. The override is Dev > Toggle heroes' On or Off;
    * release is heroReleased.
    */
   expansionHeroOffered(id: string): boolean {
@@ -674,11 +659,12 @@ export class Game {
 
   /**
    * What release players get for Expansion hero `id` (O-12), and so O-06's Release in dev mode
-   * too: released (RELEASED_EXPANSION_HEROES, whose first id brings the player row back) with
-   * Options > Expansion heroes on. Dev > Classic heroes' On shows an unreleased hero in dev mode.
+   * too: released (RELEASED_EXPANSION_HEROES) and nothing else. BUG-08: there is no Options row
+   * for them any more; a `classic.expansion` value saved by an earlier version is ignored and
+   * never rewritten.
    */
   heroReleased(id: string): boolean {
-    return expansionReleased(id) && this.deps.settings?.classic.expansion === 'on';
+    return expansionReleased(id);
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -695,8 +681,7 @@ export class Game {
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
-    // A hero the select does not offer now (an Expansion hero from a link or save while Options >
-    // Expansion heroes is off): the first slot's hero, Mario, in his chosen look, so Survival has a
+    // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
     // hero standing and the select shows who plays.
     const slots = this.heroSlots;
     if (!slots.includes(host)) {

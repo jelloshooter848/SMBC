@@ -52,8 +52,6 @@ describe('O-12 outside developer mode', () => {
   it('the getters give Classic rules and no Expansion heroes; the saved values stay as they were', () => {
     const h = saved();
     expect(h.game.classicRules).toBe('classic');
-    expect(h.game.expansionHeroes).toBe(false);
-    expect(h.game.expansionRowShown).toBe(false);
     for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id)).toBe(false);
     expect(h.settings.classicRules).toBe('current');
     expect(h.settings.classic.expansion).toBe('on');
@@ -133,13 +131,12 @@ describe('O-12 outside developer mode', () => {
 });
 
 describe('O-12 in developer mode', () => {
-  it('both rows show and the saved values are in force', () => {
+  it('the Classic rules row shows and its saved value is in force (BUG-08: no Expansion heroes row)', () => {
     const h = saved(true);
     const o = new ClassicOptionsScene(h.game, () => {});
     expect(labels(o)).toContain('Classic rules');
-    expect(labels(o)).toContain('Expansion heroes');
+    expect(labels(o)).not.toContain('Expansion heroes');
     expect(h.game.classicRules).toBe('current');
-    expect(h.game.expansionHeroes).toBe(true);
     // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
     for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id), id).toBe(false);
     h.settings.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: [...EXPANSION_HEROES] };

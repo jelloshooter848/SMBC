@@ -95,7 +95,7 @@ export const CLASSIC_SLOT_ORDER: readonly string[] = [
 ];
 
 /**
- * The heroes the original never had (Options > Expansion heroes; off by default): their slots
+ * The heroes the original never had (shown once released: RELEASED_EXPANSION_HEROES): their slots
  * follow the original's. The Dev menu's own toggles still leave any of them out.
  */
 export const CLASSIC_EXPANSION_HEROES: readonly string[] = ['vicviper', 'warriors', 'arthur', 'yoshi'];

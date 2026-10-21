@@ -8,6 +8,12 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
+  joins the Classic select once it is released; an Expansion heroes value saved by an earlier
+  version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
+
 ## [0.4.68] - 2026-10-21
 
 ### Added

@@ -15,7 +15,7 @@ browser does, including phones, and deploys as static files.
 with our own art and music. **Chapter 1**, the story campaign, is **coming soon** (version 1.0): the
 title's **Campaign** row says so for now. Every save file, save code and resume link made by earlier
 versions is kept, untouched, for when it opens. The plan is in [docs/ROADMAP.md](docs/ROADMAP.md):
-0.5.0 the Classic remake, 0.6 to 0.9 new heroes (the Expansion heroes option), 1.0 Chapter 1.
+0.5.0 the Classic remake, 0.6 to 0.9 new heroes (each added to the Classic select as it is released), 1.0 Chapter 1.
 
 **This is an unaffiliated fan project.** It contains no Nintendo, Capcom, Konami or other
 third-party art, music or code. The sprites and tiles are original pixel art stored as text in

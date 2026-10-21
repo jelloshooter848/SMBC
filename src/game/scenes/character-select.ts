@@ -1417,7 +1417,7 @@ export class CharacterSelectScene implements Scene {
    */
   get grid(): GridLayout {
     // The original's two rows of six hold its eleven heroes and Random. A longer list uses the
-    // wider grid: Options > Expansion heroes makes 15 slots, two rows of eight (a test's longer
+    // wider grid: the Expansion heroes make 15 slots, two rows of eight (a test's longer
     // stand-in roster takes a third row).
     return this.total <= ORIGINAL_GRID.cols * 2 ? ORIGINAL_GRID : SELECT_GRID;
   }

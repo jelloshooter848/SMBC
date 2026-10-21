@@ -14,7 +14,6 @@ import { ClassicHeroesScene } from './disable-heroes';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   ClassicOptionRowsScene,
-  EXPANSION_ROW,
   GAME_MODE_ROW,
   MORE_SETTINGS_ROWS,
   MUSIC_SET_ROW,
@@ -200,8 +199,8 @@ const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', cu
  */
 export function classicOptionsOn(game: Game): boolean {
   const saved = game.deps.settings?.classic ?? defaultClassicSettings();
-  // O-12: an Expansion heroes value not in force (outside developer mode) is not "on".
-  const c = game.expansionRowShown ? saved : { ...saved, expansion: defaultClassicSettings().expansion };
+  // BUG-08: a saved Expansion heroes value (the row is gone) is ignored, so it is never "on".
+  const c = { ...saved, expansion: defaultClassicSettings().expansion };
   if (game.classicRules === 'classic') return !isOriginalClassic(c);
   return c.gameMode !== defaultClassicSettings().gameMode;
 }
@@ -416,8 +415,7 @@ export class ClassicOptionsScene extends MenuScene {
     const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
       rowsOriginal(rows, game.deps.settings?.classic ?? defaultClassicSettings()) ? 'Original' : 'Changed';
     const onBack = this.onBack ?? (() => {});
-    // O-12: the Classic rules row and the Expansion heroes row are developer mode's (the original
-    // has neither); Expansion heroes returns for players once a hero is released.
+    // O-12: the Classic rules row is developer mode's (the original has none).
     const rulesRow: MenuItem = {
       label: 'Classic rules',
       value: () => (this.drawing ? '' : this.rulesLabel),
@@ -427,7 +425,6 @@ export class ClassicOptionsScene extends MenuScene {
     this.setItems([
       ...(game.devMode ? [rulesRow] : []),
       optionItem(game, GAME_MODE_ROW, () => this.build()),
-      ...(game.expansionRowShown ? [optionItem(game, EXPANSION_ROW, () => this.build())] : []),
       {
         label: 'More settings',
         value: state(MORE_SETTINGS_ROWS),

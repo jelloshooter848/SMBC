@@ -249,7 +249,7 @@ describe('the title and the CLASSIC menu', () => {
     expect(labels(opts)).toEqual([
       'Classic rules',
       'Game mode',
-      'Expansion heroes',
+      // BUG-08: no Expansion heroes row.
       'More settings',
       'Weapons',
       // 0.5.0 (G-066).
