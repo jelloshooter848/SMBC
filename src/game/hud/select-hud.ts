@@ -5,6 +5,7 @@ import type { CharacterDef } from '../characters/character';
 import type { GameState } from '../context';
 import { faceAt } from '../scenes/select-grid';
 import { CLASSIC_HUD_COLUMNS } from './hud';
+import { worldLabel } from './world-label';
 
 /**
  * The HUD's face box over Classic mode's select: its top-left and size (framed). The original's
@@ -20,7 +21,8 @@ export const HUD_TEXT = CLASSIC_HUD_COLUMNS;
  * The HUD over Classic mode's select (the original 3.1.21's layout: the HUD stays on top): the
  * shown hero's face in a white-framed box (our standing art doubled, its head filling the box; the
  * Random slot's "?"), then its HUD name, the score, the coins, WORLD and TIME as in a level.
- * `shown` null: the Random slot.
+ * `shown` null: the Random slot. `place`: the level the select is for (BUG-04: the coming level,
+ * whose WORLD card follows the select; the state still holds the last level's until then).
  */
 export function drawSelectHud(
   r: Renderer,
@@ -29,6 +31,7 @@ export function drawSelectHud(
   shown: CharacterDef | null,
   art: { sheet: string; palette: string; frame: string } | null,
   frame = '#fcfcfc',
+  place: { world: number; stage: number } = state,
 ): void {
   const font = assets.sheet('font');
   const B = HUD_FACE;
@@ -64,6 +67,6 @@ export function drawSelectHud(
   r.text(font, String(state.score).padStart(7, '0'), T.name, 16);
   r.text(font, `$×${String(state.coins).padStart(2, '0')}`, T.coins, 16);
   r.text(font, 'WORLD', T.world, 8);
-  r.text(font, `${state.world}-${state.stage}`, T.level, 16);
+  r.text(font, `${worldLabel(place.world)}-${place.stage}`, T.level, 16);
   r.text(font, 'TIME', T.time, 8);
 }

@@ -28,6 +28,7 @@ import { CLASSIC_HURT } from '../classic/anim';
 import type { Player } from '../../entities/player';
 import type { SpriteSpec } from '../character';
 import { marioClassicDef } from '@content/sprites/mario-classic';
+import { SMB1_STOMP_HELD } from '../classic/stomp';
 
 /**
  * Classic SMBC Mario and Luigi (2026-10-07-mario-luigi-classic-smbc-rules.md, ML-C1..ML-C28).
@@ -129,7 +130,8 @@ export function plumberClassicProfile(c: PlumberConstants): MovementProfile {
     ...(c.softCut !== undefined ? { softCut: c.softCut } : {}),
     turnInAir: false,
     jumpBuffer: false,
-    stompBounce: 0x02800, // bouncePwr 300: 2.5 px/f
+    // BUG-07 (owner decision): SMB1's held stomp bounce, not the original's fixed bouncePwr 300.
+    stompHeld: SMB1_STOMP_HELD,
     crouchJump: true,
   };
 }

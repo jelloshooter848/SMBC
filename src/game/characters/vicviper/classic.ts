@@ -27,6 +27,7 @@ import {
 } from '../classic/power';
 import { VIC_GUIDE } from './classic-guide';
 import { fire, keepEscort, recordTrail, SHIELD_HP } from './classic-weapons';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Vic Viper, a Classic-only hero (bug-reports/2026-10-07-vicviper-build-classic-character.md, VV-1..
@@ -82,6 +83,8 @@ export const MAXED_CAPSULE_SCORE = 1000;
 
 /** No jump (VV-8): one tier of zeros. Walking numbers only matter to the scripted clears. */
 export const VIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   ...MARIO.movement,
   minWalk: 0,
   maxWalk: FLY_SPEED,

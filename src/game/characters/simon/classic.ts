@@ -59,6 +59,7 @@ import {
   WHIP_REACH,
   WHIP_Y,
 } from './classic-weapons';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Classic SMBC Simon (bug-reports/2026-10-07-simon-classic-smbc-rules.md, SI-C1..SI-C32): the
@@ -72,6 +73,8 @@ import {
 const WALK = 0x01400;
 
 export const SIMON_CLASSIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   // Instant speed: the ramp fields are never read with instantAccel.
   minWalk: WALK,
   walkAccel: WALK,

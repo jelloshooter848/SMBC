@@ -10,6 +10,13 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
+  level's end keeps them. Switching to another hero puts the first one's away until he is picked
+  again, and another look of the same hero shares them. A death resets only the hero who died. A
+  new game or a continue resets everyone. The saved run keeps every hero's.
+- Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy as in
+  SMB1, higher while JUMP is held (BUG-07). This deliberately departs from the original, which
+  bounces the same either way, by owner decision.
 - Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
   joins the Classic select once it is released; an Expansion heroes value saved by an earlier
   version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
@@ -27,6 +34,28 @@ under `## [Unreleased]`.
   pages (Level select, Toggle heroes) are described as they now are (RC-021).
 - Classic: the Options hints on the CLASSIC title's Start box and the CLASSIC menu no longer name
   Classic rules (RC-041).
+
+### Fixed
+
+- Classic mode's Everyone Can Stomp cheat: the other heroes now bounce off a stomped enemy as
+  high as in the original, the same with JUMP held or not. They bounced about two and a half
+  times too high (BUG-07).
+- Classic: CLASSIC > Options and the pages it opens (More settings, Weapons, Disable heroes,
+  Cheats) are boxes over the CLASSIC title's demo, like the Start and map set boxes, each page's
+  name on its top row; Video, audio, controls stays the full Options page (BUG-01).
+- Classic: the map set box, CONTINUE / NEW GAME, the overwrite warning and the Options boxes
+  move and go back with the original's sounds, as the Start box does (RC-040).
+- Classic: a game over offers CONTINUE and MAIN MENU, and both keep the run. Its map set's save
+  holds the continue point (the world's first level, starting lives, score 0, power-ups gone, as
+  the original's continue gives), so the set's Continue later goes on from there, not 1-1 (BUG-05).
+- Classic: CONTINUE on a map set opens the hero select first, as the original's Load Game does;
+  the run goes on at the saved level with its lives and score and the hero picked, and BACK
+  returns to the set's CONTINUE / NEW GAME box (BUG-03).
+- Classic: the CLASSIC title keeps SMB CROSSOVER exactly where the title has it, with CLASSIC in
+  the REMIX stamp's place, and its boxes sit under the logo with closer rows (scrolling past six),
+  so the demo's ground and heroes stay in view (BUG-02).
+- Classic: the hero select's HUD shows the level coming next (between levels, after a death,
+  a new game or a Level Select jump), no longer WORLD 1-1 or the level just cleared (BUG-04).
 
 ## [0.4.68] - 2026-10-21
 

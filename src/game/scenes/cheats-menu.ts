@@ -3,6 +3,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { saveSettings, type ClassicCheatId, type ClassicCheatsSettings } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
+import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Game } from './game';
 import type { World } from '../world/world';
 import { CardScene } from './message';
@@ -38,8 +39,16 @@ export class CheatsScene extends MenuScene {
     private readonly opts: { all: boolean; world?: World | null; translucent?: boolean },
   ) {
     super(game, 'CHEATS', [], onBack, opts.translucent === true);
+    if (this.over) {
+      this.translucent = true;
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.rebuild();
   }
+
+  /** BUG-01: the CLASSIC title it is a box over (from CLASSIC > Options), else null. */
+  private readonly over = demoUnder(this.game);
 
   private get store(): ClassicCheatsSettings | null {
     return this.game.deps.settings?.classicCheats ?? null;
@@ -148,6 +157,7 @@ export class CheatsScene extends MenuScene {
   }
 
   override update(input: InputFrame): void {
+    this.over?.tickDemo();
     if (!this.code) {
       super.update(input);
       return;
@@ -188,6 +198,18 @@ export class CheatsScene extends MenuScene {
   }
 
   override render(r: Renderer): void {
+    if (this.over) {
+      renderBoxedMenu(r, this.game, {
+        header: this.title,
+        items: this.items,
+        index: this.index,
+        t: this.t,
+        // The code prompt in the status line's place while it is being entered.
+        status: this.code ? 'Enter the code' : this.status,
+        age: this.t,
+      });
+      return;
+    }
     super.render(r);
     if (!this.code) return;
     const font = this.game.ctx.assets.sheet('font');

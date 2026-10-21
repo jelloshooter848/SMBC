@@ -66,6 +66,11 @@ export interface HeroPick {
   /** Back (B/Select), e.g. to the world map; without it there is no way back. */
   onCancel?: () => void;
   /**
+   * Survival's revive mode with every hero fallen still offers BACK (onCancel), as a new game's
+   * select does: Continue's pick (BUG-03), where the run has not gone on yet (B-I QA).
+   */
+  leaveFallen?: boolean;
+  /**
    * Campaign deaths: RETURN TO MAP, an entry below the hero row (Down, then OK) and the
    * B/Select shortcut (shown on touch as MAP). Leaves the level as Pause → Quit to map does.
    */
@@ -877,7 +882,7 @@ export class CharacterSelectScene implements Scene {
   /** DONE (attack) in revive mode: the question; BACK at a new game's select with every hero fallen. */
   private reviveLeave(): string | null {
     if (!this.survival?.allFallen) return 'DONE';
-    return this.start ? 'BACK' : null;
+    return this.start || (this.pick?.leaveFallen && this.pick.onCancel) ? 'BACK' : null;
   }
 
   /** Revive mode's spoken instructions. */
@@ -980,10 +985,12 @@ export class CharacterSelectScene implements Scene {
       this.game.deps.announcer?.say(
         `Are you finished reviving and strengthening heroes? No. Up and down to choose, OK to answer.`,
       );
-    } else if (leave === 'BACK' && this.start) {
-      // Every hero still fallen: the run has not begun, so BACK leaves as on any new game's select.
+    } else if (leave === 'BACK' && (this.start || this.pick?.onCancel)) {
+      // Every hero still fallen: the run has not begun (or gone on), so BACK leaves as on any
+      // new game's select.
       this.game.ctx.audio.sfx('select');
-      this.start.back();
+      if (this.start) this.start.back();
+      else this.pick?.onCancel?.();
     } else this.game.ctx.audio.sfx('bump');
   }
 
@@ -1446,6 +1453,7 @@ export class CharacterSelectScene implements Scene {
       shown,
       face ?? (shown ? this.artOf(shown) : null),
       this.theme.hudFrame,
+      this.comingPlace(),
     );
     // G-055: a pick closes the select and name boxes while the hero acts it out
     // (CharacterSelectBox: cancel(), nameBox.cancel()).
@@ -1588,6 +1596,21 @@ export class CharacterSelectScene implements Scene {
       r.text(dark, str, x + dx, y + dy);
     r.text(assets.sheet('font', th.shadowFont), str, x + 1, y + 1);
     r.text(assets.sheet('font', kind === 'tint' ? th.tintFont : th.nameFont), str, x, y);
+  }
+
+  /**
+   * BUG-04: the world and stage of the level the select is for (Game.selectLevel), for its HUD:
+   * the state's own move on only at that level's WORLD card, after the select.
+   */
+  private comingPlace(): { world: number; stage: number } {
+    const id = this.game.selectLevel;
+    if (!id) return this.game.state;
+    try {
+      const lv = this.game.deps.getLevel(id);
+      return { world: lv.world, stage: lv.stage };
+    } catch {
+      return this.game.state;
+    }
   }
 
   /**

@@ -16,6 +16,10 @@ export const GAME_OVER_CARD_FRAMES = 270;
  * (SCREEN_TYPE_GAME_OVER): durTmrLsr swaps the GAME OVER text for CONTINUE, YES and NO with the
  * selector on YES; up/down toggles (setNewSelection) and jump or pause chooses (makeSelection).
  * YES continues (`onContinue`); NO goes back to the title (EventManager.restartGame).
+ *
+ * A Classic mode run (BUG-05, owner): CONTINUE and MAIN MENU in place of the question and its
+ * YES / NO. Both keep the run: CONTINUE plays on at once, MAIN MENU goes to the CLASSIC menu,
+ * where the set's Continue goes on from the same point (the game over wrote its slot there).
  */
 export class GameOverScene implements Scene {
   private t = 0;
@@ -24,7 +28,14 @@ export class GameOverScene implements Scene {
   constructor(
     private readonly game: Game,
     private readonly onContinue: (() => void) | null = null,
+    /** A Classic mode run's choices: CONTINUE / MAIN MENU (BUG-05). */
+    private readonly classic = false,
   ) {}
+
+  /** The two choices as said (YES / NO, or a Classic run's CONTINUE / MAIN MENU). */
+  private get choices(): [string, string] {
+    return this.classic ? ['Continue', 'Main menu'] : ['Yes', 'No'];
+  }
 
   /** The CONTINUE prompt is up. */
   get prompting(): boolean {
@@ -57,7 +68,7 @@ export class GameOverScene implements Scene {
     if (pressed('up') || pressed('down')) {
       this._yes = !this._yes;
       this.game.ctx.audio.sfx('select');
-      this.game.deps.announcer?.say(this._yes ? 'Yes' : 'No');
+      this.game.deps.announcer?.say(this.choices[this._yes ? 0 : 1]);
     } else if (pressed('jump') || pressed('start')) {
       if (this._yes && this.onContinue) {
         this.game.ctx.audio.sfx('coin');
@@ -78,7 +89,11 @@ export class GameOverScene implements Scene {
     }
     this._prompting = true;
     this._yes = true;
-    this.game.deps.announcer?.say('Continue? Yes. Up and down to choose, OK to confirm.');
+    this.game.deps.announcer?.say(
+      this.classic
+        ? 'Continue or main menu? Both keep your run. Continue. Up and down to choose, OK to confirm.'
+        : 'Continue? Yes. Up and down to choose, OK to confirm.',
+    );
   }
 
   render(r: Renderer): void {
@@ -86,6 +101,12 @@ export class GameOverScene implements Scene {
     const font = this.game.ctx.assets.sheet('font');
     if (!this._prompting) {
       r.text(font, 'GAME OVER', 92, 112);
+      return;
+    }
+    if (this.classic) {
+      r.text(font, 'CONTINUE', 96, 104);
+      r.text(font, 'MAIN MENU', 96, 120);
+      r.text(font, '>', 82, this._yes ? 104 : 120);
       return;
     }
     r.text(font, 'CONTINUE?', 92, 96);

@@ -132,7 +132,7 @@ import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
-import { savedRunRestores } from './original-saves';
+import { openClassicSet, savedRunRestores } from './original-saves';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -206,6 +206,11 @@ function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Reco
   const out: Record<string, number> = {};
   for (const k of def.keepOnDeath ?? []) if (kit[k] !== undefined) out[k] = kit[k];
   return out;
+}
+
+/** BUG-06: whether kept power `k` reads for `def` (a look with another damage kind starts afresh). */
+function fitsHero(def: CharacterDef, k: HeroPower): boolean {
+  return def.damage.kind === 'powerup' ? k.powerState !== 'full' : k.powerState === 'full';
 }
 
 /** Classic mode's random hero draw's seed when play is repeatable (tests: no freshSeeds). */
@@ -365,6 +370,16 @@ export class Game {
    * heroes keeps them). The played heroes' are in `state`.
    */
   heroKits: Record<string, HeroPower> = {};
+  /**
+   * BUG-06: a Classic mode run's power, hit points and kit of each hero not being played, by slot
+   * hero id (a look shares its hero's, as the original's skins share a charNum). The original keeps
+   * every hero's upgrades and ammo in StatManager (obtainedUpgradesVec, ammoVec, _pStateVec by
+   * charNum, StatManager.as 135-147): a level's end resets nothing, a hero change leaves each hero
+   * his own (Character.as 605 reads getObtainedUpgradesDct(charNum)), a death resets only the hero
+   * who died (Character.cleanUp, Character.as 3076-3081), and a new game or a continue resets
+   * everyone (resetAllStats, StatManager.as 280-332, 485-489, 542-548). Empty in every other run.
+   */
+  classicKits: Record<string, HeroPower> = {};
   /**
    * A visit to Kakariko Village under way (0.4.41, town/scene.ts): its scene, kept while the hero
    * is in the secret house's Top Secret Area, and the ? blocks opened there this visit ("x,y";
@@ -812,7 +827,9 @@ export class Game {
     const id = this.slotOf(c).id;
     if (this.survival?.isFallen(id)) return false;
     if (this.survival?.boosted(id)) return true;
-    return id === this.slotOf(this.state.character).id && this.state.powerState === 'fire';
+    if (id === this.slotOf(this.state.character).id) return this.state.powerState === 'fire';
+    // BUG-06: a hero put away keeps his Fire Flower.
+    return this.classicKits[id]?.powerState === 'fire';
   }
 
   /**
@@ -1827,6 +1844,8 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic;
     this.linkRun = false;
+    // BUG-06: a dev start is a new run; no hero keeps a kit from the run it left.
+    this.classicKits = {};
     // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
@@ -1956,6 +1975,14 @@ export class Game {
     this.classicTutorials.newGame();
     const id = this.classicStartable(levelId) ? levelId : '1-1';
     this.startRun(character, id, null, rules, true, dev, true);
+  }
+
+  /**
+   * BUG-06: each hero keeps his own power and kit across hero changes (Game.classicKits): a
+   * Classic mode run under Classic rules, never the campaign.
+   */
+  get keepsHeroKits(): boolean {
+    return this.classicRun && this.campaign === null && this.liveRules === 'classic';
   }
 
   /** G-008: this run writes and clears the resume slot (a Classic mode run; not dev, not a link). */
@@ -2118,6 +2145,8 @@ export class Game {
     this.linkRun = classic && link;
     // Per-set saves: a new run; its first WORLD card writes its set's slot.
     this.resumeSet = null;
+    // BUG-06: a new game resets every hero (StatManager.startNewGameHandler → resetAllStats).
+    this.classicKits = {};
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
     // a hero the select does not offer now plays as its first slot's hero.
     if (classic) character = this.restoreSlotHero(character);
@@ -2171,6 +2200,7 @@ export class Game {
     this.survival = null;
     this.resumeSet = null;
     this.sayFirst = null;
+    this.classicKits = {};
   }
 
   /**
@@ -2186,8 +2216,11 @@ export class Game {
     }
   }
 
-  /** G-008: writes the resume slot for the WORLD card of `levelId`. */
-  private keepResume(levelId: string): void {
+  /**
+   * G-008: writes the resume slot for the WORLD card of `levelId`. `continued`: written by a game
+   * over at its continue point (BUG-05): Continue from it counts as a continue used.
+   */
+  private keepResume(levelId: string, continued = false): void {
     const sv = this.survival;
     const survival = sv
       ? {
@@ -2195,10 +2228,20 @@ export class Game {
           reviveAllowed: sv.reviveAllowed,
         }
       : undefined;
-    const r = resumeOf(levelId, this.state, this.liveRules, survival, {
-      difficulty: this.classicDifficulty,
-      gameMode: this.deps.settings?.classic.gameMode ?? 'all',
-    });
+    const r = resumeOf(
+      levelId,
+      this.state,
+      this.liveRules,
+      survival,
+      {
+        difficulty: this.classicDifficulty,
+        gameMode: this.deps.settings?.classic.gameMode ?? 'all',
+      },
+      // BUG-06: the other heroes' power and kit, as the original's file keeps every hero's
+      // (StatManager.prepareLoadSaveStats 610-643).
+      // None kept: no field (as a slot from before BUG-06 reads).
+      this.keepsHeroKits && Object.keys(this.classicKits).length > 0 ? this.classicKits : undefined,
+    );
     // The level's own world and stage (before its WORLD card the state still holds the last one's).
     try {
       const lv = this.deps.getLevel(levelId);
@@ -2210,7 +2253,7 @@ export class Game {
     // A run the Level Select cheat took to another set writes that set's slot from here on; the
     // set it left keeps its save as its last WORLD card wrote it (release review of #191).
     this.resumeSet = resumeSetOf(levelId);
-    saveClassicResume(r);
+    saveClassicResume(continued ? { ...r, continued: true } : r);
   }
 
   /**
@@ -2295,10 +2338,13 @@ export class Game {
     s.stage = r.stage;
     // O-12: a run kept under Current rules goes on under Classic rules outside developer mode,
     // with its level, lives, score and coins; its power and kit (Current's) start afresh.
+    // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
+    this.classicKits = {};
     if (rules === r.rules) {
       s.powerState = r.powerState;
       s.hp = r.hp;
       s.kit = { ...r.kit };
+      if (r.heroKits) this.classicKits = structuredClone(r.heroKits);
     }
     s.warped = r.warped;
     s.checkpoint = r.checkpoint;
@@ -2324,8 +2370,57 @@ export class Game {
     // that follows, so a screen reader hears it rather than having it replaced in the same frame.
     const restores = savedRunRestores(r);
     this.sayFirst = restores ? `Continue. ${restores}.` : 'Continue.';
-    this.goToLevel(r.levelId, { mode: 'stand' });
+    this.continueSelect(r.levelId, this.resumeSet, r.continued === true);
     return true;
+  }
+
+  /**
+   * BUG-03: CONTINUE goes through the select first, as the original's Load Game does
+   * (EventManager.loadGame sets StatManager.newLev, so ScreenManager.createLevel shows
+   * CharacterSelect before the level; Single Character keeps the saved hero, Single random draws
+   * one, as at any new level). The saved hero stays focused and keeps its power if picked again.
+   * BACK returns to the set's CONTINUE / NEW GAME box.
+   */
+  private continueSelect(levelId: string, set: MapSetId, continued: boolean): void {
+    const s = this.state;
+    const go = () => {
+      // BUG-05: a slot a game over wrote is a continue, counted as the run goes on (as CONTINUE).
+      if (continued) this.countContinue();
+      this.goToLevel(levelId, { mode: 'stand' });
+    };
+    this.selectLevel = levelId;
+    const choice = this.classicHeroChoice(false);
+    if (choice === 'keep') return go();
+    if (choice === 'random') {
+      const c = this.singleRandomHero();
+      if (c !== s.character) this.setHero(0, c);
+      return go();
+    }
+    const current = s.character;
+    this.leaveClassicTitle();
+    this.scenes.clear();
+    this.scenes.push(
+      new CharacterSelectScene(this, {
+        player: 0,
+        current,
+        onPick: (c) => {
+          this.heroChosen = true;
+          if (c !== current) this.setHero(0, c);
+          go();
+        },
+        random: true,
+        onCancel: () => this.backToSet(set),
+        leaveFallen: true,
+      }),
+    );
+  }
+
+  /** BACK from Continue's select: the CLASSIC menu on map set `set`, its CONTINUE / NEW GAME box up. */
+  private backToSet(set: MapSetId): void {
+    this.sayFirst = null;
+    this.showClassicMenu(set);
+    const ms = MAP_SETS.find((m) => m.id === set);
+    if (ms) openClassicSet(this, ms, { back: () => this.showClassicMenu(set) });
   }
 
   /**
@@ -2836,6 +2931,26 @@ export class Game {
     }
     // The default of the def played under the run's rules (TG-17a).
     const d = playedHero(this.ctx, c, this.liveRules);
+    if (this.keepsHeroKits && player === 0) {
+      // BUG-06: the hero left is put away as he is; `c` comes back as he was left.
+      const old = s.character;
+      const left: HeroPower = { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      this.classicKits[this.slotOf(old).id] = left;
+      const key = this.slotOf(c).id;
+      const kept = this.classicKits[key];
+      delete this.classicKits[key];
+      s.character = c;
+      if (kept && fitsHero(d, kept)) {
+        s.powerState = kept.powerState;
+        s.hp = kept.hp;
+        s.kit = { ...kept.kit };
+      } else {
+        s.powerState = defaultPower(d);
+        s.hp = startHp(d);
+        s.kit = old === c ? keptKit(d, s.kit) : {};
+      }
+      return;
+    }
     const power = defaultPower(d);
     // The same hero picked again keeps what a death keeps (CharacterDef.keepOnDeath).
     if (player === 1) {
@@ -2858,8 +2973,19 @@ export class Game {
    */
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
-    // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
-    if (this.keepsResume) this.dropResume(levelId);
+    this.continueReady = false;
+    if (this.keepsResume) {
+      // BUG-05 (owner): a game over keeps the run. Its set's slot holds the continue point (what
+      // CONTINUE plays on from: continueAfterDyingHandler's reset, the world's first level), so
+      // MAIN MENU and the set's Continue later go on from the same place.
+      const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
+      if (id === null) this.dropResume(levelId);
+      else {
+        this.resetForContinue();
+        this.continueReady = true;
+        this.keepResume(id, true);
+      }
+    }
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives
@@ -2872,7 +2998,7 @@ export class Game {
       this.scenes.push(new GameOverScene(this, () => this.returnToMap()));
       return;
     }
-    this.scenes.push(new GameOverScene(this, () => this.continueGame(levelId, player)));
+    this.scenes.push(new GameOverScene(this, () => this.continueGame(levelId, player), this.keepsResume));
   }
 
   /**
@@ -2882,18 +3008,10 @@ export class Game {
    * character select as for a new level.
    */
   continueGame(levelId: string | null, player = 0): void {
-    // Infinite Lives' goal (StatManager.numContinuesUsed): counted over the save's life.
-    const cheats = this.deps.settings?.classicCheats;
-    if (cheats && this.cheatGoalsCount) {
-      cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
-      saveSettings(this.deps.settings as Settings);
-    }
-    const old = this.state;
-    this.state = newGameState(old.character, old.character2, this.liveRules);
-    if (this.classicRun) this.classicStartLives();
-    // Survival (resetAllStats, continueAfterDyingHandler): every hero fallen again, revival allowed.
-    this.survival?.reset();
-    this.state.warped = old.warped;
+    this.countContinue();
+    // The game over already reset the run for its slot's continue point (BUG-05).
+    if (!this.continueReady) this.resetForContinue();
+    this.continueReady = false;
     const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
     if (id === null) {
       this.showTitle();
@@ -2901,6 +3019,32 @@ export class Game {
     }
     this.respawn(id, { mode: 'stand' }, player);
   }
+
+  /** Infinite Lives' goal (StatManager.numContinuesUsed): a continue, counted over the save's life. */
+  private countContinue(): void {
+    const cheats = this.deps.settings?.classicCheats;
+    if (cheats && this.cheatGoalsCount) {
+      cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
+      saveSettings(this.deps.settings as Settings);
+    }
+  }
+
+  /**
+   * StatManager.resetAllStats(false) as a continue does it: lives back to the starting count,
+   * score and coins 0, every power-up gone; in Survival every hero fallen again, revival allowed.
+   */
+  private resetForContinue(): void {
+    const old = this.state;
+    this.state = newGameState(old.character, old.character2, this.liveRules);
+    // BUG-06: every hero's power-ups go too, so a game over's slot carries no heroKits.
+    this.classicKits = {};
+    if (this.classicRun) this.classicStartLives();
+    this.survival?.reset();
+    this.state.warped = old.warped;
+  }
+
+  /** The game over has reset the run already (its slot written at the continue point, BUG-05). */
+  private continueReady = false;
 
   /** "1-3" → "1-1", "ll-5-2" → "ll-5-1"; custom levels and others outside a numbered world restart themselves. */
   private firstLevelOfWorld(levelId: string): string {

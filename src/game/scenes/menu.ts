@@ -115,6 +115,13 @@ export class MenuScene implements Scene {
    * (both layouts keep a tenth row clear of the BACK line).
    */
   protected visibleRows = 9;
+  /**
+   * The sounds of moving the cursor and of going back (RC-040: the CLASSIC boxes set the
+   * original's, MessageBoxSounds SN_CHANGE_SELECTION and SN_CANCEL_ITEM; every other menu keeps
+   * the menu blip).
+   */
+  protected moveSfx = 'select';
+  protected backSfx = 'select';
 
   constructor(
     protected readonly game: Game,
@@ -168,11 +175,11 @@ export class MenuScene implements Scene {
     if (!n) return;
     if (input.pressed('up')) {
       this.index = (this.index + n - 1) % n;
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.moveSfx);
       this.announce();
     } else if (input.pressed('down')) {
       this.index = (this.index + 1) % n;
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.moveSfx);
       this.announce();
     }
     const it = this.items[this.index] as MenuItem;
@@ -195,7 +202,7 @@ export class MenuScene implements Scene {
         this.announce();
       }
     } else if ((input.pressed('attack') || input.pressed('select')) && this.onBack) {
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.backSfx);
       this.onBack();
     }
   }

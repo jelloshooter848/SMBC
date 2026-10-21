@@ -23,10 +23,11 @@ import {
 } from './original-options';
 import type { Game } from './game';
 import { openClassicSet, savedRunSpoken } from './original-saves';
+import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { ClassicTitleScene } from './original-title';
-import { boxGrowth, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
+import { boxCentreUnderLogo, boxGrowth, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
 import { abilityHint } from './hints';
 import { FONT_COLOURS } from '@content/sprites/font';
 
@@ -242,6 +243,11 @@ export class ClassicMenuScene extends MenuScene {
   ) {
     super(game, 'CLASSIC', [], () => this.leave(), over !== null);
     this.boxAt = grow ? 0 : null;
+    // RC-040: the box's moves and BACK sound as the Start box's (MessageBoxSounds).
+    if (over) {
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.build();
     // Back from a set's select: on that set's row again.
     if (focus)
@@ -336,7 +342,7 @@ export class ClassicMenuScene extends MenuScene {
     });
     const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
     // Clear of the status line and the BACK hint under it, whatever its row count (O-04).
-    const at = boxLayout(rows, this.status !== '', 160);
+    const at = boxLayout(rows, this.status !== '', boxCentreUnderLogo(rows));
     drawMenuBox(r, game.ctx.assets, rows, this.index, { cx: 128, cy: at.cy, grow, t: this.t, calm });
     if (grow < 1) return;
     const assets = game.ctx.assets;
@@ -383,9 +389,23 @@ const MENU_ROW_H = 14;
 
 /** Classic mode's options: Game mode, then every other setting (the usual Options). */
 export class ClassicOptionsScene extends MenuScene {
+  /** BUG-01: the CLASSIC title it is a box over (null: a full-screen page). */
+  private readonly over = demoUnder(this.game);
+
   constructor(game: Game, onBack: () => void) {
     super(game, 'CLASSIC OPTIONS', [], onBack);
+    if (this.over) {
+      this.translucent = true;
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+    }
     this.build();
+  }
+
+  /** The demo under the box plays on while it is up. */
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
   }
 
   /** The rows (rebuilt after a change, so the Game mode row's `*` mark follows). */
@@ -453,5 +473,21 @@ export class ClassicOptionsScene extends MenuScene {
 
   protected override announce(): void {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
+  }
+
+  /** BUG-01: over the CLASSIC title, the original's box; else the usual full-screen page. */
+  override render(r: Renderer): void {
+    if (this.over) {
+      renderBoxedMenu(r, this.game, {
+        header: 'Options',
+        items: this.items,
+        index: this.index,
+        t: this.t,
+        status: this.status,
+        age: this.t,
+      });
+      return;
+    }
+    super.render(r);
   }
 }

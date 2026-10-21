@@ -50,6 +50,7 @@ import { CANNON_CLASSIC, HOMING_CLASSIC, TRIPLE_CLASSIC } from './classic-weapon
 import { SOPHIA_CLASSIC_GUIDE } from './classic-guide';
 import { sophiaCameraX } from './classic-camera';
 import { afterLifts, classicDrive } from './classic-lifts';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /*
  * Sophia III under Classic SMBC rules (bug-reports/2026-10-07-sophia-build-classic-character.md,
@@ -250,6 +251,8 @@ export const SOPHIA_CLASSIC: CharacterDef = {
   // ScreenManager.displayThankYouText: Sophia III's skins thank Jason (THANK YOU JASON!).
   thanksName: 'Jason',
   ...SOPHIA,
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  movement: { ...SOPHIA.movement, stompBounce: CLASSIC_STOMP_BOUNCE },
   rules: 'classic',
   // R1: the select screen and the intro card show her Classic art.
   portraitArt: { sheet: 'sophia-classic', palette: 'sophia', frame: 'portrait' },

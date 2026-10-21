@@ -14,6 +14,7 @@ import { ClassicHeroesScene } from '@game/scenes/disable-heroes';
 import { GuideIndexScene } from '@game/scenes/guide';
 import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { pickAtContinue } from './continue-select';
 
 // O-12 (0.5.0 RC audit addendum, blocker): the Expansion heroes are locked on the release build,
 // and the Classic rules and Expansion heroes rows are developer mode's only. Outside dev mode the
@@ -125,7 +126,9 @@ describe('O-12 outside developer mode', () => {
     expect(h.game.state).toMatchObject({ score: 4200, coins: 17, lives: 4, world: 2, stage: 1 });
     expect(h.game.state.powerState).not.toBe('fire');
     expect(h.game.state.kit).not.toHaveProperty('bombs');
-    // Its next WORLD card keeps it as the Classic-rules run it now is.
+    // Its next WORLD card (after Continue's select, BUG-03) keeps it as the Classic-rules run it now is.
+    pickAtContinue(h);
+    h.until(() => loadClassicResume()?.rules === 'classic', 600);
     expect(loadClassicResume()).toMatchObject({ rules: 'classic', hero: 'mario' });
   });
 });
