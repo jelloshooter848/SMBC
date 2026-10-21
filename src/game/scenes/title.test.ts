@@ -16,7 +16,7 @@ import { newSave, writeSave } from '@game/save/save-files';
 import { Game } from './game';
 import { TitleScene } from './title';
 import { PauseScene } from './pause';
-import { ClassicTitleScene } from './classic-title';
+import { ClassicTitleScene } from './original-title';
 import { DEV_CODE } from './cheat';
 import { heroRow, titleFreed, TITLE_TIMING } from './title-anim';
 

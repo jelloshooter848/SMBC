@@ -265,7 +265,7 @@ export interface WorldStart {
    */
   rules?: Rules;
   /**
-   * The CLASSIC title's live demo (O-04, scenes/classic-demo.ts): the camera and the screen's
+   * The CLASSIC title's live demo (O-04, scenes/title-demo.ts): the camera and the screen's
    * edges follow player 1 alone (TitleLevel's screen follows its Mario), and no hero takes a pipe
    * or a door. Absent (false) everywhere else.
    */

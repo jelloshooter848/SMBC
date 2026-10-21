@@ -8,13 +8,13 @@ import type { Game } from './game';
 import type { MenuItem } from './menu';
 import { abilityHint, controlScheme } from './hints';
 import { menuTouchLabels } from '../touch-labels';
-import { ClassicDemo, MARIO_WAIT } from './classic-demo';
-import { boxGrowth, drawMenuBox, type BoxRow } from './classic-box';
+import { ClassicDemo, MARIO_WAIT } from './title-demo';
+import { boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
 
 /**
  * The CLASSIC title in the original's style (O-04; level/TitleLevel.as, messageBoxes/StartMenu.as):
- * the live 1-1 demo (classic-demo.ts) with no HUD, our logo centred near the top, the version at
+ * the live 1-1 demo (title-demo.ts) with no HUD, our logo centred near the top, the version at
  * the bottom left and, once Mario sets off, the begin prompt blinking every 500 ms (steady with
  * Reduce flashing). OK (or a tap on the screen) opens the Start box: START, OPTIONS, BACK. START
  * goes on to the map set menu (ClassicMenuScene, drawn as a box over the demo); BACK in the box

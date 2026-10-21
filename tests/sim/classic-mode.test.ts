@@ -25,7 +25,7 @@ import type { CardScene } from '@game/scenes/message';
 import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { reconcileRules } from '@game/rules/reconcile';
 import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
-import { ClassicTitleScene } from '@game/scenes/classic-title';
+import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';

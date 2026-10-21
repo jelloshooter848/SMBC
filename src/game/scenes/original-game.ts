@@ -26,8 +26,8 @@ import type { Game } from './game';
 import { worldLabel } from '../hud/world-label';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
-import type { ClassicTitleScene } from './classic-title';
-import { boxGrowth, drawMenuBox, type BoxRow } from './classic-box';
+import type { ClassicTitleScene } from './original-title';
+import { boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { abilityHint } from './hints';
 import { FONT_COLOURS } from '@content/sprites/font';
 
@@ -329,7 +329,7 @@ export class ClassicMenuScene extends MenuScene {
     line(abilityHint(game, 'BACK', 'attack'), 228);
   }
 
-  /** The demo under the box plays on while it is up (classic-title.ts). */
+  /** The demo under the box plays on while it is up (original-title.ts). */
   override update(input: InputFrame): void {
     this.over?.tickDemo();
     super.update(input);

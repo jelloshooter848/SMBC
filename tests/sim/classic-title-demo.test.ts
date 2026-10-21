@@ -11,9 +11,9 @@ import {
   MARIO_WAIT,
   WAKE_AHEAD,
   demoDef,
-} from '@game/scenes/classic-demo';
-import { ClassicTitleScene, PROMPT_BLINK } from '@game/scenes/classic-title';
-import { BOX_GROW, boxGrowth, cursorBob, MUSHROOM_CURSOR } from '@game/scenes/classic-box';
+} from '@game/scenes/title-demo';
+import { ClassicTitleScene, PROMPT_BLINK } from '@game/scenes/original-title';
+import { BOX_GROW, boxGrowth, cursorBob, MUSHROOM_CURSOR } from '@game/scenes/menu-box';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
