@@ -12,6 +12,7 @@ import { menuTouchLabels } from '../touch-labels';
 import { ClassicDemo, MARIO_WAIT } from './title-demo';
 import { boxCentreUnderLogo, boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
+import { joinMusic, TITLE_MUSIC } from './title-music';
 
 /**
  * The CLASSIC title in the original's style (O-04; level/TitleLevel.as, messageBoxes/StartMenu.as):
@@ -99,6 +100,7 @@ export class ClassicTitleScene implements Scene {
   ) {
     this.demo = new ClassicDemo(game.ctx);
     this.phase = phase;
+    this.fromRemix = smash;
     // With Reduce flashing it is simply in place: no fall, no shake, no flying chips.
     this.smashing = smash && !game.ctx.reduceFlashing;
     // START in place of NEW GAME and LOAD GAME: it opens the map set menu, where a run is
@@ -145,7 +147,15 @@ export class ClassicTitleScene implements Scene {
     this.bindPointer();
     // The demo's own level tune, every time it opens (TitleLevel is a real 1-1: a new one, from
     // the title, a game over or the select, starts its music).
-    this.game.ctx.audio.playMusic('overworld');
+    // BUG-12: from the REMIX title the join is smoothed. With the smash, the REMIX theme fades
+    // out over CLASSIC's fall and the overworld rises from the impact frame (startOverworld);
+    // with Reduce flashing (no smash), a plain crossfade.
+    const audio = this.game.ctx.audio;
+    if (this.fromRemix && this.smashing) {
+      audio.fadeOutMusic?.(TITLE_MUSIC.fallOut);
+      this.overworldDue = true;
+    } else if (this.fromRemix) joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
+    else audio.playMusic('overworld');
     if (this.quiet) return;
     if (this.phase === 'start') this.announce(true);
     else this.sayDemo();
@@ -154,6 +164,19 @@ export class ClassicTitleScene implements Scene {
   exit(): void {
     this.unbind?.();
     this.unbind = null;
+    this.overworldDue = false;
+  }
+
+  /** Came in from the REMIX title (its music joins smoothly, BUG-12). */
+  private readonly fromRemix: boolean;
+  /** The overworld waits for CLASSIC's impact (BUG-12). */
+  private overworldDue = false;
+
+  /** The impact (or the smash cut short by a press): the overworld rises, the smash its downbeat. */
+  private startOverworld(): void {
+    if (!this.overworldDue) return;
+    this.overworldDue = false;
+    this.game.ctx.audio.playMusic('overworld', TITLE_MUSIC.impactIn);
   }
 
   private sayDemo(): void {
@@ -177,6 +200,8 @@ export class ClassicTitleScene implements Scene {
   /** One frame of the demo (also run by the menus drawn over it, so it keeps playing). */
   tickDemo(): void {
     this.demo.update();
+    // However the smash ended, its overworld never waits past it (BUG-12).
+    if (this.overworldDue && this.smashPhase() === 'done') this.startOverworld();
   }
 
   /** OK on the demo: the Start box grows open (StartMenu.initiate). */
@@ -230,14 +255,21 @@ export class ClassicTitleScene implements Scene {
   /** The smash ends at once: CLASSIC in its place (a press, or its time up). */
   finishSmash(): void {
     this.smashing = false;
+    this.startOverworld();
   }
 
   update(input: InputFrame): void {
     this.t++;
     this.tickDemo();
     if (this.smashing) {
-      if (this.t === SMASH.drop && !this.game.ctx.reduceFlashing) this.game.ctx.audio.sfx('stamp');
-      // Any press finishes it, and still does what it does (OK still opens the Start box).
+      if (this.t === SMASH.drop && !this.game.ctx.reduceFlashing) {
+        // On the impact frame: the overworld starts under the thud (BUG-12).
+        this.startOverworld();
+        this.game.ctx.audio.sfx('stamp');
+      }
+      // Any press finishes it, and still does what it does (OK still opens the Start box). BACK
+      // before the impact: no overworld at all, the REMIX theme just comes back up (BUG-12).
+      if (input.pressed('attack') || input.pressed('select')) this.overworldDue = false;
       if (this.t >= SMASH.end || this.tapped || Actions.some((a) => input.pressed(a))) this.finishSmash();
     }
     if (this.phase === 'demo') {

@@ -1064,17 +1064,20 @@ export class Game {
   }
 
   showTitle(): void {
-    this.leaveRun();
+    // BUG-12: back from the CLASSIC title (or a box over it), its overworld fades into the theme.
+    // Its music is not stopped here: the title's crossfade takes it from where it is.
+    const fromClassic = this.scenes.find((s) => s instanceof ClassicTitleScene) !== undefined;
+    this.leaveRun(fromClassic);
     this.scenes.clear();
-    this.scenes.push(new TitleScene(this));
+    this.scenes.push(new TitleScene(this, fromClassic));
   }
 
   /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */
-  private leaveRun(): void {
+  private leaveRun(keepMusic = false): void {
     this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
-    this.deps.ctx.audio.stopMusic();
+    if (!keepMusic) this.deps.ctx.audio.stopMusic();
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;

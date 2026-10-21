@@ -32,6 +32,7 @@ import {
   TITLE_TIMING as T,
   type HeroSlot,
 } from './title-anim';
+import { joinMusic, TITLE_MUSIC } from './title-music';
 
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
 const MADE = 'MADE BY JELLOSHOOTER848';
@@ -110,7 +111,11 @@ export class TitleScene extends MenuScene {
   private stampAt: number;
   private readonly version = `V${__APP_VERSION__}`.toUpperCase();
 
-  constructor(game: Game) {
+  constructor(
+    game: Game,
+    /** Back from the CLASSIC title: its overworld fades out, then the theme rises (BUG-12). */
+    private readonly fromClassic = false,
+  ) {
     super(game, '', [], null);
     // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
     // stands in colour; with dev mode on (the campaign playable) the row shows the best file's.
@@ -165,7 +170,11 @@ export class TitleScene extends MenuScene {
     this.bindPointer();
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
-    else audio.playMusic('title');
+    else if (this.fromClassic) {
+      // The drop waits for the overworld's fade-out, so the stamp still lands on the fanfare.
+      const wait = joinMusic(audio, 'title', TITLE_MUSIC.backOut, TITLE_MUSIC.backIn);
+      this.hold = Math.round(wait * 60);
+    } else audio.playMusic('title');
     this.rebuild();
     const it = this.items[this.index];
     this.game.deps.announcer?.say(
@@ -183,6 +192,9 @@ export class TitleScene extends MenuScene {
         .join(' '),
     );
   }
+
+  /** Frames the drop waits before it starts (the overworld fading out, BUG-12). */
+  private hold = 0;
 
   /**
    * B does nothing here, but stays (blank) so the developer code can be entered by touch. SELECT
@@ -317,6 +329,7 @@ export class TitleScene extends MenuScene {
   private finish(): void {
     if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
     this.phase = 'ready';
+    this.hold = 0;
     this.clock = Math.max(this.clock, this.stampAt + T.dustFrames, T.dropEnd);
     for (const a of this.actors) {
       a.x = a.slot.x;
@@ -327,6 +340,10 @@ export class TitleScene extends MenuScene {
   }
 
   private tick(): void {
+    if (this.hold > 0) {
+      this.hold--;
+      return;
+    }
     this.clock++;
     const t = this.clock;
     if (t === this.stampAt) {

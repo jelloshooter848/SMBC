@@ -20,6 +20,10 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- The music between the REMIX title and the CLASSIC title no longer cuts (BUG-12). Going to
+  CLASSIC, the title theme fades out as CLASSIC falls and the demo's tune rises on its smash;
+  with Reduce flashing on, the two simply crossfade. Back to the title, the demo's tune fades
+  out before the theme fades in. The CLASSIC boxes over the demo never restart it.
 - Classic mode's Everyone Can Stomp cheat: the other heroes now bounce off a stomped enemy as
   high as in the original, the same with JUMP held or not. They bounced about two and a half
   times too high (BUG-07).
