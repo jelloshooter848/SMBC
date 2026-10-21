@@ -328,7 +328,7 @@ export const songs: Song[] = [
       o6 e8. d16 c8 o5 g8 o6 c4 r4                  ; bar 10 (C)
       q8
       o5 e8 a4 b8 ^8 o6 c4.                         ; bar 11 (Am)
-      o6 c8 o5 b8 a8 f8 ^4 r8 c8                    ; bar 12 (F)
+      o6 c8 o5 a8 g8 f8 ^4 r8 c8                    ; bar 12 (F)
       o5 d8 f4 a8 ^8 o6 d4.                         ; bar 13 (Dm)
       o6 d8 c8 o5 b8 g8 ^4 b8 o6 d8                 ; bar 14 (G)
       q7
@@ -349,11 +349,11 @@ export const songs: Song[] = [
       [r8 o4 b8 r16 o5 d16 r8]2                     ; bar 6  (G)
       @1 v8 q7
       o6 c4. o5 g8 e4 g8 o6 c8                      ; bar 7  thirds under the call
-      o6 d4 o5 b-8 f8 b-4 a8 f8                     ; bar 8
+      o6 d4 o5 b-8 f8 b-4 f8 d8                     ; bar 8
       o5 f8 a8 f8 c8 d8 g8 b8 o6 d8                 ; bar 9
       o6 c8. o5 b16 g8 e8 e4 r4                     ; bar 10
       @2 v6 q8
-      o4 a4. o5 c8 ^2                               ; bar 11 pads (Am)
+      o4 a4. o5 e8 ^2                               ; bar 11 pads (Am)
       o4 a4. o5 c8 ^2                               ; bar 12 (F)
       o4 f4. a8 ^2                                  ; bar 13 (Dm)
       o4 g4. b8 ^2                                  ; bar 14 (G)
