@@ -114,6 +114,62 @@ const luigi = [
   '76666666hh666666hh666667',
 ];
 
+/** Link: the long green cap falling back to his right, the fair fringe, his pointed ears out at the sides, the green tunic. */
+const link = [
+  '........77777777........',
+  '......77x666666677......',
+  '.....7x666666666667.....',
+  '....7x666666666666667...',
+  '...7x66666666666666667..',
+  '...766666666666666666667',
+  '..7c66666666666666666667',
+  '..cbuubuubuubuubuubuc767',
+  '..cubbubbubbubbubbubbc67',
+  '..cbb2bb22b22b22bb2bbc67',
+  'oo.c2221022222201222c.77',
+  'o2oo222002222220022oo2o7',
+  '.o22o32002222220023o22o.',
+  '..o223222222222222322o..',
+  '...oo3222222n2222223oo..',
+  '....o3222222n22222223o..',
+  '.....o32222nn2222223o...',
+  '.....o3322222222223o....',
+  '......o33222oo22233o....',
+  '.......oo333333333o.....',
+  '.....77oooooooooooo77...',
+  '...77x667733337766x677..',
+  '.77x66666677336666666x77',
+  '7x6666666667766666666667',
+];
+
+/** Princess Zelda: light brown hair down to her shoulders, the gold circlet and its red jewel, the pointed ears, the pink gown. */
+const zelda = [
+  '........................',
+  '.......bbbbbbbbbb.......',
+  '.....bbuuuuuuuuuubb.....',
+  '....buuuuuuuuuuuuuub....',
+  '...buuuuuuu44uuuuuuub...',
+  '...buuddddd44ddddduub...',
+  '..buu22222222222222uub..',
+  '..buu22222222222222uub..',
+  '..bu22oo22222222oo22ub..',
+  '..bu2221022222201222ub..',
+  'oo2u2220022222200222u2oo',
+  '.o2u3222222222222223u2o.',
+  '..bu3222222332222223ub..',
+  '..buu32222222222223uub..',
+  '..buu32222wwww22223uub..',
+  '..buuu322222222223uuub..',
+  '..buuuu3333333333uuuub..',
+  '..buuuubo333333obuuuub..',
+  '.buuuuubb333333bbuuuuub.',
+  '.buuuubiiiiiiiiiibuuuub.',
+  'buuuubiiitiiiitiiibuuuub',
+  'buuubiiiiiiiiiiiiiibuuub',
+  'buubiiiiiiiiiiiiiiiibuub',
+  'bubviiiiiiiiiiiiiiiivbub',
+];
+
 /** The moustached template (Dr. Wily's, Mr. X's and Dr. Cossack's looks are built on it). */
 const moustached = [
   '.......0000000000.......',
@@ -140,34 +196,6 @@ const moustached = [
   '..04444499444444449944444',
   '.044444444444444444444444',
   '.044444444444444444444444',
-].map((r) => r.slice(0, 24).padEnd(24, '.'));
-
-/** Link: the long green cap falling back, blond fringe, a pointed ear, green tunic. */
-const link = [
-  '........00000000........',
-  '......006666666600......',
-  '.....06666666666660.....',
-  '....0666666666666660....',
-  '...066666666666666660...',
-  '..0d6d6d6d6d66666666600.',
-  '..0dddddddddd666666666600',
-  '..0ddd2222222dd66666666660',
-  '..0dd222222222dd6666666660',
-  '..0d22000222000d2066666660',
-  '.0d222010222010d2206666660',
-  '.0d222000222000d22220666660',
-  '.0d2222222222222222220066600',
-  '..0222222232222222220..0660',
-  '..022222222222222220....00.',
-  '...0222220000222220........',
-  '....02222222222220.........',
-  '.....000222222000..........',
-  '....06660000000666.........',
-  '...0666666666666666........',
-  '..066667666666766660.......',
-  '.06666667666667666660......',
-  '.06666666766676666660......',
-  '.06666666676766666660......',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
 /** Samus: the round orange helmet, its green visor, the red rim and the shoulder pads. */
@@ -707,8 +735,8 @@ const yoshi = [
 /*
  * 0.5.0's looks (G-050..G-053), each face redrawn in its own colours from one of ours: Mario's
  * and Luigi's Super Mario Bros. 3 looks (black hair, dark blue straps), Princess Zelda's three
- * from the princess face (brown hair and a red jewel; gold hair and a white gown; Game Boy
- * greens), Quick Man from Bass's helmet in red with its gold crest, Haggle Man from Ryu's hood in
+ * from her own face (light brown hair and a red jewel; gold hair, a silver circlet and a white
+ * gown; Game Boy greens), Quick Man from Bass's helmet in red with its gold crest, Haggle Man from Ryu's hood in
  * red.
  */
 const mario3 = rimmed(
@@ -719,9 +747,9 @@ const luigi3 = rimmed(
   [...recolour(luigi.slice(0, 20), { c: '0', b: 'h' }), ...recolour(luigi.slice(20), { h: 'a' })],
   'h',
 );
-const zeldaNes = recolour(peach, { l: 'b', 8: '4' });
-const zeldaSnes = recolour(peach, { l: 'd', d: 'f', i: '1', 8: 'j' });
-const zeldaGb = recolour(peach, { 0: '7', l: '7', d: '6', 8: '7', i: '6', 2: 'l', 3: '6', 4: '6', 1: 'l' });
+const zeldaNes = zelda;
+const zeldaSnes = recolour(zelda, { d: 'f', u: 'd', i: '1', t: '1', v: 'j', 4: 'j' });
+const zeldaGb = recolour(zelda, { u: '7', b: '7', d: 'x', i: 'q', t: 'q', v: '6', 4: '6' });
 const quickman = recolour(bass, { h: '4' });
 const haggleman = recolour(ryu, { a: '5', 9: '4', 4: 'd' });
 /*
