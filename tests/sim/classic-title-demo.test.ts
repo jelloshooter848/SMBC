@@ -243,7 +243,8 @@ describe('O-04 the CLASSIC title', () => {
     h.tap('start');
     const ct = h.top() as ClassicTitleScene;
     h.tap('down');
-    expect(h.said.at(-1)).toMatch(/^Options\. Classic rules/);
+    // RC-041: the hint no longer names the removed Classic rules row.
+    expect(h.said.at(-1)).toMatch(/^Options\. Game mode/);
     expect(h.audio.sfx).toHaveBeenCalledWith('fireball');
     h.tap('down');
     expect(h.said.at(-1)).toMatch(/^Back\. To the title/);
