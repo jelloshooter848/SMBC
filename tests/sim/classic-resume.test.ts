@@ -5,7 +5,7 @@ import { LINK } from '@game/characters/link';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import type { ClassicMenuScene } from '@game/scenes/original-game';
-import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
+import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume } from '@game/run-resume';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // G-008: the original saves and loads a run (Pause > Load / Save, title > Load Game). Classic
@@ -24,6 +24,10 @@ function classic(over: Partial<Settings> = {}, dev = false): H & { settings: Set
 }
 
 const inLevel = (h: H) => h.top() instanceof LevelScene;
+
+/** Every resume slot in storage (per-set saves: one key per map set), by key. */
+const slots = () =>
+  Object.fromEntries([...store.entries()].filter(([k]) => k.startsWith(CLASSIC_RESUME_KEY)));
 
 describe('G-008 the Classic resume slot', () => {
   // Per-set saves (owner, before 0.5.0): the set's own row offers it now, not a global Continue
@@ -133,8 +137,13 @@ describe('G-008 the Classic resume slot', () => {
 
   it('a developer Classic run never writes it', () => {
     const h = classic({}, true);
+    // Per-set saves: a real slot first (a Classic mode run), then every slot compared.
+    h.game.classicGame(LINK, '1-2');
+    const before = slots();
+    expect(before[classicResumeKey('smb')]).toMatch(/"levelId":"1-2/);
     h.game.devClassicGame(MARIO, '1-1', 'classic');
-    expect(store.has(CLASSIC_RESUME_KEY)).toBe(false);
+    h.game.devClassicGame(MARIO, 'll-1-1', 'classic');
+    expect(slots()).toEqual(before);
   });
 
   it('a broken slot is ignored', () => {
