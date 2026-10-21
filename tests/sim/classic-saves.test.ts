@@ -12,6 +12,7 @@ import { MAP_SETS, mapSetOf, type ClassicMenuScene } from '@game/scenes/original
 import { ClassicOverwriteScene, ClassicSetScene, openClassicSet } from '@game/scenes/original-saves';
 import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume, resumeSetOf } from '@game/run-resume';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
+import { pickAtContinue } from './continue-select';
 
 // Per-set saves (owner, before 0.5.0; O-07 "Classic keeps Continue", G-008): one resume slot per
 // map set; picking a set that has one asks CONTINUE / NEW GAME, NEW GAME warns first (Cancel
@@ -115,6 +116,7 @@ describe('per-set saves: CONTINUE / NEW GAME', () => {
     expect(h.top()).toBeInstanceOf(ClassicSetScene);
     h.idle(8);
     h.tap('jump');
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-3/);
     expect(h.game.state.score).toBe(4200);
@@ -280,6 +282,7 @@ describe('per-set saves: Continue says what it restores (owner decision)', () =>
     pick(h, 'lost');
     h.idle(8);
     h.tap('jump');
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     const line = h.said.find((t) => t.startsWith('Continue.'));
     expect(line).toMatch(/^Continue\. Survival, Hard\. World 5-1\. \d lives?\.$/);
@@ -292,6 +295,7 @@ describe('per-set saves: Continue says what it restores (owner decision)', () =>
     store.set(classicResumeKey('lost'), slot({ difficulty: 'normal', gameMode: 'all' }));
     const h = classic();
     expect(h.game.resumeClassic('lost')).toBe(true);
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     expect(h.said.find((t) => t.startsWith('Continue.'))).toMatch(
       /^Continue\. All heroes, Normal\. World 5-1/,
@@ -302,6 +306,7 @@ describe('per-set saves: Continue says what it restores (owner decision)', () =>
     store.set(classicResumeKey('lost'), slot({}));
     const h = classic();
     expect(h.game.resumeClassic('lost')).toBe(true);
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     const line = h.said.find((t) => t.startsWith('Continue.'));
     expect(line).toMatch(/^Continue\. World 5-1/);
@@ -611,6 +616,7 @@ describe('per-set saves over the CLASSIC title (B-F, O-04)', () => {
     expect(reset).not.toHaveBeenCalled();
     // B-E's release review: a per-set Continue still drops any queued box.
     expect(cleared).toHaveBeenCalled();
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     pick(h, 'smb');
     h.idle(8);

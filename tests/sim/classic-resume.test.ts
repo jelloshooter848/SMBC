@@ -7,6 +7,7 @@ import type { MenuItem } from '@game/scenes/menu';
 import type { ClassicMenuScene } from '@game/scenes/original-game';
 import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume } from '@game/run-resume';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { pickAtContinue } from './continue-select';
 
 // G-008: the original saves and loads a run (Pause > Load / Save, title > Load Game). Classic
 // mode's resume slot stands in: written at each WORLD card of a Classic run, offered as
@@ -67,6 +68,7 @@ describe('G-008 the Classic resume slot', () => {
     expect(h.game.classicRun).toBe(true);
     expect(h.game.state).toMatchObject({ score: 12300, coins: 42, lives: 5, world: 1, stage: 3 });
     expect(h.game.state.character.id).toBe('link');
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-3/);
   });
@@ -86,6 +88,7 @@ describe('G-008 the Classic resume slot', () => {
     });
     h.game.showTitle();
     expect(h.game.resumeClassic()).toBe(true);
+    pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-2/);
   });

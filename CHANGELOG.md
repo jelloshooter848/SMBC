@@ -10,6 +10,9 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic: CONTINUE on a map set opens the hero select first, as the original's Load Game does;
+  the run goes on at the saved level with its lives and score and the hero picked, and BACK
+  returns to the set's CONTINUE / NEW GAME box (BUG-03).
 - Classic: the CLASSIC title keeps SMB CROSSOVER exactly where the title has it, with CLASSIC in
   the REMIX stamp's place, and its boxes sit under the logo with closer rows (scrolling past six),
   so the demo's ground and heroes stay in view (BUG-02).

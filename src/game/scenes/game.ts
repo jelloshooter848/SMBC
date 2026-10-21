@@ -133,7 +133,7 @@ import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
-import { savedRunRestores } from './original-saves';
+import { openClassicSet, savedRunRestores } from './original-saves';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -2316,8 +2316,52 @@ export class Game {
     // that follows, so a screen reader hears it rather than having it replaced in the same frame.
     const restores = savedRunRestores(r);
     this.sayFirst = restores ? `Continue. ${restores}.` : 'Continue.';
-    this.goToLevel(r.levelId, { mode: 'stand' });
+    this.continueSelect(r.levelId, this.resumeSet);
     return true;
+  }
+
+  /**
+   * BUG-03: CONTINUE goes through the select first, as the original's Load Game does
+   * (EventManager.loadGame sets StatManager.newLev, so ScreenManager.createLevel shows
+   * CharacterSelect before the level; Single Character keeps the saved hero, Single random draws
+   * one, as at any new level). The saved hero stays focused and keeps its power if picked again.
+   * BACK returns to the set's CONTINUE / NEW GAME box.
+   */
+  private continueSelect(levelId: string, set: MapSetId): void {
+    const s = this.state;
+    const go = () => this.goToLevel(levelId, { mode: 'stand' });
+    this.selectLevel = levelId;
+    const choice = this.classicHeroChoice(false);
+    if (choice === 'keep') return go();
+    if (choice === 'random') {
+      const c = this.singleRandomHero();
+      if (c !== s.character) this.setHero(0, c);
+      return go();
+    }
+    const current = s.character;
+    this.leaveClassicTitle();
+    this.scenes.clear();
+    this.scenes.push(
+      new CharacterSelectScene(this, {
+        player: 0,
+        current,
+        onPick: (c) => {
+          this.heroChosen = true;
+          if (c !== current) this.setHero(0, c);
+          go();
+        },
+        random: true,
+        onCancel: () => this.backToSet(set),
+      }),
+    );
+  }
+
+  /** BACK from Continue's select: the CLASSIC menu on map set `set`, its CONTINUE / NEW GAME box up. */
+  private backToSet(set: MapSetId): void {
+    this.sayFirst = null;
+    this.showClassicMenu(set);
+    const ms = MAP_SETS.find((m) => m.id === set);
+    if (ms) openClassicSet(this, ms, { back: () => this.showClassicMenu(set) });
   }
 
   /**
