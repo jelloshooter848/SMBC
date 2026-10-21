@@ -60,20 +60,41 @@ export function loadDevPick(game: Game): DevPick | null {
       return null;
     }
   }
-  const roster = game.rosterFor(rules);
-  if (!roster.some((c) => c.id === hero) || !roster.some((c) => c.id === look)) return null;
+  // The hero must be one the START page offers now (a hero back on Release is not), and the look
+  // one of its looks; a power its played def does not have falls back to its first state.
+  const offered = branch === 'campaign' ? game.deps.characters : game.slotsFor(rules);
+  const slot = offered.find((c) => c.id === hero);
+  if (!slot) return null;
+  const def = devLooks(game, slot, rules).find((c) => c.id === look);
+  if (!def || (branch === 'campaign' && def !== slot)) return null;
+  const states = powerStatesOf(def, rules);
   return {
     branch,
     level,
     name,
-    hero: hero as string,
-    look: look as string,
-    power,
+    hero: slot.id,
+    look: def.id,
+    power: states.includes(power) ? power : (states[0] as string),
     kit: p.kit === true,
     rules,
     classicRun: p.classicRun === true,
     difficulty: difficulty as MapDifficulty,
   };
+}
+
+const POWER_UP_STATES = ['small', 'big', 'fire'];
+const HP_STATES = ['full', 'half', '1 hp'];
+
+/** The power states the START page offers for `look` played under `rules`. */
+export function powerStatesOf(look: CharacterDef, rules: Rules): string[] {
+  return heroFor(look, rules).damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
+}
+
+/** Slot hero `hero`'s looks on the roster under `rules` (its own first). */
+function devLooks(game: Game, hero: CharacterDef, rules: Rules): readonly CharacterDef[] {
+  const roster = game.rosterFor(rules);
+  const list = skinsOf(hero).filter((d) => d === hero || roster.includes(d));
+  return list.length ? list : [hero];
 }
 
 /** Starts `pick` (and keeps it for Again). */
@@ -118,14 +139,18 @@ const SET_NAMES: Record<string, string> = { smb: 'SMB', special: 'Special', lost
 
 /** A dev page: a MenuScene that says its title as it opens, then its row. */
 class DevPage extends MenuScene {
+  /** The title as it is said ("Lost Levels D"); the drawn title is upper case. */
+  private readonly spoken: string;
+
   constructor(game: Game, title: string, items: MenuItem[], translucent: boolean) {
-    super(game, title, items, () => game.scenes.pop(), translucent);
+    super(game, title.toUpperCase(), items, () => game.scenes.pop(), translucent);
+    this.spoken = title;
   }
 
   override enter(): void {
     const it = this.items[this.index];
     const v = it?.value ? `: ${it.value()}` : '';
-    const page = this.title.charAt(0) + this.title.slice(1).toLowerCase();
+    const page = this.spoken;
     const line = `${it?.label ?? ''}${v}`;
     this.game.deps.announcer?.say(`${page}. ${it?.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line}`);
   }
@@ -150,7 +175,7 @@ export class DevClassicScene extends DevPage {
   constructor(game: Game, translucent = false) {
     super(
       game,
-      'CLASSIC',
+      'Classic',
       [
         ...MAP_SETS.map((set) => ({
           label: set.label,
@@ -175,12 +200,7 @@ export class DevWorldScene extends DevPage {
         select: () => push(game, new DevLevelPage(game, branch, set, w, translucent), translucent),
       });
     items.push(back(game));
-    super(
-      game,
-      branch === 'classic' ? (SET_NAMES[set.id]?.toUpperCase() ?? 'WORLD') : 'STORY LEVEL',
-      items,
-      translucent,
-    );
+    super(game, branch === 'classic' ? (SET_NAMES[set.id] ?? 'World') : 'Story level', items, translucent);
   }
 }
 
@@ -212,7 +232,7 @@ export class DevLevelPage extends DevPage {
             game,
             new DevPage(
               game,
-              'AREAS',
+              'Areas',
               [
                 ...areas.map((a) => ({
                   label: a,
@@ -229,7 +249,7 @@ export class DevLevelPage extends DevPage {
       });
     }
     items.push(back(game));
-    super(game, `${(setName ?? 'WORLD').toUpperCase()} ${worldName(world)}`, items, translucent);
+    super(game, `${setName ?? 'World'} ${worldName(world)}`, items, translucent);
   }
 }
 
@@ -242,7 +262,7 @@ export class DevCampaignScene extends DevPage {
     const lost = MAP_SETS[2] as MapSet;
     super(
       game,
-      'CAMPAIGN',
+      'Campaign',
       [
         {
           label: 'World map',
@@ -306,7 +326,7 @@ export class DevFilesScene extends DevPage {
       );
     }
     items.push(back(game));
-    super(game, 'OPEN A FILE', items, translucent);
+    super(game, 'Open a file', items, translucent);
   }
 }
 
@@ -316,7 +336,7 @@ export class DevTrainingScene extends DevPage {
     const heroes = game.deps.characters.filter((c) => hasTraining(c.id));
     super(
       game,
-      'TRAINING ROOMS',
+      'Training rooms',
       [
         ...heroes.map((c) => ({
           label: c.name,
@@ -329,9 +349,6 @@ export class DevTrainingScene extends DevPage {
     );
   }
 }
-
-const POWER_UP_STATES = ['small', 'big', 'fire'];
-const HP_STATES = ['full', 'half', '1 hp'];
 
 /**
  * The START page: Start, Hero (the select's slot heroes), Look (that hero's skins), Power, then
@@ -351,7 +368,7 @@ export class DevStartScene extends DevPage {
     game: Game,
     readonly target: { branch: 'classic' | 'campaign'; level: string; name: string },
   ) {
-    super(game, 'START', [], false);
+    super(game, 'Start', [], false);
     const classic = target.branch === 'classic';
     this.rules = classic ? 'classic' : 'current';
     this.classicRun = classic;
@@ -390,6 +407,7 @@ export class DevStartScene extends DevPage {
     });
     if (classic) {
       const live = () => this.difficultyLive;
+      const heroName = () => this.hero.name;
       items.push(
         {
           label: 'Map difficulty',
@@ -409,13 +427,24 @@ export class DevStartScene extends DevPage {
           label: 'Rules',
           value: () => RULES_LABELS[this.rules],
           adjust: () => {
+            const hero = this.hero.id;
+            const look = this.look.id;
             this.rules = this.rules === 'classic' ? 'current' : 'classic';
-            // The slots and the power list can differ under the other rules.
-            if (this.heroIndex >= this.heroes.length) this.heroIndex = 0;
-            this.lookIndex = 0;
+            // The slots and the power list can differ under the other rules: the same hero (and
+            // look) when the new rules offer it, else the first hero.
+            this.heroIndex = Math.max(
+              0,
+              this.heroes.findIndex((c) => c.id === hero),
+            );
+            this.lookIndex = Math.max(
+              0,
+              this.looks.findIndex((c) => c.id === look),
+            );
             this.powerIndex = 0;
           },
-          hint: RULES_HINT,
+          get hint() {
+            return `${RULES_HINT}. Hero: ${heroName()}`;
+          },
         },
         {
           label: 'Mode',
@@ -449,9 +478,7 @@ export class DevStartScene extends DevPage {
 
   /** The hero's looks on this start's roster (its own first). */
   get looks(): readonly CharacterDef[] {
-    const roster = this.game.rosterFor(this.rules);
-    const list = skinsOf(this.hero).filter((d) => d === this.hero || roster.includes(d));
-    return list.length ? list : [this.hero];
+    return devLooks(this.game, this.hero, this.rules);
   }
 
   get look(): CharacterDef {
@@ -465,7 +492,7 @@ export class DevStartScene extends DevPage {
   }
 
   private get powerStates(): string[] {
-    return this.played.damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
+    return powerStatesOf(this.look, this.rules);
   }
 
   private get power(): string {

@@ -204,6 +204,86 @@ describe('O-05: the dev Level select as pages', () => {
   });
 });
 
+describe('O-05 QA: kept picks, Rules and spoken titles', () => {
+  const kept = (over: Record<string, unknown>) =>
+    store.set(
+      DEV_LAST_KEY,
+      JSON.stringify({
+        branch: 'classic',
+        level: '1-1',
+        name: 'SMB 1-1',
+        hero: 'mario',
+        look: 'mario',
+        power: 'small',
+        kit: false,
+        rules: 'classic',
+        classicRun: true,
+        difficulty: 'normal',
+        ...over,
+      }),
+    );
+
+  it("a kept power the hero does not have falls back to its first state (never 'banana', never fire on an hp hero)", () => {
+    const h = dev();
+    kept({ power: 'banana' });
+    expect(loadDevPick(h.game)?.power).toBe('small');
+    h.game.showDevMenu();
+    h.idle(8);
+    h.tap('jump'); // Again
+    enterLevel(h);
+    expect(h.game.state.powerState).toBe('small');
+    kept({
+      branch: 'campaign',
+      hero: 'link',
+      look: 'link',
+      power: 'fire',
+      rules: 'current',
+      classicRun: false,
+    });
+    expect(loadDevPick(h.game)?.power).toBe('full');
+  });
+
+  it('a kept hero the START page no longer offers is ignored (an Expansion hero back on Release)', () => {
+    const h = dev();
+    const s = h.game.deps.settings as Settings;
+    s.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: ['yoshi'] };
+    kept({ hero: 'yoshi', look: 'yoshi' });
+    expect(loadDevPick(h.game)?.hero).toBe('yoshi');
+    delete s.classicDev.heroesOn; // Release: not offered in 0.5.0
+    expect(loadDevPick(h.game)).toBeNull();
+    // A look that is not that hero's is ignored too.
+    kept({ hero: 'mario', look: 'link' });
+    expect(loadDevPick(h.game)).toBeNull();
+  });
+
+  it('Rules keeps the hero when the other rules offer it, else the first hero; the row says who', () => {
+    const h = dev();
+    const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
+    h.game.scenes.push(start);
+    h.idle(8);
+    const row = (l: string) => items(start).find((i) => i.label === l) as MenuItem;
+    for (let i = 0; i < 20 && start.hero.id !== 'samus'; i++) row('Hero').adjust?.(1);
+    stepTo(h, 'Rules', () => start.pick.rules === 'current');
+    expect(start.hero.id).toBe('samus');
+    expect(h.said.at(-1)).toMatch(/^Rules: Campaign\..*Hero: Samus$/);
+    row('Rules').adjust?.(1); // back to Classic SMBC
+    for (let i = 0; i < 20 && start.hero.id !== 'bass'; i++) row('Hero').adjust?.(1);
+    expect(start.hero.id).toBe('bass');
+    row('Rules').adjust?.(1); // Campaign rules have no Bass
+    expect(start.hero.id).toBe(h.game.slotsFor('current')[0]?.id);
+    expect(row('Rules').hint).toMatch(/Hero: Mario$/);
+  });
+
+  it('page titles are said with their own casing', () => {
+    const h = dev();
+    h.game.scenes.push(new DevClassicScene(h.game));
+    pick(h, 'The Lost Levels');
+    pick(h, 'World D');
+    expect(h.said.at(-1)).toMatch(/^Lost Levels D\. D-1/);
+    expect((h.top() as MenuScene).title).toBe('LOST LEVELS D');
+  });
+});
+
 describe('O-05: the Campaign branch', () => {
   it('a story level starts as free play under Current rules, with no file', () => {
     const h = dev();
