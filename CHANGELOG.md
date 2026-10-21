@@ -20,6 +20,11 @@ under `## [Unreleased]`.
   row, and the Yoshi mount is Off, On or Ride. In dev mode the Expansion heroes option no longer
   offers all four by itself: Release shows exactly what players get. None of it applies outside
   dev mode.
+- Classic mode: the original's **Tutorials** option (Classic options > Tutorials, off by default as
+  in the original). On, a box in the original's words explains the hero select, the controls at the
+  first start, each hero the first time you play them, and the Mushroom, each upgrade, the Star and
+  cheats. Each page waits for OK (SKIP closes the box), is read out, and works with touch, keys and
+  pad. Each box shows once per game; a new game shows them again. Never in the campaign.
 
 ### Changed
 

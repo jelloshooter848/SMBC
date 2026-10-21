@@ -256,6 +256,8 @@ describe('the title and the CLASSIC menu', () => {
       'Music set',
       // G-032 (0.5.0): the original's Disable characters.
       'Disable heroes',
+      // O-15 / G-042 (0.5.0): the original's General > Tutorials.
+      'Tutorials',
       'Cheats',
       'Video, audio, controls',
       'Back',

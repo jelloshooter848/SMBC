@@ -110,6 +110,17 @@ export interface Settings {
    */
   classicHeroesOff?: string[];
   /**
+   * Classic mode's Tutorials (O-15 / G-042; the original's General > Tutorials,
+   * GeneralOptions.as 25, off by default as GameSettings.as 89): the TutorialManager's boxes at
+   * the select, the first start, each hero's start and each upgrade. Optional: absent is off.
+   */
+  classicTutorials?: boolean;
+  /**
+   * The Tutorials boxes shown in this Classic game (TutorialManager.saveData: each box once per
+   * game, and all of them again from a new game, startNewGameHandler). Optional.
+   */
+  classicTutorialsSeen?: string[];
+  /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
    * into older files (every field defaults to the original's: all off, most locked).
@@ -343,6 +354,14 @@ export function loadSettings(): Settings {
     : [];
   if (off.length) s.classicHeroesOff = off;
   else delete s.classicHeroesOff;
+  // Tutorials (O-15): on only when stored as true; the boxes seen, as their ids.
+  if (stored.classicTutorials === true) s.classicTutorials = true;
+  else delete s.classicTutorials;
+  const seen = Array.isArray(stored.classicTutorialsSeen)
+    ? (stored.classicTutorialsSeen as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (seen.length) s.classicTutorialsSeen = seen;
+  else delete s.classicTutorialsSeen;
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;
