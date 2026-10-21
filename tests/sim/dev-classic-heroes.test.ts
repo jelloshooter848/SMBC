@@ -49,6 +49,22 @@ describe('O-06: Dev > Classic heroes', () => {
     expect(row(page, 'All').value?.()).toBe('Release');
   });
 
+  it('keys and touch: OK (the touch OK button) and RIGHT step a row, and the new value is read out', () => {
+    const { h, page, settings } = devGame();
+    h.game.scenes.push(page);
+    h.idle(8);
+    expect(page.touchLabels().jump).toBe('OK');
+    for (let i = 0; i < 4; i++) h.tap('down');
+    expect(h.said.at(-1)).toMatch(/^Yoshi: Release/);
+    h.tap('jump');
+    expect(h.said.at(-1)).toMatch(/^Yoshi: On/);
+    h.tap('right');
+    expect(h.said.at(-1)).toMatch(/^Yoshi: Off/);
+    expect(settings.classicDev.heroesOff).toEqual(['yoshi']);
+    h.tap('attack');
+    expect(h.game.scenes.top).not.toBe(page);
+  });
+
   it('Release follows what players get; On shows a hero they do not; Off hides one they do', () => {
     const { h, page, settings } = devGame();
     settings.classic.expansion = 'off';

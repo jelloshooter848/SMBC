@@ -182,7 +182,7 @@ export class DevClassicHeroesScene extends MenuScene {
         return v === 'mixed' ? 'Mixed' : v === 'release' ? 'Release' : `All ${v}`;
       },
       adjust: flipAll,
-      select: () => flipAll(1),
+      select: () => this.picked(() => flipAll(1)),
       hint: 'Release, All on or All off for every hero below',
     });
     for (const def of heroes) {
@@ -194,7 +194,7 @@ export class DevClassicHeroesScene extends MenuScene {
         label: fitName(def.name, 24 - 'Release'.length - 1),
         value: () => OVERRIDE_NAMES[get(def.id)],
         adjust: flip,
-        select: () => flip(1),
+        select: () => this.picked(() => flip(1)),
         get hint() {
           return `Release: as players get it, ${released(def)} now. On: always in dev mode. Off: hidden`;
         },
@@ -212,12 +212,18 @@ export class DevClassicHeroesScene extends MenuScene {
       label: 'Yoshi mount',
       value: () => MOUNT_NAMES[mount()],
       adjust: setMount,
-      select: () => setMount(1),
+      select: () => this.picked(() => setMount(1)),
       hint: 'Classic mode: Yoshi eggs hatch from blocks; Ride starts each level riding him. Off plays the original',
     });
     for (const r of rows) TOGGLE_ROWS.add(r);
     rows.push({ label: 'Back', select: onBack });
     this.setItems(rows);
+  }
+
+  /** OK on a row steps it as RIGHT does, and reads the new value out (MenuScene says it for RIGHT only). */
+  private picked(step: () => void): void {
+    step();
+    this.announce();
   }
 
   override enter(): void {
