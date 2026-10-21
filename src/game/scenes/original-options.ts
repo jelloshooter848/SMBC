@@ -292,6 +292,8 @@ export class ClassicOptionRowsScene extends MenuScene {
       this.translucent = true;
       this.moveSfx = 'fireball';
       this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
     }
     this.build();
   }
