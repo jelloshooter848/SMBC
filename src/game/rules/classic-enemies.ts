@@ -9,6 +9,7 @@ import { Bowser } from '../entities/enemies/bowser';
 import { Cheep } from '../entities/enemies/cheep';
 import type { World } from '../world/world';
 import { attackMult } from '../characters/classic/options';
+import { Crab, FireEnemy, GOOMBA_KIN } from '../entities/enemies/special-enemies';
 import { heroSound } from '../characters/classic/sounds';
 
 /**
@@ -53,11 +54,33 @@ export const CLASSIC_HP = {
   'bowser-both': 4400,
   /** Any form while player 1 is Mario or Luigi (5 × the fireball's 1000). */
   'bowser-mario': 5000,
+  // Super Mario Bros. Special's enemies (G-021; HealthValue.as). FireEnemy's own line is
+  // commented out, so it keeps its Goomba base's 250.
+  icicle: 25,
+  crab: 600,
+  fly: 350,
+  barrel: 400,
+  'fire-enemy': 250,
 } as const;
 
-/** Armoured enemies (HP-C12): Buzzy Beetle, Bullet Bill and Spike Top (Spiny is not). */
+/** Armoured enemies (HP-C12): Buzzy Beetle, Bullet Bill, Spike Top and Barrel (Spiny is not). */
 export function isArmoured(e: Enemy): boolean {
-  return e.kind === 'bullet-bill' || e.kind === 'spike-top' || (e instanceof Koopa && e.color === 'buzzy');
+  return armourOf(e) > 0;
+}
+
+/**
+ * The pierce an attack needs to get through `e` (its PR_PIERCE_PAS), 0 for none: ARMOUR_STRENGTH
+ * for the armoured, 11 for Special's FireEnemy (G-021: only the Hammer's 11, or the Star, puts it
+ * out).
+ */
+export function armourOf(e: Enemy): number {
+  if (e instanceof FireEnemy) return FireEnemy.ARMOUR;
+  const armoured =
+    e.kind === 'bullet-bill' ||
+    e.kind === 'spike-top' ||
+    e.kind === 'barrel' ||
+    (e instanceof Koopa && e.color === 'buzzy');
+  return armoured ? ARMOUR_STRENGTH : 0;
 }
 
 /** Resists hit-stun, boomerang stun and Ice freeze (HP-C15): Lakitu, Bowser (and fakes). */
@@ -105,7 +128,7 @@ function speedUp(e: Enemy): void {
     e.chaseSpeed = Math.round(e.chaseSpeed * FAST_ENEMY_MULT);
     return;
   }
-  if (!(e instanceof Goomba || e instanceof Koopa || e instanceof Spiny)) return;
+  if (!(e instanceof Goomba || e instanceof Koopa || e instanceof Spiny || GOOMBA_KIN.has(e.kind))) return;
   const old = e.walkSpeed;
   e.walkSpeed = Math.round(old * FAST_ENEMY_MULT);
   if (Math.abs(e.body.vx) === old) e.body.vx = Math.sign(e.body.vx) * e.walkSpeed;
@@ -182,9 +205,17 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
   }
   // All Weapons Pierce (Classic cheat; Character.landAttack, Projectile.confirmedHit): armour
   // never stops a hit.
-  if (isArmoured(e) && (src.pierce ?? 0) < ARMOUR_STRENGTH && !world.cheats.allWeaponsPierce) {
+  const armour = armourOf(e);
+  if (armour > 0 && (src.pierce ?? 0) < armour && !world.cheats.allWeaponsPierce) {
     if (src.blockedSfx) world.audio.sfx(src.blockedSfx);
     return 'blocked';
+  }
+  // Crab.takeDamage: Mario's fireball (MarioFireBall, Mario's and Luigi's) only angers a calm
+  // crab, setting it to 400 hit points (G-021).
+  if (e instanceof Crab && !e.angry && src.kind === 'fireball' && isMarioFireball(src)) {
+    e.classicHp = Crab.ANGRY_HP;
+    e.anger(world);
+    return 'hp';
   }
   const dmg = classicDamage(src, attackMult(world.classic));
   e.classicHp -= dmg;
@@ -208,6 +239,12 @@ export function classicHit(e: Enemy, src: DamageSource, world: World): Reaction 
   if (e instanceof Koopa && e.classicDamaged(e.classicHp) === 'shell') return 'shell';
   e.classicHpHit(src, world);
   return 'hp';
+}
+
+/** A shot from Mario's or Luigi's fire power (the original's MarioFireBall). */
+function isMarioFireball(src: DamageSource): boolean {
+  const id = attackerDef(src)?.id;
+  return id === 'mario' || id === 'luigi';
 }
 
 /**

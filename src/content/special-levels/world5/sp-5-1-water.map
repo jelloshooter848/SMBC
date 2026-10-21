@@ -1,0 +1,35 @@
+id: sp-5-1-water
+name: WORLD 5-1
+world: 5
+stage: 1
+theme: water
+music: water
+time: inherit
+start: 2,1
+startMode: fall
+camera: scroll
+parent: sp-5-1
+
+[tiles]
+;; 0                16               32
+................ ................ ...
+................ ................ ...
+wwwwwwwwwwwwwwBB BBBBBBBBBBBBBBBB BB{
+..............#. .....BBBBBBBBBBB BB{
+..............#. .....BBBBBBBBBBB BB{
+..............#. ..........BBBBBB BB{
+..............#. ..........BBBBBB BB{
+..........$$$$$$ $$$$............ BB{
+................ ................ BB{
+................ ................ ())
+.........#...... ........$$$$$$$$ <>>
+.........#...... ....$$$$BBBBBBBB BBB
+.........#...... ....BBBBBBBBBBBB BBB
+################ ################ ###
+################ ################ ###
+
+[entities]
+blooper 17 5 dx=8
+
+[zones]
+pipe 32 10 right -> sp-5-1 22 9 exit=up

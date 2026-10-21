@@ -362,6 +362,10 @@
 + koopa-green 106 10 dx=8
 + koopa-red 110 5 dx=8
 + koopa-para-green-h 137 9
++ crab 144 5 dx=8
++ crab 156 12
++ crab 159 12 dx=8
++ crab 165 7 dx=8
 + koopa-red 14 9
 start 2 10 stand
 

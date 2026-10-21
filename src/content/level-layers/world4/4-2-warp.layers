@@ -63,6 +63,11 @@
 0 14 .i..
 5 14 ..i.....i...i.i...i.i.i....ii......BBBBBBBBB.{}..{}..{}..BB
 + koopa-para-green 23 4
++ fly 23 10
++ fly 26 10
++ fly 33 3
++ barrel 42 9
++ barrel 44 7
 + piranha 50 10 red=1
 + podoboo 52 12
 + piranha 54 10 red=1

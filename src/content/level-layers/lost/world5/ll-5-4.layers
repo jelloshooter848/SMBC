@@ -338,7 +338,9 @@
 + firebar-ccw 40 4
 + firebar 48 4
 + firebar 53 11
++ icicle 54 3 dx=8
 + firebar 56 11
++ icicle 57 3 dx=8
 + firebar 62 9
 + firebar-ccw 63 5
 + firebar 66 11

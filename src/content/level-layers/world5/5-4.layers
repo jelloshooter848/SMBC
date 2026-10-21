@@ -198,6 +198,7 @@
 + firebar 18 9
 + podoboo 25 12
 + firebar 28 9
++ fly 35 8
 + firebar-ccw 43 5
 + firebar-ccw 67 5
 + block-item 74 9 item=clock
@@ -205,6 +206,7 @@
 + firebar-ccw 98 10
 + block-item 100 2 item=bee
 + piranha 111 12
++ fly 115 9
 + firebar-ccw 122 8 len=12
 + koopa-red 14 9
 -zone bowser-fire 87

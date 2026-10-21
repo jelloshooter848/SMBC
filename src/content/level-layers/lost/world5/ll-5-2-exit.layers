@@ -43,6 +43,8 @@
 26 14 .
 - piranha 3 11
 + piranha 3 11 red=1
++ barrel 14 7 dx=8
++ barrel 16 6 dx=8 dy=-8
 + piranha 18 5 red=1
 
 [layer horz]

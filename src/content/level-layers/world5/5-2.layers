@@ -68,6 +68,7 @@
 93 9 $$
 102 9 CPE
 110 9 EEC
+118 9 E
 120 9 ?
 123 9 ?
 125 9 E
@@ -143,6 +144,8 @@
 - buzzy 137 12
 - buzzy 138 12
 + koopa-green 47 8
++ block-item 118 9 item=atom
++ block-item 125 9 item=clock
 
 [layer hard]
 29 5 .
@@ -169,6 +172,7 @@
 66 9 B
 68 9 ...
 81 9 4
+118 9 E
 123 9 5
 125 9 E
 129 9 B
@@ -237,8 +241,13 @@
 + koopa-para-green 41 10 dx=8 dy=-8
 + koopa-para-green 70 4 dx=8
 + koopa-para-green 107 9 dx=8
++ block-item 118 9 item=atom
++ block-item 125 9 item=clock
++ fly 152 4 dx=8
 + koopa-para-green 168 8
 + piranha 173 11 red=1
++ fly 174 4
++ crab 184 10
 + koopa-para-green 189 4 dx=8
 + hammer-bro-chase 123 4
 + hammer-bro-chase 90 7

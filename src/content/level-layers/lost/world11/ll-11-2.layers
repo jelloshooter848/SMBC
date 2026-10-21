@@ -349,6 +349,7 @@
 - koopa-para-red 171 6
 - koopa-green 108 12
 + firebar 151 7
++ block-item 4 5 item=clock
 + block-item 5 5 item=bee
 + piranha-down 23 5 red=1
 + koopa-para-green 46 6 dx=8
@@ -356,6 +357,7 @@
 + piranha 62 6 red=1
 + koopa-para-green-h 103 11
 + piranha 103 13 red=1
++ block-item 121 9 item=clock
 -zone pipe 173 8 right -> ll-11-2-exit 3 10 exit=up
 +zone checkpoint 81 12
 +zone pipe 173 8 right -> ll-11-2-exit 1 4 exit=up

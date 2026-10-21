@@ -43,3 +43,6 @@
 4 13 B--------B.{
 0 14 B{}wBwwwwwwwwBw{
 + piranha-down 4 9 red=1
++ block-item 6 6 item=clock
++ icicle 8 4
++ icicle 12 4

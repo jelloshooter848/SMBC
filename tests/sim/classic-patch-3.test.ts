@@ -180,11 +180,13 @@ describe("1. Infinite Time: TIME's digits hidden on the HUD and the card (label 
   });
 });
 
-describe('2. All Hammer Bros: the goal says The Lost Levels stands in for the Special maps', () => {
-  it("the locked text names The Lost Levels and the original's Special maps", () => {
+// G-020 (0.5.0): the Special map set is built, so its goal is the original's again
+// (StatManager.as:510-511; MessageBoxMessages.LOCKED_CHEAT_ALL_HAMMER_BROS).
+describe('2. All Hammer Bros: the goal is the Special map set', () => {
+  it("the locked text is the original's, with no stand-in", () => {
     const t = cheatInfo('allHammerBros').goalText;
-    expect(t).toMatch(/The Lost Levels/);
-    expect(t).toMatch(/Special maps/);
+    expect(t).toBe('Beat the Super Mario Bros. Special map set.');
+    expect(t).not.toMatch(/The Lost Levels/);
   });
 });
 

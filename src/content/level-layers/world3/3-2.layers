@@ -132,12 +132,15 @@
 - goomba 189 12
 - goomba 191 12
 + piranha 169 10 red=1
++ crab 18 12
 + koopa-para-green 46 12
 + koopa-para-green 47 12 dx=8
 + piranha 53 12 red=1
 + block-item 60 2 item=bee
 + koopa-red 65 12 dx=8
 + koopa-para-green 94 10 dy=-8
++ fly 103 12
++ fly 105 12
 + koopa-para-green-h 126 8
 + lakitu 130 0 end=169
 + koopa-red 133 12 dx=8
@@ -145,6 +148,9 @@
 + spike-top 150 12
 + spike-top 151 12 dx=8
 + koopa-para-green 163 11 dx=8
++ barrel 195 8 dx=8
++ barrel 197 6 dx=8
++ barrel 199 4 dx=8
 + hammer-bro 73 12
 + koopa-red 175 12
 

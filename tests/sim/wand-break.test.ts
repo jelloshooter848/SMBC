@@ -28,7 +28,7 @@ import { campaignLevel } from '@game/level/campaign';
 import { castlePages, CASTLE_PAGES, FINALE_PAGES, STORY_NOT_OVER, WAND_BREAK_SAID } from '@game/story/script';
 import { FINALE } from '@game/story/finale';
 import { WorldMapScene } from '@game/scenes/world-map';
-import { CreditsScene, creditsLines, CREDITS } from '@game/scenes/credits';
+import { CreditsScene, creditsLines, creditsSpeech, CREDITS } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import type { LevelData } from '@game/level/schema';
 import type { Action } from '@engine/input/actions';
@@ -364,8 +364,10 @@ describe("BOWSER'S CASTLE in the game: the wand, the castle pages, then the cred
     expect(said).toEqual([
       WAND_BREAK_SAID,
       ...read('THANK YOU MARIO!'),
-      `Credits. ${STORY_NOT_OVER.filter(Boolean).join(' ')}`,
+      // The whole roll is read out (owner decision, 0.5.0), the story's lines in it.
+      creditsSpeech(creditsLines(true)),
     ]);
+    for (const l of STORY_NOT_OVER.filter(Boolean)) expect(said.at(-1)).toContain(l);
     // The wand's page is read once, not again with the credits.
     expect(said.filter((s) => s.includes(FINALE_PAGES.news[0] as string))).toHaveLength(1);
     const credits = h.top() as CreditsScene;
@@ -409,7 +411,11 @@ describe("BOWSER'S CASTLE in the game: the wand, the castle pages, then the cred
     axeToCredits(h);
     expect(w.entities.some((e) => e instanceof WandBreak)).toBe(false);
     // The castle reads its lines as they show (with what to press), the credits do not again.
-    expect(h.said.slice(from)).toEqual(['THANK YOU MARIO! YOUR QUEST IS OVER. OK to continue.', 'Credits.']);
+    // (The roll is read out, owner decision 0.5.0: its own lines, which start with "Credits.".)
+    expect(h.said.slice(from)).toEqual([
+      'THANK YOU MARIO! YOUR QUEST IS OVER. OK to continue.',
+      creditsSpeech(CREDITS),
+    ]);
     expect((h.top() as CreditsScene).lines).toEqual(CREDITS);
   });
 });

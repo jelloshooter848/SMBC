@@ -1,0 +1,59 @@
+id: sp-2-2-under
+name: WORLD 2-2
+world: 2
+stage: 2
+theme: underground
+music: underground
+time: inherit
+start: 1,2
+startMode: fall
+camera: scroll
+parent: sp-2-2
+
+[tiles]
+;; 0                16               32               48
+................ ................ ................ ............
+................ ................ ................ ............
+................ ...{}.......{}.. ...............B BBBBBBBBBBBB
+................ ...{}.......{}.. ...............B BBBBBBBBBBBB
+................ ...{}.......{}.. ...............B BBBB.BBBB.BB
+................ ...{}.......{}.. ...............B BBBB.BBB.B.B
+................ ...{}.......DG.. ...............B BBBB.BBB.BBB
+................ ...{}........... .$$$$$$$$......B BBBB.BBBB.BB
+................ ...{}........... ...............B BBBB.BBBBB.B
+.......??M...... ..1DG........... ...............B BBBB.BBBBB.B
+................ ......$$$$...... ......BBB......B BBBB.BBB.B.B
+................ ................ ....BBBBB....[]B BBBB.B.BB.BB
+........g....... .g.............. ..BBBBBBB....{}B BBBBBBBBBBBB
+##########ww#### ######wwww####ww ww#######wwww### ############
+##########..#### ######....####.. ..#######....### ############
+
+[entities]
+goomba 15 12 dx=8
+
+[zones]
+pipe 45 11 down -> sp-2-2 122 3 exit=up
+
+[decor]
+bush-2 4 12
+tree-small 13 12
+tree-big 15 12
+tree-small 52 5
+tree-small 52 6
+tree-small 52 7
+tree-small 52 8
+tree-small 52 9
+tree-small 52 10
+tree-small 52 11
+tree-small 52 12
+tree-small 54 12
+tree-small 56 6
+tree-small 56 7
+tree-small 56 11
+tree-small 57 5
+tree-small 57 8
+tree-small 57 12
+tree-small 58 6
+tree-small 58 9
+tree-small 58 10
+tree-small 58 11

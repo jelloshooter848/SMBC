@@ -276,20 +276,24 @@
 + podoboo 14 12
 + lift-h 18 11 len=4 range=3 dx=-8
 + firebar-ccw 32 9
++ icicle 39 3 dx=8
 + piranha 43 13 red=1
 + podoboo 59 12
 + podoboo 74 12
 + lift-h 85 13 len=4 range=3 dx=-8
 + firebar-ccw 96 9
++ icicle 103 3 dx=8
 + piranha 107 13 red=1
 + podoboo 123 12
 + podoboo 138 12
 + lift-h 149 13 len=4 range=3 dx=-8
++ icicle 162 3 dx=8
 + piranha 168 10 red=1
 + podoboo 172 12
 + firebar 176 9
 + podoboo 203 12
 + lift-h 214 13 len=4 range=3
++ icicle 226 3 dx=8
 + piranha 232 10 red=1
 + podoboo 236 12
 + firebar 240 9

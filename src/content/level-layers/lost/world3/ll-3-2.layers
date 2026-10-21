@@ -247,6 +247,8 @@
 - koopa-red 132 8
 - koopa-green 75 9
 - koopa-red 182 12
++ crab 12 8 dx=8
++ crab 15 4 dx=8
 + block-item 21 7 item=bee
 + piranha-down 50 5 red=1
 + piranha 50 9 red=1

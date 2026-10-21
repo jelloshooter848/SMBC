@@ -52,6 +52,7 @@
 15 14 %
 - piranha 3 11
 + block-item 1 2 item=bee
++ block-item 1 8 item=clock
 + piranha 4 11 red=1
 +zone checkpoint 4 6
 start 4 10 pipe-exit

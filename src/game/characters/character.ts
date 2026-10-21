@@ -3,7 +3,7 @@ import type { MovementProfile } from './profile';
 import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import type { DamageSource } from '../rules/damage';
-import type { PowerUpKind } from '../entities/objects/powerup';
+import type { HeroPowerUp, PowerUpKind } from '../entities/objects/powerup';
 import type { PickupKind } from '../entities/objects/pickup';
 import type { Enemy } from '../entities/enemies/enemy';
 import type { Projectile } from '../entities/projectiles/projectile';
@@ -69,7 +69,7 @@ export interface CharacterBehaviour {
   /** Runs after movement each frame. Attacks, slides, weapon logic. */
   update(p: Player, input: InputFrame, world: World): void;
   /** A helpful item was collected (a poison mushroom is handled by the world, never here). */
-  onPowerUp(p: Player, kind: Exclude<PowerUpKind, 'poison' | 'clock' | 'bee'>, world: World): void;
+  onPowerUp(p: Player, kind: HeroPowerUp, world: World): void;
   /** The player ran into an enemy without stomping. Return damage to deal instead of getting hurt, or null. */
   contactDamage(p: Player, enemy: Enemy, world: World): DamageSource | null;
   /**

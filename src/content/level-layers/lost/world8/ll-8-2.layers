@@ -183,6 +183,7 @@
 + piranha 9 11 red=1
 + lift-h 22 9 len=4 range=3
 + lift-h 27 10 len=4 range=3 dx=-8
++ block-item 42 9 item=clock
 + piranha 63 10 red=1
 + koopa-para-green-h 78 8 dx=8
 + piranha 78 10 red=1

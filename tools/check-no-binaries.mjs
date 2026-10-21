@@ -4,6 +4,12 @@
 //
 // One narrow exception: the secrets guide's screenshots (docs/secrets/img/*.png, taken from the
 // game itself, so only our own art), each at most DOC_SCREENSHOT_MAX_BYTES.
+//
+// Original-art rule, one named exception (docs/ART_EXCEPTIONS.md): Classic mode's full power-up
+// draws the original game's Exploding Rabbit logo (src/content/sprites/rabbit-logo.ts, text pixel
+// arrays like all our art, so nothing here changes for it). Exploding Rabbit logo (c) Jay Pavlina /
+// Exploding Rabbit, used as a tribute in Classic mode; will be replaced on request. It is a single
+// named exception, not a precedent: every other original-asset rule is unchanged.
 import { execSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';

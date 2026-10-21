@@ -90,7 +90,7 @@
 + koopa-green 61 12
 
 [layer hard]
-91 5 =
+91 5 E
 21 9 3
 88 9 3
 100 9 U
@@ -159,7 +159,21 @@
 + piranha 50 10
 + lakitu 52 0 end=146
 + piranha 73 13
++ crab 76 12
++ crab 77 12 dx=8
++ crab 79 12
++ fly 84 12
++ block-item 91 5 item=atom
++ fly 91 8
++ crab 108 12 dx=8
++ crab 109 12 dx=8
++ fly 140 12
++ fly 142 12
 + koopa-para-green 147 8
++ block-item 150 9 item=clock
++ fly 181 12
++ fly 183 10
++ fly 185 8
 + block-item 191 10 item=bee
 
 [layer horz]

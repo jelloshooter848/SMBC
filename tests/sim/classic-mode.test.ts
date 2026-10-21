@@ -14,7 +14,7 @@ import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
 import { CharacterSelectScene } from '@game/scenes/character-select';
-import { CreditsScene } from '@game/scenes/credits';
+import { CREDITS, CreditsScene, creditsSpeech } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
@@ -183,8 +183,10 @@ describe('the title and the CLASSIC menu', () => {
   it('the menu: Super Mario Bros., The Lost Levels, Options, Back; each line is announced', () => {
     const h = classic();
     const menu = toClassicMenu(h);
+    // G-020: SMB Special between the two (the original's order).
     expect(labels(menu)).toEqual([
       'Super Mario Bros.',
+      'SMB Special',
       'The Lost Levels',
       'Map difficulty',
       'Options',
@@ -192,7 +194,14 @@ describe('the title and the CLASSIC menu', () => {
     ]);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of ['The Lost Levels', 'Map difficulty', 'Options', 'Back', 'Super Mario Bros.']) {
+    for (const l of [
+      'SMB Special',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+      'Super Mario Bros.',
+    ]) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -206,6 +215,7 @@ describe('the title and the CLASSIC menu', () => {
     const h = classic();
     expect(labels(toClassicMenu(h))).toEqual([
       'Super Mario Bros.',
+      'SMB Special',
       'The Lost Levels',
       'Map difficulty',
       'Options',
@@ -455,7 +465,8 @@ describe('a Classic run', () => {
     const credits = h.top();
     expect(credits).toBeInstanceOf(CreditsScene);
     // The classic credits, not the campaign's "the story is not over" lines.
-    expect(h.said.at(-1)).toBe('Credits.');
+    // (The roll is read out, owner decision 0.5.0: its own lines only.)
+    expect(h.said.at(-1)).toBe(creditsSpeech(CREDITS));
     h.until(() => (credits as CreditsScene).touchLabels().jump === 'OK', 6000);
     h.tap('jump');
     // The cheats the clear and the game unlocked (All Ground Is Bricks among them): a card each,

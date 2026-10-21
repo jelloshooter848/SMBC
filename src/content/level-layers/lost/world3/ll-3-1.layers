@@ -244,6 +244,8 @@
 + piranha 123 12 red=1
 + piranha 126 13 red=1
 + blooper 146 13
++ crab 150 10
++ crab 152 10 dx=8
 + blooper 155 13
 + piranha 172 9 red=1
 + piranha 176 5 red=1

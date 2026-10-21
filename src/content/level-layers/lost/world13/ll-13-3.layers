@@ -235,6 +235,9 @@
 - koopa-red 131 4
 - hammer-bro-chase 93 8
 - hammer-bro-chase 175 12
++ fly 12 8 dx=8
++ fly 14 8 dx=8
++ barrel 15 12 dx=8
 + piranha 38 10 red=1
 + koopa-red 46 12 dx=8
 + hammer-bro 64 12 dx=8

@@ -10,6 +10,7 @@ import {
   lostLettersOpen,
   recordLostGameBeaten,
   saveProgress,
+  type MapSetId,
 } from '@engine/save/progress';
 import type { CheatFlags, GameContext, GameState, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
@@ -58,7 +59,6 @@ import { MenuScene } from './menu';
 import { loadLibrary, customLevelId } from '../level/library';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
-import { STORY_NOT_OVER } from '../story/script';
 import { FINALE } from '../story/finale';
 import { WorldMapScene, showChapterGate, spoken, type WorldMapOptions } from './world-map';
 import type { MapProgress, PageId, WorldMapPage } from '../map/types';
@@ -840,9 +840,7 @@ export class Game {
     // the end. 8-4 until Bowser's Castle comes (story/finale.ts FINALE).
     const story = storyOn(this) && from === FINALE.castle;
     // The castle's lines were read out as they showed (World.updateBossClear), so the credits
-    // do not read them a second time.
-    const said = story ? ` ${STORY_NOT_OVER.filter(Boolean).join(' ')}` : '';
-    this.deps.announcer?.say(`Credits.${said}`);
+    // do not read them a second time; the scene reads the whole roll, the story lines with it.
     this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world, creditsLines(story)));
   }
 
@@ -877,9 +875,9 @@ export class Game {
         saveSettings(this.deps.settings as Settings);
       }
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
-      // All Ground Is Bricks, The Lost Levels All Hammer Bros for now (the original's goal for it
-      // is the Special set, which brings its own beat event, G-020).
-      if (set === 'smb' || set === 'lost') this.cheatEvent({ beat: set });
+      // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
+      // count and no-continue goals.
+      this.cheatEvent({ beat: set });
       this.showClassicUnlocks();
       return;
     }
@@ -969,7 +967,6 @@ export class Game {
     } else if (from === 'll-13-4') {
       then = () => {
         const head = world ? world.castleText.splice(0) : card;
-        this.deps.announcer?.say('Credits.');
         this.scenes.pop(); // the card; the level (if any) stays beneath the credits
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
@@ -1835,12 +1832,17 @@ export class Game {
   }
 
   /**
-   * `?dev=1&mode=classic&level=..` (main.ts): a Classic run from any level with the URL's hero
-   * and rules, one player (the village and the stage tutorials start 1-1 instead).
+   * A `?level=` link's Classic run (main.ts): from that level with the URL's hero and rules, one
+   * player (the village and the stage tutorials start 1-1 instead). `dev`: dev mode is on
+   * (`?dev=1&mode=classic`), and the run counts for nothing (classicDev). With dev mode off (a
+   * shared link on a release build) it counts as any Classic run does, as the original counts a
+   * run that its Level Select started anywhere (LevelSelectMenu.as 115-131 only sets the map pack
+   * and difficulty and creates the level; StatManager.beatGameHandler 506-529 asks nothing of
+   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect).
    */
-  devClassicGame(character: CharacterDef, levelId: string, rules: Rules): void {
+  devClassicGame(character: CharacterDef, levelId: string, rules: Rules, dev = true): void {
     this.pendingLevel = null;
-    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, true);
+    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, dev);
   }
 
   /**
@@ -1924,7 +1926,7 @@ export class Game {
    * A Classic run cleared a level (`level`, `castle`) or beat a game (`beat`): the goals that ask
    * for it (Level.completeLevel, StatManager.beatGameHandler) unlock their cheats.
    */
-  cheatEvent(ev: { level?: boolean; castle?: boolean; beat?: 'smb' | 'lost' }): void {
+  cheatEvent(ev: { level?: boolean; castle?: boolean; beat?: MapSetId }): void {
     const s = this.deps.settings;
     if (!s || !this.cheatGoalsCount) return;
     const c = s.classicCheats;

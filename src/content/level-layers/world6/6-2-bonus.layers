@@ -29,6 +29,9 @@
 0 13 .BB[]BB..BB[]BBB
 0 14 ...{}......{}...
 + piranha 3 13 red=1
++ icicle 5 3
++ icicle 6 3 dx=8
++ icicle 8 3
 + piranha 11 13 red=1
 -zone pipe 13 12 right -> 6-2 35 10 exit=up
 +zone pipe 13 12 right -> 6-2 35 3 exit=up

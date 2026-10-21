@@ -101,10 +101,16 @@
 + podoboo 13 11
 + firebar 23 6
 + block-item 24 6 item=bee
++ icicle 27 3
 + podoboo 33 12
 + firebar-ccw 37 6
 + firebar-ccw 80 4
 + firebar-ccw 92 9
++ icicle 98 5
++ icicle 102 5
++ block-item 113 5 item=clock
++ icicle 116 3
++ icicle 119 3
 + podoboo 130 12
 + koopa-green 49 8
 + koopa-green 60 8

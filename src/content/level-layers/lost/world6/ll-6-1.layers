@@ -177,7 +177,7 @@
 119 10 B====B
 150 10 .....
 178 10 ...{}
-188 10 B====B
+188 10 B=E==B
 210 10 B===B
 229 10 .
 232 10 ..
@@ -240,7 +240,11 @@
 - koopa-green 61 12
 - hammer-bro 73 12
 - hammer-bro 107 12
++ fly 21 8 dx=8
 + piranha 28 9 red=1
++ crab 35 8 dx=8
++ block-item 36 5 item=clock
++ crab 38 8
 + koopa-para-green-h 50 8
 + koopa-green 53 12 dx=8
 + koopa-green 56 12 dx=8
@@ -253,6 +257,7 @@
 + piranha 181 9 red=1
 + lakitu 183 0 end=221
 + piranha-down 190 5 red=1
++ block-item 190 10 item=hammer
 + hammer-bro 135 4
 + hammer-bro 138 8
 + buzzy 123 9

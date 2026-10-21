@@ -522,11 +522,14 @@ function parseZone(line: string): Zone {
       return z;
     }
     case 'vine': {
-      // vine x y -> level x y
-      const [, xs, ys, arrow, level, tx, ty] = parts;
+      // vine x y -> level x y [exit=up|fall|none]
+      const [, xs, ys, arrow, level, tx, ty, ...rest] = parts;
       if (arrow !== '->' || !level || tx === undefined || ty === undefined)
-        throw new Error('expected "vine x y -> level x y"');
-      return { kind: 'vine', x: Number(xs), y: Number(ys), target: { level, x: Number(tx), y: Number(ty) } };
+        throw new Error('expected "vine x y -> level x y [exit=up|fall|none]"');
+      const exit = parseProps(rest).exit;
+      const target: Extract<Zone, { kind: 'vine' }>['target'] = { level, x: Number(tx), y: Number(ty) };
+      if (exit === 'up' || exit === 'fall' || exit === 'none') target.exitDir = exit;
+      return { kind: 'vine', x: Number(xs), y: Number(ys), target };
     }
     case 'teleport': {
       // teleport x y -> level x y [exit=beam|fall] [block=bx,by]
@@ -872,7 +875,9 @@ function serializeZone(z: Zone): string {
     case 'exit':
       return `exit ${z.x} next=${z.next}`;
     case 'vine':
-      return `vine ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}`;
+      return `vine ${z.x} ${z.y} -> ${z.target.level} ${z.target.x} ${z.target.y}${
+        z.target.exitDir ? ` exit=${z.target.exitDir}` : ''
+      }`;
     case 'pit':
       return `pit ${z.x} -> ${z.target.level} ${z.target.x} ${z.target.y}${z.w === undefined ? '' : ` w=${z.w}`}${
         z.campaign ? ' campaign' : ''

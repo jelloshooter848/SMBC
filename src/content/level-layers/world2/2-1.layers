@@ -103,6 +103,7 @@
 - koopa-green 32 12
 - goomba 59 12
 - koopa-green 66 12
++ block-item 79 9 item=atom
 + block-item 170 9 item=clock
 
 [layer hard]
@@ -112,7 +113,7 @@
 183 4 {}
 190 4 {}
 53 5 M
-69 5 =
+69 5 E
 125 5 E
 128 5 P
 182 5 2{}
@@ -220,13 +221,26 @@
 + piranha 122 9 red=1
 + piranha 130 8 red=1
 + piranha 176 10 red=1
++ barrel 21 9 dx=8
++ barrel 24 7
++ icicle 29 6
 + goomba 43 11 dx=8
 + koopa-para-green-h 55 7
++ block-item 69 5 item=atom
 + koopa-para-green 70 4
++ icicle 82 6
++ crab 82 12
++ crab 83 12 dx=8
++ icicle 84 6
++ crab 85 12
 + blooper 93 14 dx=8 dy=-8
 + koopa-para-green 125 4
 + koopa-para-green-h 146 8 dy=-8
 + piranha 153 7 red=1
++ block-item 161 9 item=clock
++ icicle 165 6
++ icicle 167 6
++ fly 168 4
 + koopa-para-green 175 9 dx=8
 + block-item 182 5 item=bee
 + piranha-down 183 10 red=1

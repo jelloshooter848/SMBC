@@ -313,9 +313,13 @@
 + firebar 23 9
 + piranha-down 35 6 red=1
 + piranha-down 46 6 red=1
++ icicle 53 3 dx=8
 + podoboo 53 12
++ icicle 56 3
 + podoboo 57 12
++ icicle 59 3
 + podoboo 60 12
++ icicle 63 3
 + firebar 68 4
 + podoboo 71 12
 + podoboo 81 12

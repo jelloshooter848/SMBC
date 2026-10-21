@@ -182,11 +182,15 @@
 + goomba 36 10 dx=8
 + goomba 43 9 dx=8
 + podoboo 67 12
++ icicle 76 6
++ icicle 80 6 dx=8
 + piranha 80 13 red=1
++ icicle 84 6 dx=8
 + piranha 84 13 red=1
 + koopa-para-green 92 12 dy=-8
 + koopa-para-green 93 11 dx=8 dy=-8
 + koopa-para-green-h 99 9 dx=8 dy=-8
++ barrel 112 4 dx=8
 + piranha-down 112 10 red=1
 + piranha 112 13 red=1
 + block-item 117 3 item=bee

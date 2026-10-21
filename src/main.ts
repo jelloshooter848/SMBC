@@ -12,7 +12,7 @@ import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
 import { loadSettings, saveSettings, type Settings } from '@engine/save/settings';
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
-import { getLevel as getBuiltinLevel, levelIds } from '@content/levels';
+import { getLevel as getBuiltinLevel, levelIds, specialLevelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
 import { decodeShare } from '@engine/share';
 import { linkCode } from '@game/save/save-code';
@@ -114,6 +114,7 @@ function boot(): void {
     getLevel,
     listLevels: () => [
       ...levelIds(),
+      ...specialLevelIds(),
       ...Object.keys(loadLibrary().levels)
         .sort()
         .map((n) => customLevelId(n)),
@@ -296,7 +297,7 @@ function boot(): void {
   });
   const level = params.get('level');
   // Outside dev mode a link opens no campaign content (0.5.0, dev-url.ts urlLevelStart): custom
-  // levels as before, SMB and Lost Levels levels as a Classic run, anything else the title.
+  // levels as before, SMB, Special and Lost Levels levels as a Classic run, anything else the title.
   const start = urlLevelStart(params, settings.dev);
   if (level && start) {
     // `&rules=classic|current` (dev mode only, dev-url.ts): the run's rules; `char` reads the
@@ -310,7 +311,8 @@ function boot(): void {
     const c1 = roster.find((c) => c.id === params.get('char')) ?? (roster[0] as (typeof roster)[0]);
     const c2 = roster.find((c) => c.id === params.get('char2')) ?? null;
     // Classic mode is one player: `char2` is for free play only.
-    if (classic) game.devClassicGame(c1, level, rules);
+    // A link on a release build (dev mode off) counts toward goals and BEATEN; a dev run never.
+    if (classic) game.devClassicGame(c1, level, rules, settings.dev);
     else game.newGame(c1, level, c2, { rules });
     // The full kit of the def played under the run's rules (TG-8).
     const hero = heroFor(c1, game.liveRules);

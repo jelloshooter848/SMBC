@@ -8,6 +8,34 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Classic mode: the original's third map set, **Super Mario Bros. Special** (SMB Special on the
+  CLASSIC menu, between the other two): 32 levels, built for each hero and each Map Difficulty like
+  the others, ending with the credits and the title as Super Mario Bros. does.
+- Classic mode: Special's **new enemies**, with our own art: Icicles that drop when you come near
+  or bump their brick, Crabs that get angry and faster when hit, hopping Flies, rolling armoured
+  Barrels and living Flames that only a Star or the Hammer can put out. None of them can be
+  stomped. Special has a few of them on Easy and Normal and many more on Hard; Super Mario Bros.
+  and The Lost Levels have them on Hard only.
+- Classic mode: the full power-up in Special shows the original's **Exploding Rabbit logo**, as a
+  tribute (Classic rules only; credited in the credits, and replaced on request).
+- Classic mode: Special's **new items**, in blocks: the **Atom** defeats every enemy on screen, the
+  **Hammer** swings over and in front of you for ten seconds and defeats any enemy it touches, and
+  the **Wing** lets you swim through the air for ten seconds. Each is worth 1000 points and says
+  what it does when you take it.
+
+### Changed
+
+- Classic mode: the **All Hammer Bros** cheat is unlocked by beating Super Mario Bros. Special, as
+  in the original, no longer by beating The Lost Levels. Anyone who already unlocked it keeps it.
+- Classic mode: a shared level link (to a Super Mario Bros., Special or Lost Levels level) now
+  counts toward the cheats' goals and a map set's BEATEN mark, as a Level Select start does.
+- Classic mode: Super Mario Bros. and The Lost Levels on Easy and Hard now also have the Clocks
+  in bricks and hidden blocks and the Atoms that the original puts there.
+- The credits are read out to screen readers, the whole roll at once as it starts (the Classic
+  and the campaign credits alike).
+
 ## [0.4.66] - 2026-10-20
 
 0.4.65 was tagged but never released; its changes ship here, listed together.

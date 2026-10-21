@@ -156,8 +156,11 @@ export interface ClassicCheatsSettings {
   on: Record<ClassicCheatId, boolean>;
   unlocked: Record<ClassicCheatId, boolean>;
   stats: Record<ClassicCheatStat, number>;
-  /** The games beaten in Classic mode (StatManager.beatGame): SMB, The Lost Levels. */
-  beaten: { smb: boolean; lost: boolean };
+  /**
+   * The games beaten in Classic mode (StatManager.beatGame): SMB, Super Mario Bros. Special
+   * (G-020; a save from before it had none, so it starts false) and The Lost Levels.
+   */
+  beaten: { smb: boolean; special: boolean; lost: boolean };
   /**
    * Continues used in Classic mode over the save's whole life (StatManager.numContinuesUsed is a
    * saved stat): Infinite Lives unlocks only while it is 0 when a game is beaten.
@@ -186,7 +189,7 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
     on: flags(() => false),
     unlocked: flags((id) => OPEN_CHEATS.includes(id)),
     stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
-    beaten: { smb: false, lost: false },
+    beaten: { smb: false, special: false, lost: false },
     continuesUsed: 0,
     levelSelect: false,
   };

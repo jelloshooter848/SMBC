@@ -5,9 +5,12 @@
 //
 //   node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4
 //   node tools/levelgen/convert-smbc.mjs --prefix=ll- tools/levelgen/source/levelDataLostLevels.xml src/content/levels/lost/world1 1-1 1-2 1-3 1-4
+//   node tools/levelgen/convert-smbc.mjs --prefix=sp- tools/levelgen/source/levelDataSpecial.xml src/content/levels/special/world1 1-1 1-2 1-3 1-4
 //
 // `--prefix` namespaces every generated id (areas, parents, pipe/vine/pit/warp targets, exits) so
-// another game's levels (The Lost Levels: `ll-1-1` ...) can live next to SMB1's.
+// another game's levels (The Lost Levels: `ll-1-1` ..., Super Mario Bros. Special: `sp-1-1` ...)
+// can live next to SMB1's. The prefix also names the map set: `ll-` builds with The Lost Levels'
+// rules and themes, `sp-` with Special's (G-020).
 //
 // The XML is a <LEVELDATA> of <LEVEL ID TIME MAIN_AREA> holding <AREA ID TYPE><MAP> cells:
 // a flat comma list of 15 rows × W columns. A cell is `0` or tokens joined by `()`, each
@@ -47,8 +50,13 @@ if (LAYERS) {
     if (!said.has(s)) warn((said.add(s), s));
   };
 }
-/** Lost Levels (prefixed) runs: 8-4 ends the game, World 9 and each of A-D (10-13) stand alone. */
-const LOST = PREFIX !== '';
+/** Lost Levels (`ll-`) runs: 8-4 ends the game, World 9 and each of A-D (10-13) stand alone. */
+const LOST = PREFIX === 'll-';
+/**
+ * Super Mario Bros. Special (`sp-`, G-020; levelDataSpecial.xml, MapPack.Special): eight worlds,
+ * 8-4 ends the game as in SMB1, with its own theme table (SPECIAL_THEMES).
+ */
+const SPECIAL = PREFIX === 'sp-';
 const pid = (id) => (id === 'end' ? id : `${PREFIX}${id}`);
 
 /* ---------- parsing ---------- */
@@ -254,6 +262,28 @@ const GENERAL_THEMES = {
   8: { water: 'castle-water' },
 };
 const GENERAL_AREA_THEMES = { '7-2c': 'overworld' };
+/**
+ * Super Mario Bros. Special's own entries in the theme table (GameSuperMarioBros.as, themeMapPack =
+ * MapPack.Special), before the general table above (G-020). World 8's platform levels are the
+ * orange giant mushrooms. Single areas: 2-2c the underground (TG_UNDERGROUND_SCENERY), 3-1b and
+ * 6-2e water at night (TG_WATER_NIGHT: our water), 3-2b and 8-3c the orange mushrooms, 4-1b and
+ * 4-3b coin heavens (TG_COIN_HEAVEN, _BLUE: the overworld sky), 6-2c a water area underground
+ * (TG_UNDERGROUND_WATER: our water), 8-2b plain water (not World 8's castle water) and 8-2c the
+ * overworld before a castle wall (TG_OVERWORLD_CASTLE_WALL: our overworld).
+ */
+const SPECIAL_THEMES = { 8: { platform: 'mushroom' } };
+const SPECIAL_AREA_THEMES = {
+  '2-2c': 'underground',
+  '3-1b': 'water',
+  '6-2e': 'water',
+  '3-2b': 'mushroom',
+  '8-3c': 'mushroom',
+  '4-1b': 'overworld',
+  '4-3b': 'overworld',
+  '6-2c': 'water',
+  '8-2b': 'water',
+  '8-2c': 'overworld',
+};
 /** Music for the themes that are not named after a song (by the area type they skin). */
 const THEME_MUSIC = {
   night: 'overworld',
@@ -269,7 +299,7 @@ const THEME_MUSIC = {
 };
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6). A Clock in a `?` block is
-// `Q` (see tileChar); in a brick or hidden block (none on normal difficulty) it stays a coin.
+// `Q` (see tileChar); in a brick or hidden block it is a `block-item` (blockItemOf, below).
 const ITEM_BRICK = {
   Coin: 'E',
   MultiCoin: 'C',
@@ -283,11 +313,26 @@ const ITEM_BRICK = {
 const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: 'Q' };
 const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2' };
 /**
- * Items no tile holds: the block is a coin brick or hidden coin block (`E` / `2`) and a
- * `block-item` spawn puts the item in it (World.blockItems). The Hudson Bee (G-023; Hard only,
- * pickups/HudsonBee.as) in any block.
+ * Items no tile holds: the block is a coin brick, `?` block or hidden coin block (`E` / `?` /
+ * `2`) and a `block-item` spawn puts the item in it (World.blockItems). The Hudson Bee (G-023;
+ * Hard only, pickups/HudsonBee.as) in any block; Super Mario Bros. Special's Atom, Hammer and Wing
+ * (G-022; ground/Brick.as 420-434), and its one Exploding Rabbit power-up (`rabbit`;
+ * Character.fullyPowerup: the hero's top power at once).
  */
-const BLOCK_ITEMS = { HudsonBee: 'bee' };
+const BLOCK_ITEMS = {
+  HudsonBee: 'bee',
+  Atom: 'atom',
+  Hammer: 'hammer',
+  Wing: 'wing',
+  ExplodingRabbit: 'rabbit',
+};
+/**
+ * A Clock in a brick or hidden block (Special's Easy and Hard layers, a few Lost Levels ones):
+ * a `block-item` too (a `?` Clock is `Q`, see tileChar).
+ */
+const blockItemOf = (name, params) =>
+  BLOCK_ITEMS[params.ContainedItem] ??
+  (params.ContainedItem === 'Clock' && name !== 'itemBlock' ? 'clock' : undefined);
 const MARKERS = {
   enemyGoomba: 'g',
   enemyKoopaGreen: 'k',
@@ -322,6 +367,14 @@ const ENTITIES = {
   enemyWingedKoopaGreen: 'koopa-para-green',
   enemyWingedKoopaHorizontalGreen: 'koopa-para-green-h',
   bowserAxe: 'axe',
+  // Super Mario Bros. Special's enemies (G-021). Their HideOnDifficulties: in Special a few on
+  // Easy and Normal and most on Hard only (e.g. 37 Icicles on Normal, 155 on Hard); in SMB1 and
+  // The Lost Levels on Hard only.
+  enemyIcicle: 'icicle',
+  enemyCrab: 'crab',
+  enemyFly: 'fly',
+  enemyBarrel: 'barrel',
+  enemyFireEnemy: 'fire-enemy',
   // FireBar.as: a label with "Left" turns counter-clockwise (clockwise = false), "Right" clockwise.
   fireBarLeft: 'firebar-ccw',
   fireBarRight: 'firebar',
@@ -357,6 +410,11 @@ const SHIFTABLE = new Set([
   'hammer-bro',
   'hammer-bro-chase',
   'buzzy',
+  'icicle',
+  'crab',
+  'fly',
+  'barrel',
+  'fire-enemy',
   'spike-top',
   'spiny',
 ]);
@@ -394,16 +452,18 @@ const IGNORED = new Set([
   'sceneryText_B',
   'sceneryText_C',
   'sceneryText_D',
+  // Special 4-2's sign.
+  'sceneryText_?',
 ]);
 
 function themeFor(levelId, type, areaId) {
   // The Lost Levels' table also skins castle and water areas (9-3a, World 9's flooded overworld).
-  if (LOST) {
+  if (LOST || SPECIAL) {
     const world = Number(levelId.split('-')[0]);
     const key = `${levelId}${areaId}`;
     const skin =
-      LOST_AREA_THEMES[key] ??
-      LOST_THEMES[world]?.[type] ??
+      (LOST ? LOST_AREA_THEMES : SPECIAL_AREA_THEMES)[key] ??
+      (LOST ? LOST_THEMES : SPECIAL_THEMES)[world]?.[type] ??
       GENERAL_AREA_THEMES[key] ??
       GENERAL_THEMES[world]?.[type];
     if (skin) return skin;
@@ -411,7 +471,7 @@ function themeFor(levelId, type, areaId) {
   if (type === 'castle') return 'castle';
   if (type === 'underGround' || type === 'pipeBonus') return 'underground';
   if (type === 'water') return 'water';
-  if (LOST) return 'overworld';
+  if (LOST || SPECIAL) return 'overworld';
   if (!LOST && SNOW.has(levelId)) return 'snow';
   if (!LOST && NIGHT.has(levelId)) return 'night';
   return 'overworld';
@@ -449,8 +509,10 @@ function tileChar(tok, area, world) {
   // themes only recolour, so their ground becomes the cloud-block tile `O` (solid, like `#`).
   const clouds = area.type === 'coinHeaven';
   // Platform and bridge levels are treetops, except World 4's giant mushrooms.
-  // (The Lost Levels draw every platform level as treetops.)
-  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && (LOST || world !== 4);
+  // (The Lost Levels draw every platform level as treetops; Special's are giant mushrooms where its
+  // theme is one, convertArea's area.theme.)
+  const mushrooms = SPECIAL ? String(area.theme).startsWith('mushroom') : !LOST && world === 4;
+  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && !mushrooms;
   switch (name) {
     case 'groundNormal':
     case 'groundWideNormal':
@@ -553,7 +615,16 @@ function convertArea(level, area, id, levels, profile) {
   const [world, stage] = levelId.split('-').map(Number);
   const isMain = area.id === level.attrs.MAIN_AREA;
   const theme = themeFor(levelId, area.type, area.id);
-  const music = THEME_MUSIC[theme] ?? theme;
+  area.theme = theme;
+  // Special's single-area skins keep the music of their area type (the playlist goes by type:
+  // GameSuperMarioBros.createPlayList), e.g. 2-2c's underground look over the overworld tune.
+  const typeMusic =
+    SPECIAL && SPECIAL_AREA_THEMES[`${levelId}${area.id}`]
+      ? ({ underGround: 'underground', pipeBonus: 'underground', water: 'water', castle: 'castle' }[
+          area.type
+        ] ?? 'overworld')
+      : null;
+  const music = typeMusic ?? THEME_MUSIC[theme] ?? theme;
   const header = {
     id,
     name: `WORLD ${levelId}`,
@@ -609,12 +680,12 @@ function convertArea(level, area, id, levels, profile) {
           const solo = ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?');
           b.set(x, y, solo ? '?' : ch);
           if (solo) b.entity('block-item', x, y, { item: 'clock' });
-          const item = BLOCK_ITEMS[params.ContainedItem];
+          const item = blockItemOf(name, params);
           if (item && (name === 'brick' || name === 'itemBlockInvisible' || name === 'itemBlock')) {
             b.set(x, y, name === 'brick' ? 'E' : name === 'itemBlock' ? '?' : '2');
             b.entity('block-item', x, y, { item });
           }
-          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
+          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest, number: params.number });
           continue;
         }
         if (MARKERS[name]) {
@@ -726,6 +797,8 @@ function convertArea(level, area, id, levels, profile) {
             break;
           // Scenery anchors in the original sit on the centre column; ours use the bottom-left tile.
           case 'hillMedium':
+          case 'hillBig':
+            // hillBig: Special's taller hill (no art of its own: the big hill).
             b.dec('hill-big', x - 2, y);
             break;
           case 'hillSmall':
@@ -735,6 +808,10 @@ function convertArea(level, area, id, levels, profile) {
           case 'cloudDouble':
           case 'cloudTriple':
             b.dec(`cloud-${{ cloudSingle: 1, cloudDouble: 2, cloudTriple: 3 }[name]}`, x - 1, y - 1);
+            break;
+          // Special's small cloud (no art of its own: the single cloud).
+          case 'cloudSmall':
+            b.dec('cloud-1', x - 1, y - 1);
             break;
           case 'treeSmallTop':
             b.dec('tree-small', x, y + 1); // ours anchor on the trunk tile
@@ -751,7 +828,11 @@ function convertArea(level, area, id, levels, profile) {
             break;
           }
           case 'playerStart':
-            start = { x, y };
+            // Level.as puts the hero's middle on the cell's middle, plus half a tile with
+            // shiftRight: in Special's bonus rooms that is the line between this column and the
+            // next, and on Hard those rooms' floors have holes in every other column (this one).
+            // Our arrivals centre the hero in a column, so a shifted start there is the next one.
+            start = { x: SPECIAL && area.type === 'pipeBonus' && params.shiftRight ? x + 1 : x, y };
             break;
           case 'halfwayPoint':
             // LOCKED_CP levels (castles, SMB1 World 8, Lost Levels 7-4 to 8-4) have no halfway
@@ -887,7 +968,10 @@ function convertArea(level, area, id, levels, profile) {
 
   // How the player arrives decides the start mode.
   const pipeExit = [...vertEnds.values()][0];
-  if (area.type === 'pipeBonus') {
+  // Special's bonus rooms are closed above (no ceiling gap to drop through, unlike SMB1's and The
+  // Lost Levels'): the hero starts at the room's playerStart (Level.as), and a pipe in comes out
+  // of its matching pipe end (linkAreas).
+  if (area.type === 'pipeBonus' && !SPECIAL) {
     header.start = `${start?.x ?? 1},0`;
     header.startMode = 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
@@ -953,8 +1037,23 @@ function convertLevel(levelId, allLevels, profile = BASE) {
   for (const c of converted) {
     for (const v of c.vines) {
       const t = byAreaId.get(v.dest);
-      if (!t?.vineStart) {
-        console.warn(`${c.id}: vine at ${v.x},${v.y} to area ${v.dest} without a vineStart`);
+      if (!t) {
+        console.warn(`${c.id}: vine at ${v.x},${v.y} to unknown area ${v.dest}`);
+        continue;
+      }
+      // A vine with a `number` (Special 4-1 and 4-3: Vine.as globPipeExInt) arrives like a pipe:
+      // the hero rises out of the target's pipe end with that number (Character.checkVinePosition
+      // -> levelTransfer(dest, vineExInt)), whichever the profile builds (charVert pieces).
+      if (v.number !== undefined && t.vertEnds.has(String(v.number))) {
+        const e = t.vertEnds.get(String(v.number));
+        c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
+        continue;
+      }
+      if (!t.vineStart) {
+        // No vine to climb there and no pipe end: the hero starts as the area starts.
+        const [sx, sy] = t.builder.header.start.split(',');
+        const exit = { 'pipe-exit': 'up', fall: 'fall' }[t.builder.header.startMode] ?? 'none';
+        c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${sx} ${sy} exit=${exit}`);
         continue;
       }
       c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${t.vineStart.x} ${t.vineStart.y}`);
@@ -982,14 +1081,23 @@ function convertLevel(levelId, allLevels, profile = BASE) {
         console.warn(`${c.id}: pipe at ${p.x},${p.y} to unknown area ${dest}`);
         continue;
       }
-      if (t.area.type === 'pipeBonus') {
+      if (t.area.type === 'pipeBonus' && !SPECIAL) {
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 1} 0 exit=none`);
       } else if (p.number !== undefined && t.vertEnds.has(String(p.number))) {
         const e = t.vertEnds.get(String(p.number));
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
       } else {
+        // Into a Special bonus room with no matching pipe end: at its playerStart, standing there
+        // (ground under it) or dropping in down its column (SMB1-style rooms' gap in the ceiling).
+        const ground =
+          t.start &&
+          tokensAt(t.area, t.start.x, t.start.y + 1).some((k) => {
+            const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
+            return ch && ch !== '$' && ch !== 'w';
+          });
+        const exit = SPECIAL && t.area.type === 'pipeBonus' && !ground ? 'fall' : 'none';
         c.builder.zone(
-          `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=none`,
+          `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=${exit}`,
         );
       }
     }

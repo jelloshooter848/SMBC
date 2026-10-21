@@ -83,6 +83,7 @@
 190 14 ##
 - lakitu 19 0
 + lakitu 36 0 end=95
++ block-item 90 5 item=atom
 + block-item 128 9 item=clock
 
 [layer hard]
@@ -165,14 +166,20 @@
 + piranha 21 10 red=1
 + piranha 132 9 red=1
 + lakitu 6 0 end=220
++ icicle 25 6
 + koopa-red 52 8 dx=8
 + koopa-para-green-h 58 11
++ crab 75 12
++ crab 77 12
 + koopa-red 85 10 dx=8
++ fly 103 8
 + koopa-para-green 114 11
 + piranha 124 13
 + koopa-para-green 127 12
 + block-item 150 5 item=clock
 + koopa-red 172 12 dx=8
++ fly 181 10 dx=8
++ fly 184 10 dx=8
 + koopa-red 93 8
 + koopa-red 152 8
 + koopa-red 43 9

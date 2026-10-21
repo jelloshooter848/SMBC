@@ -96,6 +96,7 @@
 + piranha 172 13
 + piranha 174 13
 + piranha 179 11
++ block-item 20 7 item=clock
 + lakitu 77 0 end=111
 + goomba 193 7
 + goomba 195 7
@@ -194,8 +195,11 @@
 - koopa-red 140 12
 - hammer-bro 151 12
 + lakitu 62 0 end=87
++ block-item 29 10 item=hammer
 + koopa-red 60 12 dx=8
 + block-item 75 2 item=bee
++ crab 81 10
++ crab 82 10 dx=8
 + piranha 84 13 red=1
 + koopa-green 94 11 dx=8
 + koopa-red 96 7 dx=8

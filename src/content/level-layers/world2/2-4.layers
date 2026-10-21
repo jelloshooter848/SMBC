@@ -114,9 +114,11 @@
 - lift-up 86 12
 - lift-down 89 6
 - lift-down 89 12
++ icicle 12 5
 + firebar 23 7 len=12
 + piranha 32 11
 + koopa-para-green 34 1
++ icicle 35 6
 + firebar-ccw 37 9
 + firebar-ccw 43 5
 + firebar-ccw 43 13
@@ -127,10 +129,12 @@
 + koopa-para-green 81 9
 + lift-fall 86 8 len=3 dx=-4
 + lift-fall 89 8 len=3 dx=-4
++ icicle 95 5 dx=8
 + firebar 103 11
 + podoboo 109 12
 + piranha 111 12
 + podoboo 113 12
++ icicle 117 5
 + firebar 121 5
 -zone bowser-fire 87
 +zone checkpoint 100 12

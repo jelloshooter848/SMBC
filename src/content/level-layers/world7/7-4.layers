@@ -284,15 +284,21 @@
 + block-item 281 6 item=bee
 + block-item 286 7 item=clock
 + podoboo 289 12
++ icicle 290 3 dx=8
 + podoboo 294 12
++ icicle 297 3 dx=8
 + podoboo 299 12
++ icicle 302 3 dx=8
 + podoboo 304 12
 + piranha 306 11
 + podoboo 308 12
++ icicle 309 3 dx=8
 + piranha 310 9
 + podoboo 312 12
++ icicle 313 3 dx=8
 + piranha 314 12
 + podoboo 316 12
++ icicle 317 3 dx=8
 -zone bowser-fire 296
 +zone checkpoint 154 12
 +zone bowser-fire 286

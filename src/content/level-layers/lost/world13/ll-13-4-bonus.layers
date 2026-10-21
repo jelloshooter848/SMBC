@@ -62,6 +62,7 @@
 23 14 ..{}.
 + piranha 8 13 red=1
 + piranha 25 13 red=1
++ block-item 29 5 item=clock
 + hammer-bro 19 9
 -zone pipe 29 12 right -> ll-13-4-end 3 10 exit=up
 +zone pipe 29 9 right -> ll-13-4-end 3 10 exit=up

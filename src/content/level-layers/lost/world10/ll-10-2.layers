@@ -265,6 +265,7 @@
 + piranha-down 47 8 red=1
 + piranha 47 13 red=1
 + piranha 49 11 red=1
++ block-item 58 5 item=clock
 + piranha 59 5 red=1
 + piranha-down 74 9 red=1
 + piranha 74 13 red=1
@@ -275,7 +276,9 @@
 + piranha 85 7 red=1
 + koopa-red 92 8 dx=8
 + piranha-down 96 10 red=1
++ barrel 102 1 dx=8
 + piranha 102 11 red=1
++ barrel 104 1
 + piranha 106 9 red=1
 + piranha 110 7 red=1
 + lift-fall 113 7 len=4 dy=-8
@@ -285,12 +288,16 @@
 + piranha 127 13 red=1
 + piranha-down 142 6 red=1
 + piranha 142 9 red=1
++ fire-enemy 153 1
 + piranha-down 158 7 red=1
 + piranha-down 164 10 red=1
 + piranha-down 173 12 red=1
 + piranha-down 183 10 red=1
++ barrel 189 1 dx=8
 + piranha 189 6 red=1
++ barrel 191 1
 + piranha 198 10 red=1
++ barrel 205 5
 + podoboo 211 12
 + koopa-red 213 1 dx=8
 + koopa-para-green-h 214 7 dx=8

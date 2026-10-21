@@ -414,6 +414,7 @@
 + koopa-red 72 8 dx=8
 + koopa-para-red 75 8 dx=8 dy=-8
 + koopa-para-green-h 81 11 dx=8
++ block-item 82 5 item=clock
 + koopa-para-green-h 82 7 dx=8
 + koopa-para-red 88 9 dx=8 dy=-8
 + firebar-ccw 91 13

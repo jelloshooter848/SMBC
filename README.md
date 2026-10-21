@@ -18,9 +18,12 @@ versions is kept, untouched, for when it opens. The plan is in [docs/ROADMAP.md]
 0.5.0 the Classic remake, 0.6 to 0.9 new heroes (the Expansion heroes option), 1.0 Chapter 1.
 
 **This is an unaffiliated fan project.** It contains no Nintendo, Capcom, Konami or other
-third-party art, music or code. All sprites and tiles are original pixel art stored as text in
-`src/content/sprites`, and all music is original chiptune synthesized at runtime from
-`src/content/music`. Character names are used only to describe gameplay styles.
+third-party art, music or code. The sprites and tiles are original pixel art stored as text in
+`src/content/sprites`, with one named exception, not a precedent (docs/ART_EXCEPTIONS.md):
+Classic mode's full power-up shows the original game's Exploding Rabbit logo. Exploding Rabbit
+logo © Jay Pavlina / Exploding Rabbit, used as a tribute in Classic mode; will be replaced on
+request. All music is original chiptune synthesized at runtime from `src/content/music`.
+Character names are used only to describe gameplay styles.
 
 ## Play
 
@@ -48,7 +51,8 @@ tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 
 ### Classic mode
 
-**CLASSIC** on the title opens the original game's menu: **Super Mario Bros.** and **The Lost
+**CLASSIC** on the title opens the original game's menu: **Super Mario Bros.**, **Super Mario
+Bros. Special** (SMB Special: 32 more levels, with its own enemies and items) and **The Lost
 Levels**, the original's heroes on its select screen (with their alternative looks), its
 **Options** (Classic rules or Current, lives, attack, damage, the weapons, the **Cheats** the
 original unlocks, and **Survival**, where every hero has one life). The heroes play by the
@@ -319,6 +323,10 @@ into `tools/levelgen/source/` (gitignored) and run
 Classic mode also plays the original's versions of each level for the other map difficulties and
 for heroes with level flags; `node tools/levelgen/regen.mjs --layers tools/levelgen/source` writes
 them as `src/content/level-layers/**/*.layers` without touching any map.
+Super Mario Bros. Special comes from `levelDataSpecial.xml` with `--prefix=sp-` into
+`src/content/special-levels/worldN/` (apart from the campaign's maps; layers in
+`src/content/level-layers/special/`): `node tools/levelgen/regen.mjs --only=special
+tools/levelgen/source`.
 The Lost Levels come from `levelDataLostLevels.xml` with `--prefix=ll-` into
 `src/content/levels/lost/worldN/` (worlds A–D are 10–13). They bring their own looks: orange
 and red giant-mushroom land (`mushroom`, `mushroom-red`), sky levels on cloud ledges (`clouds`,

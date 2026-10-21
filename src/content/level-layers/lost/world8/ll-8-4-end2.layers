@@ -96,6 +96,7 @@
 + koopa-green 34 10 dx=8
 + koopa-green 98 10 dx=8
 + podoboo 194 12
++ block-item 203 5 item=clock
 + koopa-red 43 11
 + koopa-red 107 11
 -zone pipe 35 11 down -> ll-8-4 47 10 exit=up
@@ -215,6 +216,8 @@
 + podoboo 157 12
 + podoboo 164 12
 + podoboo 170 12
++ icicle 174 3 dx=8
++ icicle 178 3 dx=8
 + podoboo 194 12
 + koopa-green 144 7
 + koopa-green 170 7

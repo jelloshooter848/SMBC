@@ -55,6 +55,7 @@
 + piranha 3 11
 + piranha 16 11
 + piranha 53 13
++ block-item 9 9 item=clock
 + koopa-green 18 12 dx=8
 + koopa-green 20 12 dx=8
 + koopa-green 22 12 dx=8
@@ -155,6 +156,7 @@
 + koopa-red 40 12 dx=8
 + piranha 45 9 red=1
 + block-item 50 9 item=clock
++ fire-enemy 51 11
 + piranha 57 8 red=1
 + piranha 65 10 red=1
 + koopa-red 73 12 dx=8

@@ -30,8 +30,11 @@
 0 12 .
 1 13 BBBBBBBBBBBB
 1 14 ~~~~~~~~~~~~
++ icicle 4 6
 + podoboo 4 14
++ icicle 7 6 dx=8
 + podoboo 7 14
++ icicle 10 6 dx=8
 + podoboo 10 14
 -zone pipe 13 12 right -> 8-1 115 10 exit=up
 +zone pipe 13 12 right -> 8-1 94 8 exit=up

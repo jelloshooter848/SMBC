@@ -186,6 +186,8 @@
 + piranha 53 9 red=1
 + piranha 126 9 red=1
 + piranha 168 10 red=1
++ fly 17 10
++ fly 18 10 dx=8 dy=-8
 + koopa-para-red 32 8 dx=8
 + koopa-para-red 35 8 dx=8
 + koopa-para-green-h 40 10 dy=-8
@@ -201,6 +203,9 @@
 + piranha 109 9 red=1
 + hammer-bro-chase 118 8 dx=8
 + hammer-bro-chase 120 12 dx=8
++ block-item 121 9 item=clock
++ fly 135 12 dx=8
++ fly 138 12
 + hammer-bro-chase 145 12 dx=8
 + piranha 150 10 red=1
 + hammer-bro-chase 158 12 dx=8

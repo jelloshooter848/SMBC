@@ -120,6 +120,7 @@
 59 14 {}
 + piranha-down 19 9 red=1
 + piranha-down 22 9 red=1
++ icicle 38 5 dx=8
 + piranha-down 49 6 red=1
 + podoboo 54 12
 + podoboo 63 12

@@ -147,6 +147,7 @@
 - buzzy 146 12
 + bowser 231 9
 + firebar 20 6
++ block-item 80 10 item=clock
 + block-item 138 9 item=clock
 + firebar-ccw 156 5
 + firebar-ccw 170 5
@@ -354,6 +355,7 @@
 + lift-h 37 13 len=4 range=3 dx=-8
 + podoboo 40 12
 + lift-h 43 13 len=4 range=3 dx=-8
++ block-item 44 5 item=clock
 + podoboo 46 12
 + lift-h 49 12 len=4 range=3 dx=-8
 + podoboo 52 12
@@ -382,6 +384,7 @@
 + koopa-red 126 5 dx=8
 + podoboo 126 12
 + podoboo 130 12
++ block-item 144 12 item=clock
 + piranha-down 145 5 red=1
 + piranha 147 9 red=1
 + lift-v 156 10 len=6 range=6 dx=-16

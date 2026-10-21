@@ -61,7 +61,10 @@
 32 7 O
 61 7 |
 + koopa-para-red 64 6
++ icicle 67 7 dx=8
++ fly 71 12
 + koopa-para-green 79 5
++ fly 79 12
 + goomba 19 12
 + goomba 21 12
 -zone pit 0 -> 3-1 162 0

@@ -280,6 +280,7 @@
 + piranha-down 90 10 red=1
 + hammer-bro 98 12 dx=8
 + piranha 110 9 red=1
++ block-item 116 9 item=clock
 + hammer-bro 122 12 dx=8
 + hammer-bro 131 12 dx=8
 + block-item 140 4 item=bee
