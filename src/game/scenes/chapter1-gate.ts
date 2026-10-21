@@ -7,8 +7,9 @@ import type { Game } from './game';
  * The campaign's gate for 0.5.0 (G-100..G-102): Classic mode is the game; the story campaign
  * ("Chapter 1") comes in 1.0. Outside dev mode the title's Campaign row (O-02) and a resume link
  * (`#save=`) show this card instead of the file select. Nothing is read, written or migrated:
- * every save file (smbc.save.N), smbc.progress and smbc.settings stays as it is, Options > Save
- * files still copies them out, and with dev mode on everything opens as before.
+ * every save file (smbc.save.N), smbc.progress and smbc.settings stays as it is. Options > Save
+ * files, which copies them out, opens with Chapter 1 (dev mode only until then, O-07); with dev
+ * mode on everything opens as before.
  */
 
 /** The box's bottom edge: clear of the title's version line (y 228). */

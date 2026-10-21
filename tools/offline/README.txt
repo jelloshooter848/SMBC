@@ -32,9 +32,9 @@ YOUR SAVES
     2. In the other one: Options > Save files > PASTE CODE, then pick a file to load it into.
 
   Saves stay in the browser you play in. Some browsers (Firefox) keep them per folder: to keep
-  your saves when you update, put the new index.html in the same folder as the old one, or carry
-  them over with a save code. Clearing your browser's site data clears the saves too, so copy a
-  code now and then as a backup.
+  your saves when you update, put the new index.html in the same folder as the old one (save codes
+  for Chapter 1's files come with Options > Save files, which opens with Chapter 1). Clearing your
+  browser's site data clears the saves too.
 
 
 BROWSERS
