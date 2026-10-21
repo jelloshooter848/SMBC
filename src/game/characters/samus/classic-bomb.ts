@@ -92,7 +92,7 @@ export class ClassicBomb extends Entity {
   private detonate(world: World): void {
     const r = px(BOMB_BLAST_PX >> 1);
     world.spawn(new Explosion(this.cx, this.cy, true));
-    world.audio.sfx('bump');
+    world.audio.sfx('samus-bomb'); // G-074 (was the shared `bump`)
     // Bricks and blocks in the blast are struck once (classic-bricks-and-shots BR-C13).
     for (let ty = tileAt(this.cy - r); ty <= tileAt(this.cy + r - 1); ty++)
       for (let tx = tileAt(this.cx - r); tx <= tileAt(this.cx + r - 1); tx++) {

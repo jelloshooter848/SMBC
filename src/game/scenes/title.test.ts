@@ -136,8 +136,7 @@ describe('title text', () => {
     const t = texts(h.game.scenes.top as TitleScene).map((x) => x.str);
     for (const s of [
       'CLASSIC',
-      'CHAPTER 1',
-      'CUSTOM LEVELS',
+      'CAMPAIGN',
       'OPTIONS',
       'MADE BY JELLOSHOOTER848',
       'BASED ON SUPER MARIO BROS.',

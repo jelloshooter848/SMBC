@@ -22,6 +22,34 @@ under `## [Unreleased]`.
   under Classic rules with its level, lives, score and coins.
 - The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
   "Current") wherever it is shown or read out.
+- Custom levels moved from the title menu into the title's Options, next to Level editor; Back returns
+  to Options. Neither row shows in Classic's options or in a game's Options any more.
+- The title's Chapter 1 row is now **Campaign**; its card reads CAMPAIGN / CHAPTER 1 COMING SOON!
+  and no longer says the save files are kept.
+- Options → **Save files** shows only in developer mode until Chapter 1 opens (Classic keeps its
+  Continue); nothing is deleted. The Home Screen app's and the download's first notes no longer
+  point to it while it is hidden.
+- The save-backup reminders are off by default; settings saved by earlier versions turn them off
+  once (they can be turned back on in Options → Save files).
+- Classic options: **All options** is now **Video, audio, controls**.
+- The title's Options → How to play lists Classic's heroes with their Classic pages while the
+  campaign is closed, instead of the campaign's guides.
+- Classic's hero select no longer draws an OK prompt under the hero, as the original; revive mode
+  keeps its lines. Its spoken line names the highlighted hero and says what OK does (looks or play).
+- Classic's hero select moves as the original's: Left and Right wrap within the row, and Up or Down
+  from either row goes to the other row.
+- Classic: BACK on the hero select between levels and after a death, and Pause → **Quit** (was Quit
+  to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
+  Continue holds the run.
+- Classic's pick performances are the original's own: the select and name boxes close and the
+  hero acts on the ground, whole. Mario jumps into a hidden block, Luigi jumps at a brick column,
+  Simon whips two bricks open and walks onto a pork chop, Samus sinks through the ground, Bill is
+  electrocuted (no colour flash with Reduce flashing), Ryu clings to a wall, Jason hops out of
+  Sophia. Bass and Proto Man no longer teleport (Mega Man's teleport plays once).
+- Classic: Bill's shots have their own hit and kill sounds.
+- Classic: the last weapons that borrowed another hero's sound have their own: Mega Man's Hard
+  Knuckle, Pharaoh Shot, Flame Blast, Magma Bazooka, Water Shield, Screw Crusher, Rush and Super
+  Arm, Samus's bomb blast and Ryu's sword.
 - Classic mode: **CLASSIC now opens a title in the original's style** (O-04). A live World 1-1
   demo plays behind our logo with no HUD. Mario sets off after five seconds and jumps by
   himself, and nine more heroes, powered up along the level, wake as the screen reaches them and
@@ -46,6 +74,8 @@ under `## [Unreleased]`.
   Normal after a reload, and its win was recorded on Normal.
 - Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
   link's run plays and counts as before, but never writes or clears the Continue slot.
+- A custom level link (`?level=custom-…`) to a level this browser does not have shows an announced
+  LEVEL NOT FOUND card instead of the blank "WORLD IS NOT BUILT YET" one; that card is read out too.
 
 ## [0.4.67] - 2026-10-21
 

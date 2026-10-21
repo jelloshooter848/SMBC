@@ -394,6 +394,7 @@ function item(scene: unknown, label: string): MenuItem {
 describe('Options > Save files', () => {
   it('lists the files with their summary, and turns backup reminders off and on', () => {
     const h = makeGame();
+    h.settings.dev = true; // O-07: the Save files row shows while the campaign is open (dev mode)
     worldFive(2);
     h.game.showTitle();
     const opts = new OptionsScene(h.game, () => h.game.scenes.pop());
