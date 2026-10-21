@@ -14,9 +14,9 @@ under `## [Unreleased]`.
   Mario Bros. now puts you inside the room, under its entry pipe, as the original does. Before, six
   Lost Levels rooms (3-1, 5-3, 7-1, 8-2, 12-1 and 13-2) dropped you onto their roof, and four of
   them trapped you there until the time ran out.
-- Classic mode: CLASSIC > Continue now goes on with the run's own Map Difficulty and Game mode, as
-  the original's save does. Before, a Hard or Easy run went on as Normal after a reload, and its
-  win was recorded on Normal.
+- Classic mode: CLASSIC > Continue now goes on with the run's own Map Difficulty and Game mode, and
+  the menus show them, as loading the original's save does. Before, a Hard or Easy run went on as
+  Normal after a reload, and its win was recorded on Normal.
 - Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
   link's run plays and counts as before, but never writes or clears the Continue slot.
 
