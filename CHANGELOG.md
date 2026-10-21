@@ -30,6 +30,11 @@ under `## [Unreleased]`.
   to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
   Continue holds the run.
 
+### Fixed
+
+- A custom level link (`?level=custom-…`) to a level this browser does not have shows an announced
+  LEVEL NOT FOUND card instead of the blank "WORLD IS NOT BUILT YET" one; that card is read out too.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added

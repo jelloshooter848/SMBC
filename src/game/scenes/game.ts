@@ -57,7 +57,8 @@ import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
-import { loadLibrary, customLevelId } from '../level/library';
+import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
+import { pageSaid } from '../story/cards';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
 import { FINALE } from '../story/finale';
@@ -179,6 +180,16 @@ export interface GameDeps {
 export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 
 /** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
+/** RC-005: the card a `?level=custom-` link shows when this browser has no such custom level. */
+export const CUSTOM_LEVEL_MISSING: readonly string[] = [
+  'LEVEL NOT FOUND',
+  '',
+  'THIS CUSTOM LEVEL IS NOT',
+  'SAVED IN THIS BROWSER.',
+  '',
+  'ASK FOR ITS SHARE LINK.',
+];
+
 export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
 
 /**
@@ -2370,22 +2381,24 @@ export class Game {
       level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
     } catch {
       this.deps.ctx.audio.stopMusic();
-      this.deps.ctx.audio.playJingle('world-clear');
-      this.scenes.clear();
-      this.scenes.push(
-        new MessageScene(
-          this,
-          [
+      // RC-005: a custom level this browser does not have (someone else's `?level=custom-` link:
+      // the library is per browser) says so, instead of the unbuilt-world card.
+      const custom = levelId.startsWith(CUSTOM_PREFIX);
+      const lines = custom
+        ? [...CUSTOM_LEVEL_MISSING]
+        : [
             'THANK YOU FOR PLAYING!',
             '',
-            `WORLD ${levelId.split('-')[0]} IS NOT`,
+            `WORLD ${(levelId.split('-')[0] ?? '').toUpperCase()} IS NOT`,
             'BUILT YET.',
             '',
             'MORE WORLDS COMING SOON',
-          ],
-          () => this.showTitle(),
-        ),
-      );
+          ];
+      if (custom) this.deps.ctx.audio.sfx('bump');
+      else this.deps.ctx.audio.playJingle('world-clear');
+      this.scenes.clear();
+      this.deps.announcer?.say(pageSaid(lines, true));
+      this.scenes.push(new MessageScene(this, lines, () => this.showTitle()));
       return;
     }
     // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open

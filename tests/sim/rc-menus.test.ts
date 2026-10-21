@@ -17,13 +17,15 @@ import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import type { TitleScene } from '@game/scenes/title';
+import { TitleScene } from '@game/scenes/title';
 import { MenuScene, type MenuItem } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
+import { CUSTOM_LEVEL_MISSING } from '@game/scenes/game';
+import { MessageScene } from '@game/scenes/message';
 import { QUIT_RUN_KEPT, QUIT_RUN_TITLE, QuitRunScene } from '@game/scenes/quit-run';
 import { ClassicMenuScene } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
@@ -472,5 +474,32 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
       h.tap('attack');
       expect(h.top()).not.toBeInstanceOf(QuitRunScene);
     }
+  });
+});
+
+describe('RC-005: a custom level link this browser does not have', () => {
+  it('shows an announced LEVEL NOT FOUND card that waits for OK, then the title', () => {
+    const h = makeGame();
+    h.game.goToLevel('custom-someone-elses', { mode: 'stand' });
+    expect(h.top()).toBeInstanceOf(MessageScene);
+    const text = drawn(h);
+    for (const l of CUSTOM_LEVEL_MISSING.filter(Boolean)) expect(text).toContain(l);
+    expect(text.join(' ')).not.toMatch(/NOT BUILT YET|THANK YOU/);
+    for (const l of CUSTOM_LEVEL_MISSING) expect(l.length).toBeLessThanOrEqual(30);
+    expect(h.said.at(-1)).toBe(
+      'LEVEL NOT FOUND THIS CUSTOM LEVEL IS NOT SAVED IN THIS BROWSER. ASK FOR ITS SHARE LINK. OK to continue.',
+    );
+    h.idle(300);
+    expect(h.top()).toBeInstanceOf(MessageScene);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(TitleScene);
+  });
+
+  it('an unbuilt world is still the thank-you card, now read out and with its world drawn', () => {
+    const h = makeGame();
+    h.game.goToLevel('z-1', { mode: 'stand' });
+    expect(h.top()).toBeInstanceOf(MessageScene);
+    expect(drawn(h)).toContain('WORLD Z IS NOT');
+    expect(h.said.at(-1)).toMatch(/^THANK YOU FOR PLAYING! WORLD Z IS NOT BUILT YET\./);
   });
 });
