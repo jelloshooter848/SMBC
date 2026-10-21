@@ -10,6 +10,9 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic: the CLASSIC title keeps SMB CROSSOVER exactly where the title has it, with CLASSIC in
+  the REMIX stamp's place, and its boxes sit under the logo with closer rows (scrolling past six),
+  so the demo's ground and heroes stay in view (BUG-02).
 - Classic: the hero select's HUD shows the level coming next (between levels, after a death,
   a new game or a Level Select jump), no longer WORLD 1-1 or the level just cleared (BUG-04).
 

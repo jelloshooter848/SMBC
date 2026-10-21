@@ -27,7 +27,7 @@ import { openClassicSet, savedRunSpoken } from './original-saves';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { ClassicTitleScene } from './original-title';
-import { boxGrowth, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
+import { boxCentreUnderLogo, boxGrowth, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
 import { abilityHint } from './hints';
 import { FONT_COLOURS } from '@content/sprites/font';
 
@@ -341,7 +341,7 @@ export class ClassicMenuScene extends MenuScene {
     });
     const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
     // Clear of the status line and the BACK hint under it, whatever its row count (O-04).
-    const at = boxLayout(rows, this.status !== '', 160);
+    const at = boxLayout(rows, this.status !== '', boxCentreUnderLogo(rows));
     drawMenuBox(r, game.ctx.assets, rows, this.index, { cx: 128, cy: at.cy, grow, t: this.t, calm });
     if (grow < 1) return;
     const assets = game.ctx.assets;
