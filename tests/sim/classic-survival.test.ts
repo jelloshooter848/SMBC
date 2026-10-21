@@ -242,6 +242,8 @@ describe('revive mode (CharacterSelectBox.reviveCharacter, 406-455)', () => {
   it('the Random slot revives a random hero it can (720-721: getRandomCharInd)', () => {
     const h = survival();
     start(h);
+    // RC-006: Left wraps within the row, so Down to the Random slot's row first.
+    h.tap('down');
     h.tap('left'); // the Random slot
     expect(sel(h).cursor).toBe(sel(h).chars.length);
     h.tap('jump');
@@ -257,9 +259,12 @@ describe('revive mode (CharacterSelectBox.reviveCharacter, 406-455)', () => {
     expect(sel(h).reviving).toBe(false);
     expect(h.said.at(-1)).toMatch(/^Choose your hero\. Mario\./);
     // Picking: only standing heroes (changeMode: pState != PS_FALLEN).
+    // RC-006: each row wraps on its own: Mario's row has only fallen heroes besides him.
     h.tap('right');
+    expect(sel(h).chars[sel(h).cursor]).toBe(MARIO);
+    h.tap('down');
     expect(sel(h).cursor).toBe(sel(h).chars.length); // the Random slot, past the fallen
-    h.tap('right');
+    h.tap('up');
     expect(sel(h).chars[sel(h).cursor]).toBe(MARIO);
   });
 

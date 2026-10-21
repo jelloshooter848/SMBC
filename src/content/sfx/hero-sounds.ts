@@ -47,6 +47,19 @@ export const heroSfx: Sfx[] = [
   { id: 'mm-1up', pulse: '@2 v11 q8 x0 l32 o6 c e g o7 c x1 o6 g16 o7 c8' },
   // A Metal Blade (G-074): a spinning whine.
   { id: 'mm-blade', pulse: '@2 v9 q8 x0 l64 [o6 e c]2 x1 o6 e32' },
+  // The last weapons that borrowed another hero's sound (G-074): the Hard Knuckle's punch, the
+  // Pharaoh Shot's rising flare, the Flame Blast's and the Magma Bazooka's roars, the Water
+  // Shield's ripple (and its burst), the Screw Crusher's whirl, Rush's call and the Super Arm's
+  // heave.
+  { id: 'mm-knuckle', pulse: '@0 v10 q8 x1 p-5 o4 c32', noise: 'v9 x1 l64 n4' },
+  { id: 'mm-pharaoh', pulse: '@2 v9 q8 x0 l64 o5 g o6 d g x1 o6 d32' },
+  { id: 'mm-flame', pulse: '@0 v9 q8 x1 p-5 o4 g32', noise: 'v9 x1 l64 n5 n7' },
+  { id: 'mm-magma', pulse: '@0 v10 q8 x1 p-7 o3 g16', noise: 'v10 x1 l64 n3 n5 n7' },
+  { id: 'mm-water', pulse: '@1 v9 q8 x0 l64 [o6 c o5 a]2 x1 o6 e32' },
+  { id: 'mm-water-throw', pulse: '@1 v10 q8 x1 p12 o5 a32', noise: 'v7 x1 l64 n2' },
+  { id: 'mm-screw', pulse: '@2 v9 q8 x0 l64 [o5 a o6 e]2 x1 o6 a32' },
+  { id: 'mm-rush', pulse: '@2 v11 q8 x0 l64 o5 c e g o6 c x1 o6 e32' },
+  { id: 'mm-arm', pulse: '@0 v10 q8 x1 p-5 o3 a32', noise: 'v8 x1 l64 n10' },
 
   /* ---------- Samus ---------- */
   // Landing (G-070): a soft metallic thump.
@@ -95,6 +108,9 @@ export const heroSfx: Sfx[] = [
   { id: 'cv-cross', pulse: '@2 v9 q8 x0 l64 o5 e a e a x1 o5 e32' },
   { id: 'cv-holy-water', pulse: '@1 v9 q8 x1 p-5 o5 c32', noise: 'v12 x1 l64 n2 n4 n6 n8 n10' },
 
+  // Her bomb going off (G-074, in place of the shared `bump`): a low crump.
+  { id: 'samus-bomb', pulse: '@0 v9 q8 x1 p-12 o3 c16', noise: 'v12 x1 l64 n8 n10 n12 n14' },
+
   /* ---------- Ryu ---------- */
   // Taking a hit (G-071): a short rasp.
   { id: 'ng-hurt', pulse: '@3 v11 q8 x1 p-5 o4 g32', noise: 'v10 x1 l64 n6 n10' },
@@ -108,6 +124,8 @@ export const heroSfx: Sfx[] = [
   { id: 'ng-star', pulse: '@2 v9 q8 x1 p12 o6 c64', noise: 'v6 x1 l64 n0' },
   { id: 'ng-windmill', pulse: '@1 v9 q8 x0 l64 [o6 c o5 g]2 x1 o6 c32' },
   { id: 'ng-fire', pulse: '@0 v10 q8 x1 p-7 o4 c16', noise: 'v11 x1 l64 n4 n6 n8' },
+  // His sword (G-074, in place of the shared `sword`): a thin, quick swish.
+  { id: 'ng-sword', pulse: '@2 v8 q8 x1 p12 o6 g64', noise: 'v9 x1 l64 n0 n1' },
 
   /* ---------- Bill ---------- */
   // Landing (G-070): a heavy boot thud.
@@ -118,6 +136,10 @@ export const heroSfx: Sfx[] = [
   { id: 'bill-flame', pulse: '@0 v8 q8 x1 p-5 o4 e32', noise: 'v10 x1 l64 n4 n6 n8' },
   // An item (G-073; SFX_BILL_GET_ITEM, his default pickup sound): a rising fanfare blip.
   { id: 'bill-item', pulse: '@2 v11 q8 x0 l64 o5 e b o6 e x1 o6 b32' },
+  // A shot landing (G-072; SFX_BILL_SHOT_HIT): a hard metallic tick.
+  { id: 'bill-hit', pulse: '@1 v10 q8 x1 p5 o5 a64', noise: 'v10 x1 l64 n2 n6' },
+  // A foe destroyed (G-072; SFX_BILL_ENEMY_EXPLODE): a short low blast that rumbles out.
+  { id: 'bill-kill', pulse: '@0 v9 q8 x1 p-12 o3 g16', noise: 'v13 x1 l64 n6 n8 n10 n12 n14 n15' },
   // Taking a hit (G-070, G-071; Bill.as 899): an electric shock, a buzzing crackle.
   {
     id: 'bill-shock',

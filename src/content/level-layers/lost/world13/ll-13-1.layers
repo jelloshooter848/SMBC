@@ -218,7 +218,9 @@
 + firebar 188 7
 + firebar-ccw 190 5
 + koopa-red 180 9
+-zone pipe 73 7 down -> ll-13-1-bonus 1 0 exit=none
 +zone checkpoint 120 12
++zone pipe 73 7 down -> ll-13-1-bonus 1 3 exit=stand
 
 [layer horz]
 55 5 =

@@ -330,6 +330,8 @@ export class LevelScene implements Scene {
       if (this.roundOver && !this.game.scenes.find((s) => s === this)) break;
     }
     if (!this.roundOver) this.explainers.update();
+    // Classic mode's Tutorials (O-15): a start's or an upgrade's box over the frozen level.
+    if (!this.roundOver) this.game.classicTutorials?.levelTick(this.world, this);
   }
 
   /** Player 1's hero decides the buttons: touch input only ever drives player 1. */
@@ -456,7 +458,11 @@ export class LevelScene implements Scene {
           mode:
             exitDir === 'up'
               ? 'pipe-exit'
-              : exitDir === 'climb' || exitDir === 'fall' || exitDir === 'beam' || exitDir === 'spin'
+              : exitDir === 'climb' ||
+                  exitDir === 'fall' ||
+                  exitDir === 'beam' ||
+                  exitDir === 'spin' ||
+                  exitDir === 'stand'
                 ? exitDir
                 : target.startMode,
         };

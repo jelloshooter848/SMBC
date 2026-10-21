@@ -477,7 +477,7 @@ describe('dev Level select Rules row', () => {
     const menu = new DevLevelSelectScene(h.game, () => undefined);
     const items = (menu as unknown as { items: MenuItem[] }).items;
     const rules = items.find((i) => i.label === 'Rules') as MenuItem;
-    expect(rules.value?.()).toBe('Current');
+    expect(rules.value?.()).toBe('Campaign');
     rules.adjust?.(1);
     expect(rules.value?.()).toBe('Classic SMBC');
     items.find((i) => i.label === 'Start')?.select?.();

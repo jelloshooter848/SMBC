@@ -473,7 +473,7 @@ describe('G-022: the items', () => {
     }
   });
 
-  it('under Current rules the full power-up upgrades each hero until no upgrade is left (Character.as 1735-1741)', () => {
+  it('under Campaign rules the full power-up upgrades each hero until no upgrade is left (Character.as 1735-1741)', () => {
     const state = (p: World['player']) =>
       `${p.powerState} ${p.hp} ${JSON.stringify(p.scratch, Object.keys(p.scratch).sort())}`;
     const most: Record<string, number> = {};
@@ -539,7 +539,7 @@ describe('G-022: the items', () => {
     expect(AMMO_PICKUPS.has('arrow-pack')).toBe(true);
   });
 
-  it('the full power-up shows the original logo in Classic play, our own icon under Current rules', () => {
+  it('the full power-up shows the original logo in Classic play, our own icon under Campaign rules', () => {
     const drawn = (rules: 'classic' | 'current', reduceFlashing: boolean, frame: number) => {
       const level = testLevel({ 9: '..........?' });
       level.entities.push({ type: 'block-item', x: 10, y: 9, props: { item: 'rabbit' } });

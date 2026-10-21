@@ -27,21 +27,43 @@ export class OptionsScene extends MenuScene {
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
-      {
-        label: 'Save files',
-        select: () => this.push(new SaveFilesOptions(game, () => this.pop(), translucent)),
-        hint: 'Share, copy or paste save codes',
-      },
+      // The campaign's save files (and their backup reminders): only while the campaign is open,
+      // so with dev mode on until Chapter 1 (O-07 option c, O-08). Classic keeps its Continue.
+      ...(game.campaignOpen
+        ? [
+            {
+              label: 'Save files',
+              select: () => this.push(new SaveFilesOptions(game, () => this.pop(), translucent)),
+              hint: 'Share, copy or paste save codes',
+            },
+          ]
+        : []),
       {
         label: 'How to play',
-        select: () => this.push(new GuideIndexScene(game, () => this.pop(), classic)),
+        // O-14: while the campaign is closed, the title's How to play is Classic's (its select's
+        // heroes and their Classic pages), as Classic's own options are.
+        select: () =>
+          this.push(
+            new GuideIndexScene(game, () => this.pop(), classic || (!translucent && !game.campaignOpen)),
+          ),
         hint: 'Controls and power-ups for every hero',
       },
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
       // iPhone Home Screen support (0.4.44): only where it can help (hidden in the app itself).
       ...homeScreenItems(game, (s) => (this.status = s)),
-      // The editor leaves the current game, so it is only offered from the title.
-      ...(translucent ? [] : [{ label: 'Level editor', select: () => game.openEditor() }]),
+      // Custom levels and the editor leave the current game, so they are only offered from the
+      // title's Options, never in a game or in Classic's options (O-01, RC-027). The custom levels
+      // open over Options, so Back comes back here.
+      ...(translucent || classic
+        ? []
+        : [
+            {
+              label: 'Custom levels',
+              select: () => game.showCustomLevels(() => this.pop()),
+              hint: 'Play the levels you made in the level editor',
+            },
+            { label: 'Level editor', select: () => game.openEditor() },
+          ]),
       { label: 'Back', select: onBack },
     ]);
   }

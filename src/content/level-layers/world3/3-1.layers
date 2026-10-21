@@ -235,7 +235,9 @@
 + koopa-red 53 12
 + koopa-red 149 12
 -zone vine 131 5 -> 3-1-sky 4 14
+-zone pipe 38 9 down -> 3-1-bonus 1 0 exit=none
 +zone vine 129 5 -> 3-1-sky 4 14
++zone pipe 38 9 down -> 3-1-bonus 1 3 exit=stand
 
 [layer horz]
 + lift-fall 195 4 len=2 dx=8

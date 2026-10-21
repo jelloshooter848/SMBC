@@ -319,7 +319,7 @@ describe('file select', () => {
     h.game.campaign = { slot: 1 };
     h.game.showTitle();
     expect(h.game.campaign).toBeNull();
-    h.game.showCustomLevels();
+    h.game.showCustomLevels(() => h.game.showTitle());
     h.game.pendingLevel = '1-2';
     h.game.showCharacterSelect();
     h.idle(12);

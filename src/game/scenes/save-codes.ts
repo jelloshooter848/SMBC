@@ -60,7 +60,8 @@ export function spokenCode(code: string): string {
     .join(', ');
 }
 
-const reminders = (game: Game) => game.deps.settings?.backupReminders !== false;
+/** The backup reminders: off unless turned on (O-08), as Game.offerBackup reads them. */
+const reminders = (game: Game) => game.deps.settings?.backupReminders === true;
 
 /**
  * Options > Save files: the three files, PASTE CODE (into a file picked next: the path the Home

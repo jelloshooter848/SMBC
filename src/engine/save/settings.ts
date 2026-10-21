@@ -63,7 +63,8 @@ export interface Settings {
   devUnlock: string;
   /**
    * After each castle's first clear, a card offers to back up the file as a save code (Options >
-   * Save files > Backup reminders, 0.4.44). On by default; older settings files get it on.
+   * Save files > Backup reminders, 0.4.44). Off by default since O-08 (settings v3); the v2 -> v3
+   * migration turns it off once, as v2 files cannot tell the old default from a choice.
    */
   backupReminders: boolean;
   /**
@@ -108,6 +109,17 @@ export interface Settings {
    * stays (Game.heroSlots). Optional, so older files need no migration.
    */
   classicHeroesOff?: string[];
+  /**
+   * Classic mode's Tutorials (O-15 / G-042; the original's General > Tutorials,
+   * GeneralOptions.as 25, off by default as GameSettings.as 89): the TutorialManager's boxes at
+   * the select, the first start, each hero's start and each upgrade. Optional: absent is off.
+   */
+  classicTutorials?: boolean;
+  /**
+   * The Tutorials boxes shown in this Classic game (TutorialManager.saveData: each box once per
+   * game, and all of them again from a new game, startNewGameHandler). Optional.
+   */
+  classicTutorialsSeen?: string[];
   /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
@@ -198,7 +210,15 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
 /** Settings.classicDev. */
 export interface ClassicDevToggles {
   yoshiMount: boolean;
+  /** The Yoshi mount is on and every level starts riding him (O-06: Off / On / Ride). */
+  yoshiRide?: boolean;
+  /**
+   * Dev > Classic heroes (O-06): the per-hero overrides over what release players get. `heroesOff`
+   * (the old Dev menu toggles, kept as they were) is the Off half, `heroesOn` the On half: shown
+   * in dev mode even when not released. A hero in neither follows the release rule.
+   */
   heroesOff: string[];
+  heroesOn?: string[];
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
@@ -213,8 +233,11 @@ export interface HomeScreenFlags {
 
 export const SETTINGS_KEY = 'smbc.settings';
 
-/** The settings file's version: 2 since the quieter default master volume (0.4.49). */
-export const SETTINGS_VERSION = 2;
+/**
+ * The settings file's version: 2 since the quieter default master volume (0.4.49), 3 since the
+ * backup reminders are off by default (O-08).
+ */
+export const SETTINGS_VERSION = 3;
 
 /**
  * The master volume a new player starts at (0.4.49): 6 dB below the old 0.8, so the game starts
@@ -251,7 +274,7 @@ export function defaultSettings(): Settings {
     announce: true,
     dev: false,
     devUnlock: '',
-    backupReminders: true,
+    backupReminders: false,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
     classicMapDifficulty: 'normal',
@@ -271,6 +294,10 @@ const migrations: Array<(old: Record<string, unknown>) => Record<string, unknown
     const a = audio as Record<string, unknown>;
     return a.master === OLD_DEFAULT_MASTER ? { ...old, audio: { ...a, master: DEFAULT_MASTER } } : old;
   },
+  // v2 -> v3 (O-08): the backup reminders become off by default. A v2 file's `true` is the old
+  // default as often as a choice (the two cannot be told apart), so it turns off once; the
+  // player can turn it back on in Options > Save files.
+  (old) => ({ ...old, backupReminders: false }),
 ];
 
 /** Deep-merge stored values over defaults so new fields always exist. */
@@ -311,6 +338,13 @@ export function loadSettings(): Settings {
   s.classicCheats.continuesUsed = Number.isFinite(used) ? Math.max(0, Math.floor(used)) : 0;
   s.classic = normaliseClassic(s.classic);
   s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
+  // The merge keeps only keys the defaults have: O-06's optional fields are copied over here.
+  const dev = (stored.classicDev ?? {}) as Record<string, unknown>;
+  const on = Array.isArray(dev.heroesOn)
+    ? (dev.heroesOn as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (on.length) s.classicDev.heroesOn = on.filter((id) => !s.classicDev.heroesOff.includes(id));
+  if (dev.yoshiRide === true && s.classicDev.yoshiMount) s.classicDev.yoshiRide = true;
   // The merge keeps only keys the defaults have, so the skin choices are copied over here.
   const skins = normaliseSkins(stored.classicSkins);
   if (skins) s.classicSkins = skins;
@@ -320,6 +354,14 @@ export function loadSettings(): Settings {
     : [];
   if (off.length) s.classicHeroesOff = off;
   else delete s.classicHeroesOff;
+  // Tutorials (O-15): on only when stored as true; the boxes seen, as their ids.
+  if (stored.classicTutorials === true) s.classicTutorials = true;
+  else delete s.classicTutorials;
+  const seen = Array.isArray(stored.classicTutorialsSeen)
+    ? (stored.classicTutorialsSeen as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (seen.length) s.classicTutorialsSeen = seen;
+  else delete s.classicTutorialsSeen;
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;

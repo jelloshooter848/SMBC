@@ -1,5 +1,6 @@
 import { OPEN_DEV_LOCK, type DevLock } from '../dev-lock';
 import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
+import { confirmQuitRun } from './quit-run';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
@@ -18,6 +19,8 @@ import {
   CLASSIC_EXTRAS,
   CLASSIC_SLOTS,
   EXPANSION_HEROES,
+  expansionReleased,
+  RELEASED_EXPANSION_HEROES,
   heroFor,
   isSkin,
   skinHost,
@@ -30,6 +33,7 @@ import {
   clearClassicResume,
   loadClassicResume,
   resumeOf,
+  resumeSetOf,
   saveClassicResume,
   type ClassicResume,
 } from '../run-resume';
@@ -56,7 +60,8 @@ import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
-import { loadLibrary, customLevelId } from '../level/library';
+import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
+import { pageSaid } from '../story/cards';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
 import { FINALE } from '../story/finale';
@@ -98,6 +103,7 @@ import {
 import {
   FIRST_HERO,
   loadSave,
+  newSave,
   saveFromState,
   stateFromSave,
   tutorialHeroes,
@@ -119,12 +125,15 @@ import { TownScene } from '../town/scene';
 import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
 import type { World } from '../world/world';
 import { TipLog } from '../tutorial/tips';
+import { ClassicTutorials } from '../tutorial/original-tutorials';
 import type { ShareEnv } from '../save/share-code';
 import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
+import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
+import { savedRunRestores } from './original-saves';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -177,6 +186,16 @@ export interface GameDeps {
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
 export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 
+/** RC-005: the card a `?level=custom-` link shows when this browser has no such custom level. */
+export const CUSTOM_LEVEL_MISSING: readonly string[] = [
+  'LEVEL NOT FOUND',
+  '',
+  'THIS CUSTOM LEVEL IS NOT',
+  'SAVED IN THIS BROWSER.',
+  '',
+  'ASK FOR ITS SHARE LINK.',
+];
+
 /** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
 export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
 
@@ -212,7 +231,7 @@ export class Game {
   /** World map progress (cleared levels, open worlds, secrets, the hero's place on the map). */
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
-  campaign: { slot: SaveSlot } | null = null;
+  campaign: { slot: SaveSlot; scratch?: true } | null = null;
   /**
    * A Classic mode run (title > CLASSIC, or the dev Level select's Mode: Classic run): the
    * original game's flow, with no campaign file (`campaign` stays null). Every other start clears
@@ -238,6 +257,12 @@ export class Game {
    * `?mode=classic`): it never records a beat status (G-005) and its wins unlock nothing.
    */
   classicDev = false;
+  /**
+   * RC-004: the Classic run came from a `?level=` link (devClassicGame). It counts as any Classic
+   * run does, but it never touches the resume slot (no write at its WORLD cards, no clear at its
+   * game over or credits), so a shared link cannot replace the player's CLASSIC > Continue run.
+   */
+  private linkRun = false;
   /**
    * The rules chosen for this non-campaign run (Classic mode, TG-9 rules model). Run starters set
    * it: devStart's and newGame's `opts.rules`, or the Classic mode flow before it starts a run;
@@ -304,6 +329,8 @@ export class Game {
   tutorialRun: TutorialRun | null = null;
   /** The tips a tutorial or a training stage has shown (0.4.43: the pause menu's LAST TIPS). */
   readonly tips = new TipLog();
+  /** Classic mode's Tutorials boxes (O-15 / G-042; off unless Classic options > Tutorials is on). */
+  readonly classicTutorials = new ClassicTutorials(this);
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
   /**
@@ -455,6 +482,8 @@ export class Game {
   selectEntered(classic: boolean): void {
     this.heroChosen = false;
     if (classic && this.campaign === null) this.deps.ctx.audio.playMusic(SMB_SET.select);
+    // Tutorials (O-15): the select's box over it (EventManager.characterSelectStart).
+    if (classic) this.classicTutorials.atSelect();
   }
 
   /**
@@ -496,7 +525,8 @@ export class Game {
 
   /**
    * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
-   * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
+   * sound (G-070: Mega Man and his skins teleport out, MegaMan.as 157; Bill is shocked, Bill.as
+   * 1087; CHOOSE_SFX).
    * The one trigger of both: the pick performance's start (heroPicked), else the select's close
    * after a pick (selectLeft).
    */
@@ -547,6 +577,9 @@ export class Game {
    */
   private sayHero: string | null = null;
 
+  /** Said at the start of the next lives card's line, then cleared (Continue's, owner decision). */
+  private sayFirst: string | null = null;
+
   /** Single random: a random hero, to be named on the next lives card. */
   private singleRandomHero(): CharacterDef {
     const c = this.randomHero();
@@ -591,7 +624,7 @@ export class Game {
   slotsFor(rules: Rules): CharacterDef[] {
     const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
-    const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
+    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter((id) => this.expansionHeroOffered(id))];
     const slots: CharacterDef[] = [];
     for (const id of ids) {
       const def = roster.find((c) => c.id === id && !isSkin(c));
@@ -610,9 +643,42 @@ export class Game {
    */
   private classicFlow = false;
 
-  /** Options > Expansion heroes is on (the heroes the original never had are offered). */
+  /**
+   * Options > Expansion heroes is on and in force (the heroes the original never had are offered).
+   * O-12: outside developer mode only once a hero is released (RELEASED_EXPANSION_HEROES), so a
+   * setting saved by an earlier version is ignored, never rewritten.
+   */
   get expansionHeroes(): boolean {
-    return this.deps.settings?.classic.expansion === 'on';
+    return this.expansionRowShown && this.deps.settings?.classic.expansion === 'on';
+  }
+
+  /** O-12: the Options > Expansion heroes row shows (developer mode, or a hero released). */
+  get expansionRowShown(): boolean {
+    return this.devMode || RELEASED_EXPANSION_HEROES.length > 0;
+  }
+
+  /**
+   * O-12 / O-06: the one place that decides whether Expansion hero `id` gets a select slot (so the
+   * select, Random, Survival, Disable heroes, the guides and the dev START page):
+   * `devMode ? (override ?? release) : release`. The override is Dev > Classic heroes' On or Off;
+   * release is heroReleased.
+   */
+  expansionHeroOffered(id: string): boolean {
+    const release = this.heroReleased(id);
+    if (!this.devMode) return release;
+    const t = this.classicToggles;
+    if (t.heroesOff.includes(id)) return false;
+    if (t.heroesOn?.includes(id)) return true;
+    return release;
+  }
+
+  /**
+   * What release players get for Expansion hero `id` (O-12), and so O-06's Release in dev mode
+   * too: released (RELEASED_EXPANSION_HEROES, whose first id brings the player row back) with
+   * Options > Expansion heroes on. Dev > Classic heroes' On shows an unreleased hero in dev mode.
+   */
+  heroReleased(id: string): boolean {
+    return expansionReleased(id) && this.deps.settings?.classic.expansion === 'on';
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -768,7 +834,8 @@ export class Game {
   get yoshiMount(): 'on' | 'ride' | undefined {
     if (this.liveRules !== 'classic' || !this.devMode) return undefined;
     if (this.yoshiUrl) return this.yoshiUrl;
-    return this.classicToggles.yoshiMount ? 'on' : undefined;
+    const t = this.classicToggles;
+    return t.yoshiMount ? (t.yoshiRide ? 'ride' : 'on') : undefined;
   }
 
   /**
@@ -829,8 +896,8 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    // G-008: a Classic run that reaches the credits is over; its resume slot goes.
-    if (this.classicRun && !this.classicDev) clearClassicResume();
+    // G-008: a Classic run that reaches the credits is over; its set's resume slot goes.
+    if (this.keepsResume) this.dropResume(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -980,6 +1047,13 @@ export class Game {
   }
 
   showTitle(): void {
+    this.leaveRun();
+    this.scenes.clear();
+    this.scenes.push(new TitleScene(this));
+  }
+
+  /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */
+  private leaveRun(): void {
     this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
@@ -997,8 +1071,6 @@ export class Game {
     this.devAllHeroes = false;
     this.bonus = newBonusState();
     this.town = null;
-    this.scenes.clear();
-    this.scenes.push(new TitleScene(this));
   }
 
   /**
@@ -1157,7 +1229,7 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     this.campaignSave = { ...base, story: this.story.slice() };
-    writeSave(this.campaignSave);
+    this.writeFile(this.campaignSave);
   }
 
   /**
@@ -1170,7 +1242,7 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     this.campaignSave = { ...base, explained: this.explained.slice() };
-    writeSave(this.campaignSave);
+    this.writeFile(this.campaignSave);
   }
 
   /**
@@ -1209,7 +1281,26 @@ export class Game {
       explained: this.explained.slice(),
     };
     this.campaignSave = save;
+    this.writeFile(save);
+  }
+
+  /** Writes the open file to its slot, unless it is a dev scratch file (openScratchFile). */
+  private writeFile(save: SaveFile): void {
+    if (this.campaign?.scratch) return;
     writeSave(save);
+  }
+
+  /**
+   * Dev > Campaign (O-05): `save` (a copy of a file), or a new file with every world and hero
+   * open, played as a scratch file: it plays as the campaign does, but nothing is ever written to
+   * a save slot and no backup card asks. Dev mode only.
+   */
+  openScratchFile(save?: SaveFile): void {
+    if (!this.devMode) return;
+    const file = save
+      ? structuredClone(save)
+      : { ...newSave(1, FIRST_HERO, null, this.deps.characters), devUnlockAll: true, devAllHeroes: true };
+    this.openFile(file.slot, file, false, true);
   }
 
   /**
@@ -1285,7 +1376,13 @@ export class Game {
     const castle = this.backupDue;
     if (castle === null) return false;
     this.backupDue = null;
-    if (!this.campaign || this.mapUnlockAll || this.deps.settings?.backupReminders !== true) return false;
+    if (
+      !this.campaign ||
+      this.campaign.scratch ||
+      this.mapUnlockAll ||
+      this.deps.settings?.backupReminders !== true
+    )
+      return false;
     this.scenes.push(new BackupCardScene(this, this.campaign.slot));
     return true;
   }
@@ -1476,7 +1573,7 @@ export class Game {
     // G-008: the next level is the run's place from here, as the original's file holds the level
     // just reached (StatManager's current level moves on at the clear); quitting from the select
     // between levels resumes there.
-    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
+    if (this.keepsResume) this.keepResume(levelId);
     // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
     // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
     if (pipe && this.survival) this.survival.reviveAllowed = true;
@@ -1501,6 +1598,7 @@ export class Game {
           then();
         },
         ...(this.classicRun ? { random: true } : {}),
+        ...this.classicQuitPick(),
       });
     };
     this.deps.ctx.audio.stopMusic();
@@ -1714,7 +1812,7 @@ export class Game {
     power: string,
     fullKit = false,
     seed?: number,
-    opts: { rules?: Rules; classic?: boolean } = {},
+    opts: { rules?: Rules; classic?: boolean; difficulty?: MapDifficulty } = {},
   ): void {
     const classic = opts.classic === true;
     // A Classic run has none of the campaign's rooms: the village and the stage tutorials (1-0)
@@ -1725,7 +1823,9 @@ export class Game {
     this.runRules = opts.rules ?? 'current';
     this.classicRun = classic;
     this.classicDev = classic;
-    this.classicDifficulty = 'normal';
+    this.linkRun = false;
+    // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
+    this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
     const hero = heroFor(character, rules);
     this.state = newGameState(character, null, rules);
@@ -1761,19 +1861,23 @@ export class Game {
     this.scenes.push(new EditorScene(this, initial));
   }
 
-  /** Menu of saved custom levels; picking one goes to character select then the level. */
-  showCustomLevels(): void {
+  /**
+   * Menu of saved custom levels (title > Options, O-01), over Options: Back closes it; picking
+   * one goes to character select, then the level.
+   */
+  showCustomLevels(back: () => void): void {
     const names = Object.keys(loadLibrary().levels).sort();
     const items = names.map((n) => ({
       label: n.slice(0, 14),
       select: () => {
         this.pendingLevel = customLevelId(n);
+        this.scenes.clear();
         this.showCharacterSelect();
       },
     }));
     if (!items.length) items.push({ label: 'No levels yet', select: () => this.openEditor() });
-    items.push({ label: 'Back', select: () => this.showTitle() });
-    this.scenes.replace(new MenuScene(this, 'CUSTOM LEVELS', items, () => this.showTitle()));
+    items.push({ label: 'Back', select: back });
+    this.scenes.push(new MenuScene(this, 'CUSTOM LEVELS', items, back));
   }
 
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
@@ -1838,11 +1942,19 @@ export class Game {
    * shared link on a release build) it counts as any Classic run does, as the original counts a
    * run that its Level Select started anywhere (LevelSelectMenu.as 115-131 only sets the map pack
    * and difficulty and creates the level; StatManager.beatGameHandler 506-529 asks nothing of
-   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect).
+   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect). It never
+   * writes or clears the resume slot (RC-004, linkRun).
    */
   devClassicGame(character: CharacterDef, levelId: string, rules: Rules, dev = true): void {
     this.pendingLevel = null;
-    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, dev);
+    this.classicTutorials.newGame();
+    const id = this.classicStartable(levelId) ? levelId : '1-1';
+    this.startRun(character, id, null, rules, true, dev, true);
+  }
+
+  /** G-008: this run writes and clears the resume slot (a Classic mode run; not dev, not a link). */
+  get keepsResume(): boolean {
+    return this.classicRun && !this.classicDev && !this.linkRun && this.campaign === null;
   }
 
   /**
@@ -1954,6 +2066,8 @@ export class Game {
   showCheatUnlocks(world: World): void {
     const id = this.cheatUnlocks.shift();
     if (!id) return;
+    // Tutorials (O-15): the cheat box follows the cards once (Cheats.as).
+    this.classicTutorials.cheatUnlocked();
     this.deps.ctx.audio.sfx('1up');
     this.deps.announcer?.say(`You unlocked the ${cheatInfo(id).name} cheat! OK to continue.`);
     this.scenes.push(
@@ -1970,9 +2084,13 @@ export class Game {
     );
   }
 
-  /** The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). */
+  /**
+   * The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). O-12:
+   * that row is developer mode's only; outside it a Classic run always plays Classic rules (a
+   * saved 'current' is ignored, never rewritten). Every read of the setting goes through here.
+   */
   get classicRules(): Rules {
-    return this.deps.settings?.classicRules ?? 'classic';
+    return this.devMode ? (this.deps.settings?.classicRules ?? 'classic') : 'classic';
   }
 
   private startRun(
@@ -1982,12 +2100,16 @@ export class Game {
     rules: Rules | undefined,
     classic: boolean,
     dev: boolean,
+    link = false,
   ): void {
     this.tutorialRun = null;
     this.campaign = null;
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    this.linkRun = classic && link;
+    // Per-set saves: a new run; its first WORLD card writes its set's slot.
+    this.resumeSet = null;
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
     // a hero the select does not offer now plays as its first slot's hero.
     if (classic) character = this.restoreSlotHero(character);
@@ -2032,10 +2154,15 @@ export class Game {
 
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
+    // Tutorials (O-15): no box queued in the run left behind shows in the next one.
+    this.classicTutorials.clearQueue();
     this.classicRun = false;
     this.classicFlow = false;
     this.classicDev = false;
+    this.linkRun = false;
     this.survival = null;
+    this.resumeSet = null;
+    this.sayFirst = null;
   }
 
   /**
@@ -2060,7 +2187,10 @@ export class Game {
           reviveAllowed: sv.reviveAllowed,
         }
       : undefined;
-    const r = resumeOf(levelId, this.state, this.liveRules, survival);
+    const r = resumeOf(levelId, this.state, this.liveRules, survival, {
+      difficulty: this.classicDifficulty,
+      gameMode: this.deps.settings?.classic.gameMode ?? 'all',
+    });
     // The level's own world and stage (before its WORLD card the state still holds the last one's).
     try {
       const lv = this.deps.getLevel(levelId);
@@ -2069,14 +2199,37 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
+    // A run the Level Select cheat took to another set writes that set's slot from here on; the
+    // set it left keeps its save as its last WORLD card wrote it (release review of #191).
+    this.resumeSet = resumeSetOf(levelId);
     saveClassicResume(r);
   }
 
-  /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
-  classicResume(): ClassicResume | null {
-    const r = loadClassicResume();
+  /**
+   * The rules a kept run goes on under: its own in developer mode; outside it Classic rules, the
+   * only ones a release Classic run plays (O-12: a slot saved under Current rules too).
+   */
+  private resumeRules(r: ClassicResume): Rules {
+    return this.devMode ? r.rules : 'classic';
+  }
+
+  /** Per-set saves: the map set whose slot the Classic run writes (its last WORLD card's). */
+  private resumeSet: MapSetId | null = null;
+
+  /** G-008: clears the run's set's slot (the set of `levelId` when no WORLD card set it yet). */
+  private dropResume(levelId: string | null): void {
+    const set = this.resumeSet ?? (levelId ? resumeSetOf(levelId) : null);
+    if (set) clearClassicResume(set);
+  }
+
+  /**
+   * G-008, per-set saves: the Classic run kept in map set `set`'s slot (without `set`, the latest
+   * of them), or null when there is none or it no longer plays (its hero or level is gone).
+   */
+  classicResume(set?: MapSetId): ClassicResume | null {
+    const r = loadClassicResume(set);
     if (!r) return null;
-    const hero = this.rosterFor(r.rules).find((c) => c.id === r.hero);
+    const hero = this.rosterFor(this.resumeRules(r)).find((c) => c.id === r.hero);
     try {
       this.deps.getLevel(r.levelId);
     } catch {
@@ -2087,17 +2240,40 @@ export class Game {
 
   /**
    * CLASSIC > Continue (G-008): the run in the resume slot goes on from the WORLD card of the
-   * level it was in, with its lives, score, coins, hero, power and kit, under its own rules.
+   * level it was in, with its lives, score, coins, hero, power and kit, under its own rules, on
+   * its own Map Difficulty and Game mode (RC-002).
    */
-  resumeClassic(): boolean {
-    const r = this.classicResume();
-    const hero = r ? this.rosterFor(r.rules).find((c) => c.id === r.hero) : undefined;
+  resumeClassic(set?: MapSetId): boolean {
+    this.classicTutorials.clearQueue();
+    const r = this.classicResume(set);
+    const rules = r ? this.resumeRules(r) : 'classic';
+    const hero = r ? this.rosterFor(rules).find((c) => c.id === r.hero) : undefined;
     if (!r || !hero) return false;
+    const settings = this.deps.settings;
+    // RC-002: the run's Map Difficulty (a slot from before it was kept: the menu's, as it shows).
+    this.classicDifficulty = r.difficulty ?? settings?.classicMapDifficulty ?? 'normal';
+    // Loading the original's file sets the map difficulty and the game mode it was saved with
+    // (GameSettings.prepareLoadSave / loadData: changeMapDifficulty, changeCampaignMode), so the
+    // CLASSIC menu's Map difficulty and Options' Game mode show the run's afterwards.
+    if (settings) {
+      let changed = false;
+      if (r.difficulty && settings.classicMapDifficulty !== r.difficulty) {
+        settings.classicMapDifficulty = r.difficulty;
+        changed = true;
+      }
+      if (r.gameMode && settings.classic.gameMode !== r.gameMode) {
+        settings.classic.gameMode = r.gameMode;
+        changed = true;
+      }
+      if (changed) this.deps.applySettings?.();
+    }
     this.tutorialRun = null;
     this.campaign = null;
-    this.runRules = r.rules;
+    this.runRules = rules;
     this.classicRun = true;
     this.classicDev = false;
+    this.linkRun = false;
+    this.resumeSet = resumeSetOf(r.levelId);
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
@@ -2109,16 +2285,20 @@ export class Game {
     s.lives = r.lives;
     s.world = r.world;
     s.stage = r.stage;
-    s.powerState = r.powerState;
-    s.hp = r.hp;
-    s.kit = { ...r.kit };
+    // O-12: a run kept under Current rules goes on under Classic rules outside developer mode,
+    // with its level, lives, score and coins; its power and kit (Current's) start afresh.
+    if (rules === r.rules) {
+      s.powerState = r.powerState;
+      s.hp = r.hp;
+      s.kit = { ...r.kit };
+    }
     s.warped = r.warped;
     s.checkpoint = r.checkpoint;
     this.survival = null;
     if (r.survival && this.survivalMode) {
       const sv = this.newSurvival();
       // A fallen look is its slot's hero (an older run kept Peach by her own id: Luigi's slot).
-      const roster = this.rosterFor(r.rules);
+      const roster = this.rosterFor(rules);
       const fallen = r.survival.fallen.map((id) => {
         const d = roster.find((c) => c.id === id);
         return d ? this.slotOf(d).id : id;
@@ -2131,16 +2311,71 @@ export class Game {
     this.quickRespawn = false;
     this.backupDue = null;
     this.pendingLevel = null;
-    this.deps.announcer?.say('Continue.');
+    // Continue says what it restored (owner decision): "Continue. Survival, Hard." whenever the
+    // slot carries them (just "Continue." for an older one), as the start of the WORLD card's line
+    // that follows, so a screen reader hears it rather than having it replaced in the same frame.
+    const restores = savedRunRestores(r);
+    this.sayFirst = restores ? `Continue. ${restores}.` : 'Continue.';
     this.goToLevel(r.levelId, { mode: 'stand' });
     return true;
   }
 
-  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
-  showClassicMenu(): void {
+  /**
+   * O-16: a Classic run's mid-run select (between levels, after a death) has BACK: it asks to
+   * quit (QuitRunScene), NO back to the select. Nothing outside a Classic mode run.
+   */
+  private classicQuitPick(): { onCancel?: () => void } {
+    if (!this.classicRun || this.campaign !== null || this.playtestDone) return {};
+    return { onCancel: () => confirmQuitRun(this, 'No. Choose your hero.') };
+  }
+
+  /**
+   * O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written): the
+   * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
+   */
+  quitClassicRun(): void {
+    this.leaveRun();
+    this.scenes.clear();
+    this.showClassicMenu();
+  }
+
+  /**
+   * The CLASSIC menu (every map set, MAP_SETS; Options; Back), coming back to it from a run or a
+   * select: a box over the CLASSIC title's demo, with the title's Start box under it (O-04); on
+   * map set `focus`'s row (Back from that set's select), else the first.
+   */
+  showClassicMenu(focus?: MapSetId): void {
     this.endClassicRun();
     this.runRules = 'current';
-    this.scenes.replace(new ClassicMenuScene(this));
+    const title = new ClassicTitleScene(this, 'start', true);
+    this.leaveClassicTitle();
+    this.scenes.push(title);
+    this.scenes.push(new ClassicMenuScene(this, title, false, focus));
+  }
+
+  /**
+   * The scene on top goes, and with it every CLASSIC title and menu under it and whatever was
+   * opened over them (each one's exit runs: a title's demo World and its pointer listener go), so
+   * only one CLASSIC title is ever kept.
+   */
+  private leaveClassicTitle(): void {
+    this.scenes.pop();
+    // Every scene opened from the CLASSIC title goes with it, however deep (Options > Cheats >
+    // Level select > Go leaves the select over all of them).
+    const isTitle = (sc: unknown) => sc instanceof ClassicTitleScene || sc instanceof ClassicMenuScene;
+    while (this.scenes.find(isTitle)) this.scenes.pop();
+  }
+
+  /**
+   * The title's CLASSIC entry (O-04): the CLASSIC title, its live 1-1 demo and begin prompt;
+   * `phase` 'start' opens it with its Start box up.
+   */
+  showClassicTitle(phase: ClassicTitlePhase = 'demo'): void {
+    this.endClassicRun();
+    this.runRules = 'current';
+    const title = new ClassicTitleScene(this, phase);
+    this.leaveClassicTitle();
+    this.scenes.push(title);
   }
 
   /**
@@ -2151,6 +2386,8 @@ export class Game {
     // The run's rules are set before the pick, so the roster (Game.roster) offers the Classic
     // extras on the very first select.
     this.campaign = null;
+    // A new Classic game: every Tutorials box shows again (TutorialManager.startNewGameHandler).
+    this.classicTutorials.newGame();
     this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
@@ -2170,7 +2407,9 @@ export class Game {
       this.classicStartLives();
       this.survival = this.newSurvival();
     }
-    this.scenes.replace(
+    // The select replaces the CLASSIC title and its menus (its BACK builds them again).
+    this.leaveClassicTitle();
+    this.scenes.push(
       new CharacterSelectScene(this, null, {
         begin: (c) => {
           this.heroChosen = true;
@@ -2237,7 +2476,7 @@ export class Game {
    * Play save file `slot` (file select): load it into the game state, save it, show the map.
    * `save` is passed when just created (so play goes on even if storage is unavailable).
    */
-  openFile(slot: SaveSlot, save = loadSave(slot), opening = false): void {
+  openFile(slot: SaveSlot, save = loadSave(slot), opening = false, scratch = false): void {
     if (!save) {
       this.showTitle();
       return;
@@ -2246,7 +2485,7 @@ export class Game {
     this.playtestDone = null;
     this.pendingLevel = null;
     this.quickRespawn = false;
-    this.campaign = { slot };
+    this.campaign = scratch ? { slot, scratch } : { slot };
     this.endClassicRun();
     this.backupDue = null;
     this.campaignSave = save;
@@ -2345,22 +2584,24 @@ export class Game {
       level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
     } catch {
       this.deps.ctx.audio.stopMusic();
-      this.deps.ctx.audio.playJingle('world-clear');
-      this.scenes.clear();
-      this.scenes.push(
-        new MessageScene(
-          this,
-          [
+      // RC-005: a custom level this browser does not have (someone else's `?level=custom-` link:
+      // the library is per browser) says so, instead of the unbuilt-world card.
+      const custom = levelId.startsWith(CUSTOM_PREFIX);
+      const lines = custom
+        ? [...CUSTOM_LEVEL_MISSING]
+        : [
             'THANK YOU FOR PLAYING!',
             '',
-            `WORLD ${levelId.split('-')[0]} IS NOT`,
+            `WORLD ${(levelId.split('-')[0] ?? '').toUpperCase()} IS NOT`,
             'BUILT YET.',
             '',
             'MORE WORLDS COMING SOON',
-          ],
-          () => this.showTitle(),
-        ),
-      );
+          ];
+      if (custom) this.deps.ctx.audio.sfx('bump');
+      else this.deps.ctx.audio.playJingle('world-clear');
+      this.scenes.clear();
+      this.deps.announcer?.say(pageSaid(lines, true));
+      this.scenes.push(new MessageScene(this, lines, () => this.showTitle()));
       return;
     }
     // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
@@ -2383,11 +2624,13 @@ export class Game {
       return;
     }
     // G-008: a Classic mode run keeps its resume slot at each WORLD card (never a dev run).
-    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
+    if (this.keepsResume) this.keepResume(levelId);
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
+    const first = this.sayFirst ? `${this.sayFirst} ` : '';
+    this.sayFirst = null;
     this.deps.announcer?.say(
-      `${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
+      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
@@ -2471,7 +2714,7 @@ export class Game {
   respawn(levelId: string, start: LevelStart, player = 0): void {
     this.selectLevel = levelId;
     // G-008: the slot follows the death (its lives) before the select, so quitting there resumes it.
-    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
+    if (this.keepsResume) this.keepResume(levelId);
     if (this.quickRespawn) {
       this.goToLevel(levelId, start);
       return;
@@ -2506,6 +2749,7 @@ export class Game {
           then();
         },
         ...(this.classicRun ? { random: true } : {}),
+        ...this.classicQuitPick(),
         // Campaign: back to the map as Pause → Quit to map (no clear; the life lost here is
         // already counted and saved, and the hero stays as the death left it).
         ...(this.campaign && !this.playtestDone ? { onMap: () => this.returnToMap() } : {}),
@@ -2607,7 +2851,7 @@ export class Game {
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
     // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
-    if (this.classicRun && !this.classicDev) clearClassicResume();
+    if (this.keepsResume) this.dropResume(levelId);
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

@@ -5,7 +5,7 @@ import { LINK } from '@game/characters/link';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import type { ClassicMenuScene } from '@game/scenes/original-game';
-import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
+import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume } from '@game/run-resume';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // G-008: the original saves and loads a run (Pause > Load / Save, title > Load Game). Classic
@@ -25,8 +25,14 @@ function classic(over: Partial<Settings> = {}, dev = false): H & { settings: Set
 
 const inLevel = (h: H) => h.top() instanceof LevelScene;
 
+/** Every resume slot in storage (per-set saves: one key per map set), by key. */
+const slots = () =>
+  Object.fromEntries([...store.entries()].filter(([k]) => k.startsWith(CLASSIC_RESUME_KEY)));
+
 describe('G-008 the Classic resume slot', () => {
-  it('a Classic run writes it at the WORLD card; the CLASSIC menu offers Continue', () => {
+  // Per-set saves (owner, before 0.5.0): the set's own row offers it now, not a global Continue
+  // row (tests/sim/classic-saves.test.ts has the prompt).
+  it('a Classic run writes it at the WORLD card; its set on the CLASSIC menu says so', () => {
     const h = classic();
     h.game.showClassicMenu();
     expect(labels(h.top())).not.toContain('Continue');
@@ -40,8 +46,10 @@ describe('G-008 the Classic resume slot', () => {
     });
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(labels(menu)[0]).toBe('Continue');
-    expect((menu as unknown as { items: MenuItem[] }).items[0]?.hint).toMatch(/World 1-2 with 3 lives/);
+    expect(labels(menu)[0]).toBe('Super Mario Bros.');
+    expect((menu as unknown as { items: MenuItem[] }).items[0]?.hint).toMatch(
+      /Saved run: World 1-2, 3 lives/,
+    );
   });
 
   it('Continue goes back to that level with the lives, score, coins and hero kept', () => {
@@ -110,8 +118,11 @@ describe('G-008 the Classic resume slot', () => {
     expect(off.game.state.score).toBe(50);
     // The WORLD card rewrote the slot as Mario's: the saved Yoshi run again.
     slot();
-    const on = classic();
+    // O-12: the Expansion heroes row is developer mode's until a hero is released.
+    const on = classic({}, true);
     on.settings.classic = { ...on.settings.classic, expansion: 'on' };
+    // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
+    on.settings.classicDev.heroesOn = ['yoshi'];
     expect(on.game.resumeClassic()).toBe(true);
     expect(on.game.state.character.id).toBe('yoshi');
   });
@@ -126,8 +137,13 @@ describe('G-008 the Classic resume slot', () => {
 
   it('a developer Classic run never writes it', () => {
     const h = classic({}, true);
+    // Per-set saves: a real slot first (a Classic mode run), then every slot compared.
+    h.game.classicGame(LINK, '1-2');
+    const before = slots();
+    expect(before[classicResumeKey('smb')]).toMatch(/"levelId":"1-2/);
     h.game.devClassicGame(MARIO, '1-1', 'classic');
-    expect(store.has(CLASSIC_RESUME_KEY)).toBe(false);
+    h.game.devClassicGame(MARIO, 'll-1-1', 'classic');
+    expect(slots()).toEqual(before);
   });
 
   it('a broken slot is ignored', () => {

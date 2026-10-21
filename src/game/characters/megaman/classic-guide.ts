@@ -64,7 +64,7 @@ export const MEGAMAN_CLASSIC_GUIDE: CharacterGuide = {
       name: 'Charge Kick',
       icon: 'icon-kick',
       cost: '4',
-      does: 'Switch it on, then every slide is an attack.',
+      does: 'Turns the slide attack on or off. While on, every slide is an attack.',
     },
     { name: 'Flame Blast', icon: 'icon-flame', cost: '4', does: 'Lands and burns as a pillar of fire.' },
     {

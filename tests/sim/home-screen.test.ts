@@ -48,6 +48,9 @@ function game(h: Partial<HomeScreenHooks>, settings: Settings = loadSettings()) 
   return { ...g, settings };
 }
 
+/** Settings with the campaign open (dev mode): the notes then name Options → Save files (O-07). */
+const campaignOpen = (): Settings => ({ ...loadSettings(), dev: true });
+
 const isCard = (h: H, lines: readonly string[]) =>
   h.top() instanceof CardScene && (h.top() as CardScene).lines.join('|') === lines.join('|');
 
@@ -127,7 +130,7 @@ function title(h: H) {
 
 describe('the Home Screen app note on its own saves', () => {
   it('first launch from the Home Screen: over the title, read out, naming Options → Save files → PASTE CODE', () => {
-    const h = game(IPHONE_APP);
+    const h = game(IPHONE_APP, campaignOpen());
     title(h);
     h.until(() => isCard(h, STANDALONE_NOTICE_LINES), 60);
     expect(STANDALONE_NOTICE_LINES.join(' ')).toMatch(/OPTIONS > SAVE FILES > PASTE CODE/);
@@ -178,7 +181,7 @@ describe('UPDATE READY on the title', () => {
   });
 
   it('the Home Screen note comes first, then the update', () => {
-    const h = game({ ...IPHONE_APP, updateReady: () => true });
+    const h = game({ ...IPHONE_APP, updateReady: () => true }, campaignOpen());
     title(h);
     h.until(() => isCard(h, STANDALONE_NOTICE_LINES), 60);
     answer(h, 'jump');
@@ -192,7 +195,7 @@ const FILE_COPY = { fileCopy: true };
 
 describe("the downloaded copy's note on its own saves", () => {
   it('first launch from the disk: over the title, read out, waits for a press, naming COPY CODE and PASTE CODE', () => {
-    const h = game(FILE_COPY);
+    const h = game(FILE_COPY, campaignOpen());
     title(h);
     h.until(() => isCard(h, OFFLINE_NOTICE_LINES), 60);
     const text = OFFLINE_NOTICE_LINES.join(' ');
@@ -217,7 +220,7 @@ describe("the downloaded copy's note on its own saves", () => {
   });
 
   it('BACK dismisses it too', () => {
-    const h = game(FILE_COPY);
+    const h = game(FILE_COPY, campaignOpen());
     title(h);
     h.until(() => isCard(h, OFFLINE_NOTICE_LINES), 60);
     answer(h, 'attack');

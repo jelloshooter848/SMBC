@@ -80,7 +80,7 @@ describe('settings: the quieter default master volume (v2)', () => {
     expect(OLD_DEFAULT_MASTER).toBe(0.8);
     expect(20 * Math.log10(DEFAULT_MASTER / OLD_DEFAULT_MASTER)).toBeCloseTo(-6.02, 1);
     expect(defaultSettings().v).toBe(SETTINGS_VERSION);
-    expect(SETTINGS_VERSION).toBe(2);
+    expect(SETTINGS_VERSION).toBe(3); // v3: O-08's backup reminders off by default
   });
 
   it('settings still at the old default (0.8, never changed) move to the new default', () => {

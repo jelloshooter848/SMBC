@@ -140,4 +140,6 @@
 - koopa-green 72 12
 + block-item 12 5 item=clock
 + block-item 111 2 item=bee
+-zone pipe 109 9 down -> ll-7-1-bonus2 1 0 exit=none
 +zone cheeps 7 94
++zone pipe 109 9 down -> ll-7-1-bonus2 1 4 exit=stand

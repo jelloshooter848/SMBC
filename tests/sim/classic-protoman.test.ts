@@ -222,8 +222,9 @@ describe('PM-18: the whistle on the pick, Proto Man only', () => {
     const slot = h.game.slotOf(def);
     expect(sel.chars).toContain(slot);
     h.idle(12);
+    // RC-006: Right wraps within a row, so Down moves on to the next row every 12 steps.
     for (let i = 0; i < 40 && sel.chars[(sel as unknown as { index: number }).index] !== slot; i++)
-      h.tap('right');
+      h.tap(i % 12 === 11 ? 'down' : 'right');
     const sfxMock = h.audio.sfx as unknown as { mock: { calls: unknown[][] } };
     const before = sfxMock.mock.calls.length;
     h.tap('jump');

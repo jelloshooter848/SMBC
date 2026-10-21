@@ -58,6 +58,8 @@ describe('FU-4: the Random slot', () => {
     const h = classic();
     const sel = select(h);
     expect(sel.hasRandom).toBe(true);
+    // RC-006: Left wraps within the row, so Down to the second row first.
+    h.tap('down');
     h.tap('left');
     expect(idx(sel)).toBe(sel.chars.length);
     expect(h.said.at(-1)).toBe('Random');
@@ -67,8 +69,9 @@ describe('FU-4: the Random slot', () => {
     const q = sel.slot(sel.chars.length);
     const last = sel.slot(sel.chars.length - 1);
     expect(q.y > last.y || (q.y === last.y && q.x > last.x)).toBe(true);
-    // Right wraps back to the first hero.
+    // Right wraps back to the row's first hero; Up to the first row's.
     h.tap('right');
+    h.tap('up');
     expect(idx(sel)).toBe(0);
   });
 
@@ -76,6 +79,7 @@ describe('FU-4: the Random slot', () => {
     const run = () => {
       const h = classic();
       select(h);
+      h.tap('down');
       h.tap('left');
       h.tap('jump');
       // G-055 (0.5.0): the pick performance plays first.
@@ -96,6 +100,7 @@ describe('FU-4: the Random slot', () => {
   it('after a death the select starts on the Random slot again; picking a hero there clears it', () => {
     const h = classic();
     select(h);
+    h.tap('down');
     h.tap('left');
     h.tap('jump');
     die(h);
@@ -105,7 +110,8 @@ describe('FU-4: the Random slot', () => {
     expect(idx(sel)).toBe(sel.chars.length);
     expect(h.said.at(-1)).toMatch(/^Choose your hero\. Random\./);
     h.idle(12);
-    h.tap('right'); // Mario
+    h.tap('right'); // the row's first hero (RC-006: each row wraps)
+    h.tap('up'); // Mario
     h.tap('jump');
     expect(h.game.state.character).toBe(MARIO);
     expect(h.game.pickedRandom).toBe(false);
@@ -211,10 +217,15 @@ function pick(h: H, label: string): void {
 describe('the Game mode row (CLASSIC > Options)', () => {
   it('steps All heroes → Single hero → Single random, saved, marked and spoken as changed', () => {
     const h = classic();
+    // O-12: the Classic rules row (the first) is developer mode's.
+    h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     expect(h.top()).toBeInstanceOf(TitleScene);
     pick(h, 'Classic');
+    // O-04: the CLASSIC title's demo, then its Start box's START.
+    h.tap('jump');
+    h.tap('jump');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
     pick(h, 'Options');
     const o = h.top() as ClassicOptionsScene;
@@ -262,9 +273,11 @@ describe('review fixes', () => {
     expect(a.said.at(-1)).toBe('World 1-1. 3 lives.');
   });
 
-  it('the CLASSIC menu hint counts only options that apply: with Current rules, Game mode only', () => {
+  it('the CLASSIC menu hint counts only options that apply: with Campaign rules, Game mode only', () => {
     const hint = (over: Partial<ClassicSettings>, rules: 'classic' | 'current') => {
       const h = classic(over);
+      // O-12: Classic rules set to Current is developer mode's.
+      h.settings.dev = true;
       h.settings.classicRules = rules;
       h.game.showClassicMenu();
       return items(h.top())[0]?.hint ?? '';

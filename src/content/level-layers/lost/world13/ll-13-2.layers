@@ -203,7 +203,9 @@
 + buzzy 34 10
 + goomba 35 10
 + goomba 42 10
+-zone pipe 118 3 down -> ll-13-2-bonus 1 0 exit=none
 +zone checkpoint 99 10
++zone pipe 118 3 down -> ll-13-2-bonus 1 3 exit=stand
 
 [layer horz]
 68 13 #

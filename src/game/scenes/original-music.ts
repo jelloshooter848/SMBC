@@ -201,12 +201,14 @@ const HERO_SET_OF: Readonly<Record<string, string>> = {
 };
 
 /**
- * A sound with the choose jingle, by hero id: Mega Man and Bass teleport out (MegaMan.as 157),
- * Bill is electrocuted (Bill.as chooseCharacter 1087).
+ * A sound with the choose jingle, by hero id: Mega Man teleports out (MegaMan.as 157), and so do
+ * his skins Proto Man (whose whistle only replaces the choose music) and Break Man, as the
+ * original's Mega Man skins take his chooseCharacter. Bill is electrocuted (Bill.as 1087). Bass
+ * jumps instead, so he never teleports (RC-032). Played once, at the pick (Game.heroPicked).
  */
 export const CHOOSE_SFX: Readonly<Record<string, string>> = {
   megaman: 'mm-teleport',
-  bass: 'mm-teleport',
+  protoman: 'mm-teleport',
   bill: 'bill-shock',
 };
 

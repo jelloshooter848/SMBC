@@ -23,8 +23,13 @@ import {
   rowsOriginal,
 } from './original-options';
 import type { Game } from './game';
-import { worldLabel } from '../hud/world-label';
+import { openClassicSet, savedRunSpoken } from './original-saves';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { InputFrame } from '@engine/input/input-manager';
+import type { ClassicTitleScene } from './original-title';
+import { boxGrowth, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
+import { abilityHint } from './hints';
+import { FONT_COLOURS } from '@content/sprites/font';
 
 /**
  * Classic mode (title > CLASSIC): the original game with none of the campaign's additions. This
@@ -140,7 +145,7 @@ export const DIFFICULTY_NAMES: Record<MapDifficulty, string> = {
 };
 
 /** The status line while Current rules leave every map on Normal (it fits the 28 columns). */
-export const CURRENT_RULES_NORMAL = 'Current rules: always Normal';
+export const CURRENT_RULES_NORMAL = 'Campaign rules: always Normal';
 
 /**
  * A Map difficulty row (G-006): its value, changed with left and right (and OK / CHANGE on a
@@ -164,7 +169,7 @@ export function mapDifficultyItem(
     get hint() {
       return classic()
         ? 'Easy, Normal or Hard: each plays the original version of every level'
-        : 'Classic rules only: with Current rules every level plays as Normal';
+        : 'Classic rules only: with Campaign rules every level plays as Normal';
     },
   };
 }
@@ -186,56 +191,104 @@ function settingsDifficulty(game: Game): { get(): MapDifficulty; set(d: MapDiffi
 const CLASSIC_RULES_RIGHT = 248;
 const CLASSIC_RULES_Y = 64;
 
-const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
+// Owner decision: the 'current' rules are shown and said as "Campaign" (the saved value stays).
+const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Campaign' };
 
 /**
  * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
  * Current rules only Game mode applies (More settings and Weapons are Classic rules only).
  */
 export function classicOptionsOn(game: Game): boolean {
-  const c = game.deps.settings?.classic ?? defaultClassicSettings();
-  if ((game.deps.settings?.classicRules ?? 'classic') === 'classic') return !isOriginalClassic(c);
+  const saved = game.deps.settings?.classic ?? defaultClassicSettings();
+  // O-12: an Expansion heroes value not in force (outside developer mode) is not "on".
+  const c = game.expansionRowShown ? saved : { ...saved, expansion: defaultClassicSettings().expansion };
+  if (game.classicRules === 'classic') return !isOriginalClassic(c);
   return c.gameMode !== defaultClassicSettings().gameMode;
 }
 
-/** The CLASSIC menu: each map set (MAP_SETS), Options, Back. */
+/** The Tutorials row's spoken help (O-15 / G-042). */
+export const TUTORIALS_HINT =
+  'On: boxes explain the select, the controls, each hero and each upgrade, once per game';
+
+/**
+ * The Tutorials row (O-15 / G-042; the original's General > Tutorials, GeneralOptions.as 25): Off
+ * (the original's default, GameSettings.as 89) or On. Left / Right or OK switch it.
+ */
+export function tutorialsItem(game: Game): MenuItem {
+  const flip = () => {
+    const s = game.deps.settings;
+    if (!s) return;
+    if (s.classicTutorials) delete s.classicTutorials;
+    else s.classicTutorials = true;
+    game.deps.applySettings?.();
+  };
+  return {
+    label: 'Tutorials',
+    value: () => (game.deps.settings?.classicTutorials ? 'On' : 'Off'),
+    adjust: flip,
+    hint: TUTORIALS_HINT,
+  };
+}
+
+/**
+ * The CLASSIC menu: each map set (MAP_SETS), Options, Back. Opened from the CLASSIC title's Start
+ * box (`over`, O-04), it is a box over the title's live demo, and BACK returns to that box; on its
+ * own (no `over`) it is a full-screen menu whose BACK goes to the CLASSIC title.
+ */
 export class ClassicMenuScene extends MenuScene {
-  constructor(game: Game) {
-    super(game, 'CLASSIC', [], () => game.showTitle());
+  /** Frame the box opened (its grow); null: open at once (coming back from a run). */
+  private boxAt: number | null;
+
+  constructor(
+    game: Game,
+    readonly over: ClassicTitleScene | null = null,
+    grow = over !== null,
+    focus?: MapSetId,
+  ) {
+    super(game, 'CLASSIC', [], () => this.leave(), over !== null);
+    this.boxAt = grow ? 0 : null;
     this.build();
+    // Back from a set's select: on that set's row again.
+    if (focus)
+      this.index = Math.max(
+        0,
+        MAP_SETS.findIndex((m) => m.id === focus),
+      );
+  }
+
+  /** BACK: the Start box under it, or the CLASSIC title. */
+  private leave(): void {
+    if (this.over) this.over.backFromSets();
+    else this.game.showClassicTitle('start');
   }
 
   /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
   private build(): void {
     const game = this.game;
-    const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
     // the hint, drawn as BEATEN at the row's end (render).
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
     const items: MenuItem[] = [];
-    // G-008: the run kept in the resume slot, from the level it was in (the map sets follow it).
-    const kept = game.classicResume();
-    this.firstSetRow = kept ? 1 : 0;
-    if (kept)
-      items.push({
-        label: 'Continue',
-        select: () => void game.resumeClassic(),
-        hint: `Your last run, from the start of ${kept.levelId.startsWith('ll-') ? 'Lost Levels ' : ''}World ${worldLabel(kept.world)}-${kept.stage} with ${kept.lives} ${kept.lives === 1 ? 'life' : 'lives'}`,
-      });
+    // Per-set saves (O-07, G-008): each set keeps its own run; picking a set that has one asks
+    // CONTINUE / NEW GAME (original-saves.ts), one with none starts a new game as before.
     items.push(
-      ...MAP_SETS.map((set) => ({
-        label: set.label,
-        select: () => game.classicSelect(set.start, back),
-        hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
-      })),
+      ...MAP_SETS.map((set) => {
+        const kept = game.classicResume(set.id);
+        const saved = kept ? `. Saved run: ${savedRunSpoken(kept)}` : '';
+        return {
+          label: set.label,
+          select: () => openClassicSet(game, set, { back: () => game.showClassicMenu(set.id) }),
+          hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${saved}${own}`,
+        };
+      }),
     );
     // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
     // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
     // as Normal, which the row shows and says (and it does not change).
-    items.push(mapDifficultyItem(game, () => game.deps.settings?.classicRules !== 'current'));
-    this.status = game.deps.settings?.classicRules === 'current' ? CURRENT_RULES_NORMAL : '';
+    items.push(mapDifficultyItem(game, () => game.classicRules !== 'current'));
+    this.status = game.classicRules === 'current' ? CURRENT_RULES_NORMAL : '';
     items.push(
       {
         label: 'Options',
@@ -247,9 +300,9 @@ export class ClassicMenuScene extends MenuScene {
               this.announce();
             }),
           ),
-        hint: 'Classic rules, game mode, more settings, weapons, music set and all settings',
+        hint: `${game.devMode ? 'Classic rules, game mode' : 'Game mode'}, more settings, weapons, music set, and video, audio and controls`,
       },
-      { label: 'Back', select: () => game.showTitle() },
+      { label: 'Back', select: () => this.leave() },
     );
     this.setItems(items);
   }
@@ -262,16 +315,58 @@ export class ClassicMenuScene extends MenuScene {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 
+  /** Back from a set's CONTINUE / NEW GAME prompt: the highlighted row again. */
+  reannounce(): void {
+    this.announce();
+  }
+
   /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
   private beaten: boolean[] = [];
-  /** The menu row of the first map set (1 under the Continue row, G-008). */
-  private firstSetRow = 0;
+
+  /**
+   * Over the CLASSIC title (O-04): the rows in a box over the demo (each value and BEATEN at the
+   * row's right), the Current-rules status line under it and the BACK line.
+   */
+  private renderBox(r: Renderer): void {
+    const game = this.game;
+    const calm = game.ctx.reduceFlashing;
+    const rows: BoxRow[] = this.items.map((it, i) => {
+      const set = i;
+      const value = it.value?.();
+      return {
+        label: it.label,
+        ...(value !== undefined ? { value } : {}),
+        ...(set >= 0 && set < MAP_SETS.length && this.beaten[set] ? { mark: BEATEN_MARK } : {}),
+      };
+    });
+    const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
+    // Clear of the status line and the BACK hint under it, whatever its row count (O-04).
+    const at = boxLayout(rows, this.status !== '', 160);
+    drawMenuBox(r, game.ctx.assets, rows, this.index, { cx: 128, cy: at.cy, grow, t: this.t, calm });
+    if (grow < 1) return;
+    const assets = game.ctx.assets;
+    const line = (s: string, y: number) => {
+      const x = Math.round(128 - (s.length * 8) / 2);
+      r.text(assets.sheet('font', FONT_COLOURS.black), s, x + 1, y + 1);
+      r.text(assets.sheet('font'), s, x, y);
+    };
+    // The screen's full width (31 columns), so "CAMPAIGN RULES: ALWAYS NORMAL" fits whole.
+    if (this.status && at.statusY !== null) line(this.status.toUpperCase().slice(0, 31), at.statusY);
+    line(abilityHint(game, 'BACK', 'attack'), at.backY);
+  }
+
+  /** The demo under the box plays on while it is up (original-title.ts). */
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
+  }
 
   /**
    * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
    * screen and short, so its rows never scroll); the spoken hint carries the difficulty.
    */
   override render(r: Renderer): void {
+    if (this.over) return this.renderBox(r);
     super.render(r);
     const font = this.game.ctx.assets.sheet('font');
     this.beaten.forEach((b, i) => {
@@ -280,7 +375,7 @@ export class ClassicMenuScene extends MenuScene {
           font,
           BEATEN_MARK,
           MENU_VALUE_RIGHT - BEATEN_MARK.length * 8,
-          CLASSIC_RULES_Y + (i + this.firstSetRow) * MENU_ROW_H,
+          CLASSIC_RULES_Y + i * MENU_ROW_H,
         );
     });
   }
@@ -321,15 +416,18 @@ export class ClassicOptionsScene extends MenuScene {
     const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
       rowsOriginal(rows, game.deps.settings?.classic ?? defaultClassicSettings()) ? 'Original' : 'Changed';
     const onBack = this.onBack ?? (() => {});
+    // O-12: the Classic rules row and the Expansion heroes row are developer mode's (the original
+    // has neither); Expansion heroes returns for players once a hero is released.
+    const rulesRow: MenuItem = {
+      label: 'Classic rules',
+      value: () => (this.drawing ? '' : this.rulesLabel),
+      adjust: step,
+      hint: 'Classic SMBC plays the heroes as the original did; Campaign as the campaign does',
+    };
     this.setItems([
-      {
-        label: 'Classic rules',
-        value: () => (this.drawing ? '' : this.rulesLabel),
-        adjust: step,
-        hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
-      },
+      ...(game.devMode ? [rulesRow] : []),
       optionItem(game, GAME_MODE_ROW, () => this.build()),
-      optionItem(game, EXPANSION_ROW, () => this.build()),
+      ...(game.expansionRowShown ? [optionItem(game, EXPANSION_ROW, () => this.build())] : []),
       {
         label: 'More settings',
         value: state(MORE_SETTINGS_ROWS),
@@ -349,6 +447,7 @@ export class ClassicOptionsScene extends MenuScene {
         select: () => game.scenes.push(new ClassicHeroesScene(game, () => this.back())),
         hint: 'Leave heroes out of the select and Random',
       },
+      tutorialsItem(game),
       {
         label: 'Cheats',
         select: () => game.scenes.push(new CheatsScene(game, () => this.back(), { all: game.devMode })),
@@ -357,16 +456,17 @@ export class ClassicOptionsScene extends MenuScene {
           : 'The original cheats; play to unlock them',
       },
       {
-        label: 'All options',
+        // O-13: named for what it holds (the original's own options are the rows above).
+        label: 'Video, audio, controls',
         select: () => game.scenes.push(new OptionsScene(game, () => this.back(), false, true)),
-        hint: 'Video, audio, controls and more',
+        hint: 'Video, audio, controls, how to play and asset packs',
       },
       { label: 'Back', select: onBack },
     ]);
   }
 
   private get rulesLabel(): string {
-    return RULES_LABELS[this.game.deps.settings?.classicRules ?? 'classic'];
+    return RULES_LABELS[this.game.classicRules];
   }
 
   private back(): void {
@@ -393,6 +493,8 @@ export class ClassicOptionsScene extends MenuScene {
     } finally {
       this.drawing = false;
     }
+    // The row is developer mode's only (O-12).
+    if (!this.game.devMode) return;
     const v = this.rulesLabel.toUpperCase();
     r.text(this.game.ctx.assets.sheet('font'), v, CLASSIC_RULES_RIGHT - v.length * 8, CLASSIC_RULES_Y);
   }

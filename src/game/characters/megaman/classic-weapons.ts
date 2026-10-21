@@ -660,7 +660,7 @@ export function liftBrick(p: Player, world: World, at: { tx: number; ty: number 
   world.brickHp.delete(`${at.tx},${at.ty}`);
   const c = new CarriedBrick(p);
   world.spawn(c);
-  world.audio.sfx('kick');
+  world.audio.sfx('mm-arm');
   return c;
 }
 
@@ -676,7 +676,7 @@ export function throwBrick(f: MMFire, c: CarriedBrick): boolean {
   c.destroy();
   const s = new ArmBrick(c.body.x, c.body.y, f.p.facing, SUPER_ARM_BRICK, f.p);
   f.world.spawn(s);
-  f.world.audio.sfx('kick');
+  f.world.audio.sfx('mm-arm');
   return true;
 }
 
@@ -724,14 +724,15 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
         p.root = KNUCKLE_APPEAR;
         p.rootFreeze = true;
       }
-      world.audio.sfx('kick');
+      // G-074: its own punch (was Mario's `kick`).
+      world.audio.sfx('mm-knuckle');
       return true;
     }
     case 'pharaoh-shot': {
       if (countShots(world, p, (k) => k !== 'pharaoh-balloon' && k !== 'arm-debris') >= 1) return false;
       if (!f.spend(id, cost)) return false;
       shoot(f, PHARAOH_SHOTS[0] as ProjectileSpec, aimForward(f));
-      world.audio.sfx('buster');
+      world.audio.sfx('mm-pharaoh');
       // With 4 units left the press also starts a balloon over his head.
       if (f.has(id, cost) && !balloonOf(p, world)) {
         const s = PHARAOH_BALLOONS[0] as ProjectileSpec;
@@ -749,7 +750,7 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
       if (capCount(world, p) >= 3 || !f.spend(id, cost)) return false;
       const pos = busterSpawn(p, FLAME_BULLET, f.pad);
       world.spawn(new FlameBullet(pos.x, pos.y, p.facing, FLAME_BULLET, p));
-      world.audio.sfx('fireball');
+      world.audio.sfx('mm-flame');
       return true;
     }
     case 'magma-bazooka': {
@@ -763,7 +764,7 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
         // Once all eight are live a press sends them outward (no energy needed).
         if (out.length === WATER_DROPS && out.every((d) => d.live && !d.thrownFrom)) {
           for (const d of out) d.launch();
-          world.audio.sfx('buster');
+          world.audio.sfx('mm-water-throw');
         }
         return false;
       }
@@ -773,7 +774,7 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
         const back = (i * 2 * Math.PI) / WATER_DROPS;
         world.spawn(new WaterDrop(p, a0 - back, back));
       }
-      world.audio.sfx('swim');
+      world.audio.sfx('mm-water');
       return true;
     }
     case 'screw-crusher': {
@@ -789,7 +790,7 @@ export function fireWeapon(f: MMFire, id: MMWeaponId): boolean {
           y: b.y + (b.h >> 1) - px(SCREW_CRUSHER.h >> 1),
         },
       );
-      world.audio.sfx('buster');
+      world.audio.sfx('mm-screw');
       return true;
     }
     case 'super-arm':
@@ -804,7 +805,7 @@ export function magmaVolley(f: MMFire, spec: ProjectileSpec): void {
   shoot(f, spec, { vx: v * MM_SHOT_SPEED, vy: 0 });
   shoot(f, spec, { vx: v * MM_DIAGONAL, vy: -MM_DIAGONAL });
   shoot(f, spec, { vx: v * MM_DIAGONAL, vy: MM_DIAGONAL });
-  f.world.audio.sfx(spec === MAGMA_CHARGED ? 'charge-shot' : 'fireball');
+  f.world.audio.sfx(spec === MAGMA_CHARGED ? 'charge-shot' : 'mm-magma');
 }
 
 /** The Flower weapon's projectiles vanish on a hit (MM-C16): all his but buster shots. */

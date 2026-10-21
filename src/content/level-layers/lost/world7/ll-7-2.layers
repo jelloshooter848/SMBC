@@ -267,8 +267,8 @@
 -zone pipe 51 4 down -> ll-7-2-bonus 1 0 exit=none
 -zone pipe 115 4 down -> ll-7-2-bonus 1 0 exit=none
 +zone checkpoint 154 11
-+zone pipe 51 4 down -> ll-7-2-bonus 13 0 exit=none
-+zone pipe 115 4 down -> ll-7-2-bonus 13 0 exit=none
++zone pipe 51 4 down -> ll-7-2-bonus 13 12 exit=stand
++zone pipe 115 4 down -> ll-7-2-bonus 13 12 exit=stand
 
 [layer horz]
 + lift-fall 253 4 len=2 dx=8
