@@ -8,6 +8,21 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode: **redrawn select faces** for Mario, Luigi, Link, Samus, Simon, Mega Man, Bass,
+  Bill, Sophia III, Quick Man and Princess Zelda's three looks (Mario's and Luigi's Super Mario
+  Bros. 3 looks with them): shaded skin and materials, a coloured rim that stands out in the black
+  box, and each face in its hero's in-game colours. Bass's helmet is now orange and Sophia pink as
+  in play, Zelda has her own face, and Quick Man his boomerang crest.
+- Classic mode plays the original's rules and heroes only: the Classic rules switch and the
+  Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
+  Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
+  by an earlier version is kept but has no effect; a Continue run kept under Campaign rules goes on
+  under Classic rules with its level, lives, score and coins.
+- The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
+  "Current") wherever it is shown or read out.
+
 ### Fixed
 
 - Classic mode, Map Difficulty Hard: going down a pipe into a bonus room of The Lost Levels or Super
@@ -19,16 +34,6 @@ under `## [Unreleased]`.
   Normal after a reload, and its win was recorded on Normal.
 - Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
   link's run plays and counts as before, but never writes or clears the Continue slot.
-
-### Changed
-
-- Classic mode plays the original's rules and heroes only: the Classic rules switch and the
-  Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
-  Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
-  by an earlier version is kept but has no effect; a Continue run kept under Campaign rules goes on
-  under Classic rules with its level, lives, score and coins.
-- The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
-  "Current") wherever it is shown or read out.
 
 ## [0.4.67] - 2026-10-21
 
