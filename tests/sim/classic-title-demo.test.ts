@@ -12,7 +12,13 @@ import {
   WAKE_AHEAD,
   demoDef,
 } from '@game/scenes/title-demo';
-import { CLASSIC_AT, ClassicTitleScene, PROMPT_BLINK, SMASH } from '@game/scenes/original-title';
+import {
+  CLASSIC_AT,
+  ClassicTitleScene,
+  PROMPT_BLINK,
+  PROMPT_STRIP,
+  SMASH,
+} from '@game/scenes/original-title';
 import {
   BOX_GROW,
   boxGrowth,
@@ -23,6 +29,8 @@ import {
   type BoxRow,
 } from '@game/scenes/menu-box';
 import type { Scene } from '@engine/scene';
+import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { CheatsScene } from '@game/scenes/cheats-menu';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TitleScene } from '@game/scenes/title';
@@ -536,7 +544,7 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
   }, 120000);
 });
 
-describe('O-04 release review: no title left behind', () => {
+describe('O-04 release review: no title left behind, the logo and prompt over the demo', () => {
   const stack = (h: H) => (h.game.scenes as unknown as { stack: Scene[] }).stack;
 
   it('Options > Cheats > Level select > Go, then BACK, several times: one title, one listener', () => {
@@ -565,5 +573,39 @@ describe('O-04 release review: no title left behind', () => {
       expect(stack(h)).toHaveLength(2);
       expect(live.size).toBe(1);
     }
+  });
+
+  it('the logo and the prompt draw over everything the demo draws; the prompt on its dark strip', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = true;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    h.idle(MARIO_WAIT + PROMPT_BLINK + 2);
+    expect(ct.promptShown()).toBe(true);
+    const ops: { kind: string; what: string }[] = [];
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite(sheet: SpriteSheet, frame: string): void {
+        ops.push({ kind: 'sprite', what: `${sheet.id}:${frame}` });
+      },
+      text(_f: SpriteSheet, str: string): void {
+        ops.push({ kind: 'text', what: str });
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, c: string): void {
+        ops.push({ kind: 'rect', what: c });
+      },
+    });
+    ct.render(r);
+    const firstLogo = ops.findIndex((o) => o.what.startsWith('title-logo:'));
+    const lastDemo = ops.reduce(
+      (k, o, i) => (o.kind === 'sprite' && !o.what.startsWith('title-logo:') ? i : k),
+      -1,
+    );
+    expect(firstLogo).toBeGreaterThan(-1);
+    expect(lastDemo).toBeGreaterThan(-1);
+    expect(firstLogo).toBeGreaterThan(lastDemo);
+    const strip = ops.findIndex((o) => o.kind === 'rect' && o.what === PROMPT_STRIP);
+    const words = ops.findIndex((o) => o.kind === 'text' && o.what === ct.prompt);
+    expect(strip).toBeGreaterThan(lastDemo);
+    expect(words).toBeGreaterThan(strip);
   });
 });
