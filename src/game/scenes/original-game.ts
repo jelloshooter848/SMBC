@@ -198,6 +198,30 @@ export function classicOptionsOn(game: Game): boolean {
   return c.gameMode !== defaultClassicSettings().gameMode;
 }
 
+/** The Tutorials row's spoken help (O-15 / G-042). */
+export const TUTORIALS_HINT =
+  'On: a box explains the select, the controls, each hero and each upgrade the first time in a game';
+
+/**
+ * The Tutorials row (O-15 / G-042; the original's General > Tutorials, GeneralOptions.as 25): Off
+ * (the original's default, GameSettings.as 89) or On. Left / Right or OK switch it.
+ */
+export function tutorialsItem(game: Game): MenuItem {
+  const flip = () => {
+    const s = game.deps.settings;
+    if (!s) return;
+    if (s.classicTutorials) delete s.classicTutorials;
+    else s.classicTutorials = true;
+    game.deps.applySettings?.();
+  };
+  return {
+    label: 'Tutorials',
+    value: () => (game.deps.settings?.classicTutorials ? 'On' : 'Off'),
+    adjust: flip,
+    hint: TUTORIALS_HINT,
+  };
+}
+
 /** The CLASSIC menu: each map set (MAP_SETS), Options, Back. */
 export class ClassicMenuScene extends MenuScene {
   constructor(game: Game) {
@@ -349,6 +373,7 @@ export class ClassicOptionsScene extends MenuScene {
         select: () => game.scenes.push(new ClassicHeroesScene(game, () => this.back())),
         hint: 'Leave heroes out of the select and Random',
       },
+      tutorialsItem(game),
       {
         label: 'Cheats',
         select: () => game.scenes.push(new CheatsScene(game, () => this.back(), { all: game.devMode })),

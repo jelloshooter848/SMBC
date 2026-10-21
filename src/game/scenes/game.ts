@@ -119,6 +119,7 @@ import { TownScene } from '../town/scene';
 import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
 import type { World } from '../world/world';
 import { TipLog } from '../tutorial/tips';
+import { ClassicTutorials } from '../tutorial/original-tutorials';
 import type { ShareEnv } from '../save/share-code';
 import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
@@ -304,6 +305,8 @@ export class Game {
   tutorialRun: TutorialRun | null = null;
   /** The tips a tutorial or a training stage has shown (0.4.43: the pause menu's LAST TIPS). */
   readonly tips = new TipLog();
+  /** Classic mode's Tutorials boxes (O-15 / G-042; off unless Classic options > Tutorials is on). */
+  readonly classicTutorials = new ClassicTutorials(this);
   /** Heroes whose training question was answered on the campaign's file (SaveFile.tutorials). */
   tutorials: string[] = [];
   /**
@@ -455,6 +458,8 @@ export class Game {
   selectEntered(classic: boolean): void {
     this.heroChosen = false;
     if (classic && this.campaign === null) this.deps.ctx.audio.playMusic(SMB_SET.select);
+    // Tutorials (O-15): the select's box over it (EventManager.characterSelectStart).
+    if (classic) this.classicTutorials.atSelect();
   }
 
   /**
@@ -1842,6 +1847,7 @@ export class Game {
    */
   devClassicGame(character: CharacterDef, levelId: string, rules: Rules, dev = true): void {
     this.pendingLevel = null;
+    this.classicTutorials.newGame();
     this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, dev);
   }
 
@@ -1954,6 +1960,8 @@ export class Game {
   showCheatUnlocks(world: World): void {
     const id = this.cheatUnlocks.shift();
     if (!id) return;
+    // Tutorials (O-15): the cheat box follows the cards once (Cheats.as).
+    this.classicTutorials.cheatUnlocked();
     this.deps.ctx.audio.sfx('1up');
     this.deps.announcer?.say(`You unlocked the ${cheatInfo(id).name} cheat! OK to continue.`);
     this.scenes.push(
@@ -2151,6 +2159,8 @@ export class Game {
     // The run's rules are set before the pick, so the roster (Game.roster) offers the Classic
     // extras on the very first select.
     this.campaign = null;
+    // A new Classic game: every Tutorials box shows again (TutorialManager.startNewGameHandler).
+    this.classicTutorials.newGame();
     this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
