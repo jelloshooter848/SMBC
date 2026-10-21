@@ -10,6 +10,11 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic mode: **redrawn select faces** for Mario, Luigi, Link, Samus, Simon, Mega Man, Bass,
+  Bill, Sophia III, Quick Man and Princess Zelda's three looks (Mario's and Luigi's Super Mario
+  Bros. 3 looks with them): shaded skin and materials, a coloured rim that stands out in the black
+  box, and each face in its hero's in-game colours. Bass's helmet is now orange and Sophia pink as
+  in play, Zelda has her own face, and Quick Man his boomerang crest.
 - Custom levels moved from the title menu into the title's Options, next to Level editor; Back returns
   to Options. Neither row shows in Classic's options or in a game's Options any more.
 - The title's Chapter 1 row is now **Campaign**; its card reads CAMPAIGN / CHAPTER 1 COMING SOON!
