@@ -938,6 +938,12 @@ describe('Dev → Bonus games', () => {
     const { h } = onMap({}, true);
     const before = { lives: h.game.state.lives, bonus: { ...h.game.bonus } };
     h.game.scenes.push(new DevMenuScene(h.game, true));
+    // BUG-09: Dev mode > Level select > Bonus games.
+    const menu = h.top() as MenuScene;
+    expect(labels(menu)).toContain('Level select');
+    h.idle(8);
+    toRow(h, menu, 'Level select');
+    h.tap('jump');
     const dev = h.top() as MenuScene;
     expect(labels(dev)).toContain('Bonus games');
     h.idle(8);

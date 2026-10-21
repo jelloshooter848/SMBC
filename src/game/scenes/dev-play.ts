@@ -6,9 +6,9 @@ import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
 import { CLASSIC_EXTRAS, heroFor, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
+import { CUSTOM_PREFIX } from '../level/library';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
 import { levelSelectTarget, worldName } from './level-select-cheat';
-import { RULES_HINT, RULES_LABELS } from './dev-level-select';
 import { DevMiniGamesScene } from './dev-minigames';
 import { DevBonusGamesScene } from '../bonus/dev';
 import { hasTraining, runTraining } from '../tutorial/training';
@@ -152,6 +152,11 @@ export function devAgainItem(game: Game): MenuItem | null {
   };
 }
 
+/** The START page's Rules row values and hint (dev Classic starts, TG rules model). */
+// Owner decision: the 'current' rules are shown and said as "Campaign" (the value stays).
+export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
+export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
+
 /** The short map set names (the cheat's Level select has the same). */
 const SET_NAMES: Record<string, string> = { smb: 'SMB', special: 'Special', lost: 'Lost Levels' };
 
@@ -199,6 +204,44 @@ export function areaName(id: string, prefix: string): string {
 export function areasOf(game: Game, id: string): string[] {
   const all = game.deps.listLevels?.() ?? [];
   return all.filter((a) => a === id || a.startsWith(`${id}-`));
+}
+
+/**
+ * BUG-09: Dev > Level select, the one level select of the Dev menu: Classic (the O-05 map set
+ * pages), Campaign, Mini games and Bonus games. It replaces the old one-page list
+ * (dev-level-select.ts, deprecated); every id that list offered is reached from these pages.
+ */
+export class DevLevelPagesScene extends DevPage {
+  constructor(game: Game, translucent = false) {
+    super(
+      game,
+      'Level select',
+      [
+        {
+          label: 'Classic',
+          select: () => push(game, new DevClassicScene(game, translucent), translucent),
+          hint: 'Map set, world, level, then the start page',
+        },
+        {
+          label: 'Campaign',
+          select: () => push(game, new DevCampaignScene(game, translucent), translucent),
+          hint: 'World map, story levels, village, training, games; nothing is saved',
+        },
+        {
+          label: 'Mini games',
+          select: () => push(game, new DevMiniGamesScene(game, translucent), translucent),
+          hint: "Play any hero's freeing mini game; nothing is saved",
+        },
+        {
+          label: 'Bonus games',
+          select: () => push(game, new DevBonusGamesScene(game, translucent), translucent),
+          hint: 'Toad House, N-spade and the spade game; nothing is saved',
+        },
+        back(game),
+      ],
+      translucent,
+    );
+  }
 }
 
 /** Dev > Classic: the map sets. */
@@ -321,6 +364,7 @@ export class DevCampaignScene extends DevPage {
       push(game, new DevStartScene(game, { branch: 'campaign', level, name }), translucent);
     const smb = MAP_SETS[0] as MapSet;
     const lost = MAP_SETS[2] as MapSet;
+    const custom = (game.deps.listLevels?.() ?? []).filter((id) => id.startsWith(CUSTOM_PREFIX));
     super(
       game,
       'Campaign',
@@ -347,6 +391,32 @@ export class DevCampaignScene extends DevPage {
         },
         { label: 'Village', select: start(DEV_VILLAGE, 'Village'), hint: 'Kakariko Village, every hero' },
         { label: 'Tutorial 1-0', select: start('1-0', 'Tutorial 1-0'), hint: "Mario's tutorial stage" },
+        // BUG-09: the editor's levels, which only the old one-page Level select listed.
+        ...(custom.length
+          ? [
+              {
+                label: 'Custom levels',
+                select: () =>
+                  push(
+                    game,
+                    new DevPage(
+                      game,
+                      'Custom levels',
+                      [
+                        ...custom.map((id) => ({
+                          label: id.slice(CUSTOM_PREFIX.length),
+                          select: start(id, `Custom ${id.slice(CUSTOM_PREFIX.length)}`),
+                        })),
+                        back(game),
+                      ],
+                      translucent,
+                    ),
+                    translucent,
+                  ),
+                hint: 'The levels made in the editor',
+              },
+            ]
+          : []),
         {
           label: 'Training rooms',
           select: () => push(game, new DevTrainingScene(game, translucent), translucent),

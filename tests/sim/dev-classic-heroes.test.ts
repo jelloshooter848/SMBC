@@ -204,7 +204,8 @@ describe('O-05 / O-06: nothing reaches release players', () => {
     h.game.showDevMenu();
     const dev = h.game.scenes.top as DevMenuScene;
     expect(items(dev).map((i) => i.label)).toEqual(
-      expect.arrayContaining(['Classic', 'Campaign', 'Classic heroes', 'Dev mode off']),
+      // BUG-09: Classic and Campaign are under the one Level select.
+      expect.arrayContaining(['Level select', 'Classic heroes', 'Dev mode off']),
     );
   });
 });

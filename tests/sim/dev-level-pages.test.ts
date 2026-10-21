@@ -70,14 +70,18 @@ describe('O-05: the dev Level select as pages', () => {
     const h = dev();
     h.game.showDevMenu();
     const menu = labels(h.top());
-    expect(menu.slice(0, 3)).toEqual(['Classic', 'Campaign', 'Level select']);
+    // BUG-09: one Level select, which opens Classic and Campaign.
+    expect(menu[0]).toBe('Level select');
     expect(menu).not.toContain('Again');
+    pick(h, 'Level select');
+    expect(labels(h.top()).slice(0, 2)).toEqual(['Classic', 'Campaign']);
   });
 
   it('keys: Lost Levels D-4 as Samus with the Fire Flower on Hard in a Classic run, in under 30 presses, read out', () => {
     const h = dev();
     h.game.showDevMenu();
-    let presses = pick(h, 'Classic');
+    let presses = pick(h, 'Level select'); // BUG-09
+    presses += pick(h, 'Classic');
     expect(h.top()).toBeInstanceOf(DevClassicScene);
     expect(h.said.at(-1)).toMatch(/^Classic\. Super Mario Bros\./);
     presses += pick(h, 'The Lost Levels');

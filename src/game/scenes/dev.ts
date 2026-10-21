@@ -1,14 +1,11 @@
 import { MenuScene } from './menu';
-import { DevLevelSelectScene } from './dev-level-select';
-import { DevMiniGamesScene } from './dev-minigames';
-import { DevBonusGamesScene } from '../bonus/dev';
 import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 import type { MenuItem } from './menu';
 import type { InputFrame } from '@engine/input/input-manager';
 import { CLASSIC_EXTRAS, EXPANSION_HEROES, expansionReleased } from '../characters/registry';
 import type { CharacterDef } from '../characters/character';
-import { DevCampaignScene, DevClassicScene, devAgainItem } from './dev-play';
+import { DevLevelPagesScene, devAgainItem } from './dev-play';
 
 /**
  * Developer tools menu, reachable from the title and (translucently) from the pause menu.
@@ -23,32 +20,13 @@ export class DevMenuScene extends MenuScene {
     };
     const again = devAgainItem(game);
     this.setItems([
-      // O-05: the Level select as pages (dev-play.ts); Again replays the last start in one press.
+      // O-05: Again replays the last start in one press. BUG-09: one Level select, its pages
+      // nesting Classic, Campaign, Mini games and Bonus games (dev-play.ts).
       ...(again ? [again] : []),
       {
-        label: 'Classic',
-        select: () => push(new DevClassicScene(game, this.translucent)),
-        hint: 'Map set, world, level, then the start page',
-      },
-      {
-        label: 'Campaign',
-        select: () => push(new DevCampaignScene(game, this.translucent)),
-        hint: 'World map, story levels, village, training, games; nothing is saved',
-      },
-      {
         label: 'Level select',
-        select: () => push(new DevLevelSelectScene(game, () => game.scenes.pop())),
-        hint: 'Every area by its id, on one page',
-      },
-      {
-        label: 'Mini games',
-        select: () => push(new DevMiniGamesScene(game, fromPause)),
-        hint: "Play any hero's freeing mini game; nothing is saved",
-      },
-      {
-        label: 'Bonus games',
-        select: () => push(new DevBonusGamesScene(game, fromPause)),
-        hint: 'Toad House, N-spade and the spade game; nothing is saved',
+        select: () => push(new DevLevelPagesScene(game, this.translucent)),
+        hint: 'Classic, Campaign, Mini games and Bonus games',
       },
       {
         label: 'Assists',

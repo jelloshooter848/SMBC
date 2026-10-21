@@ -13,6 +13,9 @@ under `## [Unreleased]`.
 - Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
   joins the Classic select once it is released; an Expansion heroes value saved by an earlier
   version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
+- Dev mode: one **Level select** in the Dev menu (BUG-09). It opens Classic, Campaign, Mini games
+  and Bonus games; the old one-page list is gone, and the editor's levels it listed are now under
+  Campaign > Custom levels.
 
 ## [0.4.68] - 2026-10-21
 
