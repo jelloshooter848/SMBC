@@ -142,6 +142,90 @@ const link = [
   '7x6666666667766666666667',
 ];
 
+/** Samus: the round orange helmet, its lime visor framed in dark red, the big shoulder pads. */
+const samus = [
+  '........pppppppp........',
+  '......ppnnnggnnnpp......',
+  '.....pnnggggggggnnp.....',
+  '....pnggggggggggggnp....',
+  '...pnggggggggggggggnp...',
+  '..pngggg55555555ggggnp..',
+  '..pggg557777777755gggp..',
+  '.pggg5711qqqqqqqq75gggp.',
+  '.pggg571qqqqqqqqq75gggp.',
+  '.pggg57qqqqqqqqqq75gggp.',
+  '.pogg57xxxxxxxxxx75ggop.',
+  '.pogg55777777777755ggop.',
+  '.poggg555555555555gggop.',
+  '..poggggggggggggggggop..',
+  '..ppoooooooooooooooopp..',
+  '.pp5p55555555555555p5pp.',
+  '.pgnnp555555555555pnngp.',
+  'pgnnggp5555555555pggnngp',
+  'pnggggop55555555poggggnp',
+  'pggggggp55555555pggggggp',
+  'pggggogp55555555pgoggggp',
+  'pogggoop55555555poogggop',
+  'ppoooopp55555555ppoooopp',
+  'p5555555555555555555555p',
+];
+
+/** Simon: short red-brown hair under the grey headband, heavy brows, a square jaw, the leather armour. */
+const simon = [
+  '.......pppppppppp.......',
+  '.....pp5o5o55o5o5pp.....',
+  '....p55o5o5555o5o55p....',
+  '...p5o555555555555o5p...',
+  '...p5555555555555555p...',
+  '..pffffffffffffffffffp..',
+  '..peeeeeeeeeeeeeeeeeep..',
+  '..p5o32222222222223o5p..',
+  '..p532555522225555235p..',
+  '..p532210222222012235p..',
+  '..po3220022222200223op..',
+  '..po3222222332222223op..',
+  '..po3222222332222223op..',
+  '...o3222223nn3222223o...',
+  '...o3222222222222223o...',
+  '...on3222oooooo2223no...',
+  '....on322222222223no....',
+  '....onn3333333333nno....',
+  '.....oonnnnnnnnnnoo.....',
+  '...ccbboo333333oobbcc...',
+  '..cbuubbbconnocbbbuubc..',
+  '.cbuubbbbbccccbbbbbuubc.',
+  'cbuubbbbbbbccbbbbbbbuubc',
+  'cbubbbbbbbbbbbbbbbbbbubc',
+];
+
+/** Bill: dark hair under the red bandana (its knot and tails to his right), heavy brows, a stubbled jaw, bare shoulders and his strap. */
+const bill = [
+  '.....cccccccccccccc.....',
+  '....ccbccccccccccbcc....',
+  '...cccbcccbccbcccbccc...',
+  '...cccccccccccccccccp44.',
+  '..pw444444444444444p455.',
+  '..p55555555555555554p5..',
+  '..pc32222222222222245p..',
+  '..oc3ccc22222222ccc5co..',
+  '..oc3221022222201223co..',
+  '..oc3220022222200223co..',
+  '..o332222223322222233o..',
+  '..o332222223322222233o..',
+  '...o3222nn3333nn2223o...',
+  '...o3222222222222223o...',
+  '...o32222oooooo22223o...',
+  '...o3322222222222233o...',
+  '....o33333333333333o....',
+  '.....oonnnnnnnnnnoo.....',
+  '......on33333333no......',
+  '...ocb332222222233noo...',
+  '..on3cb2222332222223no..',
+  '.on322cb2223322222223no.',
+  'on32333cb3333333333323no',
+  'on322222cb222222222223no',
+];
+
 /** Princess Zelda: light brown hair down to her shoulders, the gold circlet and its red jewel, the pointed ears, the pink gown. */
 const zelda = [
   '........................',
@@ -198,62 +282,6 @@ const moustached = [
   '.044444444444444444444444',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
-/** Samus: the round orange helmet, its green visor, the red rim and the shoulder pads. */
-const samus = [
-  '.......0000000000.......',
-  '.....00ggggggggggg00....',
-  '....0ggggggggggggggg0...',
-  '...0ggggg555555ggggggg0..',
-  '..0gggg5500000055ggggg0..',
-  '..0ggg5066666666055gggg0.',
-  '.0ggg506666666666605gggg0',
-  '.0ggg506611666666605gggg0',
-  '.0ggg506616666666605gggg0',
-  '.0ggg506666666666605gggg0',
-  '.0ggg550666666666055gggg0',
-  '.0gggg5500000000055ggggg0',
-  '.0ggggg555555555555gggggg0',
-  '..0gggggggggggggggggggg0.',
-  '..05ggggggggggggggggg50..',
-  '...055gggggggggggggg550..',
-  '..0dd0555555555555550dd0.',
-  '.0ddddd000000000000ddddd0',
-  '0ddggddd0555555550dddggdd0',
-  '0dggggdd0555555550ddggggd0',
-  '0dggggdd0555555550ddggggd0',
-  '0ddgggdd0555555550ddgggdd0',
-  '0ddddddd0555555550ddddddd0',
-  '.0000000055555555500000000',
-].map((r) => r.slice(0, 24).padEnd(24, '.'));
-
-/** Simon: long brown hair under a red headband, a strong jaw, the leather armour's collar. */
-const simon = [
-  '......000000000000......',
-  '....00bbbbbbbbbbbb00....',
-  '...0bbbbbbbbbbbbbbbb0...',
-  '..0bbbbbbbbbbbbbbbbbb0..',
-  '..0b444444444444444b0...',
-  '..0b555555555555555b0...',
-  '.0bbb2222222222222bbb0..',
-  '.0bb222000222000222bb0..',
-  '.0bb222010222010222bb0..',
-  '.0bb2220002220002222bb0.',
-  '.0bb2222222222222222bb0.',
-  '.0bbb222222232222222bb0.',
-  '.0bbb22222222222222bbb0.',
-  '.0bbbb222200000222bbbb0.',
-  '.0bbbbb2222222222bbbbb0.',
-  '..0bbbbb22222222bbbbb0..',
-  '..0bbbbbb000000bbbbbb0..',
-  '...0bbbb0cccccc0bbbb0...',
-  '...0bb0cccbbbbccc0bb0...',
-  '..0bbcccbbbbbbbbcccbb0..',
-  '.0cccbbbbbbbbbbbbbbccc0.',
-  '0cccbbbbbbbbbbbbbbbbccc0',
-  '0ccbbbbbbbbbbbbbbbbbbcc0',
-  '0cbbbbbbbbbbbbbbbbbbbbc0',
-].map((r) => r.slice(0, 24).padEnd(24, '.'));
-
 /** Mega Man: the round blue helmet with its light crest, the open face and big eyes. */
 const megaman = [
   '.......0000000000.......',
@@ -308,34 +336,6 @@ const bass = [
   '.0dddhhhhhhhhhhhhhhhhhddd0',
   '.0ddhhhhhhhhhhhhhhhhhhhdd0',
   '.0dhhhhhhhhhhhhhhhhhhhhhd0',
-].map((r) => r.slice(0, 24).padEnd(24, '.'));
-
-/** Bill: short dark hair and a red bandana, a squared jaw, bare shoulders. */
-const bill = [
-  '.......00000000000......',
-  '.....00ccccccccccc00....',
-  '....0cccccccccccccccc0..',
-  '...0ccccccccccccccccccc0.',
-  '...04444444444444444440.',
-  '..044444444444444444444000',
-  '..055555555555555555554440',
-  '..0c22222222222222222c05440',
-  '..0c22200022220002222c0.0440',
-  '..0c22201022220102222c0..00',
-  '..0c22200022220002222c0..',
-  '..0c22222222222222222c0..',
-  '..0c22222222322222222c0..',
-  '..0c22222222222222222c0..',
-  '...0c22222000000222220...',
-  '...0c22222222222222220...',
-  '....0c222222222222220....',
-  '.....00222222222222000...',
-  '....0222000000000002220..',
-  '...02222222222222222222200',
-  '..022222333222222233322220',
-  '.0222223333222222333332220',
-  '.0222222333222222333322220',
-  '.0222222222222222222222220',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
 /** Ryu: the blue ninja hood, a strip of face with the eyes, the scarf tail. */
