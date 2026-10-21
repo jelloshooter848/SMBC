@@ -5,6 +5,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { saveSettings } from '@engine/save/settings';
+import { defaultClassicWeapons } from '@engine/save/original-options';
 import type { Game } from '../scenes/game';
 import type { World } from '../world/world';
 import type { Player } from '../entities/player';
@@ -31,7 +32,7 @@ import { wrapPrompt } from './stage-prompts';
  * its music consoles, the Exploding Rabbit website and forum).
  */
 
-/** The ability names a box's words use, by placeholder: the ability shown, and its action. */
+/** The generic ability names a box's words use, by placeholder: the ability shown, and its action. */
 const ABILITIES: Readonly<Record<string, readonly [string, Action]>> = {
   JUMP: ['JUMP', 'jump'],
   ATTACK: ['ATTACK', 'attack'],
@@ -42,16 +43,84 @@ const ABILITIES: Readonly<Record<string, readonly [string, Action]>> = {
   DONE: ['DONE', 'attack'],
 };
 
+/** The actions a `{NAME:action}` placeholder may name. */
+const ACTIONS: readonly Action[] = ['jump', 'attack', 'special', 'select', 'start'];
+
+/** Mega Man's weapons' button names (megaman/classic-weapons.ts MM_WEAPONS' labels). */
+const MM_LABELS: Readonly<Record<string, string>> = {
+  'metal-blade': 'BLADE',
+  'super-arm': 'ARM',
+  'hard-knuckle': 'KNUCKLE',
+  'pharaoh-shot': 'PHARAOH',
+  'charge-kick': 'KICK',
+  'flame-blast': 'FLAME',
+  'magma-bazooka': 'MAGMA',
+  'water-shield': 'SHIELD',
+  'screw-crusher': 'SCREW',
+};
+/** Ryu's arts' button names (ryu/classic-weapons.ts). */
+const RYU_LABELS: Readonly<Record<string, string>> = {
+  shuriken: 'SHURIKEN',
+  windmill: 'WINDMILL',
+  'fire-wheel': 'WHEEL',
+  'dragon-ball': 'DRAGON',
+  'jump-slash': 'SPIN',
+};
+/** Simon's sub-weapons' button names (simon/index.ts SIMON_TOOL_LABELS). */
+const SIMON_LABELS: Readonly<Record<string, string>> = {
+  dagger: 'DAGGER',
+  'hand-axe': 'AXE',
+  'holy-water': 'WATER',
+  cross: 'CROSS',
+  stopwatch: 'WATCH',
+};
+
+/**
+ * The `{=name}` placeholders: a button whose name (and, for Ryu's Jump Slash, place) follows the
+ * Customize Weapons choice and the hero, as the hero's touch buttons do.
+ */
+function dynamicAbility(
+  game: Game,
+  name: string,
+  hero: string | undefined,
+): readonly [string, Action] | null {
+  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  switch (name) {
+    case 'link-tool':
+      return [w.link === 'bow' ? 'BOW' : 'BOMB', 'select'];
+    case 'weapon':
+      // Bass's Flower weapon (his own Water Shield button reads WATER), else Mega Man's.
+      if (hero === 'bass')
+        return [w.bass === 'water-shield' ? 'WATER' : (MM_LABELS[w.bass] ?? 'WEAPON'), 'special'];
+      return [MM_LABELS[w.megaman] ?? 'WEAPON', 'special'];
+    case 'ryu-art':
+      return [RYU_LABELS[w.ryuStart] ?? 'SPECIAL', 'special'];
+    case 'ryu-slash':
+      return w.ryuStart === 'jump-slash' ? ['SPIN', 'special'] : ['SPIN', 'select'];
+    case 'simon-start':
+      return [SIMON_LABELS[w.simonStart] ?? 'SPECIAL', 'special'];
+    case 'sophia-missile':
+      return [w.sophia === 'homing' ? 'HOMING' : 'MISSILE', 'special'];
+    default:
+      return null;
+  }
+}
+
 /**
  * Each box's pages (TutorialManager's *_MSG arrays), by the original's name for it: a hero's start
- * is `<hero id>Start`, Mega Man's Mushroom `megamanPowerUp`, an upgrade its PickupInfo name.
+ * is `<hero id>Start`, Mega Man's Mushroom `megamanPowerUp`, an upgrade its PickupInfo name. A
+ * hero's own box names its buttons as its touch buttons do: `{SHOOT:attack}` is the ability SHOOT
+ * on the attack action, `{=link-tool}` a name that follows the weapon choice (dynamicAbility).
+ *
+ * Where our Classic heroes play differently from the words (our buttons, our kits), the words say
+ * what ours do; directions are UP, DOWN, LEFT and RIGHT, or "away from" / "toward" a wall.
  */
 export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   characterSelect: ['Use the directions to move the cursor, and press {OK} to select a character.'],
   firstCharacterStart: [
     'Each character controls just like they do in their own games. Use the directions to move, and press {JUMP} to jump and {ATTACK} to attack. Hold {ATTACK} to run with Mario and Luigi.',
     'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
-    'Note that Mario and Luigi are the only characters that can jump on enemies. For some characters, you can press {SPECIAL} for an alternate attack and {TOOLS} to change weapons.',
+    'Note that Mario and Luigi are the only characters that can jump on enemies. For some characters, you can press {SPECIAL} for an alternate attack and {TOOLS} for another weapon or tool.',
     'You can pause the game by pressing {MENU}. In the pause menu, you can change several options.',
     'Also, playing with a gamepad is highly recommended.',
   ],
@@ -70,58 +139,61 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Mushroom:\nA mushroom gives you an extra hit and enhances most characters. By default, if you take damage you will lose the mushroom and some upgrades you collected. You can get most of them back by collecting another mushroom.',
   ],
   bassStart: [
-    'Bass:\nPress DOWN and {JUMP} to dash. Bass can perform a dash jump if you jump while dashing. Bass can also double jump in the air. Press {TOOLS} or {SPECIAL} to cycle through weapons when you have them.',
+    'Bass:\nPress DOWN and {JUMP} to dash. Bass can perform a dash jump if you jump while dashing. Bass can also double jump in the air. Hold {SHOOT:attack} for rapid fire.',
+    'With a fire flower, press {=weapon} to use his weapon. Press {SWAP:select} to swap the shot and weapon buttons.',
   ],
   billStart: [
-    'Bill:\nBill can shoot in different directions if you hold UP and DOWN while moving. He cannot collect a mushroom and will be killed in one hit.',
+    'Bill:\nBill can shoot in different directions if you hold UP and DOWN while moving. With only his rifle, he will be killed in one hit.',
   ],
   linkStart: [
     'Link:\nWhile in the air, Link can perform an upward thrust or downward thrust by pressing UP or DOWN.',
-    'He can throw his boomerang to stun enemies and grab items by pressing {SPECIAL}. Press {TOOLS} to switch subweapons if you have more than one.',
+    'He can throw his boomerang to stun enemies and grab items by pressing {BOOMERANG:special}. Once he has bombs or a bow, press {=link-tool} to use them.',
   ],
-  linkBlueRing: ['Blue Ring:\nThe blue ring prevents Link from getting damaged by his bombs.'],
-  linkBow: ['Bow and Arrows:\nPress {SPECIAL} to shoot an arrow across the screen.'],
+  linkBlueRing: ["Blue Ring:\nThe blue ring makes Link's sword stronger."],
+  linkBow: ['Bow and Arrows:\nPress {BOW:select} to shoot an arrow across the screen.'],
   linkBomb: [
-    'Bomb:\nPress {SPECIAL} place a bomb. It will explode after a short time. Bombs damage Link if he does not have a mushroom.',
+    'Bomb:\nPress {BOMB:select} to place a bomb. It will explode after a short time. Link is never hurt by his own bombs.',
   ],
   linkBombBag: ["Bomb Bag:\nThe bomb bag increases Link's bomb capacity."],
   linkQuiver: ["Quiver:\nThe quiver increases Link's arrow capacity."],
   linkRedRing: ['Red Ring:\nThe red ring allows Link to shoot sword beams across the screen.'],
   luigiStart: [
-    'Luigi:\nLuigi can run if you hold {ATTACK} while moving. If he has firepower, press {ATTACK} to throw fireballs.',
+    'Luigi:\nLuigi can run if you hold {RUN:attack} while moving. If he has firepower, press {FIRE:attack} to throw fireballs.',
     'He controls similarly to Mario, but his controls are more loose and he can jump higher.',
   ],
   marioStart: [
-    'Mario:\nMario can run if you hold {ATTACK} while moving. If he has firepower, press {ATTACK} to throw fireballs.',
+    'Mario:\nMario can run if you hold {RUN:attack} while moving. If he has firepower, press {FIRE:attack} to throw fireballs.',
   ],
   megamanStart: [
-    'Mega Man:\nMega man can slide by pressing DOWN and {JUMP} while on the ground. Press {TOOLS} or {SPECIAL} to cycle through weapons when you have them.',
-    'Mega Man begins with Rush Coil, which can be used to help Mega Man make some long or high jumps. Press {TOOLS} or {SPECIAL} to switch to Rush Coil.',
+    'Mega Man:\nMega man can slide by pressing DOWN and {JUMP} while on the ground. With a fire flower, press {=weapon} to use his weapon. Hold {RUSH:select} to swap the shoot and weapon buttons.',
+    'Mega Man begins with Rush Coil, which can be used to help Mega Man make some long or high jumps. Tap {RUSH:select} to call Rush.',
   ],
   megamanPowerUp: [
-    'When Mega Man has a mushroom, hold {ATTACK} to charge up his mega buster.',
+    'When Mega Man has a mushroom, hold {SHOOT:attack} to charge up his mega buster.',
     "Note that some Mega Man skins can't charge up their mega buster.",
   ],
-  megamanChargeKick: ['Charge Kick:\nPress DOWN and {JUMP} to damage enemies while sliding.'],
+  megamanChargeKick: [
+    'Charge Kick:\nPress {KICK:special} to switch it on. Then press DOWN and {JUMP} to damage enemies while sliding.',
+  ],
   megamanHardKnuckle: [
     'Hard Knuckle:\nWhile the hard knuckle is on the screen, press UP or DOWN to move it up or down.',
   ],
   megamanMetalBlade: ['Metal Blade:\nMetal blades can be thrown in 8 directions.'],
-  megamanPharaohShot: ['Pharaoh Shot:\nYou can hold {ATTACK} to charge up the pharaoh shot.'],
+  megamanPharaohShot: ['Pharaoh Shot:\nYou can hold {=weapon} to charge up the pharaoh shot.'],
   megamanSuperArm: [
-    'Super Arm:\nPress {ATTACK} when touching a brick to pick it up. Press {ATTACK} again to throw it.',
+    'Super Arm:\nPress {=weapon} when touching a brick to pick it up. Press {=weapon} again to throw it.',
   ],
   megamanWaterShield: [
-    'Water Shield:\nPress {ATTACK} to form a shield around you. Press {ATTACK} again to shoot the shield outward.',
+    'Water Shield:\nPress {=weapon} to form a shield around you. Press {=weapon} again to shoot the shield outward.',
   ],
   ryuStart: [
-    'Ryu:\nRyu can climb any wall by jumping toward it. While climbing, press back and {JUMP} to jump backwards off a wall, or press down and {JUMP} to detach from a wall.',
-    "If you're near the top of a wall, press {JUMP} to jump on top of it. Press {SPECIAL} or UP and {ATTACK} to throw special weapons when you have enough ammo.",
+    'Ryu:\nRyu can climb any wall by jumping toward it. While climbing, press away from the wall and {JUMP} to jump backwards off a wall, or press DOWN and {JUMP} to detach from a wall.',
+    "If you're near the top of a wall, press {JUMP} to jump on top of it. Press {=ryu-art} to throw special weapons when you have enough ammo.",
   ],
-  ryuJumpSlash: ['Jump Slash:\nPress {SPECIAL} or UP and {ATTACK} while in the air to use the jump slash.'],
+  ryuJumpSlash: ['Jump Slash:\nPress {=ryu-slash} while in the air to use the jump slash.'],
   ryuScroll: ["Scroll:\nThe scroll increases Ryu's ammo capacity."],
   samusStart: [
-    'Samus:\nSamus can shoot upward while standing, running, and jumping. Press down while crouching to turn into the morph ball. While in morph ball state, you can set bombs with {ATTACK}.',
+    'Samus:\nSamus can shoot upward while standing, running, and jumping. Press DOWN while crouching to turn into the morph ball. While in morph ball state, you can set bombs with {BOMB:attack}.',
   ],
   samusIceBeam: [
     'Ice Beam:\nShooting enemies with the ice beam will freeze them in place for a short time.  Frozen enemies can be used as platforms.',
@@ -132,13 +204,20 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   samusScrewAttack: ['Screw Attack:\nScrew attack causes spin jumps to damage enemies.'],
   samusMissileExpansion: ["Missile Expansion:\nThe missile expansion increases Samus' ammo capacity."],
   simonStart: [
-    'Simon:\nSimon can double jump if you press {JUMP} while in the air. Press {SPECIAL} or UP and {ATTACK} to use subweapons if you have enough ammo.',
+    'Simon:\nSimon can double jump if you press {JUMP} while in the air. Press {=simon-start} to use subweapons if you have enough ammo.',
   ],
   sophiaStart: [
-    'Sophia:\nSophia can use special weapons with {SPECIAL} or DOWN and {ATTACK} when you have them. Press {TOOLS} to switch between them.',
+    'Sophia:\nSophia can fire missiles with {=sophia-missile} when you have them. Press {SWAP:select} to switch between them.',
   ],
   sophiaHomingMissile: [
-    'Homing Missile:\nPress {SPECIAL} or DOWN and {ATTACK} to fire a homing missile when enemies are on screen. If you have multiple weapons, press {TOOLS} to switch between them.',
+    'Homing Missile:\nPress {HOMING:special} to fire a homing missile. If you have both missiles, press {SWAP:select} to switch between them.',
+  ],
+  sophiaWallClimb: [
+    'Wall Climb:\nHold UP while driving into a wall to climb up it. Hold DOWN while driving off a cliff to climb down it.',
+    'While climbing a wall, press {JUMP} to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press {JUMP}.',
+  ],
+  sophiaCeilingClimb: [
+    'Ceiling Climb:\nJump into a ceiling to grapple to it. To temporarily disable grapple, hold DOWN while in the air.',
   ],
   sophiaHover: [
     'Hover:\n Press and hold {JUMP} while in the air to hover. The hover bar will recharge over time.',
@@ -148,13 +227,30 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
 /** Every box's id (tests). */
 export const TUTORIAL_IDS: readonly string[] = Object.keys(TUTORIAL_TEXT);
 
-/** A page's words with each {ABILITY} filled in: the ability, then the real key in brackets. */
-export function fillAbilities(game: Game, text: string): string {
-  return text.replace(/\{([A-Z]+)\}/g, (all, name: string) => {
-    const a = ABILITIES[name];
-    return a ? abilityHint(game, a[0], a[1]) : all;
-  });
+/**
+ * A page's words with each placeholder filled in: the ability (the generic `{JUMP}`, the hero's own
+ * `{SHOOT:attack}`, or `{=name}`, dynamicAbility for `hero`), then the real key in brackets on
+ * keyboard and pad.
+ */
+export function fillAbilities(game: Game, text: string, hero?: string): string {
+  return text.replace(
+    /\{(=?)([A-Za-z-]+)(?::([a-z]+))?\}/g,
+    (all, dyn: string, name: string, act?: string) => {
+      const a = dyn
+        ? dynamicAbility(game, name, hero)
+        : act
+          ? ACTIONS.includes(act as Action)
+            ? ([name, act as Action] as const)
+            : null
+          : ABILITIES[name];
+      return a ? abilityHint(game, a[0], a[1]) : all;
+    },
+  );
 }
+
+/** A Mega Man weapon's box id: `megaman` and the weapon in camel case (megamanMetalBlade). */
+const mmBox = (weapon: string): string =>
+  `megaman${weapon.replace(/(^|-)([a-z])/g, (_, _d, c: string) => c.toUpperCase())}`;
 
 /**
  * What a hero's Classic power states bring that the original has a box for (the Classic power
@@ -162,11 +258,11 @@ export function fillAbilities(game: Game, text: string): string {
  * original shows these as each upgrade is collected (Character.hitPickup → checkTutorial).
  */
 export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'): string[] {
-  const w = game.deps.settings?.classic.weapons;
+  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
   const big = state === 'big';
   switch (hero) {
     case 'link': {
-      const bow = w?.link === 'bow';
+      const bow = w.link === 'bow';
       return big
         ? ['linkBlueRing', bow ? 'linkBow' : 'linkBomb']
         : ['linkRedRing', bow ? 'linkQuiver' : 'linkBombBag'];
@@ -174,20 +270,22 @@ export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'
     case 'samus':
       return big
         ? []
-        : [
-            w?.samus === 'ice' ? 'samusIceBeam' : 'samusWaveBeam',
-            'samusScrewAttack',
-            'samusMissileExpansion',
-          ];
-    case 'megaman': {
-      if (big) return ['megamanPowerUp'];
-      const id = `megaman${(w?.megaman ?? 'metal-blade').replace(/(^|-)([a-z])/g, (_, _d, c: string) => c.toUpperCase())}`;
-      return [id];
-    }
+        : [w.samus === 'ice' ? 'samusIceBeam' : 'samusWaveBeam', 'samusScrewAttack', 'samusMissileExpansion'];
+    case 'megaman':
+      return big ? ['megamanPowerUp'] : [mmBox(w.megaman)];
+    case 'bass':
+      // Bass's Flower weapon is one of Mega Man's: the same box.
+      return big ? [] : [mmBox(w.bass)];
     case 'ryu':
-      return big ? [] : ['ryuScroll', ...(w?.ryuExtra === 'jump-slash' ? ['ryuJumpSlash'] : [])];
+      return big ? [] : ['ryuScroll', ...(w.ryuExtra === 'jump-slash' ? ['ryuJumpSlash'] : [])];
     case 'sophia':
-      return big ? ['sophiaHover'] : w?.sophia === 'homing' ? ['sophiaHomingMissile'] : [];
+      return big
+        ? ['sophiaHover']
+        : [
+            'sophiaWallClimb',
+            'sophiaCeilingClimb',
+            ...(w.sophia === 'homing' ? ['sophiaHomingMissile'] : []),
+          ];
     default:
       return [];
   }
@@ -195,8 +293,8 @@ export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'
 
 /** The boxes a hero's first level start shows: its own start, and a start weapon with a box. */
 export function startTutorials(game: Game, hero: string): string[] {
-  const w = game.deps.settings?.classic.weapons;
-  return [`${hero}Start`, ...(hero === 'ryu' && w?.ryuStart === 'jump-slash' ? ['ryuJumpSlash'] : [])];
+  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  return [`${hero}Start`, ...(hero === 'ryu' && w.ryuStart === 'jump-slash' ? ['ryuJumpSlash'] : [])];
 }
 
 /** Frames a level start or an upgrade waits for the hero to land before its box shows anyway. */
@@ -213,6 +311,8 @@ interface Watch {
 export class ClassicTutorials {
   /** Box ids waiting for the moment to show (TutorialManager.MSGS_TO_SHOW). */
   private readonly queue: string[] = [];
+  /** The hero each queued box was offered for (its buttons' names follow that hero). */
+  private readonly heroOf = new Map<string, string>();
   private watch: Watch | null = null;
   private wait = 0;
 
@@ -237,6 +337,7 @@ export class ClassicTutorials {
   /** A new Classic game: every box shows again (TutorialManager.startNewGameHandler). */
   newGame(): void {
     this.queue.length = 0;
+    this.heroOf.clear();
     this.watch = null;
     const s = this.game.deps.settings;
     if (s?.classicTutorialsSeen) {
@@ -246,9 +347,10 @@ export class ClassicTutorials {
   }
 
   /** Queue box `id` unless it was seen this game, is queued, or has no words (checkTutorial). */
-  offer(id: string): void {
+  offer(id: string, hero?: string): void {
     if (!this.enabled || !TUTORIAL_TEXT[id] || this.seen.includes(id) || this.queue.includes(id)) return;
     this.queue.push(id);
+    if (hero) this.heroOf.set(id, hero);
   }
 
   /** Waiting boxes (tests). */
@@ -264,7 +366,11 @@ export class ClassicTutorials {
       s.classicTutorialsSeen = [...new Set([...(s.classicTutorialsSeen ?? []), ...ids])];
       saveSettings(s);
     }
-    return ids.flatMap((id) => (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(this.game, t)));
+    const pages = ids.flatMap((id) =>
+      (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(this.game, t, this.heroOf.get(id))),
+    );
+    this.heroOf.clear();
+    return pages;
   }
 
   /** Push the queued boxes over the scene on top (it stays frozen beneath until the last page). */
@@ -281,6 +387,8 @@ export class ClassicTutorials {
   atSelect(): void {
     if (!this.enabled) return;
     this.offer(this.game.survival !== null ? 'survival' : 'characterSelect');
+    // Cheats unlocked by the clear are told on this select (Cheats.as 108: the cheat box follows).
+    if (this.game.cheatUnlocks.length) this.offer('cheat');
     this.show(null);
   }
 
@@ -304,17 +412,18 @@ export class ClassicTutorials {
     if (!w || w.world !== world) {
       this.watch = { world, power: p.powerState, star: p.star > 0 };
       this.offer('firstCharacterStart');
-      for (const id of startTutorials(this.game, hero)) this.offer(id);
+      for (const id of startTutorials(this.game, hero)) this.offer(id, hero);
     } else {
       if (p.powerState !== w.power) {
         const from = w.power;
         const to = p.powerState;
         if (to === 'big' && from === 'small') {
           this.offer('mushroom');
-          for (const id of upgradeTutorials(this.game, hero, 'big')) this.offer(id);
+          for (const id of upgradeTutorials(this.game, hero, 'big')) this.offer(id, hero);
         } else if (to === 'fire') {
-          if (from === 'small') for (const id of upgradeTutorials(this.game, hero, 'big')) this.offer(id);
-          for (const id of upgradeTutorials(this.game, hero, 'fire')) this.offer(id);
+          if (from === 'small')
+            for (const id of upgradeTutorials(this.game, hero, 'big')) this.offer(id, hero);
+          for (const id of upgradeTutorials(this.game, hero, 'fire')) this.offer(id, hero);
         }
         w.power = to;
       }
@@ -364,8 +473,8 @@ type Phase = 'grow' | 'open' | 'shrink';
  * open from its centre and shrinks shut after the press that closes it (MessageBox.grow, shrink;
  * the next page then grows); with Reduce flashing it simply appears and goes. There is no page
  * count or press mark on it, as on the original's. Each page is read out and waits for a press,
- * never a timer; SKIP closes the box at once. After the last page the scene beneath is read out
- * again.
+ * never a timer; SKIP closes the box at once. After the last page a select beneath is read out
+ * again; a level is not (nothing it said is current).
  */
 export class TutorialBoxScene implements Scene {
   readonly translucent = true;
@@ -443,7 +552,9 @@ export class TutorialBoxScene implements Scene {
     if (!this.said) {
       // Read out on the first frame, after the scene beneath has read itself out (a select's
       // enter() speaks after it pushed this box): that line is read again when the box closes.
-      this.before = (this.game.deps.announcer as { lastText?: string } | undefined)?.lastText ?? '';
+      // Over a level nothing is read again (its last line is stale by now).
+      if (!this.world)
+        this.before = (this.game.deps.announcer as { lastText?: string } | undefined)?.lastText ?? '';
       this.said = true;
       this.say();
     }

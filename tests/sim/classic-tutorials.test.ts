@@ -5,6 +5,7 @@ import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { MEGAMAN } from '@game/characters/megaman';
 import { RYU } from '@game/characters/ryu';
+import { SOPHIA } from '@game/characters/sophia';
 import { fontText } from '@game/hud/text';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -309,7 +310,7 @@ describe('each box waits for a press, is read out and works with touch (O-15)', 
     for (const id of TUTORIAL_IDS) {
       for (const t of TUTORIAL_TEXT[id] ?? []) {
         const filled = fillAbilities(h.game, t);
-        expect(filled, id).not.toMatch(/\{[A-Z]+\}|_BTN|\b(button|key) [A-Z]\b|\b[ABXY] (button|to)\b/i);
+        expect(filled, id).not.toMatch(/\{[^}]*\}|_BTN|\b(button|key) [A-Z]\b|\b[ABXY] (button|to)\b/i);
         expect(filled, id).not.toMatch(/arrow keys|Exploding Rabbit/i);
         for (const part of filled.split('\n'))
           expect(fontText(part).length, `${id}: ${part}`).toBe(part.toUpperCase().length);
@@ -421,6 +422,125 @@ describe("the box looks like the original's (PlainMessageBox in the SMB NES map 
   });
 });
 
+describe("the words are true for our Classic heroes, in their own buttons' names (O-15 QA)", () => {
+  /** A game whose controls in use are `scheme` (touch: names only; keyboard: the key after). */
+  function schemed(scheme: 'touch' | 'keyboard', over: Partial<ClassicSettings> = {}): TH {
+    const settings: Settings = { ...defaultSettings(), classic: { ...defaultClassicSettings(), ...over } };
+    settings.classicTutorials = true;
+    const h = makeGame({ deps: { settings, applySettings: () => {}, controlScheme: () => scheme } });
+    return { ...h, settings };
+  }
+  const pages = (h: H, id: string, hero?: string) =>
+    (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(h.game, t, hero)).join(' ');
+
+  it('Link: the boomerang on SPECIAL, bombs or the bow on TOOLS, bombs never hurt him, the blue ring a stronger sword', () => {
+    const h = schemed('touch');
+    expect(pages(h, 'linkStart')).toMatch(
+      /pressing BOOMERANG\. Once he has bombs or a bow, press BOMB to use them\./,
+    );
+    expect(pages(h, 'linkBomb')).toMatch(/Press BOMB to place a bomb/);
+    expect(pages(h, 'linkBomb')).toMatch(/never hurt by his own bombs/);
+    expect(pages(h, 'linkBomb')).not.toMatch(/damage Link/);
+    expect(pages(h, 'linkBow')).toMatch(/Press BOW to shoot an arrow/);
+    expect(pages(h, 'linkBlueRing')).toMatch(/sword stronger/);
+    expect(pages(h, 'linkBlueRing')).not.toMatch(/bombs/);
+    const bow = schemed('touch', { weapons: { ...defaultClassicSettings().weapons, link: 'bow' } });
+    expect(pages(bow, 'linkStart')).toMatch(/press BOW to use them/);
+    // Keyboard: the name, then the real key.
+    const k = schemed('keyboard');
+    expect(pages(k, 'linkBomb')).toMatch(/Press BOMB \([^)]+\) to place a bomb/);
+  });
+
+  it('Mega Man: the weapon on SPECIAL, a tap of TOOLS calls Rush, holding it swaps the buttons', () => {
+    const h = schemed('touch');
+    const start = pages(h, 'megamanStart');
+    expect(start).toMatch(/press BLADE to use his weapon/);
+    expect(start).toMatch(/Hold RUSH to swap the shoot and weapon buttons/);
+    expect(start).toMatch(/Tap RUSH to call Rush/);
+    expect(start).not.toMatch(/cycle through weapons|switch to Rush Coil/);
+    expect(pages(h, 'megamanPowerUp')).toMatch(/hold SHOOT to charge/);
+    const arm = schemed('touch', { weapons: { ...defaultClassicSettings().weapons, megaman: 'super-arm' } });
+    expect(pages(arm, 'megamanSuperArm')).toMatch(/Press ARM when touching a brick/);
+    expect(pages(arm, 'megamanStart')).toMatch(/press ARM to use his weapon/);
+  });
+
+  it("Bass: dash, dash jump, double jump, rapid fire; the Flower weapon on SPECIAL and SWAP on TOOLS; Mega Man's box for it", () => {
+    const h = schemed('touch');
+    const start = pages(h, 'bassStart', 'bass');
+    expect(start).toMatch(/Hold SHOOT for rapid fire/);
+    expect(start).toMatch(/press WATER to use his weapon\. Press SWAP to swap the shot and weapon buttons\./);
+    expect(start).not.toMatch(/cycle through weapons/);
+    expect(pages(h, 'megamanWaterShield', 'bass')).toMatch(/Press WATER to form a shield/);
+    const mm = schemed('touch', {
+      weapons: { ...defaultClassicSettings().weapons, megaman: 'water-shield' },
+    });
+    expect(pages(mm, 'megamanWaterShield', 'megaman')).toMatch(/Press SHIELD to form a shield/);
+  });
+
+  it("every other hero's box: its own buttons and its Classic kit", () => {
+    const h = schemed('touch');
+    expect(pages(h, 'marioStart')).toMatch(/hold RUN while moving\. If he has firepower, press FIRE/);
+    expect(pages(h, 'luigiStart')).toMatch(/hold RUN while moving/);
+    expect(pages(h, 'billStart')).toMatch(/With only his rifle, he will be killed in one hit/);
+    expect(pages(h, 'billStart')).not.toMatch(/cannot collect a mushroom/);
+    expect(pages(h, 'ryuStart')).toMatch(/Press SHURIKEN to throw special weapons/);
+    expect(pages(h, 'ryuStart')).toMatch(/press away from the wall and JUMP/);
+    expect(pages(h, 'samusStart')).toMatch(/set bombs with BOMB/);
+    expect(pages(h, 'simonStart')).toMatch(/Press AXE to use subweapons/);
+    expect(pages(h, 'sophiaStart')).toMatch(/fire missiles with MISSILE when you have them\. Press SWAP/);
+    expect(pages(h, 'sophiaHomingMissile')).toMatch(
+      /Press HOMING to fire a homing missile\. If you have both missiles, press SWAP/,
+    );
+    expect(pages(h, 'sophiaWallClimb')).toMatch(/Hold UP while driving into a wall/);
+    expect(pages(h, 'sophiaCeilingClimb')).toMatch(/Jump into a ceiling to grapple to it/);
+    const slash = schemed('touch', {
+      weapons: { ...defaultClassicSettings().weapons, ryuExtra: 'jump-slash' },
+    });
+    expect(pages(slash, 'ryuJumpSlash')).toMatch(/Press SPIN while in the air/);
+    // No "UP and ATTACK" throws, no "down and ATTACK": ours have none.
+    for (const id of ['ryuStart', 'ryuJumpSlash', 'simonStart', 'sophiaStart', 'sophiaHomingMissile'])
+      expect(pages(h, id), id).not.toMatch(/(UP|DOWN) and (ATTACK|SLASH|WHIP|SHOOT)/);
+    // One direction style: capitals, or away from / toward a wall.
+    for (const id of TUTORIAL_IDS)
+      expect(TUTORIAL_TEXT[id]?.join(' '), id).not.toMatch(/\bpress (down|up|back)\b/);
+  });
+
+  it('a level start box names the hero buttons in play (Link on touch: BOOMERANG, BOMB)', () => {
+    const h = schemed('touch');
+    play(h as TH, LINK, ['characterSelect', 'firstCharacterStart']);
+    const b = untilBox(h) as TutorialBoxScene;
+    expect(b.pages.join(' ')).toMatch(/pressing BOOMERANG/);
+  });
+
+  it('over a level the box re-reads nothing as it closes; over the select it re-reads the select', () => {
+    const h = game(true);
+    play(h);
+    untilBox(h);
+    readBox(h);
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    expect(h.said.at(-1)).toMatch(/^Tutorial, page 6 of 6/);
+  });
+
+  it('cheats unlocked by a clear, told at the select: the cheat box follows the select box (Cheats.as 108)', () => {
+    const h = game(true);
+    h.game.cheatUnlocks.push('allHammerBros');
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    expect(idsOf(readBox(h), h)).toEqual(['characterSelect', 'cheat']);
+  });
+
+  it("Sophia's Fire Flower shows the wall and ceiling climb boxes in play", () => {
+    const h = game(true);
+    const l = play(h, SOPHIA, ['characterSelect', 'firstCharacterStart', 'sophiaStart']);
+    expect(untilBox(h, 60)).toBeNull();
+    const p = l.world.player;
+    p.def.behaviour.onPowerUp(p, 'mushroom', l.world);
+    expect(idsOf(untilBox(h)?.pages ?? [], h)).toEqual(['mushroom', 'sophiaHover']);
+    readBox(h);
+    p.def.behaviour.onPowerUp(p, 'flower', l.world);
+    expect(idsOf(untilBox(h)?.pages ?? [], h)).toEqual(['sophiaWallClimb', 'sophiaCeilingClimb']);
+  });
+});
+
 describe('which boxes have been seen (TutorialManager.saveData / startNewGameHandler)', () => {
   it('each box shows once a game, is saved at once, and a new game shows them all again', () => {
     const h = game(true);
@@ -457,6 +577,11 @@ describe('upgradeTutorials follows the Classic kits and Customize Weapons (PS-C5
     expect(upgradeTutorials(h.game, MEGAMAN.id, 'fire')).toEqual(['megamanMetalBlade']);
     expect(upgradeTutorials(h.game, RYU.id, 'fire')).toEqual(['ryuScroll']);
     expect(upgradeTutorials(h.game, 'sophia', 'big')).toEqual(['sophiaHover']);
+    // SOPHIA_WALL_CLIMB and SOPHIA_CEILING_CLIMB: our Flower (Crusher) brings both climbs.
+    expect(upgradeTutorials(h.game, 'sophia', 'fire')).toEqual(['sophiaWallClimb', 'sophiaCeilingClimb']);
+    // Bass's Flower weapon is one of Mega Man's: the same box (his Water Shield by default).
+    expect(upgradeTutorials(h.game, 'bass', 'fire')).toEqual(['megamanWaterShield']);
+    expect(upgradeTutorials(h.game, 'bass', 'big')).toEqual([]);
     expect(upgradeTutorials(h.game, MARIO.id, 'fire')).toEqual([]);
     const bow = game(true, {
       weapons: { ...defaultClassicSettings().weapons, link: 'bow', megaman: 'super-arm' },
