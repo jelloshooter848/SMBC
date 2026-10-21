@@ -234,10 +234,8 @@ describe('3. Infinite Lives: continues count over the save, not per run', () => 
 describe('4. Classic mode with Campaign rules: nothing counts toward the cheats', () => {
   it('no clear, no game beaten, no continue and no tally counts under Campaign rules', () => {
     const h = classicGame();
-    // O-12: Classic rules set to Current is developer mode's.
-    h.settings.dev = true;
-    h.settings.classicRules = 'current';
-    h.game.classicGame(MARIO);
+    // BUG-11: a Current-rules Classic run is a START page (or `rules=`) run's; as a counted run.
+    h.game.devClassicGame(MARIO, '1-1', 'current', false);
     expect(h.game.cheatGoalsCount).toBe(false);
     h.game.cheatEvent({ level: true, castle: true });
     h.game.cheatEvent({ beat: 'smb' });

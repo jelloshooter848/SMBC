@@ -239,15 +239,13 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('Options: Classic rules (Classic SMBC / Campaign), saved in settings, then every other option', () => {
-    // O-12: the Classic rules and Expansion heroes rows are developer mode's.
+  it('Options: Game mode, then every other option (BUG-11: no Classic rules row, even in dev mode)', () => {
     const h = classic({ dev: true });
     toClassicMenu(h);
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
     expect(opts).toBeInstanceOf(ClassicOptionsScene);
     expect(labels(opts)).toEqual([
-      'Classic rules',
       'Game mode',
       // BUG-08: no Expansion heroes row.
       'More settings',
@@ -262,18 +260,10 @@ describe('the title and the CLASSIC menu', () => {
       'Video, audio, controls',
       'Back',
     ]);
-    expect(h.said.at(-1)).toMatch(/^Classic options\. Classic rules: Classic SMBC\./);
-    // Drawn in full: the label, and the value right-aligned on its row.
-    let t = draw(opts).texts.map((x) => x.str);
-    expect(t).toContain('CLASSIC RULES');
-    expect(t).toContain('CLASSIC SMBC');
-    h.idle(8);
-    h.tap('right');
-    expect(h.settings.classicRules).toBe('current');
-    expect(h.said.at(-1)).toMatch(/^Classic rules: Campaign/);
-    t = draw(opts).texts.map((x) => x.str);
-    expect(t).toContain('CAMPAIGN');
-    h.tap('jump');
+    expect(h.said.at(-1)).toMatch(/^Classic options\. Game mode: /);
+    const t = draw(opts).texts.map((x) => x.str);
+    expect(t).not.toContain('CLASSIC RULES');
+    expect(t).not.toContain('CLASSIC SMBC');
     expect(h.settings.classicRules).toBe('classic');
     pick(h, 'Video, audio, controls');
     expect(labels(h.top())).toContain('Video');
@@ -355,10 +345,12 @@ describe('a Classic run', () => {
     },
   );
 
-  it('plays Campaign rules when Options says so', () => {
-    // O-12: Classic rules set to Current is developer mode's.
+  it('BUG-11: a saved Campaign rules setting is ignored; the dev START page still plays a Campaign-rules run', () => {
     const h = classic({ classicRules: 'current', dev: true });
     h.game.classicGame(MARIO);
+    expect(h.game.runRules).toBe('classic');
+    expect(h.settings.classicRules).toBe('current');
+    h.game.devClassicGame(MARIO, '1-1', 'current');
     expect(h.game.runRules).toBe('current');
     expect(h.game.classicRun).toBe(true);
   });
@@ -776,11 +768,14 @@ describe('the select screen: Classic extras on a second row', () => {
     toClassicMenu(h);
     pick(h, 'The Lost Levels');
     expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
-    // O-12: Classic rules set to Current is developer mode's.
+    // BUG-11: a saved Campaign rules setting is ignored (the extra is offered); a dev START page
+    // Campaign-rules run still leaves it out.
     const c = classic({ classicRules: 'current', dev: true });
     toClassicMenu(c);
     pick(c, 'Super Mario Bros.');
-    expect((c.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
+    expect((c.top() as CharacterSelectScene).chars).toContain(EXTRA);
+    c.game.devClassicGame(MARIO, '1-1', 'current');
+    expect(c.game.heroSlots).not.toContain(EXTRA);
   });
 
   it('not offered in free play or on a campaign file', () => {
@@ -833,16 +828,14 @@ describe('the select screen: Classic extras on a second row', () => {
     expect(h.said.at(-1)?.split(', ')[0]).toBe(CHARACTERS[0]?.name);
   });
 
-  it('Classic rules Campaign: the registry, in one row', () => {
-    // O-12: Classic rules set to Current is developer mode's.
-    const h = classic({ classicRules: 'current', dev: true });
-    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+  it('Campaign rules (a dev START page run, BUG-11): the registry, in one row', () => {
+    const h = classic({ dev: true });
+    h.game.devClassicGame(MARIO, '1-1', 'current');
+    expect(h.game.slotsFor(h.game.liveRules)).toBe(CHARACTERS);
+    die(h);
     const sel = h.top() as CharacterSelectScene;
+    expect(sel).toBeInstanceOf(CharacterSelectScene);
     expect(sel.chars).toBe(CHARACTERS);
-    // BACK returns to the CLASSIC menu.
-    h.idle(12);
-    h.tap('attack');
-    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   });
 });
 

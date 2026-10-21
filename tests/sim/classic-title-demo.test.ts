@@ -496,6 +496,10 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
         }
         h.game.showClassicMenu();
         const menu = h.top() as ClassicMenuScene;
+        // BUG-11: no menu run plays Campaign rules any more, so the status line is set by hand to
+        // check where the box draws one.
+        if (rules === 'current')
+          (menu as unknown as { status: string }).status = 'Campaign rules: always Normal';
         const status = (menu as unknown as { status: string }).status;
         if (status) seen.status++;
         // Per-set saves (B-G): no Continue row; the saved run's set says so in its hint.

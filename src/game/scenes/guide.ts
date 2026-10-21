@@ -63,7 +63,7 @@ export function wrapHanging(text: string, cols: number): string[] {
 export class GuideIndexScene extends MenuScene {
   /**
    * `classic` (G-093): opened from Classic mode's menus, where no run plays yet; the list is the
-   * Classic select's heroes under Options > Classic rules. A Classic run lists its select's heroes.
+   * Classic select's heroes (Classic rules: Game.classicRules). A Classic run lists its select's heroes.
    */
   constructor(game: Game, onBack: () => void, classic = false) {
     super(game, 'HOW TO PLAY', [], onBack);

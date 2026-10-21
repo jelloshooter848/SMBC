@@ -154,12 +154,12 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     expect(h.game.state.character).toBe(BASS_CLASSIC);
   });
 
-  it('Classic mode with Classic rules set to Campaign, and free play: no Bass', () => {
-    // O-12: Classic rules set to Current is developer mode's.
-    const settings = { ...defaultSettings(), classicRules: 'current' as const, dev: true };
+  it('a Campaign-rules Classic run (the dev START page, BUG-11), and free play: no Bass', () => {
+    const settings = { ...defaultSettings(), dev: true };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
-    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
-    expect((h.top() as CharacterSelectScene).chars).not.toContain(BASS_CLASSIC);
+    h.game.devClassicGame(MARIO, '1-1', 'current');
+    expect(h.game.heroSlots).not.toContain(BASS_CLASSIC);
+    expect(h.game.roster).not.toContain(BASS_CLASSIC);
     const f = makeGame();
     f.game.showCharacterSelect();
     expect((f.top() as CharacterSelectScene).chars).not.toContain(BASS_CLASSIC);

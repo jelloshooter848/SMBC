@@ -236,10 +236,9 @@ describe('cheats are Classic only', () => {
     expect(h.game.ctx.classicCheats?.invincible).toBe(true);
     h.game.showTitle();
     expect(h.game.ctx.classicCheats).toBeUndefined();
-    // Classic mode under Current rules (developer mode's, O-12): no cheats.
+    // A Classic run under Current rules (the dev START page's Rules row, BUG-11): no cheats.
     h.settings.dev = true;
-    h.settings.classicRules = 'current';
-    h.game.classicGame(MARIO);
+    h.game.devClassicGame(MARIO, '1-1', 'current');
     expect(h.game.ctx.classicCheats).toBeUndefined();
     // Free play with Classic rules (dev Level select's Free play): no cheats.
     h.game.newGame(MARIO, '1-1', null, { rules: 'classic' });

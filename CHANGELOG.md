@@ -20,6 +20,9 @@ under `## [Unreleased]`.
   the old page plus **Plays as**, where each hero can play its Classic or its Campaign design in
   Classic mode; **Campaign** lets each campaign hero play its Campaign design or its Classic kit.
   Saved with the other dev toggles; no effect outside dev mode.
+- Dev mode: Classic options no longer has the **Classic rules** row (BUG-11). Classic mode always
+  plays Classic rules; Toggle heroes' Plays as gives one hero its Campaign design instead. A saved
+  rules value is ignored and kept as it was; the dev start page's Rules row is unchanged.
 
 ## [0.4.68] - 2026-10-21
 

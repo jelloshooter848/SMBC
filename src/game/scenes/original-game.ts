@@ -6,7 +6,7 @@ import {
   type BeatStatus,
   type MapSetId,
 } from '@engine/save/progress';
-import { MAP_DIFFICULTIES, type ClassicRules, type MapDifficulty } from '@engine/save/settings';
+import { MAP_DIFFICULTIES, type MapDifficulty } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
@@ -186,12 +186,8 @@ function settingsDifficulty(game: Game): { get(): MapDifficulty; set(d: MapDiffi
   };
 }
 
-/** Where the Classic rules value is drawn: right edge, and the first full-screen menu row's y. */
-const CLASSIC_RULES_RIGHT = 248;
+/** The first full-screen menu row's y (the CLASSIC menu's BEATEN marks line up with its rows). */
 const CLASSIC_RULES_Y = 64;
-
-// Owner decision: the 'current' rules are shown and said as "Campaign" (the saved value stays).
-const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Campaign' };
 
 /**
  * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
@@ -385,11 +381,8 @@ const BEATEN_MARK = 'BEATEN';
 const MENU_VALUE_RIGHT = 232;
 const MENU_ROW_H = 14;
 
-/** Classic mode's options: its rules, then every other setting (the usual Options). */
+/** Classic mode's options: Game mode, then every other setting (the usual Options). */
 export class ClassicOptionsScene extends MenuScene {
-  /** While drawing: the Classic rules row draws its own value (it needs the full row). */
-  private drawing = false;
-
   constructor(game: Game, onBack: () => void) {
     super(game, 'CLASSIC OPTIONS', [], onBack);
     this.build();
@@ -398,12 +391,6 @@ export class ClassicOptionsScene extends MenuScene {
   /** The rows (rebuilt after a change, so the Game mode row's `*` mark follows). */
   private build(): void {
     const game = this.game;
-    const step = () => {
-      const s = game.deps.settings;
-      if (!s) return;
-      s.classicRules = s.classicRules === 'classic' ? 'current' : 'classic';
-      game.deps.applySettings?.();
-    };
     const menu = (title: string, spoken: string, rows: Parameters<typeof rowsOriginal>[0]) => () =>
       game.scenes.push(
         new ClassicOptionRowsScene(game, title, rows, spoken, () => {
@@ -415,15 +402,8 @@ export class ClassicOptionsScene extends MenuScene {
     const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
       rowsOriginal(rows, game.deps.settings?.classic ?? defaultClassicSettings()) ? 'Original' : 'Changed';
     const onBack = this.onBack ?? (() => {});
-    // O-12: the Classic rules row is developer mode's (the original has none).
-    const rulesRow: MenuItem = {
-      label: 'Classic rules',
-      value: () => (this.drawing ? '' : this.rulesLabel),
-      adjust: step,
-      hint: 'Classic SMBC plays the heroes as the original did; Campaign as the campaign does',
-    };
+    // BUG-11: no Classic rules row (Dev > Toggle heroes' Plays as sets a hero's design instead).
     this.setItems([
-      ...(game.devMode ? [rulesRow] : []),
       optionItem(game, GAME_MODE_ROW, () => this.build()),
       {
         label: 'More settings',
@@ -462,10 +442,6 @@ export class ClassicOptionsScene extends MenuScene {
     ]);
   }
 
-  private get rulesLabel(): string {
-    return RULES_LABELS[this.game.classicRules];
-  }
-
   private back(): void {
     this.game.scenes.pop();
     this.announce();
@@ -477,22 +453,5 @@ export class ClassicOptionsScene extends MenuScene {
 
   protected override announce(): void {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
-  }
-
-  /**
-   * "CLASSIC RULES" and "CLASSIC SMBC" are too long for a menu row's value column: the value is
-   * drawn right-aligned to the screen's edge (the menu is full screen, its first row unscrolled).
-   */
-  override render(r: Renderer): void {
-    this.drawing = true;
-    try {
-      super.render(r);
-    } finally {
-      this.drawing = false;
-    }
-    // The row is developer mode's only (O-12).
-    if (!this.game.devMode) return;
-    const v = this.rulesLabel.toUpperCase();
-    r.text(this.game.ctx.assets.sheet('font'), v, CLASSIC_RULES_RIGHT - v.length * 8, CLASSIC_RULES_Y);
   }
 }

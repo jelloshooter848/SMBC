@@ -234,7 +234,7 @@ export class Game {
   /**
    * A Classic mode run (title > CLASSIC, or the dev Level select's Mode: Classic run): the
    * original game's flow, with no campaign file (`campaign` stays null). Every other start clears
-   * it. Its rules are runRules (Classic mode: settings.classicRules; dev: the Rules row).
+   * it. Its rules are runRules (Classic mode: classicRules, always Classic; dev: the START page Rules row).
    */
   classicRun = false;
   /**
@@ -1930,7 +1930,7 @@ export class Game {
 
   /**
    * Classic mode (title > CLASSIC): a new game of `levelId` (SMB 1-1, or the Lost Levels' 1-1)
-   * with no campaign file, playing settings.classicRules. The original's flow from there:
+   * with no campaign file, playing Classic rules (classicRules). The original's flow from there:
    * character select before every new level (each clear: levelExitTo), after every death and
    * continue, warps through character select, and after SMB 8-4 the ending, the credits and the
    * Lost Levels.
@@ -2091,12 +2091,14 @@ export class Game {
   }
 
   /**
-   * The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). O-12:
-   * that row is developer mode's only; outside it a Classic run always plays Classic rules (a
-   * saved 'current' is ignored, never rewritten). Every read of the setting goes through here.
+   * The rules a Classic mode run plays (the menu flow, Continue, its guides and options). Every
+   * read of the old setting went through here, so this is the one place it is ignored.
    */
   get classicRules(): Rules {
-    return this.devMode ? (this.deps.settings?.classicRules ?? 'classic') : 'classic';
+    // BUG-11: always Classic rules. The old Rules row is gone; a saved settings.classicRules is
+    // ignored and never rewritten. Dev > Toggle heroes' Plays as gives one hero its Campaign
+    // design instead (heroSwaps); the dev START page's Rules row still starts a Campaign-rules run.
+    return 'classic';
   }
 
   private startRun(
