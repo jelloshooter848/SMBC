@@ -110,7 +110,8 @@ export function resumeOf(
 
 function copyKits(kits: Readonly<Record<string, HeroKit>>): Record<string, HeroKit> {
   const out: Record<string, HeroKit> = {};
-  for (const [id, k] of Object.entries(kits)) out[id] = { powerState: k.powerState, hp: k.hp, kit: { ...k.kit } };
+  for (const [id, k] of Object.entries(kits))
+    out[id] = { powerState: k.powerState, hp: k.hp, kit: { ...k.kit } };
   return out;
 }
 

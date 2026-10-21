@@ -8,6 +8,22 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
+  level's end keeps them. Switching to another hero puts the first one's away until he is picked
+  again, and another look of the same hero shares them. A death resets only the hero who died. A
+  new game or a continue resets everyone. The saved run keeps every hero's.
+- Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy as in
+  SMB1, higher while JUMP is held (BUG-07). This deliberately departs from the original, which
+  bounces the same either way, by owner decision.
+
+### Fixed
+
+- Classic mode's Everyone Can Stomp cheat: the other heroes now bounce off a stomped enemy as
+  high as in the original, the same with JUMP held or not. They bounced about two and a half
+  times too high (BUG-07).
+
 ## [0.4.68] - 2026-10-21
 
 ### Added

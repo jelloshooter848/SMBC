@@ -178,10 +178,15 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     marioRun(h);
     const r = {
       ...resumeOf('1-2', h.game.state, 'classic'),
-      heroKits: { link: { powerState: 'big', hp: 'x' }, luigi: { powerState: 'fire', hp: 0, kit: { a: 1, b: 'no' } } },
+      heroKits: {
+        link: { powerState: 'big', hp: 'x' },
+        luigi: { powerState: 'fire', hp: 0, kit: { a: 1, b: 'no' } },
+      },
     };
     store.set(classicResumeKey('smb'), JSON.stringify(r));
-    expect(loadClassicResume('smb')?.heroKits).toEqual({ luigi: { powerState: 'fire', hp: 0, kit: { a: 1 } } });
+    expect(loadClassicResume('smb')?.heroKits).toEqual({
+      luigi: { powerState: 'fire', hp: 0, kit: { a: 1 } },
+    });
   });
 
   it('outside a Classic run (free play) a new hero still starts from its default', () => {

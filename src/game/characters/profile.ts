@@ -213,6 +213,13 @@ export interface MovementProfile {
    */
   stompBounce?: number | undefined;
   /**
+   * SMB1's held stomp bounce (BUG-07, owner decision; set only by the Classic SMB heroes, and taking
+   * the place of `stompBounce`): vy = -`vy`, then until the apex the tier of `tiers` the speed
+   * picks (pickJumpTier) gives its holdGravity while jump is held, else its fallGravity, so a held
+   * jump bounces higher. The last jump's rise lines and soft cut are dropped. Absent: as above.
+   */
+  stompHeld?: { vy: number; tiers: readonly JumpTier[] } | undefined;
+  /**
    * Down held at take-off keeps the crouch pose and hitbox for the whole jump, with no run cap
    * and no attacks, until landing (ML-C22; rise path only; Player.crouchJump). Absent: crouching
    * ends on leaving the ground.
