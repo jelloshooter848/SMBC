@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings, loadSettings, saveSettings, type Settings } from '@engine/save/settings';
-import { defaultClassicSettings, type ClassicSettings } from '@engine/save/original-options';
+import {
+  CLASSIC_WEAPON_VALUES,
+  defaultClassicSettings,
+  type ClassicSettings,
+  type ClassicWeapons,
+} from '@engine/save/original-options';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { MEGAMAN } from '@game/characters/megaman';
 import { RYU } from '@game/characters/ryu';
 import { SOPHIA } from '@game/characters/sophia';
+import { CLASSIC_CHARACTERS } from '@game/characters/registry';
+import { BASS_CLASSIC } from '@game/characters/bass/classic';
+import { MM_WEAPONS } from '@game/characters/megaman/classic-weapons';
+import { CLASSIC_ARTS } from '@game/characters/ryu/classic-weapons';
+import { SIMON_TOOL_LABELS } from '@game/characters/simon';
+import type { Player } from '@game/entities/player';
+import type { World } from '@game/world/world';
+import { runSim } from '@game/sim/headless';
+import { testLevel } from './classic-harness';
 import { fontText } from '@game/hud/text';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
@@ -310,7 +324,9 @@ describe('each box waits for a press, is read out and works with touch (O-15)', 
     for (const id of TUTORIAL_IDS) {
       for (const t of TUTORIAL_TEXT[id] ?? []) {
         const filled = fillAbilities(h.game, t);
-        expect(filled, id).not.toMatch(/\{[^}]*\}|_BTN|\b(button|key) [A-Z]\b|\b[ABXY] (button|to)\b/i);
+        expect(filled, id).not.toMatch(
+          /\{[^}]*\}|\[\[|\]\]|_BTN|\b(button|key) [A-Z]\b|\b[ABXY] (button|to)\b/i,
+        );
         expect(filled, id).not.toMatch(/arrow keys|Exploding Rabbit/i);
         for (const part of filled.split('\n'))
           expect(fontText(part).length, `${id}: ${part}`).toBe(part.toUpperCase().length);
@@ -471,6 +487,18 @@ describe("the words are true for our Classic heroes, in their own buttons' names
     expect(start).toMatch(/press WATER to use his weapon\. Press SWAP to swap the shot and weapon buttons\./);
     expect(start).not.toMatch(/cycle through weapons/);
     expect(pages(h, 'megamanWaterShield', 'bass')).toMatch(/Press WATER to form a shield/);
+    // The Charge Kick swaps nothing (megaman/classic.ts): no swap line, and the kick box says it starts on.
+    const kick = schemed('touch', {
+      weapons: { ...defaultClassicSettings().weapons, bass: 'charge-kick', megaman: 'charge-kick' },
+    });
+    expect(pages(kick, 'bassStart', 'bass')).not.toMatch(/SWAP|swap/);
+    expect(pages(kick, 'megamanStart', 'megaman')).not.toMatch(/swap/);
+    expect(pages(kick, 'megamanChargeKick', 'megaman')).toMatch(
+      /^Charge Kick:\nIt is on: press DOWN and JUMP to damage enemies while sliding\. Press KICK to turn it off or on\.$/,
+    );
+    expect(pages(kick, 'megamanChargeKick', 'bass')).toMatch(
+      /while dashing\. Press KICK to turn it off or on/,
+    );
     const mm = schemed('touch', {
       weapons: { ...defaultClassicSettings().weapons, megaman: 'water-shield' },
     });
@@ -487,10 +515,20 @@ describe("the words are true for our Classic heroes, in their own buttons' names
     expect(pages(h, 'ryuStart')).toMatch(/press away from the wall and JUMP/);
     expect(pages(h, 'samusStart')).toMatch(/set bombs with BOMB/);
     expect(pages(h, 'simonStart')).toMatch(/Press AXE to use subweapons/);
-    expect(pages(h, 'sophiaStart')).toMatch(/fire missiles with MISSILE when you have them\. Press SWAP/);
-    expect(pages(h, 'sophiaHomingMissile')).toMatch(
-      /Press HOMING to fire a homing missile\. If you have both missiles, press SWAP/,
+    // In Classic play she owns one missile only: no SWAP.
+    expect(pages(h, 'sophiaStart')).toMatch(/fire missiles with MISSILE when you have them\.$/);
+    expect(pages(h, 'sophiaHomingMissile')).toMatch(/Press HOMING to fire a homing missile\.$/);
+    // Ryu's Jump Slash as his art is not thrown.
+    const spin = schemed('touch', {
+      weapons: { ...defaultClassicSettings().weapons, ryuStart: 'jump-slash' },
+    });
+    expect(pages(spin, 'ryuStart')).toMatch(/Press SPIN in the air for the jump slash/);
+    expect(pages(spin, 'ryuStart')).not.toMatch(/throw/);
+    // True with the Expansion heroes too (Yoshi stomps).
+    expect(pages(h, 'firstCharacterStart')).toMatch(
+      /of the original heroes, only Mario and Luigi can jump on enemies/,
     );
+    expect(pages(h, 'firstCharacterStart')).not.toMatch(/SPECIAL|TOOLS/);
     expect(pages(h, 'sophiaWallClimb')).toMatch(/Hold UP while driving into a wall/);
     expect(pages(h, 'sophiaCeilingClimb')).toMatch(/Jump into a ceiling to grapple to it/);
     const slash = schemed('touch', {
@@ -540,6 +578,113 @@ describe("the words are true for our Classic heroes, in their own buttons' names
     expect(idsOf(untilBox(h)?.pages ?? [], h)).toEqual(['sophiaWallClimb', 'sophiaCeilingClimb']);
   });
 });
+
+describe("the boxes' button names are the heroes' own touch labels, for every Customize Weapons choice (O-15 QA)", () => {
+  /** A Classic World for hero `id` with weapon option `over`, its hero powered up to the Flower. */
+  function fired(id: string, over: Partial<ClassicWeapons>): { p: Player; world: World } {
+    const def = id === 'bass' ? BASS_CLASSIC : CLASSIC_CHARACTERS[id];
+    if (!def) throw new Error(id);
+    const classic = {
+      ...defaultClassicSettings(),
+      weapons: { ...defaultClassicSettings().weapons, ...over },
+    };
+    const world = runSim({
+      level: testLevel(),
+      character: def,
+      script: { steps: [] },
+      maxFrames: 0,
+      rules: 'classic',
+      classic,
+    }).world;
+    const p = world.player;
+    p.scratch.hearts = 99; // Simon's sub-weapons show only with hearts to throw
+    p.def.behaviour.onPowerUp(p, 'flower', world);
+    p.def.behaviour.onPowerUp(p, 'flower', world);
+    expect(p.powerState).toBe('fire');
+    return { p, world };
+  }
+  const labelOf = (id: string, over: Partial<ClassicWeapons>, action: 'special' | 'select') => {
+    const { p, world } = fired(id, over);
+    return p.def.touchLabels?.(p, world)[action] ?? null;
+  };
+  /** The tutorial's name for `placeholder`, on touch (the bare ability name). */
+  function said(placeholder: string, over: Partial<ClassicWeapons>, hero: string): string {
+    const settings: Settings = {
+      ...defaultSettings(),
+      classic: { ...defaultClassicSettings(), weapons: { ...defaultClassicSettings().weapons, ...over } },
+    };
+    const h = makeGame({ deps: { settings, controlScheme: () => 'touch' } });
+    return fillAbilities(h.game, placeholder, hero);
+  }
+
+  it("Mega Man's and Bass's Flower weapon (SPECIAL), every choice", () => {
+    for (const w of CLASSIC_WEAPON_VALUES.megaman) {
+      expect(said('{=weapon}', { megaman: w }, 'megaman'), w).toBe(
+        labelOf('megaman', { megaman: w }, 'special'),
+      );
+      expect(mmLabelFromSource(w)).toBeDefined();
+    }
+    for (const w of CLASSIC_WEAPON_VALUES.bass)
+      expect(said('{=weapon}', { bass: w }, 'bass'), w).toBe(labelOf('bass', { bass: w }, 'special'));
+    // RUSH on TOOLS for Mega Man, SWAP for Bass (but the Charge Kick, which swaps nothing).
+    expect(labelOf('megaman', {}, 'select')).toBe('RUSH');
+    expect(labelOf('bass', {}, 'select')).toBe('SWAP');
+    expect(labelOf('bass', { bass: 'charge-kick' }, 'select')).toBeNull();
+  });
+
+  it("Link's bombs or bow (TOOLS), and the boomerang (SPECIAL)", () => {
+    for (const w of CLASSIC_WEAPON_VALUES.link)
+      expect(said('{=link-tool}', { link: w }, 'link'), w).toBe(labelOf('link', { link: w }, 'select'));
+    expect(labelOf('link', {}, 'special')).toBe('BOOMERANG');
+  });
+
+  it("Ryu's art (SPECIAL) and a Jump Slash on either button; Simon's sub-weapon; Sophia's missile", () => {
+    for (const w of CLASSIC_WEAPON_VALUES.ryuStart) {
+      const extra = w === 'windmill' ? 'shuriken' : 'windmill';
+      expect(said('{=ryu-art}', { ryuStart: w, ryuExtra: extra }, 'ryu'), w).toBe(
+        labelOf('ryu', { ryuStart: w, ryuExtra: extra }, 'special'),
+      );
+    }
+    expect(said('{=ryu-slash}', { ryuExtra: 'jump-slash' }, 'ryu')).toBe(
+      labelOf('ryu', { ryuExtra: 'jump-slash' }, 'select'),
+    );
+    for (const w of CLASSIC_WEAPON_VALUES.simonStart) {
+      const extra = w === 'cross' ? 'dagger' : 'cross';
+      expect(said('{=simon-start}', { simonStart: w, simonExtra: extra }, 'simon'), w).toBe(
+        labelOf('simon', { simonStart: w, simonExtra: extra }, 'special'),
+      );
+    }
+    for (const w of CLASSIC_WEAPON_VALUES.sophia)
+      expect(said('{=sophia-missile}', { sophia: w }, 'sophia'), w).toBe(
+        labelOf('sophia', { sophia: w }, 'special'),
+      );
+  });
+
+  it('the copied label tables match their sources (MM_WEAPONS, CLASSIC_ARTS, SIMON_TOOL_LABELS)', () => {
+    for (const wp of MM_WEAPONS)
+      expect(said('{=weapon}', { megaman: wp.id }, 'megaman'), wp.id).toBe(wp.label);
+    for (const a of CLASSIC_ARTS) {
+      const extra = a.id === 'windmill' ? 'shuriken' : 'windmill';
+      expect(said('{=ryu-art}', { ryuStart: a.id, ryuExtra: extra }, 'ryu'), a.id).toBe(a.label);
+    }
+    for (const [id, label] of Object.entries(SIMON_TOOL_LABELS)) {
+      const extra = id === 'cross' ? 'dagger' : 'cross';
+      expect(
+        said(
+          '{=simon-start}',
+          { simonStart: id as ClassicWeapons['simonStart'], simonExtra: extra },
+          'simon',
+        ),
+        id,
+      ).toBe(label);
+    }
+  });
+});
+
+/** Mega Man's weapon label as its source table gives it. */
+function mmLabelFromSource(id: string): string | undefined {
+  return MM_WEAPONS.find((w) => w.id === id)?.label;
+}
 
 describe('which boxes have been seen (TutorialManager.saveData / startNewGameHandler)', () => {
   it('each box shows once a game, is saved at once, and a new game shows them all again', () => {

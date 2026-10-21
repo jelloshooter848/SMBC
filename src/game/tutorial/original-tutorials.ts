@@ -107,6 +107,25 @@ function dynamicAbility(
 }
 
 /**
+ * The `[[name|words]]` (or `[[!name|words]]`) conditions: the words show only when the condition
+ * holds (or does not) for the hero's kit and the Customize Weapons choice.
+ */
+function condition(game: Game, name: string, hero: string | undefined): boolean {
+  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  switch (name) {
+    case 'swap':
+      // Every Flower weapon swaps buttons with the buster but the Charge Kick (megaman/classic.ts).
+      return (hero === 'bass' ? w.bass : w.megaman) !== 'charge-kick';
+    case 'bass':
+      return hero === 'bass';
+    case 'ryu-slash-art':
+      return w.ryuStart === 'jump-slash';
+    default:
+      return false;
+  }
+}
+
+/**
  * Each box's pages (TutorialManager's *_MSG arrays), by the original's name for it: a hero's start
  * is `<hero id>Start`, Mega Man's Mushroom `megamanPowerUp`, an upgrade its PickupInfo name. A
  * hero's own box names its buttons as its touch buttons do: `{SHOOT:attack}` is the ability SHOOT
@@ -120,7 +139,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   firstCharacterStart: [
     'Each character controls just like they do in their own games. Use the directions to move, and press {JUMP} to jump and {ATTACK} to attack. Hold {ATTACK} to run with Mario and Luigi.',
     'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
-    'Note that Mario and Luigi are the only characters that can jump on enemies. For some characters, you can press {SPECIAL} for an alternate attack and {TOOLS} for another weapon or tool.',
+    'Note that of the original heroes, only Mario and Luigi can jump on enemies. Some heroes also have a second attack and a tool button: the guide in the pause menu names them.',
     'You can pause the game by pressing {MENU}. In the pause menu, you can change several options.',
     'Also, playing with a gamepad is highly recommended.',
   ],
@@ -140,7 +159,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   ],
   bassStart: [
     'Bass:\nPress DOWN and {JUMP} to dash. Bass can perform a dash jump if you jump while dashing. Bass can also double jump in the air. Hold {SHOOT:attack} for rapid fire.',
-    'With a fire flower, press {=weapon} to use his weapon. Press {SWAP:select} to swap the shot and weapon buttons.',
+    'With a fire flower, press {=weapon} to use his weapon.[[swap| Press {SWAP:select} to swap the shot and weapon buttons.]]',
   ],
   billStart: [
     'Bill:\nBill can shoot in different directions if you hold UP and DOWN while moving. With only his rifle, he will be killed in one hit.',
@@ -165,7 +184,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Mario:\nMario can run if you hold {RUN:attack} while moving. If he has firepower, press {FIRE:attack} to throw fireballs.',
   ],
   megamanStart: [
-    'Mega Man:\nMega man can slide by pressing DOWN and {JUMP} while on the ground. With a fire flower, press {=weapon} to use his weapon. Hold {RUSH:select} to swap the shoot and weapon buttons.',
+    'Mega Man:\nMega Man can slide by pressing DOWN and {JUMP} while on the ground. With a fire flower, press {=weapon} to use his weapon.[[swap| Hold {RUSH:select} to swap the shoot and weapon buttons.]]',
     'Mega Man begins with Rush Coil, which can be used to help Mega Man make some long or high jumps. Tap {RUSH:select} to call Rush.',
   ],
   megamanPowerUp: [
@@ -173,7 +192,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     "Note that some Mega Man skins can't charge up their mega buster.",
   ],
   megamanChargeKick: [
-    'Charge Kick:\nPress {KICK:special} to switch it on. Then press DOWN and {JUMP} to damage enemies while sliding.',
+    'Charge Kick:\nIt is on: press DOWN and {JUMP} to damage enemies while [[bass|dashing]][[!bass|sliding]]. Press {=weapon} to turn it off or on.',
   ],
   megamanHardKnuckle: [
     'Hard Knuckle:\nWhile the hard knuckle is on the screen, press UP or DOWN to move it up or down.',
@@ -188,7 +207,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   ],
   ryuStart: [
     'Ryu:\nRyu can climb any wall by jumping toward it. While climbing, press away from the wall and {JUMP} to jump backwards off a wall, or press DOWN and {JUMP} to detach from a wall.',
-    "If you're near the top of a wall, press {JUMP} to jump on top of it. Press {=ryu-art} to throw special weapons when you have enough ammo.",
+    "If you're near the top of a wall, press {JUMP} to jump on top of it. [[!ryu-slash-art|Press {=ryu-art} to throw special weapons when you have enough ammo.]][[ryu-slash-art|Press {=ryu-art} in the air for the jump slash when you have enough ammo.]]",
   ],
   ryuJumpSlash: ['Jump Slash:\nPress {=ryu-slash} while in the air to use the jump slash.'],
   ryuScroll: ["Scroll:\nThe scroll increases Ryu's ammo capacity."],
@@ -196,7 +215,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Samus:\nSamus can shoot upward while standing, running, and jumping. Press DOWN while crouching to turn into the morph ball. While in morph ball state, you can set bombs with {BOMB:attack}.',
   ],
   samusIceBeam: [
-    'Ice Beam:\nShooting enemies with the ice beam will freeze them in place for a short time.  Frozen enemies can be used as platforms.',
+    'Ice Beam:\nShooting enemies with the ice beam will freeze them in place for a short time. Frozen enemies can be used as platforms.',
   ],
   samusWaveBeam: [
     'Wave Beam:\nThe wave beam arcs up and down as it travels across the screen and passes through walls and pipes.',
@@ -206,12 +225,8 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   simonStart: [
     'Simon:\nSimon can double jump if you press {JUMP} while in the air. Press {=simon-start} to use subweapons if you have enough ammo.',
   ],
-  sophiaStart: [
-    'Sophia:\nSophia can fire missiles with {=sophia-missile} when you have them. Press {SWAP:select} to switch between them.',
-  ],
-  sophiaHomingMissile: [
-    'Homing Missile:\nPress {HOMING:special} to fire a homing missile. If you have both missiles, press {SWAP:select} to switch between them.',
-  ],
+  sophiaStart: ['Sophia:\nSophia can fire missiles with {=sophia-missile} when you have them.'],
+  sophiaHomingMissile: ['Homing Missile:\nPress {HOMING:special} to fire a homing missile.'],
   sophiaWallClimb: [
     'Wall Climb:\nHold UP while driving into a wall to climb up it. Hold DOWN while driving off a cliff to climb down it.',
     'While climbing a wall, press {JUMP} to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press {JUMP}.',
@@ -220,7 +235,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Ceiling Climb:\nJump into a ceiling to grapple to it. To temporarily disable grapple, hold DOWN while in the air.',
   ],
   sophiaHover: [
-    'Hover:\n Press and hold {JUMP} while in the air to hover. The hover bar will recharge over time.',
+    'Hover:\nPress and hold {JUMP} while in the air to hover. The hover bar will recharge over time.',
   ],
 };
 
@@ -233,7 +248,12 @@ export const TUTORIAL_IDS: readonly string[] = Object.keys(TUTORIAL_TEXT);
  * keyboard and pad.
  */
 export function fillAbilities(game: Game, text: string, hero?: string): string {
-  return text.replace(
+  const kept = text.replace(
+    /\[\[(!?)([a-z-]+)\|([^\]]*)\]\]/g,
+    (_all, not: string, name: string, words: string) =>
+      condition(game, name, hero) !== (not === '!') ? words : '',
+  );
+  return kept.replace(
     /\{(=?)([A-Za-z-]+)(?::([a-z]+))?\}/g,
     (all, dyn: string, name: string, act?: string) => {
       const a = dyn
