@@ -232,8 +232,9 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('Options: Classic rules (Classic SMBC / Current), saved in settings, then every other option', () => {
-    const h = classic();
+  it('Options: Classic rules (Classic SMBC / Campaign), saved in settings, then every other option', () => {
+    // O-12: the Classic rules and Expansion heroes rows are developer mode's.
+    const h = classic({ dev: true });
     toClassicMenu(h);
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
@@ -260,9 +261,9 @@ describe('the title and the CLASSIC menu', () => {
     h.idle(8);
     h.tap('right');
     expect(h.settings.classicRules).toBe('current');
-    expect(h.said.at(-1)).toMatch(/^Classic rules: Current/);
+    expect(h.said.at(-1)).toMatch(/^Classic rules: Campaign/);
     t = draw(opts).texts.map((x) => x.str);
-    expect(t).toContain('CURRENT');
+    expect(t).toContain('CAMPAIGN');
     h.tap('jump');
     expect(h.settings.classicRules).toBe('classic');
     pick(h, 'Video, audio, controls');
@@ -345,8 +346,9 @@ describe('a Classic run', () => {
     },
   );
 
-  it('plays Current rules when Options says so', () => {
-    const h = classic({ classicRules: 'current' });
+  it('plays Campaign rules when Options says so', () => {
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.runRules).toBe('current');
     expect(h.game.classicRun).toBe(true);
@@ -759,13 +761,14 @@ describe('the select screen: Classic extras on a second row', () => {
     expect(h.game.state.character).toBe(EXTRA);
   });
 
-  it('also on the Lost Levels entry; never with Classic rules set to Current', () => {
+  it('also on the Lost Levels entry; never with Classic rules set to Campaign', () => {
     saveProgress({ ...loadProgress(), cleared: ['8-4'] });
     const h = classic();
     toClassicMenu(h);
     pick(h, 'The Lost Levels');
     expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
-    const c = classic({ classicRules: 'current' });
+    // O-12: Classic rules set to Current is developer mode's.
+    const c = classic({ classicRules: 'current', dev: true });
     toClassicMenu(c);
     pick(c, 'Super Mario Bros.');
     expect((c.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
@@ -821,8 +824,9 @@ describe('the select screen: Classic extras on a second row', () => {
     expect(h.said.at(-1)?.split(', ')[0]).toBe(CHARACTERS[0]?.name);
   });
 
-  it('Classic rules Current: the registry, in one row', () => {
-    const h = classic({ classicRules: 'current' });
+  it('Classic rules Campaign: the registry, in one row', () => {
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars).toBe(CHARACTERS);

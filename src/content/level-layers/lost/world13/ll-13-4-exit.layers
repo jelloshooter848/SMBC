@@ -165,7 +165,7 @@
 + spiny 89 12
 + spiny 91 12
 -zone pipe 85 6 down -> ll-13-4-bonus 1 0 exit=none
-+zone pipe 94 12 right -> ll-13-4-bonus 1 0 exit=none
++zone pipe 94 12 right -> ll-13-4-bonus 1 3 exit=stand
 start 3 9 pipe-exit
 
 [layer horz]

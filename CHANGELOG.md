@@ -15,6 +15,13 @@ under `## [Unreleased]`.
   Bros. 3 looks with them): shaded skin and materials, a coloured rim that stands out in the black
   box, and each face in its hero's in-game colours. Bass's helmet is now orange and Sophia pink as
   in play, Zelda has her own face, and Quick Man his boomerang crest.
+- Classic mode plays the original's rules and heroes only: the Classic rules switch and the
+  Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
+  Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
+  by an earlier version is kept but has no effect; a Continue run kept under Campaign rules goes on
+  under Classic rules with its level, lives, score and coins.
+- The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
+  "Current") wherever it is shown or read out.
 - Custom levels moved from the title menu into the title's Options, next to Level editor; Back returns
   to Options. Neither row shows in Classic's options or in a game's Options any more.
 - The title's Chapter 1 row is now **Campaign**; its card reads CAMPAIGN / CHAPTER 1 COMING SOON!
@@ -44,6 +51,15 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic mode, Map Difficulty Hard: going down a pipe into a bonus room of The Lost Levels or Super
+  Mario Bros. now puts you inside the room, under its entry pipe, as the original does. Before, six
+  Lost Levels rooms (3-1, 5-3, 7-1, 8-2, 12-1 and 13-2) dropped you onto their roof, and four of
+  them trapped you there until the time ran out.
+- Classic mode: CLASSIC > Continue now goes on with the run's own Map Difficulty and Game mode, and
+  the menus show them, as loading the original's save does. Before, a Hard or Easy run went on as
+  Normal after a reload, and its win was recorded on Normal.
+- Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
+  link's run plays and counts as before, but never writes or clears the Continue slot.
 - A custom level link (`?level=custom-…`) to a level this browser does not have shows an announced
   LEVEL NOT FOUND card instead of the blank "WORLD IS NOT BUILT YET" one; that card is read out too.
 

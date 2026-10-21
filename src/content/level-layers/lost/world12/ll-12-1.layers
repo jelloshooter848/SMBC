@@ -294,7 +294,9 @@
 + piranha 214 9 red=1
 + koopa-red 149 8
 -zone vine 197 5 -> ll-12-1-sky 4 14
+-zone pipe 96 10 down -> ll-12-1-bonus 1 0 exit=none
 +zone checkpoint 135 12
++zone pipe 96 10 down -> ll-12-1-bonus 1 8 exit=up
 
 [layer horz]
 147 13 ###

@@ -104,6 +104,8 @@
 + piranha 86 10 red=1
 + podoboo 90 12
 + lift-h 90 13 len=2 range=3 dx=8
+-zone pipe 51 11 down -> ll-1-2-bonus 1 0 exit=none
++zone pipe 51 11 down -> ll-1-2-bonus 1 3 exit=stand
 
 [layer horz]
 - lift-fall 34 9

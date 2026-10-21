@@ -231,9 +231,11 @@ describe('3. Infinite Lives: continues count over the save, not per run', () => 
   });
 });
 
-describe('4. Classic mode with Current rules: nothing counts toward the cheats', () => {
-  it('no clear, no game beaten, no continue and no tally counts under Current rules', () => {
+describe('4. Classic mode with Campaign rules: nothing counts toward the cheats', () => {
+  it('no clear, no game beaten, no continue and no tally counts under Campaign rules', () => {
     const h = classicGame();
+    // O-12: Classic rules set to Current is developer mode's.
+    h.settings.dev = true;
     h.settings.classicRules = 'current';
     h.game.classicGame(MARIO);
     expect(h.game.cheatGoalsCount).toBe(false);
@@ -452,7 +454,7 @@ describe('11. Revive mode on a standing hero says "OK to power up", as the scree
   });
 });
 
-describe("12. Survival's power-up under Current rules: each hero's own Current upgrade", () => {
+describe("12. Survival's power-up under Campaign rules: each hero's own campaign upgrade", () => {
   const flatLevel1 = () => getLevel('1-1');
 
   it("Current Mega Man: the helmet, then his first weapon (not the Classic Flower's path)", () => {

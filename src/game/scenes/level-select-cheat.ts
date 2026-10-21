@@ -60,7 +60,7 @@ export class LevelSelectScene extends MenuScene {
   /** Whether the run plays (or will play) Classic rules: Map difficulty applies only then. */
   private get classic(): boolean {
     const g = this.game;
-    return (g.classicRun ? g.liveRules : (g.deps.settings?.classicRules ?? 'classic')) === 'classic';
+    return (g.classicRun ? g.liveRules : g.classicRules) === 'classic';
   }
 
   private build(): void {

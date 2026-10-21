@@ -468,6 +468,31 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   });
 
+  it('a link run (never writes Continue, RC-004) promises nothing: no kept line, no Continue hint', () => {
+    const h = makeGame();
+    h.game.devClassicGame(h.game.heroSlots[0]!, '1-1', 'classic', false);
+    for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
+    expect(h.game.keepsResume).toBe(false);
+    h.idle(4);
+    h.tap('start');
+    const quit = items(h.top()).find((i) => i.label === 'Quit');
+    expect(quit?.hint).toBe('Back to the Classic menu');
+    pick(h, 'Quit');
+    expect(h.top()).toBeInstanceOf(QuitRunScene);
+    expect(drawn(h)).not.toContain(QUIT_RUN_KEPT);
+    expect(h.said.at(-1)).toBe('Quit to the Classic menu? No');
+  });
+
+  it('a Classic mode run keeps the promise', () => {
+    const h = makeGame();
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
+    expect(h.game.keepsResume).toBe(true);
+    h.idle(4);
+    h.tap('start');
+    expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toMatch(/Continue picks the run up/);
+  });
+
   it('the campaign select keeps no BACK of its own (Current rules unchanged)', () => {
     const h = makeGame(true);
     h.game.newGame(h.game.roster[0]!, '1-1', null);

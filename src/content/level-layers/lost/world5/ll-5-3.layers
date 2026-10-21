@@ -358,7 +358,11 @@
 + firebar-ccw 245 6
 + firebar 245 6
 -zone bullets 155 75
+-zone pipe 38 4 down -> ll-5-3-bonus 1 0 exit=none
+-zone pipe 102 4 down -> ll-5-3-bonus 1 0 exit=none
 +zone bullets 155 98
++zone pipe 38 4 down -> ll-5-3-bonus 1 4 exit=stand
++zone pipe 102 4 down -> ll-5-3-bonus 1 4 exit=stand
 
 [layer horz]
 205 4 .

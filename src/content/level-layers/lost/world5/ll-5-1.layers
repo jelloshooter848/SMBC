@@ -491,8 +491,10 @@
 + koopa-red 251 7
 + koopa-green 112 11
 -zone checkpoint 210 12
+-zone pipe 87 9 down -> ll-5-1-bonus 1 0 exit=none
 +zone checkpoint 211 12
 +zone bullets 141 22
++zone pipe 87 9 down -> ll-5-1-bonus 1 3 exit=stand
 
 [layer horz]
 136 5 BBB

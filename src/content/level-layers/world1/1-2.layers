@@ -298,5 +298,7 @@
 + koopa-red 87 7
 + koopa-red 151 12
 + spring 152 12
+-zone pipe 103 10 down -> 1-2-bonus 1 0 exit=none
 -zone pipe 166 9 right -> 1-2-exit 3 10 exit=up
++zone pipe 103 10 down -> 1-2-bonus 1 3 exit=stand
 +zone pipe 166 9 right -> 1-2-exit 3 11 exit=up

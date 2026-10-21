@@ -87,10 +87,11 @@ export class PauseScene extends MenuScene {
       items.push({
         label: 'Quit',
         select: () => confirmQuitRun(game, 'Paused.'),
-        // G-008: the run's resume slot holds this level's start (not in developer runs).
-        hint: game.classicDev
-          ? 'Back to the Classic menu'
-          : 'Back to the Classic menu; Continue picks the run up from this level',
+        // G-008: the run's resume slot holds this level's start, only when the run writes it
+        // (Game.keepsResume: not a developer run, not a link run, RC-004).
+        hint: game.keepsResume
+          ? 'Back to the Classic menu; Continue picks the run up from this level'
+          : 'Back to the Classic menu',
       });
       this.setItems(items);
       return;

@@ -148,6 +148,20 @@ export const CLASSIC_SLOTS: readonly string[] = CLASSIC_SLOT_ORDER;
 /** The heroes Options > Expansion heroes adds, by hero id (the original has none of them). */
 export const EXPANSION_HEROES: readonly string[] = CLASSIC_EXPANSION_HEROES;
 
+/**
+ * O-12: the Expansion heroes released to players, by id (a subset of EXPANSION_HEROES). This list
+ * is the one source of truth for what a release build offers: outside developer mode an Expansion
+ * hero is in the select only when it is here and Options > Expansion heroes is on, and that row
+ * only shows once the list is not empty. Each later release adds one id. None for 0.5.0.
+ * Developer mode's per-hero overrides (O-06) sit on top (Game.expansionHeroOffered).
+ */
+export const RELEASED_EXPANSION_HEROES: readonly string[] = [];
+
+/** O-12: Expansion hero `id` is released to players (RELEASED_EXPANSION_HEROES). */
+export function expansionReleased(id: string): boolean {
+  return RELEASED_EXPANSION_HEROES.includes(id);
+}
+
 /** Hero `def` is one of a slot's other looks (never a slot of its own). */
 export function isSkin(def: CharacterDef): boolean {
   return skinHost(def) !== def;

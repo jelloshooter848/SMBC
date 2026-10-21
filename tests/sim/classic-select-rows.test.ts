@@ -14,7 +14,12 @@ isolateClassicRegistry();
 const idx = (s: CharacterSelectScene) => (s as unknown as { index: number }).index;
 
 function classicSelect(classicRules: 'classic' | 'current' = 'classic') {
-  const settings = { ...defaultSettings(), classicRules };
+  // O-12: Classic rules set to Current is developer mode's.
+  const settings = {
+    ...defaultSettings(),
+    classicRules,
+    ...(classicRules === 'current' ? { dev: true } : {}),
+  };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   h.game.classicSelect('1-1', () => h.game.showClassicMenu());
   const sel = h.top() as CharacterSelectScene;
@@ -111,7 +116,7 @@ describe('two-row character select', () => {
     expect(idx(sel)).toBe(start);
   });
 
-  it('one row (Classic rules set to Current, free play): Up and Down do nothing, text as today', () => {
+  it('one row (Classic rules set to Campaign, free play): Up and Down do nothing, text as today', () => {
     // Classic mode's select is the original's grid (nine to a row, then the "?" cell), so only
     // the free-play select keeps the one row.
     const { h, sel } = classicSelect('current');

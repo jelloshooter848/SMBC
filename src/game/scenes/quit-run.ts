@@ -8,7 +8,7 @@ import type { Game } from './game';
  * and at the level's start (Game.keepResume), so quitting loses nothing.
  */
 
-/** The question, and the line under it while the run is kept (not in developer runs). */
+/** The question, and the line under it when the run is kept (Game.keepsResume: not dev or link runs). */
 export const QUIT_RUN_TITLE = 'QUIT TO THE CLASSIC MENU?';
 export const QUIT_RUN_KEPT = 'YOUR RUN WAITS IN CONTINUE.';
 
@@ -24,7 +24,7 @@ export class QuitRunScene extends MenuScene {
       onNo,
       true,
     );
-    this.status = game.classicDev ? '' : QUIT_RUN_KEPT;
+    this.status = game.keepsResume ? QUIT_RUN_KEPT : '';
   }
 
   override enter(): void {

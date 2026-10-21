@@ -309,7 +309,9 @@
 + goomba 134 12
 + koopa-red 233 12
 -zone checkpoint 130 12
+-zone pipe 169 10 down -> ll-2-2-bonus 1 0 exit=none
 +zone checkpoint 135 12
++zone pipe 169 10 down -> ll-2-2-bonus 1 3 exit=stand
 
 [layer horz]
 81 12 .B

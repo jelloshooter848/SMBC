@@ -442,7 +442,7 @@ describe('G-070 to G-074: the heroes’ own sounds', () => {
     expect(h.sounds).not.toContain('samus-step');
   });
 
-  it('Classic mode under Current rules: the hero music, hit and death sounds still play (G-060, G-065, G-072)', () => {
+  it('Classic mode under Campaign rules: the hero music, hit and death sounds still play (G-060, G-065, G-072)', () => {
     const h = audioGame({ classicRules: 'current' });
     h.game.devClassicGame(LINK, '1-1', 'current');
     h.until(() => h.top() instanceof LevelScene, 600);
