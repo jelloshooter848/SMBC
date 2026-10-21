@@ -24,6 +24,10 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
+import { QUIT_RUN_KEPT, QUIT_RUN_TITLE, QuitRunScene } from '@game/scenes/quit-run';
+import { ClassicMenuScene } from '@game/scenes/original-game';
+import { PauseScene } from '@game/scenes/pause';
+import { LevelScene } from '@game/scenes/level';
 import { GuideIndexScene } from '@game/scenes/guide';
 import { ClassicOptionsScene } from '@game/scenes/original-game';
 import { SaveFilesOptions } from '@game/scenes/save-codes';
@@ -386,5 +390,87 @@ describe('O-10: no OK prompt line on the select; the spoken line says what OK do
     const h = makeGame(true);
     h.game.showCharacterSelect();
     expect(h.said.at(-1)).toMatch(/^Select your hero\. Left and right to choose, OK to begin\./);
+  });
+});
+
+describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
+  /** A Classic run in 1-1, its first pick done, then a death with lives left: the select again. */
+  function midRunSelect(h: H): CharacterSelectScene {
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
+    expect(h.top()).toBeInstanceOf(LevelScene);
+    h.game.respawn('1-1', { mode: 'stand' });
+    const sel = h.top() as CharacterSelectScene;
+    expect(sel).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    return sel;
+  }
+
+  it('BACK on the select after a death asks NO / YES, NO first, announced; NO goes back to the select', () => {
+    const h = makeGame();
+    const sel = midRunSelect(h);
+    h.tap('attack');
+    const card = h.top();
+    expect(card).toBeInstanceOf(QuitRunScene);
+    expect(labels(card)).toEqual(['No', 'Yes']);
+    expect(cursor(card)).toBe(0);
+    expect(h.said.at(-1)).toBe('Quit to the Classic menu? Your run waits in Continue. No');
+    const text = drawn(h);
+    expect(text).toContain(QUIT_RUN_TITLE);
+    expect(text).toContain(QUIT_RUN_KEPT);
+    for (const l of [QUIT_RUN_TITLE, QUIT_RUN_KEPT]) expect(l.length).toBeLessThanOrEqual(28);
+    h.idle(8);
+    h.tap('jump');
+    expect(h.top()).toBe(sel);
+    expect(h.said.at(-1)).toBe('No. Choose your hero.');
+    expect(h.game.classicRun).toBe(true);
+  });
+
+  it('YES goes to the CLASSIC menu, where Continue holds the run', () => {
+    const h = makeGame();
+    midRunSelect(h);
+    h.tap('attack');
+    pick(h, 'Yes');
+    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+    expect(h.game.classicRun).toBe(false);
+    expect(h.game.classicResume()).not.toBeNull();
+  });
+
+  it('BACK on the card is NO', () => {
+    const h = makeGame();
+    const sel = midRunSelect(h);
+    h.tap('attack');
+    h.idle(8);
+    h.tap('attack');
+    expect(h.top()).toBe(sel);
+  });
+
+  it('Pause > Quit asks the same, and NO returns to the pause', () => {
+    const h = makeGame();
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
+    h.idle(4);
+    h.tap('start');
+    const pause = h.top();
+    expect(pause).toBeInstanceOf(PauseScene);
+    pick(h, 'Quit');
+    expect(h.top()).toBeInstanceOf(QuitRunScene);
+    pick(h, 'No');
+    expect(h.top()).toBe(pause);
+    pick(h, 'Quit');
+    pick(h, 'Yes');
+    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+  });
+
+  it('the campaign select keeps no BACK of its own (Current rules unchanged)', () => {
+    const h = makeGame(true);
+    h.game.newGame(h.game.roster[0]!, '1-1', null);
+    h.game.respawn('1-1', { mode: 'stand' });
+    const sel = h.top();
+    if (sel instanceof CharacterSelectScene) {
+      h.idle(12);
+      h.tap('attack');
+      expect(h.top()).not.toBeInstanceOf(QuitRunScene);
+    }
   });
 });

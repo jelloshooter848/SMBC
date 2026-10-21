@@ -26,6 +26,9 @@ under `## [Unreleased]`.
   keeps its lines. Its spoken line names the highlighted hero and says what OK does (looks or play).
 - Classic's hero select moves as the original's: Left and Right wrap within the row, and Up or Down
   from either row goes to the other row.
+- Classic: BACK on the hero select between levels and after a death, and Pause → **Quit** (was Quit
+  to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
+  Continue holds the run.
 
 ## [0.4.67] - 2026-10-21
 

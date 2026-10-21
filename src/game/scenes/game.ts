@@ -1,5 +1,6 @@
 import { OPEN_DEV_LOCK, type DevLock } from '../dev-lock';
 import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
+import { confirmQuitRun } from './quit-run';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
@@ -1501,6 +1502,7 @@ export class Game {
           then();
         },
         ...(this.classicRun ? { random: true } : {}),
+        ...this.classicQuitPick(),
       });
     };
     this.deps.ctx.audio.stopMusic();
@@ -2145,6 +2147,21 @@ export class Game {
   }
 
   /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
+  /**
+   * O-16: a Classic run's mid-run select (between levels, after a death) has BACK: it asks to
+   * quit (QuitRunScene), NO back to the select. Nothing outside a Classic mode run.
+   */
+  private classicQuitPick(): { onCancel?: () => void } {
+    if (!this.classicRun || this.campaign !== null || this.playtestDone) return {};
+    return { onCancel: () => confirmQuitRun(this, 'No. Choose your hero.') };
+  }
+
+  /** O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written). */
+  quitClassicRun(): void {
+    this.showTitle();
+    this.showClassicMenu();
+  }
+
   showClassicMenu(): void {
     this.endClassicRun();
     this.runRules = 'current';
@@ -2514,6 +2531,7 @@ export class Game {
           then();
         },
         ...(this.classicRun ? { random: true } : {}),
+        ...this.classicQuitPick(),
         // Campaign: back to the map as Pause → Quit to map (no clear; the life lost here is
         // already counted and saved, and the hero stays as the death left it).
         ...(this.campaign && !this.playtestDone ? { onMap: () => this.returnToMap() } : {}),

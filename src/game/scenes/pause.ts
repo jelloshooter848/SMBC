@@ -1,5 +1,6 @@
 import { MenuScene, type MenuItem } from './menu';
 import { AssistOptionsScene, OptionsScene } from './options';
+import { confirmQuitRun } from './quit-run';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
 import { LevelSelectScene } from './level-select-cheat';
@@ -82,11 +83,14 @@ export class PauseScene extends MenuScene {
           hint: 'Every original cheat, in developer mode',
         });
       if (game.stageRound) items.push(this.giveUp());
+      // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
       items.push({
-        label: 'Quit to title',
-        select: () => game.showTitle(),
+        label: 'Quit',
+        select: () => confirmQuitRun(game, 'Paused.'),
         // G-008: the run's resume slot holds this level's start (not in developer runs).
-        ...(game.classicDev ? {} : { hint: 'Classic mode > Continue picks the run up from this level' }),
+        hint: game.classicDev
+          ? 'Back to the Classic menu'
+          : 'Back to the Classic menu; Continue picks the run up from this level',
       });
       this.setItems(items);
       return;
