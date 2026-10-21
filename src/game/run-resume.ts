@@ -105,14 +105,15 @@ export function clearClassicResume(set: MapSetId): void {
 
 /**
  * Per-set saves: the single slot of 0.4.x (CLASSIC_RESUME_KEY) moves into the slot of its
- * level's map set, then the old key goes. The old key is gone once read, so one that is there is
+ * level's map set, then the old key goes (only once the copy is written). The old key is gone once read, so one that is there is
  * the newer run (an older build wrote it since) and takes the set's slot. A broken old slot is
  * just dropped. Safe to call at every read.
  */
 export function migrateClassicResume(): void {
   if (!hasKey(CLASSIC_RESUME_KEY)) return;
   const old = readSlot(CLASSIC_RESUME_KEY);
-  if (old) saveJson(classicResumeKey(resumeSetOf(old.levelId)), loadJson(CLASSIC_RESUME_KEY));
+  // The old key goes only once its run is safely in its set's slot (a full or blocked storage keeps it).
+  if (old && !saveJson(classicResumeKey(resumeSetOf(old.levelId)), loadJson(CLASSIC_RESUME_KEY))) return;
   removeKey(CLASSIC_RESUME_KEY);
 }
 

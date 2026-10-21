@@ -365,4 +365,120 @@ describe('per-set saves: the Level Select cheat', () => {
     expect(loadClassicResume('smb')).toBeNull();
     expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
   });
+
+  /** A Lost Levels save at ll-5-1, then an SMB run at 2-1 with the pause's Level Select on `set`. */
+  function inRunSelect(h: H, set: string, world: number, level: number): LevelSelectScene {
+    playTo(h, 'll-5-1');
+    playTo(h, '2-1');
+    h.until(() => inLevel(h), 600);
+    h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop(), true));
+    const page = h.top() as LevelSelectScene;
+    Object.assign(page as unknown as Record<string, unknown>, { set: SET(set), world, level });
+    (page as unknown as { index: number }).index = labels(page).indexOf('Go');
+    h.idle(8);
+    h.tap('jump');
+    return page;
+  }
+
+  it('QA: in a run, Go to another set that has a save warns; Cancel keeps that save', () => {
+    const h = classic();
+    const page = inRunSelect(h, 'lost', 3, 1);
+    const w = h.top();
+    expect(w).toBeInstanceOf(ClassicOverwriteScene);
+    expect(idx(w)).toBe(0);
+    expect(h.said.at(-1)).toMatch(
+      /^Overwrite save\? A new game of The Lost Levels overwrites its saved run, World 5-1/,
+    );
+    h.idle(8);
+    h.tap('jump');
+    expect(h.top()).toBe(page);
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-5-1/);
+    expect(loadClassicResume('smb')?.levelId).toMatch(/^2-1/);
+  });
+
+  it('QA: in a run, a confirmed Go to another set moves the run into that set’s slot', () => {
+    const h = classic();
+    inRunSelect(h, 'lost', 3, 1);
+    h.idle(8);
+    h.tap('down');
+    h.tap('jump');
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
+    expect(loadClassicResume('smb')).toBeNull();
+  });
+
+  it('in a run, Go within its own set never asks (the run is that set’s save)', () => {
+    const h = classic();
+    inRunSelect(h, 'smb', 4, 1);
+    expect(h.top()).not.toBeInstanceOf(ClassicOverwriteScene);
+    expect(loadClassicResume('smb')?.levelId).toMatch(/^4-1/);
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-5-1/);
+  });
+});
+
+describe('per-set saves: small things', () => {
+  it('classicResume() with no set: the latest written (savedAt) wins', () => {
+    const h = classic();
+    playTo(h, '1-2');
+    playTo(h, 'll-2-1');
+    playTo(h, 'sp-3-1');
+    const at = (set: 'smb' | 'special' | 'lost', t: number) => {
+      const r = JSON.parse(store.get(classicResumeKey(set)) as string) as Record<string, unknown>;
+      store.set(classicResumeKey(set), JSON.stringify({ ...r, savedAt: t }));
+    };
+    at('smb', 300);
+    at('lost', 200);
+    at('special', 100);
+    expect(h.game.classicResume()?.levelId).toMatch(/^1-2/);
+    at('lost', 400);
+    expect(h.game.classicResume()?.levelId).toMatch(/^ll-2-1/);
+    // A slot from before savedAt was kept counts as oldest.
+    const r = JSON.parse(store.get(classicResumeKey('lost')) as string) as Record<string, unknown>;
+    delete r.savedAt;
+    store.set(classicResumeKey('lost'), JSON.stringify(r));
+    expect(h.game.classicResume()?.levelId).toMatch(/^1-2/);
+  });
+
+  it('the old key stays when its copy cannot be written', () => {
+    store.set(
+      CLASSIC_RESUME_KEY,
+      JSON.stringify({
+        v: 1,
+        levelId: '5-2',
+        rules: 'classic',
+        hero: 'luigi',
+        score: 1,
+        coins: 0,
+        lives: 3,
+        world: 5,
+        stage: 2,
+        powerState: 'small',
+        hp: 0,
+        kit: {},
+        warped: false,
+        checkpoint: null,
+      }),
+    );
+    const ls = (globalThis as { localStorage: { setItem: (k: string, v: string) => void } }).localStorage;
+    const setItem = ls.setItem;
+    ls.setItem = () => {
+      throw new Error('QuotaExceededError');
+    };
+    expect(loadClassicResume('smb')).toBeNull();
+    expect(store.has(CLASSIC_RESUME_KEY)).toBe(true);
+    ls.setItem = setItem;
+    expect(loadClassicResume('smb')?.levelId).toBe('5-2');
+    expect(store.has(CLASSIC_RESUME_KEY)).toBe(false);
+  });
+
+  it('Back from a set’s select returns to the CLASSIC menu on that set’s row', () => {
+    const h = classic();
+    pick(h, 'lost');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    h.idle(30);
+    h.tap('attack');
+    const menu = h.top() as ClassicMenuScene;
+    expect(labels(menu)).toContain('The Lost Levels');
+    expect(idx(menu)).toBe(2);
+    expect(h.said.at(-1)).toMatch(/The Lost Levels/);
+  });
 });

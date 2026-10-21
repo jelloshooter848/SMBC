@@ -203,15 +203,20 @@ export function classicOptionsOn(game: Game): boolean {
 
 /** The CLASSIC menu: each map set (MAP_SETS), Options, Back. */
 export class ClassicMenuScene extends MenuScene {
-  constructor(game: Game) {
+  constructor(game: Game, focus?: MapSetId) {
     super(game, 'CLASSIC', [], () => game.showTitle());
     this.build();
+    // Back from a set's select: on that set's row again.
+    if (focus)
+      this.index = Math.max(
+        0,
+        MAP_SETS.findIndex((m) => m.id === focus),
+      );
   }
 
   /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
   private build(): void {
     const game = this.game;
-    const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
@@ -226,7 +231,7 @@ export class ClassicMenuScene extends MenuScene {
         const saved = kept ? `. Saved run: ${savedRunSpoken(kept)}` : '';
         return {
           label: set.label,
-          select: () => openClassicSet(game, set, { back }),
+          select: () => openClassicSet(game, set, { back: () => game.showClassicMenu(set.id) }),
           hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${saved}${own}`,
         };
       }),

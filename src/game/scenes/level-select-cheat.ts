@@ -114,10 +114,14 @@ export class LevelSelectScene extends MenuScene {
     const target = levelSelectTarget(game, this.set, this.world, this.level);
     const difficulty = this.classic ? this.difficulty : 'normal';
     const go = () => game.classicLevelSelect(target, difficulty);
-    // Per-set saves: from the menus Go starts a new run, which overwrites the set's saved one,
-    // so it asks first (Cancel focused). In a run (the pause menu) the run itself goes on.
-    const inRun = game.classicRun && game.scenes.find((s) => s instanceof LevelScene) !== undefined;
-    const kept = inRun ? null : game.classicResume(this.set.id);
+    // Per-set saves: Go asks first (Cancel focused) whenever it would overwrite a saved run: from
+    // the menus (a new run), and in a run (the pause menu) going to another set that has its own
+    // (the run moves into that set's slot). In a run within its own set, the run just goes on.
+    const here = game.classicRun
+      ? (game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined)
+      : undefined;
+    const sameSet = here !== undefined && mapSetOf(here.world.level.id).id === this.set.id;
+    const kept = sameSet ? null : game.classicResume(this.set.id);
     if (!kept) return go();
     game.scenes.push(
       new ClassicOverwriteScene(

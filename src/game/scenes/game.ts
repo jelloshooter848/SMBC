@@ -2236,11 +2236,14 @@ export class Game {
     return true;
   }
 
-  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
-  showClassicMenu(): void {
+  /**
+   * The title's CLASSIC entry: every map set (MAP_SETS), Options, Back; on map set `focus`'s row
+   * (Back from that set's select), else the first.
+   */
+  showClassicMenu(focus?: MapSetId): void {
     this.endClassicRun();
     this.runRules = 'current';
-    this.scenes.replace(new ClassicMenuScene(this));
+    this.scenes.replace(new ClassicMenuScene(this, focus));
   }
 
   /**

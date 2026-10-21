@@ -26,8 +26,8 @@ under `## [Unreleased]`.
   keep their own run, written at each WORLD card as before. Picking a set that has one asks
   **CONTINUE / NEW GAME**; NEW GAME warns first that the set's saved run will be overwritten, with
   Cancel picked. A set with no save starts a new game as before, and the CLASSIC menu no longer has
-  its own Continue row. The Level Select cheat asks the same before it starts a new run over a
-  saved one. A run saved by an earlier version moves into its set's save.
+  its own Continue row. The Level Select cheat asks the same before it would overwrite another
+  saved run, from the menus or from a run's pause. A run saved by an earlier version moves into its set's save.
 
 ### Fixed
 
