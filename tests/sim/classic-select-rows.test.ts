@@ -94,7 +94,7 @@ describe('two-row character select', () => {
     expect(idx(sel)).toBe(sel.firstRow);
   });
 
-  it('one row (Classic rules set to Current, free play): Up and Down do nothing, text as today', () => {
+  it('one row (Classic rules set to Campaign, free play): Up and Down do nothing, text as today', () => {
     // Classic mode's select is the original's grid (nine to a row, then the "?" cell), so only
     // the free-play select keeps the one row.
     const { h, sel } = classicSelect('current');

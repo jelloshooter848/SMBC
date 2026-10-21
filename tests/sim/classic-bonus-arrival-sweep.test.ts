@@ -14,7 +14,8 @@ import type { CharacterDef } from '@game/characters/character';
 import { layeredLevel, layerFlags } from '@game/level/layers';
 import type { LevelData, Zone } from '@game/level/schema';
 import type { TileMap } from '@game/world/tilemap';
-import type { WorldStart } from '@game/world/world';
+import type { World, WorldStart } from '@game/world/world';
+import type { Action } from '@engine/input/actions';
 import { T, tileDef } from '@game/level/tiles';
 import { testLevel } from './classic-harness';
 
@@ -107,8 +108,8 @@ function reachOf(def: CharacterDef): { jump: number; climbs: boolean } {
 /**
  * Whether a hero `h` tiles tall whose feet rise `jump` px can get from standing on (x, y) to a cell
  * from which he takes one of the room's ways out (walks, drops and jumps up to `jump` px up and
- * four tiles across, through open air; a wall climber also climbs a wall beside him). The same
- * check as classic-special-sweeps.
+ * four tiles across, through open air; a wall climber also grabs a wall face in his jump's reach
+ * and climbs it). classic-special-sweeps' check, with the jump-to-grab added (RC-022).
  */
 function canLeave(
   map: TileMap,
@@ -155,11 +156,22 @@ function canLeave(
         if (!clear(cx, cy, top) || !clear(tx, ty, top)) continue;
         todo.push([tx, ty]);
       }
+    // A wall climber (Ryu, Haggle Man: MovementProfile.wallClimb; Ryu.as climbs any wall) grabs
+    // a wall face within his jump: beside him, or up to four tiles across, reached through open
+    // air at the height he grabs it (RC-022: Hard 4-2's block at 12,5 from the block at 10,9).
     if (climbs)
-      for (const tx of [cx - 1, cx + 1]) {
+      for (let dx = -4; dx <= 4; dx++) {
+        if (dx === 0) continue;
+        const tx = cx + dx;
+        const face = dx > 0 ? tx - 1 : tx + 1;
+        const across = (wy: number) => {
+          for (let c = Math.min(cx, face); c <= Math.max(cx, face); c++)
+            for (let k = 0; k < h; k++) if (!air(c, wy - k)) return false;
+          return true;
+        };
         let wall = -1;
         for (let wy = cy; wy >= Math.max(0, cy - Math.floor(jump / 16)) && wall < 0; wy--)
-          if (!air(tx, wy) && clear(cx, cy, wy)) wall = wy;
+          if (!air(tx, wy) && clear(cx, cy, wy) && across(wy)) wall = wy;
         if (wall < 0) continue;
         let topRow = wall;
         while (topRow > 0 && !air(tx, topRow - 1)) topRow--;
@@ -185,20 +197,12 @@ const ALL_LOOKS: CharacterDef[] = [
 ];
 
 /**
- * RC-022: Hard 1-2's and 4-2's rooms (the original's own design, levelDataLostLevels.xml 1-2 f
- * and 4-2 b on Hard) are left by way of hidden blocks (1-2: the coin blocks at 26,8 and 25,5 over
- * the pit; 4-2: the blocks at 1,9 and 1,5 over the landing pipe), which this sweep's map does not
- * see until they are hit. In these rooms it counts a hidden block as the solid block it becomes.
+ * RC-022: Hard 1-2's room (the original's own design, levelDataLostLevels.xml 1-2 f on Hard) is
+ * left by way of its hidden coin blocks at 26,8 and 25,5 over the pit, which this sweep's map does
+ * not see until they are hit. In that room it counts a hidden block as the solid block it becomes.
+ * Not a bug: the original's design; the sweep's model.
  */
-const HIDDEN_ROUTE = new Set(['hard ll-1-2-bonus', 'hard ll-4-2-bonus']);
-
-/**
- * RC-022, left open for the owner: Hard 4-2's room for the two lowest jumpers. The exit pipe's
- * ledge (the block at 12,5) is 64 px over the block at 10,9, above Ryu's and Haggle Man's
- * measured jumps (reachOf), with no wall beside it to climb. RC-001 does not change this room (its Hard ceiling has the
- * drop gap, so the old arrival already landed inside); the pieces are the original's.
- */
-const OPEN = new Set(['hard ll-4-2-bonus ryu', 'hard ll-4-2-bonus haggleman']);
+const HIDDEN_ROUTE = new Set(['hard ll-1-2-bonus']);
 
 /** `map` with each hidden block shown (its hit turns it into a solid used block). */
 function revealed(map: TileMap): TileMap {
@@ -256,13 +260,78 @@ describe('RC-001: every way into an SMB1 or Lost Levels bonus room puts the hero
           const outs = w.level.zones.filter((z) => z.kind === 'pipe' || z.kind === 'pit');
           const h = Math.ceil(toPx(b.h) / 16);
           const map = HIDDEN_ROUTE.has(`${difficulty} ${e.level}`) ? revealed(w.map) : w.map;
-          if (
-            !canLeave(map, tx, ty, h, jump, outs, climbs) &&
-            !OPEN.has(`${difficulty} ${e.level} ${def.id}`)
-          )
+          if (!canLeave(map, tx, ty, h, jump, outs, climbs))
             bad.push(`${where}: no way out in jump reach from ${tx},${ty}`);
         }
     }
     expect(bad).toEqual([]);
   }, 600_000);
+});
+
+/**
+ * RC-022, Hard 4-2's room: not a bug (the original's design; the sweep's model). Its exit ledge
+ * (the block at 12,5) is 64 px over the block at 10,9, above Ryu's and Haggle Man's plain jumps,
+ * but they jump at its left face, grab it, climb and hop on, as Ryu.as climbs any wall. A bot plays
+ * it from the arrival with real inputs: block to block, then the grab, the climb and the pipe.
+ */
+function hopBot(steps: { x: number; feet: number }[]): (w: World, f: number) => Action[] {
+  let i = 0;
+  let still = 0;
+  let lastY = 0;
+  let ground = 0;
+  return (w) => {
+    const p = w.player;
+    const b = p.body;
+    const mid = toPx(b.x + (b.w >> 1));
+    const cx = mid >> 4;
+    const feet = (toPx(b.y + b.h) - 1) >> 4;
+    still = b.y === lastY ? still + 1 : 0;
+    lastY = b.y;
+    const step = steps[i];
+    if (step && b.onGround && cx === step.x && feet === step.feet) i++;
+    if (p.wall) return still > 2 ? ['jump', 'right'] : ['up'];
+    const goal = steps[i];
+    // The last step done: walk right, into the exit pipe.
+    if (!goal) return ['right'];
+    const target = goal.x * 16 + 8;
+    const steer: Action[] = mid < target - 2 ? ['right', 'run'] : mid > target + 2 ? ['left'] : [];
+    // On the ground: a run-up to the platform's edge, then a fresh press (jump let go for a few
+    // frames first); in the air, jump held and steered at the next block.
+    ground = b.onGround ? ground + 1 : 0;
+    if (b.onGround) {
+      const front = (toPx(b.x + b.w) + 2) >> 4;
+      if (w.map.isSolid(front, feet + 1)) return ['right', 'run'];
+      return ground < 4 ? [] : [...steer, 'jump'];
+    }
+    return [...steer, 'jump'];
+  };
+}
+
+describe('RC-022: Hard 4-2’s room, the wall climbers (real moves)', () => {
+  for (const id of ['ryu', 'haggleman'])
+    it(`${id} gets from the arrival to the exit pipe by grabbing the block at 12,5`, () => {
+      const def = ALL_LOOKS.find((d) => d.id === id) as CharacterDef;
+      expect(def.movement.wallClimb, id).toBeTruthy();
+      const e = entries({ difficulty: 'hard', def }).find((x) => x.level === 'll-4-2-bonus');
+      expect(e).toBeDefined();
+      const r = runSim({
+        level: getLevel('ll-4-2-bonus'),
+        character: def,
+        rules: 'classic',
+        mapDifficulty: 'hard',
+        script: { steps: [] },
+        start: { ...(e as { start: WorldStart }).start, time: 300 },
+        maxFrames: 1500,
+        assist: { invulnerable: true },
+        // The pipe (1,12), the blocks at 6,11 and 10,9, the block at 12,5 (its face grabbed).
+        controller: hopBot([
+          { x: 1, feet: 12 },
+          { x: 6, feet: 10 },
+          { x: 10, feet: 8 },
+          { x: 12, feet: 4 },
+        ]),
+      });
+      const b = r.world.player.body;
+      expect(r.outcome, `${toPx(b.x)},${toPx(b.y)}`).toBe('pipe');
+    });
 });
