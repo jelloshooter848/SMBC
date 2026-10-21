@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { LevelScene } from '@game/scenes/level';
-import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
+import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume } from '@game/run-resume';
 import { loadProgress } from '@engine/save/progress';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
@@ -64,7 +64,8 @@ describe('RC-002 the resume slot keeps the Map Difficulty and the Game mode', ()
 
   it('an older slot (no difficulty, no game mode) still loads: the menu’s difficulty, the mode kept', () => {
     hardRun();
-    const old = JSON.parse(store.get(CLASSIC_RESUME_KEY) as string) as Record<string, unknown>;
+    // Per-set saves: the run sits in its set's slot; written back under the old key, it migrates.
+    const old = JSON.parse(store.get(classicResumeKey('smb')) as string) as Record<string, unknown>;
     delete old.difficulty;
     delete old.gameMode;
     store.set(CLASSIC_RESUME_KEY, JSON.stringify(old));
@@ -87,7 +88,7 @@ describe('RC-002 the resume slot keeps the Map Difficulty and the Game mode', ()
 
   it('a slot with values this version does not know drops them and still loads', () => {
     hardRun();
-    const bad = JSON.parse(store.get(CLASSIC_RESUME_KEY) as string) as Record<string, unknown>;
+    const bad = JSON.parse(store.get(classicResumeKey('smb')) as string) as Record<string, unknown>;
     bad.difficulty = 'nightmare';
     bad.gameMode = 42;
     store.set(CLASSIC_RESUME_KEY, JSON.stringify(bad));
