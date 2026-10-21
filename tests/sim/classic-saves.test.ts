@@ -95,7 +95,7 @@ describe('per-set saves: CONTINUE / NEW GAME', () => {
     expect(p).toBeInstanceOf(ClassicSetScene);
     expect(labels(p)).toEqual(['Continue', 'New game']);
     expect(idx(p)).toBe(0);
-    expect(h.said.at(-1)).toMatch(/^Super Mario Bros\.\. Saved run: World 4-2, 2 lives\. Continue/);
+    expect(h.said.at(-1)).toMatch(/^Super Mario Bros\. Saved run: World 4-2, 2 lives\. Continue/);
     const t = draw(p as ClassicSetScene).texts.map((x) => x.str);
     expect(t).toContain('SUPER MARIO BROS.');
     expect(t).toContain('SAVED: WORLD 4-2, 2 LIVES');
