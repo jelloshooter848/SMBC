@@ -140,7 +140,7 @@ export const DIFFICULTY_NAMES: Record<MapDifficulty, string> = {
 };
 
 /** The status line while Current rules leave every map on Normal (it fits the 28 columns). */
-export const CURRENT_RULES_NORMAL = 'Current rules: always Normal';
+export const CURRENT_RULES_NORMAL = 'Campaign rules: always Normal';
 
 /**
  * A Map difficulty row (G-006): its value, changed with left and right (and OK / CHANGE on a
@@ -164,7 +164,7 @@ export function mapDifficultyItem(
     get hint() {
       return classic()
         ? 'Easy, Normal or Hard: each plays the original version of every level'
-        : 'Classic rules only: with Current rules every level plays as Normal';
+        : 'Classic rules only: with Campaign rules every level plays as Normal';
     },
   };
 }
@@ -186,15 +186,18 @@ function settingsDifficulty(game: Game): { get(): MapDifficulty; set(d: MapDiffi
 const CLASSIC_RULES_RIGHT = 248;
 const CLASSIC_RULES_Y = 64;
 
-const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Current' };
+// Owner decision: the 'current' rules are shown and said as "Campaign" (the saved value stays).
+const RULES_LABELS: Record<ClassicRules, string> = { classic: 'Classic SMBC', current: 'Campaign' };
 
 /**
  * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
  * Current rules only Game mode applies (More settings and Weapons are Classic rules only).
  */
 export function classicOptionsOn(game: Game): boolean {
-  const c = game.deps.settings?.classic ?? defaultClassicSettings();
-  if ((game.deps.settings?.classicRules ?? 'classic') === 'classic') return !isOriginalClassic(c);
+  const saved = game.deps.settings?.classic ?? defaultClassicSettings();
+  // O-12: an Expansion heroes value not in force (outside developer mode) is not "on".
+  const c = game.expansionRowShown ? saved : { ...saved, expansion: defaultClassicSettings().expansion };
+  if (game.classicRules === 'classic') return !isOriginalClassic(c);
   return c.gameMode !== defaultClassicSettings().gameMode;
 }
 
@@ -234,8 +237,8 @@ export class ClassicMenuScene extends MenuScene {
     // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
     // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
     // as Normal, which the row shows and says (and it does not change).
-    items.push(mapDifficultyItem(game, () => game.deps.settings?.classicRules !== 'current'));
-    this.status = game.deps.settings?.classicRules === 'current' ? CURRENT_RULES_NORMAL : '';
+    items.push(mapDifficultyItem(game, () => game.classicRules !== 'current'));
+    this.status = game.classicRules === 'current' ? CURRENT_RULES_NORMAL : '';
     items.push(
       {
         label: 'Options',
@@ -247,7 +250,7 @@ export class ClassicMenuScene extends MenuScene {
               this.announce();
             }),
           ),
-        hint: 'Classic rules, game mode, more settings, weapons, music set and all settings',
+        hint: `${game.devMode ? 'Classic rules, game mode' : 'Game mode'}, more settings, weapons, music set and all settings`,
       },
       { label: 'Back', select: () => game.showTitle() },
     );
@@ -321,15 +324,18 @@ export class ClassicOptionsScene extends MenuScene {
     const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
       rowsOriginal(rows, game.deps.settings?.classic ?? defaultClassicSettings()) ? 'Original' : 'Changed';
     const onBack = this.onBack ?? (() => {});
+    // O-12: the Classic rules row and the Expansion heroes row are developer mode's (the original
+    // has neither); Expansion heroes returns for players once a hero is released.
+    const rulesRow: MenuItem = {
+      label: 'Classic rules',
+      value: () => (this.drawing ? '' : this.rulesLabel),
+      adjust: step,
+      hint: 'Classic SMBC plays the heroes as the original did; Campaign as the campaign does',
+    };
     this.setItems([
-      {
-        label: 'Classic rules',
-        value: () => (this.drawing ? '' : this.rulesLabel),
-        adjust: step,
-        hint: 'Classic SMBC plays the heroes as the original did; Current as the campaign does',
-      },
+      ...(game.devMode ? [rulesRow] : []),
       optionItem(game, GAME_MODE_ROW, () => this.build()),
-      optionItem(game, EXPANSION_ROW, () => this.build()),
+      ...(game.expansionRowShown ? [optionItem(game, EXPANSION_ROW, () => this.build())] : []),
       {
         label: 'More settings',
         value: state(MORE_SETTINGS_ROWS),
@@ -366,7 +372,7 @@ export class ClassicOptionsScene extends MenuScene {
   }
 
   private get rulesLabel(): string {
-    return RULES_LABELS[this.game.deps.settings?.classicRules ?? 'classic'];
+    return RULES_LABELS[this.game.classicRules];
   }
 
   private back(): void {
@@ -393,6 +399,8 @@ export class ClassicOptionsScene extends MenuScene {
     } finally {
       this.drawing = false;
     }
+    // The row is developer mode's only (O-12).
+    if (!this.game.devMode) return;
     const v = this.rulesLabel.toUpperCase();
     r.text(this.game.ctx.assets.sheet('font'), v, CLASSIC_RULES_RIGHT - v.length * 8, CLASSIC_RULES_Y);
   }

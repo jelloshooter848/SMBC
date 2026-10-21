@@ -204,7 +204,8 @@ describe('the original roster, Expansion heroes and old saves', () => {
   });
 
   it('Expansion heroes on adds the heroes the original never had, after it', () => {
-    const settings = defaultSettings();
+    // O-12: the Expansion heroes row is developer mode's until a hero is released.
+    const settings = { ...defaultSettings(), dev: true };
     const { h, sel } = classicSelect(settings);
     for (const id of ['vicviper', 'warriors', 'arthur', 'yoshi'])
       expect(sel.chars.some((c) => c.id === id)).toBe(false);

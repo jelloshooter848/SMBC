@@ -1,4 +1,6 @@
 import { loadJson, removeKey, saveJson } from '@engine/save/storage';
+import { CLASSIC_GAME_MODES, type ClassicGameMode } from '@engine/save/original-options';
+import type { MapDifficulty } from '@engine/save/settings';
 import type { GameState, Rules } from './context';
 
 /**
@@ -8,8 +10,9 @@ import type { GameState, Rules } from './context';
  * (so it always holds the start of the level being played, with its checkpoint), and offered as
  * CLASSIC > Continue. A game over, or the run's end at the credits, clears it. It keeps what the
  * original's file keeps for the hero playing: the level, lives, score, coins, power and kit;
- * Survival's fallen heroes; the rules the run plays. Developer runs never write it. Its own key,
- * never a campaign save.
+ * Survival's fallen heroes; the rules the run plays; and, as the original's file keeps them with
+ * the run (GameSettings.as 407-414), its Map Difficulty and Game mode (RC-002). Developer runs and
+ * link runs (`?level=`, RC-004) never write it. Its own key, never a campaign save.
  */
 export const CLASSIC_RESUME_KEY = 'smbc-classic-resume';
 
@@ -32,6 +35,10 @@ export interface ClassicResume {
   checkpoint: GameState['checkpoint'];
   /** Survival: the fallen heroes and whether revival is allowed. */
   survival?: { fallen: string[]; reviveAllowed: boolean };
+  /** The run's Map Difficulty (RC-002; a slot from before 0.4.68 has none). */
+  difficulty?: MapDifficulty;
+  /** The run's Game mode (RC-002; a slot from before 0.4.68 has none). */
+  gameMode?: ClassicGameMode;
 }
 
 /** The slot for `state` at the WORLD card of `levelId`. */
@@ -40,6 +47,7 @@ export function resumeOf(
   state: GameState,
   rules: Rules,
   survival?: ClassicResume['survival'],
+  run?: { difficulty: MapDifficulty; gameMode: ClassicGameMode },
 ): ClassicResume {
   return {
     v: 1,
@@ -59,6 +67,7 @@ export function resumeOf(
     ...(survival
       ? { survival: { fallen: [...survival.fallen], reviveAllowed: survival.reviveAllowed } }
       : {}),
+    ...(run ? { difficulty: run.difficulty, gameMode: run.gameMode } : {}),
   };
 }
 
@@ -87,9 +96,12 @@ export function loadClassicResume(): ClassicResume | null {
     cp && typeof cp === 'object' && typeof cp.level === 'string' && num(cp.x)
       ? { level: cp.level, x: cp.x, ...(num(cp.y) ? { y: cp.y } : {}) }
       : null;
-  const { survival: sv, ...rest } = r as ClassicResume;
+  const { survival: sv, difficulty: d, gameMode: gm, ...rest } = r as ClassicResume;
   return {
     ...rest,
+    // An older slot, or a value this version does not know: none (the caller falls back).
+    ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
+    ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),
     kit,
     warped: r.warped === true,
     checkpoint,

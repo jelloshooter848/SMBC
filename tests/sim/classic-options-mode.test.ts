@@ -211,6 +211,8 @@ function pick(h: H, label: string): void {
 describe('the Game mode row (CLASSIC > Options)', () => {
   it('steps All heroes → Single hero → Single random, saved, marked and spoken as changed', () => {
     const h = classic();
+    // O-12: the Classic rules row (the first) is developer mode's.
+    h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     expect(h.top()).toBeInstanceOf(TitleScene);
@@ -262,9 +264,11 @@ describe('review fixes', () => {
     expect(a.said.at(-1)).toBe('World 1-1. 3 lives.');
   });
 
-  it('the CLASSIC menu hint counts only options that apply: with Current rules, Game mode only', () => {
+  it('the CLASSIC menu hint counts only options that apply: with Campaign rules, Game mode only', () => {
     const hint = (over: Partial<ClassicSettings>, rules: 'classic' | 'current') => {
       const h = classic(over);
+      // O-12: Classic rules set to Current is developer mode's.
+      h.settings.dev = true;
       h.settings.classicRules = rules;
       h.game.showClassicMenu();
       return items(h.top())[0]?.hint ?? '';

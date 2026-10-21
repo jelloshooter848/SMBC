@@ -79,8 +79,9 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
     for (const it of items(h.top())) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
   });
 
-  it('under Current rules it shows Normal, says why and does not change; a beat counts as Normal', () => {
-    const h = classic({ classicMapDifficulty: 'hard', classicRules: 'current' });
+  it('under Campaign rules it shows Normal, says why and does not change; a beat counts as Normal', () => {
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicMapDifficulty: 'hard', classicRules: 'current', dev: true });
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
     const row = items(menu)[MAP_SETS.length] as MenuItem;
