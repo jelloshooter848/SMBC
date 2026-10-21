@@ -33,6 +33,8 @@ export interface AudioSink {
    * the music silent or two songs going. Returns the seconds until `id` starts (0: at once).
    */
   crossfadeMusic?(id: string, out: number, fadeIn: number): number;
+  /** BUG-13: start (or resume) sound from a press the browser may not see as a gesture (a pad). */
+  unlock?(): void;
   /** Play a non-looping jingle; the previous music is not resumed automatically. */
   playJingle(id: string, onEnd?: () => void): void;
   sfx(id: string): void;
