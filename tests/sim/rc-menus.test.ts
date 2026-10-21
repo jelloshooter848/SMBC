@@ -6,7 +6,7 @@ import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
-import { defaultSettings } from '@engine/save/settings';
+import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY, SETTINGS_VERSION } from '@engine/save/settings';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ScriptedInput } from '@game/sim/headless';
@@ -255,5 +255,37 @@ describe('O-07 (option c): Save files is a dev-mode row until the campaign opens
         for (const l of lines) expect(l.length).toBeLessThanOrEqual(28);
       }
     }
+  });
+});
+
+describe('O-08: the backup reminders are off by default, with a migration', () => {
+  it('a new player has them off; Save files shows Off and turns them on', () => {
+    expect(defaultSettings().backupReminders).toBe(false);
+    expect(loadSettings().backupReminders).toBe(false);
+    const h = makeGame(true);
+    const files = new SaveFilesOptions(h.game, () => {});
+    const row = items(files).find((i) => i.label === 'Backup reminders') as MenuItem;
+    expect(row.value?.()).toBe('Off');
+    row.adjust?.(1);
+    expect(h.settings.backupReminders).toBe(true);
+    expect(row.value?.()).toBe('On');
+  });
+
+  it('a v2 (or older) file saved with them on turns them off once; the rest of the file is kept', () => {
+    for (const v of [1, 2]) {
+      store.set(SETTINGS_KEY, JSON.stringify({ ...defaultSettings(), v, backupReminders: true, announce: false }));
+      const s = loadSettings();
+      expect(s.backupReminders, `v${v}`).toBe(false);
+      expect(s.announce).toBe(false);
+      expect(s.v).toBe(SETTINGS_VERSION);
+    }
+  });
+
+  it('a v3 file with them turned back on keeps them on', () => {
+    const s = loadSettings();
+    s.backupReminders = true;
+    saveSettings(s);
+    expect(JSON.parse(store.get(SETTINGS_KEY) as string).v).toBe(SETTINGS_VERSION);
+    expect(loadSettings().backupReminders).toBe(true);
   });
 });

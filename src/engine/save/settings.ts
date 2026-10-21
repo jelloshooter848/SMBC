@@ -63,7 +63,8 @@ export interface Settings {
   devUnlock: string;
   /**
    * After each castle's first clear, a card offers to back up the file as a save code (Options >
-   * Save files > Backup reminders, 0.4.44). On by default; older settings files get it on.
+   * Save files > Backup reminders, 0.4.44). Off by default since O-08 (settings v3); the v2 -> v3
+   * migration turns it off once, as v2 files cannot tell the old default from a choice.
    */
   backupReminders: boolean;
   /**
@@ -213,8 +214,11 @@ export interface HomeScreenFlags {
 
 export const SETTINGS_KEY = 'smbc.settings';
 
-/** The settings file's version: 2 since the quieter default master volume (0.4.49). */
-export const SETTINGS_VERSION = 2;
+/**
+ * The settings file's version: 2 since the quieter default master volume (0.4.49), 3 since the
+ * backup reminders are off by default (O-08).
+ */
+export const SETTINGS_VERSION = 3;
 
 /**
  * The master volume a new player starts at (0.4.49): 6 dB below the old 0.8, so the game starts
@@ -251,7 +255,7 @@ export function defaultSettings(): Settings {
     announce: true,
     dev: false,
     devUnlock: '',
-    backupReminders: true,
+    backupReminders: false,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
     classicMapDifficulty: 'normal',
@@ -271,6 +275,10 @@ const migrations: Array<(old: Record<string, unknown>) => Record<string, unknown
     const a = audio as Record<string, unknown>;
     return a.master === OLD_DEFAULT_MASTER ? { ...old, audio: { ...a, master: DEFAULT_MASTER } } : old;
   },
+  // v2 -> v3 (O-08): the backup reminders become off by default. A v2 file's `true` is the old
+  // default as often as a choice (the two cannot be told apart), so it turns off once; the
+  // player can turn it back on in Options > Save files.
+  (old) => ({ ...old, backupReminders: false }),
 ];
 
 /** Deep-merge stored values over defaults so new fields always exist. */

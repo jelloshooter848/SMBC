@@ -17,6 +17,8 @@ under `## [Unreleased]`.
 - Options → **Save files** shows only in developer mode until Chapter 1 opens (Classic keeps its
   Continue); nothing is deleted. The Home Screen app's and the download's first notes no longer
   point to it while it is hidden.
+- The save-backup reminders are off by default; settings saved by earlier versions turn them off
+  once (they can be turned back on in Options → Save files).
 
 ## [0.4.67] - 2026-10-21
 
