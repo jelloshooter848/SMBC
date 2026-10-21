@@ -2060,7 +2060,10 @@ export class Game {
           reviveAllowed: sv.reviveAllowed,
         }
       : undefined;
-    const r = resumeOf(levelId, this.state, this.liveRules, survival);
+    const r = resumeOf(levelId, this.state, this.liveRules, survival, {
+      difficulty: this.classicDifficulty,
+      gameMode: this.deps.settings?.classic.gameMode ?? 'all',
+    });
     // The level's own world and stage (before its WORLD card the state still holds the last one's).
     try {
       const lv = this.deps.getLevel(levelId);
@@ -2087,12 +2090,22 @@ export class Game {
 
   /**
    * CLASSIC > Continue (G-008): the run in the resume slot goes on from the WORLD card of the
-   * level it was in, with its lives, score, coins, hero, power and kit, under its own rules.
+   * level it was in, with its lives, score, coins, hero, power and kit, under its own rules, on
+   * its own Map Difficulty and Game mode (RC-002).
    */
   resumeClassic(): boolean {
     const r = this.classicResume();
     const hero = r ? this.rosterFor(r.rules).find((c) => c.id === r.hero) : undefined;
     if (!r || !hero) return false;
+    const settings = this.deps.settings;
+    // RC-002: the run's Map Difficulty (a slot from before it was kept: the menu's, as it shows).
+    this.classicDifficulty = r.difficulty ?? settings?.classicMapDifficulty ?? 'normal';
+    // Its Game mode: loading the original's file sets the game mode it was saved with
+    // (GameSettings.as 407-414), as the Level Select cheat's Go keeps its difficulty.
+    if (settings && r.gameMode && settings.classic.gameMode !== r.gameMode) {
+      settings.classic.gameMode = r.gameMode;
+      this.deps.applySettings?.();
+    }
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = r.rules;
