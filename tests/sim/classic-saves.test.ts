@@ -96,7 +96,7 @@ describe('per-set saves: CONTINUE / NEW GAME', () => {
     expect(labels(p)).toEqual(['Continue', 'New game']);
     expect(idx(p)).toBe(0);
     expect(h.said.at(-1)).toMatch(
-      /^Super Mario Bros\. Saved run: World 4-2, 2 lives, Normal, All heroes\. Continue/,
+      /^Super Mario Bros\. Continue or new game\. Continue\. Your saved run: World 4-2, 2 lives, Normal, All heroes$/,
     );
     const t = draw(p as ClassicSetScene).texts.map((x) => x.str);
     expect(t).toContain('SUPER MARIO BROS.');
@@ -267,7 +267,7 @@ describe('per-set saves: RC-002 difficulty and game mode, per slot', () => {
     h.game.showTitle();
     pick(h, 'smb');
     const p = h.top() as ClassicSetScene;
-    expect(h.said.at(-1)).toMatch(/Saved run: World 1-1, \d lives?, Hard, Survival\. Continue/);
+    expect(h.said.at(-1)).toMatch(/Continue\. Your saved run: World 1-1, \d lives?, Hard, Survival$/);
     expect(draw(p).texts.map((x) => x.str)).toContain('HARD, SURVIVAL');
     h.idle(8);
     h.tap('jump');

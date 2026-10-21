@@ -114,7 +114,7 @@ export class ClassicSetScene extends MenuScene {
   override enter(): void {
     const it = this.items[this.index];
     this.game.deps.announcer?.say(
-      `${this.set.label.replace(/\.$/, '')}. Saved run: ${savedRunSpoken(this.kept)}. ${it?.label ?? ''}${it?.hint ? `. ${it.hint}` : ''}`,
+      `${this.set.label.replace(/\.$/, '')}. Continue or new game. ${it?.label ?? ''}${it?.hint ? `. ${it.hint}` : ''}`,
     );
   }
 
