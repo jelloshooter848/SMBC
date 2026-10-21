@@ -2147,6 +2147,8 @@ export class Game {
 
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
+    // Tutorials (O-15): no box queued in the run left behind shows in the next one.
+    this.classicTutorials.clearQueue();
     this.classicRun = false;
     this.classicFlow = false;
     this.classicDev = false;
@@ -2218,6 +2220,7 @@ export class Game {
    * its own Map Difficulty and Game mode (RC-002).
    */
   resumeClassic(): boolean {
+    this.classicTutorials.clearQueue();
     const r = this.classicResume();
     const rules = r ? this.resumeRules(r) : 'classic';
     const hero = r ? this.rosterFor(rules).find((c) => c.id === r.hero) : undefined;
