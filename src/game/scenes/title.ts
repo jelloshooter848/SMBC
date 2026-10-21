@@ -151,11 +151,10 @@ export class TitleScene extends MenuScene {
           game.campaignOpen ? game.scenes.replace(new FileSelectScene(game)) : showChapter1Gate(game),
         hint: game.campaignOpen ? 'The story mode' : 'Coming soon',
       },
-      { label: 'Custom levels', select: () => game.showCustomLevels() },
       {
         label: 'Options',
         select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop())),
-        hint: 'Settings, how to play and the level editor',
+        hint: 'Settings, how to play, custom levels and the level editor',
       },
     ];
     if (game.devMode) items.push({ label: 'Dev mode', select: () => game.showDevMenu() });

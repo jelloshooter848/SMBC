@@ -287,9 +287,9 @@ Options → Controls.
 
 ### Level editor and sharing
 
-**Level editor** on the title screen opens a tile editor: paint tiles, place enemies, items and
+**Options → Level editor** on the title screen opens a tile editor: paint tiles, place enemies, items and
 scenery, set exits, checkpoints and pipe links, then **Play test**, **Save** (levels are stored
-in the browser and appear under **Custom levels**), **Export .map** / **Import .map**, or
+in the browser and appear under the title's **Options → Custom levels**), **Export .map** / **Import .map**, or
 **Copy share link**. A share link carries the whole level compressed in the URL, so anyone
 who opens it plays it immediately; nothing is uploaded anywhere.
 

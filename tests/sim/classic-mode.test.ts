@@ -151,30 +151,31 @@ describe('the title and the CLASSIC menu', () => {
     const h = classic();
     h.game.showTitle();
     const title = h.top() as TitleScene;
-    expect(labels(title).slice(0, 4)).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options']);
+    // O-01: Custom levels moved into Options.
+    expect(labels(title).slice(0, 3)).toEqual(['Classic', 'Chapter 1', 'Options']);
     const it = items(title)[0] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
-    // Without dev mode: four rows where main's three were (x 80, from y 96, 12 px apart).
+    // Without dev mode: three rows (x 80, from y 96, 12 px apart).
     h.idle(TITLE_TIMING.dropEnd + 10);
     const four = draw(h.top() as TitleScene).texts.filter((t) =>
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     const last = (str: string) => four.filter((t) => t.str === str).at(-1);
-    ['CLASSIC', 'CHAPTER 1', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
+    ['CLASSIC', 'CHAPTER 1', 'OPTIONS'].forEach((str, i) =>
       expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
     );
-    // Five rows with Dev mode: the usual 12 px step, every row above the credits.
+    // Four rows with Dev mode: the usual place and 12 px step, every row above the credits.
     h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     const rows = draw(h.top() as TitleScene).texts.filter((t) =>
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
-    expect(rows.length).toBeGreaterThanOrEqual(5);
+    expect(rows.length).toBeGreaterThanOrEqual(4);
     for (const r of rows) expect(r.y + 8).toBeLessThanOrEqual(148 - 4);
     // (shadows draw 1 px right and down)
-    const ys = [...new Set(rows.filter((r) => r.x === 64).map((r) => r.y))].sort((a, b) => a - b);
+    const ys = [...new Set(rows.filter((r) => r.x === 80).map((r) => r.y))].sort((a, b) => a - b);
     for (let i = 1; i < ys.length; i++) expect((ys[i] as number) - (ys[i - 1] as number)).toBe(12);
     // Clear of the logo above (where CHAPTER 1 stood before 0.5.0).
     expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);

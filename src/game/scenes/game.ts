@@ -1761,19 +1761,27 @@ export class Game {
     this.scenes.push(new EditorScene(this, initial));
   }
 
-  /** Menu of saved custom levels; picking one goes to character select then the level. */
-  showCustomLevels(): void {
+  /**
+   * Menu of saved custom levels; picking one goes to character select then the level. `back`
+   * (title > Options, O-01): the menu opens over Options and Back closes it; without it the menu
+   * replaces the top scene and Back goes to the title.
+   */
+  showCustomLevels(back?: () => void): void {
     const names = Object.keys(loadLibrary().levels).sort();
     const items = names.map((n) => ({
       label: n.slice(0, 14),
       select: () => {
         this.pendingLevel = customLevelId(n);
+        if (back) this.scenes.clear();
         this.showCharacterSelect();
       },
     }));
     if (!items.length) items.push({ label: 'No levels yet', select: () => this.openEditor() });
-    items.push({ label: 'Back', select: () => this.showTitle() });
-    this.scenes.replace(new MenuScene(this, 'CUSTOM LEVELS', items, () => this.showTitle()));
+    const leave = back ?? (() => this.showTitle());
+    items.push({ label: 'Back', select: leave });
+    const menu = new MenuScene(this, 'CUSTOM LEVELS', items, leave);
+    if (back) this.scenes.push(menu);
+    else this.scenes.replace(menu);
   }
 
   /** Run a level from the editor; returns to it when the level ends or the player quits. */

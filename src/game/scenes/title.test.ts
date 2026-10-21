@@ -137,7 +137,6 @@ describe('title text', () => {
     for (const s of [
       'CLASSIC',
       'CHAPTER 1',
-      'CUSTOM LEVELS',
       'OPTIONS',
       'MADE BY JELLOSHOOTER848',
       'BASED ON SUPER MARIO BROS.',

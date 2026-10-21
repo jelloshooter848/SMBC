@@ -40,8 +40,19 @@ export class OptionsScene extends MenuScene {
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
       // iPhone Home Screen support (0.4.44): only where it can help (hidden in the app itself).
       ...homeScreenItems(game, (s) => (this.status = s)),
-      // The editor leaves the current game, so it is only offered from the title.
-      ...(translucent ? [] : [{ label: 'Level editor', select: () => game.openEditor() }]),
+      // Custom levels and the editor leave the current game, so they are only offered from the
+      // title's Options, never in a game or in Classic's options (O-01, RC-027). The custom levels
+      // open over Options, so Back comes back here.
+      ...(translucent || classic
+        ? []
+        : [
+            {
+              label: 'Custom levels',
+              select: () => game.showCustomLevels(() => this.pop()),
+              hint: 'Play the levels you made in the level editor',
+            },
+            { label: 'Level editor', select: () => game.openEditor() },
+          ]),
       { label: 'Back', select: onBack },
     ]);
   }

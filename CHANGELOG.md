@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Custom levels moved from the title menu into the title's Options, next to Level editor; Back returns
+  to Options. Neither row shows in Classic's options or in a game's Options any more.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added

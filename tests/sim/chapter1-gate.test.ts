@@ -110,19 +110,19 @@ function seedSaves(): Map<string, string> {
 }
 
 describe('G-112: the title menu', () => {
-  it('lists Classic first, then Chapter 1, Custom levels and Options; Classic is highlighted', () => {
+  it('lists Classic first, then Chapter 1 and Options (O-01: no Custom levels); Classic is highlighted', () => {
     const h = makeGame();
     h.game.showTitle();
     const title = h.top() as TitleScene;
-    expect(labels(title)).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options']);
+    expect(labels(title)).toEqual(['Classic', 'Chapter 1', 'Options']);
     expect(cursor(title)).toBe(0);
     expect(h.said.at(-1)).toMatch(/Classic\. The original game, as it was$/);
   });
 
-  it('with dev mode on, Dev mode is the fifth row and Chapter 1 is still second', () => {
+  it('with dev mode on, Dev mode is the fourth row and Chapter 1 is still second', () => {
     const h = makeGame(true);
     h.game.showTitle();
-    expect(labels(h.top())).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options', 'Dev mode']);
+    expect(labels(h.top())).toEqual(['Classic', 'Chapter 1', 'Options', 'Dev mode']);
   });
 
   it("Chapter 1's hint says it is coming soon (outside dev mode), with no level numbers", () => {
