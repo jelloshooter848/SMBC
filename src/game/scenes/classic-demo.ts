@@ -180,7 +180,8 @@ export const DEMO_HEROES: readonly DemoHero[] = [
     x: 1366,
     y: 208,
     script: [
-      S(0),
+      S(0, 'left'),
+      S(2),
       S(30, 'right'),
       S(36, 'right', 'jump'),
       S(64, 'right'),

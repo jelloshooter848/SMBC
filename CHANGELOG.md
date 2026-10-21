@@ -8,6 +8,17 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode: **CLASSIC now opens a title in the original's style** (O-04). A live World 1-1
+  demo plays behind our logo with no HUD. Mario sets off after five seconds and jumps by
+  himself, and nine more heroes, powered up along the level, wake as the screen reaches them and
+  play their own recorded moves. Nobody takes damage, and the demo starts again at the flag.
+  "Press OK to begin" blinks every half second and stays steady with Reduce flashing. A press,
+  or a tap on the screen, opens the Start box (Start, Options, Back), and Start opens the map set
+  menu as a box over the demo, with a mushroom cursor and the original's move, choose and back
+  sounds. Every screen is announced, and BACK steps back one box at a time.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added

@@ -142,7 +142,7 @@ export class TitleScene extends MenuScene {
     const items: MenuItem[] = [
       {
         label: 'Classic',
-        select: () => game.showClassicMenu(),
+        select: () => game.showClassicTitle(),
         hint: 'The original game, as it was',
       },
       {

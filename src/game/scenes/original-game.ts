@@ -25,6 +25,11 @@ import {
 import type { Game } from './game';
 import { worldLabel } from '../hud/world-label';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { InputFrame } from '@engine/input/input-manager';
+import type { ClassicTitleScene } from './classic-title';
+import { boxGrowth, drawMenuBox, type BoxRow } from './classic-box';
+import { abilityHint } from './hints';
+import { FONT_COLOURS } from '@content/sprites/font';
 
 /**
  * Classic mode (title > CLASSIC): the original game with none of the campaign's additions. This
@@ -198,11 +203,29 @@ export function classicOptionsOn(game: Game): boolean {
   return c.gameMode !== defaultClassicSettings().gameMode;
 }
 
-/** The CLASSIC menu: each map set (MAP_SETS), Options, Back. */
+/**
+ * The CLASSIC menu: each map set (MAP_SETS), Options, Back. Opened from the CLASSIC title's Start
+ * box (`over`, O-04), it is a box over the title's live demo, and BACK returns to that box; on its
+ * own (no `over`) it is a full-screen menu whose BACK goes to the CLASSIC title.
+ */
 export class ClassicMenuScene extends MenuScene {
-  constructor(game: Game) {
-    super(game, 'CLASSIC', [], () => game.showTitle());
+  /** Frame the box opened (its grow); null: open at once (coming back from a run). */
+  private boxAt: number | null;
+
+  constructor(
+    game: Game,
+    readonly over: ClassicTitleScene | null = null,
+    grow = over !== null,
+  ) {
+    super(game, 'CLASSIC', [], () => this.leave(), over !== null);
+    this.boxAt = grow ? 0 : null;
     this.build();
+  }
+
+  /** BACK: the Start box under it, or the CLASSIC title. */
+  private leave(): void {
+    if (this.over) this.over.backFromSets();
+    else this.game.showClassicTitle('start');
   }
 
   /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
@@ -249,7 +272,7 @@ export class ClassicMenuScene extends MenuScene {
           ),
         hint: 'Classic rules, game mode, more settings, weapons, music set and all settings',
       },
-      { label: 'Back', select: () => game.showTitle() },
+      { label: 'Back', select: () => this.leave() },
     );
     this.setItems(items);
   }
@@ -271,7 +294,49 @@ export class ClassicMenuScene extends MenuScene {
    * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
    * screen and short, so its rows never scroll); the spoken hint carries the difficulty.
    */
+  /**
+   * Over the CLASSIC title (O-04): the rows in a box over the demo (each value and BEATEN at the
+   * row's right), the Current-rules status line under it and the BACK line.
+   */
+  private renderBox(r: Renderer): void {
+    const game = this.game;
+    const calm = game.ctx.reduceFlashing;
+    const rows: BoxRow[] = this.items.map((it, i) => {
+      const set = i - this.firstSetRow;
+      const value = it.value?.();
+      return {
+        label: it.label,
+        ...(value !== undefined ? { value } : {}),
+        ...(set >= 0 && set < MAP_SETS.length && this.beaten[set] ? { mark: BEATEN_MARK } : {}),
+      };
+    });
+    const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
+    const box = drawMenuBox(r, game.ctx.assets, rows, this.index, {
+      cx: 128,
+      cy: 150,
+      grow,
+      t: this.t,
+      calm,
+    });
+    if (grow < 1) return;
+    const assets = game.ctx.assets;
+    const line = (s: string, y: number) => {
+      const x = Math.round(128 - (s.length * 8) / 2);
+      r.text(assets.sheet('font', FONT_COLOURS.black), s, x + 1, y + 1);
+      r.text(assets.sheet('font'), s, x, y);
+    };
+    if (this.status) line(this.status.toUpperCase().slice(0, 28), Math.min(216, box.y + box.h + 4));
+    line(abilityHint(game, 'BACK', 'attack'), 228);
+  }
+
+  /** The demo under the box plays on while it is up (classic-title.ts). */
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
+  }
+
   override render(r: Renderer): void {
+    if (this.over) return this.renderBox(r);
     super.render(r);
     const font = this.game.ctx.assets.sheet('font');
     this.beaten.forEach((b, i) => {

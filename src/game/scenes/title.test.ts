@@ -16,7 +16,7 @@ import { newSave, writeSave } from '@game/save/save-files';
 import { Game } from './game';
 import { TitleScene } from './title';
 import { PauseScene } from './pause';
-import { ClassicMenuScene } from './original-game';
+import { ClassicTitleScene } from './classic-title';
 import { DEV_CODE } from './cheat';
 import { heroRow, titleFreed, TITLE_TIMING } from './title-anim';
 
@@ -221,8 +221,9 @@ describe('title intro (the rift)', () => {
     expect(title.phase).toBe('ready');
     h.idle(8);
     h.tap('start');
-    // The first row (Classic since 0.5.0, G-112) opens: the skip itself chose nothing.
-    expect(h.game.scenes.top).toBeInstanceOf(ClassicMenuScene);
+    // The first row (Classic since 0.5.0, G-112) opens: the skip itself chose nothing. It opens
+    // the CLASSIC title with its demo (O-04).
+    expect(h.game.scenes.top).toBeInstanceOf(ClassicTitleScene);
   });
 
   it('ends by itself in about four to six seconds', () => {

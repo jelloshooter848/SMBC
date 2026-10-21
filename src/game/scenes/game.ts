@@ -124,6 +124,7 @@ import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
+import { ClassicTitleScene, type ClassicTitlePhase } from './classic-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
@@ -2136,11 +2137,26 @@ export class Game {
     return true;
   }
 
-  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
+  /**
+   * The CLASSIC menu (every map set, MAP_SETS; Options; Back), coming back to it from a run or a
+   * select: a box over the CLASSIC title's demo, with the title's Start box under it (O-04).
+   */
   showClassicMenu(): void {
     this.endClassicRun();
     this.runRules = 'current';
-    this.scenes.replace(new ClassicMenuScene(this));
+    const title = new ClassicTitleScene(this, 'start', true);
+    this.scenes.replace(title);
+    this.scenes.push(new ClassicMenuScene(this, title, false));
+  }
+
+  /**
+   * The title's CLASSIC entry (O-04): the CLASSIC title, its live 1-1 demo and begin prompt;
+   * `phase` 'start' opens it with its Start box up.
+   */
+  showClassicTitle(phase: ClassicTitlePhase = 'demo'): void {
+    this.endClassicRun();
+    this.runRules = 'current';
+    this.scenes.replace(new ClassicTitleScene(this, phase));
   }
 
   /**
