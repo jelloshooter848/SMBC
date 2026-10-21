@@ -29,6 +29,9 @@ under `## [Unreleased]`.
 - Classic: BACK on the hero select between levels and after a death, and Pause → **Quit** (was Quit
   to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
   Continue holds the run.
+- Classic's pick performances play on the select's ground, as in the original, so tall heroes are
+  no longer cut off by their cell; and they are the real moves: Mario hits a ? block, Simon cracks
+  his whip, Ryu clings to a wall and Jason hops out of Sophia.
 
 ### Fixed
 

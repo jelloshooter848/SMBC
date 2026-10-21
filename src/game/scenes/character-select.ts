@@ -1,10 +1,18 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
-import type { Renderer } from '@engine/gfx/renderer';
+import { clipped, type Renderer } from '@engine/gfx/renderer';
 import { shownPortrait, type CharacterDef } from '../characters/character';
 import { heroFor, heroGame, skinGame } from '../characters/registry';
 import type { Game } from './game';
-import { PICK_SHOW_GUARD, pickPose, pickShowFrames, pickShowOf } from './pick-show';
+import {
+  BLOCK_HOP,
+  CLING_WALL_DX,
+  PICK_SHOW_GUARD,
+  type PickFrame,
+  pickPose,
+  pickShowFrames,
+  pickShowOf,
+} from './pick-show';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
@@ -1131,23 +1139,58 @@ export class CharacterSelectScene implements Scene {
     }
   }
 
-  /** G-055: the picked hero's standing art in its cell (x, y), moved by its pick move. */
-  private renderShow(
-    r: Renderer,
-    sh: NonNullable<CharacterSelectScene['show']>,
-    x: number,
-    y: number,
-    cell: number,
-  ): void {
+  /**
+   * G-055, RC-007: the picked hero acting out its pick on the ground, centred on `cx` (feet on
+   * y 208), whole and in its own frames (pick-show.ts), with the block, wall or Jason its move has.
+   */
+  private renderShow(r: Renderer, sh: NonNullable<CharacterSelectScene['show']>, cx: number): void {
+    const assets = this.game.ctx.assets;
     const art = this.artOf(sh.c);
     const pose = pickPose(pickShowOf(this.game.slotOf(sh.c).id).move, sh.t, this.game.ctx.reduceFlashing);
-    if (!pose.shown) return;
-    const sheet = this.game.ctx.assets.sheet(art.sheet, art.palette);
-    const frame = pose.pose === 'raise' && sheet.frames.get('raise-arms') ? 'raise-arms' : art.frame;
+    const sheet = assets.sheet(art.sheet, art.palette);
+    const has = (f: string) => sheet.frames.has(f);
+    // The move's frame in this hero's sheet: `jump` follows the standing frame's size prefix.
+    const prefix = /^(small|big)-/.exec(art.frame)?.[0] ?? '';
+    const want: Record<PickFrame, string> = {
+      jump: `${prefix}jump`,
+      'whip-0': 'whip-0',
+      'whip-1': 'whip-1',
+      whip: 'whip-leather',
+      cling: 'cling',
+      teleport: 'teleport-0',
+      open: 'open',
+    };
+    let frame = art.frame;
+    if (pose.pose === 'raise' && has('raise-arms')) frame = 'raise-arms';
+    else if (pose.frame && has(want[pose.frame])) frame = want[pose.frame];
+    const stand = sheet.frames.get(art.frame);
     const f = sheet.frames.get(frame);
-    const w = f?.w ?? 16;
+    const sw = stand?.w ?? 16;
     const h = f?.h ?? 32;
-    r.sprite(sheet, frame, x + ((cell - w) >> 1) + pose.dx, y + cell - 2 - h + pose.dy);
+    // A wider frame (Simon's whip reaching ahead, the open tank) keeps the hero's left edge.
+    const left = frame === 'open' ? cx - ((f?.w ?? 32) >> 1) : cx - (sw >> 1);
+    const top = 208 - h;
+    const tiles = assets.sheet('tiles', `tiles-${this.groundTheme()}`);
+    if (pose.block) {
+      // A ? block over Mario's head at the top of his hop; used once hit, bumped up.
+      const by = top - BLOCK_HOP - 16 + pose.block.dy;
+      r.sprite(tiles, pose.block.used ? 'used' : 'question-0', cx - 8, by);
+    }
+    if (pose.wall) {
+      // Three blocks of wall to Ryu's right, standing on the ground.
+      for (let k = 1; k <= 3; k++) r.sprite(tiles, 'hard', cx + CLING_WALL_DX, 208 - 16 * k);
+    }
+    if (pose.shown) {
+      const draw = () => r.sprite(sheet, frame, left + pose.dx, top + pose.dy);
+      // Samus sinks on her platform: only what is above the ground shows.
+      if (pose.clip) clipped(r, 0, 0, 256, 208, draw);
+      else draw();
+    }
+    if (pose.jason) {
+      const j = pose.jason;
+      const jf = j.air && has('jason-jump') ? 'jason-jump' : 'jason-stand';
+      if (has(jf)) r.sprite(sheet, jf, cx - 8 + j.dx, top + 8 + j.dy - (sheet.frames.get(jf)?.h ?? 16));
+    }
   }
 
   render(r: Renderer): void {
@@ -1377,8 +1420,6 @@ export class CharacterSelectScene implements Scene {
           r.sprite(items, frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + ((cell - (f?.h ?? 20)) >> 1));
           return;
         }
-        // G-055: the picked hero acting out its pick, in this cell.
-        if (this.show && this.show.slot === i) return this.renderShow(r, this.show, at.x, at.y, cell);
         const c = this.chars[i];
         if (!c) return;
         const look = this.game.skinFor(c);
@@ -1528,7 +1569,8 @@ export class CharacterSelectScene implements Scene {
       r.sprite(tiles, 'ground', x, 208);
       r.sprite(tiles, 'ground', x, 224);
     }
-    if (shown) {
+    if (this.show) this.renderShow(r, this.show, 128);
+    else if (shown) {
       const pt = this.artOf(shown);
       const sheet = assets.sheet(pt.sheet, pt.palette);
       const f = sheet.frames.get(pt.frame);
