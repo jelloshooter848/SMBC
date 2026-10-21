@@ -29,6 +29,12 @@ under `## [Unreleased]`.
   under Classic rules with its level, lives, score and coins.
 - The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
   "Current") wherever it is shown or read out.
+- Classic mode: **one save per map set**. Super Mario Bros., SMB Special and The Lost Levels each
+  keep their own run, written at each WORLD card as before. Picking a set that has one asks
+  **CONTINUE / NEW GAME**; NEW GAME warns first that the set's saved run will be overwritten, with
+  Cancel picked. A set with no save starts a new game as before, and the CLASSIC menu no longer has
+  its own Continue row. The Level Select cheat asks the same before it starts a new run over a
+  saved one. A run saved by an earlier version moves into its set's save.
 
 ## [0.4.67] - 2026-10-21
 

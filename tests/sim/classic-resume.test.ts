@@ -26,7 +26,9 @@ function classic(over: Partial<Settings> = {}, dev = false): H & { settings: Set
 const inLevel = (h: H) => h.top() instanceof LevelScene;
 
 describe('G-008 the Classic resume slot', () => {
-  it('a Classic run writes it at the WORLD card; the CLASSIC menu offers Continue', () => {
+  // Per-set saves (owner, before 0.5.0): the set's own row offers it now, not a global Continue
+  // row (tests/sim/classic-saves.test.ts has the prompt).
+  it('a Classic run writes it at the WORLD card; its set on the CLASSIC menu says so', () => {
     const h = classic();
     h.game.showClassicMenu();
     expect(labels(h.top())).not.toContain('Continue');
@@ -40,8 +42,10 @@ describe('G-008 the Classic resume slot', () => {
     });
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(labels(menu)[0]).toBe('Continue');
-    expect((menu as unknown as { items: MenuItem[] }).items[0]?.hint).toMatch(/World 1-2 with 3 lives/);
+    expect(labels(menu)[0]).toBe('Super Mario Bros.');
+    expect((menu as unknown as { items: MenuItem[] }).items[0]?.hint).toMatch(
+      /Saved run: World 1-2, 3 lives/,
+    );
   });
 
   it('Continue goes back to that level with the lives, score, coins and hero kept', () => {
