@@ -131,7 +131,7 @@ describe('G-093 the Classic guide', () => {
     expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
   });
 
-  it('#179: from Classic > Options > All options: the Classic select’s heroes, with Expansion off and on; a look (Peach) is its slot (Luigi)', () => {
+  it('#179: from Classic > Options > Video, audio, controls: the Classic select’s heroes, with Expansion off and on; a look (Peach) is its slot (Luigi)', () => {
     const open = (expansion: 'on' | 'off', skins?: Record<string, string>) => {
       // O-12: the Expansion heroes row is developer mode's until a hero is released.
       const h = classic({ ...(skins ? { classicSkins: skins } : {}), dev: true });

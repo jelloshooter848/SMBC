@@ -1,5 +1,6 @@
 import { OPEN_DEV_LOCK, type DevLock } from '../dev-lock';
 import { CHAPTER1_LINK_CARD, showChapter1Gate } from './chapter1-gate';
+import { confirmQuitRun } from './quit-run';
 import { SceneStack } from '@engine/scene';
 import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
@@ -58,7 +59,8 @@ import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
-import { loadLibrary, customLevelId } from '../level/library';
+import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
+import { pageSaid } from '../story/cards';
 import { CardScene, MessageScene } from './message';
 import { CreditsScene, creditsLines } from './credits';
 import { FINALE } from '../story/finale';
@@ -179,6 +181,16 @@ export interface GameDeps {
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
 export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
+
+/** RC-005: the card a `?level=custom-` link shows when this browser has no such custom level. */
+export const CUSTOM_LEVEL_MISSING: readonly string[] = [
+  'LEVEL NOT FOUND',
+  '',
+  'THIS CUSTOM LEVEL IS NOT',
+  'SAVED IN THIS BROWSER.',
+  '',
+  'ASK FOR ITS SHARE LINK.',
+];
 
 /** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
 export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
@@ -505,7 +517,8 @@ export class Game {
 
   /**
    * Classic mode's choose jingle for hero `id` (G-062; CharacterSelect.as 191), with its choose
-   * sound (G-070: Mega Man and Bass teleport out, MegaMan.as 157; Bill is shocked, Bill.as 1087).
+   * sound (G-070: Mega Man and his skins teleport out, MegaMan.as 157; Bill is shocked, Bill.as
+   * 1087; CHOOSE_SFX).
    * The one trigger of both: the pick performance's start (heroPicked), else the select's close
    * after a pick (selectLeft).
    */
@@ -1023,6 +1036,13 @@ export class Game {
   }
 
   showTitle(): void {
+    this.leaveRun();
+    this.scenes.clear();
+    this.scenes.push(new TitleScene(this));
+  }
+
+  /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */
+  private leaveRun(): void {
     this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
@@ -1040,8 +1060,6 @@ export class Game {
     this.devAllHeroes = false;
     this.bonus = newBonusState();
     this.town = null;
-    this.scenes.clear();
-    this.scenes.push(new TitleScene(this));
   }
 
   /**
@@ -1569,6 +1587,7 @@ export class Game {
           then();
         },
         ...(this.classicRun ? { random: true } : {}),
+        ...this.classicQuitPick(),
       });
     };
     this.deps.ctx.audio.stopMusic();
@@ -1831,19 +1850,23 @@ export class Game {
     this.scenes.push(new EditorScene(this, initial));
   }
 
-  /** Menu of saved custom levels; picking one goes to character select then the level. */
-  showCustomLevels(): void {
+  /**
+   * Menu of saved custom levels (title > Options, O-01), over Options: Back closes it; picking
+   * one goes to character select, then the level.
+   */
+  showCustomLevels(back: () => void): void {
     const names = Object.keys(loadLibrary().levels).sort();
     const items = names.map((n) => ({
       label: n.slice(0, 14),
       select: () => {
         this.pendingLevel = customLevelId(n);
+        this.scenes.clear();
         this.showCharacterSelect();
       },
     }));
     if (!items.length) items.push({ label: 'No levels yet', select: () => this.openEditor() });
-    items.push({ label: 'Back', select: () => this.showTitle() });
-    this.scenes.replace(new MenuScene(this, 'CUSTOM LEVELS', items, () => this.showTitle()));
+    items.push({ label: 'Back', select: back });
+    this.scenes.push(new MenuScene(this, 'CUSTOM LEVELS', items, back));
   }
 
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
@@ -1918,7 +1941,7 @@ export class Game {
   }
 
   /** G-008: this run writes and clears the resume slot (a Classic mode run; not dev, not a link). */
-  private get keepsResume(): boolean {
+  get keepsResume(): boolean {
     return this.classicRun && !this.classicDev && !this.linkRun && this.campaign === null;
   }
 
@@ -2256,6 +2279,24 @@ export class Game {
     return true;
   }
 
+  /**
+   * O-16: a Classic run's mid-run select (between levels, after a death) has BACK: it asks to
+   * quit (QuitRunScene), NO back to the select. Nothing outside a Classic mode run.
+   */
+  private classicQuitPick(): { onCancel?: () => void } {
+    if (!this.classicRun || this.campaign !== null || this.playtestDone) return {};
+    return { onCancel: () => confirmQuitRun(this, 'No. Choose your hero.') };
+  }
+
+  /** O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written). */
+  quitClassicRun(): void {
+    this.leaveRun();
+    this.scenes.clear();
+    this.scenes.push(new ClassicMenuScene(this));
+    // The menus' music, as on the way in from the title.
+    this.deps.ctx.audio.playMusic('title');
+  }
+
   /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
   showClassicMenu(): void {
     this.endClassicRun();
@@ -2465,22 +2506,24 @@ export class Game {
       level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
     } catch {
       this.deps.ctx.audio.stopMusic();
-      this.deps.ctx.audio.playJingle('world-clear');
-      this.scenes.clear();
-      this.scenes.push(
-        new MessageScene(
-          this,
-          [
+      // RC-005: a custom level this browser does not have (someone else's `?level=custom-` link:
+      // the library is per browser) says so, instead of the unbuilt-world card.
+      const custom = levelId.startsWith(CUSTOM_PREFIX);
+      const lines = custom
+        ? [...CUSTOM_LEVEL_MISSING]
+        : [
             'THANK YOU FOR PLAYING!',
             '',
-            `WORLD ${levelId.split('-')[0]} IS NOT`,
+            `WORLD ${(levelId.split('-')[0] ?? '').toUpperCase()} IS NOT`,
             'BUILT YET.',
             '',
             'MORE WORLDS COMING SOON',
-          ],
-          () => this.showTitle(),
-        ),
-      );
+          ];
+      if (custom) this.deps.ctx.audio.sfx('bump');
+      else this.deps.ctx.audio.playJingle('world-clear');
+      this.scenes.clear();
+      this.deps.announcer?.say(pageSaid(lines, true));
+      this.scenes.push(new MessageScene(this, lines, () => this.showTitle()));
       return;
     }
     // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
@@ -2626,6 +2669,7 @@ export class Game {
           then();
         },
         ...(this.classicRun ? { random: true } : {}),
+        ...this.classicQuitPick(),
         // Campaign: back to the map as Pause → Quit to map (no clear; the life lost here is
         // already counted and saved, and the hero stays as the death left it).
         ...(this.campaign && !this.playtestDone ? { onMap: () => this.returnToMap() } : {}),

@@ -191,7 +191,8 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.music.at(-1)).toBe('smb-select');
     h.idle(12);
-    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++)
+      h.tap(i % 12 === 11 ? 'down' : 'right'); // RC-006: rows wrap
     h.tap('jump');
     // G-050, G-055 (0.5.0): Link's looks open first (OK keeps his own); the jingle starts with
     // his pick performance.
@@ -205,7 +206,8 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     const h = audioGame();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     h.idle(12);
-    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== name; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== name; i++)
+      h.tap(i % 12 === 11 ? 'down' : 'right'); // RC-006: rows wrap
     h.tap('jump');
     // A hero with other looks (Mega Man: Proto Man) opens the look menu first: OK takes the
     // highlighted (own) look, and only that is the pick.
@@ -237,7 +239,8 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     h.game.showClassicMenu();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     h.idle(12);
-    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Mega Man'; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Mega Man'; i++)
+      h.tap(i % 12 === 11 ? 'down' : 'right'); // RC-006: rows wrap
     h.tap('attack');
     h.idle(4);
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);

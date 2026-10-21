@@ -257,7 +257,7 @@ function useArt(p: Player, a: ClassicArt, world: World): void {
   if (p.body.onGround || p.wall || p.scratch._jslash) return;
   if (!spendAmmo(p, 'ninpo', a.cost)) return;
   p.scratch._jslash = 1;
-  world.audio.sfx('sword');
+  world.audio.sfx('ng-sword');
 }
 
 /* ---------- lifts (RY-C15) ---------- */
@@ -403,7 +403,7 @@ function update(p: Player, input: InputFrame, world: World): void {
       p.attackTimer = CLASSIC_SLASH_FRAMES;
       s._slashAir = b.onGround ? 0 : 1;
       if (b.onGround) b.vx = 0;
-      world.audio.sfx('sword');
+      world.audio.sfx('ng-sword');
     } else if (input.pressed('special')) useArt(p, classicMainArt(p), world);
     else if (input.pressed('select')) {
       const extra = extraArt(p);
