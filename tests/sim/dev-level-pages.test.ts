@@ -1,0 +1,273 @@
+import { describe, expect, it } from 'vitest';
+import { defaultSettings, type Settings } from '@engine/save/settings';
+import {
+  DEV_LAST_KEY,
+  DevCampaignScene,
+  DevClassicScene,
+  DevStartScene,
+  areasOf,
+  loadDevPick,
+} from '@game/scenes/dev-play';
+import { LevelScene } from '@game/scenes/level';
+import type { MenuItem, MenuScene } from '@game/scenes/menu';
+import { WorldMapScene } from '@game/scenes/world-map';
+import { levelIds, specialLevelIds } from '@content/levels';
+import { loadSave, writeSave } from '@game/save/save-files';
+import { file, makeGame, store, useStorage, type H } from './heroes-harness';
+import { isolateClassicRegistry } from './classic-registry';
+
+// O-05 (RC audit addendum): the dev Level select as pages. Dev > Classic: map set, world, level
+// (or its areas), then the START page with the hero, look, power, Map difficulty, rules, mode and
+// kit. Dev > Campaign: the world map and files on a scratch copy, story levels, village, tutorial,
+// training rooms and games. Again replays the last start. Keys, pad and touch (MenuScene), read out.
+
+isolateClassicRegistry();
+useStorage();
+
+const items = (s: unknown) => (s as { items: MenuItem[] }).items;
+const labels = (s: unknown) => items(s).map((i) => i.label);
+
+function dev(): H {
+  return makeGame({
+    deps: {
+      settings: { ...defaultSettings(), dev: true } as Settings,
+      applySettings: () => {},
+      listLevels: () => [...levelIds(), ...specialLevelIds()],
+    },
+  });
+}
+
+/** Moves the cursor of the menu on top to `label` (down, or up when nearer) and presses OK. */
+function pick(h: H, label: string): number {
+  const all = labels(h.top());
+  const at = all.indexOf(label);
+  expect(at, `${label} in ${all.join(', ')}`).toBeGreaterThanOrEqual(0);
+  h.idle(8);
+  const index = (h.top() as unknown as { index: number }).index;
+  const down = (at - index + all.length) % all.length;
+  const up = all.length - down;
+  for (let i = 0; i < Math.min(down, up); i++) h.tap(down <= up ? 'down' : 'up');
+  h.tap('jump');
+  return Math.min(down, up) + 1;
+}
+
+/** Steps row `label` of the START page right until `pred` holds. */
+function stepTo(h: H, label: string, pred: () => boolean): number {
+  let n = pick(h, label) - 1; // the OK press on an adjust row stepped it once already
+  for (let i = 0; i < 60 && !pred(); i++, n++) h.tap('right');
+  expect(pred(), label).toBe(true);
+  return n + 1;
+}
+
+const enterLevel = (h: H): LevelScene => {
+  h.until(() => h.top() instanceof LevelScene, 900);
+  return h.top() as LevelScene;
+};
+
+describe('O-05: the dev Level select as pages', () => {
+  it('the Dev menu opens Classic and Campaign; no Again row until a start was made', () => {
+    const h = dev();
+    h.game.showDevMenu();
+    const menu = labels(h.top());
+    expect(menu.slice(0, 3)).toEqual(['Classic', 'Campaign', 'Level select']);
+    expect(menu).not.toContain('Again');
+  });
+
+  it('keys: Lost Levels D-4 as Samus with the Fire Flower on Hard in a Classic run, in under 30 presses, read out', () => {
+    const h = dev();
+    h.game.showDevMenu();
+    let presses = pick(h, 'Classic');
+    expect(h.top()).toBeInstanceOf(DevClassicScene);
+    expect(h.said.at(-1)).toMatch(/^Classic\. Super Mario Bros\./);
+    presses += pick(h, 'The Lost Levels');
+    expect(labels(h.top())).toContain('World D');
+    presses += pick(h, 'World D');
+    presses += pick(h, 'D-4');
+    const start = h.top() as DevStartScene;
+    expect(start).toBeInstanceOf(DevStartScene);
+    expect(labels(start)).toEqual([
+      'Start',
+      'Hero',
+      'Look',
+      'Power',
+      'Map difficulty',
+      'Rules',
+      'Mode',
+      'Kit',
+      'Back',
+    ]);
+    expect(h.said.at(-1)).toMatch(/^Start\. Start: D-4\. Lost Levels D-4/);
+    presses += stepTo(h, 'Hero', () => start.hero.id === 'samus');
+    presses += stepTo(h, 'Power', () => start.pick.power === 'fire');
+    presses += stepTo(h, 'Map difficulty', () => start.pick.difficulty === 'hard');
+    expect(h.said.at(-1)).toMatch(/^Map difficulty: Hard/);
+    presses += pick(h, 'Start');
+    expect(presses).toBeLessThan(30);
+    const l = enterLevel(h);
+    expect(l.level.id.startsWith('ll-13-4')).toBe(true);
+    expect(h.game.classicRun).toBe(true);
+    expect(h.game.liveRules).toBe('classic');
+    expect(h.game.ctx.mapDifficulty).toBe('hard');
+    expect(l.world.mapDifficulty).toBe('hard');
+    expect(h.game.state.character.id).toBe('samus');
+    expect(h.game.state.powerState).toBe('fire');
+  });
+
+  it("the Hero row offers the select slots, not every look; Look steps that hero's skins", () => {
+    const h = dev();
+    const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
+    const heroes = start.heroes.map((c) => c.id);
+    expect(heroes).toEqual(h.game.slotsFor('classic').map((c) => c.id));
+    expect(heroes).not.toContain('peach');
+    const hero = items(start).find((i) => i.label === 'Hero') as MenuItem;
+    for (let i = 0; i < heroes.length && start.hero.id !== 'luigi'; i++) hero.adjust?.(1);
+    const look = items(start).find((i) => i.label === 'Look') as MenuItem;
+    const seen = new Set<string>();
+    for (let i = 0; i < 6; i++) {
+      seen.add(start.look.id);
+      look.adjust?.(1);
+    }
+    expect(seen.has('luigi')).toBe(true);
+    expect(seen.size).toBe(start.looks.length);
+  });
+
+  it('Map difficulty plays only in a Classic run under Classic rules: else Normal, and it says so', () => {
+    const h = dev();
+    const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
+    const row = (l: string) => items(start).find((i) => i.label === l) as MenuItem;
+    row('Map difficulty').adjust?.(1);
+    expect(start.pick.difficulty).toBe('hard');
+    row('Mode').adjust?.(1); // Free play
+    expect(row('Map difficulty').value?.()).toBe('Normal');
+    expect(row('Map difficulty').hint).toMatch(/Classic run with Classic SMBC rules/);
+    expect(start.pick.difficulty).toBe('normal');
+    row('Start').select?.();
+    enterLevel(h);
+    expect(h.game.classicRun).toBe(false);
+    expect(h.game.state.lives).toBe(99);
+    expect(h.game.ctx.mapDifficulty).toBeUndefined();
+  });
+
+  it('Again replays the last start in one press, and names it', () => {
+    const h = dev();
+    const start = new DevStartScene(h.game, { branch: 'classic', level: 'sp-2-3', name: 'Special 2-3' });
+    (items(start).find((i) => i.label === 'Map difficulty') as MenuItem).adjust?.(-1); // Easy
+    items(start)
+      .find((i) => i.label === 'Start')
+      ?.select?.();
+    expect(store.has(DEV_LAST_KEY)).toBe(true);
+    expect(loadDevPick(h.game)?.level).toBe('sp-2-3');
+    h.game.showTitle();
+    h.game.showDevMenu();
+    const menu = h.top() as MenuScene;
+    expect(labels(menu)[0]).toBe('Again');
+    expect(items(menu)[0]?.hint).toMatch(/Special 2-3, Mario, small, Classic run, Classic SMBC, Easy/);
+    h.idle(8);
+    h.tap('jump');
+    const l = enterLevel(h);
+    expect(l.level.id).toBe('sp-2-3');
+    expect(h.game.ctx.mapDifficulty).toBe('easy');
+  });
+
+  it('a kept start naming a level or hero this build lacks is ignored', () => {
+    const h = dev();
+    store.set(DEV_LAST_KEY, JSON.stringify({ branch: 'classic', level: 'nope', name: 'x', hero: 'mario' }));
+    expect(loadDevPick(h.game)).toBeNull();
+    h.game.showDevMenu();
+    expect(labels(h.top())).not.toContain('Again');
+  });
+
+  it('a level with rooms lists them under Areas, each a start of its own', () => {
+    const h = dev();
+    expect(areasOf(h.game, '1-2')).toEqual(expect.arrayContaining(['1-2', '1-2-intro', '1-2-bonus']));
+    expect(areasOf(h.game, '1-1')).not.toContain('1-10');
+    h.game.scenes.push(new DevClassicScene(h.game));
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'World 1');
+    pick(h, '1-2 areas');
+    pick(h, '1-2-bonus');
+    pick(h, 'Start');
+    expect(enterLevel(h).level.id).toBe('1-2-bonus');
+  });
+
+  it('touch: OK on the page rows, CHANGE on the START page settings, BACK on every page', () => {
+    const h = dev();
+    h.game.scenes.push(new DevClassicScene(h.game));
+    expect((h.top() as MenuScene).touchLabels().jump).toBe('OK');
+    const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
+    h.game.scenes.push(start);
+    h.idle(8);
+    h.tap('down');
+    expect(start.touchLabels().jump).toBe('CHANGE');
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(DevClassicScene);
+  });
+});
+
+describe('O-05: the Campaign branch', () => {
+  it('a story level starts as free play under Current rules, with no file', () => {
+    const h = dev();
+    h.game.scenes.push(new DevCampaignScene(h.game));
+    pick(h, 'Lost story level');
+    pick(h, 'Lost world 2');
+    pick(h, '2-1');
+    const start = h.top() as DevStartScene;
+    expect(labels(start)).toEqual(['Start', 'Hero', 'Power', 'Kit', 'Back']);
+    expect(start.heroes).toEqual(h.game.deps.characters);
+    pick(h, 'Start');
+    const l = enterLevel(h);
+    expect(l.level.id.startsWith('ll-2-1')).toBe(true);
+    expect(h.game.campaign).toBeNull();
+    expect(h.game.liveRules).toBe('current');
+    expect(h.game.state.lives).toBe(99);
+  });
+
+  it('World map: a new file with every world open, played as the campaign; nothing is ever saved', () => {
+    const h = dev();
+    h.game.scenes.push(new DevCampaignScene(h.game));
+    pick(h, 'World map');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.campaign?.scratch).toBe(true);
+    expect(h.game.mapUnlockAll).toBe(true);
+    h.game.autosave();
+    h.game.markSeen('o05-test-beat');
+    h.game.markExplained('o05-test-tip');
+    expect([...store.keys()].filter((k) => k.startsWith('smbc.save.'))).toEqual([]);
+  });
+
+  it('Open a file: a copy of the slot; play on it never writes the slot', () => {
+    const h = dev();
+    writeSave(file({ slot: 2, lives: 7 }));
+    const before = store.get('smbc.save.2');
+    h.game.scenes.push(new DevCampaignScene(h.game));
+    pick(h, 'Open a file');
+    expect(items(h.top())[0]?.value?.()).toBe('Empty');
+    pick(h, 'File 2');
+    expect(h.top()).toBeInstanceOf(WorldMapScene);
+    expect(h.game.state.lives).toBe(7);
+    h.game.state.lives = 1;
+    h.game.autosave();
+    expect(store.get('smbc.save.2')).toBe(before);
+    expect(loadSave(2)?.lives).toBe(7);
+  });
+
+  it('training rooms, village, tutorial and the games are listed', () => {
+    const h = dev();
+    h.game.scenes.push(new DevCampaignScene(h.game));
+    expect(labels(h.top())).toEqual([
+      'World map',
+      'Open a file',
+      'Story level',
+      'Lost story level',
+      'Village',
+      'Tutorial 1-0',
+      'Training rooms',
+      'Mini games',
+      'Bonus games',
+      'Back',
+    ]);
+    pick(h, 'Training rooms');
+    expect(labels(h.top())).toContain('Luigi');
+    expect(labels(h.top())).not.toContain('Mario');
+  });
+});

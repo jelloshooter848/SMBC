@@ -8,6 +8,14 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Dev mode: the Level select is now a set of pages (O-05). **Classic** goes map set, world, level
+  (or one of its rooms), then a start page with the hero, its look, power, Map difficulty (Hard
+  can now be tested), rules, mode and kit. **Campaign** opens the world map or a copy of a save
+  file that never saves, story levels, the village, the tutorial stage, the training rooms and the
+  games. **Again** replays the last start in one press. The one-page list stays as Level select.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added

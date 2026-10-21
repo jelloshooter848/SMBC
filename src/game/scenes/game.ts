@@ -98,6 +98,7 @@ import {
 import {
   FIRST_HERO,
   loadSave,
+  newSave,
   saveFromState,
   stateFromSave,
   tutorialHeroes,
@@ -212,7 +213,7 @@ export class Game {
   /** World map progress (cleared levels, open worlds, secrets, the hero's place on the map). */
   mapProgress: MapProgress = newMapProgress();
   /** The save file being played from the world map; null for every non-campaign start. */
-  campaign: { slot: SaveSlot } | null = null;
+  campaign: { slot: SaveSlot; scratch?: true } | null = null;
   /**
    * A Classic mode run (title > CLASSIC, or the dev Level select's Mode: Classic run): the
    * original game's flow, with no campaign file (`campaign` stays null). Every other start clears
@@ -1157,7 +1158,7 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     this.campaignSave = { ...base, story: this.story.slice() };
-    writeSave(this.campaignSave);
+    this.writeFile(this.campaignSave);
   }
 
   /**
@@ -1170,7 +1171,7 @@ export class Game {
     const base = this.campaign ? this.campaignSave : null;
     if (!base) return;
     this.campaignSave = { ...base, explained: this.explained.slice() };
-    writeSave(this.campaignSave);
+    this.writeFile(this.campaignSave);
   }
 
   /**
@@ -1209,7 +1210,26 @@ export class Game {
       explained: this.explained.slice(),
     };
     this.campaignSave = save;
+    this.writeFile(save);
+  }
+
+  /** Writes the open file to its slot, unless it is a dev scratch file (openScratchFile). */
+  private writeFile(save: SaveFile): void {
+    if (this.campaign?.scratch) return;
     writeSave(save);
+  }
+
+  /**
+   * Dev > Campaign (O-05): `save` (a copy of a file), or a new file with every world and hero
+   * open, played as a scratch file: it plays as the campaign does, but nothing is ever written to
+   * a save slot and no backup card asks. Dev mode only.
+   */
+  openScratchFile(save?: SaveFile): void {
+    if (!this.devMode) return;
+    const file = save
+      ? structuredClone(save)
+      : { ...newSave(1, FIRST_HERO, null, this.deps.characters), devUnlockAll: true, devAllHeroes: true };
+    this.openFile(file.slot, file, false, true);
   }
 
   /**
@@ -1285,7 +1305,13 @@ export class Game {
     const castle = this.backupDue;
     if (castle === null) return false;
     this.backupDue = null;
-    if (!this.campaign || this.mapUnlockAll || this.deps.settings?.backupReminders !== true) return false;
+    if (
+      !this.campaign ||
+      this.campaign.scratch ||
+      this.mapUnlockAll ||
+      this.deps.settings?.backupReminders !== true
+    )
+      return false;
     this.scenes.push(new BackupCardScene(this, this.campaign.slot));
     return true;
   }
@@ -1714,7 +1740,7 @@ export class Game {
     power: string,
     fullKit = false,
     seed?: number,
-    opts: { rules?: Rules; classic?: boolean } = {},
+    opts: { rules?: Rules; classic?: boolean; difficulty?: MapDifficulty } = {},
   ): void {
     const classic = opts.classic === true;
     // A Classic run has none of the campaign's rooms: the village and the stage tutorials (1-0)
@@ -1725,7 +1751,8 @@ export class Game {
     this.runRules = opts.rules ?? 'current';
     this.classicRun = classic;
     this.classicDev = classic;
-    this.classicDifficulty = 'normal';
+    // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
+    this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
     const hero = heroFor(character, rules);
     this.state = newGameState(character, null, rules);
@@ -2237,7 +2264,7 @@ export class Game {
    * Play save file `slot` (file select): load it into the game state, save it, show the map.
    * `save` is passed when just created (so play goes on even if storage is unavailable).
    */
-  openFile(slot: SaveSlot, save = loadSave(slot), opening = false): void {
+  openFile(slot: SaveSlot, save = loadSave(slot), opening = false, scratch = false): void {
     if (!save) {
       this.showTitle();
       return;
@@ -2246,7 +2273,7 @@ export class Game {
     this.playtestDone = null;
     this.pendingLevel = null;
     this.quickRespawn = false;
-    this.campaign = { slot };
+    this.campaign = scratch ? { slot, scratch } : { slot };
     this.endClassicRun();
     this.backupDue = null;
     this.campaignSave = save;

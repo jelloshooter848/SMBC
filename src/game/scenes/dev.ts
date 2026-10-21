@@ -7,6 +7,7 @@ import type { Game } from './game';
 import type { MenuItem } from './menu';
 import type { InputFrame } from '@engine/input/input-manager';
 import { CLASSIC_EXTRAS } from '../characters/registry';
+import { DevCampaignScene, DevClassicScene, devAgainItem } from './dev-play';
 
 /**
  * Developer tools menu, reachable from the title and (translucently) from the pause menu.
@@ -19,8 +20,25 @@ export class DevMenuScene extends MenuScene {
       s.translucent = this.translucent;
       game.scenes.push(s);
     };
+    const again = devAgainItem(game);
     this.setItems([
-      { label: 'Level select', select: () => push(new DevLevelSelectScene(game, () => game.scenes.pop())) },
+      // O-05: the Level select as pages (dev-play.ts); Again replays the last start in one press.
+      ...(again ? [again] : []),
+      {
+        label: 'Classic',
+        select: () => push(new DevClassicScene(game, this.translucent)),
+        hint: 'Map set, world, level, then the start page',
+      },
+      {
+        label: 'Campaign',
+        select: () => push(new DevCampaignScene(game, this.translucent)),
+        hint: 'World map, story levels, village, training, games; nothing is saved',
+      },
+      {
+        label: 'Level select',
+        select: () => push(new DevLevelSelectScene(game, () => game.scenes.pop())),
+        hint: 'Every area by its id, on one page',
+      },
       {
         label: 'Mini games',
         select: () => push(new DevMiniGamesScene(game, fromPause)),
