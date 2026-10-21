@@ -168,3 +168,15 @@ describe('O-02: the title row is "Campaign"', () => {
     for (const l of [...CHAPTER1_GATE_CARD, ...CHAPTER1_LINK_CARD]) expect(l.length).toBeLessThanOrEqual(28);
   });
 });
+
+describe('O-03: the gate card no longer says the save files are kept', () => {
+  it('has no YOUR SAVE FILES ARE KEPT. line; the resume link card keeps its own line', () => {
+    expect(CHAPTER1_GATE_CARD).not.toContain('YOUR SAVE FILES ARE KEPT.');
+    expect(CHAPTER1_GATE_CARD).toEqual(['CAMPAIGN', 'CHAPTER 1 COMING SOON!', '', 'PLAY CLASSIC FOR NOW.']);
+    expect(CHAPTER1_LINK_CARD).toContain('THIS RESUME LINK IS KEPT.');
+    const h = makeGame();
+    title(h);
+    pick(h, 'Campaign');
+    expect(h.said.at(-1)).not.toContain('SAVE FILES');
+  });
+});

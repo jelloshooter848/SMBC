@@ -14,13 +14,12 @@ import type { Game } from './game';
 /** The box's bottom edge: clear of the title's version line (y 228). */
 export const CARD_BOTTOM = 222;
 
-/** The card the title's Campaign row shows (at most 28 chars a line; O-02). */
+/** The card the title's Campaign row shows (at most 28 chars a line; O-02, O-03). */
 export const CHAPTER1_GATE_CARD: readonly string[] = [
   'CAMPAIGN',
   'CHAPTER 1 COMING SOON!',
   '',
   'PLAY CLASSIC FOR NOW.',
-  'YOUR SAVE FILES ARE KEPT.',
 ];
 
 /** The card a resume link (`#save=`) shows: the link stays in the address for later. */
