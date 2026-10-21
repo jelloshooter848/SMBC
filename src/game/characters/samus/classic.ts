@@ -30,6 +30,7 @@ import {
   type ClassicPowerKit,
 } from '../classic/power';
 import { weaponOf } from '../classic/options';
+import { quietLanding } from '../classic/sounds';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, SAMUS_FLIP_TICKS } from '../classic/anim';
 import {
   CLASSIC_MAX_BOMBS,
@@ -57,9 +58,19 @@ import { SAMUS_CLASSIC_FRAMES, SAMUS_CLASSIC_ORIGIN } from '@content/sprites/sam
  * Scratch keys. Carried (kit): `missileUp` (the Missile upgrade, never lost), `missiles` (count),
  * `missileExp` (the Missile Expansion: cap 99, never lost), `classicAll` (the dev full kit, TG-44)
  * with `tool` (its Select: 0 Wave, 1 Ice). Per level: `_crouch`, `_ball`, `_aimUp`, `_flip` (the
- * somersault), `_takeoff` (feet y at a somersault-able take-off), `_screwSnd`, `_wave` (Wave
- * phase), `_still` (crouched without moving since, PI-15), `_g` / `_feet` (last frame's ground).
+ * somersault), `_takeoff` (feet y at a somersault-able take-off), `_screwSnd`, `_air`, `_step`, `_wave` (Wave
+ * phase), `_still` (crouched without moving since, PI-15), `_g` / `_feet` (last frame's ground),
+ * `_mm` (missile mode, with the Classic Samus cheat: G-040).
  */
+
+/**
+ * The Classic Samus cheat (G-040, Samus.classicMode): Special or Select toggles missile mode
+ * (missileModeToggle, a suit colour change), in which Attack fires missiles; Down on the ground
+ * rolls her straight into the morph ball (pressDwnBtn's classic branch). Off: no change at all.
+ */
+const classicSamusCheat = (world: World): boolean => world.cheats.classicSamus;
+/** In missile mode (the cheat on, with Missiles): her suit's `-missile` palette, and Attack fires them. */
+const missileMode = (p: Player): boolean => !!s(p)._mm && !!s(p).missileUp;
 
 /** The variant options (PI-1). Classic Samus uses the defaults. */
 export interface ClassicSamusVariant {
@@ -75,8 +86,14 @@ export interface ClassicSamusVariant {
   morphBall: boolean;
   /** PI-15: sideways shots on the ground, standing or walking: px above the feet. */
   standShotHeight: number;
-  /** Every beam's sound (PI-22). */
+  /** Every beam's sound (PI-22); Samus's own suit sounds (`suitSounds`) name each beam's. */
   beamSfx: string;
+  /**
+   * Samus's own suit sounds (G-070, G-074; Samus.as 517, SoundNames.as 213-214): her landing, the
+   * morph ball, the Screw Attack, each beam's sound and the bomb being set. False (Pit): none of
+   * them, and `beamSfx` for every beam.
+   */
+  suitSounds: boolean;
   /**
    * Art only: the look of each beam and missile it fires (Pit's arrows, PI-21), a copy of the spec
    * with its sheet and frames swapped and every number kept; `up` when fired straight up. Absent:
@@ -98,7 +115,19 @@ export const SAMUS_VARIANT: ClassicSamusVariant = {
   morphBall: true,
   standShotHeight: MUZZLE.stand,
   beamSfx: 'buster',
+  suitSounds: true,
 };
+
+/** Frames between Samus's footsteps (Samus.as STEP_TMR, 150 ms). */
+export const SAMUS_STEP_FRAMES = 9;
+
+/** Each beam's own sound (G-074): the short and long beams, the Ice Beam and the Wave Beam. */
+function beamSound(spec: ProjectileSpec): string {
+  if (spec === LONG_BEAM_CLASSIC) return 'samus-long-beam';
+  if (spec === ICE_BEAM_CLASSIC) return 'samus-ice-beam';
+  if (spec === WAVE_BEAM_CLASSIC) return 'samus-wave-beam';
+  return 'samus-beam';
+}
 
 /**
  * SA-C3, SA-C6, SA-C7: instant 1.25 px/f walking (WALK_SPEED 185 clamped by vxMax 150) on the
@@ -295,8 +324,9 @@ function spawnShot(p: Player, world: World, spec: ProjectileSpec, v: ClassicSamu
 
 function fireBeam(p: Player, world: World, v: ClassicSamusVariant): void {
   if (shotsOut(p, world) >= CLASSIC_MAX_SHOTS) return;
-  spawnShot(p, world, beamSpec(p, v), v);
-  world.audio.sfx(v.beamSfx);
+  const spec = beamSpec(p, v);
+  spawnShot(p, world, spec, v);
+  world.audio.sfx(v.suitSounds ? beamSound(spec) : v.beamSfx);
 }
 
 function fireMissile(p: Player, world: World, v: ClassicSamusVariant): void {
@@ -312,7 +342,7 @@ function layBomb(p: Player, world: World): void {
   if (out >= CLASSIC_MAX_BOMBS) return;
   // SA-C27: centred on her centre x, 6 px above her feet, hanging there.
   world.spawn(new ClassicBomb(p.centerX, p.feetY - px(6), p));
-  world.audio.sfx('kick');
+  world.audio.sfx('samus-bomb-set');
 }
 
 /**
@@ -335,7 +365,7 @@ function updateFlip(p: Player, input: InputFrame): void {
   }
   if (!flipping(p) && p.feetY < line && b.vy < 0) {
     s(p)._flip = 1;
-    // The Screw Attack sound plays once per jump (none exists yet: SA hints, sounds).
+    // The Screw Attack sound plays once per jump (trackJump plays it: G-070).
     if (p.powerState === 'fire') s(p)._screwSnd = 1;
   }
 }
@@ -356,11 +386,29 @@ function trackJump(p: Player, input: InputFrame, world: World, v: ClassicSamusVa
       if (!clear(world, b.x, b.y, b.w, b.h)) b.y = (tileAt(b.y) + 1) * px(16);
     }
   }
+  if (s(p)._screwSnd === 1) {
+    s(p)._screwSnd = 2;
+    if (v.suitSounds) world.audio.sfx('screw-attack');
+  }
   if (b.onGround) {
+    // Her landing (G-070; Samus.as 517): back on the ground after a frame in the air.
+    if (s(p)._air && v.suitSounds && !inBall(p) && !quietLanding(p, world)) world.audio.sfx('samus-land');
+    delete s(p)._air;
+    // Her footsteps (G-070; Samus.as 1086-1093, STEP_TMR 150 ms): one every 9 frames while she
+    // walks on the ground, the first 9 frames after she starts.
+    // Muted in a walk-in to a pipe (Samus.as 1404: activateWatchModeEnterPipe).
+    if (b.vx !== 0 && v.suitSounds && !inBall(p) && !world.autoWalk) {
+      const step = (s(p)._step ?? 0) + 1;
+      s(p)._step = step >= SAMUS_STEP_FRAMES ? 0 : step;
+      if (step >= SAMUS_STEP_FRAMES) world.audio.sfx('samus-step');
+    } else delete s(p)._step;
     s(p)._g = 1;
     s(p)._feet = p.feetY;
     delete s(p)._takeoff;
-  } else delete s(p)._g;
+  } else {
+    delete s(p)._g;
+    s(p)._air = 1;
+  }
 }
 
 /**
@@ -444,6 +492,8 @@ export function classicSamus(
   const own = opts.sheet === undefined;
   function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     let palette = p.powerState === 'fire' ? `${prefix}-varia` : prefix;
+    // G-040: missile mode's suit (changeSuitColor's PAL_ROW_*_MISSILE rows; our own colours).
+    if (missileMode(p)) palette = `${palette}-missile`;
     const star = classicStarPaletteStep(p, frame, reduceFlashing);
     // SA-C24: the Screw Attack flashes like the Star (the Star's palette wins); reduce: Varia.
     if (star !== null) palette = `samus-star-${star}`;
@@ -470,6 +520,8 @@ export function classicSamus(
   }
 
   const def: CharacterDef = {
+    // The original's level flags (G-010): Samus.as:316 (Pit, her look, too). level/layers.ts lays its pieces by them.
+    levelFlags: { horz: true },
     ...base,
     rules: 'classic',
     movement: SAMUS_CLASSIC_PROFILE,
@@ -514,10 +566,17 @@ export function classicSamus(
     // TG-44: Flower state, Missiles with 99 and the Expansion, and Select between Wave and Ice.
     devKit: () => ({ missileUp: 1, missiles: MISSILE_EXP_CAP, missileExp: 1, classicAll: 1 }),
     tools: (p) => devTools(p),
-    touchLabels(p) {
+    touchLabels(p, world) {
       if (inBall(p)) return { attack: 'BOMB', special: null, select: null };
       if (crouchPose(p) && v.noBeamInCrouch)
         return { attack: null, special: p.scratch.missileUp ? 'MISSILE' : null, select: null };
+      // G-040: with the Classic Samus cheat Attack fires the mode's weapon; Special switches it.
+      if (classicSamusCheat(world))
+        return {
+          attack: missileMode(p) ? 'MISSILE' : 'SHOOT',
+          special: p.scratch.missileUp ? 'SWITCH' : null,
+          select: p.scratch.classicAll ? 'BEAM' : null,
+        };
       return {
         attack: 'SHOOT',
         special: p.scratch.missileUp ? 'MISSILE' : null,
@@ -575,6 +634,21 @@ export function classicSamus(
           } else if (input.pressed('attack')) layBomb(p, world);
           if (inBall(p)) return;
         }
+        const cheat = classicSamusCheat(world);
+        // G-040: Special or Select (not the dev kit's beam switch) toggles missile mode.
+        if (
+          cheat &&
+          s(p).missileUp &&
+          (input.pressed('special') || (input.pressed('select') && !s(p).classicAll))
+        ) {
+          if (s(p)._mm) delete s(p)._mm;
+          else s(p)._mm = 1;
+        } else if (!cheat) delete s(p)._mm;
+        if (cheat && v.morphBall && b.onGround && input.pressed('down') && !crouchPose(p)) {
+          // G-040: Down on the ground rolls her straight into the ball (no crouch first).
+          enterBall(p);
+          return;
+        }
         if (v.crouchWalk) {
           // PI-7, PI-8: the crouch pose while Down is held (in the air too with airCrouchPose).
           const want = input.held('down') && (b.onGround || v.airCrouchPose);
@@ -584,9 +658,11 @@ export function classicSamus(
           }
           if (!b.onGround || b.vx !== 0 || !crouchPose(p)) delete s(p)._still;
         } else if (input.pressed('down')) {
-          if (crouchPose(p) && v.morphBall) enterBall(p);
-          else if (!b.onGround && !crouchPose(p) && v.morphBall) enterBall(p);
-          else if (b.onGround && !input.held('up') && !crouchPose(p)) {
+          if ((crouchPose(p) || !b.onGround) && v.morphBall) {
+            enterBall(p);
+            // Curling into the morph ball (G-070, SoundNames.as SFX_SAMUS_MORPH_BALL).
+            if (v.suitSounds) world.audio.sfx('morph-ball');
+          } else if (b.onGround && !input.held('up') && !crouchPose(p)) {
             setCrouch(p, true);
             b.vx = 0;
           }
@@ -604,6 +680,12 @@ export function classicSamus(
         if (input.held('up') && !crouchPose(p)) s(p)._aimUp = 1;
         else delete s(p)._aimUp;
         updateFlip(p, input);
+        if (cheat) {
+          // G-040: Attack fires what the mode says; Special only toggles the mode.
+          if (input.pressed('attack') && missileMode(p)) fireMissile(p, world, v);
+          else if (input.pressed('attack') && !(crouchPose(p) && v.noBeamInCrouch)) fireBeam(p, world, v);
+          return;
+        }
         if (input.pressed('attack') && !(crouchPose(p) && v.noBeamInCrouch)) fireBeam(p, world, v);
         if (input.pressed('special')) fireMissile(p, world, v);
       },
@@ -647,7 +729,7 @@ const ROWS = [
   { y: 15, vy: -200, g: 350 },
   { y: 6, vy: -100, g: 150 },
 ] as const;
-const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
+export const SAMUS_DEATH: NonNullable<CharacterDef['deathBurst']> = {
   sheet: 'samus-classic',
   pieces: [1, -1].flatMap((side, s) =>
     ROWS.map((r, i) => ({

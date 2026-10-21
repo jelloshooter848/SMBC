@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
-import { CHARACTERS, CLASSIC_EXTRAS } from '@game/characters/registry';
+import { CLASSIC_EXTRAS } from '@game/characters/registry';
 import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { makeGame } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
@@ -23,47 +23,56 @@ function classicSelect(classicRules: 'classic' | 'current' = 'classic') {
 }
 
 describe('two-row character select', () => {
-  it('Down goes to the nearest second-row hero, Up back; the edges bump', () => {
+  it('Down goes to the nearest hero on the next row, Up back; the edges bump', () => {
     expect(CLASSIC_EXTRAS.length).toBeGreaterThan(1);
     const { h, sel } = classicSelect();
-    expect(sel.firstRow).toBe(CHARACTERS.length);
     expect(h.said.some((t) => t.includes('up and down for the other row'))).toBe(true);
     expect(idx(sel)).toBe(0);
-    const nearest = (from: number, lo: number, hi: number) => {
-      let best = lo;
-      for (let k = lo; k < hi; k++)
-        if (Math.abs(sel.slot(k).x - sel.slot(from).x) < Math.abs(sel.slot(best).x - sel.slot(from).x))
+    const n = sel.chars.length + 1;
+    // The original's grid (its rows as the select lays them out: 5 / 6), the Random slot last.
+    const ys = [...new Set(Array.from({ length: n }, (_, k) => sel.slot(k).y))].sort((a, b) => a - b);
+    const rowOf = (k: number) => ys.indexOf(sel.slot(k).y);
+    const rowEnd = (r: number) =>
+      Math.max(...Array.from({ length: n }, (_, k) => k).filter((k) => rowOf(k) === r));
+    const nearest = (from: number, row: number) => {
+      let best = -1;
+      for (let k = 0; k < n; k++)
+        if (
+          rowOf(k) === row &&
+          (best < 0 ||
+            Math.abs(sel.slot(k).x - sel.slot(from).x) < Math.abs(sel.slot(best).x - sel.slot(from).x))
+        )
           best = k;
       return best;
     };
-    // The second row ends with Classic mode's Random slot (FU-4): slot chars.length.
-    const n = sel.chars.length + 1;
-    const first = sel.firstRow;
-    const down = nearest(0, first, n);
+    const rows = sel.rows;
+    expect(rows).toBe(ys.length);
+    const names = ['first', 'second', 'third', 'fourth'];
+    let at = 0;
+    for (let r = 1; r < rows; r++) {
+      const to = nearest(at, r);
+      h.tap('down');
+      expect(idx(sel)).toBe(to);
+      expect(h.said.at(-1)).toMatch(new RegExp(`, ${names[r]} row$`));
+      at = to;
+    }
+    // The last row: Down bumps.
     h.tap('down');
-    expect(idx(sel)).toBe(down);
-    expect(h.said.at(-1)).toMatch(new RegExp(`^${sel.chars[down]?.name ?? 'Random'}(, .*)?, second row$`));
-    // The original's grid holds the roster in rows of nine, three of them with Mega Man's variants
-    // (FU-3): Down goes on to the third, then bumps; Up comes back.
-    h.tap('down');
-    const third = idx(sel);
-    expect(sel.slot(third).y).toBeGreaterThan(sel.slot(down).y);
-    h.tap('down');
-    expect(idx(sel)).toBe(third);
+    expect(idx(sel)).toBe(at);
+    for (let r = rows - 2; r >= 0; r--) {
+      const to = nearest(at, r);
+      h.tap('up');
+      expect(idx(sel)).toBe(to);
+      at = to;
+    }
+    expect(rowOf(idx(sel))).toBe(0);
     h.tap('up');
-    const second = idx(sel);
-    expect(sel.slot(second).y).toBe(sel.slot(down).y);
-    const up = nearest(second, 0, first);
-    h.tap('up');
-    expect(idx(sel)).toBe(up);
-    expect(h.said.at(-1)).toMatch(new RegExp(`^${sel.chars[up]?.name}(, .*)?, first row$`));
-    h.tap('up');
-    expect(idx(sel)).toBe(up);
-    // From the last first-row hero, Down lands on the nearest column (the right end).
-    for (let i = 0; i < first - 1 - up; i++) h.tap('right');
-    expect(idx(sel)).toBe(first - 1);
+    expect(idx(sel)).toBe(at);
+    // From the first row's right end, Down lands on the nearest column.
+    for (let i = 0; i < rowEnd(0) - at; i++) h.tap('right');
+    expect(idx(sel)).toBe(rowEnd(0));
     h.tap('down');
-    expect(idx(sel)).toBe(nearest(first - 1, first, n));
+    expect(idx(sel)).toBe(nearest(rowEnd(0), 1));
   });
 
   it('Left and Right still walk the whole roster across the rows', () => {

@@ -1,3 +1,4 @@
+import type { MapDifficulty } from '@engine/save/settings';
 export type Theme =
   | 'overworld'
   | 'underground'
@@ -352,7 +353,17 @@ export type Zone =
       campaign?: boolean;
     }
   /** A vine brick at (x, y): climbing its vine off the top of the screen leads to `target` (climb mode). */
-  | { kind: 'vine'; x: number; y: number; target: { level: string; x: number; y: number } }
+  | {
+      kind: 'vine';
+      x: number;
+      y: number;
+      /**
+       * Where the top of the vine leads. `exitDir`: how the hero arrives there when he does not
+       * climb up an arrival vine (left out): `up` out of a pipe end (Special 4-1 and 4-3's
+       * numbered vines), `fall`, or `none` (the area's own start mode).
+       */
+      target: { level: string; x: number; y: number; exitDir?: 'up' | 'fall' | 'none' };
+    }
   /**
    * A teleport pad lying in tile (x, y) (on the floor of the tile below): a player who stands on
    * it is beamed up and arrives in `target` (`exitDir`: 'beam' by default, beamed down; 'fall'
@@ -579,6 +590,41 @@ export interface LevelData {
    * power block gives each hero. Classic play ignores it.
    */
   heroItems?: HeroItemEntry[];
+  /**
+   * The original's pieces for the other map difficulties and for heroes with level flags (G-006,
+   * G-010-G-012): the area's `.layers` file (tools/levelgen/convert-smbc.mjs --layers) or a map's
+   * `[layer ...]` sections, in order. Laid only in Classic SMBC play (level/layers.ts).
+   */
+  layers?: LevelLayer[];
+}
+
+/** Classic mode's Map Difficulty (G-006; data/MapDifficulty.as): one definition, the settings'. */
+export type { MapDifficulty };
+export { MAP_DIFFICULTIES } from '@engine/save/settings';
+
+/**
+ * The original's per-hero level flags (Character.as): `horz` / `vert` (usesHorzObjs /
+ * usesVertObjs: heroes of limited reach get helper pieces), `badswimmer` (not isGoodSwimmer),
+ * `wide` (isWideCharacter), `poorbowser` (poorBowserFighter: extra blocks before Bowser).
+ */
+export type LayerFlag = 'horz' | 'vert' | 'badswimmer' | 'wide' | 'poorbowser';
+export const LAYER_FLAGS: readonly LayerFlag[] = ['horz', 'vert', 'badswimmer', 'wide', 'poorbowser'];
+
+/**
+ * One layer (`[layer [easy|hard] flag...]`): laid when the run's map difficulty is its own (or it
+ * names none) and the playing heroes have every flag it names. Same lines as a hero variant, plus
+ * `+zone <zone>` / `-zone <zone>`.
+ */
+export interface LevelLayer {
+  difficulty?: MapDifficulty;
+  flags: LayerFlag[];
+  tiles: { x: number; y: number; tiles: number[] }[];
+  add?: EntitySpawn[];
+  remove?: { type: string; x: number; y: number }[];
+  addZones?: Zone[];
+  removeZones?: Zone[];
+  /** `start x y mode`: the area's start there (a Hard area's pipe one row lower). */
+  start?: { x: number; y: number; mode: LevelData['startMode'] };
 }
 
 /**

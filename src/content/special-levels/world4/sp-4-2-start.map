@@ -1,0 +1,40 @@
+id: sp-4-2-start
+name: WORLD 4-2
+world: 4
+stage: 2
+theme: mushroom
+music: overworld
+time: inherit
+start: 2,12
+startMode: stand
+camera: scroll
+parent: sp-4-2
+
+[tiles]
+;; 0                16               32
+................ ................ ...
+................ ................ ...
+...............B BBBB............ ###
+...............B BBBB............ ###
+..............2B BBBB............ ###
+...............B BBBB............ ###
+...............B BBBB............ ###
+...............B BBBB............ ###
+..............2B BBBB............ ###
+...............B BBBB.[]......... ###
+...............B BBBB.{}......... ###
+...............B BBBB.mmmmmm1.... ###
+.............[]B BBBB...i........ ###
+mmmmmmm......{}B BBBB...i...mmmmm ###
+.i...........{}B BBBB...i.....i.. ###
+
+[entities]
+decor-castle 0 12
+
+[zones]
+pipe 13 12 down -> sp-4-2 1 3 exit=none
+pipe 21 9 down -> sp-4-2 1 3 exit=none
+
+[decor]
+cloud-2 5 4
+cloud-1 23 3

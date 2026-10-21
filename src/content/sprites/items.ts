@@ -5,6 +5,7 @@ import { mapIconFrames } from './map-icons';
 import { selectRandomFrames } from './select-random';
 import { topSecretItemFrames } from './top-secret';
 import { smbcBeamItemFrames } from './smbc-shots';
+import { specialItemFrames } from './special';
 
 /**
  * Item palette roles:
@@ -98,6 +99,42 @@ const clock = [
   '...050000050....',
   '...00.....00....',
 ];
+
+/* The Hudson Bee (G-023; original art): a round gold bee with black stripes, big white eyes and
+ * a red smile, its white wings up (frame 0) and down (frame 1). */
+const beeBody = [
+  '................',
+  '....00000000....',
+  '...0555555550...',
+  '..055110011550..',
+  '..051100001150..',
+  '..051100001150..',
+  '..055110011550..',
+  '..055552255550..',
+  '..000555555000..',
+  '..055000000550..',
+  '..000555555000..',
+  '...0550000550...',
+  '....05555550....',
+  '.....000000.....',
+  '......0..0......',
+  '................',
+];
+/** The body with a wing (rows from `top`, mirrored on the right) laid over it. */
+const beeWings = (top: number, wing: readonly string[]): string[] =>
+  beeBody.map((row, y) => {
+    const w = wing[y - top];
+    if (w === undefined) return row;
+    const cells = [...row];
+    [...w].forEach((c, x) => {
+      if (c === '.') return;
+      cells[x] = c;
+      cells[15 - x] = c;
+    });
+    return cells.join('');
+  });
+const bee0 = beeWings(0, ['.00', '0110', '010']);
+const bee1 = beeWings(4, ['.0', '010', '010', '.0']);
 
 const flower0 = [
   '....00000000....',
@@ -2081,6 +2118,10 @@ export const itemsDef: SpriteDef = {
     '1up': swapColors(mushroom, { '2': '4' }),
     'poison-mushroom': poisonMushroom,
     clock,
+    'bee-0': bee0,
+    'bee-1': bee1,
+    // Super Mario Bros. Special's Atom, Hammer (and the hammer held) and Wing (G-022).
+    ...specialItemFrames,
     'flower-0': flower0,
     'flower-1': swapColors(flower0, { '7': '2', '5': '6', '6': '5' }),
     'star-0': star0,

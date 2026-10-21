@@ -2,7 +2,12 @@ import type { PaletteMode } from '../gfx/palette';
 import type { PlayerBindings } from '../input/bindings';
 import { defaultBindings } from '../input/bindings';
 import { loadJson, saveJson } from './storage';
+import type { BeatDifficulty } from './progress';
 import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
+
+/** Classic mode's map difficulties (data/MapDifficulty.as), as the beat status names them. */
+export type MapDifficulty = BeatDifficulty;
+export const MAP_DIFFICULTIES: readonly MapDifficulty[] = ['easy', 'normal', 'hard'];
 
 export type TouchMode = 'auto' | 'on' | 'off';
 /** Touch d-pad: drawn at a fixed spot, or a stick that centres under the thumb. */
@@ -52,6 +57,11 @@ export interface Settings {
   /** Developer mode (level select and test tools), unlocked with the title-screen code or ?dev=1. */
   dev: boolean;
   /**
+   * The dev-mode lock this browser opened with the passphrase (its hash, game/dev-lock.ts): a
+   * release build keeps `dev` only when it matches its own lock. '' when none was opened.
+   */
+  devUnlock: string;
+  /**
    * After each castle's first clear, a card offers to back up the file as a save code (Options >
    * Save files > Backup reminders, 0.4.44). On by default; older settings files get it on.
    */
@@ -68,6 +78,12 @@ export interface Settings {
    * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
    */
   classicRules: ClassicRules;
+  /**
+   * Classic mode's Map Difficulty (G-006; the original's New Game row, data/MapDifficulty.as):
+   * Easy, Normal (the default) or Hard. A Classic run is built for it (level/layers.ts) and its
+   * beat status records it. Files saved before it get Normal.
+   */
+  classicMapDifficulty: MapDifficulty;
   /**
    * Classic mode's options (title > CLASSIC > Options: Game Mode, More Settings, Customize
    * Weapons; save/original-options.ts), every one defaulting to the original's. Files saved
@@ -87,6 +103,12 @@ export interface Settings {
    */
   classicSkins?: Record<string, string>;
   /**
+   * Classic mode's Disable characters (G-032; GeneralOptions.as 23, 47-53): the select-slot hero
+   * ids left out of the select, the Random slot and Single random. At least one hero always
+   * stays (Game.heroSlots). Optional, so older files need no migration.
+   */
+  classicHeroesOff?: string[];
+  /**
    * Classic mode's cheats (the original's Cheats menu, Cheats.as): which are on, which are
    * unlocked, and the counts their unlock goals read (StatManager.as). Its own key, deep-merged
    * into older files (every field defaults to the original's: all off, most locked).
@@ -94,14 +116,19 @@ export interface Settings {
   classicCheats: ClassicCheatsSettings;
 }
 
-/** The original's cheats (Cheats.as), minus its no-ops (Classic Samus, Classic Simon) and Level Select. */
+/**
+ * The original's cheats (Cheats.as), minus Level Select. Classic Samus and Classic Simon (G-040)
+ * set Samus.classicMode and Simon.classicMode (Cheats.as 327, 337): the heroes read them.
+ */
 export const CLASSIC_CHEAT_IDS = [
   'allGroundIsBricks',
   'allHammerBros',
   'allWeaponsPierce',
   'alwaysBreakBricks',
   'bouncyPits',
+  'classicSamus',
   'classicScreenScroll',
+  'classicSimon',
   'everyoneCanStomp',
   'evilHammerBros',
   'extraCheckpoints',
@@ -129,17 +156,31 @@ export interface ClassicCheatsSettings {
   on: Record<ClassicCheatId, boolean>;
   unlocked: Record<ClassicCheatId, boolean>;
   stats: Record<ClassicCheatStat, number>;
-  /** The games beaten in Classic mode (StatManager.beatGame): SMB, The Lost Levels. */
-  beaten: { smb: boolean; lost: boolean };
+  /**
+   * The games beaten in Classic mode (StatManager.beatGame): SMB, Super Mario Bros. Special
+   * (G-020; a save from before it had none, so it starts false) and The Lost Levels.
+   */
+  beaten: { smb: boolean; special: boolean; lost: boolean };
   /**
    * Continues used in Classic mode over the save's whole life (StatManager.numContinuesUsed is a
    * saved stat): Infinite Lives unlocks only while it is 0 when a game is beaten.
    */
   continuesUsed: number;
+  /**
+   * The Level Select cheat (G-007; the original's 17th cheat, Cheats.as:47): unlocked by beating
+   * every map set on Hard (StatManager.allMapPacksBeatOnHard) or by the code. Not a rule: it opens
+   * the LEVEL SELECT page from the Cheats page and the Classic pause menu.
+   */
+  levelSelect: boolean;
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
-const OPEN_CHEATS: readonly ClassicCheatId[] = ['classicScreenScroll', 'everyoneCanStomp'];
+const OPEN_CHEATS: readonly ClassicCheatId[] = [
+  'classicSamus',
+  'classicScreenScroll',
+  'classicSimon',
+  'everyoneCanStomp',
+];
 
 export function defaultClassicCheats(): ClassicCheatsSettings {
   const flags = (v: (id: ClassicCheatId) => boolean) =>
@@ -148,8 +189,9 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
     on: flags(() => false),
     unlocked: flags((id) => OPEN_CHEATS.includes(id)),
     stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
-    beaten: { smb: false, lost: false },
+    beaten: { smb: false, special: false, lost: false },
     continuesUsed: 0,
+    levelSelect: false,
   };
 }
 
@@ -208,9 +250,11 @@ export function defaultSettings(): Settings {
     packs: [],
     announce: true,
     dev: false,
+    devUnlock: '',
     backupReminders: true,
     homeScreen: { tipDone: false, noticeDone: false, offlineDone: false },
     classicRules: 'classic',
+    classicMapDifficulty: 'normal',
     classicCheats: defaultClassicCheats(),
     classic: defaultClassicSettings(),
     classicDev: { yoshiMount: false, heroesOff: [] },
@@ -258,6 +302,7 @@ export function loadSettings(): Settings {
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
+  if (!MAP_DIFFICULTIES.includes(s.classicMapDifficulty)) s.classicMapDifficulty = 'normal';
   for (const k of CLASSIC_CHEAT_STATS) {
     const n = s.classicCheats.stats[k];
     s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
@@ -270,16 +315,41 @@ export function loadSettings(): Settings {
   const skins = normaliseSkins(stored.classicSkins);
   if (skins) s.classicSkins = skins;
   else delete s.classicSkins;
+  const off = Array.isArray(stored.classicHeroesOff)
+    ? (stored.classicHeroesOff as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (off.length) s.classicHeroesOff = off;
+  else delete s.classicHeroesOff;
   s.input.touchScale = Math.max(TOUCH_SCALE_MIN, Math.min(TOUCH_SCALE_MAX, s.input.touchScale)) || 1;
   s.input.bindings = s.input.bindings.map((b, i) => fillBindings(b, i));
   return s;
 }
+
+/**
+ * Slots older saves kept skin choices under that are now looks of another slot's hero: the choice
+ * moves to that hero (Proto Man's Break Man and Francesca's Doropie to Mega Man, Pit's Dark Pit to
+ * Samus), so the look is kept.
+ */
+const OLD_SKIN_SLOTS: Readonly<Record<string, string>> = {
+  protoman: 'megaman',
+  francesca: 'megaman',
+  pit: 'samus',
+};
 
 /** Settings.classicSkins as stored: its string entries (hero id to skin id), or undefined. */
 export function normaliseSkins(v: unknown): Record<string, string> | undefined {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
   const out: Record<string, string> = {};
   for (const [k, id] of Object.entries(v as Record<string, unknown>)) if (typeof id === 'string') out[k] = id;
+  for (const [old, host] of Object.entries(OLD_SKIN_SLOTS)) {
+    const id = out[old];
+    if (id === undefined) continue;
+    delete out[old];
+    // A real skin choice (not the old slot's own look) moves over, unless the host already wears
+    // a skin of its own choosing.
+    const held = out[host];
+    if (id !== old && (held === undefined || held === host)) out[host] = id;
+  }
   return Object.keys(out).length ? out : undefined;
 }
 

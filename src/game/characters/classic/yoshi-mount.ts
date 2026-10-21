@@ -267,8 +267,9 @@ export const MOUNT_SPECIAL: Readonly<Record<string, (p: Player) => MountSpecial>
   bill: (p) => (p.powerState === 'fire' ? 'own' : 'attack'),
 };
 
+/** A look rides as its hero (CharacterDef.lookOf, #179): its own row, else its hero's. */
 export function mountSpecial(base: CharacterDef, p: Player): MountSpecial {
-  return MOUNT_SPECIAL[base.id]?.(p) ?? 'own';
+  return (MOUNT_SPECIAL[base.id] ?? MOUNT_SPECIAL[base.lookOf ?? base.id])?.(p) ?? 'own';
 }
 
 /** The rider's input: Attack is Yoshi's; Special stays, or becomes the Attack shot (YM-12, YM-13). */

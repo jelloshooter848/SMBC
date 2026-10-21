@@ -340,6 +340,8 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
 /* ---------- the def ---------- */
 
 export const WARRIORS_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): not in 3.1.21: helped like Link. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true },
   id: 'warriors',
   name: 'Warriors of Light',
   hudName: 'WARRIOR',

@@ -13,18 +13,18 @@ import { HeroItem } from '@game/entities/objects/hero-item';
 import { LockedDoor } from '@game/entities/objects/keys';
 import { Partner } from '@game/entities/objects/partner';
 import type { LevelData } from '@game/level/schema';
-import { SELECT_GRID } from '@game/scenes/select-grid';
 import { CharacterSelectScene } from '@game/scenes/character-select';
-import { CreditsScene } from '@game/scenes/credits';
+import { CREDITS, CreditsScene, creditsSpeech } from '@game/scenes/credits';
 import { DevLevelSelectScene } from '@game/scenes/dev-level-select';
 import { FileSelectScene } from '@game/scenes/file-select';
 import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
-import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
+import type { CardScene } from '@game/scenes/message';
+import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { reconcileRules } from '@game/rules/reconcile';
-import { ClassicMenuScene, ClassicOptionsScene, lostLevelsOpen } from '@game/scenes/original-game';
+import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -40,7 +40,7 @@ isolateClassicRegistry({ hideExtras: true });
 // Classic mode (title > CLASSIC): the original game, with none of the campaign's additions. No
 // campaign file is opened or written; deaths and continues go through character select as in
 // the original; warp zones go where the original's go; 8-4 ends with the original ending, then
-// the Lost Levels follow (and the CLASSIC menu offers them from then on).
+// the title. Every map set is offered from the start (0.5.0, owner decision D3).
 
 useStorage();
 
@@ -85,6 +85,13 @@ function choose(h: H, def: CharacterDef): void {
   for (let i = 0; i <= CHARACTERS.length && said() !== def.name; i++) h.tap('right');
   expect(said()).toBe(def.name);
   h.tap('jump');
+  // G-050..G-055 (0.5.0): a hero with looks opens them first (OK keeps his own), and the pick
+  // performance plays before the game goes on.
+  if ((h.top() as CharacterSelectScene).pickerOpen) h.tap('jump');
+  h.until(
+    () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+    300,
+  );
 }
 
 const level = (h: H) => h.top() as LevelScene;
@@ -140,12 +147,12 @@ function exitOf(id: string): string {
 }
 
 describe('the title and the CLASSIC menu', () => {
-  it('CLASSIC comes right after Start game, with a hint free of level numbers', () => {
+  it('CLASSIC comes first (0.5.0, G-112), then Chapter 1, with a hint free of level numbers', () => {
     const h = classic();
     h.game.showTitle();
     const title = h.top() as TitleScene;
-    expect(labels(title).slice(0, 4)).toEqual(['Start game', 'Classic', 'Custom levels', 'Options']);
-    const it = items(title)[1] as MenuItem;
+    expect(labels(title).slice(0, 4)).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options']);
+    const it = items(title)[0] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
     // Without dev mode: four rows where main's three were (x 80, from y 96, 12 px apart).
@@ -154,7 +161,7 @@ describe('the title and the CLASSIC menu', () => {
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     const last = (str: string) => four.filter((t) => t.str === str).at(-1);
-    ['START GAME', 'CLASSIC', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
+    ['CLASSIC', 'CHAPTER 1', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
       expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
     );
     // Five rows with Dev mode: the usual 12 px step, every row above the credits.
@@ -169,17 +176,32 @@ describe('the title and the CLASSIC menu', () => {
     // (shadows draw 1 px right and down)
     const ys = [...new Set(rows.filter((r) => r.x === 64).map((r) => r.y))].sort((a, b) => a - b);
     for (let i = 1; i < ys.length; i++) expect((ys[i] as number) - (ys[i - 1] as number)).toBe(12);
-    // Clear of CHAPTER 1 above.
+    // Clear of the logo above (where CHAPTER 1 stood before 0.5.0).
     expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);
   });
 
-  it('the menu: Super Mario Bros., Options, Back; each line is announced', () => {
+  it('the menu: Super Mario Bros., The Lost Levels, Options, Back; each line is announced', () => {
     const h = classic();
     const menu = toClassicMenu(h);
-    expect(labels(menu)).toEqual(['Super Mario Bros.', 'Options', 'Back']);
+    // G-020: SMB Special between the two (the original's order).
+    expect(labels(menu)).toEqual([
+      'Super Mario Bros.',
+      'SMB Special',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of ['Options', 'Back', 'Super Mario Bros.']) {
+    for (const l of [
+      'SMB Special',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+      'Super Mario Bros.',
+    ]) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -189,14 +211,16 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 
-  it('The Lost Levels show only once SMB is beaten in Classic mode (a campaign clear does not count)', () => {
-    expect(lostLevelsOpen()).toBe(false);
-    file({ gameCleared: true });
-    expect(lostLevelsOpen()).toBe(false);
-    expect(labels(toClassicMenu(classic()))).toEqual(['Super Mario Bros.', 'Options', 'Back']);
-    saveProgress({ ...loadProgress(), cleared: ['8-4'] });
+  it('The Lost Levels are offered from the start (G-003, D3)', () => {
     const h = classic();
-    expect(labels(toClassicMenu(h))).toEqual(['Super Mario Bros.', 'The Lost Levels', 'Options', 'Back']);
+    expect(labels(toClassicMenu(h))).toEqual([
+      'Super Mario Bros.',
+      'SMB Special',
+      'The Lost Levels',
+      'Map difficulty',
+      'Options',
+      'Back',
+    ]);
     pick(h, 'The Lost Levels');
     choose(h, MARIO);
     const l = enterLevel(h);
@@ -214,8 +238,13 @@ describe('the title and the CLASSIC menu', () => {
     expect(labels(opts)).toEqual([
       'Classic rules',
       'Game mode',
+      'Expansion heroes',
       'More settings',
       'Weapons',
+      // 0.5.0 (G-066).
+      'Music set',
+      // G-032 (0.5.0): the original's Disable characters.
+      'Disable heroes',
       'Cheats',
       'All options',
       'Back',
@@ -426,7 +455,7 @@ describe('a Classic run', () => {
     expect(w.storyMode).toBe(false);
   });
 
-  it('8-4: the original ending and credits, then the Lost Levels open and follow', () => {
+  it('8-4: the original ending and credits, then the title (G-004, D3)', () => {
     const h = classic();
     h.game.classicGame(MARIO, '8-4-end');
     const l = enterLevel(h);
@@ -436,26 +465,28 @@ describe('a Classic run', () => {
     const credits = h.top();
     expect(credits).toBeInstanceOf(CreditsScene);
     // The classic credits, not the campaign's "the story is not over" lines.
-    expect(h.said.at(-1)).toBe('Credits.');
+    // (The roll is read out, owner decision 0.5.0: its own lines only.)
+    expect(h.said.at(-1)).toBe(creditsSpeech(CREDITS));
     h.until(() => (credits as CreditsScene).touchLabels().jump === 'OK', 6000);
     h.tap('jump');
-    const card = h.top();
-    expect(card).toBeInstanceOf(MessageScene);
-    expect(h.said.at(-1)).toMatch(/^The Lost Levels are open!|^THE LOST LEVELS ARE OPEN!/i);
-    expect(h.said.at(-1)).not.toMatch(/\b(press|push)\s+[abc]\b/i);
-    expect(loadProgress().cleared).toContain('8-4');
-    expect(lostLevelsOpen()).toBe(true);
+    // The cheats the clear and the game unlocked (All Ground Is Bricks among them): a card each,
+    // read out, then the title.
+    const cards: string[] = [];
+    for (let i = 0; i < 10 && h.top() instanceof MessageScene; i++) {
+      cards.push(h.said.at(-1) ?? '');
+      h.idle(CARD_GUARD_FRAMES + 2);
+      h.tap('jump');
+    }
+    expect(cards).toContainEqual(expect.stringMatching(/^You unlocked the All Ground Is Bricks cheat!/));
+    for (const c of cards) expect(c).not.toMatch(/\b(press|push)\s+[abc]\b/i);
+    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(loadProgress().classicBeat?.smb).toBe('normal');
     expect(saveFiles()).toEqual([]);
-    h.idle(CARD_GUARD_FRAMES + 40);
-    h.tap('jump');
-    choose(h, LINK);
-    const ll = enterLevel(h);
-    expect(ll.level.id).toBe('ll-1-1');
-    expect(h.game.classicRun).toBe(true);
+    expect(h.game.classicRun).toBe(false);
   });
 });
 
-describe('a dev-started Classic run never opens the Lost Levels', () => {
+describe('a dev-started Classic run records no beat status', () => {
   function beat84(h: H): void {
     const l = enterLevel(h);
     l.world.events.push({ type: 'exit', next: 'end' });
@@ -477,7 +508,7 @@ describe('a dev-started Classic run never opens the Lost Levels', () => {
       beat84(h);
       expect(h.top()).toBeInstanceOf(TitleScene);
       expect(loadProgress().cleared).toEqual([]);
-      expect(lostLevelsOpen()).toBe(false);
+      expect(loadProgress().classicBeat?.smb).toBe('none');
     },
   );
 
@@ -488,7 +519,7 @@ describe('a dev-started Classic run never opens the Lost Levels', () => {
     h.game.classicGame(MARIO, '8-4-end');
     expect(h.game.classicDev).toBe(false);
     beat84(h);
-    expect(lostLevelsOpen()).toBe(true);
+    expect(loadProgress().classicBeat?.smb).toBe('normal');
   });
 });
 
@@ -533,22 +564,6 @@ describe('the CLASSIC tag: fully on screen, clear of every HUD line', () => {
 });
 
 describe('QA nits', () => {
-  it('the Classic Lost Levels 8-4 card names the ability (no button letter) and is announced', () => {
-    const h = classic();
-    h.game.classicGame(MARIO, 'll-8-4');
-    const l = enterLevel(h);
-    l.world.events.push({ type: 'exit', next: 'end' });
-    h.step();
-    const card = h.top() as CardScene;
-    expect(card).toBeInstanceOf(CardScene);
-    expect(card.lines).not.toContain('PUSH BUTTON B');
-    expect(card.lines).toContain('TO GO ON');
-    const press = card.lines.find((x) => x.startsWith('PRESS OK'));
-    expect(press).toBeDefined();
-    expect(h.said.at(-1)).toContain(press as string);
-    expect(h.said.at(-1)).not.toMatch(/\bBUTTON B\b/);
-  });
-
   it('free play keeps the NES wording on that card', () => {
     const h = classic();
     h.game.newGame(MARIO, 'll-8-4');
@@ -599,7 +614,8 @@ describe('QA nits', () => {
 });
 
 describe('the Classic pause menu', () => {
-  it('Continue, Options, Quit to title (and every dev row with dev mode on)', () => {
+  // G-093, G-031 (0.5.0): the hero's Guide row, and Cheats (with Classic rules), as the original's pause has.
+  it('Continue, Guide, Options, Cheats, Quit to title (and every dev row with dev mode on)', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     enterLevel(h);
@@ -607,7 +623,7 @@ describe('the Classic pause menu', () => {
     h.tap('start');
     const pause = h.top() as PauseScene;
     expect(pause).toBeInstanceOf(PauseScene);
-    expect(labels(pause)).toEqual(['Continue', 'Options', 'Quit to title']);
+    expect(labels(pause)).toEqual(['Continue', 'Guide', 'Options', 'Cheats', 'Quit to title']);
     pick(h, 'Quit to title');
     expect(h.top()).toBeInstanceOf(TitleScene);
     expect(h.game.classicRun).toBe(false);
@@ -621,6 +637,7 @@ describe('the Classic pause menu', () => {
     // Every developer row free play or a campaign file's pause has in dev mode.
     expect(labels(d.top())).toEqual([
       'Continue',
+      'Guide',
       'Options',
       'Dev mode',
       'Assists',
@@ -670,13 +687,13 @@ describe('dev Level select: Mode', () => {
 });
 
 describe('the campaign is unaffected', () => {
-  it('Start game still opens the file select; a file plays Current, never as a Classic run', () => {
-    const h = classic();
+  it('Chapter 1 (dev mode, 0.5.0) still opens the file select; a file plays Current, never as a Classic run', () => {
+    const h = classic({ dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.classicRun).toBe(true);
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
-    pick(h, 'Start game');
+    pick(h, 'Chapter 1');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     file();
     h.game.openFile(1);
@@ -763,24 +780,23 @@ describe('the select screen: Classic extras on a second row', () => {
     expect((h.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
   });
 
-  it('the original grid: the usual heroes fill the first row, extras the next; left and right walk the whole roster', () => {
+  it('the original grid: the slots in the original\u2019s order, then Random; left and right walk them all', () => {
     const h = classic();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
-    expect(sel.firstRow).toBe(CHARACTERS.length);
-    // Cells SELECT_GRID.cell px square, nine to a row (the original's CharacterSelectBox, fitted).
-    const step = SELECT_GRID.cell + SELECT_GRID.gap;
-    CHARACTERS.forEach((_, i) =>
-      expect(sel.slot(i)).toEqual({
-        x: SELECT_GRID.x + i * step + SELECT_GRID.cell / 2,
-        y: SELECT_GRID.y + SELECT_GRID.cell,
-      }),
+    // The original's slots, in its order (CharacterSelectBox.ORDER_VEC), then any stand-in extra.
+    const want = ['mario', 'luigi', 'link', 'samus', 'simon', 'megaman', 'bass', 'bill', 'ryu', 'sophia'];
+    // (This test hides the built extras and registers a stand-in, so Bass may be absent.)
+    expect(sel.chars.map((c) => c.id).filter((id) => want.includes(id))).toEqual(
+      want.filter((id) => sel.chars.some((c) => c.id === id)),
     );
-    // The second row: the extra, then the Random slot (FU-4).
-    expect(sel.slot(CHARACTERS.length)).toEqual({
-      x: SELECT_GRID.x + SELECT_GRID.cell / 2,
-      y: SELECT_GRID.y + step + SELECT_GRID.cell,
-    });
+    // Cells SELECT_GRID.cell px square, SELECT_GRID.cols to a row (the original's
+    // CharacterSelectBox, fitted to 240 px); the stand-in extra follows, then Random (FU-4).
+    const g = sel.grid;
+    for (let i = 0; i < sel.chars.length + 1; i++) {
+      const c = sel.cellOf(i);
+      expect(sel.slot(i)).toEqual({ x: c.x + g.cell / 2, y: c.y + g.cell });
+    }
     h.idle(12);
     h.tap('left');
     expect(h.said.at(-1)).toBe('Random');
@@ -800,7 +816,6 @@ describe('the select screen: Classic extras on a second row', () => {
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars).toBe(CHARACTERS);
-    expect(sel.firstRow).toBe(CHARACTERS.length);
     // BACK returns to the CLASSIC menu.
     h.idle(12);
     h.tap('attack');

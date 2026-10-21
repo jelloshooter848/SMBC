@@ -2,7 +2,7 @@ import type { AssetRegistry } from '@engine/assets/registry';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import { startHp, type CharacterDef } from './characters/character';
 import { heroFor } from './characters/registry';
-import { CLASSIC_CHEAT_IDS, type ClassicCheatId } from '@engine/save/settings';
+import { CLASSIC_CHEAT_IDS, type ClassicCheatId, type MapDifficulty } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
@@ -111,12 +111,23 @@ export interface GameContext {
    */
   classic?: ClassicSettings;
   /**
+   * Classic mode's Map Difficulty for the run (G-006): present only in a Classic run with Classic
+   * rules (Game.classicMapDifficulty); absent (Normal) everywhere else. A World reads it once.
+   */
+  mapDifficulty?: MapDifficulty;
+  /**
    * Classic SMBC's Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-1, a dev-only
    * toggle): 'on' lets the first power-up block of each allowed area hatch him, 'ride' also starts
    * every life on his back. Absent (always under Current, in a campaign file and with the toggle
    * off): no mount code runs (YM-2). Game makes it a live view, like `rules`.
    */
   classicYoshi?: 'on' | 'ride';
+  /**
+   * A Classic mode run (title > CLASSIC, or a dev Classic run) outside a campaign file, under
+   * either rules (0.5.0 audio: the heroes' own hit and death sounds, World.hitSound and kill).
+   * Game makes it a live view; absent (false) everywhere else.
+   */
+  classicMode?: boolean;
 }
 
 /** Progress carried between levels. */

@@ -149,6 +149,14 @@ export class ToadGuide {
     return this.scenes[this.scene]?.pages[this.page] ?? null;
   }
 
+  /**
+   * A page is up and takes OK / SKIP now (its guard is over, the OK prompt shows): the map's touch
+   * buttons show only then (0.5.0, the phone "first tap ignored" bug).
+   */
+  get ready(): boolean {
+    return this.phase === 'page' && this.t >= CARD_GUARD_FRAMES; // the next update's press counts
+  }
+
   /** Toad is on the map (walking in, standing, or walking off). */
   get toadShown(): boolean {
     return this.tx !== null;

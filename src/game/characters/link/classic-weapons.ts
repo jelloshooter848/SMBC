@@ -11,6 +11,7 @@ import { Player } from '../../entities/player';
 import type { ClassicHitProps } from '../../rules/damage';
 import { T, tileDef } from '../../level/tiles';
 import type { World } from '../../world/world';
+import { heroSound } from '../classic/sounds';
 
 /**
  * Classic SMBC Link's weapons (2026-10-07-link-classic-smbc-rules.md, LK-C28..LK-C38): the Red
@@ -55,6 +56,14 @@ export const LINK_BEAM_V: ProjectileSpec = { ...LINK_BEAM, w: 3, h: 16 };
 export const LINK_ARROW: ProjectileSpec = { ...LINK_BEAM, kind: 'arrow', amount: 350, frames: ['arrow'] };
 export const LINK_ARROW_V: ProjectileSpec = { ...LINK_ARROW, w: 3, h: 16 };
 
+/**
+ * Princess Zelda's arrows (G-050; LinkProjectile.as 69-72): 400 damage, and through what they
+ * defeat (PR_PASSTHROUGH_DEFEAT). Her looks' ids (link/classic-zelda.ts).
+ */
+export const ZELDA_ARROW: ProjectileSpec = { ...LINK_ARROW, amount: 400, pierceDefeat: true };
+export const ZELDA_ARROW_V: ProjectileSpec = { ...ZELDA_ARROW, w: 3, h: 16 };
+export const ZELDA_IDS: ReadonlySet<string> = new Set(['zelda-nes', 'zelda-snes', 'zelda-gb']);
+
 /** Beam burst (LinkSimpleGraphics.as): 4 sparks, 5 px out, 115 px/s per axis, 21 f. */
 export const BEAM_BURST_FRAMES = 21;
 const BURST_START = 5;
@@ -97,7 +106,18 @@ export class LinkShot extends Projectile {
   /** A shot from `p` flying `dir`, centred on its spawn point. */
   static fire(p: Player, dir: ShotDir, arrow: boolean): LinkShot {
     const vertical = dir !== 'forward';
-    const spec = arrow ? (vertical ? LINK_ARROW_V : LINK_ARROW) : vertical ? LINK_BEAM_V : LINK_BEAM;
+    const zelda = ZELDA_IDS.has(p.def.id);
+    const spec = arrow
+      ? zelda
+        ? vertical
+          ? ZELDA_ARROW_V
+          : ZELDA_ARROW
+        : vertical
+          ? LINK_ARROW_V
+          : LINK_ARROW
+      : vertical
+        ? LINK_BEAM_V
+        : LINK_BEAM;
     const at = SHOT_SPAWN[dir];
     const cx = p.centerX + p.facing * sub(at.x);
     const cy = p.feetY + sub(at.y);
@@ -477,7 +497,7 @@ export class LinkBomb extends Entity {
       };
       const res = e.hit(src, world);
       world.scoreKill(e, 'bomb', res);
-      if (res === 'hp' || res === 'stun') world.audio.sfx('hurt-enemy');
+      if (res === 'hp' || res === 'stun') world.audio.sfx(heroSound(this.owner.def, 'hit', 'hurt-enemy'));
     }
   }
 

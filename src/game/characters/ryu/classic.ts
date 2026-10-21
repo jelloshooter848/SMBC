@@ -82,6 +82,17 @@ const SPAWN_AT = CLASSIC_THROW_FRAMES - 2;
 const LIVE_FROM = CLASSIC_SLASH_FRAMES - 2;
 const LIVE_TO = CLASSIC_SLASH_FRAMES - 7;
 
+/** Haggle Man's look on Ryu's slot (G-052, ryu/classic-haggleman.ts). */
+export const HAGGLEMAN_ID = 'haggleman';
+/**
+ * The sword's live frames (countdown values, from and to): Ryu's frames 3-8, or Haggle Man's one
+ * 45 ms animation step sooner (Ryu.as attackFramesHaggleManArr: attackStart and attack-2 in place
+ * of attack-2 and attack-3), frames 1-5.
+ */
+export function slashLive(p: Player): readonly [number, number] {
+  return p.def.id === HAGGLEMAN_ID ? [CLASSIC_SLASH_FRAMES, CLASSIC_SLASH_FRAMES - 4] : [LIVE_FROM, LIVE_TO];
+}
+
 /** Ryu's walk: 185 px/s, at once (RY-C4). */
 export const CLASSIC_WALK = 0x018ab;
 
@@ -234,7 +245,9 @@ function spawnThrow(p: Player, input: InputFrame, world: World): void {
   const y = cy - px(spec.h >> 1);
   if (a.id === 'windmill') world.spawn(new WindmillShot(x, y, dir, p));
   else world.spawn(new Projectile(x, y, dir, spec, p));
-  world.audio.sfx(a.id === 'windmill' ? 'boomerang' : a.id === 'shuriken' ? 'buster' : 'magic');
+  // Each art's own sound (G-074; SFX_RYU_THROW_SMALL_STAR, _BIG_STAR, _ART_OF_FIRE_WHEEL,
+  // _FIRE_DRAGON_BALL).
+  world.audio.sfx(a.id === 'windmill' ? 'ng-windmill' : a.id === 'shuriken' ? 'ng-star' : 'ng-fire');
 }
 
 /** Special or Select with art `a` (RY-C1): a throw, or the Jump Slash in the air. */
@@ -406,8 +419,9 @@ function update(p: Player, input: InputFrame, world: World): void {
 
   // The published melee box: the Jump Slash's body, or the sword's live frames.
   const t = p.attackTimer;
+  const [from, to] = slashLive(p);
   if (s._jslash) p.activeMelee = spinBox(p);
-  else if (t > 0 && t <= LIVE_FROM && t >= LIVE_TO) p.activeMelee = swordBox(p);
+  else if (t > 0 && t <= from && t >= to) p.activeMelee = swordBox(p);
   else p.activeMelee = null;
 }
 
@@ -435,12 +449,12 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   else if (p.wall) name = 'cling';
   // On a vine or the flagpole: the pole climb (climbPoleStart / climbPole-2), 115 ms a pose.
   else if (p.anim === 'climb') name = `climb-${Math.floor(frame / RYU_CLIMB_TICKS) & 1}`;
-  else if (t > 0 && t <= LIVE_FROM && t >= LIVE_TO && p.powerState !== 'small') {
+  else if (t > 0 && t <= slashLive(p)[0] && t >= slashLive(p)[1] && p.powerState !== 'small') {
     // The Sword Extension's wave on the hit frames (RY-C25); Reduce flashing holds its shimmer.
     const shimmer = reduceFlashing ? 0 : (frame >> 1) & 1;
     name = `${p.crouching ? 'crouch-slash-wave' : 'slash-wave'}-${shimmer}`;
   } else if (t > 0) {
-    const windUp = t > LIVE_FROM;
+    const windUp = t > slashLive(p)[0];
     name = p.crouching ? (windUp ? 'crouch-slash-0' : 'crouch-slash') : windUp ? 'slash-0' : 'slash-1';
   } else if (p.crouching) name = 'crouch';
   else if (!b.onGround) name = ryuAirPose(p);
@@ -464,6 +478,8 @@ const RYU_CLIMB_TICKS = 6.9;
 const RYU_BREATH_TICKS = 7.8;
 
 export const RYU_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Ryu.as:297,316-317. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, vert: true, poorBowser: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Irene',
   ...RYU,

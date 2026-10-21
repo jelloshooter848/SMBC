@@ -1,0 +1,32 @@
+id: sp-6-2-water
+name: WORLD 6-2
+world: 6
+stage: 2
+theme: water
+music: water
+time: inherit
+start: 2,1
+startMode: fall
+camera: scroll
+parent: sp-6-2
+
+[tiles]
+;; 0                16
+................ ....
+................ ....
+wwwwwwwwwwwwwwww ww{}
+................ ..{}
+................ ..{}
+................ ..{}
+................ ..{}
+................ ..{}
+.....$$...$$.... ..{}
+.....BB...BB.... ..{}
+....$BB.$.BB$... ..{}
+...$BBB$B$BBB$.. ())}
+...BBBBBBBBBBB.. <>>}
+################ ####
+################ ####
+
+[zones]
+pipe 16 12 right -> sp-6-2 122 8 exit=up

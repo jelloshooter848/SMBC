@@ -377,6 +377,8 @@ function touchLabels(p: Player): ReturnType<NonNullable<CharacterDef['touchLabel
 }
 
 export const YOSHI_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): not in 3.1.21: his flutter needs no helper pieces. level/layers.ts lays its pieces by them.
+  levelFlags: {},
   id: 'yoshi',
   name: 'Yoshi',
   hudName: 'YOSHI',

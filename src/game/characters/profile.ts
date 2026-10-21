@@ -58,6 +58,13 @@ export interface SwimProfile {
   surface?: { gravity: number; fallMax: number } | undefined;
   /** Classic SMBC: a dash jump's take-off under water (SlideProfile.jumpSpeed; Bass BA-15). */
   slideJump?: number | undefined;
+  /**
+   * Classic SMBC's PitVacuum (G-013; enemies/PitVacuum.as, Mario and Luigi only): in an area that
+   * starts under water, a pit's bottom-row tiles pull the hero down by `down` a frame and toward
+   * the pit's middle by `side` (once each a frame, whatever the number of tiles), and while pulled
+   * down the fall is capped at `fallMax` instead of `sinkMax`. Absent: no pull.
+   */
+  pitPull?: { down: number; side: number; fallMax: number } | undefined;
 }
 
 /**
@@ -235,14 +242,6 @@ export interface MovementProfile {
    * `frames` frames; letting go of jump ends it. Once per jump. Absent: none.
    */
   flutter?: { frames: number; lift: number; rise: number } | undefined;
-  /**
-   * A float (Classic Peach, PE-6; rise path only): once per airborne spell, on the first frame
-   * falling (vy >= 0, the rise over) with Jump held since the take-off or pressed again while
-   * falling, she hangs level (vy 0, no gravity) for `frames` frames with full air control. Letting
-   * go of Jump ends it for that spell; landing (on ground, a lift or a ridden enemy) readies it
-   * again. Not under water, nor during a hit's lock. Absent: none.
-   */
-  float?: { frames: number } | undefined;
 }
 
 /**

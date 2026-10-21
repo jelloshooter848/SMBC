@@ -145,6 +145,8 @@ function variant(
     }),
     // The castle text's name: the skin's in BmdInfo.as (its third name).
     rescueName,
+    // A look of Mega Man's (the original's MegaMan class with a skin), where a rule names him.
+    lookOf: 'megaman',
   };
 }
 
@@ -185,7 +187,8 @@ export const DOROPIE_CLASSIC = variant(
   'DORO.',
   'mm-witch',
   'doropie',
-  { noSlide: true, guide: guide("Can't slide", { slide: null }) },
+  // G-054: white orbs (MegaManParticle MEGA_MAN_COLOR_PARTICLE_SKIN_NUM lacks skin 26).
+  { noSlide: true, orbs: 'white', guide: guide("Can't slide", { slide: null }) },
   'Kagemaru',
 );
 
@@ -201,6 +204,8 @@ export const ROKKO_CLASSIC = variant(
     charge: null,
     slideFrame: 'dash',
     shotPad: ROKKO_SHOT_PAD,
+    // G-054: white orbs (skin 11 is not a colour-particle skin).
+    orbs: 'white',
     guide: guide("Dashes instead of sliding, can dash jump, can't charge", {
       slide: 'Dash: fast and upright. Jump during the dash, down held or not, to keep its speed in the air.',
       hold: null,

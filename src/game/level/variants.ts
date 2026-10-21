@@ -21,7 +21,9 @@ import type { LevelData } from './schema';
  *   lists the heroes whose sections it laid (LevelData.heroVariants): Mega Man's airship (0.4.39,
  *   `[variant megaman]` in 4-2-airship and 4-2-larry) plays by his rules where World checks it.
  *
- * Game.levelScene applies it after the campaign variant (level/campaign.ts).
+ * Game.levelScene applies it after the campaign variant (level/campaign.ts). Under Classic rules
+ * an area with `.layers` (generated from the original's data, G-010) skips its `classic`
+ * sections: the World lays the same pieces from the layers, by level flags (level/layers.ts).
  */
 
 const cache = new WeakMap<LevelData, Map<string, LevelData>>();
@@ -31,10 +33,20 @@ const cache = new WeakMap<LevelData, Map<string, LevelData>>();
  * hero playing laid (campaign play: all of them; elsewhere only `classic` ones). The same object
  * when none apply, and the same variant object for the same heroes and play.
  */
-export function heroVariant(level: LevelData, heroes: readonly string[], campaign: boolean): LevelData {
-  const runs = (level.variants ?? []).filter((v) => heroes.includes(v.hero) && (campaign || v.classic));
+export function heroVariant(
+  level: LevelData,
+  heroes: readonly string[],
+  campaign: boolean,
+  classicRules = false,
+): LevelData {
+  // Under Classic rules a level with layers (level/layers.ts) gets the original's pieces from
+  // them, laid by the World for the heroes' level flags: its `classic` sections are left out.
+  const layered = classicRules && !campaign && !!level.layers?.length;
+  const runs = (level.variants ?? []).filter(
+    (v) => heroes.includes(v.hero) && (campaign || (v.classic && !layered)),
+  );
   if (!runs.length) return level;
-  const key = `${campaign}:${[...new Set(runs.map((v) => v.hero))].sort().join(',')}`;
+  const key = `${campaign}:${layered}:${[...new Set(runs.map((v) => v.hero))].sort().join(',')}`;
   let byKey = cache.get(level);
   const hit = byKey?.get(key);
   if (hit) return hit;

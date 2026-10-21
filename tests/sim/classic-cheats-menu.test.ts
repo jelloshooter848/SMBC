@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { px } from '@engine/math/units';
 import {
   CLASSIC_CHEAT_IDS,
   defaultSettings,
@@ -71,15 +72,18 @@ const inLevel = (h: H) => h.top() instanceof LevelScene;
 const level = (h: H) => h.top() as LevelScene;
 
 describe('settings.classicCheats', () => {
-  it('defaults to the original: all off, only Everyone Can Stomp and Classic Scroll open', () => {
+  // G-040 (0.5.0): Classic Samus and Classic Simon are open from the start too (Cheats.as 36, 38).
+  it('defaults to the original: all off, only Classic Samus, Classic Scroll, Classic Simon and Everyone Can Stomp open', () => {
     const c = defaultSettings().classicCheats;
     expect(Object.values(c.on).every((v) => v === false)).toBe(true);
     expect(CLASSIC_CHEAT_IDS.filter((id) => c.unlocked[id])).toEqual([
+      'classicSamus',
       'classicScreenScroll',
+      'classicSimon',
       'everyoneCanStomp',
     ]);
     expect(Object.values(c.stats).every((v) => v === 0)).toBe(true);
-    expect(c.beaten).toEqual({ smb: false, lost: false });
+    expect(c.beaten).toEqual({ smb: false, special: false, lost: false });
   });
 
   it('a file from before it gets the defaults; a partial one keeps its values (deep-merged)', () => {
@@ -110,7 +114,7 @@ describe('the Cheats page', () => {
     expect(h.said.at(-1)).toMatch(/^Cheats\./);
     const l = labels(page);
     expect(l).toHaveLength(CHEATS.length + 2);
-    expect(l.filter((x) => x === HIDDEN_CHEAT)).toHaveLength(CHEATS.length - 2);
+    expect(l.filter((x) => x === HIDDEN_CHEAT)).toHaveLength(CHEATS.length - 4); // G-040: two more open
     expect(l).toContain('Everyone Can Stomp');
     expect(l).toContain('Classic Scroll');
     expect(l.at(-2)).toBe('Enter code');
@@ -122,7 +126,7 @@ describe('the Cheats page', () => {
     h.idle(8);
     h.tap('down');
     expect(h.said.at(-1)).toBe(
-      `Locked cheat. Beat The Lost Levels (in place of the original's Special maps).`, // All Hammer Bros
+      `Locked cheat. Beat the Super Mario Bros. Special map set.`, // All Hammer Bros (G-020)
     );
     h.tap('down');
     expect(h.said.at(-1)).toBe(
@@ -184,13 +188,14 @@ describe('the Cheats page', () => {
     expect(labels(page)).not.toContain('Enter code');
   });
 
-  it('the Classic pause has no Cheats row; in developer mode it opens every cheat, live', () => {
+  // G-031 (0.5.0): the Classic pause has the original's Cheats row (Pause > Options > Cheats).
+  it('the Classic pause has a Cheats row; in developer mode it opens every cheat, live', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     h.until(() => inLevel(h), 600);
     h.idle(4);
     h.tap('start');
-    expect(labels(h.top())).not.toContain('Cheats');
+    expect(labels(h.top())).toContain('Cheats');
     const d = classic({ dev: true });
     d.game.classicGame(MARIO);
     d.until(() => inLevel(d), 600);
@@ -210,7 +215,9 @@ describe('the Cheats page', () => {
     d.tap('jump');
     expect(d.settings.classicCheats.on.waterMode).toBe(true);
     expect(world.cheats.waterMode).toBe(true);
-    expect(world.waterTop).toBeLessThan(0);
+    // The swimming line two tiles below the screen top, as in the original's water levels (QA,
+    // 0.5.0 batch 4: the hero can no longer swim off the top).
+    expect(world.waterTop).toBe(px(2 * 16 + 8));
     // Still locked outside developer mode: a toggle in dev mode never unlocks it.
     expect(d.settings.classicCheats.unlocked.waterMode).toBe(false);
   });
@@ -384,7 +391,10 @@ describe('unlock goals', () => {
       'infiniteLives',
     ]);
     expect(lockedText(c, 'alwaysBreakBricks')).toMatch(/Current count: 5\.$/);
+    // G-020: The Lost Levels no longer stand in; beating Special unlocks All Hammer Bros.
     c.beaten.lost = true;
+    expect(unlockEarned(c)).toEqual([]);
+    c.beaten.special = true;
     expect(unlockEarned(c)).toEqual(['allHammerBros']);
   });
 

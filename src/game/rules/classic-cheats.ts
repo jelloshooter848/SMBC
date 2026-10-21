@@ -72,6 +72,12 @@ const TO_HAMMER_BRO: ReadonlySet<string> = new Set([
   'bullet-bill',
   'piranha',
   'piranha-down',
+  // Super Mario Bros. Special's (G-021).
+  'icicle',
+  'crab',
+  'fly',
+  'barrel',
+  'fire-enemy',
 ]);
 
 /**
@@ -94,7 +100,7 @@ export function allHammerBros(spawns: EntitySpawn[]): number {
  * Extra Checkpoints (Level.shouldStartAtCheckPoint: `!levData.lockedCheckpoint ||
  * Cheats.extraCheckpoints`): the halfway points (column, row) of the levels whose checkpoint the
  * original locks (LOCKED_CP="True"), by our area id, on normal difficulty, read from
- * levelDataSmb.xml and levelDataLostLevels.xml. Levels with no halfway area (SMB 8-1 to 8-3 and
+ * levelDataSmb.xml, levelDataLostLevels.xml and levelDataSpecial.xml. Levels with no halfway area (SMB 8-1 to 8-3 and
  * their Lost Levels twins: HW_AREA="") never start at one, cheat or not, so they are not here.
  */
 export const LOCKED_CHECKPOINTS: Readonly<Record<string, { x: number; y: number }>> = {
@@ -132,6 +138,16 @@ export const LOCKED_CHECKPOINTS: Readonly<Record<string, { x: number; y: number 
   'll-13-2': { x: 99, y: 12 },
   'll-13-3': { x: 119, y: 12 },
   'll-13-4-end': { x: 7, y: 12 },
+  // Super Mario Bros. Special (G-020; levelDataSpecial.xml).
+  'sp-1-4': { x: 100, y: 11 },
+  'sp-2-4': { x: 116, y: 10 },
+  'sp-3-4': { x: 74, y: 12 },
+  'sp-4-4': { x: 94, y: 12 },
+  'sp-5-4': { x: 123, y: 12 },
+  'sp-6-4': { x: 86, y: 12 },
+  'sp-7-4-end3': { x: 3, y: 6 },
+  'sp-8-1': { x: 110, y: 5 },
+  'sp-8-4-end2': { x: 2, y: 10 },
 };
 
 /**

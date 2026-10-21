@@ -446,6 +446,8 @@ export class LoadCodeScene implements Scene {
   }
 
   touchLabels(): TouchLabels {
+    // None during each step's short guard (0.5.0, the phone first-tap bug: buttons show from the frame a press counts).
+    if (this.t < CARD_GUARD_FRAMES / 2) return NO_TOUCH_BUTTONS;
     if (this.mode === 'message') return { ...NO_TOUCH_BUTTONS, jump: 'OK' };
     return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'BACK' };
   }

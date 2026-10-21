@@ -62,10 +62,16 @@ const NAMES: Record<string, string> = {
   buzzy: 'Buzzy Beetle',
   spiny: 'Spiny',
   'spike-top': 'Spike Top',
+  // Expansion heroes
+  on: 'On',
   // Game Mode
   single: 'Single hero',
   'single-random': 'Single random',
   survival: 'Survival',
+  // Music set
+  character: 'Character',
+  map: 'Map',
+  random: 'Random',
   // Weapons (the original's names)
   'super-arm': 'Super Arm',
   'metal-blade': 'Metal Blade',
@@ -158,12 +164,33 @@ export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
   row('enemySpeed', 'Enemy speed', 'Walking enemies move faster when fast'),
 ] as AnyRow[];
 
+/**
+ * The Expansion heroes row: our own (the original has no such heroes). Off, the Classic select is
+ * the original's; on, it also offers the heroes SMBC 3.1.21 never had. The Dev menu's own toggles
+ * still leave any of them out.
+ */
+export const EXPANSION_ROW = row(
+  'expansion',
+  'Expansion heroes',
+  'Off: the original SMBC heroes only. On: also the heroes the original never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi)',
+) as AnyRow;
+
 /** The Game Mode row (NewGameOptionsMenu's GAME_MODE under Classic mode). */
 export const GAME_MODE_ROW = row(
   'gameMode',
   'Game mode',
   'All heroes: choose before every level and life. Survival: each hero has one life; spend lives to revive heroes at the start and after each castle. Single hero: choose once. Single random: the game picks your hero every level and life',
   (v) => GAME_MODE_NAMES[v] ?? v,
+) as AnyRow;
+
+/**
+ * The Music set row (SoundOptions.as MUSIC_SET; G-066): whose music plays. Classic mode only, under
+ * either rules.
+ */
+export const MUSIC_SET_ROW = row(
+  'musicSet',
+  'Music set',
+  "Character: each hero's own music. Map: the Super Mario Bros. music for everyone. Random: either one, picked for each area",
 ) as AnyRow;
 
 function weaponRow<K extends keyof ClassicWeapons>(key: K, label: string, hint: string): OptionRow<string> {

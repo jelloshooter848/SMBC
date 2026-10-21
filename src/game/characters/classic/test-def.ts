@@ -50,6 +50,8 @@ export function classicStandIn(base: CharacterDef, opts: ClassicStandInOptions =
     damage: { kind: 'powerup', states: CLASSIC_POWER_STATES },
     movement: swim ? { ...base.movement, swim } : base.movement,
     stomps: plumber,
+    // The original's level flags (G-010): the plumbers swim well; everyone else does not.
+    levelFlags: plumber ? { goodSwimmer: true } : {},
     blockPowerUp: classicBlockPowerUp,
     powerIcon: true,
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, kit.response.look),

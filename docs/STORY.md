@@ -24,7 +24,7 @@ here.
   a card the full name, `MEGA MAN`, `SOPHIA III`). Every line is counted with the longest name in its place. In
   co-op it is player 1's hero. A speaker `<HERO>:` is the player's own hero talking.
 - Lines never name a button, only abilities (`OK`, `JUMP`, `TALK`), as everywhere else in the game.
-- **No text ever moves on by itself**: every page waits for a press (NEW: today's story pages turn by themselves
+- **No text ever moves on by itself** (the one exception, the Classic WORLD card, is in `docs/ACCESSIBILITY.md`): every page waits for a press (NEW: today's story pages turn by themselves
   after a minute, and the 1-0 tease's after a few seconds; both timeouts go). `OK` turns the page, `BACK` closes
   the rest of that scene. Every scene can be skipped that way; whether it can be **replayed** is said with each one.
 - Each scene says **Trigger** (when it plays), **Staging** (what is on screen) and **Code** (**NEW**: needs new

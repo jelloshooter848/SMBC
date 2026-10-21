@@ -1150,9 +1150,12 @@ export class WorldMapScene implements Scene {
    */
   touchLabels(): TouchLabels {
     if (this.mode === 'reveal' || this.mode === 'cutscene') return { ...NO_TOUCH_BUTTONS, jump: 'SKIP' };
-    // Toad's box: OK the next page, SKIP the rest of that scene.
-    if (this.mode === 'story' || this.mode === 'gate')
-      return { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'SKIP' };
+    // Toad's box: OK the next page, SKIP the rest of that scene. None while a tap would do nothing
+    // (Toad walking, a page's guard, the gate's cutaway opening), 0.5.0.
+    if (this.mode === 'story' || this.mode === 'gate') {
+      const ready = this.mode === 'story' ? this.toad?.ready : this.gate?.ready;
+      return ready ? { ...NO_TOUCH_BUTTONS, jump: 'OK', attack: 'SKIP' } : NO_TOUCH_BUTTONS;
+    }
     if (this.mode !== 'idle') return NO_TOUCH_BUTTONS;
     const here = this.nodeById(this.node);
     const open = !!here?.level && isOpen(this.progress, this.page, here.id, this.unlockAll);

@@ -51,15 +51,22 @@ const BASS_BASE: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'mu
   portrait: { sheet: 'bass', palette: 'bass', frame: 'idle' },
 };
 
-/** He wears the Water Shield suit while he holds the Flower (BA-33); his own suit otherwise. */
-const bassPalette = (id: MMWeaponId): string => (id === 'water-shield' ? 'bass-water' : 'bass');
-
-export const BASS_CLASSIC: CharacterDef = {
-  ...classicMegaMan({
-    base: BASS_BASE,
-    profile: BASS_CLASSIC_PROFILE,
-    sheet: 'bass',
-    palette: 'bass',
+/**
+ * Bass's Classic def on `base`, `profile` and look `palette` (its sheet of the same name): Bass
+ * himself, and his Quick Man look (G-051, bass/classic-quickman.ts). He wears the Water Shield
+ * suit (`<palette>-water`) while he holds the Flower (BA-33); his own suit otherwise.
+ */
+export function classicBass(
+  base: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'music'>,
+  profile: MovementProfile,
+  palette: string,
+  orbs: 'colour' | 'white' = 'white',
+): CharacterDef {
+  const def = classicMegaMan({
+    base,
+    profile,
+    sheet: palette,
+    palette,
     buster: { spec: BASS_BUSTER, cap: BASS_CAP_BIG },
     busterCapSmall: BASS_CAP_SMALL,
     charge: null,
@@ -74,10 +81,19 @@ export const BASS_CLASSIC: CharacterDef = {
       poses: AIM_POSE,
     },
     swapOnPress: true,
-    weaponPalette: bassPalette,
+    weaponPalette: (id: MMWeaponId) => (id === 'water-shield' ? `${palette}-water` : palette),
     weaponLabel: (id) => (id === 'water-shield' ? 'WATER' : mmWeapon(id).label),
     slideFrame: 'dash',
-  }),
+    // G-054: white orbs, colour only for Dr. Wily and Quick Man (BASS_COLOR_PARTICLE_SKIN_NUM 3, 4, 7, 8).
+    orbs,
+  });
+  // The original's level flags (G-010), after the Mega Man factory's (which has his `horz`):
+  // Bass.as:102-103 gives him and his looks no helper pieces (his Quick Man look has them).
+  return { ...def, levelFlags: {} };
+}
+
+export const BASS_CLASSIC: CharacterDef = {
+  ...classicBass(BASS_BASE, BASS_CLASSIC_PROFILE, 'bass'),
   // The castle text's name (BA-M13): the original's default skin (BmdInfo.as).
   rescueName: 'Dr. Wily',
 };

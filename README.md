@@ -11,10 +11,19 @@ _Super Mario Bros. Crossover_ by Exploding Rabbit: play the Super Mario Bros. le
 NES-era games, each with their own mechanics. Flash is gone; this runs anywhere a modern
 browser does, including phones, and deploys as static files.
 
+**Classic mode is the game** (title → **CLASSIC**): a remake of _Super Mario Bros. Crossover_ 3.1.21
+with our own art and music. **Chapter 1**, the story campaign, is **coming soon** (version 1.0): the
+title's Chapter 1 row says so for now. Every save file, save code and resume link made by earlier
+versions is kept, untouched, for when it opens. The plan is in [docs/ROADMAP.md](docs/ROADMAP.md):
+0.5.0 the Classic remake, 0.6 to 0.9 new heroes (the Expansion heroes option), 1.0 Chapter 1.
+
 **This is an unaffiliated fan project.** It contains no Nintendo, Capcom, Konami or other
-third-party art, music or code. All sprites and tiles are original pixel art stored as text in
-`src/content/sprites`, and all music is original chiptune synthesized at runtime from
-`src/content/music`. Character names are used only to describe gameplay styles.
+third-party art, music or code. The sprites and tiles are original pixel art stored as text in
+`src/content/sprites`, with one named exception, not a precedent (docs/ART_EXCEPTIONS.md):
+Classic mode's full power-up shows the original game's Exploding Rabbit logo. Exploding Rabbit
+logo © Jay Pavlina / Exploding Rabbit, used as a tribute in Classic mode; will be replaced on
+request. All music is original chiptune synthesized at runtime from `src/content/music`.
+Character names are used only to describe gameplay styles.
 
 ## Play
 
@@ -40,9 +49,27 @@ without lifting, and the buttons say what they do for the hero and scene. Heroes
 get a small swap button (TOOLS, WEAPON, NINPO) just above and left of the button that uses the
 tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 
+### Classic mode
+
+**CLASSIC** on the title opens the original game's menu: **Super Mario Bros.**, **Super Mario
+Bros. Special** (SMB Special: 32 more levels, with its own enemies and items) and **The Lost
+Levels**, the original's heroes on its select screen (with their alternative looks), its
+**Options** (Classic rules or Current, lives, attack, damage, the weapons, the **Cheats** the
+original unlocks, and **Survival**, where every hero has one life). The heroes play by the
+original's rules: their physics, power states, weapons and swimming, enemy hit points and
+armour. How to play (Options, or the pause menu) explains each hero as Classic plays it.
+
+### Chapter 1 (coming soon)
+
+The story campaign below (the world map, save files, the hidden heroes and their mini games) is
+Chapter 1. It opens for everyone in 1.0; until then the title's **Chapter 1** row and resume links
+show **CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser,
+**Options → Save files** still copies their codes, and a resume link stays in the address so it
+works later. In developer mode (below) Chapter 1 opens as before, for building and testing it.
+
 ### World map and save files
 
-**Start game** opens the file select: three save files, each showing its hero (two for a
+**Chapter 1** (with developer mode on, until 1.0) opens the file select: three save files, each showing its hero (two for a
 two-player file), the world reached, levels cleared (out of 32), lives and score (a star once
 the game is beaten); pick a file to continue it, start a new one or erase one. A new file is one
 player and opens on World 1's map with Mario (3 lives) standing on **1-0**, his tutorial stage:
@@ -79,7 +106,8 @@ game), so there is no account and no server: **the code is the save**.
 - **After each castle** (the first clear of each X-4) a card asks **BACK UP YOUR GAME?** with SHARE
   SAVE, COPY CODE and NOT NOW. **Options → Save files → Backup reminders** turns it off.
 - **Opening a resume link** asks, after the title, **LOAD THIS SAVE?** and which file to put it
-  in, showing what each file holds. Nothing is replaced until you answer YES; cancelling changes
+  in, showing what each file holds (with developer mode on until Chapter 1 opens; otherwise it
+  says **CHAPTER 1 COMING SOON!** and leaves the link as it is). Nothing is replaced until you answer YES; cancelling changes
   nothing. On iPhone, links open in Safari, not in a Home Screen app (its storage is separate):
   there, use PASTE CODE instead.
 - A typo is caught ("THAT CODE DOESN'T LOOK RIGHT"). Case, dashes and spaces don't matter, and
@@ -202,7 +230,7 @@ dev` and the tests never register it.
 ### Play offline from a download
 
 Each [release](https://github.com/jelloshooter848/SMBC/releases) has a
-**`smbc-vX.Y.Z-offline.zip`**: unzip it and double-click **`index.html`**. The whole game is in
+**`smbc-remix-vX.Y.Z-offline.zip`** (`smbc-vX.Y.Z-offline.zip` before 0.5.0): unzip it and double-click **`index.html`**. The whole game is in
 that one file, so it plays offline on Windows, macOS and Linux with nothing to install (tested
 in Chrome; it should work in Edge, Firefox and Safari). The downloaded copy keeps **its own
 saves, separate from the website's** (it says so on its first launch); to move a save either
@@ -213,7 +241,10 @@ level editor's SHARE) open the website, never a file on your disk. To build it y
 ### Developer mode
 
 Enter up, up, down, down, left, right, left, right, attack, jump on the title screen (or open the game
-with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu:
+with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu. It also opens
+**Chapter 1** (the campaign) and resume links until 1.0. That is on local and development builds
+(`pnpm dev`); the released game keeps dev mode for its developer: the code asks for a passphrase
+there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). In dev mode:
 
 - **Level select**: any built-in or custom level, any character, starting power, a full kit
   (all tools, ammo and magic) and 99 lives.
@@ -289,6 +320,13 @@ sound) by `tools/levelgen/convert-smbc.mjs`; download its `assets/documents/leve
 into `tools/levelgen/source/` (gitignored) and run
 `node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4`
 (one world per output folder).
+Classic mode also plays the original's versions of each level for the other map difficulties and
+for heroes with level flags; `node tools/levelgen/regen.mjs --layers tools/levelgen/source` writes
+them as `src/content/level-layers/**/*.layers` without touching any map.
+Super Mario Bros. Special comes from `levelDataSpecial.xml` with `--prefix=sp-` into
+`src/content/special-levels/worldN/` (apart from the campaign's maps; layers in
+`src/content/level-layers/special/`): `node tools/levelgen/regen.mjs --only=special
+tools/levelgen/source`.
 The Lost Levels come from `levelDataLostLevels.xml` with `--prefix=ll-` into
 `src/content/levels/lost/worldN/` (worlds A–D are 10–13). They bring their own looks: orange
 and red giant-mushroom land (`mushroom`, `mushroom-red`), sky levels on cloud ledges (`clouds`,

@@ -259,7 +259,8 @@ function startsAction(p: Player, input: InputFrame): boolean {
 
 function fireShot(p: Player, world: World, dir: ShotDir, arrow: boolean): void {
   world.spawn(LinkShot.fire(p, dir, arrow));
-  world.audio.sfx(arrow ? 'kick' : 'sword-beam');
+  // His own arrow sound (G-074; SFX_LINK_SHOOT_ARROW).
+  world.audio.sfx(arrow ? 'link-arrow' : 'sword-beam');
 }
 
 /** The Red Ring beam, if it is free (LK-C28). */
@@ -296,7 +297,8 @@ function placeBomb(p: Player, world: World): boolean {
   spendAmmo(p, 'bombs', 1);
   const at = bombSpot(p, world);
   world.spawn(new LinkBomb(at.cx, at.bottom, p));
-  world.audio.sfx('kick');
+  // Setting the bomb down (G-074; SFX_LINK_SET_BOMB).
+  world.audio.sfx('link-bomb-set');
   startAction(p, THROW);
   return true;
 }
@@ -534,6 +536,8 @@ export function linkDeath(p: Player, frame: number, reduce: boolean): { frame: s
 }
 
 export const LINK_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Link.as:348-349. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, vert: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'Princess Zelda',
   id: LINK.id,

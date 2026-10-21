@@ -26,6 +26,8 @@ export const LUIGI_CONSTANTS: PlumberConstants = {
 export const LUIGI_CLASSIC_PROFILE = plumberClassicProfile(LUIGI_CONSTANTS);
 
 export const LUIGI_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): MarioBase.as:207. level/layers.ts lays its pieces by them.
+  levelFlags: { goodSwimmer: true },
   ...plumberClassic({
     base: LUIGI,
     constants: LUIGI_CONSTANTS,

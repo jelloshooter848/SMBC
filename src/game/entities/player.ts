@@ -149,6 +149,13 @@ export class Player {
   /** Set by the world each frame: the body's centre is under the water line (swim physics). */
   inWater = false;
   /**
+   * Set by the world each frame: the pull of the pits under the hero in an area that starts under
+   * water, in the water or above its surface line (Classic SMBC's PitVacuum, SwimProfile.pitPull,
+   * G-013): its sideways direction (0: straight down), or null with no pit under the hero (or no
+   * pull for this hero).
+   */
+  pitPull: -1 | 0 | 1 | null = null;
+  /**
    * Set by the world each frame: a water level with the body above its surface line. Only read
    * for SwimProfile.surface (Classic SMBC's gravity there).
    */
@@ -240,10 +247,6 @@ export class Player {
    * ground pound drop (YO-9), set and cleared by his behaviour. Always 0 for every other hero.
    */
   fallCap = 0;
-  /** Frames left of a float (MovementProfile.float, Classic Peach PE-6); 0 when not floating. */
-  floatT = 0;
-  /** The float was used in this airborne spell (readied again on landing). */
-  floatUsed = false;
   /** Frames since spawn, for sprite timing. */
   frame = 0;
   /** Extra per-character scratch state (charge timers, etc.). */
@@ -340,10 +343,7 @@ export class Player {
     if (this.hurtLock) this.tickHurtLock();
     // A hit, a vine or stairs take him off a wall (RY-C13).
     if (this.wall && (this.hurtLock || this.stun > 0 || this.vine || this.stairs)) this.wall = null;
-    if (this.vine) {
-      this.floatT = 0;
-      return this.climb(input, map, audio);
-    }
+    if (this.vine) return this.climb(input, map, audio);
     if (this.stairs) return this.stairWalk(input);
     if (this.def.behaviour.drive?.(this, input, map, audio, onHeadBump)) return;
     if (this.wall) return this.wallUpdate(input, map, audio, onHeadBump);
@@ -380,7 +380,8 @@ export class Player {
     this.skidding = false;
 
     // Crouching: only when tall enough and on the ground; can't walk while crouched.
-    const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+    const canCrouch =
+      this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching || this.def.smallCrouch === true);
     const wantCrouch =
       input.held('down') &&
       canCrouch &&
@@ -551,6 +552,9 @@ export class Player {
       else if (dir !== 0) this.facing = dir;
     }
 
+    // PitVacuum (G-013) above a water area's surface line too: the pull does not ask for water.
+    const pull = this.pitPull !== null ? p.swim?.pitPull : undefined;
+    if (pull) b.vx += (this.pitPull ?? 0) * pull.side;
     const wasOnGround = b.onGround;
     const gapSpeed =
       wasOnGround &&
@@ -587,8 +591,8 @@ export class Player {
       if (p.flutter && this.flutterStep(input, p.flutter)) {
         // Classic Yoshi's flutter (YO-8): no gravity this frame.
       } else if (surface) {
-        // Classic SMBC above a water level's surface line (SW-C10).
-        b.vy += surface.gravity;
+        // Classic SMBC above a water level's surface line (SW-C10), plus a pit's pull (G-013).
+        b.vy += surface.gravity + (pull?.down ?? 0);
         if (b.vy > surface.fallMax) b.vy = surface.fallMax;
       } else {
         if (this.launched && this.launchGravity) b.vy += this.launchGravity;
@@ -650,7 +654,9 @@ export class Player {
     // horizontal step once (`justCrouched`); under a low ceiling he stays down.
     let skipStep = false;
     if (b.onGround && !this.crouchJump) {
-      const canCrouch = this.def.crouches && (this.def.hitbox(this).h > 16 || this.crouching);
+      const canCrouch =
+        this.def.crouches &&
+        (this.def.hitbox(this).h > 16 || this.crouching || this.def.smallCrouch === true);
       const want = input.held('down') && canCrouch;
       const cramped = this.crouching && !want && !this.roomToStand(map);
       if (want !== this.crouching && !cramped) {
@@ -667,7 +673,6 @@ export class Player {
       this.cutting = false;
       this.riseY0 = null;
       this.crouchJump = false;
-      this.floatT = 0;
       if (b.onGround) this.sinceGround = 0;
       if (p.inertia && !skipStep) this.inertiaStep(input, this.crouching);
       else if (!p.inertia) {
@@ -676,14 +681,14 @@ export class Player {
       }
       return this.swim(input, map, audio, dir, onHeadBump);
     }
+    // PitVacuum (G-013) above a water area's surface line: the pull does not ask for water.
+    const pull = this.pitPull !== null ? p.swim?.pitPull : undefined;
 
     // Take-off (ML-C8): a press on the ground (no buffer when `jumpBuffer` is false).
     const canJump = b.onGround && !locked && rooted !== true && (this.def.behaviour.canJump?.(this) ?? true);
     if (b.onGround) {
       this.sinceGround = 0;
       this.airJumpsLeft = 0;
-      this.floatT = 0;
-      this.floatUsed = false;
     } else this.sinceGround++;
     if (canJump && this.jumpPressed(input)) {
       input.consumeJumpBuffer();
@@ -736,23 +741,6 @@ export class Player {
           if (p.softCut !== undefined) b.vy = damp(b.vy, p.softCut);
         } else this.cutting = false;
       }
-      // The float (PE-6): Jump let go (or a hit) ends it; it starts falling with Jump held since
-      // the take-off, or pressed again while falling.
-      if (p.float) {
-        if (this.floatT > 0) {
-          if (locked || !input.held('jump')) this.floatT = 0;
-        } else if (
-          !this.floatUsed &&
-          !locked &&
-          !this.rising &&
-          b.vy >= 0 &&
-          input.held('jump') &&
-          ((y0 !== null && !this.jumpReleased) || input.pressed('jump'))
-        ) {
-          this.floatT = p.float.frames;
-          this.floatUsed = true;
-        }
-      }
     }
 
     // 4. The horizontal step (ML-C4, ML-C13).
@@ -773,23 +761,20 @@ export class Player {
     // 5, 6. Gravity unless rising, then the fall cap (a clamp). Above a water level's surface the
     // swim profile's own values (SW-C10); a spring's rise its own gravity (ML-C23).
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
-    if (this.floatT > 0 && !b.onGround) {
-      // Floating: level, no gravity (PE-6).
-      b.vy = 0;
-      this.floatT--;
-    } else if (!b.onGround && !this.rising) {
+    if (!b.onGround && !this.rising) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
       const g = surface
         ? surface.gravity
         : this.launched && this.launchGravity
           ? this.launchGravity
           : r.gravity;
-      b.vy += g;
+      b.vy += g + (pull?.down ?? 0);
       const cap = surface ? surface.fallMax : p.maxFall;
       if (b.vy > cap) b.vy = cap;
     }
 
     // 7. The move.
+    if (pull) b.vx += (this.pitPull ?? 0) * pull.side;
     const wasOnGround = b.onGround;
     const gapSpeed = wasOnGround && p.crossGapMinVx !== undefined && Math.abs(b.vx) > p.crossGapMinVx;
     moveX(b, map, velToSub(b.vx));
@@ -1186,6 +1171,9 @@ export class Player {
     const sw = p.swim ?? DEFAULT_SWIM;
     const seabed = sw.mode === 'seabed';
     this.airCap = p.maxWalk;
+    // PitVacuum.pull (G-013): the pit's sideways pull, before the speed caps.
+    const pull = this.pitPull !== null ? sw.pitPull : undefined;
+    if (pull) b.vx += (this.pitPull ?? 0) * pull.side;
     // Character.as water block: on the floor a slow walker is capped at vxMaxGroundWater.
     const cap = b.onGround && sw.floorWalk !== undefined ? sw.floorWalk : p.maxWalk;
     if (b.vx > cap) b.vx = cap;
@@ -1229,8 +1217,11 @@ export class Player {
       this.combo = 0;
       b.vy = 0;
     } else {
-      b.vy += sw.gravity;
-      if (b.vy > sw.sinkMax) b.vy = sw.sinkMax;
+      // Pulled down, the sink cap gives way to the water level's fall cap (Character.as: the
+      // vyMaxPsvWater cap is skipped while pulledDown; MarioBase's water vyMaxPsv still holds).
+      b.vy += sw.gravity + (pull?.down ?? 0);
+      const sink = pull ? pull.fallMax : sw.sinkMax;
+      if (b.vy > sink) b.vy = sink;
     }
     this.tier = pickJumpTier(p, b.vx);
     this.updateAnim(dir);

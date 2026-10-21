@@ -224,7 +224,8 @@ export class HolyWaterBottle extends Projectile {
     world.shotBlockAt(flame, x, y);
     // The flame does not strike that block again while it touches it.
     flame.touchingTiles().add(`${tileAt(x)},${tileAt(y)}`);
-    world.audio.sfx('fireball');
+    // The flask breaking into flame (G-074; SFX_SIMON_HOLY_WATER_EXPLODE).
+    world.audio.sfx('cv-holy-water');
     this.destroy();
   }
 }

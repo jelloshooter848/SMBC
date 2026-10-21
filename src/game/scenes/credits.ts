@@ -16,6 +16,19 @@ export const CREDITS_NAME: readonly string[] = ['SUPER MARIO BROS. CROSSOVER', '
 /** Its short form, for the closing lines. */
 export const CREDITS_SHORT_NAME: readonly string[] = ['SMB CROSSOVER', 'REMIX'];
 
+/**
+ * The credit for the one named original-art exception (owner decision, 0.5.0; docs/ART_EXCEPTIONS.md):
+ * "Exploding Rabbit logo (c) Jay Pavlina / Exploding Rabbit, used as a tribute in Classic mode;
+ * will be replaced on request."
+ */
+export const CREDITS_RABBIT_LOGO: readonly string[] = [
+  'EXPLODING RABBIT LOGO',
+  '(C) JAY PAVLINA /',
+  'EXPLODING RABBIT, USED AS A',
+  'TRIBUTE IN CLASSIC MODE;',
+  'WILL BE REPLACED ON REQUEST.',
+];
+
 /** Our credits (the original's GameTextMessages.CREDITS_* credit its own team; these credit ours). */
 export const CREDITS: readonly string[] = [
   ...CREDITS_NAME,
@@ -37,7 +50,9 @@ export const CREDITS: readonly string[] = [
   'SMBC REMIX CONTRIBUTORS',
   '',
   'EVERY SPRITE AND TILE IS',
-  'ORIGINAL PIXEL ART.',
+  'ORIGINAL PIXEL ART, BUT ONE:',
+  // The one named art exception (docs/ART_EXCEPTIONS.md; sprites/rabbit-logo.ts).
+  ...CREDITS_RABBIT_LOGO,
   'EVERY SONG IS ORIGINAL',
   'CHIPTUNE.',
   '',
@@ -52,6 +67,26 @@ export const CREDITS: readonly string[] = [
   '',
   '',
 ];
+/**
+ * The credits as one announcement: "Credits.", then each block of lines (blank lines part them)
+ * joined into a sentence, the closing name last. Every line is in it, once.
+ */
+export function creditsSpeech(lines: readonly string[]): string {
+  const blocks: string[][] = [[]];
+  for (const l of [...lines, '', ...CREDITS_TAIL]) {
+    if (l.trim() === '') {
+      if ((blocks.at(-1) as string[]).length) blocks.push([]);
+    } else (blocks.at(-1) as string[]).push(l.trim());
+  }
+  const sentences = blocks
+    .filter((b) => b.length)
+    .map((b) => {
+      const s = b.join(' ');
+      return /[.!?:;]$/.test(s) ? s : `${s}.`;
+    });
+  return ['Credits.', ...sentences].join(' ');
+}
+
 /**
  * The credits as they roll: the campaign's SMB 8-4 false ending (`story`, docs/STORY.md 2.12)
  * adds "END OF CHAPTER 1" and "...BUT THE STORY ISN'T OVER." (STORY_NOT_OVER) right after
@@ -103,9 +138,15 @@ export class CreditsScene implements Scene {
     if (world) world.backdrop = (r) => this.draw(r);
   }
 
+  /**
+   * The whole roll is read out once, as it starts (one announcement: the live region keeps only
+   * its latest text, so lines said as they scroll would cut each other off, and the roll must not
+   * wait for the reader). It replaces the bare "Credits." the ending says as it opens the scene.
+   */
   enter(): void {
     this.game.ctx.audio.stopMusic();
     this.game.ctx.audio.playMusic('credits');
+    this.game.deps.announcer?.say(creditsSpeech(this.lines));
   }
 
   /** Top y of the closing lines: right after the credits until it reaches mid-screen. */

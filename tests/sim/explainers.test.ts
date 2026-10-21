@@ -185,6 +185,7 @@ describe('pickup explainers', () => {
     h.until(() => s.explainers.frozen, 200);
     // The training's box stays out of the way while it holds.
     expect(s.director.box()).toBeNull();
+    h.until(() => h.game.tips.unlocked, 60); // (0.5.0: the buttons show once the guard is over (a tap then works))
     expect(s.touchLabels()).toMatchObject({ jump: 'OK', start: 'MENU' });
     ok(h);
     expect(s.explainers.frozen).toBe(false);

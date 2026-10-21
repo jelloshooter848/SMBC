@@ -1,12 +1,16 @@
 // Converts level data from the original Super Mario Bros. Crossover source
 // (assets/documents/levelDataSmb.xml, MIT licensed, not committed here) into this project's
-// .map format. Only the "normal" difficulty layer is converted.
+// .map format. A map holds the "normal" difficulty as the original builds it for Mario (no level
+// flags); `--layers` writes everything else (below).
 //
 //   node tools/levelgen/convert-smbc.mjs tools/levelgen/source/levelDataSmb.xml src/content/levels/world2 2-1 2-2 2-3 2-4
 //   node tools/levelgen/convert-smbc.mjs --prefix=ll- tools/levelgen/source/levelDataLostLevels.xml src/content/levels/lost/world1 1-1 1-2 1-3 1-4
+//   node tools/levelgen/convert-smbc.mjs --prefix=sp- tools/levelgen/source/levelDataSpecial.xml src/content/levels/special/world1 1-1 1-2 1-3 1-4
 //
 // `--prefix` namespaces every generated id (areas, parents, pipe/vine/pit/warp targets, exits) so
-// another game's levels (The Lost Levels: `ll-1-1` ...) can live next to SMB1's.
+// another game's levels (The Lost Levels: `ll-1-1` ..., Super Mario Bros. Special: `sp-1-1` ...)
+// can live next to SMB1's. The prefix also names the map set: `ll-` builds with The Lost Levels'
+// rules and themes, `sp-` with Special's (G-020).
 //
 // The XML is a <LEVELDATA> of <LEVEL ID TIME MAIN_AREA> holding <AREA ID TYPE><MAP> cells:
 // a flat comma list of 15 rows × W columns. A cell is `0` or tokens joined by `()`, each
@@ -14,20 +18,45 @@
 // named difficulties. Crossover-only enemies and helpers are skipped and listed. Last, the few
 // one-tile slips in the original data that the owner set to match the NES are applied
 // (nes-fixes.mjs, SMB1 maps only).
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+//
+// `--layers` writes, instead of the maps, each area's `<id>.layers` file: what the original builds
+// for the other map difficulties (Easy, Hard) and for heroes with level flags (charHorz, charVert,
+// BadSwimmer, WideCharacter, poorBowserFighter), as layers over the map (see areaLayers). It never
+// touches a .map file, so the maps (and every hand edit in them) stay byte for byte as they are.
+//
+//   node tools/levelgen/convert-smbc.mjs --layers --maps=src/content/levels/world1 tools/levelgen/source/levelDataSmb.xml src/content/level-layers/world1 1-1 1-2 1-3 1-4
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { MapBuilder } from './lib.mjs';
 import { applyNesFixes } from './nes-fixes.mjs';
 
 const args = process.argv.slice(2);
 const PREFIX = (args.find((a) => a.startsWith('--prefix='))?.slice(9) ?? '').trim();
+const LAYERS = args.includes('--layers');
+/** With --layers: where the maps are (to check the layers against them); default the out dir. */
+const MAPS_ARG = args.find((a) => a.startsWith('--maps='))?.slice(7);
 const [xmlPath, outDir, ...ids] = args.filter((a) => !a.startsWith('--'));
+const MAPS_DIR = MAPS_ARG ?? outDir;
 if (!xmlPath || !outDir || !ids.length) {
-  console.error('usage: convert-smbc.mjs [--prefix=ll-] <levelData.xml> <outDir> <levelId>...');
+  console.error('usage: convert-smbc.mjs [--prefix=ll-] [--layers] <levelData.xml> <outDir> <levelId>...');
   process.exit(2);
 }
-/** Lost Levels (prefixed) runs: 8-4 ends the game, World 9 and each of A-D (10-13) stand alone. */
-const LOST = PREFIX !== '';
+if (LAYERS) {
+  // Every profile is built: say each warning once.
+  const said = new Set();
+  const warn = console.warn;
+  console.warn = (...a) => {
+    const s = a.join(' ');
+    if (!said.has(s)) warn((said.add(s), s));
+  };
+}
+/** Lost Levels (`ll-`) runs: 8-4 ends the game, World 9 and each of A-D (10-13) stand alone. */
+const LOST = PREFIX === 'll-';
+/**
+ * Super Mario Bros. Special (`sp-`, G-020; levelDataSpecial.xml, MapPack.Special): eight worlds,
+ * 8-4 ends the game as in SMB1, with its own theme table (SPECIAL_THEMES).
+ */
+const SPECIAL = PREFIX === 'sp-';
 const pid = (id) => (id === 'end' ? id : `${PREFIX}${id}`);
 
 /* ---------- parsing ---------- */
@@ -50,7 +79,7 @@ function parseLevels(text) {
   return out;
 }
 
-/** Tokens of one cell that are visible on normal difficulty. */
+/** Every token of one cell (each difficulty's and each hero's: `visible` picks a profile's). */
 function parseCell(cell) {
   cell = cell.trim().replace(/\]$/, '');
   if (cell === '' || cell === '0') return [];
@@ -63,23 +92,91 @@ function parseCell(cell) {
       if (eq < 0) params[p] = true;
       else params[p.slice(0, eq)] = p.slice(eq + 1);
     }
-    if (String(params.HideOnDifficulties ?? '').includes('normal')) continue;
     toks.push({ name, params });
   }
   return toks;
 }
 
-/**
- * Pieces the original shows only to heroes who need help (it builds each level per character in
- * `Level.as`): `charHorz` / `charVert` = Show for heroes with limited horizontal or vertical
- * reach, `BadSwimmer` = Show for poor swimmers, `WideCharacter` = Show for wide heroes, and
- * anything marked `poorBowserFighter`. A `Hide` value means "present for everyone else", so a
- * classic hero keeps those. Our maps are built for the classic hero.
+/*
+ * Profiles: who the original builds a level for (Level.as buildLevel, 757-787). A profile is a map
+ * difficulty (`easy`, `normal`, `hard`: GameSettings.mapDifficulty) and the playing hero's level
+ * flags (Character.as): `horz` / `vert` (usesHorzObjs / usesVertObjs: limited reach),
+ * `badswimmer` (not isGoodSwimmer), `wide` (isWideCharacter) and `poorbowser`
+ * (poorBowserFighter). The base profile, Normal with no flags, is Mario's: a .map file holds it,
+ * and only it; `--layers` writes the rest as layers over it.
  */
-function helperOnly(params) {
-  for (const k of ['charHorz', 'charVert', 'BadSwimmer', 'WideCharacter'])
-    if (params[k] === 'Show') return true;
-  return params.poorBowserFighter !== undefined;
+const FLAGS = ['horz', 'vert', 'badswimmer', 'wide', 'poorbowser'];
+const BASE = { d: 'normal', flags: [] };
+const profileKey = (p) => [p.d, ...p.flags].join(' ');
+
+/**
+ * Whether a token is built for profile `p`, as Level.as decides: HideOnDifficulties names the
+ * difficulties it is left out on; determineHelperVisibility (675-693) shows `charHorz` /
+ * `charVert` = Show pieces only to heroes with that flag (Show on both: either flag) and drops
+ * `=Hide` pieces for them; getPropertyVisibility does the same for `BadSwimmer` (shown when the
+ * hero is not a good swimmer) and `WideCharacter`; a `poorBowserFighter` piece is only for those
+ * heroes (Simon and Ryu).
+ */
+function visible(params, p) {
+  const has = (f) => p.flags.includes(f);
+  if (String(params.HideOnDifficulties ?? '').includes(p.d)) return false;
+  const h = params.charHorz;
+  const v = params.charVert;
+  if (h === 'Hide' && has('horz')) return false;
+  if (v === 'Hide' && has('vert')) return false;
+  if (h === 'Show' && v === 'Show') {
+    if (!has('horz') && !has('vert')) return false;
+  } else if (v === 'Show') {
+    if (!has('vert')) return false;
+  } else if (h === 'Show' && !has('horz')) return false;
+  const prop = (val, show) => !((val === 'Hide' && show) || (val === 'Show' && !show));
+  if (!prop(params.BadSwimmer, has('badswimmer'))) return false;
+  if (!prop(params.WideCharacter, has('wide'))) return false;
+  if (params.poorBowserFighter !== undefined && !has('poorbowser')) return false;
+  return true;
+}
+
+/** A tag that keeps a piece for some heroes only (the base profile's skip log lists them). */
+const helperTag = (params) =>
+  ['charHorz', 'charVert', 'BadSwimmer', 'WideCharacter'].some((k) => params[k] === 'Show') ||
+  params.poorBowserFighter !== undefined;
+
+const built = new Map(); // profile key -> Map(level id -> the level built for that profile)
+/**
+ * `levels` as the original builds them for profile `p`: each cell's visible tokens only (a level
+ * is built the first time it is asked for).
+ */
+function levelsFor(levels, p) {
+  const key = profileKey(p);
+  let cache = built.get(key);
+  if (!cache) built.set(key, (cache = new Map()));
+  return {
+    has: (id) => levels.has(id),
+    get: (id) => {
+      if (!levels.has(id)) return undefined;
+      if (!cache.has(id)) cache.set(id, buildFor(levels.get(id), p));
+      return cache.get(id);
+    },
+  };
+}
+
+/** One level as the original builds it for profile `p`. */
+function buildFor(level, p) {
+  const areas = level.areas.map((a) => {
+    const helpers = new Map();
+    const grid = a.grid.map((row) =>
+      row.map((toks) =>
+        toks.filter((t) => {
+          if (visible(t.params, p)) return true;
+          const shown = !String(t.params.HideOnDifficulties ?? '').includes(p.d);
+          if (shown && helperTag(t.params)) helpers.set(t.name, (helpers.get(t.name) ?? 0) + 1);
+          return false;
+        }),
+      ),
+    );
+    return { ...a, grid, helpers };
+  });
+  return { ...level, areas };
 }
 
 const tokensAt = (area, x, y) => area.grid[y]?.[x] ?? [];
@@ -165,6 +262,28 @@ const GENERAL_THEMES = {
   8: { water: 'castle-water' },
 };
 const GENERAL_AREA_THEMES = { '7-2c': 'overworld' };
+/**
+ * Super Mario Bros. Special's own entries in the theme table (GameSuperMarioBros.as, themeMapPack =
+ * MapPack.Special), before the general table above (G-020). World 8's platform levels are the
+ * orange giant mushrooms. Single areas: 2-2c the underground (TG_UNDERGROUND_SCENERY), 3-1b and
+ * 6-2e water at night (TG_WATER_NIGHT: our water), 3-2b and 8-3c the orange mushrooms, 4-1b and
+ * 4-3b coin heavens (TG_COIN_HEAVEN, _BLUE: the overworld sky), 6-2c a water area underground
+ * (TG_UNDERGROUND_WATER: our water), 8-2b plain water (not World 8's castle water) and 8-2c the
+ * overworld before a castle wall (TG_OVERWORLD_CASTLE_WALL: our overworld).
+ */
+const SPECIAL_THEMES = { 8: { platform: 'mushroom' } };
+const SPECIAL_AREA_THEMES = {
+  '2-2c': 'underground',
+  '3-1b': 'water',
+  '6-2e': 'water',
+  '3-2b': 'mushroom',
+  '8-3c': 'mushroom',
+  '4-1b': 'overworld',
+  '4-3b': 'overworld',
+  '6-2c': 'water',
+  '8-2b': 'water',
+  '8-2c': 'overworld',
+};
 /** Music for the themes that are not named after a song (by the area type they skin). */
 const THEME_MUSIC = {
   night: 'overworld',
@@ -180,7 +299,7 @@ const THEME_MUSIC = {
 };
 
 // Lost Levels extras: a poison mushroom hurts like an enemy (4/5/6). A Clock in a `?` block is
-// `Q` (see tileChar); in a brick or hidden block (none on normal difficulty) it stays a coin.
+// `Q` (see tileChar); in a brick or hidden block it is a `block-item` (blockItemOf, below).
 const ITEM_BRICK = {
   Coin: 'E',
   MultiCoin: 'C',
@@ -193,6 +312,27 @@ const ITEM_BRICK = {
 };
 const ITEM_Q = { Mushroom: 'M', OneUpMushroom: 'U', Star: '*', PoisonMushroom: '4', Clock: 'Q' };
 const ITEM_HIDDEN = { OneUpMushroom: '1', Mushroom: '3', PoisonMushroom: '6', Clock: '2' };
+/**
+ * Items no tile holds: the block is a coin brick, `?` block or hidden coin block (`E` / `?` /
+ * `2`) and a `block-item` spawn puts the item in it (World.blockItems). The Hudson Bee (G-023;
+ * Hard only, pickups/HudsonBee.as) in any block; Super Mario Bros. Special's Atom, Hammer and Wing
+ * (G-022; ground/Brick.as 420-434), and its one Exploding Rabbit power-up (`rabbit`;
+ * Character.fullyPowerup: the hero's top power at once).
+ */
+const BLOCK_ITEMS = {
+  HudsonBee: 'bee',
+  Atom: 'atom',
+  Hammer: 'hammer',
+  Wing: 'wing',
+  ExplodingRabbit: 'rabbit',
+};
+/**
+ * A Clock in a brick or hidden block (Special's Easy and Hard layers, a few Lost Levels ones):
+ * a `block-item` too (a `?` Clock is `Q`, see tileChar).
+ */
+const blockItemOf = (name, params) =>
+  BLOCK_ITEMS[params.ContainedItem] ??
+  (params.ContainedItem === 'Clock' && name !== 'itemBlock' ? 'clock' : undefined);
 const MARKERS = {
   enemyGoomba: 'g',
   enemyKoopaGreen: 'k',
@@ -215,6 +355,10 @@ const MARKER_TYPES = {
   n: 'hammer-bro-chase',
 };
 const ENTITIES = {
+  // Easy and Hard layers only (none on Normal): our Spike Top (entities/enemies/spike-top.ts).
+  enemySpikeTop: 'spike-top',
+  // Hard ll-13-4-exit's walking Spinies (our Lakitu's Spiny, entities/enemies).
+  enemySpiney: 'spiny',
   enemyCheepFast: 'cheep-red',
   enemyCheepSlow: 'cheep-grey',
   enemyBlooper: 'blooper',
@@ -223,6 +367,14 @@ const ENTITIES = {
   enemyWingedKoopaGreen: 'koopa-para-green',
   enemyWingedKoopaHorizontalGreen: 'koopa-para-green-h',
   bowserAxe: 'axe',
+  // Super Mario Bros. Special's enemies (G-021). Their HideOnDifficulties: in Special a few on
+  // Easy and Normal and most on Hard only (e.g. 37 Icicles on Normal, 155 on Hard); in SMB1 and
+  // The Lost Levels on Hard only.
+  enemyIcicle: 'icicle',
+  enemyCrab: 'crab',
+  enemyFly: 'fly',
+  enemyBarrel: 'barrel',
+  enemyFireEnemy: 'fire-enemy',
   // FireBar.as: a label with "Left" turns counter-clockwise (clockwise = false), "Right" clockwise.
   fireBarLeft: 'firebar-ccw',
   fireBarRight: 'firebar',
@@ -258,6 +410,13 @@ const SHIFTABLE = new Set([
   'hammer-bro',
   'hammer-bro-chase',
   'buzzy',
+  'icicle',
+  'crab',
+  'fly',
+  'barrel',
+  'fire-enemy',
+  'spike-top',
+  'spiny',
 ]);
 const shiftProps = (params) => ({
   ...(params.shiftRight ? { dx: 8 } : {}),
@@ -293,16 +452,18 @@ const IGNORED = new Set([
   'sceneryText_B',
   'sceneryText_C',
   'sceneryText_D',
+  // Special 4-2's sign.
+  'sceneryText_?',
 ]);
 
 function themeFor(levelId, type, areaId) {
   // The Lost Levels' table also skins castle and water areas (9-3a, World 9's flooded overworld).
-  if (LOST) {
+  if (LOST || SPECIAL) {
     const world = Number(levelId.split('-')[0]);
     const key = `${levelId}${areaId}`;
     const skin =
-      LOST_AREA_THEMES[key] ??
-      LOST_THEMES[world]?.[type] ??
+      (LOST ? LOST_AREA_THEMES : SPECIAL_AREA_THEMES)[key] ??
+      (LOST ? LOST_THEMES : SPECIAL_THEMES)[world]?.[type] ??
       GENERAL_AREA_THEMES[key] ??
       GENERAL_THEMES[world]?.[type];
     if (skin) return skin;
@@ -310,7 +471,7 @@ function themeFor(levelId, type, areaId) {
   if (type === 'castle') return 'castle';
   if (type === 'underGround' || type === 'pipeBonus') return 'underground';
   if (type === 'water') return 'water';
-  if (LOST) return 'overworld';
+  if (LOST || SPECIAL) return 'overworld';
   if (!LOST && SNOW.has(levelId)) return 'snow';
   if (!LOST && NIGHT.has(levelId)) return 'night';
   return 'overworld';
@@ -348,8 +509,10 @@ function tileChar(tok, area, world) {
   // themes only recolour, so their ground becomes the cloud-block tile `O` (solid, like `#`).
   const clouds = area.type === 'coinHeaven';
   // Platform and bridge levels are treetops, except World 4's giant mushrooms.
-  // (The Lost Levels draw every platform level as treetops.)
-  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && (LOST || world !== 4);
+  // (The Lost Levels draw every platform level as treetops; Special's are giant mushrooms where its
+  // theme is one, convertArea's area.theme.)
+  const mushrooms = SPECIAL ? String(area.theme).startsWith('mushroom') : !LOST && world === 4;
+  const trees = (area.type === 'platform' || area.type === 'cheepCheep') && !mushrooms;
   switch (name) {
     case 'groundNormal':
     case 'groundWideNormal':
@@ -389,6 +552,17 @@ function tileChar(tok, area, world) {
     case 'groundPipeMidRightSide':
     case 'groundPipeIntTop':
       return ')';
+    // A sideways pipe opening to the right, and its junction on the left (Hard layers of 1-2 and
+    // 6-2, many Lost Levels areas): no mirrored tiles (the tile list only grows at its end, and
+    // the key box must stay last), so they are the left-facing pieces' tiles: solid all the same.
+    case 'groundPipeEndRightTop':
+      return '(';
+    case 'groundPipeEndRightBottom':
+      return '<';
+    case 'groundPipeIntRightTop':
+      return ')';
+    case 'groundPipeIntRightBottom':
+      return '>';
     case 'groundPipeMidLeftSide':
     case 'groundPipeIntBottom':
       return '>';
@@ -404,6 +578,7 @@ function tileChar(tok, area, world) {
     case 'standardPlatformStemSin':
     case 'standardPlatformStemMidTop':
     case 'standardPlatformStemRhtTop':
+    case 'standardPlatformStemMid':
       return trees ? 't' : 'i';
     case 'wavesLava':
       return '~';
@@ -435,12 +610,21 @@ function tileChar(tok, area, world) {
 
 /* ---------- one area ---------- */
 
-function convertArea(level, area, id, levels) {
+function convertArea(level, area, id, levels, profile) {
   const levelId = level.id;
   const [world, stage] = levelId.split('-').map(Number);
   const isMain = area.id === level.attrs.MAIN_AREA;
   const theme = themeFor(levelId, area.type, area.id);
-  const music = THEME_MUSIC[theme] ?? theme;
+  area.theme = theme;
+  // Special's single-area skins keep the music of their area type (the playlist goes by type:
+  // GameSuperMarioBros.createPlayList), e.g. 2-2c's underground look over the overworld tune.
+  const typeMusic =
+    SPECIAL && SPECIAL_AREA_THEMES[`${levelId}${area.id}`]
+      ? ({ underGround: 'underground', pipeBonus: 'underground', water: 'water', castle: 'castle' }[
+          area.type
+        ] ?? 'overworld')
+      : null;
+  const music = typeMusic ?? THEME_MUSIC[theme] ?? theme;
   const header = {
     id,
     name: `WORLD ${levelId}`,
@@ -453,6 +637,8 @@ function convertArea(level, area, id, levels) {
   const b = new MapBuilder(area.width, header);
   const skipped = new Map();
   const skip = (name) => skipped.set(name, (skipped.get(name) ?? 0) + 1);
+  // Crossover pieces only built for other heroes (see visible).
+  for (const [name, n] of area.helpers ?? []) skipped.set(`${name}(helper)`, n);
 
   let start = null;
   let levelExit = null;
@@ -482,11 +668,6 @@ function convertArea(level, area, id, levels) {
       const cellMarkers = [];
       for (const tok of tokensAt(area, x, y)) {
         const { name, params } = tok;
-        if (helperOnly(params)) {
-          // Crossover pieces only shown for heroes with special needs (see helperOnly).
-          skip(`${name}(helper)`);
-          continue;
-        }
         const ch = tileChar(tok, area, world);
         if (ch) {
           // Water and lava are a background layer: they never cover a tile (9-1's flag ball).
@@ -494,10 +675,17 @@ function convertArea(level, area, id, levels) {
           // Two `?` blocks on one cell (Lost Levels 9-1, 24,9 on normal: a Clock block and a
           // coin block; Level.as builds one ItemBlock per token): `Q` is that pair.
           if (ch === '?' && b.rows[y][x] === 'Q') continue;
-          if (ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?'))
-            console.warn(`${id}: Clock block at ${x},${y} without a coin block: becomes Q`);
-          b.set(x, y, ch);
-          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest });
+          // A Clock block on its own (Easy and Hard layers): a `?` holding the Clock (`Q` is the
+          // Clock-and-coin pair).
+          const solo = ch === 'Q' && !tokensAt(area, x, y).some((t) => tileChar(t, area, world) === '?');
+          b.set(x, y, solo ? '?' : ch);
+          if (solo) b.entity('block-item', x, y, { item: 'clock' });
+          const item = blockItemOf(name, params);
+          if (item && (name === 'brick' || name === 'itemBlockInvisible' || name === 'itemBlock')) {
+            b.set(x, y, name === 'brick' ? 'E' : name === 'itemBlock' ? '?' : '2');
+            b.entity('block-item', x, y, { item });
+          }
+          if (ch === 'V') vines.push({ x, y, dest: params.pTransDest, number: params.number });
           continue;
         }
         if (MARKERS[name]) {
@@ -609,6 +797,8 @@ function convertArea(level, area, id, levels) {
             break;
           // Scenery anchors in the original sit on the centre column; ours use the bottom-left tile.
           case 'hillMedium':
+          case 'hillBig':
+            // hillBig: Special's taller hill (no art of its own: the big hill).
             b.dec('hill-big', x - 2, y);
             break;
           case 'hillSmall':
@@ -618,6 +808,10 @@ function convertArea(level, area, id, levels) {
           case 'cloudDouble':
           case 'cloudTriple':
             b.dec(`cloud-${{ cloudSingle: 1, cloudDouble: 2, cloudTriple: 3 }[name]}`, x - 1, y - 1);
+            break;
+          // Special's small cloud (no art of its own: the single cloud).
+          case 'cloudSmall':
+            b.dec('cloud-1', x - 1, y - 1);
             break;
           case 'treeSmallTop':
             b.dec('tree-small', x, y + 1); // ours anchor on the trunk tile
@@ -634,14 +828,19 @@ function convertArea(level, area, id, levels) {
             break;
           }
           case 'playerStart':
-            start = { x, y };
+            // Level.as puts the hero's middle on the cell's middle, plus half a tile with
+            // shiftRight: in Special's bonus rooms that is the line between this column and the
+            // next, and on Hard those rooms' floors have holes in every other column (this one).
+            // Our arrivals centre the hero in a column, so a shifted start there is the next one.
+            start = { x: SPECIAL && area.type === 'pipeBonus' && params.shiftRight ? x + 1 : x, y };
             break;
           case 'halfwayPoint':
             // LOCKED_CP levels (castles, SMB1 World 8, Lost Levels 7-4 to 8-4) have no halfway
             // start on normal difficulty in the original (Level.as shouldStartAtCheckPoint).
             // The row is kept: the respawn puts the feet on the bottom of the midpoint's cell
             // (Level.as hwPnt = currentY + TILE_SIZE, lines 1068-1072); ll-5-3's is on row 9.
-            if (level.attrs.LOCKED_CP !== 'True') b.zone(`checkpoint ${x} ${y}`);
+            // Easy and Hard open them (Level.as:1454: mapDifficulty HARD or EASY).
+            if (level.attrs.LOCKED_CP !== 'True' || profile.d !== 'normal') b.zone(`checkpoint ${x} ${y}`);
             break;
           case 'levelExit':
             levelExit = { x, y };
@@ -769,7 +968,10 @@ function convertArea(level, area, id, levels) {
 
   // How the player arrives decides the start mode.
   const pipeExit = [...vertEnds.values()][0];
-  if (area.type === 'pipeBonus') {
+  // Special's bonus rooms are closed above (no ceiling gap to drop through, unlike SMB1's and The
+  // Lost Levels'): the hero starts at the room's playerStart (Level.as), and a pipe in comes out
+  // of its matching pipe end (linkAreas).
+  if (area.type === 'pipeBonus' && !SPECIAL) {
     header.start = `${start?.x ?? 1},0`;
     header.startMode = 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
@@ -817,7 +1019,10 @@ function convertArea(level, area, id, levels) {
 
 /* ---------- links between areas ---------- */
 
-function convertLevel(level, levels) {
+/** Every area of level `levelId`, built for `profile` (default: the base profile). */
+function convertLevel(levelId, allLevels, profile = BASE) {
+  const levels = levelsFor(allLevels, profile);
+  const level = levels.get(levelId);
   const used = new Map();
   const ids = level.areas.map((a) => {
     if (a.id === level.attrs.MAIN_AREA) return pid(level.id);
@@ -827,13 +1032,28 @@ function convertLevel(level, levels) {
     used.set(suffix, n);
     return pid(`${level.id}-${suffix}${n > 1 ? n : ''}`);
   });
-  const converted = level.areas.map((a, i) => convertArea(level, a, ids[i], levels));
+  const converted = level.areas.map((a, i) => convertArea(level, a, ids[i], levels, profile));
   const byAreaId = new Map(level.areas.map((a, i) => [a.id, converted[i]]));
   for (const c of converted) {
     for (const v of c.vines) {
       const t = byAreaId.get(v.dest);
-      if (!t?.vineStart) {
-        console.warn(`${c.id}: vine at ${v.x},${v.y} to area ${v.dest} without a vineStart`);
+      if (!t) {
+        console.warn(`${c.id}: vine at ${v.x},${v.y} to unknown area ${v.dest}`);
+        continue;
+      }
+      // A vine with a `number` (Special 4-1 and 4-3: Vine.as globPipeExInt) arrives like a pipe:
+      // the hero rises out of the target's pipe end with that number (Character.checkVinePosition
+      // -> levelTransfer(dest, vineExInt)), whichever the profile builds (charVert pieces).
+      if (v.number !== undefined && t.vertEnds.has(String(v.number))) {
+        const e = t.vertEnds.get(String(v.number));
+        c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
+        continue;
+      }
+      if (!t.vineStart) {
+        // No vine to climb there and no pipe end: the hero starts as the area starts.
+        const [sx, sy] = t.builder.header.start.split(',');
+        const exit = { 'pipe-exit': 'up', fall: 'fall' }[t.builder.header.startMode] ?? 'none';
+        c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${sx} ${sy} exit=${exit}`);
         continue;
       }
       c.builder.zone(`vine ${v.x} ${v.y} -> ${t.id} ${t.vineStart.x} ${t.vineStart.y}`);
@@ -861,14 +1081,23 @@ function convertLevel(level, levels) {
         console.warn(`${c.id}: pipe at ${p.x},${p.y} to unknown area ${dest}`);
         continue;
       }
-      if (t.area.type === 'pipeBonus') {
+      if (t.area.type === 'pipeBonus' && !SPECIAL) {
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 1} 0 exit=none`);
       } else if (p.number !== undefined && t.vertEnds.has(String(p.number))) {
         const e = t.vertEnds.get(String(p.number));
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
       } else {
+        // Into a Special bonus room with no matching pipe end: at its playerStart, standing there
+        // (ground under it) or dropping in down its column (SMB1-style rooms' gap in the ceiling).
+        const ground =
+          t.start &&
+          tokensAt(t.area, t.start.x, t.start.y + 1).some((k) => {
+            const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
+            return ch && ch !== '$' && ch !== 'w';
+          });
+        const exit = SPECIAL && t.area.type === 'pipeBonus' && !ground ? 'fall' : 'none';
         c.builder.zone(
-          `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=none`,
+          `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=${exit}`,
         );
       }
     }
@@ -882,6 +1111,282 @@ function convertLevel(level, levels) {
   return converted;
 }
 
+/* ---------- layers (--layers) ---------- */
+
+const MARKER_CHARS = new Set(Object.keys(MARKER_TYPES));
+const entityLine = (e) =>
+  `${e.type} ${e.x} ${e.y}${
+    e.props
+      ? ' ' +
+        Object.entries(e.props)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(' ')
+      : ''
+  }`;
+/** An entity line's `type x y` (what a layer's `- type x y` takes out). */
+const entityKey = (line) => line.split(' ').slice(0, 3).join(' ');
+
+/** A built area as rows of tile chars (markers become spawns, as parseTextMap reads them). */
+function stateOf(b) {
+  const rows = b.rows.map((r) => [...r]);
+  const ents = b.entities.map(entityLine);
+  for (let y = 0; y < rows.length; y++)
+    for (let x = 0; x < rows[y].length; x++) {
+      const ch = rows[y][x];
+      if (!MARKER_CHARS.has(ch)) continue;
+      ents.push(`${MARKER_TYPES[ch]} ${x} ${y}`);
+      rows[y][x] = '.';
+    }
+  const start = `${b.header.start.replace(',', ' ')} ${b.header.startMode}`;
+  return { rows, ents, zones: [...b.zones], decor: [...b.decor], header: JSON.stringify(b.header), start };
+}
+
+/** `s` with layer `l` laid: its cells set, its spawns and zones taken out, then added. */
+function applyLayer(s, l) {
+  const rows = s.rows.map((r) => [...r]);
+  for (const c of l.cells) rows[c.y][c.x] = c.ch;
+  const gone = new Set(l.removes);
+  const out = new Set(l.zonesOut);
+  return {
+    ...s,
+    rows,
+    ents: s.ents.filter((e) => !gone.has(entityKey(e))).concat(l.adds),
+    zones: s.zones.filter((z) => !out.has(z)).concat(l.zonesIn),
+    start: l.start ?? s.start,
+  };
+}
+
+/** Lines of `a` and `b` grouped by `key`, for the keys whose lines differ. */
+function changedKeys(a, b, key) {
+  const group = (list) => {
+    const m = new Map();
+    for (const l of list) m.set(key(l), [...(m.get(key(l)) ?? []), l]);
+    return m;
+  };
+  const ga = group(a);
+  const gb = group(b);
+  const out = [];
+  for (const k of new Set([...ga.keys(), ...gb.keys()])) {
+    const la = (ga.get(k) ?? []).slice().sort().join('\n');
+    const lb = (gb.get(k) ?? []).slice().sort().join('\n');
+    if (la !== lb) out.push({ key: k, had: ga.has(k), lines: gb.get(k) ?? [] });
+  }
+  return out;
+}
+
+/** The layer that turns `from` into `to` (null when they are the same). */
+function diffLayer(from, to, d, flags) {
+  const cells = [];
+  for (let y = 0; y < to.rows.length; y++)
+    for (let x = 0; x < to.rows[y].length; x++)
+      if (from.rows[y][x] !== to.rows[y][x]) cells.push({ x, y, ch: to.rows[y][x] });
+  const removes = [];
+  const adds = [];
+  for (const c of changedKeys(from.ents, to.ents, entityKey)) {
+    if (c.had) removes.push(c.key);
+    adds.push(...c.lines);
+  }
+  const zonesOut = [];
+  const zonesIn = [];
+  for (const c of changedKeys(from.zones, to.zones, (z) => z)) {
+    if (c.had) zonesOut.push(c.key);
+    zonesIn.push(...c.lines);
+  }
+  const start = from.start === to.start ? null : to.start;
+  if (!cells.length && !removes.length && !adds.length && !zonesOut.length && !zonesIn.length && !start)
+    return null;
+  return { d, flags, cells, removes, adds, zonesOut, zonesIn, start };
+}
+
+/** Every non-empty subset of FLAGS, smallest first (then in FLAGS order). */
+const SUBSETS = (() => {
+  const out = [];
+  for (let m = 1; m < 1 << FLAGS.length; m++) out.push(FLAGS.filter((_, i) => m & (1 << i)));
+  const rank = (s) => s.map((f) => FLAGS.indexOf(f));
+  return out.sort((a, b) => a.length - b.length || String(rank(a)).localeCompare(String(rank(b))));
+})();
+
+/**
+ * Area states of level `levelId` for every profile, by profile key then area id. The NES fixes
+ * are applied to each (quietly: a profile that changes a fixed cell keeps its own tile).
+ */
+function profileStates(levelId, levels) {
+  const out = new Map();
+  for (const d of ['easy', 'normal', 'hard'])
+    for (const flags of [[], ...SUBSETS]) {
+      const p = { d, flags };
+      const areas = new Map();
+      for (const c of convertLevel(levelId, levels, p)) {
+        applyNesFixes(c.id, c.builder, true);
+        const state = stateOf(c.builder);
+        // What this profile's build skipped (helpers for other heroes aside), for the log.
+        state.skipped = [...c.skipped]
+          .filter(([k]) => !k.endsWith('(helper)'))
+          .map(([k, v]) => `${k}×${v}`)
+          .join(', ');
+        areas.set(c.id, state);
+      }
+      out.set(profileKey(p), areas);
+    }
+  return out;
+}
+
+/**
+ * One area's layers over its base (Normal, no flags), in the order Classic play lays them
+ * (level/layers.ts): for each flag set S (none first, then smallest first), a layer for any
+ * difficulty and then one for Easy and one for Hard; a profile lays every layer whose flags it
+ * has and whose difficulty is its own or any. Each is the difference between what the original
+ * builds for (difficulty, S) and what the earlier layers already lay for it, so every profile's
+ * result is exactly the original's.
+ */
+function areaLayers(areaId, states) {
+  const base = states.get(profileKey(BASE)).get(areaId);
+  const layers = [];
+  const compose = (d, flags) =>
+    layers
+      .filter((l) => (l.d === null || l.d === d) && l.flags.every((f) => flags.includes(f)))
+      .reduce(applyLayer, base);
+  const warned = new Set();
+  for (const flags of [[], ...SUBSETS])
+    for (const d of flags.length ? [null, 'easy', 'hard'] : ['easy', 'hard']) {
+      const target = states.get(profileKey({ d: d ?? 'normal', flags })).get(areaId);
+      const l = diffLayer(compose(d ?? 'normal', flags), target, d, flags);
+      if (l) layers.push(l);
+      // A layer holds tiles, spawns and zones; the header and decor stay the map's.
+      const th = JSON.parse(target.header);
+      const bh = JSON.parse(base.header);
+      const keys = Object.keys(th).filter((k) => th[k] !== bh[k] && k !== 'start' && k !== 'startMode');
+      const decor = target.decor.filter((x) => !base.decor.includes(x));
+      for (const [what, diff] of [
+        ['header', keys.map((k) => `${k}: ${bh[k]} -> ${th[k]}`).join(', ')],
+        ['decor', decor.join(', ')],
+      ])
+        if (diff && !warned.has(what)) {
+          warned.add(what);
+          console.warn(
+            `${areaId}: ${what} differs for ${profileKey({ d: d ?? 'normal', flags })} (${diff}); kept`,
+          );
+        }
+    }
+  return layers;
+}
+
+/** Tile rows and spawn keys of a committed map (to check the layers lay over its base). */
+function readMap(file) {
+  let text;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  const rows = [];
+  const ents = new Set();
+  let section = '';
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/;;.*$/, '').trim();
+    if (!line) continue;
+    const sec = /^\[(.+)\]$/.exec(line);
+    if (sec) {
+      section = sec[1];
+      continue;
+    }
+    if (section === 'tiles') rows.push([...line.replace(/\s+/g, '')]);
+    else if (section === 'entities') ents.add(entityKey(line));
+  }
+  rows.forEach((r, y) =>
+    r.forEach((ch, x) => {
+      if (!MARKER_CHARS.has(ch)) return;
+      ents.add(`${MARKER_TYPES[ch]} ${x} ${y}`);
+      r[x] = '.';
+    }),
+  );
+  return { rows, ents };
+}
+
+const layerHeader = (l) => ['layer', ...(l.d ? [l.d] : []), ...l.flags].join(' ');
+
+function layersText(areaId, layers) {
+  const source = xmlPath.replace(/^.*[\\/]/, '');
+  const out = [
+    `;; ${areaId}: the original's pieces for the other map difficulties and for heroes with level flags`,
+    `;; (generated by tools/levelgen/convert-smbc.mjs --layers from ${source}; do not edit by hand).`,
+    ';; Classic play lays, in order, each layer whose flags the hero has and whose difficulty is the',
+    ";; run's or any (level/layers.ts). The .map file holds Normal for a hero with no flags.",
+  ];
+  for (const l of layers) {
+    out.push('', `[${layerHeader(l)}]`);
+    // Runs of changed cells per row (only changed cells: the map's own edits stay).
+    const byRow = new Map();
+    for (const c of l.cells) byRow.set(c.y, [...(byRow.get(c.y) ?? []), c]);
+    for (const [y, cells] of [...byRow].sort((a, b) => a[0] - b[0])) {
+      let run = null;
+      for (const c of cells.sort((a, b) => a.x - b.x)) {
+        if (run && c.x === run.x + run.chars.length) run.chars += c.ch;
+        else {
+          if (run) out.push(`${run.x} ${y} ${run.chars}`);
+          run = { x: c.x, chars: c.ch };
+        }
+      }
+      if (run) out.push(`${run.x} ${y} ${run.chars}`);
+    }
+    for (const k of l.removes) out.push(`- ${k}`);
+    for (const a of l.adds) out.push(`+ ${a}`);
+    for (const z of l.zonesOut) out.push(`-zone ${z}`);
+    for (const z of l.zonesIn) out.push(`+zone ${z}`);
+    if (l.start) out.push(`start ${l.start}`);
+  }
+  return out.join('\n') + '\n';
+}
+
+/** Writes `<area>.layers` beside each area's map (removing a stale one); never touches a .map. */
+function writeLayers(levelId, levels) {
+  const states = profileStates(levelId, levels);
+  for (const areaId of states.get(profileKey(BASE)).keys()) {
+    const layers = areaLayers(areaId, states);
+    const file = join(outDir, `${areaId}.layers`);
+    if (!layers.length) {
+      rmSync(file, { force: true });
+      console.log(`${areaId}: no layers`);
+      continue;
+    }
+    writeFileSync(file, layersText(areaId, layers));
+    // The layers lay over the committed map: report the cells and spawns where it is not the
+    // original's base (its own hand edits), which a layer would overwrite or miss.
+    const map = readMap(join(MAPS_DIR, `${areaId}.map`));
+    const base = states.get(profileKey(BASE)).get(areaId);
+    let cells = 0;
+    let spawns = 0;
+    if (map) {
+      const added = new Set();
+      for (const l of layers) {
+        for (const c of l.cells) if (map.rows[c.y]?.[c.x] !== base.rows[c.y][c.x]) cells++;
+        for (const k of l.removes) if (!map.ents.has(k) && !added.has(k)) spawns++;
+        for (const a of l.adds) added.add(entityKey(a));
+      }
+    }
+    const lines = layers.reduce((n, l) => n + l.cells.length + l.adds.length + l.removes.length, 0);
+    // The tokens each profile's build skipped (no mapping yet), grouped by the same list.
+    const skips = new Map();
+    for (const [key, areas] of states) {
+      const sk = areas.get(areaId)?.skipped;
+      if (sk) skips.set(sk, [...(skips.get(sk) ?? []), key]);
+    }
+    for (const [sk, keys] of skips)
+      console.log(
+        `${areaId}: skipped ${sk} (${keys.length > 3 ? `${keys.slice(0, 3).join('; ')} and ${keys.length - 3} more` : keys.join('; ')})`,
+      );
+    console.log(
+      `${areaId}: ${layers.length} layers (${layers
+        .map(layerHeader)
+        .map((h) => h.slice(6))
+        .join('; ')}), ${lines} changes` +
+        (map ? '' : '; no map to check') +
+        (cells ? `; ${cells} cells over the map's own edits` : '') +
+        (spawns ? `; ${spawns} removals miss` : ''),
+    );
+  }
+}
+
 /* ---------- run ---------- */
 
 const levels = parseLevels(readFileSync(xmlPath, 'utf8'));
@@ -892,7 +1397,11 @@ for (const id of ids) {
     console.error(`no level ${id}`);
     process.exit(1);
   }
-  for (const c of convertLevel(level, levels)) {
+  if (LAYERS) {
+    writeLayers(id, levels);
+    continue;
+  }
+  for (const c of convertLevel(id, levels)) {
     // One-tile slips in the original data, set to match the NES (nes-fixes.mjs).
     const fixed = applyNesFixes(c.id, c.builder);
     const text = c.builder.toString();

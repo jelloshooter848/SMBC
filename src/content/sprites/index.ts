@@ -8,19 +8,24 @@ import { marioPalettes, marioDef } from './mario';
 import { marioClassicDef } from './mario-classic';
 import { enemyPalettes, enemiesDef } from './enemies';
 import { spikeTopDef } from './spike-top';
+import { specialEnemiesDef } from './special';
+import { rabbitLogoDef, rabbitLogoPalettes } from './rabbit-logo';
 import { linkPalettes, linkDef } from './link';
 import { linkClassicDef, linkClassicPalettes, linkClassicShieldDef } from './link-classic';
 import { megamanPalettes, megamanDef, megamanClassicDef } from './megaman';
 import { bassPalettes, bassDef } from './bass';
 import { protomanDef, protomanPalettes } from './protoman';
+import { selectFacePalettes, selectFacesDef } from './select-faces';
 import {
   MEGAMAN_VARIANT_SHEETS,
   MEGAMAN_VARIANT_SUITS,
   megamanVariantPalettes,
 } from './smbc-megaman-variants';
 import { samusPalettes, samusDef, samusClassicDef } from './samus';
+import { megamanOrbsDef } from './megaman-orbs';
+import { BASS_LOOKS, heroLookPalettes, heroLookSheets } from './hero-looks';
 import { darkpitShotsDef, pitDef, pitPalettes, pitShotPalettes, pitShotsDef } from './pit';
-import { peachDef, peachItemPalettes, peachItemsDef, peachPalettes } from './peach';
+import { peachDef, peachPalettes } from './peach';
 import { simonPalettes, simonDef } from './simon';
 import { simonClassicDef } from './simon-classic';
 import { simonFlameDef } from './simon-flame';
@@ -116,6 +121,10 @@ export const SPRITES: Record<string, SpriteDef> = {
   enemies: enemiesDef,
   // Classic mode's Spike Top (Replace Goombas), drawn with the enemy palettes.
   'spike-top': spikeTopDef,
+  // Super Mario Bros. Special's enemies (G-021), drawn with the enemy palettes.
+  'special-enemies': specialEnemiesDef,
+  // The one named original-art exception (Classic mode's full power-up; docs/ART_EXCEPTIONS.md).
+  'rabbit-logo': rabbitLogoDef,
   link: linkDef,
   megaman: megamanDef,
   // Classic SMBC's Bass (characters/bass/classic.ts).
@@ -124,11 +133,16 @@ export const SPRITES: Record<string, SpriteDef> = {
   protoman: protomanDef,
   samus: samusDef,
   'samus-classic': samusClassicDef,
+  'megaman-orbs': megamanOrbsDef,
+  // Classic mode's 0.5.0 looks (G-050..G-053).
+  ...heroLookSheets,
   // Classic SMBC's shots in the original's colours and sizes (Samus's beams, Mario's fireball).
   'smbc-shots': smbcShotsDef,
   'bill-classic': billClassicDef,
   'ryu-classic': ryuClassicDef,
   'megaman-classic': megamanClassicDef,
+  // Classic mode's select-screen faces (our own close-ups, scenes/select-grid.ts).
+  'select-faces': selectFacesDef,
   // Classic mode's Mega Man variants (FU-3), built on his Classic sheet: mm-rock, mm-cutman, ...
   ...MEGAMAN_VARIANT_SHEETS,
   'simon-classic': simonClassicDef,
@@ -143,7 +157,6 @@ export const SPRITES: Record<string, SpriteDef> = {
   'warriors-fx': warriorsFxDef,
   // Princess Peach, a Classic-only hero (PE-24, PE-25), and her plucks.
   peach: peachDef,
-  'peach-items': peachItemsDef,
   // Sir Arthur, a Classic-only hero (AR-29), his weapons and their Gold armour look.
   arthur: arthurDef,
   'arthur-fx': arthurFxDef,
@@ -229,6 +242,7 @@ const defaults: Record<string, readonly string[]> = {
   ...fontPalettes,
   ...fontTints,
   ...itemPalettes,
+  ...rabbitLogoPalettes,
   ...decorPalettes,
   ...marioPalettes,
   ...enemyPalettes,
@@ -236,7 +250,9 @@ const defaults: Record<string, readonly string[]> = {
   ...linkClassicPalettes,
   ...megamanPalettes,
   ...bassPalettes,
+  ...heroLookPalettes,
   ...protomanPalettes,
+  ...selectFacePalettes,
   ...megamanVariantPalettes,
   ...samusPalettes,
   ...smbcShotPalettes,
@@ -244,7 +260,6 @@ const defaults: Record<string, readonly string[]> = {
   ...pitShotPalettes,
   ...warriorsPalettes,
   ...peachPalettes,
-  ...peachItemPalettes,
   ...arthurPalettes,
   ...simonPalettes,
   ...ryuPalettes,
@@ -337,6 +352,12 @@ fallback('protoman-rush', 'megaman-rush');
 for (const name of MEGAMAN_VARIANT_SUITS)
   for (let i = 0; i < 4; i++) fallback(`${name}-star-${i}`, `megaman-star-${i}`);
 for (const sheet of Object.keys(MEGAMAN_VARIANT_SHEETS)) fallback(`${sheet}-rush`, 'megaman-rush');
+// Classic mode's 0.5.0 looks (G-050..G-053): their hosts' Star colours.
+for (let i = 0; i < 4; i++) {
+  fallback(`quickman-star-${i}`, `bass-star-${i}`);
+  for (const id of Object.keys(BASS_LOOKS)) fallback(`${id}-star-${i}`, `bass-star-${i}`);
+  fallback(`haggleman-star-${i}`, `ryu-star-${i}`);
+}
 
 fallback('mario-fire', 'mario');
 fallback('luigi', 'mario');

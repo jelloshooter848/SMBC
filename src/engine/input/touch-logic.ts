@@ -385,3 +385,32 @@ export class ButtonLabeler {
     return this.current.get(a);
   }
 }
+
+// ---- Held buttons ----------------------------------------------------------------------------
+
+/** A pointer holding a face or small button: what it presses now, and whether it may slide. */
+export interface HeldButton {
+  action: Action | null;
+  /** A thumb may roll onto the next face button without lifting. */
+  slide: boolean;
+}
+
+/**
+ * The scene hid buttons (`hidden`): a pointer holding one lets go of it, and stays let go until it
+ * lifts (0.5.0). Without that, a thumb held on JUMP when a card opened re-took the card's OK as a
+ * fresh press the moment it reappeared after the guard and moved a pixel, skipping the card.
+ * True when the pointer changed.
+ */
+export function releaseHidden(p: HeldButton, hidden: readonly Action[]): boolean {
+  if (!p.action || !hidden.includes(p.action)) return false;
+  p.action = null;
+  p.slide = false;
+  return true;
+}
+
+/** A held pointer moved over `next` (the face button under it, or none). True when it changed. */
+export function slideHeld(p: HeldButton, next: Action | null): boolean {
+  if (!p.slide || next === p.action) return false;
+  p.action = next;
+  return true;
+}

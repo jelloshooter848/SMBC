@@ -10,9 +10,17 @@ import { moveX, type Body } from '../entities/body';
 import { px, tileAt, tileToSub, TILE_SUB, toPx, velToSub } from '@engine/math/units';
 import { Rng } from '@engine/rng';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import type { EntitySpawn, HeroItemEntry, LevelData, PipeDir, TransferMode, Zone } from '../level/schema';
+import type {
+  EntitySpawn,
+  HeroItemEntry,
+  LevelData,
+  MapDifficulty,
+  PipeDir,
+  TransferMode,
+  Zone,
+} from '../level/schema';
 import { isSwimLevel, isWaterTheme } from '../level/schema';
-import { tileDef, T } from '../level/tiles';
+import { tileDef, T, type BlockContent } from '../level/tiles';
 import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';
 import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
 import { TileMap } from './tilemap';
@@ -29,6 +37,7 @@ import { Blooper } from '../entities/enemies/blooper';
 import { Podoboo } from '../entities/enemies/podoboo';
 import { HammerBro } from '../entities/enemies/hammer-bro';
 import { SpikeTop } from '../entities/enemies/spike-top';
+import { Barrel, Crab, FireEnemy, Fly, Icicle } from '../entities/enemies/special-enemies';
 import { LakituZone } from '../entities/enemies/lakitu';
 import { Spiny } from '../entities/enemies/spiny';
 import { BulletBill, BulletLauncher, BULLET_SPEED } from '../entities/enemies/bullet-bill';
@@ -53,7 +62,8 @@ import {
   TeleportPad,
   type TeleportZone,
 } from '../entities/objects/teleporter';
-import { PowerUp, type PowerUpKind } from '../entities/objects/powerup';
+import { PowerUp, isWorldItem, type HeroPowerUp, type PowerUpKind } from '../entities/objects/powerup';
+import { isSpecialItem, takeSpecialItem, type SpecialItem } from './special-items';
 import { isPickupKind, Pickup, type PickupKind } from '../entities/objects/pickup';
 import { HeroItem } from '../entities/objects/hero-item';
 import { applyItem, blockItem, itemRules, itemSfx } from '../items/heroes';
@@ -88,6 +98,7 @@ import {
 import type { ClassicCheatStat } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
 import { heroFor } from '../characters/registry';
+import { layeredLevel, layerFlags } from '../level/layers';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
 import { drawThemeBackdrop } from './theme-backdrop';
@@ -140,6 +151,8 @@ import { CostumePile } from '../entities/effects/costume-pile';
 import { cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import type { Action } from '@engine/input/actions';
 
+/** The hurt blink held steady with Reduce flashing (G-092): the hero at 65 %, as Classic heroes are. */
+export const HURT_STEADY_ALPHA = 0.65;
 /** What goes on from the castle's text (OK): JUMP or ATTACK. MENU still pauses. */
 const CASTLE_OK_KEYS: readonly Action[] = ['jump', 'attack'];
 /** How long an item's name shows under the HUD when first found (docs/POWERUPS.md 3.3). */
@@ -316,6 +329,9 @@ export interface AreaSnapshot {
 /** Classic SMBC: the areas of one stage left so far, by level id. */
 export type AreaMemory = Map<string, AreaSnapshot>;
 
+/** Flying Cheep Cheeps out at once, by map difficulty (FlyingCheepSpawner.as MAX_CHEEP_*). */
+export const FLYING_CHEEP_CAP: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 3, hard: 4 };
+
 /** The fixed seed headless runs use for a level unless they pass their own. */
 export const levelSeed = (level: LevelData): number => level.id.length * 7919 + 1;
 
@@ -402,8 +418,13 @@ const ENEMY_REMOVAL_PX = 6 * 16;
  */
 const BOUNCY_PIT_VY = 0x08555;
 const BOUNCY_PIT_CHEEP_VY = 0x04a00;
-/** Water Mode (Classic cheat): the swimming line above the top of any map. */
-const WATER_MODE_TOP = px(-1024);
+/**
+ * Water Mode (Classic cheat) and Special's Wing (Level.forceWaterLevel): the swimming line two
+ * tiles below the screen top, as in every water level of the original (Character: exitWater once
+ * `hTop <= GLOB_STG_TOP + TILE_SIZE*2`), so the hero cannot swim off the top of the screen. The
+ * same line our water maps get from their wave row 2 (row * 16 + 8).
+ */
+export const WATER_MODE_TOP = px(2 * 16 + 8);
 /**
  * The vine you arrive on in a sky area (Vine.growFromStgBot): it grows from the screen bottom
  * (GLOB_STG_BOT) until its top is 5 tiles up, at riseSpeed 60 Flash px/s (0.5 px a frame).
@@ -603,6 +624,14 @@ export class World {
   readonly areaMemory: AreaMemory | null;
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
+  /** The clock ran out here (the heroes died of it: Classic mode's TIME UP card, G-030). */
+  timedOut = false;
+  /**
+   * Classic SMBC's PitVacuums (G-013), worked out on first use: per column, how its pit pulls
+   * (PULL_RIGHT, PULL_DOWN, PULL_LEFT; 0 none), or null in an area that does not start under
+   * water (the Water Mode cheat adds none: Level._initialWaterLevel).
+   */
+  private pitVacuums: Int8Array | null | undefined;
   /** Set once a vine or pit transfer has been queued, so the frame ends quietly. */
   private leaving = false;
   private cheepTimer = 0;
@@ -734,15 +763,18 @@ export class World {
    * classic, dev, arena and play-test levels, which keep their old text and behaviour.
    */
   storyMode = false;
+  /**
+   * A Classic mode run (set by LevelScene from Game.classicCastle, G-001/G-002): an exit marked
+   * `next=end` (Lost Levels 8-4's castle, 9-4's flag) leads on to `next`, a castle with Toad's
+   * "another castle" news; with `next` null the castle is the map set's last and says the quest
+   * is over (Lost Levels D-4 too, as SMB 8-4). Null elsewhere: the Lost Levels' 8-4, 9-4 and D-4
+   * keep the NES rules, their castles saying nothing (the endings' cards do).
+   */
+  classicEnd: { next: string | null } | null = null;
   /** The exploding bridge's boom (entities/objects/bridge-blast.ts). */
   readonly bridgeBoomSfx = BRIDGE_BOOM_SFX;
   /** What the players have done here so far (the tutorial's lessons read it, src/game/tutorial). */
   readonly feats: WorldFeats = { stomps: 0, coinBlocks: 0, powerBlocks: 0, bricks: 0, pierced: 0 };
-  /**
-   * The enemy each player stands on (CharacterDef.standsOnEnemies, Classic Peach's riding) and
-   * where it was when last ridden. Empty unless a def sets standsOnEnemies.
-   */
-  private readonly rides = new Map<Player, { e: Enemy; x: number }>();
   /** A free camera's renderer (the screen moved up by the camera's y), reused each frame. */
   private offsetRenderer: OffsetRenderer | null = null;
   /** The map's height in px (240, one screen, unless a `camera: free` map is taller). */
@@ -772,14 +804,34 @@ export class World {
    */
   private trickSpin: { wall: TrickWall; dir: 'out' | 'in'; t: number } | null = null;
 
+  /**
+   * The area being played. Under Classic rules, as the original builds it for the run's map
+   * difficulty and the heroes' level flags (G-006, G-010-G-012: level/layers.ts); else the
+   * level as given.
+   */
+  readonly level: LevelData;
+  /** Blocks holding another item than their tile's (`block-item` spawns), by "x,y". */
+  private readonly blockItems = new Map<string, BlockContent>();
+  /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
+  readonly mapDifficulty: MapDifficulty;
+
   constructor(
-    readonly level: LevelData,
+    level: LevelData,
     readonly ctx: GameContext,
     readonly state: GameState,
     start: WorldStart = {},
   ) {
     this.audio = ctx.audio;
     this.rules = start.rules ?? rulesOf(ctx);
+    this.mapDifficulty = this.rules === 'classic' ? (ctx.mapDifficulty ?? 'normal') : 'normal';
+    if (this.rules === 'classic') {
+      const heroes = [state.character, ...(state.character2 ? [state.character2] : [])];
+      level = layeredLevel(level, {
+        difficulty: this.mapDifficulty,
+        flags: layerFlags(heroes.map((d) => heroFor(d, 'classic'))),
+      });
+    }
+    this.level = level;
     // Classic mode's Infinite Lives, Infinite Time and Invincible cheats are the assists' own
     // (cheatAssist); a Current World has the context's assists as they are.
     this.assist = this.rules === 'classic' ? cheatAssist(ctx.assist, () => this.cheats) : ctx.assist;
@@ -836,6 +888,12 @@ export class World {
       .map((e) => Cheep.placeSwimmer(e, this.rng))
       .filter((e) => !(mode === 'climb' && (e.type === 'vine' || e.type === 'chain') && e.x === sx))
       .sort((a, b) => a.x - b.x);
+    // `block-item x y item=...` (the Classic layers' Hudson Bee and lone Clocks, G-023): no
+    // entity; the block at x y holds that item instead of its own (bumpBlock).
+    for (const s of this.spawns)
+      if (s.type === 'block-item' && typeof s.props?.item === 'string')
+        this.blockItems.set(`${s.x},${s.y}`, s.props.item as BlockContent);
+    this.spawns = this.spawns.filter((s) => s.type !== 'block-item');
     // Stairs are scenery spanning several columns (a `ul` flight reaches left of its x): built
     // with the world, never despawned.
     for (const st of this.spawns.filter((e) => e.type === 'stairs')) {
@@ -1236,6 +1294,17 @@ export class World {
       // Classic mode's Replace Goombas: Spike Top (rules/classic-goombas.ts).
       case 'spike-top':
         return new SpikeTop(x + px(2), y + px(2));
+      // Super Mario Bros. Special's enemies (G-021; entities/enemies/special-enemies.ts).
+      case 'icicle':
+        return new Icicle(x + px(3), y + px(1), s.x, s.y);
+      case 'crab':
+        return new Crab(x + px(2), y + px(2));
+      case 'fly':
+        return new Fly(x + px(2), y + px(2));
+      case 'barrel':
+        return new Barrel(x + px(2), y + px(2));
+      case 'fire-enemy':
+        return new FireEnemy(x + px(2), y + px(2));
       case 'bullet-bill':
         return new BulletBill(x + px(1), y + px(2), -1);
       case 'lakitu':
@@ -1243,7 +1312,10 @@ export class World {
       case 'balance':
         return new BalanceLift(s.x, s.y, s.props ?? {});
       case 'princess':
-        return new Princess(s.x, s.y, this.player.def.endingGreeter ?? null);
+        // A Classic mode run's ordinary castle (classicEnd, G-002): Toad waits, as in the
+        // original's data (the converter put the NES princess in Lost Levels 8-4).
+        if (this.classicEnd?.next) return new Toad(s.x, s.y);
+        return new Princess(s.x, s.y);
       case 'toad':
         return new Toad(s.x, s.y);
       case 'captive': {
@@ -1482,6 +1554,23 @@ export class World {
     this.dryWaterTop ??= this.waterTop;
     this.waterTop = on ? WATER_MODE_TOP : this.dryWaterTop;
   }
+
+  /**
+   * Special's Wing (G-022; Character.as 1655-1665, Level.forceWaterLevel): the area swims for
+   * `frames` (a new Wing starts the time again), then dries unless it is a water area or the
+   * Water Mode cheat is on (wingTimerHandler: `!level.initialWaterLevel && !Cheats.waterMode`).
+   */
+  wingSwim(frames: number): void {
+    this.setWaterMode(true);
+    this.wingFrames = frames;
+  }
+  /** Frames of a Wing's swim left (0: none). */
+  wingFrames = 0;
+
+  private tickWing(): void {
+    if (this.wingFrames <= 0 || --this.wingFrames > 0) return;
+    if (!this.cheats.waterMode) this.setWaterMode(false);
+  }
   /** The area's own water line, kept while Water Mode floods it. */
   private dryWaterTop: number | undefined;
 
@@ -1544,12 +1633,17 @@ export class World {
     this.audio.sfx(opts.small ? 'bump' : 'explosion');
     for (const e of this.enemies) {
       if (!overlaps(box, e.body)) continue;
-      const res = e.hit(
-        { kind: 'bomb', amount: opts.amount ?? 2, owner, dirX: e.body.x < cx ? -1 : 1, ...opts.classicHit },
-        this,
-      );
+      const src: DamageSource = {
+        kind: 'bomb',
+        amount: opts.amount ?? 2,
+        owner,
+        dirX: e.body.x < cx ? -1 : 1,
+        ...opts.classicHit,
+      };
+      const res = e.hit(src, this);
       this.scoreKill(e, 'bomb', res);
-      if (res === 'hp') this.audio.sfx('hurt-enemy');
+      // Blasts make the hero's own hit sound too (G-072).
+      if (res === 'hp') this.audio.sfx(this.hitSound(src));
     }
     if (opts.hurtsPlayers ?? true) {
       for (const p of this.activePlayers()) {
@@ -1608,6 +1702,8 @@ export class World {
     for (const e of carried) {
       if (e instanceof PowerUp) {
         if (e.item === 'clock') this.collectClock(e);
+        else if (e.item === 'bee') this.collectBee(e);
+        else if (isSpecialItem(e.item)) takeSpecialItem(this, p, e as PowerUp & { item: SpecialItem });
         else if (e.item !== 'poison') this.powerUp(p, e.item);
       } else if (e instanceof HeroItem) this.takeHeroItem(p, e);
       else if (e instanceof Pickup) this.collectPickup(p, e);
@@ -1774,9 +1870,10 @@ export class World {
     for (let i = 0; i < lives; i++) this.addLife(this.player.body.x, this.player.body.y - px(16));
   }
 
-  addLife(x: number, y: number): void {
+  /** One more life, with its sound (`sfx`: a Classic hero's own, G-073; else `1up`). */
+  addLife(x: number, y: number, sfx = '1up'): void {
     this.state.lives++;
-    this.audio.sfx('1up');
+    this.audio.sfx(sfx);
     this.spawn(new ScorePopup(x, y, '1UP'));
   }
 
@@ -1784,6 +1881,19 @@ export class World {
   private seqHit(s: number | '1up', x: number, y: number): void {
     if (s === '1up') this.addLife(x, y);
     else this.addScore(s, x, y);
+  }
+
+  /**
+   * The sound of hit `src` taking an enemy's hit points: `hurt-enemy`, or in a Classic mode run
+   * (either rules) the hero's own (G-072, rules/classic-enemies.ts classicHitSfx).
+   */
+  hitSound(src: DamageSource): string {
+    return (this.ctx.classicMode ? classicRules().hitSfx?.(src) : undefined) ?? 'hurt-enemy';
+  }
+
+  /** Is `p` riding a springboard now (pressed into it, before the launch)? */
+  onSpring(p: Player): boolean {
+    return this.entities.some((e) => e instanceof Spring && e.alive && e.ridBy(p));
   }
 
   /**
@@ -1897,6 +2007,9 @@ export class World {
           ? p.body.y > this.waterTop - px(8)
           : p.body.y + (p.body.h >> 1) >= this.waterTop;
       p.aboveWater = !p.inWater && this.waterTop !== Infinity;
+      // PitVacuum.updateStats pulls whether or not the hero is under water (G-013): only the area
+      // (one that starts under water) and the hero (SwimProfile.pitPull) decide.
+      p.pitPull = p.profile.swim?.pitPull ? this.pitPullOn(p) : null;
       this.grabVines(p, input);
       this.grabStairs(p, input);
       const spring = this.springUnder(p);
@@ -1964,7 +2077,6 @@ export class World {
       if (e instanceof Enemy && e.alive && this.cheats.bouncyPits) this.bounceEnemy(e);
     }
     this.resolveLifts();
-    this.rideEnemies();
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -1995,6 +2107,7 @@ export class World {
     if (!this.pipeAnim && !this.leaving && !this.trickSpin) this.checkTeleports();
     this.checkZones();
     this.tickPath();
+    this.tickWing();
     this.checkLoops();
     this.flyingCheeps();
     this.flyingBullets();
@@ -2367,7 +2480,7 @@ export class World {
   /** Leave for a linked area (vine top, pit); the scene swaps levels on the event. */
   private transfer(
     target: { level: string; x: number; y: number },
-    mode: 'climb' | 'fall' | 'spin' | 'up',
+    mode: 'climb' | 'fall' | 'spin' | 'up' | 'none',
     chain = false,
   ): void {
     if (this.leaving) return;
@@ -2392,7 +2505,8 @@ export class World {
           on = this.vineBlockAt(v.x, v.y) ?? this.placedVineAt(v.x, v.y);
           return on?.centerX === p.vine?.x;
         });
-        if (z) this.transfer(z.target, 'climb', on?.art === 'chain');
+        // A vine to an area with none to climb on arrives as that area starts (its `exit=`).
+        if (z) this.transfer(z.target, z.target.exitDir ?? 'climb', on?.art === 'chain');
         else b.y = -b.h; // nowhere to go: hang at the top
       }
       return;
@@ -2485,7 +2599,7 @@ export class World {
 
   /**
    * Bridge levels: red Cheep Cheeps leap from below while the lead player is inside a `cheeps`
-   * zone (FlyingCheepSpawner.as). With fewer than MAX_CHEEP_NORMAL = 3 out and no spawn pending it
+   * zone (FlyingCheepSpawner.as). With fewer than its cap out (FLYING_CHEEP_CAP: 3 on Normal) and no spawn pending it
    * waits a random 600-1050 ms (36-63 frames) and then launches one if still in the zone and below
    * the limit. Fish may only fly left once the lead has not moved right for 2 s
    * (CAN_REVERSE_DIRECTION_DELAY = 2000).
@@ -2502,8 +2616,11 @@ export class World {
     for (const e of this.entities)
       if (e.alive && ((e instanceof Cheep && e.flying) || (e instanceof HammerBro && e.spawner === 'cheep')))
         flying++;
-    if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < 3) {
-      const marioType = lead.def.id === 'mario' || lead.def.id === 'luigi';
+    // MAX_CHEEP_EASY / NORMAL / HARD (FlyingCheepSpawner.as:17-19, 37-50; G-006): 2, 3 or 4.
+    const cap = FLYING_CHEEP_CAP[this.mapDifficulty];
+    if (this.cheepTimer > 0 && --this.cheepTimer === 0 && inZone && flying < cap) {
+      const leadId = lead.def.lookOf ?? lead.def.id;
+      const marioType = leadId === 'mario' || leadId === 'luigi';
       const target = {
         centerX: lead.centerX,
         vx: lead.body.vx,
@@ -2517,7 +2634,7 @@ export class World {
       );
       flying++;
     }
-    if (inZone && flying < 3 && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
+    if (inZone && flying < cap && this.cheepTimer === 0) this.cheepTimer = 36 + this.rng.int(28);
   }
 
   /**
@@ -2576,6 +2693,7 @@ export class World {
       }
       if (this.time <= 0) {
         this.time = 0;
+        this.timedOut = true;
         for (const p of this.activePlayers()) this.kill(p);
       }
     }
@@ -2627,8 +2745,11 @@ export class World {
     }
   }
 
-  /** Scroll-back camera: a live Bowser within 2 tiles of the screen (Level.as bowser.onScreen). */
-  private bowserOnScreen(): boolean {
+  /**
+   * Scroll-back camera, and Classic mode's boss music (LevelScene): a live Bowser within 2 tiles
+   * of the screen (Level.as bowser.onScreen).
+   */
+  bowserOnScreen(): boolean {
     for (const e of this.entities)
       if (
         e instanceof Bowser &&
@@ -2719,7 +2840,12 @@ export class World {
       else this.audio.sfx('bump');
       return;
     }
-    const { kind, content } = def.block;
+    const { kind } = def.block;
+    // A `block-item` spawn's item replaces the block's own (the Hudson Bee, a lone Clock).
+    const key = `${tx},${ty}`;
+    const item = this.blockItems.get(key);
+    if (item) this.blockItems.delete(key);
+    const content = item ?? def.block.content;
     const frame = kind === 'brick' ? 'brick' : 'used';
     if (kind === 'brick' && content === 'none') {
       if (breakBricks) {
@@ -2745,7 +2871,6 @@ export class World {
         this.blockDrop(tx, ty, p, 'coin');
         break;
       case 'coins10': {
-        const key = `${tx},${ty}`;
         let c = this.coinBlocks.get(key);
         if (!c) {
           // The original's ground/Brick.as: COIN_BRICK_MAX_COINS = 15 and a coinBrickTmrDur =
@@ -2783,7 +2908,23 @@ export class World {
         // The Clock comes out of its block; the coin block on the same cell is next (T.Q_CLOCK).
         this.spawn(new PowerUp(tx, ty, 'clock'));
         this.audio.sfx('powerup-appear');
-        restore = T.Q_COIN;
+        // A lone Clock (a `block-item`) leaves a used block.
+        if (id === T.Q_CLOCK && !item) restore = T.Q_COIN;
+        break;
+      case 'bee':
+      case 'atom':
+      case 'rabbit':
+      case 'hammer':
+      case 'wing':
+        // The Hudson Bee rises out like any item (Brick.normalItemExitBrickStart, G-023), and
+        // Super Mario Bros. Special's Atom, Hammer and Wing likewise (G-022). The full power-up
+        // wears the original's logo in Classic play only (sprites/rabbit-logo.ts).
+        {
+          const u = new PowerUp(tx, ty, content);
+          if (content === 'rabbit' && this.rules === 'classic') u.classicLogo = true;
+          this.spawn(u);
+        }
+        this.audio.sfx('powerup-appear');
         break;
       case 'vine':
         this.spawn(new Vine(tx, ty, 0, { tx, ty }));
@@ -2917,7 +3058,7 @@ export class World {
     // onPowerUp scores its own 1000.
     if (id === null) {
       const kind = e.entries === GROW_BLOCK ? 'mushroom' : p.def.blockPowerUp(p);
-      if (kind !== 'poison' && kind !== 'clock') p.def.behaviour.onPowerUp(p, kind, this);
+      if (!isWorldItem(kind)) p.def.behaviour.onPowerUp(p, kind, this);
       return;
     }
     this.addScore(1000, p.body.x, p.body.y - px(16));
@@ -2939,12 +3080,21 @@ export class World {
    * Samus took the Varia Suit from a Mushroom before any Energy Tank): a small hero their grow item,
    * else the Mushroom their next one, the Fire Flower their default power. Else its onPowerUp.
    */
-  powerUp(p: Player, kind: Exclude<PowerUp['item'], 'poison' | 'clock'>): void {
+  powerUp(p: Player, kind: HeroPowerUp): void {
     if ((kind === 'mushroom' || kind === 'flower') && itemRules(p.def.id) && isFound(p)) {
       const id = blockItem(p, null, kind === 'mushroom' ? 'mushroom' : 'powerup');
       if (id !== null) return this.takeHeroItem(p, new HeroItem(0, 0, id, p.def.id));
     }
     p.def.behaviour.onPowerUp(p, kind, this);
+  }
+
+  /**
+   * The Hudson Bee (G-023; Character.as:1612-1618): 8000 points shown where it was, and the
+   * power-up sound.
+   */
+  private collectBee(e: PowerUp): void {
+    this.addScore(8000, e.body.x, e.body.y);
+    this.audio.sfx('powerup');
   }
 
   /**
@@ -3007,7 +3157,7 @@ export class World {
           };
           const res = e.hit(src, this);
           this.scoreKill(e, src.kind, res);
-          if (res === 'hp') this.audio.sfx('hurt-enemy');
+          if (res === 'hp') this.audio.sfx(this.hitSound(src));
           if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
         }
       }
@@ -3026,6 +3176,8 @@ export class World {
           if (e.item === 'poison') {
             if (p.star <= 0) this.hurtPlayer(p, e.body.x + e.body.w / 2 < p.centerX ? 1 : -1);
           } else if (e.item === 'clock') this.collectClock(e);
+          else if (e.item === 'bee') this.collectBee(e);
+          else if (isSpecialItem(e.item)) takeSpecialItem(this, p, e as PowerUp & { item: SpecialItem });
           else this.powerUp(p, e.item);
         }
       } else if (e instanceof HeroItem) {
@@ -3112,9 +3264,6 @@ export class World {
     // No stomp during a Classic SMBC hit's push (PS-C12), nor under water for a hero whose
     // swim profile says so (SW-C7): plain contact.
     const stompBarred = p.hurtLock !== null || (p.inWater && p.profile.swim?.noStomp === true);
-    // CharacterDef.standsOnEnemies (Classic Peach, PE-11): landing on it, or riding it, is no
-    // stomp and no hurt (World.rideEnemies keeps her on top).
-    if (!stompBarred && p.def.standsOnEnemies?.(p, e) && (fromAbove || this.rides.get(p)?.e === e)) return;
     // CharacterDef.seaFloorSafe (ML-C25): a Blooper leaves a hero on the sea floor alone.
     if (e instanceof Blooper && p.def.seaFloorSafe === true && pb.onGround && feet === px(this.heightPx - 32))
       return;
@@ -3228,8 +3377,7 @@ export class World {
       pr.hitIds.add(e.id);
       if (pr.spec.rehitAfter !== undefined) pr.markHit(e.id, this.frame);
       this.scoreKill(e, src.kind, r);
-      if (r === 'hp') this.audio.sfx('hurt-enemy');
-      else if (r === 'stun') this.audio.sfx('hurt-enemy');
+      if (r === 'hp' || r === 'stun') this.audio.sfx(this.hitSound(src));
       // A shot that pierces what it defeats goes on only past a kill.
       const through =
         pr.spec.pierce ||
@@ -3282,49 +3430,6 @@ export class World {
 
   /* ---------- Lifts ---------- */
 
-  /** The enemy `p` stands on now (CharacterDef.standsOnEnemies), or null. */
-  ridingEnemy(p: Player): Enemy | null {
-    const r = this.rides.get(p);
-    return r && r.e.alive && this.entities.includes(r.e) ? r.e : null;
-  }
-
-  /**
-   * Enemies as moving floors (CharacterDef.standsOnEnemies; Classic Peach's riding, PE-11), after
-   * the enemies moved, like Lift.carry: a hero falling onto one (or still on the one ridden last
-   * frame) is put on its top, grounded, and moved by its step. Only defs that set the field ride.
-   */
-  private rideEnemies(): void {
-    for (const p of this.activePlayers()) {
-      const stands = p.def.standsOnEnemies;
-      const was = this.rides.get(p);
-      this.rides.delete(p);
-      if (!stands || p.vine || p.stairs || p.frozen) continue;
-      const pb = p.body;
-      if (pb.vy < 0) continue;
-      const feet = pb.y + pb.h;
-      for (const e of this.enemies) {
-        const eb = e.body;
-        if (pb.x >= eb.x + eb.w || pb.x + pb.w <= eb.x || !stands(p, e)) continue;
-        const riding = was?.e === e;
-        const onTop = riding
-          ? feet >= eb.y - px(4) && feet <= eb.y + px(12)
-          : pb.prevBottom <= eb.y + px(4) && feet >= eb.y && feet <= eb.y + px(12);
-        if (!onTop) continue;
-        pb.y = eb.y - pb.h;
-        pb.vy = 0;
-        pb.onGround = true;
-        const dx = riding && was ? eb.x - was.x : 0;
-        if (dx !== 0) {
-          const wall = pb.hitWall;
-          moveX(pb, this.playerMap(p), dx);
-          if (pb.hitWall === 0) pb.hitWall = wall;
-        }
-        this.rides.set(p, { e, x: eb.x });
-        break;
-      }
-    }
-  }
-
   private resolveLifts(): void {
     for (const e of this.entities) {
       if (!(e instanceof Lift) || !e.alive) continue;
@@ -3358,10 +3463,17 @@ export class World {
       if (toPx(p.body.y) > this.heightPx) this.pitDeaths.add(p);
       p.body.vx = 0;
       p.body.vy = 0;
+      // Its sound: the hero's death sound from Classic mode's table (G-065; every burst is a
+      // Classic def's, so a dev Classic-rules start reads it too), else its jingle. After a pit
+      // too (no pieces then).
+      const sound = p.def.rules === 'classic' ? classicRules().deathSfx?.(p.def) : undefined;
       if (this.activePlayers().length === 0) {
         this.audio.setTempoScale(1);
-        this.audio.playJingle(burst.jingle);
-      } else this.audio.sfx('hit');
+        if (sound) {
+          this.audio.stopMusic();
+          this.audio.sfx(sound);
+        } else this.audio.playJingle(burst.jingle);
+      } else this.audio.sfx(sound ?? 'hit');
       return;
     }
     if (this.deathSfx) {
@@ -3376,7 +3488,12 @@ export class World {
     }
     if (this.activePlayers().length === 0) {
       this.audio.setTempoScale(1);
-      this.audio.playJingle('death');
+      // A Classic mode run (either rules): the hero's own death sound (G-065).
+      const own = this.ctx.classicMode ? classicRules().deathSfx?.(p.def) : undefined;
+      if (own) {
+        this.audio.stopMusic();
+        this.audio.sfx(own);
+      } else this.audio.playJingle('death');
     } else this.audio.sfx('hit');
   }
 
@@ -3930,7 +4047,7 @@ export class World {
         if (c.t >= (c.fireworks > 0 ? 1 + c.fireworks * FIREWORK_FRAMES + 60 : 90)) {
           c.phase = 'done';
           const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-          this.events.push({ type: 'exit', next: exit?.next ?? 'end' });
+          this.events.push({ type: 'exit', next: this.exitNext(exit?.next) });
         }
         break;
       }
@@ -4174,9 +4291,11 @@ export class World {
     // The Lost Levels' last castles (8-4, 9-4, D-4) say nothing themselves: the ending's card
     // (Game.showLostEnding) is the thanks, over the level, when Toad's thanks would start, so
     // no line is said twice.
-    const next = exit?.next ?? 'end';
+    // A Classic mode run (classicEnd, G-001/G-002): a castle marked `next=end` that is not its
+    // map set's last is an ordinary one, on to the next world; the last says the quest is over.
+    const next = this.exitNext(exit?.next);
     const s = c.t - c.stop;
-    if (next === 'end' && (this.level.parent ?? this.level.id).startsWith('ll-')) {
+    if (next === 'end' && !this.classicEnd && (this.level.parent ?? this.level.id).startsWith('ll-')) {
       if (s >= 30) {
         this.events.push({ type: 'exit', next });
         c.t = -100000;
@@ -4208,17 +4327,44 @@ export class World {
     if (s === 120) {
       // In the story 8-4 is no longer the end (story/finale.ts endMoved): another castle.
       const end = next === 'end' && !(this.storyMode && endMoved(this.level.parent ?? this.level.id));
-      // CharacterDef.endingGreeter: who stands in the princess's place greets the hero instead.
-      const greeter = end ? this.player.def.endingGreeter : undefined;
-      const news = greeter
-        ? [...greeter.news]
-        : end
-          ? ['YOUR QUEST IS OVER.']
-          : anotherCastle(p.def.rescueName);
+      const news = end ? ['YOUR QUEST IS OVER.'] : anotherCastle(p.def.rescueName);
       this.castleText.push('', ...news);
       c.at = s;
       this.events.push({ type: 'say', text: [thanks, ...news, 'OK to continue.'].join(' ') });
     } else if (ok) leave();
+  }
+
+  /**
+   * The pull of the pits under `p` this frame (PitVacuum.updateStats: any vacuum whose column the
+   * hitbox overlaps, edges touching, at any height): sideways toward each pit's middle, left and
+   * right at most once each (Character.pulledLeft/pulledRight), or null over no pit.
+   */
+  private pitPullOn(p: Player): -1 | 0 | 1 | null {
+    if (this.pitVacuums === undefined)
+      this.pitVacuums = isSwimLevel(this.level) ? pitVacuumColumns(this.map) : null;
+    const vac = this.pitVacuums;
+    if (!vac) return null;
+    const b = p.body;
+    let left = false;
+    let right = false;
+    let any = false;
+    for (let tx = Math.max(0, tileAt(b.x - 1)); tx <= tileAt(b.x + b.w) && tx < vac.length; tx++) {
+      const v = vac[tx];
+      if (!v) continue;
+      any = true;
+      if (v === PULL_LEFT) left = true;
+      else if (v === PULL_RIGHT) right = true;
+    }
+    if (!any) return null;
+    return ((right ? 1 : 0) - (left ? 1 : 0)) as -1 | 0 | 1;
+  }
+
+  /**
+   * Where an exit marked `marked` leads: a Classic mode run's way on in place of `end` at an
+   * ordinary castle or flagpole (classicEnd: Lost Levels 8-4 and 9-4, G-001/G-002).
+   */
+  private exitNext(marked = 'end'): string {
+    return marked === 'end' ? (this.classicEnd?.next ?? marked) : marked;
   }
 
   private renderCastleText(r: Renderer, view: View): void {
@@ -4817,6 +4963,9 @@ export class World {
       if (look.visible) translucent(r, look.alpha, () => this.drawPlayer(r, view, p));
       return;
     }
+    // G-092: with Reduce flashing the hurt blink is held steady, the hero drawn see-through.
+    if (view.reduceFlashing && p.invuln > 0 && p.def.noHurtBlink !== true)
+      return translucent(r, HURT_STEADY_ALPHA, () => this.drawPlayer(r, view, p));
     if (!p.visible(view.frame)) return;
     this.drawPlayer(r, view, p);
   }
@@ -4888,4 +5037,33 @@ export function anotherCastle(rescueName?: string): string[] {
   const first = `BUT ${fontText(rescueName)} IS IN`;
   if (first.length <= CASTLE_COLS) return [first, 'ANOTHER CASTLE!'];
   return wrapText(`${first} ANOTHER CASTLE!`, CASTLE_COLS);
+}
+
+/** A PitVacuum's pull (PitVacuum.setVacDir): "down-right", "down", "down-left". */
+const PULL_RIGHT = 1;
+const PULL_DOWN = 2;
+const PULL_LEFT = 3;
+
+/**
+ * Classic SMBC's PitVacuums (G-013; Level.as 762-777 and setUpPitVacs): one on every empty tile of
+ * the bottom row; a run of them is one pit, whose left half pulls right, its middle tile straight
+ * down and its right half left, toward the middle.
+ */
+export function pitVacuumColumns(map: TileMap): Int8Array {
+  const out = new Int8Array(map.width);
+  const row = map.height - 1;
+  const empty = (tx: number) => tx < map.width && map.collisionAt(tx, row) === 'none';
+  for (let start = 0; start < map.width;) {
+    if (!empty(start)) {
+      start++;
+      continue;
+    }
+    let end = start;
+    while (empty(end + 1)) end++;
+    const mid = (start + end) / 2;
+    for (let tx = start; tx <= end; tx++)
+      out[tx] = tx < mid ? PULL_RIGHT : tx === mid ? PULL_DOWN : PULL_LEFT;
+    start = end + 1;
+  }
+  return out;
 }

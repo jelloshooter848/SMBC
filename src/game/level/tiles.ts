@@ -30,6 +30,20 @@ export type BlockContent =
   | 'path'
   /** A key box (0.4.52, objects/keys.ts): the key rises out of it, and it is spent. */
   | 'key'
+  /**
+   * The Hudson Bee (G-023; pickups/HudsonBee.as): 8000 points. No tile holds it: a `block-item`
+   * spawn puts it (or a lone Clock) in the map's block there (World.blockItems).
+   */
+  | 'bee'
+  /**
+   * Super Mario Bros. Special's Atom, Hammer and Wing (G-022; world/special-items.ts), put in a
+   * block by `block-item` spawns as the Hudson Bee is.
+   */
+  | 'atom'
+  /** Special's one full power-up (fullyPowerup: the hero's top power). */
+  | 'rabbit'
+  | 'hammer'
+  | 'wing'
   | 'none';
 
 export interface TileDef {

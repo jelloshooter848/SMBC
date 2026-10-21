@@ -15,11 +15,14 @@ import type { PickupKind } from './entities/objects/pickup';
 
 /**
  * The pickups the Infinite Ammo goal counts (Character.hitPickup: PickupInfo.AMMO_DCT): Link's
- * bombs, Mega Man's weapon energy, Ryu's ninpo, Samus's missiles, Sophia III's two missile types
- * and Simon's hearts. Health, energy, E-tanks and the extra heroes' pickups are not ammo.
+ * bombs and arrows (LINK_ARROW_AMMO, with the Bow), Mega Man's weapon energy, Ryu's ninpo,
+ * Samus's missiles, Sophia III's two missile types and Simon's hearts. Health, energy, E-tanks
+ * and the extra heroes' pickups are not ammo. The full power-up fills each of these
+ * (world/special-items.ts, setAllAmmoToMax).
  */
 export const AMMO_PICKUPS: ReadonlySet<PickupKind> = new Set<PickupKind>([
   'bomb',
+  'arrow-pack',
   'weapon-small',
   'weapon-large',
   'ninpo-small',
@@ -54,8 +57,8 @@ export type CheatGoal =
   | { kind: 'count'; stat: ClassicCheatStat; beaten: boolean }
   /** Beat Super Mario Bros. (the original: its SMB map set). */
   | { kind: 'beat-smb' }
-  /** Beat The Lost Levels (the original's Special map set, which Classic mode does not have). */
-  | { kind: 'beat-lost' }
+  /** Beat Super Mario Bros. Special (G-020; StatManager.beatGameHandler: MapPack.Special). */
+  | { kind: 'beat-special' }
   /** Beat a game without a continue (StatManager.numContinuesUsed 0). */
   | { kind: 'no-continue' }
   /** Clear any level (Level.completeLevel). */
@@ -89,9 +92,10 @@ export const CHEATS: readonly CheatInfo[] = [
     id: 'allHammerBros',
     name: 'All Hammer Bros',
     what: 'Every enemy but Bowser is a Hammer Bro',
-    goal: { kind: 'beat-lost' },
-    // The original asks for its Special map set, which Classic mode does not have (FU-7e).
-    goalText: "Beat The Lost Levels (in place of the original's Special maps).",
+    // StatManager.as:510-511: beating the Special map set (G-020). A save that unlocked it under
+    // the old stand-in goal (The Lost Levels) keeps it: unlocks are never taken back.
+    goal: { kind: 'beat-special' },
+    goalText: 'Beat the Super Mario Bros. Special map set.',
   },
   {
     id: 'allWeaponsPierce',
@@ -115,9 +119,25 @@ export const CHEATS: readonly CheatInfo[] = [
     goalText: `Beat the game once and stomp ${CHEAT_GOALS.enemiesStomped} enemies.`,
   },
   {
+    // G-040: Samus.classicMode (Samus.as 991, 1037-1046, 1099).
+    id: 'classicSamus',
+    name: 'Classic Samus',
+    what: 'Special or Tools switches Samus between beam and missiles (her suit changes colour), and Down rolls her straight into the morph ball',
+    goal: { kind: 'open' },
+    goalText: '',
+  },
+  {
     id: 'classicScreenScroll',
     name: 'Classic Scroll',
     what: 'Classic Screen Scroll: the screen never scrolls back left, from the next area',
+    goal: { kind: 'open' },
+    goalText: '',
+  },
+  {
+    // G-040: Simon.classicMode (Simon.as 531, 613, 671, 795).
+    id: 'classicSimon',
+    name: 'Classic Simon',
+    what: "Simon's jump keeps the direction he took off in, and walking off a ledge he drops straight down",
     goal: { kind: 'open' },
     goalText: '',
   },
@@ -183,9 +203,9 @@ export function cheatInfo(id: ClassicCheatId): CheatInfo {
   return CHEATS.find((c) => c.id === id) as CheatInfo;
 }
 
-/** StatManager.beatGame: either game beaten in Classic mode. */
+/** StatManager.beatGame: any map set beaten in Classic mode. */
 export function beatAGame(c: ClassicCheatsSettings): boolean {
-  return c.beaten.smb || c.beaten.lost;
+  return c.beaten.smb || c.beaten.special || c.beaten.lost;
 }
 
 /** The locked message with its count (Cheats.getUnlockConditionsMessage: "Current Count: N"). */
@@ -216,8 +236,8 @@ function earned(c: ClassicCheatsSettings, info: CheatInfo, ev: CheatEvent): bool
       return c.stats[g.stat] >= CHEAT_GOALS[g.stat] && (!g.beaten || beatAGame(c));
     case 'beat-smb':
       return c.beaten.smb;
-    case 'beat-lost':
-      return c.beaten.lost;
+    case 'beat-special':
+      return c.beaten.special;
     case 'no-continue':
       return ev.noContinue === true;
     case 'level':
@@ -244,10 +264,16 @@ export function unlockEarned(c: ClassicCheatsSettings, ev: CheatEvent = {}): Cla
 /** The Enter code row's code (CheatMenu.CORRECT_INPUT): unlocks every cheat. */
 export function unlockAll(c: ClassicCheatsSettings): void {
   for (const id of CLASSIC_CHEAT_IDS) c.unlocked[id] = true;
+  c.levelSelect = true;
 }
 
+/**
+ * Whether every cheat is unlocked (Cheats.allUnlocked: all 17 locks, the Level Select's too), so
+ * the Enter code row goes. A save that entered the code before the Level Select cheat existed has
+ * the 14 rule cheats but not it: the row comes back, and the code unlocks it.
+ */
 export function allUnlocked(c: ClassicCheatsSettings): boolean {
-  return CLASSIC_CHEAT_IDS.every((id) => c.unlocked[id]);
+  return CLASSIC_CHEAT_IDS.every((id) => c.unlocked[id]) && c.levelSelect === true;
 }
 
 /** One more of `stat` (capped as StatManager.checkDefaultStatMaxMin, at 999999). */

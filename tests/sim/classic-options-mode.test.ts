@@ -78,6 +78,11 @@ describe('FU-4: the Random slot', () => {
       select(h);
       h.tap('left');
       h.tap('jump');
+      // G-055 (0.5.0): the pick performance plays first.
+      h.until(
+        () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+        300,
+      );
       expect(h.top()).toBeInstanceOf(IntroScene);
       const said = h.said.find((s) => s.startsWith('Random: '));
       expect(said).toBeDefined();
@@ -156,6 +161,12 @@ describe('FU-7b: Game mode', () => {
     const sel = select(h);
     for (let i = 0; i < 20 && sel.chars[idx(sel)] !== LINK; i++) h.tap('right');
     h.tap('jump');
+    // G-050, G-055 (0.5.0): Link's looks open first (OK keeps his own); then his performance.
+    if (sel.pickerOpen) h.tap('jump');
+    h.until(
+      () => !(h.top() instanceof CharacterSelectScene) || !(h.top() as CharacterSelectScene).performing,
+      300,
+    );
     expect(h.game.state.character).toBe(LINK);
     die(h);
     expect(h.top()).toBeInstanceOf(IntroScene);
@@ -243,8 +254,11 @@ describe('review fixes', () => {
     expect(h.said.at(-1)).toBe(`${h.game.state.character.name}. World 1-1. 9 lives.`);
     // All heroes: the card is as before (the select screen named the hero).
     const a = classic();
-    select(a);
+    const sa = select(a);
     a.tap('jump');
+    // G-053, G-055 (0.5.0): Mario's looks open first (OK keeps his own); then his performance.
+    if (sa.pickerOpen) a.tap('jump');
+    a.until(() => !sa.performing, 300);
     expect(a.said.at(-1)).toBe('World 1-1. 3 lives.');
   });
 

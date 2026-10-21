@@ -129,8 +129,15 @@ export class LevelScene implements Scene {
   readonly debug = new DebugOverlay();
   private lastDebugToggle = { f1: false, f2: false };
   private started = false;
+  /**
+   * Classic mode (G-064): Bowser has been on screen in this area, so its castle tune is now the
+   * boss's (Game.classicMusic). Set once; a new area starts without it.
+   */
+  bossMusic = false;
   /** This level was an arena round's stage and its exit ended the round (arena/stage-round.ts). */
   private roundOver = false;
+  /** Classic mode's TIME UP card was shown for this death (G-030). */
+  private timeUpShown = false;
   /** Back from scenes pushed over the level: the press that closed them must not jump. */
   private swallowJump = false;
   /**
@@ -173,6 +180,8 @@ export class LevelScene implements Scene {
       };
     // The campaign's story (src/game/story): entities and the world check it.
     this.world.storyMode = storyOn(game);
+    // Classic mode: every castle but the map set's last is an ordinary one (G-001/G-002).
+    this.world.classicEnd = game.classicCastle?.(level.parent ?? level.id) ?? null;
     // Campaign play (as the story's): each hero's own items from the power blocks.
     if (this.world.storyMode) this.world.useHeroItems(level.heroItems ?? []);
     // The hero's remark at a fake Bowser's axe (story/castle-remark.ts, 0.4.23).
@@ -240,6 +249,18 @@ export class LevelScene implements Scene {
     this.game.ctx.audio.playMusic(music);
   }
 
+  /**
+   * Classic mode's boss trigger (G-064; Level.as 2799-2808): Bowser on screen switches the
+   * castle's music to the boss tune (the final boss's in worlds 8 and D), unless a Star's tune is
+   * playing (the boss tune follows when it ends). Never outside a Classic mode run.
+   */
+  private bossMusicCheck(): void {
+    if (this.bossMusic || !this.game.classicRun || this.game.campaign !== null) return;
+    if (!this.world.bowserOnScreen()) return;
+    this.bossMusic = true;
+    if (!this.world.players.some((p) => p.star > 0)) this.game.ctx.audio.playMusic(this.world.music);
+  }
+
   /** Play on after scenes pushed over the level (a captive's unlock flow): music back on. */
   resume(): void {
     this.game.ctx.audio.stopMusic();
@@ -294,6 +315,7 @@ export class LevelScene implements Scene {
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     this.world.update(inputs);
+    this.bossMusicCheck();
     if (this.afterFirstUpdate) {
       const f = this.afterFirstUpdate;
       this.afterFirstUpdate = null;
@@ -479,6 +501,13 @@ export class LevelScene implements Scene {
       case 'died': {
         if (game.playtestDone) {
           game.playtestDone();
+          return;
+        }
+        // Classic mode (G-030): a death by the clock shows TIME UP first (EventManager
+        // dieDurTmrLsr -> ScreenManager.showTimeUpScreen), then the death goes on as any other.
+        if (game.classicRun && this.world.timedOut && !this.timeUpShown) {
+          this.timeUpShown = true;
+          game.showTimeUp(() => this.handle(ev));
           return;
         }
         // Aboard Larry's airship a death costs no life: TRY AGAIN? YES / NO (scenes/airship.ts).
@@ -677,6 +706,8 @@ export class LevelScene implements Scene {
       keyHolder: this.world.keyHolder,
       // Classic's Infinite Time cheat: TIME's digits hidden, the label kept (TopScreenText.hideTime).
       noTime: this.world.cheats.infiniteTime,
+      // A Classic run's HUD stays where its select's was (one TopScreenText for both).
+      classic: this.game.classicRun,
     });
     // The Bowser bar while his fight is on (0.4.47, campaign: world/boss-bar.ts).
     drawBowserBar(

@@ -30,6 +30,7 @@ import { stageTutorial } from '@game/tutorial/stage-tutorial';
 import { draw, makeGame, store, useStorage, file, type H } from './heroes-harness';
 import { okTip, passTip, playTutorial } from './tutorial-bot';
 import { ALL_STORY, skipOpening } from './story-seen';
+import { openChapter1 } from './chapter1-open';
 
 // Mario's tutorial stage 1-0 (0.5.0; reworked in 0.4.36): World 1's start node, where a new file
 // begins; 1-1 opens once it is cleared (or skipped). Toad tells the story, the lessons follow one
@@ -44,8 +45,10 @@ const director = (h: H) => level(h).tutorial;
 
 /** Title → Start game → slot 1 (a new file when it is empty). */
 function newFileFromTitle(h: H) {
+  openChapter1(h.game); // 0.5.0: Chapter 1 opens in dev mode, the row under Classic
   h.game.showTitle();
   h.idle(8);
+  h.tap('down');
   h.tap('start');
   expect(h.top()).toBeInstanceOf(FileSelectScene);
   h.idle(8);

@@ -194,6 +194,16 @@ function startThrow(p: Player, w: ClassicSubWeapon, world: World): void {
   p.scratch._aw = CLASSIC_SUB_WEAPONS.indexOf(w);
 }
 
+/**
+ * Each thrown sub-weapon's sound by id (G-074); the holy water's flask keeps its toss sound
+ * (`boomerang`) and has its own when it breaks (classic-weapons.ts).
+ */
+const SUB_WEAPON_SFX: Readonly<Record<string, string>> = {
+  dagger: 'cv-dagger',
+  'hand-axe': 'cv-axe',
+  cross: 'cv-cross',
+};
+
 /** Frame 14 of a throw: the weapon appears if the hearts and the cap still allow (SI-C18, SI-C20). */
 function release(p: Player, world: World): void {
   const w = CLASSIC_SUB_WEAPONS[p.scratch._aw ?? 0];
@@ -212,7 +222,8 @@ function release(p: Player, world: World): void {
         ? new HolyWaterBottle(x, y, p.facing, p)
         : new Projectile(x, y, p.facing, s, p);
   world.spawn(shot);
-  world.audio.sfx(w.id === 'dagger' ? 'buster' : 'boomerang');
+  // Each sub-weapon's own throw (G-074; SFX_SIMON_THROW_DAGGER, _AXE, _CROSS).
+  world.audio.sfx(SUB_WEAPON_SFX[w.id] ?? 'boomerang');
 }
 
 /** The whip box this frame (SI-C15): from his centre and feet, mirrored when facing left. */
@@ -327,6 +338,24 @@ function rooted(p: Player, input: InputFrame): boolean {
 /** The world each player last updated in (rooted runs in Player.update, which has none). */
 const worlds = new WeakMap<Player, World>();
 
+/**
+ * The Classic Simon cheat (G-040, Simon.classicMode): off the ground he keeps the speed he took
+ * off with (movePlayer moves him only on the ground), an air jump takes the direction held then
+ * or goes straight up (pressJmpBtn), and walking off a ledge he drops straight down
+ * (checkState: `classicMode && !jumped` stops vx). The profile's airControl 'none' is the first
+ * two; the drop is here. Off: his own profile, untouched.
+ */
+function classicSimonCheat(p: Player, world: World, jumped: boolean): void {
+  const on = world.cheats.classicSimon;
+  const b = p.body;
+  if (on && p.profile.airControl !== 'none') p.profile = { ...p.profile, airControl: 'none' };
+  else if (!on && p.profile.airControl === 'none' && SIMON_CLASSIC_PROFILE.airControl !== 'none')
+    p.profile = { ...p.profile, airControl: SIMON_CLASSIC_PROFILE.airControl };
+  if (!on) return;
+  // Off a ledge without a jump (the frame he leaves the ground): straight down.
+  if (p.scratch._g === 1 && !b.onGround && !jumped && b.vy >= 0) b.vx = 0;
+}
+
 /** Remembers this frame's ground, air-jump and spring state, to see next frame's jumps. */
 function remember(p: Player): void {
   p.scratch._g = p.body.onGround ? 1 : 0;
@@ -335,6 +364,8 @@ function remember(p: Player): void {
 }
 
 export const SIMON_CLASSIC: CharacterDef = {
+  // The original's level flags (G-010): Simon.as:289,310. level/layers.ts lays its pieces by them.
+  levelFlags: { horz: true, poorBowser: true },
   // The castle text's name (PM-M8): the original's default skin (BmdInfo.as).
   rescueName: 'your friend',
   ...SIMON,
@@ -406,6 +437,7 @@ export const SIMON_CLASSIC: CharacterDef = {
       const groundJump = s._g === 1 && !b.onGround && b.vy < 0 && input.pressed('jump');
       const airJump = !b.onGround && p.airJumpsLeft < (s._aj ?? 0);
       const springOff = p.launched && !s._ln;
+      classicSimonCheat(p, world, groundJump || springOff);
       if ((groundJump || airJump || springOff) && input.dirX !== 0) p.facing = input.dirX;
       if (groundJump || airJump) endAction(p);
       remember(p);

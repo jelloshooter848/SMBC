@@ -1,5 +1,5 @@
 import type { InputFrame } from '@engine/input/input-manager';
-import type { CharacterDef, CharacterGuide, MeterInfo, SpriteSpec } from '../character';
+import type { CharacterDef, CharacterGuide, DeathPiece, MeterInfo, SpriteSpec } from '../character';
 import { CLASSIC_POWER_STATES } from '../character';
 import type { MovementProfile } from '../profile';
 import type { ToolInfo } from '../toolbelt';
@@ -30,6 +30,7 @@ import {
   type ClassicPowerKit,
 } from '../classic/power';
 import { weaponOf } from '../classic/options';
+import { landSound } from '../classic/sounds';
 import { MEGAMAN, MEGAMAN_PROFILE } from './index';
 import { MEGAMAN_CLASSIC_GUIDE } from './classic-guide';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic/anim';
@@ -144,6 +145,60 @@ export interface RapidFire {
 }
 
 /** Options of a Classic Mega Man variant. Everything optional falls back to Mega Man's. */
+/*
+ * G-054 (MegaManBase.initiateNormalDeath, MegaManParticle.as): orbs burst out of his middle (5 px
+ * out from it, the original's 10 halved), an inner ring and an outer ring flying straight out
+ * (diagonals at SQRT1_2), gone off the screen. Mega Man's own look has the colour particles: 4
+ * inner (90 px/s) and 8 outer (240 px/s), parting after 200 ms. Bass's has the white ones: 8 and
+ * 8 (80 and 180 px/s), at once. The original's px/s halved for our 16 px tiles, per 60 fps
+ * frame. His death sound (SFX_MEGA_MAN_DIE, Classic mode's sound table) plays in place of the jingle, after a pit too,
+ * where no orbs show; the death ends after DIE_TMR_DEL_NORMAL / DIE_TMR_DEL_PIT, 2500 ms.
+ */
+const ORB_PX_S = 0.5 / 60;
+/** The orbs' middle above his feet (half the 24 px standing hurt box). */
+const ORB_MID = 12;
+const ORB_OFFSET = 5;
+const DIRS: Readonly<Record<string, readonly [number, number]>> = {
+  up: [0, -1],
+  'up-rht': [Math.SQRT1_2, -Math.SQRT1_2],
+  rht: [1, 0],
+  'dwn-rht': [Math.SQRT1_2, Math.SQRT1_2],
+  dwn: [0, 1],
+  'dwn-lft': [-Math.SQRT1_2, Math.SQRT1_2],
+  lft: [-1, 0],
+  'up-lft': [-Math.SQRT1_2, -Math.SQRT1_2],
+};
+const ALL_DIRS = Object.keys(DIRS);
+
+function orbRing(dirs: readonly string[], speed: number, delay: number): DeathPiece[] {
+  return dirs.map((d) => {
+    const [ux, uy] = DIRS[d] as readonly [number, number];
+    // The start offset is a plain 10 px on each axis the direction names (no SQRT1_2).
+    const ox = Math.sign(ux) * ORB_OFFSET;
+    const oy = Math.sign(uy) * ORB_OFFSET;
+    return {
+      frame: 'orb',
+      x: ox,
+      y: ORB_MID - oy,
+      vx: ux * speed * ORB_PX_S,
+      vy: uy * speed * ORB_PX_S,
+      gravity: 0,
+      range: 160,
+      ...(delay ? { delay } : {}),
+    };
+  });
+}
+
+/** The orb burst (G-054): `colour` Mega Man's own look's, `white` Bass's. */
+export function megaManOrbs(kind: 'colour' | 'white'): NonNullable<CharacterDef['deathBurst']> {
+  const pieces =
+    kind === 'colour'
+      ? [...orbRing(['up', 'rht', 'dwn', 'lft'], 90, 12), ...orbRing(ALL_DIRS, 240, 12)]
+      : [...orbRing(ALL_DIRS, 80, 0), ...orbRing(ALL_DIRS, 180, 0)];
+  // His death sound comes from Classic mode's table (classic/sounds.ts: mm-death), as every hero's.
+  return { sheet: 'megaman-orbs', pieces, jingle: 'death', frames: 150, pitFrames: 150 };
+}
+
 export interface ClassicMegaManOptions {
   /** The roster def it plays for (id, name, hudName, portrait, music; TG-18), or a Classic-only hero's. */
   base: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'portraitArt' | 'music'>;
@@ -168,6 +223,8 @@ export interface ClassicMegaManOptions {
   allWeapons?: readonly MMWeaponId[];
   /** Rush Coil on a Select tap. */
   rush?: boolean;
+  /** His death's orbs (G-054): Mega Man's colour ones (the default) or Bass's white ones. */
+  orbs?: 'colour' | 'white';
   guide?: CharacterGuide;
   /** A rapid-fire, rooting, aimed buster (Bass); absent: Mega Man's press-to-fire buster. */
   rapid?: RapidFire;
@@ -669,6 +726,8 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
   }
 
   const def: CharacterDef = {
+    // The original's level flags (G-010): MegaMan.as:136-137 (his looks and variants too). level/layers.ts lays its pieces by them.
+    levelFlags: { horz: true },
     id: base.id,
     name: base.name,
     hudName: base.hudName,
@@ -705,6 +764,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
     blockPowerUp: classicBlockPowerUp,
     powerIcon: true,
     jumpSfx: () => 'jump-small',
+    deathBurst: megaManOrbs(o.orbs ?? 'colour'),
     drawLook: (p, _frame, reduce) => classicLook(p, reduce, response.look),
     starMusicLeft: CLASSIC_STAR_MUSIC_LEFT,
     drop: (rng, _e, killer) => (killer ? classicDrop(rng, killer, drops, 'enemy') : null),
@@ -754,6 +814,7 @@ export function classicMegaMan(o: ClassicMegaManOptions): CharacterDef {
         : {}),
       update(p, input, world) {
         classicStartKit(p, START);
+        landSound(p, world, 'mm-land');
         if (!p.transition) delete p.scratch._fillFrom;
         // Hard Knuckle steers by the d-pad's up/down (classic-weapons KnuckleShot).
         p.scratch._ud = input.held('up') ? -1 : input.held('down') ? 1 : 0;

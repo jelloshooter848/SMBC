@@ -30,7 +30,8 @@ import { ARTHUR_CLASSIC } from './arthur/classic';
 import { YOSHI_CLASSIC } from './yoshi/classic';
 // The Classic rules' shared-system hooks.
 import { installClassicRules } from '../rules/hooks';
-import { classicEnemySpawned, classicHit, isArmoured } from '../rules/classic-enemies';
+import { heroSound } from './classic/sounds';
+import { classicEnemySpawned, classicHit, classicHitSfx, isArmoured } from '../rules/classic-enemies';
 import { applyCheatEdits } from '../rules/classic-cheats';
 import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
@@ -38,9 +39,11 @@ import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
 import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 import {
+  CLASSIC_EXPANSION_HEROES,
   CLASSIC_HERO_GAMES,
   CLASSIC_SKIN_GAMES,
   CLASSIC_SKIN_LISTS,
+  CLASSIC_SLOT_ORDER,
   CLASSIC_VARIANT_DEFS,
 } from './classic/skins';
 
@@ -49,6 +52,8 @@ import {
 // to import classic modules.
 installClassicRules({
   enemyHit: classicHit,
+  hitSfx: classicHitSfx,
+  deathSfx: (def) => heroSound(def, 'death'),
   enemySpawned: classicEnemySpawned,
   // The Classic Yoshi mount's egg block comes first (nothing with the mount off, YM-2).
   strikeBlock: (world, tx, ty, p, breakBricks, hit) =>
@@ -56,8 +61,12 @@ installClassicRules({
   levelEdits: (map, id, defs, spawns, options, world) => {
     // Both tables apply, then Classic mode's spawn options (Replace Goombas, Piranhas) and its
     // level-edit cheats (rules/classic-cheats.ts).
+    // An area with layers (level/layers.ts, G-010) already has the original's wide shafts, laid by
+    // the heroes' level flags: the hand-made wide table is for any area without them. The floor
+    // jumpers' stepping stones (2-2, 7-2) are the layers' own cells, as hard blocks: kept.
+    const layered = !!world?.level.layers?.length;
     const water = applyClassicLevelEdits(map, id, defs);
-    const wide = applyWideVariants(map, id, defs, spawns);
+    const wide = !layered && applyWideVariants(map, id, defs, spawns);
     const opts = applyOptionSpawns(map, spawns, options);
     const cheats = world && spawns ? applyCheatEdits(map, id, spawns, world) : false;
     return opts || wide || water || cheats;
@@ -99,8 +108,13 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   PROTOMAN_CLASSIC,
   BREAKMAN_CLASSIC,
   // Mega Man's gameplay variants (FU-3: Rock, Cut Man, Fire Man, Ice Man, Francesca and Doropie,
-  // Rokko Chan), after his rival: each its own slot, Doropie a skin on Francesca's.
+  // Rokko Chan): skins on his slot, each with its own rules.
   ...CLASSIC_VARIANT_DEFS,
+  // His variants (Rock, Cut Man, Fire Man, Ice Man, Francesca, Doropie, Rokko Chan) are
+  // Classic-only defs too, so the roster lists them for the skin menu and old saves.
+  ...(CLASSIC_SKIN_LISTS.megaman ?? []).filter(
+    (d) => d.rules === 'classic' && d !== PROTOMAN_CLASSIC && d !== BREAKMAN_CLASSIC,
+  ),
   PIT_CLASSIC,
   DARKPIT_CLASSIC,
   VICVIPER_CLASSIC,
@@ -108,18 +122,36 @@ export const CLASSIC_EXTRAS: CharacterDef[] = [
   PEACH_CLASSIC,
   // Sir Arthur (AR-2): after Peach.
   ARTHUR_CLASSIC,
+  // 0.5.0's looks (G-050..G-053): skins on Mario's, Link's, Ryu's, Bass's and Luigi's slots.
+  ...[
+    ...(CLASSIC_SKIN_LISTS.mario ?? []),
+    ...(CLASSIC_SKIN_LISTS.link ?? []),
+    ...(CLASSIC_SKIN_LISTS.ryu ?? []),
+    ...(CLASSIC_SKIN_LISTS.bass ?? []),
+  ].filter((d) => d.rules === 'classic' && d.id !== 'bass'),
+  ...(CLASSIC_SKIN_LISTS.luigi ?? []).filter((d) => d.rules === 'classic' && d.id !== 'peach'),
   // Yoshi (YO-2): last.
   YOSHI_CLASSIC,
 ];
 
 /**
  * Classic mode's skins (FU-8): by select-slot hero id, the looks that slot can wear, its own
- * first. A skin plays exactly as its slot's hero (a hero that plays differently has its own slot:
- * CLASSIC_EXTRAS' variants); the select's skin picker
- chooses among them, and the choice is remembered
- * per hero (Settings.classicSkins).
+ * first, in the original's skin order. A skin brings its own rules with it, as the original's do
+ * (SkinDescriptions.as), so each is a whole Classic def; the select's skin menu chooses among
+ * them, and the choice is remembered per hero (Settings.classicSkins).
  */
 export const CLASSIC_SKINS: Readonly<Record<string, readonly CharacterDef[]>> = CLASSIC_SKIN_LISTS;
+
+/** The select's slots, in the original's order (classic/skins.ts), by hero id. */
+export const CLASSIC_SLOTS: readonly string[] = CLASSIC_SLOT_ORDER;
+
+/** The heroes Options > Expansion heroes adds, by hero id (the original has none of them). */
+export const EXPANSION_HEROES: readonly string[] = CLASSIC_EXPANSION_HEROES;
+
+/** Hero `def` is one of a slot's other looks (never a slot of its own). */
+export function isSkin(def: CharacterDef): boolean {
+  return skinHost(def) !== def;
+}
 
 /** The slot hero `def` is a skin of (itself when it is no other hero's skin). */
 export function skinHost(def: CharacterDef): CharacterDef {

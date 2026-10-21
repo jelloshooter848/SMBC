@@ -7,7 +7,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { NullRenderer } from '@engine/gfx/renderer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { CreditsScene, CREDITS, CREDITS_TAIL } from '@game/scenes/credits';
+import { CreditsScene, CREDITS, CREDITS_TAIL, creditsSpeech } from '@game/scenes/credits';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import { CARD_GUARD_FRAMES, CardScene, MessageScene } from '@game/scenes/message';
@@ -121,7 +121,10 @@ describe('the credits roll', () => {
     expect(credits).toBeInstanceOf(CreditsScene);
     expect((credits as CreditsScene).translucent).toBe(true);
     expect(level.world.castleText).toEqual([]); // handed to the credits
-    expect(h.said.at(-1)).toBe('Credits.'); // the castle reads its lines as they show
+    // The castle reads its lines as they show; the credits read the roll (owner decision, 0.5.0),
+    // not those lines again.
+    expect(h.said.at(-1)).toBe(creditsSpeech((credits as CreditsScene).lines));
+    expect(h.said.at(-1)).not.toContain('YOUR QUEST IS OVER.');
     for (let i = 0; i < 5000; i++) h.step();
     expect(h.top()).toBe(credits); // the closing lines wait for OK
     h.step(['jump']);
