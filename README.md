@@ -13,7 +13,7 @@ browser does, including phones, and deploys as static files.
 
 **Classic mode is the game** (title → **CLASSIC**): a remake of _Super Mario Bros. Crossover_ 3.1.21
 with our own art and music. **Chapter 1**, the story campaign, is **coming soon** (version 1.0): the
-title's Chapter 1 row says so for now. Every save file, save code and resume link made by earlier
+title's **Campaign** row says so for now. Every save file, save code and resume link made by earlier
 versions is kept, untouched, for when it opens. The plan is in [docs/ROADMAP.md](docs/ROADMAP.md):
 0.5.0 the Classic remake, 0.6 to 0.9 new heroes (the Expansion heroes option), 1.0 Chapter 1.
 
@@ -62,14 +62,14 @@ armour. How to play (Options, or the pause menu) explains each hero as Classic p
 ### Chapter 1 (coming soon)
 
 The story campaign below (the world map, save files, the hidden heroes and their mini games) is
-Chapter 1. It opens for everyone in 1.0; until then the title's **Chapter 1** row and resume links
-show **CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser,
+Chapter 1. It opens for everyone in 1.0; until then the title's **Campaign** row and resume links
+show **CAMPAIGN: CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser,
 **Options → Save files** still copies their codes, and a resume link stays in the address so it
 works later. In developer mode (below) Chapter 1 opens as before, for building and testing it.
 
 ### World map and save files
 
-**Chapter 1** (with developer mode on, until 1.0) opens the file select: three save files, each showing its hero (two for a
+**Campaign** on the title (with developer mode on, until 1.0) opens the file select: three save files, each showing its hero (two for a
 two-player file), the world reached, levels cleared (out of 32), lives and score (a star once
 the game is beaten); pick a file to continue it, start a new one or erase one. A new file is one
 player and opens on World 1's map with Mario (3 lives) standing on **1-0**, his tutorial stage:
@@ -242,7 +242,7 @@ level editor's SHARE) open the website, never a file on your disk. To build it y
 
 Enter up, up, down, down, left, right, left, right, attack, jump on the title screen (or open the game
 with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu. It also opens
-**Chapter 1** (the campaign) and resume links until 1.0. That is on local and development builds
+the **Campaign** (Chapter 1) and resume links until 1.0. That is on local and development builds
 (`pnpm dev`); the released game keeps dev mode for its developer: the code asks for a passphrase
 there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). In dev mode:
 

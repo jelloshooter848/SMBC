@@ -147,12 +147,12 @@ function exitOf(id: string): string {
 }
 
 describe('the title and the CLASSIC menu', () => {
-  it('CLASSIC comes first (0.5.0, G-112), then Chapter 1, with a hint free of level numbers', () => {
+  it('CLASSIC comes first (0.5.0, G-112), then Campaign (O-02), with a hint free of level numbers', () => {
     const h = classic();
     h.game.showTitle();
     const title = h.top() as TitleScene;
     // O-01: Custom levels moved into Options.
-    expect(labels(title).slice(0, 3)).toEqual(['Classic', 'Chapter 1', 'Options']);
+    expect(labels(title).slice(0, 3)).toEqual(['Classic', 'Campaign', 'Options']);
     const it = items(title)[0] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
@@ -162,7 +162,7 @@ describe('the title and the CLASSIC menu', () => {
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     const last = (str: string) => four.filter((t) => t.str === str).at(-1);
-    ['CLASSIC', 'CHAPTER 1', 'OPTIONS'].forEach((str, i) =>
+    ['CLASSIC', 'CAMPAIGN', 'OPTIONS'].forEach((str, i) =>
       expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
     );
     // Four rows with Dev mode: the usual place and 12 px step, every row above the credits.
@@ -688,13 +688,13 @@ describe('dev Level select: Mode', () => {
 });
 
 describe('the campaign is unaffected', () => {
-  it('Chapter 1 (dev mode, 0.5.0) still opens the file select; a file plays Current, never as a Classic run', () => {
+  it('Campaign (dev mode, 0.5.0, O-02) still opens the file select; a file plays Current, never as a Classic run', () => {
     const h = classic({ dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.classicRun).toBe(true);
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
-    pick(h, 'Chapter 1');
+    pick(h, 'Campaign');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     file();
     h.game.openFile(1);

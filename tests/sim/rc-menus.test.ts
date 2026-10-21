@@ -18,6 +18,8 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
+import { CardScene } from '@game/scenes/message';
+import { CHAPTER1_GATE_CARD, CHAPTER1_LINK_CARD } from '@game/scenes/chapter1-gate';
 
 // The 0.5.0 RC's title and menus batch (docs/classic/RC_AUDIT_0.5.0.md, addendum O-01..O-16, and
 // RC-005..RC-007): each block names the item it checks.
@@ -149,5 +151,20 @@ describe('O-01: Custom levels moves from the title into Options', () => {
       expect(labels(o)).not.toContain('Custom levels');
       expect(labels(o)).not.toContain('Level editor');
     }
+  });
+});
+
+describe('O-02: the title row is "Campaign"', () => {
+  it('reads Campaign, second; its card reads CAMPAIGN / CHAPTER 1 COMING SOON!, read out', () => {
+    const h = makeGame();
+    const t = title(h);
+    expect(labels(t)).toEqual(['Classic', 'Campaign', 'Options']);
+    expect(drawn(h)).toContain('CAMPAIGN');
+    pick(h, 'Campaign');
+    expect(h.top()).toBeInstanceOf(CardScene);
+    expect(CHAPTER1_GATE_CARD.slice(0, 2)).toEqual(['CAMPAIGN', 'CHAPTER 1 COMING SOON!']);
+    expect(CHAPTER1_LINK_CARD.slice(0, 2)).toEqual(['CAMPAIGN', 'CHAPTER 1 COMING SOON!']);
+    expect(h.said.at(-1)).toMatch(/^CAMPAIGN CHAPTER 1 COMING SOON!/);
+    for (const l of [...CHAPTER1_GATE_CARD, ...CHAPTER1_LINK_CARD]) expect(l.length).toBeLessThanOrEqual(28);
   });
 });
