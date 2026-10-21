@@ -5,6 +5,7 @@ import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { LevelScene } from '@game/scenes/level';
 import { CharacterSelectScene } from '@game/scenes/character-select';
+import { LevelSelectScene } from '@game/scenes/level-select-cheat';
 import type { MenuItem } from '@game/scenes/menu';
 import { MAP_SETS, mapSetOf, type ClassicMenuScene } from '@game/scenes/original-game';
 import { ClassicOverwriteScene, ClassicSetScene, openClassicSet } from '@game/scenes/classic-set-prompt';
@@ -291,5 +292,34 @@ describe('per-set saves: phone touch', () => {
     h.tap('jump');
     const w = h.top() as ClassicOverwriteScene;
     expect(w.touchLabels()).toMatchObject({ jump: 'OK', attack: 'BACK' });
+  });
+});
+
+describe('per-set saves: the Level Select cheat', () => {
+  it('Go from the menus on a set with a save warns first (Cancel focused)', () => {
+    const h = classic();
+    playTo(h, '2-1');
+    h.game.showClassicMenu();
+    h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
+    const page = h.top() as LevelSelectScene;
+    (page as unknown as { index: number }).index = labels(page).indexOf('Go');
+    h.idle(8);
+    h.tap('jump');
+    const w = h.top();
+    expect(w).toBeInstanceOf(ClassicOverwriteScene);
+    expect(idx(w)).toBe(0);
+    h.idle(8);
+    h.tap('jump');
+    expect(h.top()).toBe(page);
+    expect(loadClassicResume('smb')?.levelId).toMatch(/^2-1/);
+  });
+
+  it('a run it takes to another set moves its slot there', () => {
+    const h = classic();
+    playTo(h, '2-1');
+    h.until(() => inLevel(h), 600);
+    h.game.classicLevelSelect('ll-3-1', 'normal');
+    expect(loadClassicResume('smb')).toBeNull();
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
   });
 });

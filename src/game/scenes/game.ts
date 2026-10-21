@@ -1989,6 +1989,8 @@ export class Game {
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    // Per-set saves: a new run; its first WORLD card writes its set's slot.
+    this.resumeSet = null;
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
     // a hero the select does not offer now plays as its first slot's hero.
     if (classic) character = this.restoreSlotHero(character);
@@ -2071,7 +2073,10 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
-    this.resumeSet = resumeSetOf(levelId);
+    // A run the Level Select cheat took to another set moves there: one slot holds it, not two.
+    const set = resumeSetOf(levelId);
+    if (this.resumeSet && this.resumeSet !== set) clearClassicResume(this.resumeSet);
+    this.resumeSet = set;
     saveClassicResume(r);
   }
 
