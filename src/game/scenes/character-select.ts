@@ -1445,6 +1445,7 @@ export class CharacterSelectScene implements Scene {
       shown,
       face ?? (shown ? this.artOf(shown) : null),
       this.theme.hudFrame,
+      this.comingPlace(),
     );
     // G-055: a pick closes the select and name boxes while the hero acts it out
     // (CharacterSelectBox: cancel(), nameBox.cancel()).
@@ -1587,6 +1588,21 @@ export class CharacterSelectScene implements Scene {
       r.text(dark, str, x + dx, y + dy);
     r.text(assets.sheet('font', th.shadowFont), str, x + 1, y + 1);
     r.text(assets.sheet('font', kind === 'tint' ? th.tintFont : th.nameFont), str, x, y);
+  }
+
+  /**
+   * BUG-04: the world and stage of the level the select is for (Game.selectLevel), for its HUD:
+   * the state's own move on only at that level's WORLD card, after the select.
+   */
+  private comingPlace(): { world: number; stage: number } {
+    const id = this.game.selectLevel;
+    if (!id) return this.game.state;
+    try {
+      const lv = this.game.deps.getLevel(id);
+      return { world: lv.world, stage: lv.stage };
+    } catch {
+      return this.game.state;
+    }
   }
 
   /**

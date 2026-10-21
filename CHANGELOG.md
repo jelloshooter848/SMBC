@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Classic: the hero select's HUD shows the level coming next (between levels, after a death,
+  a new game or a Level Select jump), no longer WORLD 1-1 or the level just cleared (BUG-04).
+
 ## [0.4.68] - 2026-10-21
 
 ### Added
