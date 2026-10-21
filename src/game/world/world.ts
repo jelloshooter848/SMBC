@@ -264,6 +264,12 @@ export interface WorldStart {
    * rooms pass 'current': they are scripted around Current kits.
    */
   rules?: Rules;
+  /**
+   * The CLASSIC title's live demo (O-04, scenes/classic-demo.ts): the camera and the screen's
+   * edges follow player 1 alone (TitleLevel's screen follows its Mario), and no hero takes a pipe
+   * or a door. Absent (false) everywhere else.
+   */
+  demo?: boolean;
   /** Override the level's start tile. */
   x?: number;
   y?: number;
@@ -814,6 +820,8 @@ export class World {
   private readonly blockItems = new Map<string, BlockContent>();
   /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
   readonly mapDifficulty: MapDifficulty;
+  /** The CLASSIC title's demo World (WorldStart.demo). */
+  readonly demo: boolean;
 
   constructor(
     level: LevelData,
@@ -840,6 +848,7 @@ export class World {
     this.deathStyle = start.deathStyle ?? 'hop';
     this.deathSfx = this.deathStyle === 'hop' ? null : (start.deathSfx ?? DEATH_SFX[this.deathStyle]);
     this.scorePopups = start.scorePopups ?? true;
+    this.demo = start.demo === true;
     this.map = new TileMap(level);
     for (const id of level.tiles) if (id === T.CRACKED) this.cracked++;
     this.descents = level.zones.filter(
@@ -2034,7 +2043,9 @@ export class World {
       // (its left and bottom edges on the enemy's). Only Classic hits ever set `frozen`.
       for (const e of this.entities)
         if (e instanceof Enemy && e.alive && e.frozen > 0) solidBox(p.body, frozenBlock(e));
-      if (p.body.x < this.camera.x) {
+      // The demo's other heroes are left behind as the screen moves on (TitleLevel: only its Mario
+      // is held on screen).
+      if (p.body.x < this.camera.x && !(this.demo && p !== this.player)) {
         this.placeX(p, this.camera.x);
         if (p.body.vx < 0) p.body.vx = 0;
         this.unsqueeze(p);
@@ -2044,7 +2055,7 @@ export class World {
       // so does a camera held back by an anchor (a parked tank).
       if (
         p.body.x + p.body.w > rightEdge &&
-        (this.camera.auto || anchor !== null || (this.coop && p !== this.rightmost()))
+        (this.camera.auto || anchor !== null || (this.coop && !this.demo && p !== this.rightmost()))
       ) {
         this.placeX(p, rightEdge - p.body.w);
         if (this.camera.auto && p.body.vx > 0) p.body.vx = 0;
@@ -2083,7 +2094,7 @@ export class World {
     this.crackWalls();
     this.snuffCandles();
     for (const [i, p] of this.players.entries()) {
-      if (p.dead || p.out) continue;
+      if (p.dead || p.out || this.demo) continue;
       this.checkPipes(p, this.autoWalk ? AUTO_WALK_INPUT : (inputs[i] ?? NO_INPUT));
       if (this.pipeAnim) break;
       if (!this.autoWalk && this.checkDoors(p, inputs[i] ?? NO_INPUT)) break;
@@ -2674,6 +2685,10 @@ export class World {
   }
 
   private rightmost(): Player | null {
+    if (this.demo) {
+      const lead = this.players[0];
+      return lead && !lead.dead && !lead.out ? lead : null;
+    }
     let best: Player | null = null;
     for (const p of this.activePlayers()) if (!best || p.body.x > best.body.x) best = p;
     return best;
