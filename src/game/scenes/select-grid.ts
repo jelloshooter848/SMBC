@@ -241,6 +241,38 @@ export function drawPanel(
   }
 }
 
+/**
+ * How much a MessageBox grows (or shrinks) each frame: MessageBox.grow adds SCALE_INC (7) times
+ * the frame's time (1/60 s) to its scale, from 0.01, so it is full size in 9 frames.
+ */
+export const BOX_GROW_PER_FRAME = 7 / 60;
+
+/**
+ * A MessageBox's panel (`w` x `h` at full size) centred on (cx, cy) at `scale` (0-1), as
+ * MessageBox.grow and shrink scale it about its centre. Too small for its frame, it is a plain
+ * patch of the frame's light colour.
+ */
+export function drawScaledPanel(
+  r: Renderer,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  scale: number,
+  th: SelectTheme = DEFAULT_SELECT_THEME,
+): void {
+  const s = Math.max(0, Math.min(1, scale));
+  const sw = Math.max(1, Math.round(w * s));
+  const sh = Math.max(1, Math.round(h * s));
+  const x = Math.round(cx - sw / 2);
+  const y = Math.round(cy - sh / 2);
+  if (sw < 8 || sh < 8) {
+    r.rect(x, y, sw, sh, th.frame.kind === 'bevel' ? th.frame.light : (th.frame.lines[0] ?? th.fill));
+    return;
+  }
+  drawPanel(r, x, y, sw, sh, th);
+}
+
 /** A cell in look `th`, with the cursor's 1 px ring (`cursor`, a colour) when it is on it. */
 export function drawCell(
   r: Renderer,

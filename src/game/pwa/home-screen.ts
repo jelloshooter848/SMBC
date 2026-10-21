@@ -67,6 +67,17 @@ export const STANDALONE_NOTICE_LINES: readonly string[] = [
   'SAFARI, USE OPTIONS >',
   'SAVE FILES > PASTE CODE.',
 ];
+/**
+ * The same note while the campaign is closed (O-07 option c: Save files is in dev mode only until
+ * Chapter 1 opens), so it names no menu the player cannot reach.
+ */
+export const STANDALONE_NOTICE_CLOSED_LINES: readonly string[] = [
+  'WELCOME TO THE HOME SCREEN',
+  'APP! IT KEEPS ITS OWN SAVES,',
+  "APART FROM SAFARI'S.",
+];
+const STANDALONE_NOTICE_CLOSED_SAID =
+  "Welcome to the Home Screen app! It keeps its own saves, apart from Safari's. OK to continue.";
 const STANDALONE_NOTICE_SAID =
   "Welcome to the Home Screen app! It keeps its own saves, apart from Safari's. To bring a save over from Safari, use Options, Save files, Paste code. OK to continue.";
 
@@ -81,6 +92,15 @@ export const OFFLINE_NOTICE_LINES: readonly string[] = [
   'COPY CODE ON ONE, THEN',
   'PASTE CODE ON THE OTHER.',
 ];
+/** The downloaded copy's note while the campaign is closed (O-07; see STANDALONE_NOTICE_CLOSED_LINES). */
+export const OFFLINE_NOTICE_CLOSED_LINES: readonly string[] = [
+  'PLAYING FROM A DOWNLOAD!',
+  'THIS COPY KEEPS ITS OWN',
+  'SAVES, APART FROM THE',
+  "WEBSITE'S.",
+];
+const OFFLINE_NOTICE_CLOSED_SAID =
+  "You are playing from a download. This copy keeps its own saves, apart from the website's. OK to continue.";
 const OFFLINE_NOTICE_SAID =
   "You are playing from a download. This copy keeps its own saves, apart from the website's. To move a save, use Options, Save files: Copy code on one, then Paste code on the other. OK to continue.";
 
@@ -186,7 +206,8 @@ export function titleNotice(game: Game): boolean {
       setFlag(game, 'offlineDone');
       game.scenes.pop();
     };
-    card(game, OFFLINE_NOTICE_LINES, OFFLINE_NOTICE_SAID, close, { top: true });
+    if (game.campaignOpen) card(game, OFFLINE_NOTICE_LINES, OFFLINE_NOTICE_SAID, close, { top: true });
+    else card(game, OFFLINE_NOTICE_CLOSED_LINES, OFFLINE_NOTICE_CLOSED_SAID, close, { top: true });
     return true;
   }
   if (standaloneNoticeDue(game)) {
@@ -194,7 +215,8 @@ export function titleNotice(game: Game): boolean {
       setFlag(game, 'noticeDone');
       game.scenes.pop();
     };
-    card(game, STANDALONE_NOTICE_LINES, STANDALONE_NOTICE_SAID, close, { top: true });
+    if (game.campaignOpen) card(game, STANDALONE_NOTICE_LINES, STANDALONE_NOTICE_SAID, close, { top: true });
+    else card(game, STANDALONE_NOTICE_CLOSED_LINES, STANDALONE_NOTICE_CLOSED_SAID, close, { top: true });
     return true;
   }
   if (updateNoticeDue(game)) {

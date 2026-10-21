@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ClassicTitleScene } from '@game/scenes/original-title';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MAP_SET_IDS } from '@engine/save/progress';
 import { MARIO } from '@game/characters/mario';
@@ -480,5 +481,73 @@ describe('per-set saves: small things', () => {
     expect(labels(menu)).toContain('The Lost Levels');
     expect(idx(menu)).toBe(2);
     expect(h.said.at(-1)).toMatch(/The Lost Levels/);
+    // B-F's boxed set menu over the CLASSIC title's demo, with exactly one title under it.
+    expect(menu.over).toBeInstanceOf(ClassicTitleScene);
+    expect(titles(h)).toBe(1);
+  });
+});
+
+/** How many CLASSIC titles the stack holds. */
+function titles(h: H): number {
+  return (h.game.scenes as unknown as { stack: unknown[] }).stack.filter(
+    (x) => x instanceof ClassicTitleScene,
+  ).length;
+}
+
+describe('per-set saves over the CLASSIC title (B-F, O-04)', () => {
+  it('the prompt is a box over the demo, which plays on under it', () => {
+    const h = classic();
+    playTo(h, '3-1');
+    pick(h, 'smb');
+    const p = h.top() as ClassicSetScene;
+    expect(p).toBeInstanceOf(ClassicSetScene);
+    expect(p.translucent).toBe(true);
+    expect(p.demo).toBeInstanceOf(ClassicTitleScene);
+    const tick = vi.spyOn(p.demo as ClassicTitleScene, 'tickDemo');
+    h.idle(5);
+    expect(tick).toHaveBeenCalledTimes(5);
+    const t = draw(p).texts.map((x) => x.str);
+    expect(t).toEqual(
+      expect.arrayContaining(['SUPER MARIO BROS.', 'CONTINUE', 'NEW GAME', 'SAVED: WORLD 3-1, 3 LIVES']),
+    );
+    h.tap('down');
+    h.tap('jump');
+    const w = h.top() as ClassicOverwriteScene;
+    expect(w.translucent).toBe(true);
+    expect(draw(w).texts.map((x) => x.str)).toEqual(expect.arrayContaining(['OVERWRITE SAVE?', 'CANCEL']));
+    expect(titles(h)).toBe(1);
+  });
+
+  it('B-E: Continue keeps the Tutorials seen this game; a confirmed New game resets them', () => {
+    const h = classic();
+    playTo(h, '3-1');
+    const reset = vi.spyOn(h.game.classicTutorials, 'newGame');
+    pick(h, 'smb');
+    h.idle(8);
+    h.tap('jump');
+    expect(reset).not.toHaveBeenCalled();
+    h.until(() => inLevel(h), 600);
+    pick(h, 'smb');
+    h.idle(8);
+    h.tap('down');
+    h.tap('jump');
+    h.idle(8);
+    h.tap('down');
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(titles(h)).toBe(0);
+  });
+
+  it('O-16: quitting a run from its select goes back to one boxed CLASSIC menu', () => {
+    const h = classic();
+    playTo(h, '3-1');
+    h.until(() => inLevel(h), 600);
+    h.game.quitClassicRun();
+    const menu = h.top() as ClassicMenuScene;
+    expect(labels(menu)).toContain('Super Mario Bros.');
+    expect(menu.over).toBeInstanceOf(ClassicTitleScene);
+    expect(titles(h)).toBe(1);
+    expect(loadClassicResume('smb')?.levelId).toMatch(/^3-1/);
   });
 });

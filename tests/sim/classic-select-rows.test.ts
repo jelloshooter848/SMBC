@@ -28,7 +28,7 @@ function classicSelect(classicRules: 'classic' | 'current' = 'classic') {
 }
 
 describe('two-row character select', () => {
-  it('Down goes to the nearest hero on the next row, Up back; the edges bump', () => {
+  it('Down goes to the nearest hero on the next row, Up back; past the edges to the other row (RC-006)', () => {
     expect(CLASSIC_EXTRAS.length).toBeGreaterThan(1);
     const { h, sel } = classicSelect();
     expect(h.said.some((t) => t.includes('up and down for the other row'))).toBe(true);
@@ -61,9 +61,16 @@ describe('two-row character select', () => {
       expect(h.said.at(-1)).toMatch(new RegExp(`, ${names[r]} row$`));
       at = to;
     }
-    // The last row: Down bumps.
+    // RC-006: the last row's Down goes round to the first row (CharacterSelectBox
+    // .getNearestPortrait), and Up comes back.
+    const last = at;
     h.tap('down');
-    expect(idx(sel)).toBe(at);
+    expect(rowOf(idx(sel))).toBe(0);
+    expect(idx(sel)).toBe(nearest(last, 0));
+    const wrapped = idx(sel);
+    h.tap('up');
+    expect(idx(sel)).toBe(nearest(wrapped, rows - 1));
+    at = idx(sel);
     for (let r = rows - 2; r >= 0; r--) {
       const to = nearest(at, r);
       h.tap('up');
@@ -71,8 +78,13 @@ describe('two-row character select', () => {
       at = to;
     }
     expect(rowOf(idx(sel))).toBe(0);
+    // Up on the first row: the last row's nearest.
     h.tap('up');
-    expect(idx(sel)).toBe(at);
+    expect(rowOf(idx(sel))).toBe(rows - 1);
+    expect(idx(sel)).toBe(nearest(at, rows - 1));
+    h.tap('down');
+    expect(rowOf(idx(sel))).toBe(0);
+    at = idx(sel);
     // From the first row's right end, Down lands on the nearest column.
     for (let i = 0; i < rowEnd(0) - at; i++) h.tap('right');
     expect(idx(sel)).toBe(rowEnd(0));
@@ -80,18 +92,28 @@ describe('two-row character select', () => {
     expect(idx(sel)).toBe(nearest(rowEnd(0), 1));
   });
 
-  it('Left and Right still walk the whole roster across the rows', () => {
+  it('RC-006: Left and Right wrap within the row, as the original (Simon to Mario)', () => {
     const { h, sel } = classicSelect();
-    // Left from the first hero: the Random slot (FU-4), then the last hero.
+    const n = sel.chars.length + 1;
+    const y0 = sel.slot(0).y;
+    const top = Array.from({ length: n }, (_, k) => k).filter((k) => sel.slot(k).y === y0);
+    const end = Math.max(...top);
+    // Left from the first hero: the first row's last, never the Random slot.
     h.tap('left');
-    expect(idx(sel)).toBe(sel.chars.length);
-    h.tap('left');
-    expect(idx(sel)).toBe(sel.chars.length - 1);
-    h.tap('right');
+    expect(idx(sel)).toBe(end);
     h.tap('right');
     expect(idx(sel)).toBe(0);
-    for (let i = 0; i < sel.firstRow; i++) h.tap('right');
-    expect(idx(sel)).toBe(sel.firstRow);
+    for (let i = 0; i < top.length; i++) h.tap('right');
+    expect(idx(sel)).toBe(0);
+    // The second row wraps on its own, through the Random slot (FU-4) at its end.
+    h.tap('down');
+    const start = idx(sel);
+    expect(sel.slot(start).y).toBeGreaterThan(y0);
+    h.tap('left');
+    expect(idx(sel)).toBe(sel.chars.length);
+    expect(h.said.at(-1)).toBe('Random');
+    h.tap('right');
+    expect(idx(sel)).toBe(start);
   });
 
   it('one row (Classic rules set to Campaign, free play): Up and Down do nothing, text as today', () => {
@@ -101,7 +123,8 @@ describe('two-row character select', () => {
     expect(sel.firstRow).toBe(sel.chars.length);
     expect(sel.rows).toBe(2);
     expect(h.said.at(-1)).toBe(
-      'Select your hero. Left and right to choose, up and down for the other row, OK to begin.',
+      // O-10: Classic's select names the hero and what OK does on it.
+      'Select your hero. Mario, Super Mario Bros. Left and right to choose, up and down for the other row, OK: play.',
     );
     const f = makeGame();
     f.game.showCharacterSelect();

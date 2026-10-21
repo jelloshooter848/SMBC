@@ -191,7 +191,8 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.music.at(-1)).toBe('smb-select');
     h.idle(12);
-    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Link'; i++)
+      h.tap(i % 12 === 11 ? 'down' : 'right'); // RC-006: rows wrap
     h.tap('jump');
     // G-050, G-055 (0.5.0): Link's looks open first (OK keeps his own); the jingle starts with
     // his pick performance.
@@ -205,7 +206,8 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     const h = audioGame();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     h.idle(12);
-    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== name; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== name; i++)
+      h.tap(i % 12 === 11 ? 'down' : 'right'); // RC-006: rows wrap
     h.tap('jump');
     // A hero with other looks (Mega Man: Proto Man) opens the look menu first: OK takes the
     // highlighted (own) look, and only that is the pick.
@@ -237,17 +239,19 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     h.game.showClassicMenu();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     h.idle(12);
-    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Mega Man'; i++) h.tap('right');
+    for (let i = 0; i <= 40 && h.said.at(-1)?.split(', ')[0] !== 'Mega Man'; i++)
+      h.tap(i % 12 === 11 ? 'down' : 'right'); // RC-006: rows wrap
     h.tap('attack');
     h.idle(4);
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
     expect(h.jingles).toEqual([]);
     expect(h.sounds).not.toContain('mm-teleport');
-    // The select tune stopped, and nothing started after it.
+    // The select tune stopped, and nothing started after it but the CLASSIC title's own 1-1 tune
+    // (O-04: its demo is a real 1-1, as TitleLevel is, whose music starts with it).
     const at = h.music.lastIndexOf('smb-select');
     expect(at).toBeGreaterThanOrEqual(0);
     expect(h.music.slice(at + 1)).toContain('(stop)');
-    expect(h.music.slice(at + 1).every((x) => x === '(stop)')).toBe(true);
+    expect(h.music.slice(at + 1).filter((x) => x !== '(stop)')).toEqual(['overworld']);
   });
 
   it('a select outside Classic mode stays silent as before', () => {

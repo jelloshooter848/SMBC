@@ -1,10 +1,24 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
-import type { Renderer } from '@engine/gfx/renderer';
+import { clipped, type Renderer } from '@engine/gfx/renderer';
+import type { SmbcCanvas } from '@content/sprites/smbc-anchor';
+import { BILL_SMBC_CANVAS } from '@content/sprites/smbc-bill';
+import { MEGAMAN_SMBC_CANVAS } from '@content/sprites/smbc-megaman';
+import { RYU_SMBC_CANVAS } from '@content/sprites/smbc-ryu';
+import { SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
 import { shownPortrait, type CharacterDef } from '../characters/character';
 import { heroFor, heroGame, skinGame } from '../characters/registry';
 import type { Game } from './game';
-import { PICK_SHOW_GUARD, pickPose, pickShowFrames, pickShowOf } from './pick-show';
+import {
+  GROUND_Y,
+  PICK_SHOW_GUARD,
+  type PickFrame,
+  pickShow,
+  pickShowFrames,
+  pickShowOf,
+  type ShowFrame,
+  type ShowProp,
+} from './pick-show';
 import { cheatInfo } from '../cheats';
 import { abilityHint } from './hints';
 import { fontText } from '../hud/text';
@@ -132,6 +146,27 @@ type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; y
 export const REVIVE_NEWS = ['YOU CAN NOW REVIVE', 'AND STRENGTHEN HEROES.'];
 /** The question before leaving revive mode (MessageBoxMessages.CANCEL_REVIVE). */
 export const REVIVE_DONE_QUESTION = ['ARE YOU FINISHED', 'REVIVING AND', 'STRENGTHENING HEROES?'];
+
+/** Sheets whose frames are drawn on a fixed canvas, the hero's body centred at `cx` (smbc-anchor). */
+const SHOW_CANVASES: Readonly<Record<string, SmbcCanvas>> = {
+  'ryu-classic': RYU_SMBC_CANVAS,
+  'megaman-classic': MEGAMAN_SMBC_CANVAS,
+  'bill-classic': BILL_SMBC_CANVAS,
+};
+
+/**
+ * RC-007: where in frame `frame` (`w` px wide) of sheet `sheet` the hero's body centre is, so a
+ * pick show's frames all stand where its standing art does: a canvas sheet's centre, Simon's
+ * cropped frames' own origins, the Current Simon's whip frames (his body at their left), else the
+ * frame's middle (a trimmed portrait).
+ */
+function showAnchor(sheet: string, frame: string, w: number): number {
+  const canvas = SHOW_CANVASES[sheet];
+  if (canvas && w === canvas.w) return canvas.cx;
+  if (sheet === 'simon-classic') return SIMON_CLASSIC_ORIGIN[frame] ?? w >> 1;
+  if (sheet === 'simon' && frame.includes('whip') && w > 16) return 8;
+  return w >> 1;
+}
 
 export class CharacterSelectScene implements Scene {
   private index = 0;
@@ -556,7 +591,7 @@ export class CharacterSelectScene implements Scene {
   private perform(c: CharacterDef, go: () => void): void {
     if (!this.classicLayout || this._reviving) return go();
     const slotId = this.game.slotOf(c).id;
-    this.show = { c, slot: this.index, t: 0, frames: pickShowFrames(slotId), go };
+    this.show = { c, slot: this.index, t: 0, frames: pickShowFrames(slotId, this.game.skinFor(c).id), go };
     // The choose jingle and teleport start with the move (G-062, G-070).
     this.game.heroPicked(c);
   }
@@ -566,6 +601,9 @@ export class CharacterSelectScene implements Scene {
     const sh = this.show;
     if (!sh) return;
     sh.t++;
+    // The move's own sounds (a brick breaking, Mario's block, Simon's whip).
+    const sfx = this.showFrame(sh).sfx;
+    if (sfx) this.game.ctx.audio.sfx(sfx);
     const skip =
       sh.t > PICK_SHOW_GUARD &&
       (pressed('jump') || pressed('start') || pressed('attack') || pressed('select'));
@@ -689,6 +727,16 @@ export class CharacterSelectScene implements Scene {
     return mine === c ? c.portraitFor(second ? s.kit2 : s.kit) : shownPortrait(c);
   }
 
+  /**
+   * O-10 (RC-024): what OK does on slot `i` in Classic's select, said in the screen's line:
+   * " OK: looks." where it opens the skin menu, else " OK: play."; nothing outside Classic's
+   * select or in revive mode (which says its own action).
+   */
+  private okSay(i: number): string {
+    if (!this.classicLayout || this._reviving) return '';
+    return this.opensPicker(i) ? ' OK: looks.' : ' OK: play.';
+  }
+
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   private rowsHint(): string {
     if (this.rows > 2) return ' up and down for the other rows,';
@@ -768,7 +816,8 @@ export class CharacterSelectScene implements Scene {
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       const name = this.sayName(this.index) || pick.current.name;
       this.game.deps.announcer?.say(
-        `${who} your hero. ${sentence(name)} Left and right to choose,${this.rowsHint()} OK to confirm.` +
+        `${who} your hero. ${sentence(name)} Left and right to choose,${this.rowsHint()}` +
+          (this.classicLayout ? this.okSay(this.index) : ' OK to confirm.') +
           (pick.onMap ? ' Down for return to map.' : '') +
           this.skinHint() +
           this.toFind() +
@@ -779,8 +828,11 @@ export class CharacterSelectScene implements Scene {
     }
     this.index = this.unlocked(this.index);
     this.index2 = this.unlocked(this.index2);
+    // Classic's select names the highlighted hero and what OK does on it (O-10, RC-024).
+    const first = this.classicLayout ? ` ${sentence(this.sayName(this.index))}` : '';
+    const ok = this.classicLayout ? this.okSay(this.index) : ' OK to begin.';
     this.game.deps.announcer?.say(
-      `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
+      `Select your hero.${first} Left and right to choose,${this.rowsHint()}${ok}${this.start ? '' : ' Player two: press menu to join.'}` +
         this.skinHint() +
         this.toFind() +
         this.fallenNote() +
@@ -960,19 +1012,27 @@ export class CharacterSelectScene implements Scene {
     const n = this.total;
     // Left/right step to the next hero that is not locked (wrapping); with every other hero
     // locked the cursor stays put.
+    // RC-006: Classic's grid wraps within the row, as the original's (CharacterSelectBox
+    // .determineSelection: Simon's Right goes to Mario, not to the next row).
+    const own = this.classicLayout && this.rows > 1;
     const move = (idx: number, f: InputFrame): number => {
-      const d = f.pressed('left') ? n - 1 : f.pressed('right') ? 1 : 0;
-      if (!d) return idx;
-      let to = (idx + d) % n;
-      while (to !== idx && this.skipped(to)) to = (to + d) % n;
+      const right = f.pressed('right');
+      if (!f.pressed('left') && !right) return idx;
+      const r = own ? this.rowOf(idx) : 0;
+      const lo = own ? (this.rowStarts[r] as number) : 0;
+      const len = own ? (this.rowStarts[r + 1] as number) - lo : n;
+      const d = right ? 1 : len - 1;
+      const step = (i: number) => lo + ((i - lo + d) % len);
+      let to = step(idx);
+      while (to !== idx && this.skipped(to)) to = step(to);
       this.game.ctx.audio.sfx(to === idx ? 'bump' : 'select');
       const name = this.sayName(to);
       if (name) this.game.deps.announcer?.say(name);
       return to;
     };
     // Two rows (the Classic extras): Up / Down go to the other row's nearest unlocked hero by
-    // column; Up on the first row or Down on the second bumps (Down there is left to RETURN TO
-    // MAP when the pick has it). One row: null, nothing changes (today's select).
+    // column; outside Classic's grid Up on the first row or Down on the last bumps (Down there is
+    // left to RETURN TO MAP when the pick has it). One row: null, nothing changes (today's select).
     const rows = this.rows > 1;
     const starts = this.rowStarts;
     const ROW_NAMES = ['first', 'second', 'third'];
@@ -982,8 +1042,10 @@ export class CharacterSelectScene implements Scene {
       const down = f.pressed('down');
       if (up === down) return null;
       const row = this.rowOf(idx);
-      const to = up ? row - 1 : row + 1;
-      if (to < 0 || to >= this.rows) {
+      // RC-006: in Classic's grid Up or Down from either row goes to the other row
+      // (CharacterSelectBox.getNearestPortrait); elsewhere the edges bump.
+      const to = own ? (row + (up ? this.rows - 1 : 1)) % this.rows : up ? row - 1 : row + 1;
+      if (to < 0 || to >= this.rows || (own && down && row === this.rows - 1 && this.pick?.onMap)) {
         if (down && this.pick?.onMap) return null;
         this.game.ctx.audio.sfx('bump');
         return idx;
@@ -1107,23 +1169,79 @@ export class CharacterSelectScene implements Scene {
     }
   }
 
-  /** G-055: the picked hero's standing art in its cell (x, y), moved by its pick move. */
-  private renderShow(
-    r: Renderer,
-    sh: NonNullable<CharacterSelectScene['show']>,
-    x: number,
-    y: number,
-    cell: number,
-  ): void {
+  /** The show of picked hero `c` this frame (its look's own move, else its slot's). */
+  private showFrame(sh: NonNullable<CharacterSelectScene['show']>): ShowFrame {
+    const move = pickShowOf(this.game.slotOf(sh.c).id, this.game.skinFor(sh.c).id).move;
+    return pickShow(move, sh.t, this.game.ctx.reduceFlashing);
+  }
+
+  /**
+   * G-055, RC-007: the picked hero acting out the original's pick move on the ground, centred on
+   * `cx` (feet on y 208), whole and in its own frames, with the props its chooseCharacter adds
+   * (pick-show.ts). The select and name boxes are closed meanwhile, as in the original.
+   */
+  private renderShow(r: Renderer, sh: NonNullable<CharacterSelectScene['show']>, cx: number): void {
+    const assets = this.game.ctx.assets;
     const art = this.artOf(sh.c);
-    const pose = pickPose(pickShowOf(this.game.slotOf(sh.c).id).move, sh.t, this.game.ctx.reduceFlashing);
-    if (!pose.shown) return;
-    const sheet = this.game.ctx.assets.sheet(art.sheet, art.palette);
-    const frame = pose.pose === 'raise' && sheet.frames.get('raise-arms') ? 'raise-arms' : art.frame;
+    const pose = this.showFrame(sh);
+    const palette =
+      pose.flash !== undefined && art.palette === 'bill' ? `bill-star-${pose.flash}` : art.palette;
+    const sheet = assets.sheet(art.sheet, palette);
+    const has = (n: string) => sheet.frames.has(n);
+    const frame = this.showSheetFrame(art.frame, pose.frame, has);
     const f = sheet.frames.get(frame);
-    const w = f?.w ?? 16;
     const h = f?.h ?? 32;
-    r.sprite(sheet, frame, x + ((cell - w) >> 1) + pose.dx, y + cell - 2 - h + pose.dy);
+    // Every frame stands on the ground with the hero's body centred on cx (showAnchor).
+    const left = cx - showAnchor(art.sheet, frame, f?.w ?? 16);
+    const top = GROUND_Y - h;
+    const theme = this.groundTheme();
+    const tiles = assets.sheet('tiles', `tiles-${theme}`);
+    const prop = (p: ShowProp) => {
+      switch (p.kind) {
+        case 'tile':
+          return r.sprite(tiles, p.frame, p.x, p.y);
+        case 'piece':
+          return r.sprite(assets.sheet('items'), 'brick-piece', p.x, p.y);
+        case 'meat':
+          return r.sprite(assets.sheet('crypt'), 'meat', p.x, p.y);
+        case 'plank':
+          return r.sprite(assets.sheet('items'), 'plank', p.x, p.y);
+        case 'hole':
+          return r.rect(p.x, p.y, p.w, p.h, SKY[theme] ?? '#000000');
+        case 'jason': {
+          const jf = p.air && has('jason-jump') ? 'jason-jump' : 'jason-stand';
+          if (has(jf)) r.sprite(sheet, jf, p.x - 8, p.y - (sheet.frames.get(jf)?.h ?? 16));
+          return;
+        }
+      }
+    };
+    pose.behind.forEach(prop);
+    if (pose.shown) {
+      const draw = () => r.sprite(sheet, frame, left + pose.dx, top + pose.dy);
+      if (pose.clipY !== undefined) clipped(r, 0, 0, 256, pose.clipY, draw);
+      else draw();
+    }
+    pose.front.forEach(prop);
+  }
+
+  /**
+   * The sheet frame for a show's `want` (pick-show.ts PickFrame) where the hero's sheet has one,
+   * else its standing frame `stand`: `jump` and `walk-N` follow the standing frame's size prefix
+   * (`small-jump`), the whip's lash is the leather one, and a missing walk pose is the first.
+   */
+  private showSheetFrame(stand: string, want: PickFrame | undefined, has: (n: string) => boolean): string {
+    if (!want) return stand;
+    const pre = /^(small|big)-/.exec(stand)?.[0] ?? '';
+    const names: Record<string, string[]> = {
+      jump: [`${pre}jump`, 'jump', 'jump-tuck', 'fall'],
+      whip: ['whip-leather'],
+      'crouch-whip': ['crouch-whip-leather'],
+      teleport: ['teleport-0'],
+      raise: ['raise-arms', 'up-thrust-0'],
+    };
+    const walk = /^walk-(\d+)$/.exec(want);
+    const list = walk ? [`${pre}walk-${walk[1]}`, `${pre}walk-0`] : (names[want] ?? [want]);
+    return list.find(has) ?? stand;
   }
 
   render(r: Renderer): void {
@@ -1247,6 +1365,8 @@ export class CharacterSelectScene implements Scene {
 
   /** The hero shown in the HUD and on the ground: the skin menu's look, else the slot's in its look. */
   private shownHero(): CharacterDef | null {
+    // A pick's show (a Random pick too): the picked hero, in its look.
+    if (this.show) return this.show.c;
     if (this.picker) return this.pickerSkin;
     if (this.isRandom(this.index)) return null;
     const c = this.chars[this.index];
@@ -1326,6 +1446,9 @@ export class CharacterSelectScene implements Scene {
       face ?? (shown ? this.artOf(shown) : null),
       this.theme.hudFrame,
     );
+    // G-055: a pick closes the select and name boxes while the hero acts it out
+    // (CharacterSelectBox: cancel(), nameBox.cancel()).
+    if (this.show) return;
     const pan = gridPanel(this.rows, this.grid);
     // The name box's top (CharNameBox at y 119), or under a taller grid (a third row).
     const by = Math.max(NAME_BOX.y, pan.y + pan.h + 4);
@@ -1353,8 +1476,6 @@ export class CharacterSelectScene implements Scene {
           r.sprite(items, frame, at.x + ((cell - (f?.w ?? 16)) >> 1), at.y + ((cell - (f?.h ?? 20)) >> 1));
           return;
         }
-        // G-055: the picked hero acting out its pick, in this cell.
-        if (this.show && this.show.slot === i) return this.renderShow(r, this.show, at.x, at.y, cell);
         const c = this.chars[i];
         if (!c) return;
         const look = this.game.skinFor(c);
@@ -1392,8 +1513,9 @@ export class CharacterSelectScene implements Scene {
     const hNow = grow < 0.5 ? 8 : Math.round(8 + (boxH - 8) * ((grow - 0.5) / 0.5));
     drawPanel(r, 128 - (w >> 1), by + ((boxH - hNow) >> 1), w, hNow, th);
     // The hero's name in the menu font; the look's name and the game in the selected tint, 14 px
-    // apart (CharNameBox LINE_SPACE 28). Our one prompt goes on the ground under the hero (named by
-    // ability, the real key when not on touch), clear of every hero's head.
+    // apart (CharNameBox LINE_SPACE 28). The pick itself shows no prompt, as the original's (O-10);
+    // revive mode's prompt goes on the ground under the hero (named by ability, the real key when
+    // not on touch), clear of every hero's head.
     if (grow >= 1) {
       lines.forEach((l, k) =>
         this.outlined(
@@ -1403,14 +1525,16 @@ export class CharacterSelectScene implements Scene {
           l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name',
         ),
       );
-      const ok = abilityHint(this.game, 'OK', 'jump');
-      const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
-      const what = this._reviving ? `TO ${verb}` : this.skinsAt(this.index).length > 1 ? 'LOOKS' : 'TO PICK';
-      // The key hint goes when it would not fit on the screen (a long key name).
-      const keyed = fontText(`${ok} ${what}`);
-      const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
-      // G-055: no prompt while the picked hero acts out its pick.
-      if (!this.show) this.outlined(r, prompt, GROUND_TEXT_Y);
+      if (this._reviving) {
+        const ok = abilityHint(this.game, 'OK', 'jump');
+        const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+        const what = `TO ${verb}`;
+        // The key hint goes when it would not fit on the screen (a long key name).
+        const keyed = fontText(`${ok} ${what}`);
+        const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
+        // G-055: no prompt while the picked hero acts out its pick.
+        if (!this.show) this.outlined(r, prompt, GROUND_TEXT_Y);
+      }
     }
     const py = GROUND_TEXT_Y + 10;
     const sv = this.survival;
@@ -1501,7 +1625,8 @@ export class CharacterSelectScene implements Scene {
       r.sprite(tiles, 'ground', x, 208);
       r.sprite(tiles, 'ground', x, 224);
     }
-    if (shown) {
+    if (this.show) this.renderShow(r, this.show, 128);
+    else if (shown) {
       const pt = this.artOf(shown);
       const sheet = assets.sheet(pt.sheet, pt.palette);
       const f = sheet.frames.get(pt.frame);

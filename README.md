@@ -13,7 +13,7 @@ browser does, including phones, and deploys as static files.
 
 **Classic mode is the game** (title → **CLASSIC**): a remake of _Super Mario Bros. Crossover_ 3.1.21
 with our own art and music. **Chapter 1**, the story campaign, is **coming soon** (version 1.0): the
-title's Chapter 1 row says so for now. Every save file, save code and resume link made by earlier
+title's **Campaign** row says so for now. Every save file, save code and resume link made by earlier
 versions is kept, untouched, for when it opens. The plan is in [docs/ROADMAP.md](docs/ROADMAP.md):
 0.5.0 the Classic remake, 0.6 to 0.9 new heroes (the Expansion heroes option), 1.0 Chapter 1.
 
@@ -62,14 +62,14 @@ armour. How to play (Options, or the pause menu) explains each hero as Classic p
 ### Chapter 1 (coming soon)
 
 The story campaign below (the world map, save files, the hidden heroes and their mini games) is
-Chapter 1. It opens for everyone in 1.0; until then the title's **Chapter 1** row and resume links
-show **CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser,
-**Options → Save files** still copies their codes, and a resume link stays in the address so it
-works later. In developer mode (below) Chapter 1 opens as before, for building and testing it.
+Chapter 1. It opens for everyone in 1.0; until then the title's **Campaign** row and resume links
+show **CAMPAIGN: CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser
+(Options → **Save files**, which copies their codes, shows in developer mode only until then), and a
+resume link stays in the address so it works later. In developer mode (below) Chapter 1 opens as before, for building and testing it.
 
 ### World map and save files
 
-**Chapter 1** (with developer mode on, until 1.0) opens the file select: three save files, each showing its hero (two for a
+**Campaign** on the title (with developer mode on, until 1.0) opens the file select: three save files, each showing its hero (two for a
 two-player file), the world reached, levels cleared (out of 32), lives and score (a star once
 the game is beaten); pick a file to continue it, start a new one or erase one. A new file is one
 player and opens on World 1's map with Mario (3 lives) standing on **1-0**, his tutorial stage:
@@ -104,7 +104,7 @@ game), so there is no account and no server: **the code is the save**.
   code, or the whole message with the link in it. Its code is shown on the file's screen too.
   **PASTE CODE** on the list itself asks which file to load the code into.
 - **After each castle** (the first clear of each X-4) a card asks **BACK UP YOUR GAME?** with SHARE
-  SAVE, COPY CODE and NOT NOW. **Options → Save files → Backup reminders** turns it off.
+  SAVE, COPY CODE and NOT NOW, when **Options → Save files → Backup reminders** is on (off by default).
 - **Opening a resume link** asks, after the title, **LOAD THIS SAVE?** and which file to put it
   in, showing what each file holds (with developer mode on until Chapter 1 opens; otherwise it
   says **CHAPTER 1 COMING SOON!** and leaves the link as it is). Nothing is replaced until you answer YES; cancelling changes
@@ -191,8 +191,10 @@ has the same guide for the hero you are playing.
   **Key hints** (off by default) shows the same ability buttons with their current labels and
   bound keys beside the game ("JUMP / Z"), and a key line on the touch buttons. Instructions
   name abilities (JUMP, BACK, TOOLS), with your bound key or pad button when not on touch.
-- **Save files**: share, copy or paste each file's save code, and backup reminders on or off
+- **Save files** (developer mode only until Chapter 1 opens): share, copy or paste each file's save
+  code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
+- **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
@@ -215,8 +217,8 @@ loaded.
   Screen** when the browser offers it.
 
 On iPhone the Home Screen app keeps **its own saves, separate from Safari's** (the game says so
-on its first launch). To bring a Safari save over, use **Options → Save files → PASTE CODE** in
-the app. Home Screen apps are also exempt from Safari's 7-day clean-up of site data, so saves
+on its first launch). Once Chapter 1 is open, bring a Safari save file over with **Options → Save
+files → PASTE CODE** in the app. Home Screen apps are also exempt from Safari's 7-day clean-up of site data, so saves
 there are safer.
 
 A new release downloads in the background; the title then shows **UPDATE READY**: OK reloads
@@ -233,8 +235,8 @@ Each [release](https://github.com/jelloshooter848/SMBC/releases) has a
 **`smbc-remix-vX.Y.Z-offline.zip`** (`smbc-vX.Y.Z-offline.zip` before 0.5.0): unzip it and double-click **`index.html`**. The whole game is in
 that one file, so it plays offline on Windows, macOS and Linux with nothing to install (tested
 in Chrome; it should work in Edge, Firefox and Safari). The downloaded copy keeps **its own
-saves, separate from the website's** (it says so on its first launch); to move a save either
-way, use **Options → Save files → COPY CODE** in one and **PASTE CODE** in the other. Links it shares (resume links, the
+saves, separate from the website's** (it says so on its first launch); once Chapter 1 is open, move a
+save file either way with **Options → Save files → COPY CODE** in one and **PASTE CODE** in the other. Links it shares (resume links, the
 level editor's SHARE) open the website, never a file on your disk. To build it yourself, run
 `pnpm build:offline` (it writes `dist-offline/`; see [docs/RELEASING.md](docs/RELEASING.md)).
 
@@ -242,7 +244,7 @@ level editor's SHARE) open the website, never a file on your disk. To build it y
 
 Enter up, up, down, down, left, right, left, right, attack, jump on the title screen (or open the game
 with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu. It also opens
-**Chapter 1** (the campaign) and resume links until 1.0. That is on local and development builds
+the **Campaign** (Chapter 1) and resume links until 1.0. That is on local and development builds
 (`pnpm dev`); the released game keeps dev mode for its developer: the code asks for a passphrase
 there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). In dev mode:
 
@@ -287,9 +289,9 @@ Options → Controls.
 
 ### Level editor and sharing
 
-**Level editor** on the title screen opens a tile editor: paint tiles, place enemies, items and
+**Options → Level editor** on the title screen opens a tile editor: paint tiles, place enemies, items and
 scenery, set exits, checkpoints and pipe links, then **Play test**, **Save** (levels are stored
-in the browser and appear under **Custom levels**), **Export .map** / **Import .map**, or
+in the browser and appear under the title's **Options → Custom levels**), **Export .map** / **Import .map**, or
 **Copy share link**. A share link carries the whole level compressed in the URL, so anyone
 who opens it plays it immediately; nothing is uploaded anywhere.
 

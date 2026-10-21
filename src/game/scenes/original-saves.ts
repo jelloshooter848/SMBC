@@ -1,11 +1,15 @@
 import type { Renderer } from '@engine/gfx/renderer';
 import type { Scene } from '@engine/scene';
+import type { InputFrame } from '@engine/input/input-manager';
+import { FONT_COLOURS } from '@content/sprites/font';
 import type { ClassicResume } from '../run-resume';
 import { worldLabel } from '../hud/world-label';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import { DIFFICULTY_NAMES, type MapSet } from './original-game';
 import { GAME_MODE_NAMES } from './original-options';
+import { BOX_BACK_Y, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
+import { abilityHint } from './hints';
 
 /*
  * Per-set saves (O-07, owner: one save per map set). Picking a map set on the CLASSIC menu goes
@@ -49,12 +53,15 @@ export function openClassicSet(game: Game, set: MapSet, flow: ClassicSetFlow): v
   const kept = game.classicResume(set.id);
   if (!kept) return newGame();
   const base = game.scenes.top;
+  // Over the CLASSIC title's demo (B-F's boxed set menu, O-04): the prompt is a box over the demo
+  // too, and the demo plays on under it.
+  const demo = (base as OverDemo | undefined)?.over ?? null;
   // Back to the scene the prompt opened over, then the new game (it replaces that one).
   const close = () => {
     while (game.scenes.top && game.scenes.top !== base) game.scenes.pop();
   };
   game.scenes.push(
-    new ClassicSetScene(game, set, kept, {
+    new ClassicSetScene(game, set, kept, demo, {
       onContinue: () => {
         close();
         game.resumeClassic(set.id);
@@ -75,6 +82,42 @@ export function openClassicSet(game: Game, set: MapSet, flow: ClassicSetFlow): v
 /** A scene that can say its highlighted entry again (the CLASSIC menu). */
 type Reannounces = Scene & { reannounce?: () => void };
 
+/** The CLASSIC title's demo a boxed CLASSIC menu is over (original-title.ts). */
+export interface ClassicDemo {
+  tickDemo(): void;
+}
+type OverDemo = Scene & { over?: ClassicDemo | null };
+
+/**
+ * A prompt as a box over the CLASSIC title's demo: its text on a dark band near the top, its
+ * choices in a menu box under it, and the BACK hint, all in the boxed menu's style.
+ */
+function renderOverDemo(
+  r: Renderer,
+  game: Game,
+  lines: string[],
+  items: MenuItem[],
+  index: number,
+  t: number,
+): void {
+  const assets = game.ctx.assets;
+  const calm = game.ctx.reduceFlashing;
+  const shown = lines.map((l) => l.toUpperCase().slice(0, 30)).filter(Boolean);
+  const top = 40;
+  const bandH = shown.length * 12 + 10;
+  r.rect(8, top, 240, bandH, 'rgba(0,0,0,0.8)');
+  const line = (str: string, y: number) => {
+    const x = Math.round(128 - (str.length * 8) / 2);
+    r.text(assets.sheet('font', FONT_COLOURS.black), str, x + 1, y + 1);
+    r.text(assets.sheet('font'), str, x, y);
+  };
+  shown.forEach((l, i) => line(l, top + 6 + i * 12));
+  const rows: BoxRow[] = items.map((it) => ({ label: it.label }));
+  const at = boxLayout(rows, false, top + bandH + 30);
+  drawMenuBox(r, assets, rows, index, { cx: 128, cy: at.cy, grow: 1, t, calm });
+  line(abilityHint(game, 'BACK', 'attack'), BOX_BACK_Y);
+}
+
 interface SetActions {
   onContinue: () => void;
   onNewGame: () => void;
@@ -87,9 +130,11 @@ export class ClassicSetScene extends MenuScene {
     game: Game,
     readonly set: MapSet,
     readonly kept: ClassicResume,
+    /** The CLASSIC title's demo it is over, or null (a full-screen menu). */
+    readonly demo: ClassicDemo | null,
     actions: SetActions,
   ) {
-    super(game, set.label.toUpperCase(), [], actions.onBack);
+    super(game, set.label.toUpperCase(), [], actions.onBack, demo !== null);
     const items: MenuItem[] = [
       {
         label: 'Continue',
@@ -100,10 +145,17 @@ export class ClassicSetScene extends MenuScene {
         label: 'New game',
         select: () =>
           game.scenes.push(
-            new ClassicOverwriteScene(game, set, kept, actions.onNewGame, () => {
-              game.scenes.pop();
-              this.reannounce();
-            }),
+            new ClassicOverwriteScene(
+              game,
+              set,
+              kept,
+              actions.onNewGame,
+              () => {
+                game.scenes.pop();
+                this.reannounce();
+              },
+              demo,
+            ),
           ),
         hint: `Start ${set.label} again. Your saved run will be overwritten`,
       },
@@ -123,10 +175,18 @@ export class ClassicSetScene extends MenuScene {
     this.announce();
   }
 
+  /** The demo under the box plays on while it is up. */
+  override update(input: InputFrame): void {
+    this.demo?.tickDemo();
+    super.update(input);
+  }
+
   override render(r: Renderer): void {
+    const lines = [`SAVED: ${savedRunLine(this.kept)}`, savedRunHow(this.kept)];
+    if (this.demo)
+      return renderOverDemo(r, this.game, [this.title, ...lines], this.items, this.index, this.t);
     super.render(r);
     const font = this.game.ctx.assets.sheet('font');
-    const lines = [`SAVED: ${savedRunLine(this.kept)}`, savedRunHow(this.kept)];
     lines.forEach((l, i) => {
       const t = l.toUpperCase().slice(0, 28);
       if (t) r.text(font, t, 128 - t.length * 4, 120 + i * 14);
@@ -145,8 +205,10 @@ export class ClassicOverwriteScene extends MenuScene {
     readonly kept: ClassicResume,
     onConfirm: () => void,
     onCancel: () => void,
+    /** The CLASSIC title's demo it is over, or null (a full-screen menu). */
+    readonly demo: ClassicDemo | null = null,
   ) {
-    super(game, 'OVERWRITE SAVE?', [], onCancel);
+    super(game, 'OVERWRITE SAVE?', [], onCancel, demo !== null);
     this.setItems([
       { label: 'Cancel', select: onCancel, hint: 'Keep the saved run' },
       {
@@ -165,9 +227,13 @@ export class ClassicOverwriteScene extends MenuScene {
     );
   }
 
+  /** The demo under the box plays on while it is up. */
+  override update(input: InputFrame): void {
+    this.demo?.tickDemo();
+    super.update(input);
+  }
+
   override render(r: Renderer): void {
-    super.render(r);
-    const font = this.game.ctx.assets.sheet('font');
     const lines = [
       'A NEW GAME OF',
       this.set.label.toUpperCase().slice(0, 28),
@@ -175,6 +241,10 @@ export class ClassicOverwriteScene extends MenuScene {
       savedRunLine(this.kept).toUpperCase().slice(0, 28),
       savedRunHow(this.kept).toUpperCase().slice(0, 28),
     ];
+    if (this.demo)
+      return renderOverDemo(r, this.game, [this.title, ...lines], this.items, this.index, this.t);
+    super.render(r);
+    const font = this.game.ctx.assets.sheet('font');
     lines.forEach((l, i) => l && r.text(font, l, 128 - l.length * 4, 112 + i * 14));
   }
 }

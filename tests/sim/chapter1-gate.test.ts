@@ -110,22 +110,22 @@ function seedSaves(): Map<string, string> {
 }
 
 describe('G-112: the title menu', () => {
-  it('lists Classic first, then Chapter 1, Custom levels and Options; Classic is highlighted', () => {
+  it('lists Classic first, then Campaign (O-02) and Options (O-01: no Custom levels); Classic is highlighted', () => {
     const h = makeGame();
     h.game.showTitle();
     const title = h.top() as TitleScene;
-    expect(labels(title)).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options']);
+    expect(labels(title)).toEqual(['Classic', 'Campaign', 'Options']);
     expect(cursor(title)).toBe(0);
     expect(h.said.at(-1)).toMatch(/Classic\. The original game, as it was$/);
   });
 
-  it('with dev mode on, Dev mode is the fifth row and Chapter 1 is still second', () => {
+  it('with dev mode on, Dev mode is the fourth row and Campaign is still second', () => {
     const h = makeGame(true);
     h.game.showTitle();
-    expect(labels(h.top())).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options', 'Dev mode']);
+    expect(labels(h.top())).toEqual(['Classic', 'Campaign', 'Options', 'Dev mode']);
   });
 
-  it("Chapter 1's hint says it is coming soon (outside dev mode), with no level numbers", () => {
+  it("Campaign's hint says it is coming soon (outside dev mode), with no level numbers", () => {
     const h = makeGame();
     h.game.showTitle();
     const row = items(h.top())[1];
@@ -136,13 +136,11 @@ describe('G-112: the title menu', () => {
 describe('G-100: Chapter 1 shows "COMING SOON!" outside dev mode', () => {
   it('the card goes over the title, is read out, and the file select never opens', () => {
     const h = makeGame();
-    choose(h, 'Chapter 1');
+    choose(h, 'Campaign');
     const card = h.top();
     expect(card).toBeInstanceOf(CardScene);
     expect((card as CardScene).lines).toEqual(CHAPTER1_GATE_CARD);
-    expect(h.said.at(-1)).toBe(
-      'CHAPTER 1 COMING SOON! PLAY CLASSIC FOR NOW. YOUR SAVE FILES ARE KEPT. OK to continue.',
-    );
+    expect(h.said.at(-1)).toBe('CAMPAIGN CHAPTER 1 COMING SOON! PLAY CLASSIC FOR NOW. OK to continue.');
     expect(h.sfx).toHaveBeenCalledWith('bump');
     const text = drawn(h);
     for (const l of CHAPTER1_GATE_CARD.filter(Boolean)) expect(text).toContain(l);
@@ -156,7 +154,7 @@ describe('G-100: Chapter 1 shows "COMING SOON!" outside dev mode', () => {
 
   it('it never moves on by itself; OK closes it back onto the title, on the same row', () => {
     const h = makeGame();
-    choose(h, 'Chapter 1');
+    choose(h, 'Campaign');
     const card = h.top();
     h.idle(600);
     expect(h.top()).toBe(card);
@@ -168,16 +166,16 @@ describe('G-100: Chapter 1 shows "COMING SOON!" outside dev mode', () => {
   it('MENU and BACK close it too', () => {
     for (const key of ['start', 'attack'] as const) {
       const h = makeGame();
-      choose(h, 'Chapter 1');
+      choose(h, 'Campaign');
       h.idle(40);
       h.tap(key);
       expect(h.top()).toBeInstanceOf(TitleScene);
     }
   });
 
-  it('with dev mode on, Chapter 1 opens the file select as Start game did', () => {
+  it('with dev mode on, Campaign opens the file select as Start game did', () => {
     const h = makeGame(true);
-    choose(h, 'Chapter 1');
+    choose(h, 'Campaign');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
   });
 
@@ -224,7 +222,7 @@ describe('G-102: every campaign save is kept', () => {
   it('the title, the gate card and a Classic visit leave the files, progress and settings as they were', () => {
     const before = seedSaves();
     const h = makeGame();
-    choose(h, 'Chapter 1');
+    choose(h, 'Campaign');
     h.idle(40);
     h.tap('jump');
     h.game.showTitle();
@@ -234,7 +232,7 @@ describe('G-102: every campaign save is kept', () => {
   it('the files are all there again once the campaign opens (dev mode)', () => {
     seedSaves();
     const h = makeGame(true);
-    choose(h, 'Chapter 1');
+    choose(h, 'Campaign');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     expect(store.has('smbc.save.1')).toBe(true);
     expect(store.has('smbc.save.3')).toBe(true);
@@ -263,7 +261,7 @@ describe('G-111: the title hero row', () => {
 describe('G-100: the card sits clear of the title', () => {
   it('its box ends above the version line (y 228), so the build string stays readable', () => {
     const h = makeGame();
-    choose(h, 'Chapter 1');
+    choose(h, 'Campaign');
     const rects: { x: number; y: number; w: number; h: number; c: string }[] = [];
     const r: Renderer = Object.assign(new NullRenderer(), {
       rect(x: number, y: number, w: number, hh: number, c: string): void {
