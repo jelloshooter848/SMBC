@@ -610,6 +610,14 @@ function tileChar(tok, area, world) {
 
 /* ---------- one area ---------- */
 
+/**
+ * Whether the hero drops into a bonus room from its top row at its playerStart's column (SMB1's
+ * and The Lost Levels' rooms on Easy and Normal: a gap in the ceiling over that column). Special's
+ * rooms on every difficulty and SMB1's and The Lost Levels' on Hard are closed above, so a pipe in
+ * comes out of the room's matching pipe end or puts the hero at its playerStart (RC-001).
+ */
+const dropsIn = (type, profile) => type === 'pipeBonus' && !SPECIAL && profile.d !== 'hard';
+
 function convertArea(level, area, id, levels, profile) {
   const levelId = level.id;
   const [world, stage] = levelId.split('-').map(Number);
@@ -970,8 +978,9 @@ function convertArea(level, area, id, levels, profile) {
   const pipeExit = [...vertEnds.values()][0];
   // Special's bonus rooms are closed above (no ceiling gap to drop through, unlike SMB1's and The
   // Lost Levels'): the hero starts at the room's playerStart (Level.as), and a pipe in comes out
-  // of its matching pipe end (linkAreas).
-  if (area.type === 'pipeBonus' && !SPECIAL) {
+  // of its matching pipe end (linkAreas). On Hard, SMB1's and The Lost Levels' rooms are closed
+  // too (their Hard pieces lay a ceiling and an entry pipe), so they take the same rule (RC-001).
+  if (dropsIn(area.type, profile)) {
     header.start = `${start?.x ?? 1},0`;
     header.startMode = 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
@@ -995,7 +1004,9 @@ function convertArea(level, area, id, levels, profile) {
       return c && c !== '$' && c !== 'w';
     });
     header.start = `${sx},${sy}`;
-    header.startMode = below ? 'stand' : 'fall';
+    // A Hard SMB1 or Lost Levels bonus room: at the playerStart under its entry pipe (RC-001).
+    const closed = area.type === 'pipeBonus' && !SPECIAL;
+    header.startMode = below || closed ? 'stand' : 'fall';
     header.camera = area.width <= 16 ? 'locked' : 'scroll';
   }
   if (!isMain) header.parent = pid(levelId);
@@ -1081,21 +1092,26 @@ function convertLevel(levelId, allLevels, profile = BASE) {
         console.warn(`${c.id}: pipe at ${p.x},${p.y} to unknown area ${dest}`);
         continue;
       }
-      if (t.area.type === 'pipeBonus' && !SPECIAL) {
+      if (dropsIn(t.area.type, profile)) {
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 1} 0 exit=none`);
       } else if (p.number !== undefined && t.vertEnds.has(String(p.number))) {
         const e = t.vertEnds.get(String(p.number));
         c.builder.zone(`pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${e.x} ${e.y - 1} exit=up`);
       } else {
-        // Into a Special bonus room with no matching pipe end: at its playerStart, standing there
-        // (ground under it) or dropping in down its column (SMB1-style rooms' gap in the ceiling).
+        // Into a closed bonus room (Special's; SMB1's and The Lost Levels' on Hard) with no matching
+        // pipe end: at its playerStart, standing there (ground under it) or dropping in down its
+        // column (SMB1-style rooms' gap in the ceiling).
         const ground =
           t.start &&
           tokensAt(t.area, t.start.x, t.start.y + 1).some((k) => {
             const ch = tileChar(k, t.area, Number(level.id.split('-')[0]));
             return ch && ch !== '$' && ch !== 'w';
           });
-        const exit = SPECIAL && t.area.type === 'pipeBonus' && !ground ? 'fall' : 'none';
+        // A Hard SMB1 or Lost Levels room's playerStart is just under its entry pipe, with its
+        // ceiling closed: the hero is put there (exit=stand; the map's own start mode is Normal's
+        // drop) and falls to the floor, as Level.as puts him. A `fall` comes from above the
+        // screen, onto the roof (RC-001).
+        const exit = t.area.type !== 'pipeBonus' ? 'none' : !SPECIAL ? 'stand' : !ground ? 'fall' : 'none';
         c.builder.zone(
           `pipe ${p.x} ${p.y} ${p.dir} -> ${t.id} ${t.start?.x ?? 2} ${t.start?.y ?? 12} exit=${exit}`,
         );

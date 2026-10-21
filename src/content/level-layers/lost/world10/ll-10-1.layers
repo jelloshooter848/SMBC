@@ -350,7 +350,9 @@
 + koopa-red 97 9
 + koopa-red 187 10
 + koopa-red 191 11
+-zone pipe 130 3 down -> ll-10-1-bonus 1 0 exit=none
 +zone checkpoint 89 12
++zone pipe 130 3 down -> ll-10-1-bonus 1 3 exit=stand
 
 [layer horz]
 50 13 #

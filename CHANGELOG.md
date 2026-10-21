@@ -8,6 +8,13 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Classic mode, Map Difficulty Hard: going down a pipe into a bonus room of The Lost Levels or Super
+  Mario Bros. now puts you inside the room, under its entry pipe, as the original does. Before, six
+  Lost Levels rooms (3-1, 5-3, 7-1, 8-2, 12-1 and 13-2) dropped you onto their roof, and four of
+  them trapped you there until the time ran out.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added
