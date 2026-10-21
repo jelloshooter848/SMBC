@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.67] - 2026-10-21
+
 ### Added
 
 - Classic mode: the original's third map set, **Super Mario Bros. Special** (SMB Special on the
@@ -1735,7 +1737,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.66...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.67...HEAD
+[0.4.67]: https://github.com/jelloshooter848/SMBC/compare/v0.4.66...v0.4.67
 [0.4.66]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...v0.4.66
 [0.4.64]: https://github.com/jelloshooter848/SMBC/compare/v0.4.63...v0.4.64
 [0.4.63]: https://github.com/jelloshooter848/SMBC/compare/v0.4.62...v0.4.63
