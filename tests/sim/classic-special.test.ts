@@ -362,11 +362,11 @@ describe('G-020: All Hammer Bros comes from beating Special only (StatManager.as
     expect(s.classicCheats.unlocked.allHammerBros).toBe(true);
   });
 
-  it('the CHANGELOG says so under [Unreleased]', () => {
+  it('the CHANGELOG says so', () => {
+    // Any section: the line moves from [Unreleased] into a dated section when a release is stamped.
     const log = readFileSync(new URL('../../CHANGELOG.md', import.meta.url), 'utf8');
-    const unreleased = log.slice(log.indexOf('## [Unreleased]'), log.search(/\n## \[0\./));
-    expect(unreleased).toMatch(/All Hammer Bros/);
-    expect(unreleased).toMatch(/Special/);
+    const entry = log.split(/\n(?=- )/).find((item) => /All Hammer Bros/.test(item));
+    expect(entry).toMatch(/Special/);
   });
 });
 
