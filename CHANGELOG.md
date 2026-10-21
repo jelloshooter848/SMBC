@@ -15,6 +15,9 @@ under `## [Unreleased]`.
   can now be tested), rules, mode and kit. **Campaign** opens the world map or a copy of a save
   file that never saves, story levels, the village, the tutorial stage, the training rooms and the
   games. **Again** replays the last start in one press. The one-page list stays as Level select.
+- Dev mode: a **Classic heroes** page (O-06) in place of the Dev menu's Classic toggles: each
+  Expansion hero is Release (what players get), On (always shown in dev mode) or Off, with an All
+  row, and the Yoshi mount is Off, On or Ride. None of it applies outside dev mode.
 
 ## [0.4.67] - 2026-10-21
 

@@ -6,7 +6,8 @@ import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 import type { MenuItem } from './menu';
 import type { InputFrame } from '@engine/input/input-manager';
-import { CLASSIC_EXTRAS } from '../characters/registry';
+import { CLASSIC_EXTRAS, EXPANSION_HEROES } from '../characters/registry';
+import type { CharacterDef } from '../characters/character';
 import { DevCampaignScene, DevClassicScene, devAgainItem } from './dev-play';
 
 /**
@@ -54,7 +55,11 @@ export class DevMenuScene extends MenuScene {
         select: () => push(new AssistOptionsScene(game, () => game.scenes.pop())),
         hint: 'Only active while dev mode is on',
       },
-      ...classicToggleRows(game),
+      {
+        label: 'Classic heroes',
+        select: () => push(new DevClassicHeroesScene(game, () => game.scenes.pop())),
+        hint: 'Release, On or Off for each Expansion hero, and the Yoshi mount',
+      },
       {
         label: 'Dev mode off',
         select: () => {
@@ -90,7 +95,7 @@ export class DevMenuScene extends MenuScene {
   }
 }
 
-/** The rows classicToggleRows made (DevMenuScene.update: START never flips them). */
+/** The rows DevClassicHeroesScene made (its update: START never flips them). */
 const TOGGLE_ROWS = new WeakSet<MenuItem>();
 
 /** A toggle row's label room beside an ON / OFF value (MenuScene: 24 columns less 4). */
@@ -101,62 +106,135 @@ const TOGGLE_COLS = 20;
  * fit the row beside its value ("CLASSIC: WARRIORS"). Names, never the HUD's short name.
  */
 export function classicHeroLabel(def: { name: string }): string {
-  const words = def.name.split(' ');
-  const cut = () => words.length > 1 && `Classic: ${words.join(' ')}`.length > TOGGLE_COLS;
+  return `Classic: ${fitName(def.name, TOGGLE_COLS - 'Classic: '.length)}`;
+}
+
+/** `name` with its last words left off while longer than `cols`, never ending on "of" / "the". */
+function fitName(name: string, cols: number): string {
+  const words = name.split(' ');
   let shortened = false;
-  while (cut()) {
+  while (words.length > 1 && words.join(' ').length > cols) {
     words.pop();
     shortened = true;
   }
-  // Never end on a joining word ("WARRIORS OF").
   while (shortened && words.length > 1 && /^(of|the|and)$/i.test(words.at(-1) ?? '')) words.pop();
-  return `Classic: ${words.join(' ')}`;
+  return words.join(' ');
 }
 
-/** ON / OFF for a toggle row's value. */
-const onOff = (on: boolean): string => (on ? 'ON' : 'OFF');
+/** An O-06 hero override: Release (what players get), On (always, in dev mode) or Off (hidden). */
+export type HeroOverride = 'release' | 'on' | 'off';
+const OVERRIDE_NAMES: Record<HeroOverride, string> = { release: 'Release', on: 'On', off: 'Off' };
+const OVERRIDES: readonly HeroOverride[] = ['release', 'on', 'off'];
+
+/** Yoshi mount values (Settings.classicDev.yoshiMount and yoshiRide). */
+type Mount = 'off' | 'on' | 'ride';
+const MOUNTS: readonly Mount[] = ['off', 'on', 'ride'];
+const MOUNT_NAMES: Record<Mount, string> = { off: 'Off', on: 'On', ride: 'Ride' };
 
 /**
- * The Classic mode toggles (Settings.classicDev, saved; read only in dev mode): the Yoshi mount
- * (off by default, so Classic plays as the original), then each Classic hero the original SMBC
- * 3.1.21 did not have (CharacterDef.notInOriginal; on by default). A hero turned off is not on
- * the Classic select, and a `?char=` start for it falls back. Changes apply from the next start.
+ * Dev > Classic heroes (O-06): one row per Expansion hero (EXPANSION_HEROES, the heroes SMBC
+ * 3.1.21 never had) with Release / On / Off, an All row (Release, All on, All off; Mixed when they
+ * differ) and the Yoshi mount (Off / On / Ride). Saved in Settings.classicDev, read only in dev
+ * mode (Game.expansionHeroOffered), so release players always get the release rule.
  */
-export function classicToggleRows(game: Game): MenuItem[] {
-  const s = game.deps.settings;
-  if (!s) return [];
-  s.classicDev ??= { yoshiMount: false, heroesOff: [] };
-  const save = () => game.deps.applySettings?.();
-  const mount = () => {
-    s.classicDev.yoshiMount = !s.classicDev.yoshiMount;
-    save();
-  };
-  const rows: MenuItem[] = [
-    {
-      label: 'Classic: Yoshi mount',
-      value: () => onOff(s.classicDev.yoshiMount),
-      adjust: mount,
-      select: mount,
-      hint: 'Classic mode: Yoshi eggs hatch from blocks. Off plays the original',
-    },
-  ];
-  for (const def of CLASSIC_EXTRAS) {
-    if (!def.notInOriginal) continue;
-    const flip = () => {
-      const off = s.classicDev.heroesOff;
-      const i = off.indexOf(def.id);
-      if (i >= 0) off.splice(i, 1);
-      else off.push(def.id);
+export class DevClassicHeroesScene extends MenuScene {
+  constructor(game: Game, onBack: () => void) {
+    super(game, 'CLASSIC HEROES', [], onBack);
+    const s = game.deps.settings;
+    if (!s) {
+      this.setItems([{ label: 'Back', select: onBack }]);
+      return;
+    }
+    s.classicDev ??= { yoshiMount: false, heroesOff: [] };
+    const dev = s.classicDev;
+    const save = () => game.deps.applySettings?.();
+    const heroes = EXPANSION_HEROES.map((id) => CLASSIC_EXTRAS.find((d) => d.id === id)).filter(
+      (d): d is CharacterDef => d !== undefined,
+    );
+    const get = (id: string): HeroOverride =>
+      dev.heroesOff.includes(id) ? 'off' : dev.heroesOn?.includes(id) ? 'on' : 'release';
+    const set = (id: string, v: HeroOverride) => {
+      dev.heroesOff = dev.heroesOff.filter((h) => h !== id);
+      const on = (dev.heroesOn ?? []).filter((h) => h !== id);
+      if (v === 'off') dev.heroesOff.push(id);
+      if (v === 'on') on.push(id);
+      if (on.length) dev.heroesOn = on;
+      else delete dev.heroesOn;
+    };
+    const step = <T>(list: readonly T[], v: T, d: -1 | 1): T =>
+      list[(list.indexOf(v) + d + list.length) % list.length] as T;
+    const all = (): HeroOverride | 'mixed' => {
+      const vs = new Set(heroes.map((d) => get(d.id)));
+      return vs.size === 1 ? ([...vs][0] as HeroOverride) : 'mixed';
+    };
+    const released = (d: CharacterDef) => (game.heroReleased(d.id) ? 'shown' : 'hidden');
+    const rows: MenuItem[] = [];
+    const flipAll = (d: -1 | 1) => {
+      const now = all();
+      const next = now === 'mixed' ? (d > 0 ? 'release' : 'off') : step(OVERRIDES, now, d);
+      for (const h of heroes) set(h.id, next);
       save();
     };
     rows.push({
-      label: classicHeroLabel(def),
-      value: () => onOff(!s.classicDev.heroesOff.includes(def.id)),
-      adjust: flip,
-      select: flip,
-      hint: 'Classic mode hero not in the original game. Off hides it from the hero select',
+      label: 'All',
+      value: () => {
+        const v = all();
+        return v === 'mixed' ? 'Mixed' : v === 'release' ? 'Release' : `All ${v}`;
+      },
+      adjust: flipAll,
+      select: () => flipAll(1),
+      hint: 'Release, All on or All off for every hero below',
     });
+    for (const def of heroes) {
+      const flip = (d: -1 | 1) => {
+        set(def.id, step(OVERRIDES, get(def.id), d));
+        save();
+      };
+      rows.push({
+        label: fitName(def.name, 24 - 'Release'.length - 1),
+        value: () => OVERRIDE_NAMES[get(def.id)],
+        adjust: flip,
+        select: () => flip(1),
+        get hint() {
+          return `Release: as players get it, ${released(def)} now. On: always in dev mode. Off: hidden`;
+        },
+      });
+    }
+    const mount = (): Mount => (dev.yoshiMount ? (dev.yoshiRide ? 'ride' : 'on') : 'off');
+    const setMount = (d: -1 | 1) => {
+      const next = step(MOUNTS, mount(), d);
+      dev.yoshiMount = next !== 'off';
+      if (next === 'ride') dev.yoshiRide = true;
+      else delete dev.yoshiRide;
+      save();
+    };
+    rows.push({
+      label: 'Yoshi mount',
+      value: () => MOUNT_NAMES[mount()],
+      adjust: setMount,
+      select: () => setMount(1),
+      hint: 'Classic mode: Yoshi eggs hatch from blocks; Ride starts each level riding him. Off plays the original',
+    });
+    for (const r of rows) TOGGLE_ROWS.add(r);
+    rows.push({ label: 'Back', select: onBack });
+    this.setItems(rows);
   }
-  for (const r of rows) TOGGLE_ROWS.add(r);
-  return rows;
+
+  override enter(): void {
+    const it = this.items[this.index];
+    const v = it?.value ? `: ${it.value()}` : '';
+    this.game.deps.announcer?.say(`Classic heroes. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`);
+  }
+
+  /** START on a toggle row leaves the page as BACK does, never flipping it (DevMenuScene's rule). */
+  override update(input: InputFrame): void {
+    const it = this.items[this.index];
+    if (this.t + 1 >= 6 && it && TOGGLE_ROWS.has(it) && input.pressed('start') && this.onBack) {
+      this.t++;
+      this.game.ctx.audio.sfx('select');
+      this.onBack();
+      return;
+    }
+    super.update(input);
+  }
 }

@@ -592,7 +592,7 @@ export class Game {
   slotsFor(rules: Rules): CharacterDef[] {
     const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
-    const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
+    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter((id) => this.expansionHeroOffered(id))];
     const slots: CharacterDef[] = [];
     for (const id of ids) {
       const def = roster.find((c) => c.id === id && !isSkin(c));
@@ -610,6 +610,26 @@ export class Game {
    * and Random slot leave out the disabled heroes before classicRun is set (G-032).
    */
   private classicFlow = false;
+
+  /**
+   * O-06: whether Expansion hero `id` takes a select slot. The one rule the select, Random,
+   * Survival, Disable heroes, the guides and the dev Level select all read (through slotsFor):
+   * `devMode ? (override ?? release) : release`, where the override is Dev > Classic heroes' On or
+   * Off and release is what release players get (heroReleased).
+   */
+  expansionHeroOffered(id: string): boolean {
+    const release = this.heroReleased(id);
+    if (!this.devMode) return release;
+    const t = this.classicToggles;
+    if (t.heroesOff.includes(id)) return false;
+    if (t.heroesOn?.includes(id)) return true;
+    return release;
+  }
+
+  /** What release players get for Expansion hero `id` (no dev override). */
+  heroReleased(id: string): boolean {
+    return EXPANSION_HEROES.includes(id) && this.expansionHeroes;
+  }
 
   /** Options > Expansion heroes is on (the heroes the original never had are offered). */
   get expansionHeroes(): boolean {
@@ -769,7 +789,8 @@ export class Game {
   get yoshiMount(): 'on' | 'ride' | undefined {
     if (this.liveRules !== 'classic' || !this.devMode) return undefined;
     if (this.yoshiUrl) return this.yoshiUrl;
-    return this.classicToggles.yoshiMount ? 'on' : undefined;
+    const t = this.classicToggles;
+    return t.yoshiMount ? (t.yoshiRide ? 'ride' : 'on') : undefined;
   }
 
   /**

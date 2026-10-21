@@ -2,12 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Action } from '@engine/input/actions';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { ScriptedInput } from '@game/sim/headless';
-import { DevMenuScene } from '@game/scenes/dev';
+import { DevClassicHeroesScene } from '@game/scenes/dev';
 import type { MenuItem } from '@game/scenes/menu';
 import { makeGame, useStorage } from './heroes-harness';
 
 // classic-patch-2 item 5: START (Escape on a keyboard) on a Dev menu toggle row leaves the menu
-// and never flips the toggle; JUMP and left / right still do.
+// and never flips the toggle; JUMP and left / right still do. O-06 moved the rows to Dev > Classic
+// heroes (DevClassicHeroesScene), which keeps the rule.
 
 useStorage();
 
@@ -18,7 +19,7 @@ function open() {
   const settings = { ...defaultSettings(), dev: true };
   (h.game.deps as { settings?: Settings }).settings = settings;
   (h.game.deps as { applySettings?: () => void }).applySettings = vi.fn();
-  const menu = new DevMenuScene(h.game);
+  const menu = new DevClassicHeroesScene(h.game, () => h.game.scenes.pop());
   h.game.scenes.push(menu);
   const input = new ScriptedInput({ steps: [] });
   const press = (a: Action[]) => {
@@ -43,7 +44,7 @@ function open() {
 describe('Dev menu toggle rows and START / Escape', () => {
   it('START on the Yoshi mount row leaves the menu with the toggle unchanged', () => {
     const { h, settings, menu, press, at } = open();
-    at('Classic: Yoshi mount');
+    at('Yoshi mount');
     expect(settings.classicDev.yoshiMount).toBe(false);
     press(['start']);
     expect(settings.classicDev.yoshiMount).toBe(false);
@@ -52,22 +53,23 @@ describe('Dev menu toggle rows and START / Escape', () => {
 
   it('START on a hero row leaves it on', () => {
     const { settings, press, at } = open();
-    at('Classic: Yoshi');
+    at('Yoshi');
     press(['start']);
     expect(settings.classicDev.heroesOff).toEqual([]);
   });
 
   it('JUMP and RIGHT still flip the toggle; START on a plain row still picks it', () => {
     const { h, settings, menu, press, at } = open();
-    at('Classic: Yoshi mount');
+    at('Yoshi mount');
     press(['jump']);
     expect(settings.classicDev.yoshiMount).toBe(true);
-    press(['right']);
+    press(['right']); // Ride
+    press(['right']); // Off
     expect(settings.classicDev.yoshiMount).toBe(false);
     expect(h.game.scenes.top).toBe(menu);
-    press(['up']);
+    press(['down']);
     press(['start']);
-    // "Assists" opened over the Dev menu.
+    // "Back" left the page.
     expect(h.game.scenes.top).not.toBe(menu);
   });
 });
