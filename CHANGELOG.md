@@ -8,6 +8,14 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode: **redrawn select faces** for Mario, Luigi, Link, Samus, Simon, Mega Man, Bass,
+  Bill, Sophia III, Quick Man and Princess Zelda's three looks (Mario's and Luigi's Super Mario
+  Bros. 3 looks with them): shaded skin and materials, a coloured rim that stands out in the black
+  box, and each face in its hero's in-game colours. Bass's helmet is now orange and Sophia pink as
+  in play, Zelda has her own face, and Quick Man his boomerang crest.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added
