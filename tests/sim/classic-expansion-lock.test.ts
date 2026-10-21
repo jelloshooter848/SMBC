@@ -100,7 +100,7 @@ describe('O-12 outside developer mode', () => {
     expect(h.game.state.character.id).toBe('mario');
   });
 
-  it('a Continue slot kept as Yoshi under Current rules goes on as Mario, Classic rules, power reset', () => {
+  it('a Continue slot kept as Yoshi under Campaign rules goes on as Mario, Classic rules, power reset', () => {
     store.set(
       CLASSIC_RESUME_KEY,
       JSON.stringify({
@@ -144,7 +144,7 @@ describe('O-12 in developer mode', () => {
     for (const id of EXPANSION_HEROES) expect(slots).toContain(id);
   });
 
-  it('a Continue slot under Current rules goes on under them, its power kept', () => {
+  it('a Continue slot under Campaign rules goes on under them, its power kept', () => {
     store.set(
       CLASSIC_RESUME_KEY,
       JSON.stringify({

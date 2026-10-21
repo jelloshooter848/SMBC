@@ -87,7 +87,7 @@ describe('G-031 cheats from the Classic pause', () => {
     expect(level.world.cheats.waterMode).toBe(true);
   });
 
-  it('is not offered under Current rules, where no cheat plays', () => {
+  it('is not offered under Campaign rules, where no cheat plays', () => {
     // O-12: Classic rules set to Current is developer mode's: the run starts there, and its
     // pause is a player's (dev mode off; developer mode's pause offers every cheat).
     const h = classic({ classicRules: 'current', dev: true });
@@ -164,7 +164,7 @@ describe('G-093 the Classic guide', () => {
     expect(peach).not.toContain('Peach');
   });
 
-  it('with Classic rules set to Current it lists the Current heroes', () => {
+  it('with Classic rules set to Campaign it lists the campaign’s heroes', () => {
     // O-12: Classic rules set to Current is developer mode's.
     const h = classic({ classicRules: 'current', dev: true });
     h.game.showClassicMenu();

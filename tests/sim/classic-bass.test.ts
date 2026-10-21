@@ -152,7 +152,7 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     expect(h.game.state.character).toBe(BASS_CLASSIC);
   });
 
-  it('Classic mode with Classic rules set to Current, and free play: no Bass', () => {
+  it('Classic mode with Classic rules set to Campaign, and free play: no Bass', () => {
     // O-12: Classic rules set to Current is developer mode's.
     const settings = { ...defaultSettings(), classicRules: 'current' as const, dev: true };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });

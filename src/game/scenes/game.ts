@@ -2172,11 +2172,20 @@ export class Game {
     const settings = this.deps.settings;
     // RC-002: the run's Map Difficulty (a slot from before it was kept: the menu's, as it shows).
     this.classicDifficulty = r.difficulty ?? settings?.classicMapDifficulty ?? 'normal';
-    // Its Game mode: loading the original's file sets the game mode it was saved with
-    // (GameSettings.as 407-414), as the Level Select cheat's Go keeps its difficulty.
-    if (settings && r.gameMode && settings.classic.gameMode !== r.gameMode) {
-      settings.classic.gameMode = r.gameMode;
-      this.deps.applySettings?.();
+    // Loading the original's file sets the map difficulty and the game mode it was saved with
+    // (GameSettings.prepareLoadSave / loadData: changeMapDifficulty, changeCampaignMode), so the
+    // CLASSIC menu's Map difficulty and Options' Game mode show the run's afterwards.
+    if (settings) {
+      let changed = false;
+      if (r.difficulty && settings.classicMapDifficulty !== r.difficulty) {
+        settings.classicMapDifficulty = r.difficulty;
+        changed = true;
+      }
+      if (r.gameMode && settings.classic.gameMode !== r.gameMode) {
+        settings.classic.gameMode = r.gameMode;
+        changed = true;
+      }
+      if (changed) this.deps.applySettings?.();
     }
     this.tutorialRun = null;
     this.campaign = null;

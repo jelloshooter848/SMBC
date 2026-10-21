@@ -229,7 +229,7 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('Options: Classic rules (Classic SMBC / Current), saved in settings, then every other option', () => {
+  it('Options: Classic rules (Classic SMBC / Campaign), saved in settings, then every other option', () => {
     // O-12: the Classic rules and Expansion heroes rows are developer mode's.
     const h = classic({ dev: true });
     toClassicMenu(h);
@@ -342,7 +342,7 @@ describe('a Classic run', () => {
     },
   );
 
-  it('plays Current rules when Options says so', () => {
+  it('plays Campaign rules when Options says so', () => {
     // O-12: Classic rules set to Current is developer mode's.
     const h = classic({ classicRules: 'current', dev: true });
     h.game.classicGame(MARIO);
@@ -755,7 +755,7 @@ describe('the select screen: Classic extras on a second row', () => {
     expect(h.game.state.character).toBe(EXTRA);
   });
 
-  it('also on the Lost Levels entry; never with Classic rules set to Current', () => {
+  it('also on the Lost Levels entry; never with Classic rules set to Campaign', () => {
     saveProgress({ ...loadProgress(), cleared: ['8-4'] });
     const h = classic();
     toClassicMenu(h);
@@ -814,7 +814,7 @@ describe('the select screen: Classic extras on a second row', () => {
     expect(h.said.at(-1)?.split(', ')[0]).toBe(CHARACTERS[0]?.name);
   });
 
-  it('Classic rules Current: the registry, in one row', () => {
+  it('Classic rules Campaign: the registry, in one row', () => {
     // O-12: Classic rules set to Current is developer mode's.
     const h = classic({ classicRules: 'current', dev: true });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());

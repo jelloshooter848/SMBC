@@ -146,7 +146,7 @@ function classicGame(over: Partial<ClassicSettings> = {}): H & { settings: Setti
 const inLevel = (h: H) => (h.top() as { world?: World }).world !== undefined;
 
 describe('ctx.classic: only a Classic run with Classic rules', () => {
-  it('absent on the title, in free play, in a campaign-shaped run and with Current rules', () => {
+  it('absent on the title, in free play, in a campaign-shaped run and with Campaign rules', () => {
     const h = classicGame({ lives: 7 });
     h.game.showTitle();
     expect(h.game.ctx.classic).toBeUndefined();

@@ -3,6 +3,7 @@ import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { LevelScene } from '@game/scenes/level';
 import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
+import { loadProgress } from '@engine/save/progress';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // RC-002 (0.5.0 RC audit): the original's save keeps the map set, the Map Difficulty and the Game
@@ -44,6 +45,8 @@ describe('RC-002 the resume slot keeps the Map Difficulty and the Game mode', ()
     h.game.showClassicMenu();
     expect(h.game.resumeClassic()).toBe(true);
     expect(h.game.classicDifficulty).toBe('hard');
+    // The CLASSIC menu's Map difficulty shows the run's, as loading the original's file sets it.
+    expect(h.settings.classicMapDifficulty).toBe('hard');
     h.until(() => inLevel(h), 600);
     expect(worldOf(h).mapDifficulty).toBe('hard');
     // And the run's Game mode is back (Single hero: no select at the next level).
@@ -69,7 +72,17 @@ describe('RC-002 the resume slot keeps the Map Difficulty and the Game mode', ()
     expect(loadClassicResume()).not.toHaveProperty('difficulty');
     expect(h.game.resumeClassic()).toBe(true);
     expect(h.game.classicDifficulty).toBe('easy');
+    expect(h.settings.classicMapDifficulty).toBe('easy');
     expect(h.settings.classic.gameMode).toBe('all');
+  });
+
+  it('Continue on a Hard slot, then the game beaten: BEATEN is recorded on Hard', () => {
+    hardRun();
+    const h = classic({ classicMapDifficulty: 'normal' });
+    expect(h.game.resumeClassic()).toBe(true);
+    h.until(() => inLevel(h), 600);
+    (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
+    expect(loadProgress().classicBeat?.smb).toBe('hard');
   });
 
   it('a slot with values this version does not know drops them and still loads', () => {
