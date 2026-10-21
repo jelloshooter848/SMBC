@@ -113,6 +113,8 @@ describe('G-008 the Classic resume slot', () => {
     // O-12: the Expansion heroes row is developer mode's until a hero is released.
     const on = classic({}, true);
     on.settings.classic = { ...on.settings.classic, expansion: 'on' };
+    // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
+    on.settings.classicDev.heroesOn = ['yoshi'];
     expect(on.game.resumeClassic()).toBe(true);
     expect(on.game.state.character.id).toBe('yoshi');
   });

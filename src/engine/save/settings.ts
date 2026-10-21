@@ -198,7 +198,15 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
 /** Settings.classicDev. */
 export interface ClassicDevToggles {
   yoshiMount: boolean;
+  /** The Yoshi mount is on and every level starts riding him (O-06: Off / On / Ride). */
+  yoshiRide?: boolean;
+  /**
+   * Dev > Classic heroes (O-06): the per-hero overrides over what release players get. `heroesOff`
+   * (the old Dev menu toggles, kept as they were) is the Off half, `heroesOn` the On half: shown
+   * in dev mode even when not released. A hero in neither follows the release rule.
+   */
   heroesOff: string[];
+  heroesOn?: string[];
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
@@ -311,6 +319,13 @@ export function loadSettings(): Settings {
   s.classicCheats.continuesUsed = Number.isFinite(used) ? Math.max(0, Math.floor(used)) : 0;
   s.classic = normaliseClassic(s.classic);
   s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
+  // The merge keeps only keys the defaults have: O-06's optional fields are copied over here.
+  const dev = (stored.classicDev ?? {}) as Record<string, unknown>;
+  const on = Array.isArray(dev.heroesOn)
+    ? (dev.heroesOn as unknown[]).filter((id): id is string => typeof id === 'string')
+    : [];
+  if (on.length) s.classicDev.heroesOn = on.filter((id) => !s.classicDev.heroesOff.includes(id));
+  if (dev.yoshiRide === true && s.classicDev.yoshiMount) s.classicDev.yoshiRide = true;
   // The merge keeps only keys the defaults have, so the skin choices are copied over here.
   const skins = normaliseSkins(stored.classicSkins);
   if (skins) s.classicSkins = skins;

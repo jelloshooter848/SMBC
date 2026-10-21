@@ -7,6 +7,7 @@ import {
   type ClassicWeapons,
 } from '@engine/save/original-options';
 import { MenuScene, type MenuItem } from './menu';
+import { RELEASED_EXPANSION_HEROES } from '../characters/registry';
 import type { Game } from './game';
 
 /**
@@ -166,13 +167,15 @@ export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
 
 /**
  * The Expansion heroes row: our own (the original has no such heroes). Off, the Classic select is
- * the original's; on, it also offers the heroes SMBC 3.1.21 never had. The Dev menu's own toggles
- * still leave any of them out.
+ * the original's; on, it also offers the released heroes SMBC 3.1.21 never had
+ * (RELEASED_EXPANSION_HEROES, O-12). Dev > Classic heroes' On or Off overrides it in dev mode (O-06).
  */
 export const EXPANSION_ROW = row(
   'expansion',
   'Expansion heroes',
-  'Off: the original SMBC heroes only. On: also the heroes the original never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi)',
+  RELEASED_EXPANSION_HEROES.length
+    ? 'Off: the original SMBC heroes only. On: also the released heroes the original never had'
+    : 'Off: the original SMBC heroes only. On: the released heroes the original never had, and none is released yet, so it shows none. To show one in dev mode, set it to On on the Classic heroes page of Dev mode',
 ) as AnyRow;
 
 /** The Game Mode row (NewGameOptionsMenu's GAME_MODE under Classic mode). */
