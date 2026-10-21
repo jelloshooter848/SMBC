@@ -1546,11 +1546,13 @@ export class Player {
 
   /**
    * Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic), unless the
-   * profile sets a fixed `stompBounce`.
+   * profile sets a fixed `stompBounce` or SMB1's `stompHeld`. `fixedVy`: a fixed bounce of that
+   * speed whatever the profile (Classic Yoshi's ground pound, YO-9: no stomp).
    */
-  stompBounce(): void {
+  stompBounce(fixedVy?: number): void {
     const b = this.body;
-    const held = this.profile.stompHeld;
+    this.stompTier = null;
+    const held = fixedVy === undefined ? this.profile.stompHeld : undefined;
     if (held) {
       // SMB1's bounce (BUG-07): no rise, no rise lines or soft cut from the last jump; the
       // tier's held or fall gravity to the apex (stompGravity).
@@ -1570,7 +1572,7 @@ export class Player {
       this.flutterUsed = false;
       return;
     }
-    const fixed = this.profile.stompBounce;
+    const fixed = fixedVy ?? this.profile.stompBounce;
     if (fixed !== undefined) {
       // A fixed bounce with normal gravity (ML-C21): no rise, no hold boost, and the last jump's
       // release state and lines stay as they were.
