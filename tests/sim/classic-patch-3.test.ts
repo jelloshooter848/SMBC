@@ -234,6 +234,8 @@ describe('3. Infinite Lives: continues count over the save, not per run', () => 
 describe('4. Classic mode with Current rules: nothing counts toward the cheats', () => {
   it('no clear, no game beaten, no continue and no tally counts under Current rules', () => {
     const h = classicGame();
+    // O-12: Classic rules set to Current is developer mode's.
+    h.settings.dev = true;
     h.settings.classicRules = 'current';
     h.game.classicGame(MARIO);
     expect(h.game.cheatGoalsCount).toBe(false);

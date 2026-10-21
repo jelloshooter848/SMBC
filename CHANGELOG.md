@@ -19,6 +19,26 @@ under `## [Unreleased]`.
   Expansion hero is Release (what players get), On (always shown in dev mode) or Off, with an All
   row, and the Yoshi mount is Off, On or Ride. None of it applies outside dev mode.
 
+### Changed
+
+- Classic mode plays the original's rules and heroes only: the Classic rules switch and the
+  Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
+  Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
+  by an earlier version is kept but has no effect; a Continue run kept under Current rules goes on
+  under Classic rules with its level, lives, score and coins.
+
+### Fixed
+
+- Classic mode, Map Difficulty Hard: going down a pipe into a bonus room of The Lost Levels or Super
+  Mario Bros. now puts you inside the room, under its entry pipe, as the original does. Before, six
+  Lost Levels rooms (3-1, 5-3, 7-1, 8-2, 12-1 and 13-2) dropped you onto their roof, and four of
+  them trapped you there until the time ran out.
+- Classic mode: CLASSIC > Continue now goes on with the run's own Map Difficulty and Game mode, as
+  the original's save does. Before, a Hard or Easy run went on as Normal after a reload, and its
+  win was recorded on Normal.
+- Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
+  link's run plays and counts as before, but never writes or clears the Continue slot.
+
 ## [0.4.67] - 2026-10-21
 
 ### Added

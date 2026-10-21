@@ -329,9 +329,10 @@ export type PipeDir = 'down' | 'up' | 'left' | 'right';
 /**
  * How the player arrives in a linked area: rising from a pipe, dropping in, climbing a vine,
  * beamed down by a teleport pad (`beam`), flipped through a trick wall's spinning panel
- * (`spin`), or placed.
+ * (`spin`), or placed (`none`: as the target map's start mode says; `stand`: put at the cell
+ * whatever the map says, e.g. a Hard Classic bonus room's playerStart, RC-001).
  */
-export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam' | 'spin';
+export type TransferMode = PipeDir | 'none' | 'climb' | 'fall' | 'beam' | 'spin' | 'stand';
 
 export type Zone =
   | {

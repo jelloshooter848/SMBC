@@ -282,7 +282,9 @@
 + podoboo 219 12
 + koopa-red 33 8
 + buzzy 137 12
+-zone pipe 84 10 down -> 4-2-bonus 1 0 exit=none
 -zone pipe 187 9 right -> 4-2-exit 3 10 exit=up
++zone pipe 84 10 down -> 4-2-bonus 1 3 exit=stand
 +zone pipe 187 9 right -> 4-2-exit 1 10 exit=up
 
 [layer horz]

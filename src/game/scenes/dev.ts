@@ -6,7 +6,7 @@ import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 import type { MenuItem } from './menu';
 import type { InputFrame } from '@engine/input/input-manager';
-import { CLASSIC_EXTRAS, EXPANSION_HEROES } from '../characters/registry';
+import { CLASSIC_EXTRAS, EXPANSION_HEROES, expansionReleased } from '../characters/registry';
 import type { CharacterDef } from '../characters/character';
 import { DevCampaignScene, DevClassicScene, devAgainItem } from './dev-play';
 
@@ -196,7 +196,8 @@ export class DevClassicHeroesScene extends MenuScene {
         adjust: flip,
         select: () => this.picked(() => flip(1)),
         get hint() {
-          return `Release: as players get it, ${released(def)} now. On: always in dev mode. Off: hidden`;
+          const players = expansionReleased(def.id) ? 'released to players' : 'not released to players';
+          return `Release: follows Expansion heroes, ${released(def)} now; ${players}. On: always in dev mode. Off: hidden`;
         },
       });
     }

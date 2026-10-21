@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { defaultSettings, loadSettings, SETTINGS_KEY, type Settings } from '@engine/save/settings';
-import { EXPANSION_HEROES } from '@game/characters/registry';
+import { EXPANSION_HEROES, RELEASED_EXPANSION_HEROES } from '@game/characters/registry';
 import type { DevMenuScene } from '@game/scenes/dev';
 import { DevClassicHeroesScene } from '@game/scenes/dev';
 import { DEV_LAST_KEY } from '@game/scenes/dev-play';
@@ -81,7 +81,7 @@ describe('O-06: Dev > Classic heroes', () => {
     expect(ids(h)).toContain('arthur');
     row(page, 'Yoshi').adjust?.(1); // Release
     expect(ids(h)).toContain('yoshi');
-    expect(row(page, 'Yoshi').hint).toMatch(/shown now/);
+    expect(row(page, 'Yoshi').hint).toMatch(/shown now; not released to players/);
   });
 
   it('All: Release, All on, All off, and Mixed when the heroes differ', () => {
@@ -171,6 +171,10 @@ describe('O-05 / O-06: nothing reaches release players', () => {
     expect(ids(h)).toContain('yoshi');
     settings.dev = false;
     for (const id of EXPANSION_HEROES) expect(ids(h)).not.toContain(id);
+    // A saved Expansion heroes 'on' gives players only the released heroes (O-12's list: none yet).
+    settings.classic.expansion = 'on';
+    for (const id of EXPANSION_HEROES)
+      expect(ids(h).includes(id), id).toBe(RELEASED_EXPANSION_HEROES.includes(id));
     h.game.runRules = 'classic';
     expect(h.game.yoshiMount).toBeUndefined();
     // The stored overrides are kept as they were.

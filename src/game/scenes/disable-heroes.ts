@@ -20,7 +20,7 @@ export class ClassicHeroesScene extends MenuScene {
 
   private build(): void {
     const game = this.game;
-    const rules = game.deps.settings?.classicRules ?? 'classic';
+    const rules = game.classicRules;
     const heroes = game.slotsFor(rules);
     const items: MenuItem[] = heroes.map((c) => ({
       label: c.name,

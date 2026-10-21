@@ -58,3 +58,4 @@
 + piranha 29 11 red=1
 -zone pipe 29 12 right -> ll-12-1 131 10 exit=up
 +zone pipe 29 3 right -> ll-12-1 131 10 exit=up
+start 1 8 pipe-exit
