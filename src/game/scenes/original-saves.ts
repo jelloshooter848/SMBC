@@ -105,7 +105,7 @@ function renderOverDemo(
   const shown = lines.map((l) => l.toUpperCase().slice(0, 30)).filter(Boolean);
   const top = 40;
   const bandH = shown.length * 12 + 10;
-  r.rect(8, top, 240, bandH, 'rgba(0,0,0,0.8)');
+  r.rect(8, top, 240, bandH, 'rgba(0,0,0,0.92)');
   const line = (str: string, y: number) => {
     const x = Math.round(128 - (str.length * 8) / 2);
     r.text(assets.sheet('font', FONT_COLOURS.black), str, x + 1, y + 1);
