@@ -432,8 +432,12 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     const h = makeGame();
     midRunSelect(h);
     h.tap('attack');
+    const before = h.said.length;
     pick(h, 'Yes');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+    expect(h.game.scenes.depth).toBe(1);
+    // Straight there: the title is never shown (or read out) on the way.
+    expect(h.said.slice(before).some((t) => t.includes('REMIX'))).toBe(false);
     expect(h.game.classicRun).toBe(false);
     expect(h.game.classicResume()).not.toBeNull();
   });
