@@ -175,6 +175,8 @@
 + fly 183 10
 + fly 185 8
 + block-item 191 10 item=bee
+-zone pipe 156 7 down -> 5-1-bonus 1 0 exit=none
++zone pipe 156 7 down -> 5-1-bonus 1 3 exit=stand
 
 [layer horz]
 + lift-fall 194 4 len=2 dx=8

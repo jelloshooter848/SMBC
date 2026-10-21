@@ -47,3 +47,4 @@
 + firebar-ccw 12 5
 -zone pipe 13 12 right -> ll-4-2 179 10 exit=up
 +zone pipe 13 4 right -> ll-4-2 179 10 exit=up
+start 1 3 stand

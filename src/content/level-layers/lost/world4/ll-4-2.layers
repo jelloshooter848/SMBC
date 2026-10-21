@@ -218,6 +218,8 @@
 + hammer-bro 51 12
 + buzzy 135 12
 + buzzy 137 12
+-zone pipe 172 13 down -> ll-4-2-bonus 1 0 exit=none
++zone pipe 172 13 down -> ll-4-2-bonus 1 3 exit=stand
 
 [layer horz]
 + lift-fall 201 4 len=2 dx=8

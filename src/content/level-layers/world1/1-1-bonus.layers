@@ -39,3 +39,4 @@
 + block-item 14 2 item=bee
 -zone pipe 13 12 right -> 1-1 163 10 exit=up
 +zone pipe 13 12 right -> 1-1 46 8 exit=up
+start 1 3 stand

@@ -58,4 +58,4 @@
 + firebar-ccw 12 7
 -zone pipe 13 12 right -> ll-7-2 147 10 exit=up
 +zone pipe 5 12 right -> ll-7-2 147 10 exit=up
-start 13 0 fall
+start 13 12 pipe-exit
