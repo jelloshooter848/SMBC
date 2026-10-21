@@ -13,13 +13,22 @@ import {
   demoDef,
 } from '@game/scenes/title-demo';
 import { CLASSIC_AT, ClassicTitleScene, PROMPT_BLINK, SMASH } from '@game/scenes/original-title';
-import { BOX_GROW, boxGrowth, cursorBob, MUSHROOM_CURSOR } from '@game/scenes/menu-box';
+import {
+  BOX_GROW,
+  boxGrowth,
+  boxLayout,
+  boxSize,
+  cursorBob,
+  MUSHROOM_CURSOR,
+  type BoxRow,
+} from '@game/scenes/menu-box';
+import type { Scene } from '@engine/scene';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import type { MenuItem } from '@game/scenes/menu';
 import type { Player } from '@game/entities/player';
-import { draw, makeGame, useStorage, type H } from './heroes-harness';
+import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // O-04 (docs/classic/RC_AUDIT_0.5.0.md, owner items): the CLASSIC title in the original's style
 // (level/TitleLevel.as, messageBoxes/StartMenu.as): a live 1-1 demo with no HUD, the begin prompt
@@ -149,29 +158,49 @@ describe('O-04 the CLASSIC title', () => {
     expect(d.texts.some((t) => t.str.startsWith('VER '))).toBe(true);
   });
 
-  it('the prompt: hidden while Mario waits, then 500 ms on and 500 ms off; it names the ability', () => {
+  it("the prompt: first at 5.5 s (the blink timer's first tick), then 500 ms on and 500 ms off; it names the ability", () => {
     const h = classic();
     h.game.ctx.reduceFlashing = false;
     const ct = new ClassicTitleScene(h.game);
-    const shown: boolean[] = [];
-    for (let i = 0; i < MARIO_WAIT + PROMPT_BLINK * 4; i++) {
+    // shown[t]: the prompt at demo frame t.
+    const shown: boolean[] = [false];
+    for (let t = 1; t <= MARIO_WAIT + PROMPT_BLINK * 5; t++) {
       ct.demo.update();
+      expect(ct.demo.t).toBe(t);
       shown.push(ct.promptShown());
     }
-    expect(shown.slice(0, MARIO_WAIT).some(Boolean)).toBe(false);
-    const after = shown.slice(MARIO_WAIT);
-    expect(after.slice(0, PROMPT_BLINK).every(Boolean)).toBe(true);
-    expect(after.slice(PROMPT_BLINK, PROMPT_BLINK * 2).some(Boolean)).toBe(false);
-    expect(after.slice(PROMPT_BLINK * 2, PROMPT_BLINK * 3).every(Boolean)).toBe(true);
+    const first = MARIO_WAIT + PROMPT_BLINK;
+    expect(first).toBe(330);
+    expect(shown.slice(0, first).some(Boolean)).toBe(false);
+    expect(shown.slice(first, first + PROMPT_BLINK).every(Boolean)).toBe(true);
+    expect(shown.slice(first + PROMPT_BLINK, first + PROMPT_BLINK * 2).some(Boolean)).toBe(false);
+    expect(shown.slice(first + PROMPT_BLINK * 2, first + PROMPT_BLINK * 3).every(Boolean)).toBe(true);
     expect(ct.prompt).toMatch(/^PRESS OK\b.* TO BEGIN$/);
     expect(ct.prompt).not.toMatch(/\b[ABC]\b/);
+  });
+
+  it('the version shows until the prompt first does, then is gone for good (TitleLevel.as:305-306)', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = false;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    const version = () => draw(ct).texts.some((t) => t.str.startsWith('VER '));
+    expect(version()).toBe(true);
+    h.idle(MARIO_WAIT + PROMPT_BLINK - 2);
+    expect(version()).toBe(true);
+    h.idle(3);
+    expect(ct.promptShown()).toBe(true);
+    expect(version()).toBe(false);
+    h.idle(PROMPT_BLINK);
+    expect(ct.promptShown()).toBe(false);
+    expect(version()).toBe(false);
   });
 
   it('Reduce flashing holds the prompt steady and the mushroom cursor still', () => {
     const h = classic();
     h.game.ctx.reduceFlashing = true;
     const ct = new ClassicTitleScene(h.game);
-    for (let i = 0; i <= MARIO_WAIT; i++) ct.demo.update();
+    for (let i = 0; i < MARIO_WAIT + PROMPT_BLINK; i++) ct.demo.update();
     for (let i = 0; i < PROMPT_BLINK * 4; i++) {
       ct.demo.update();
       expect(ct.promptShown()).toBe(true);
@@ -381,4 +410,127 @@ describe('O-04 the CLASSIC smash', () => {
     expect((h.top() as ClassicTitleScene).smashPhase()).toBe('done');
     expect(stamps(h)).toBe(0);
   });
+});
+
+describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () => {
+  const stack = (h: H) => (h.game.scenes as unknown as { stack: Scene[] }).stack;
+
+  it('5 round trips (map set > select > BACK) leave one CLASSIC title and one pointer listener', () => {
+    const live = new Set<unknown>();
+    const canvas = {
+      addEventListener: (_: string, f: unknown) => live.add(f),
+      removeEventListener: (_: string, f: unknown) => live.delete(f),
+    } as unknown as HTMLCanvasElement;
+    const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {}, canvas } });
+    h.game.showClassicTitle();
+    h.tap('jump');
+    h.tap('jump');
+    for (let trip = 0; trip < 5; trip++) {
+      expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+      h.idle(8);
+      h.tap('jump'); // Super Mario Bros.
+      expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+      // The select replaced the title and its menu (their exits ran).
+      expect(stack(h).some((s) => s instanceof ClassicTitleScene)).toBe(false);
+      expect(live.size).toBe(0);
+      h.idle(12);
+      h.tap('attack');
+    }
+    expect(stack(h).filter((s) => s instanceof ClassicTitleScene)).toHaveLength(1);
+    expect(stack(h).filter((s) => s instanceof ClassicMenuScene)).toHaveLength(1);
+    expect(live.size).toBe(1);
+    // And showClassicTitle / showClassicMenu called again keep it at one.
+    h.game.showClassicTitle('start');
+    h.game.showClassicMenu();
+    h.game.showClassicTitle();
+    expect(stack(h).filter((s) => s instanceof ClassicTitleScene)).toHaveLength(1);
+    expect(stack(h)).toHaveLength(1);
+    expect(live.size).toBe(1);
+  });
+
+  it('the status line and the BACK hint sit clear of the box at every row count', () => {
+    for (let n = 1; n <= 12; n++) {
+      const rows: BoxRow[] = Array.from({ length: n }, (_, i) => ({
+        label: i === 0 ? 'Super Mario Bros.' : `Row ${i}`,
+        ...(i === 1 ? { value: 'Normal' } : {}),
+      }));
+      for (const status of [false, true]) {
+        const at = boxLayout(rows, status, 160);
+        const { h } = boxSize(rows);
+        expect(at.bottom - at.top).toBe(h);
+        expect(at.top, `${n} rows`).toBeGreaterThanOrEqual(0);
+        const under = status ? (at.statusY as number) : at.backY;
+        expect(at.bottom, `${n} rows, status ${status}`).toBeLessThan(under);
+        if (status) expect((at.statusY as number) + 8).toBeLessThan(at.backY);
+        expect(at.backY + 8).toBeLessThanOrEqual(240);
+      }
+    }
+  });
+
+  it('the map set box as drawn: its status line and BACK hint under its frame, with and without Continue', () => {
+    const lineYs = (h: H) => {
+      const d = draw(h.top() as ClassicMenuScene);
+      const back = d.texts.filter((t) => t.str.startsWith('BACK') && t.x > 60).at(-1);
+      const status = d.texts.filter((t) => /RULES/.test(t.str)).at(-1);
+      const back0 = d.texts.find((t) => t.str === 'BACK' && t.x < 60);
+      return { back, status, lastRow: back0 };
+    };
+    const seen = { status: 0, continue: 0 };
+    for (const rules of ['classic', 'current'] as const) {
+      for (const kept of [false, true]) {
+        store.clear();
+        const settings = { ...defaultSettings(), dev: true, classicRules: rules } as Settings;
+        const h = makeGame({ deps: { settings, applySettings: () => {} } });
+        if (kept) {
+          h.game.classicGame(demoDef('mario'), '1-2');
+          h.idle(5);
+        }
+        h.game.showClassicMenu();
+        const menu = h.top() as ClassicMenuScene;
+        const status = (menu as unknown as { status: string }).status;
+        if (status) seen.status++;
+        if (labels(menu)[0] === 'Continue') seen.continue++;
+        const y = lineYs(h);
+        // The box's last row (BACK) is above the lines under the box.
+        expect(y.lastRow).toBeDefined();
+        expect(y.back?.y ?? 0).toBeGreaterThan((y.lastRow?.y ?? 0) + 8);
+        if (status) {
+          expect(y.status).toBeDefined();
+          // Whole, and on the screen.
+          expect(y.status?.str).toBe(status.toUpperCase());
+          expect(y.status?.x ?? -1).toBeGreaterThanOrEqual(0);
+          expect((y.status?.x ?? 0) + status.length * 8).toBeLessThanOrEqual(256);
+          expect(y.status?.y ?? 0).toBeGreaterThan((y.lastRow?.y ?? 0) + 8 + 6);
+          expect((y.status?.y ?? 0) + 8).toBeLessThan(y.back?.y ?? 0);
+        }
+      }
+    }
+    // Both cases were drawn: the Campaign-rules status line (dev mode) and the Continue row.
+    expect(seen.status).toBeGreaterThan(0);
+    expect(seen.continue).toBeGreaterThan(0);
+  });
+
+  it('two loops of the demo change nothing: storage, the game state, rules, the run, cheats, sounds', () => {
+    const settings = defaultSettings();
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    h.game.ctx.reduceFlashing = true;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    const snap = () =>
+      JSON.stringify({
+        store: [...store.entries()],
+        state: { ...h.game.state, character: h.game.state.character.id, character2: null },
+        runRules: h.game.runRules,
+        classicRun: h.game.classicRun,
+        settings,
+      });
+    const before = snap();
+    const sfx = h.audio.sfx.mock.calls.length;
+    const music = h.audio.playMusic.mock.calls.length;
+    for (let i = 0; i < 12000 && ct.demo.loops < 2; i++) h.step();
+    expect(ct.demo.loops).toBe(2);
+    expect(snap()).toBe(before);
+    expect(h.audio.sfx.mock.calls.length).toBe(sfx);
+    expect(h.audio.playMusic.mock.calls.length).toBe(music);
+  }, 120000);
 });

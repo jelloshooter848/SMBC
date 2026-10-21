@@ -27,7 +27,7 @@ import { worldLabel } from '../hud/world-label';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { ClassicTitleScene } from './original-title';
-import { boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
+import { boxGrowth, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
 import { abilityHint } from './hints';
 import { FONT_COLOURS } from '@content/sprites/font';
 
@@ -294,10 +294,6 @@ export class ClassicMenuScene extends MenuScene {
   private firstSetRow = 0;
 
   /**
-   * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
-   * screen and short, so its rows never scroll); the spoken hint carries the difficulty.
-   */
-  /**
    * Over the CLASSIC title (O-04): the rows in a box over the demo (each value and BEATEN at the
    * row's right), the Current-rules status line under it and the BACK line.
    */
@@ -314,13 +310,9 @@ export class ClassicMenuScene extends MenuScene {
       };
     });
     const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
-    const box = drawMenuBox(r, game.ctx.assets, rows, this.index, {
-      cx: 128,
-      cy: 160,
-      grow,
-      t: this.t,
-      calm,
-    });
+    // Clear of the status line and the BACK hint under it, whatever its row count (O-04).
+    const at = boxLayout(rows, this.status !== '', 160);
+    drawMenuBox(r, game.ctx.assets, rows, this.index, { cx: 128, cy: at.cy, grow, t: this.t, calm });
     if (grow < 1) return;
     const assets = game.ctx.assets;
     const line = (s: string, y: number) => {
@@ -328,8 +320,9 @@ export class ClassicMenuScene extends MenuScene {
       r.text(assets.sheet('font', FONT_COLOURS.black), s, x + 1, y + 1);
       r.text(assets.sheet('font'), s, x, y);
     };
-    if (this.status) line(this.status.toUpperCase().slice(0, 28), Math.min(216, box.y + box.h + 4));
-    line(abilityHint(game, 'BACK', 'attack'), 228);
+    // The screen's full width (31 columns), so "CAMPAIGN RULES: ALWAYS NORMAL" fits whole.
+    if (this.status && at.statusY !== null) line(this.status.toUpperCase().slice(0, 31), at.statusY);
+    line(abilityHint(game, 'BACK', 'attack'), at.backY);
   }
 
   /** The demo under the box plays on while it is up (original-title.ts). */
@@ -338,6 +331,10 @@ export class ClassicMenuScene extends MenuScene {
     super.update(input);
   }
 
+  /**
+   * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
+   * screen and short, so its rows never scroll); the spoken hint carries the difficulty.
+   */
   override render(r: Renderer): void {
     if (this.over) return this.renderBox(r);
     super.render(r);

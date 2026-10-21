@@ -138,3 +138,24 @@ export function drawMenuBox(
   });
   return { x, y, w, h };
 }
+
+/** The lines under a CLASSIC box: the status line (when there is one) and the BACK hint. */
+export const BOX_STATUS_Y = 218;
+export const BOX_BACK_Y = 230;
+/** The gap kept between a box and the line under it. */
+const BOX_GAP = 3;
+
+/**
+ * Where a box of `rows` rows goes (its centre y) with the lines under it: centred at `cy` when it
+ * fits, else moved up so it ends clear of the status line (or the BACK hint without one).
+ */
+export function boxLayout(
+  rows: readonly BoxRow[],
+  status: boolean,
+  cy: number,
+): { cy: number; top: number; bottom: number; statusY: number | null; backY: number } {
+  const { h } = boxSize(rows);
+  const limit = (status ? BOX_STATUS_Y : BOX_BACK_Y) - BOX_GAP;
+  const top = Math.max(0, Math.min(Math.round(cy - h / 2), limit - h));
+  return { cy: top + h / 2, top, bottom: top + h, statusY: status ? BOX_STATUS_Y : null, backY: BOX_BACK_Y };
+}

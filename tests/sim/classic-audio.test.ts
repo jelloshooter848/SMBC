@@ -243,11 +243,12 @@ describe('G-061, G-062: select music and the choose jingle', () => {
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
     expect(h.jingles).toEqual([]);
     expect(h.sounds).not.toContain('mm-teleport');
-    // The select tune stopped, and nothing started after it.
+    // The select tune stopped, and nothing started after it but the CLASSIC title's own 1-1 tune
+    // (O-04: its demo is a real 1-1, as TitleLevel is, whose music starts with it).
     const at = h.music.lastIndexOf('smb-select');
     expect(at).toBeGreaterThanOrEqual(0);
     expect(h.music.slice(at + 1)).toContain('(stop)');
-    expect(h.music.slice(at + 1).every((x) => x === '(stop)')).toBe(true);
+    expect(h.music.slice(at + 1).filter((x) => x !== '(stop)')).toEqual(['overworld']);
   });
 
   it('a select outside Classic mode stays silent as before', () => {

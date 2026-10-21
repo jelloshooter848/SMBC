@@ -2224,8 +2224,19 @@ export class Game {
     this.endClassicRun();
     this.runRules = 'current';
     const title = new ClassicTitleScene(this, 'start', true);
-    this.scenes.replace(title);
+    this.leaveClassicTitle();
+    this.scenes.push(title);
     this.scenes.push(new ClassicMenuScene(this, title, false));
+  }
+
+  /**
+   * The scene on top goes, and with it every CLASSIC title and menu under it (each one's exit
+   * runs: its demo World and its pointer listener go), so only one CLASSIC title is ever kept.
+   */
+  private leaveClassicTitle(): void {
+    this.scenes.pop();
+    while (this.scenes.top instanceof ClassicTitleScene || this.scenes.top instanceof ClassicMenuScene)
+      this.scenes.pop();
   }
 
   /**
@@ -2235,7 +2246,9 @@ export class Game {
   showClassicTitle(phase: ClassicTitlePhase = 'demo'): void {
     this.endClassicRun();
     this.runRules = 'current';
-    this.scenes.replace(new ClassicTitleScene(this, phase));
+    const title = new ClassicTitleScene(this, phase);
+    this.leaveClassicTitle();
+    this.scenes.push(title);
   }
 
   /**
@@ -2265,7 +2278,9 @@ export class Game {
       this.classicStartLives();
       this.survival = this.newSurvival();
     }
-    this.scenes.replace(
+    // The select replaces the CLASSIC title and its menus (its BACK builds them again).
+    this.leaveClassicTitle();
+    this.scenes.push(
       new CharacterSelectScene(this, null, {
         begin: (c) => {
           this.heroChosen = true;

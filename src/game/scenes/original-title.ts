@@ -120,18 +120,20 @@ export class ClassicTitleScene implements Scene {
 
   /** Whether the prompt shows this frame (TitleLevel: from Mario's start, 500 ms on and off). */
   promptShown(): boolean {
-    // Each run of the demo hides it until Mario sets off (a new TitleLevel restarts its timers).
-    if (this.phase !== 'demo' || this.demo.t <= MARIO_WAIT) return false;
+    // Each run of the demo hides it until its blink timer's first tick, 500 ms after Mario sets
+    // off (TitleLevel: the timer starts with him; a new TitleLevel restarts it).
+    const since = this.demo.t - MARIO_WAIT - PROMPT_BLINK;
+    if (this.phase !== 'demo' || since < 0) return false;
     if (this.game.ctx.reduceFlashing) return true;
-    return Math.floor((this.demo.t - MARIO_WAIT - 1) / PROMPT_BLINK) % 2 === 0;
+    return Math.floor(since / PROMPT_BLINK) % 2 === 0;
   }
 
   enter(): void {
     this.bindPointer();
-    // Back from a run or a select (quiet) nothing starts; opened from the title, the demo's own
-    // level tune plays (TitleLevel is a real 1-1).
-    if (this.quiet) return;
+    // The demo's own level tune, every time it opens (TitleLevel is a real 1-1: a new one, from
+    // the title, a game over or the select, starts its music).
     this.game.ctx.audio.playMusic('overworld');
+    if (this.quiet) return;
     if (this.phase === 'start') this.announce(true);
     else this.sayDemo();
   }
@@ -314,11 +316,15 @@ export class ClassicTitleScene implements Scene {
     }
     this.demo.render(r);
     this.logo(r);
-    // The version while only the demo is up (TitleLevel's goes when the boxes and prompt come).
-    if (this.phase === 'demo' && this.game.scenes.top === this) this.shadowText(r, this.version, 8, 227);
+    // The version while only the demo is up, until the prompt first shows (TitleLevel.as:305-306).
+    if (this.promptShown()) this.versionGone = true;
+    if (!this.versionGone && this.phase === 'demo' && this.game.scenes.top === this)
+      this.shadowText(r, this.version, 8, 227);
   }
 
   private shaker: OffsetRenderer | null = null;
+  /** The prompt has shown once: the version is gone for good (TitleLevel.clickScreenTxtTmrHandler). */
+  versionGone = false;
 
   render(r: Renderer): void {
     this.renderBackdrop(r);
