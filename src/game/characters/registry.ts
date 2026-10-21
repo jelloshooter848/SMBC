@@ -200,13 +200,19 @@ export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {
 /**
  * The def hero `def` plays in a World under `rules` (BUG-10): heroFor, except that a hero dev
  * mode's Toggle heroes set to play its other design plays that one (ctx.heroSwaps, heroRulesOf).
+ * A Classic look (a skin) follows its slot hero's Plays as: with the host set to Campaign it
+ * plays the host's Campaign design (a look has no Campaign design of its own).
  */
 export function playedHero(
   ctx: { heroSwaps?: HeroSwaps | undefined },
   def: CharacterDef,
   rules: Rules,
 ): CharacterDef {
-  return heroFor(def, heroRulesOf(ctx, def.id, rules));
+  if (!ctx.heroSwaps) return heroFor(def, rules);
+  const host = skinHost(def);
+  const r = heroRulesOf(ctx, host.id, rules);
+  if (host !== def && r === 'current') return CHARACTERS.find((c) => c.id === host.id) ?? def;
+  return heroFor(def, r);
 }
 
 export function characterById(id: string): CharacterDef {

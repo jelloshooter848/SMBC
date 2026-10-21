@@ -189,5 +189,5 @@ for Link given at the next level's start, a mushroom used as Mario going to Link
 picked, a useless one coming back, one per kind, every hero with a mushroom and a flower, the dev
 toggle and unsaved Give items, each game played through the scene, prizes, a full inventory, no
 Give up once decided, the bonus spot's rotation, used / left and a reload after the first choice,
-the Hammer Bro prize, Dev → Bonus games); `tests/sim/larry.test.ts` checks the prize after a won
+the Hammer Bro prize, Dev → Level select → Bonus games); `tests/sim/larry.test.ts` checks the prize after a won
 Hammer Bro battle.

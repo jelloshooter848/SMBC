@@ -4,7 +4,7 @@ import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
-import { CLASSIC_EXTRAS, heroFor, skinsOf } from '../characters/registry';
+import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX } from '../level/library';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
@@ -77,7 +77,7 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
   if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
   const def = devLooks(game, slot, rules).find((c) => c.id === look);
   if (!def || (branch === 'campaign' && def !== slot)) return `That look of ${slot.name} is not offered now`;
-  const states = powerStatesOf(def, rules);
+  const states = powerStatesOf(game, def, rules);
   return {
     branch,
     level,
@@ -95,9 +95,12 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
 const POWER_UP_STATES = ['small', 'big', 'fire'];
 const HP_STATES = ['full', 'half', '1 hp'];
 
-/** The power states the START page offers for `look` played under `rules`. */
-export function powerStatesOf(look: CharacterDef, rules: Rules): string[] {
-  return heroFor(look, rules).damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
+/**
+ * The power states the START page offers for `look` played under `rules`: the design it plays
+ * (BUG-10: Toggle heroes' Plays as, playedHero).
+ */
+export function powerStatesOf(game: Game, look: CharacterDef, rules: Rules): string[] {
+  return playedHero(game.ctx, look, rules).damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
 }
 
 /** Slot hero `hero`'s looks on the roster under `rules` (its own first). */
@@ -617,13 +620,13 @@ export class DevStartScene extends DevPage {
     return this.looks[this.lookIndex] ?? this.hero;
   }
 
-  /** The def played under the chosen rules: its power list and kit. */
+  /** The def played under the chosen rules (and Toggle heroes' Plays as): its power list and kit. */
   private get played(): CharacterDef {
-    return heroFor(this.look, this.rules);
+    return playedHero(this.game.ctx, this.look, this.rules);
   }
 
   private get powerStates(): string[] {
-    return powerStatesOf(this.look, this.rules);
+    return powerStatesOf(this.game, this.look, this.rules);
   }
 
   private get power(): string {

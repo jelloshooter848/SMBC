@@ -124,7 +124,7 @@ const MOUNT_NAMES: Record<Mount, string> = { off: 'Off', on: 'On', ride: 'Ride' 
  */
 export class DevClassicHeroesScene extends MenuScene {
   constructor(game: Game, onBack: () => void) {
-    super(game, 'CLASSIC HEROES', [], onBack);
+    super(game, 'TOGGLE HEROES: CLASSIC', [], onBack);
     const s = game.deps.settings;
     if (!s) {
       this.setItems([{ label: 'Back', select: onBack }]);
@@ -222,7 +222,9 @@ export class DevClassicHeroesScene extends MenuScene {
   override enter(): void {
     const it = this.items[this.index];
     const v = it?.value ? `: ${it.value()}` : '';
-    this.game.deps.announcer?.say(`Classic heroes. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`);
+    this.game.deps.announcer?.say(
+      `Toggle heroes: Classic. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`,
+    );
   }
 
   /** START on a toggle row leaves the page as BACK does, never flipping it (DevMenuScene's rule). */
@@ -302,7 +304,9 @@ export class DevPlaysAsScene extends MenuScene {
     readonly rules: Rules,
     onBack: () => void,
   ) {
-    super(game, rules === 'classic' ? 'CLASSIC: PLAYS AS' : 'CAMPAIGN HEROES', [], onBack);
+    super(game, rules === 'classic' ? 'CLASSIC: PLAYS AS' : 'TOGGLE HEROES: CAMPAIGN', [], onBack);
+    // Every hero and Back on one screen, under the title and over the BACK line.
+    this.visibleRows = 10;
     const s = game.deps.settings;
     if (!s) {
       this.setItems([{ label: 'Back', select: onBack }]);
@@ -343,7 +347,7 @@ export class DevPlaysAsScene extends MenuScene {
   override enter(): void {
     const it = this.items[this.index];
     const v = it?.value ? `: ${it.value()}` : '';
-    const page = this.rules === 'classic' ? 'Classic, plays as' : 'Campaign heroes';
+    const page = this.rules === 'classic' ? 'Toggle heroes: Classic, plays as' : 'Toggle heroes: Campaign';
     this.game.deps.announcer?.say(`${page}. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`);
   }
 

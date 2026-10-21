@@ -110,8 +110,11 @@ export class MenuScene implements Scene {
   protected status = '';
   /** The button the BACK line names (a subclass that reads Attack itself names another). */
   protected backAction: 'attack' | 'select' = 'attack';
-  /** Keeps a page of items scrolled into view. */
-  private readonly visibleRows = 9;
+  /**
+   * Keeps a page of items scrolled into view. Nine rows; a page with no status line may show ten
+   * (both layouts keep a tenth row clear of the BACK line).
+   */
+  protected visibleRows = 9;
 
   constructor(
     protected readonly game: Game,

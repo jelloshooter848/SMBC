@@ -66,7 +66,9 @@ describe('BUG-10 the Toggle heroes pages', () => {
     const both = CHARACTERS.filter((c) => CLASSIC_CHARACTERS[c.id]);
     expect(labels(page)).toEqual([...both.map((c) => c.name), 'Back']);
     for (const c of both) expect(row(page, c.name).value?.()).toBe('Classic');
-    expect(h.said.at(-1)).toMatch(/^Classic, plays as\. Mario: Classic\. Plays as: Classic or Campaign/);
+    expect(h.said.at(-1)).toMatch(
+      /^Toggle heroes: Classic, plays as\. Mario: Classic\. Plays as: Classic or Campaign/,
+    );
     h.idle(8);
     h.tap('down');
     h.tap('down'); // Link
