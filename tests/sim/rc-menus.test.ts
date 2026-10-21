@@ -28,6 +28,7 @@ import { CUSTOM_LEVEL_MISSING } from '@game/scenes/game';
 import { MessageScene } from '@game/scenes/message';
 import { QUIT_RUN_KEPT, QUIT_RUN_TITLE, QuitRunScene } from '@game/scenes/quit-run';
 import { ClassicMenuScene } from '@game/scenes/original-game';
+import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { LevelScene } from '@game/scenes/level';
 import { GuideIndexScene } from '@game/scenes/guide';
@@ -435,7 +436,9 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     const before = h.said.length;
     pick(h, 'Yes');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
-    expect(h.game.scenes.depth).toBe(1);
+    // Over the CLASSIC title's demo (O-04), and nothing else under it.
+    expect(h.game.scenes.depth).toBe(2);
+    expect((h.top() as ClassicMenuScene).over).toBeInstanceOf(ClassicTitleScene);
     // Straight there: the title is never shown (or read out) on the way.
     expect(h.said.slice(before).some((t) => t.includes('REMIX'))).toBe(false);
     expect(h.game.classicRun).toBe(false);

@@ -129,6 +129,7 @@ import { readSaveCode } from '../save/save-code';
 import { BackupCardScene } from './backup-card';
 import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
+import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
@@ -2288,20 +2289,52 @@ export class Game {
     return { onCancel: () => confirmQuitRun(this, 'No. Choose your hero.') };
   }
 
-  /** O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written). */
+  /**
+   * O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written): the
+   * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
+   */
   quitClassicRun(): void {
     this.leaveRun();
     this.scenes.clear();
-    this.scenes.push(new ClassicMenuScene(this));
-    // The menus' music, as on the way in from the title.
-    this.deps.ctx.audio.playMusic('title');
+    this.showClassicMenu();
   }
 
-  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
+  /**
+   * The CLASSIC menu (every map set, MAP_SETS; Options; Back), coming back to it from a run or a
+   * select: a box over the CLASSIC title's demo, with the title's Start box under it (O-04).
+   */
   showClassicMenu(): void {
     this.endClassicRun();
     this.runRules = 'current';
-    this.scenes.replace(new ClassicMenuScene(this));
+    const title = new ClassicTitleScene(this, 'start', true);
+    this.leaveClassicTitle();
+    this.scenes.push(title);
+    this.scenes.push(new ClassicMenuScene(this, title, false));
+  }
+
+  /**
+   * The scene on top goes, and with it every CLASSIC title and menu under it and whatever was
+   * opened over them (each one's exit runs: a title's demo World and its pointer listener go), so
+   * only one CLASSIC title is ever kept.
+   */
+  private leaveClassicTitle(): void {
+    this.scenes.pop();
+    // Every scene opened from the CLASSIC title goes with it, however deep (Options > Cheats >
+    // Level select > Go leaves the select over all of them).
+    const isTitle = (sc: unknown) => sc instanceof ClassicTitleScene || sc instanceof ClassicMenuScene;
+    while (this.scenes.find(isTitle)) this.scenes.pop();
+  }
+
+  /**
+   * The title's CLASSIC entry (O-04): the CLASSIC title, its live 1-1 demo and begin prompt;
+   * `phase` 'start' opens it with its Start box up.
+   */
+  showClassicTitle(phase: ClassicTitlePhase = 'demo'): void {
+    this.endClassicRun();
+    this.runRules = 'current';
+    const title = new ClassicTitleScene(this, phase);
+    this.leaveClassicTitle();
+    this.scenes.push(title);
   }
 
   /**
@@ -2331,7 +2364,9 @@ export class Game {
       this.classicStartLives();
       this.survival = this.newSurvival();
     }
-    this.scenes.replace(
+    // The select replaces the CLASSIC title and its menus (its BACK builds them again).
+    this.leaveClassicTitle();
+    this.scenes.push(
       new CharacterSelectScene(this, null, {
         begin: (c) => {
           this.heroChosen = true;

@@ -25,6 +25,7 @@ import type { CardScene } from '@game/scenes/message';
 import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { reconcileRules } from '@game/rules/reconcile';
 import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
+import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -70,6 +71,9 @@ function toClassicMenu(h: H): ClassicMenuScene {
   h.idle(TITLE_TIMING.dropEnd + 10);
   expect(h.top()).toBeInstanceOf(TitleScene);
   pick(h, 'Classic');
+  // O-04: the CLASSIC title's demo, then its Start box's START.
+  h.tap('jump');
+  h.tap('jump');
   expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   return h.top() as ClassicMenuScene;
 }
@@ -209,8 +213,11 @@ describe('the title and the CLASSIC menu', () => {
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
     for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
-    // Back (and BACK) returns to the title.
+    // Back (and BACK) returns to the CLASSIC title's Start box (O-04), and its BACK to the title.
     pick(h, 'Back');
+    expect(h.top()).toBeInstanceOf(ClassicTitleScene);
+    h.tap('attack');
+    h.tap('attack');
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 

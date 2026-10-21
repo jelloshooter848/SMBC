@@ -64,6 +64,18 @@ under `## [Unreleased]`.
 - Classic: the last weapons that borrowed another hero's sound have their own: Mega Man's Hard
   Knuckle, Pharaoh Shot, Flame Blast, Magma Bazooka, Water Shield, Screw Crusher, Rush and Super
   Arm, Samus's bomb blast and Ryu's sword.
+- Classic mode: **CLASSIC now opens a title in the original's style** (O-04). A live World 1-1
+  demo plays behind our logo with no HUD. Mario sets off after five seconds and jumps by
+  himself, and nine more heroes, powered up along the level, wake as the screen reaches them and
+  play their own recorded moves. Nobody takes damage, and the demo starts again at the flag.
+  "Press OK to begin" blinks every half second and stays steady with Reduce flashing. A press,
+  or a tap on the screen, opens the Start box (Start, Options, Back), and Start opens the map set
+  menu as a box over the demo, with a mushroom cursor and the original's move, choose and back
+  sounds. Every screen is announced, and BACK steps back one box at a time.
+- Classic mode: on the way in from the title, a big **CLASSIC** smashes down onto the REMIX stamp,
+  with a squash, dust, flying chips, a short shake and the stamp's thud, and stays in its place.
+  Any press finishes it, and that press still opens the Start box. With Reduce flashing it is
+  simply in place, and coming back from a run or a menu it never plays again.
 
 ### Fixed
 
