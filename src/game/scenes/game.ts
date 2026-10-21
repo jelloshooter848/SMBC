@@ -2359,6 +2359,7 @@ export class Game {
         },
         random: true,
         onCancel: () => this.backToSet(set),
+        leaveFallen: true,
       }),
     );
   }
@@ -2926,13 +2927,7 @@ export class Game {
       this.scenes.push(new GameOverScene(this, () => this.returnToMap()));
       return;
     }
-    this.scenes.push(
-      new GameOverScene(
-        this,
-        () => this.continueGame(levelId, player),
-        this.classicRun && this.campaign === null,
-      ),
-    );
+    this.scenes.push(new GameOverScene(this, () => this.continueGame(levelId, player), this.keepsResume));
   }
 
   /**

@@ -39,7 +39,7 @@ export function demoUnder(game: Game): DemoBackdrop | null {
 }
 
 export interface BoxedMenu {
-  /** The page's name, read on its own row at the box's top (the Options box has none). */
+  /** The page's name, drawn on its own gold row at the box's top (every boxed page has one). */
   header?: string;
   items: readonly MenuItem[];
   index: number;

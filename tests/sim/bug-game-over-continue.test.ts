@@ -147,3 +147,71 @@ describe('BUG-05 a Classic game over keeps the run', () => {
     expect(r?.survival?.fallen.length).toBeGreaterThan(0);
   });
 });
+
+describe('BUG-05 QA (B-I): Survival’s Continue select and runs that keep no save', () => {
+  /** A Survival run's game over in 2-2 (every hero fallen at its continue point). */
+  function survivalGameOver(h: H & { settings: Settings }): GameOverScene {
+    h.settings.classic = { ...h.settings.classic, gameMode: 'survival' };
+    h.game.classicGame(MARIO, '2-1');
+    h.game.goToLevel('2-2', { mode: 'stand' });
+    h.game.state.lives = 0;
+    h.game.gameOver('2-2');
+    h.idle(GAME_OVER_CARD_FRAMES + 2);
+    return h.top() as GameOverScene;
+  }
+
+  it('Continue’s select in revive mode with every hero fallen offers BACK (touch too) to the set’s box', () => {
+    const h = classic();
+    survivalGameOver(h);
+    h.tap('down');
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+    h.idle(8);
+    h.tap('jump');
+    h.idle(8);
+    h.tap('jump');
+    const sel = h.top() as CharacterSelectScene;
+    expect(sel).toBeInstanceOf(CharacterSelectScene);
+    expect(sel.reviving).toBe(true);
+    expect(sel.touchLabels().attack).toBe('BACK');
+    expect(h.said.some((t) => /BACK to leave/.test(t))).toBe(true);
+    h.idle(12);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(ClassicSetScene);
+  });
+
+  it('the select after an in-game CONTINUE keeps no BACK while every hero has fallen', () => {
+    const h = classic();
+    survivalGameOver(h);
+    h.tap('jump');
+    const sel = h.top() as CharacterSelectScene;
+    expect(sel).toBeInstanceOf(CharacterSelectScene);
+    expect(sel.reviving).toBe(true);
+    expect(sel.touchLabels().attack).toBeNull();
+    h.idle(12);
+    h.tap('attack');
+    expect(h.top()).toBe(sel);
+  });
+
+  it('a developer or link Classic run keeps the YES / NO prompt; NO goes to the CLASSIC menu', () => {
+    for (const dev of [true, false]) {
+      const h = classic(dev ? { dev: true } : {});
+      // dev: a dev Classic run; else a `?level=` link run (RC-004): neither writes a save.
+      h.game.devClassicGame(MARIO, '1-1', 'classic', dev);
+      h.until(() => h.top() instanceof LevelScene, 600);
+      const before = [...store.keys()].filter((k) => k.startsWith('smbc-classic-resume'));
+      h.game.state.lives = 0;
+      h.game.gameOver('1-1');
+      h.idle(GAME_OVER_CARD_FRAMES + 2);
+      const go = h.top() as GameOverScene;
+      const t = draw(go).texts.map((x) => x.str);
+      expect(t, `dev ${dev}`).toEqual(expect.arrayContaining(['CONTINUE?', 'YES', 'NO']));
+      expect(t).not.toContain('MAIN MENU');
+      expect(h.said.at(-1)).not.toMatch(/keep your run/);
+      expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-resume'))).toEqual(before);
+      h.tap('down');
+      h.tap('jump');
+      expect(h.top(), `dev ${dev}`).toBeInstanceOf(ClassicMenuScene);
+    }
+  });
+});

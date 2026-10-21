@@ -173,9 +173,10 @@ export function drawMenuBox(
       text(v, right - v.length * 8, ry, sheet);
     }
   });
-  // More rows above or below the ones shown: a small arrow at the frame's right, top or bottom.
-  if (first > 0) scrollArrow(r, x + w - 8, y + 2, -1);
-  if (first + shown < rows.length) scrollArrow(r, x + w - 8, y + h - 5, 1);
+  // More rows above or below the ones shown: a small arrow by the frame's right, top or bottom,
+  // inside the corner rivets (B-I QA).
+  if (first > 0) scrollArrow(r, x + w - 18, y + 2, -1);
+  if (first + shown < rows.length) scrollArrow(r, x + w - 18, y + h - 5, 1);
   return { x, y, w, h };
 }
 
