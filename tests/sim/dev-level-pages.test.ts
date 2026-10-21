@@ -5,6 +5,7 @@ import {
   DevCampaignScene,
   DevClassicScene,
   DevStartScene,
+  areaName,
   areasOf,
   loadDevPick,
 } from '@game/scenes/dev-play';
@@ -185,7 +186,7 @@ describe('O-05: the dev Level select as pages', () => {
     pick(h, 'Super Mario Bros.');
     pick(h, 'World 1');
     pick(h, '1-2 areas');
-    pick(h, '1-2-bonus');
+    pick(h, '1-2 bonus');
     pick(h, 'Start');
     expect(enterLevel(h).level.id).toBe('1-2-bonus');
   });
@@ -283,6 +284,105 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
     expect((h.top() as MenuScene).title).toBe('LOST LEVELS D');
   });
 });
+
+describe('O-05 review: every area reachable, Again checked on the press, readable names', () => {
+  /** Every level id the START pages under `page` start, opening each row that opens a page. */
+  function reach(h: H, page: MenuScene, seen = new Set<string>()): Set<string> {
+    for (const it of items(page)) {
+      if (it.label === 'Back' || !it.select) continue;
+      const depth = h.game.scenes.depth;
+      it.select();
+      const top = h.top();
+      if (top instanceof DevStartScene) seen.add(top.target.level);
+      else if (top !== page && h.game.scenes.depth > depth) reach(h, top as MenuScene, seen);
+      while (h.game.scenes.depth > depth) h.game.scenes.pop();
+    }
+    return seen;
+  }
+
+  it('every SMB, Lost Levels and Special area is reached from the Classic or Campaign pages', () => {
+    const h = dev();
+    const classic = new DevClassicScene(h.game);
+    h.game.scenes.push(classic);
+    const seen = reach(h, classic);
+    const campaign = new DevCampaignScene(h.game);
+    // Only the pages that start levels (World map, files and games open other scenes).
+    for (const label of ['Story level', 'Lost story level', 'Tutorial 1-0']) {
+      h.game.scenes.push(campaign);
+      const it = items(campaign).find((i) => i.label === label) as MenuItem;
+      it.select?.();
+      const top = h.top();
+      if (top instanceof DevStartScene) seen.add(top.target.level);
+      else reach(h, top as MenuScene, seen);
+      while (h.top() !== classic) h.game.scenes.pop();
+    }
+    const missing = [...levelIds(), ...specialLevelIds()].filter((id) => !seen.has(id));
+    expect(missing).toEqual([]);
+    for (const id of ['8-5', '2-top-secret', '1-0-pipe']) expect(seen.has(id), id).toBe(true);
+  });
+
+  it('the world rooms outside the four levels are under Other rooms, with readable names', () => {
+    const h = dev();
+    h.game.scenes.push(new DevClassicScene(h.game));
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'World 8');
+    pick(h, 'Other rooms');
+    expect(labels(h.top())).toContain('8-5');
+    h.game.scenes.pop();
+    h.game.scenes.pop();
+    pick(h, 'World 2');
+    pick(h, 'Other rooms');
+    expect(labels(h.top())).toContain('2 top secret');
+    expect(h.said.at(-1)).toMatch(/^SMB 2 other rooms\./);
+    pick(h, '2 top secret');
+    expect((h.top() as DevStartScene).target).toMatchObject({ level: '2-top-secret', name: '2 top secret' });
+    expect(areaName('ll-10-2-intro', 'll-')).toBe('A-2 intro');
+    expect(areaName('1-0-pipe', '')).toBe('1-0 pipe');
+    expect(areaName('sp-3-1-bonus', 'sp-')).toBe('3-1 bonus');
+  });
+
+  it('the two Campaign world pages have their own titles', () => {
+    const h = dev();
+    h.game.scenes.push(new DevCampaignScene(h.game));
+    pick(h, 'Story level');
+    expect(h.said.at(-1)).toMatch(/^Story: SMB worlds\./);
+    expect((h.top() as MenuScene).title).toBe('STORY: SMB WORLDS');
+    h.game.scenes.pop();
+    pick(h, 'Lost story level');
+    expect(h.said.at(-1)).toMatch(/^Story: Lost Levels worlds\./);
+  });
+
+  it.each(['release', 'off'] as const)(
+    'Again is checked on the press: a hero set to %s since says why and starts nothing',
+    (now) => {
+      const h = dev();
+      const s = h.game.deps.settings as Settings;
+      s.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: ['yoshi'] };
+      const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
+      const hero = items(start).find((i) => i.label === 'Hero') as MenuItem;
+      for (let i = 0; i < 20 && start.hero.id !== 'yoshi'; i++) hero.adjust?.(1);
+      saveDevPick(start);
+      h.game.showTitle();
+      h.game.showDevMenu();
+      const menu = h.top() as MenuScene;
+      expect(labels(menu)[0]).toBe('Again');
+      // Dev > Classic heroes changes while the Dev menu is open.
+      delete s.classicDev.heroesOn;
+      if (now === 'off') s.classicDev.heroesOff = ['yoshi'];
+      h.idle(8);
+      h.tap('jump');
+      expect(h.top()).toBe(menu);
+      expect(h.said.at(-1)).toMatch(/^Again cannot start\. Yoshi is not offered now/);
+      h.idle(30);
+      expect(h.game.scenes.find((x) => x instanceof LevelScene)).toBeUndefined();
+    },
+  );
+});
+
+/** Keeps `start`'s pick as Again's, as its Start row does, without starting it. */
+function saveDevPick(start: DevStartScene): void {
+  store.set(DEV_LAST_KEY, JSON.stringify(start.pick));
+}
 
 describe('O-05: the Campaign branch', () => {
   it('a story level starts as free play under Current rules, with no file', () => {
