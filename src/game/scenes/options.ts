@@ -40,7 +40,12 @@ export class OptionsScene extends MenuScene {
         : []),
       {
         label: 'How to play',
-        select: () => this.push(new GuideIndexScene(game, () => this.pop(), classic)),
+        // O-14: while the campaign is closed, the title's How to play is Classic's (its select's
+        // heroes and their Classic pages), as Classic's own options are.
+        select: () =>
+          this.push(
+            new GuideIndexScene(game, () => this.pop(), classic || (!translucent && !game.campaignOpen)),
+          ),
         hint: 'Controls and power-ups for every hero',
       },
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },

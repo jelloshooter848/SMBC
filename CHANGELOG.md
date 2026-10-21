@@ -20,6 +20,8 @@ under `## [Unreleased]`.
 - The save-backup reminders are off by default; settings saved by earlier versions turn them off
   once (they can be turned back on in Options → Save files).
 - Classic options: **All options** is now **Video, audio, controls**.
+- The title's Options → How to play lists Classic's heroes with their Classic pages while the
+  campaign is closed, instead of the campaign's guides.
 
 ## [0.4.67] - 2026-10-21
 

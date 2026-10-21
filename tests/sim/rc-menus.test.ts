@@ -18,6 +18,7 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
+import { GuideIndexScene } from '@game/scenes/guide';
 import { ClassicOptionsScene } from '@game/scenes/original-game';
 import { SaveFilesOptions } from '@game/scenes/save-codes';
 import {
@@ -298,5 +299,31 @@ describe('O-13: Classic options "All options" becomes "Video, audio, controls"',
     pick(h, 'Video, audio, controls');
     expect(h.top()).toBeInstanceOf(OptionsScene);
     expect(labels(h.top()).slice(0, 3)).toEqual(['Video', 'Audio', 'Controls']);
+  });
+});
+
+describe('O-14: no campaign guides in Classic (the title\'s How to play while the campaign is closed)', () => {
+  const guide = (h: H) => {
+    title(h);
+    pick(h, 'Options');
+    pick(h, 'How to play');
+    expect(h.top()).toBeInstanceOf(GuideIndexScene);
+    return labels(h.top()).filter((l) => l !== 'Back');
+  };
+
+  it("outside dev mode it lists the Classic select's heroes, each with its Classic page", () => {
+    const h = makeGame();
+    const names = guide(h);
+    expect(names).toContain('Bass');
+    expect(names.slice(0, 2)).toEqual(['Mario', 'Luigi']);
+    pick(h, names[0] as string);
+    expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
+  });
+
+  it('with dev mode on (the campaign open) it is the campaign roster, as before', () => {
+    const h = makeGame(true);
+    const names = guide(h);
+    expect(names).not.toContain('Bass');
+    expect(names).toEqual(h.game.roster.map((c) => c.name));
   });
 });
