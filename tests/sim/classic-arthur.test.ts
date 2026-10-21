@@ -121,6 +121,8 @@ describe('definition and roster (AR-1..AR-3, TG-41)', () => {
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     expect((h.top() as CharacterSelectScene).chars).not.toContain(A);
     settings.classic.expansion = 'on';
+    // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
+    settings.classicDev.heroesOn = ['arthur'];
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     // After the original's eleven heroes.

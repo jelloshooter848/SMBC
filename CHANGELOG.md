@@ -8,6 +8,19 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Added
+
+- Dev mode: the Level select is now a set of pages (O-05). **Classic** goes map set, world, level
+  (or one of its rooms), then a start page with the hero, its look, power, Map difficulty (Hard
+  can now be tested), rules, mode and kit. **Campaign** opens the world map or a copy of a save
+  file that never saves, story levels, the village, the tutorial stage, the training rooms and the
+  games. **Again** replays the last start in one press. The one-page list stays as Level select.
+- Dev mode: a **Classic heroes** page (O-06) in place of the Dev menu's Classic toggles: each
+  Expansion hero is Release (what players get), On (always shown in dev mode) or Off, with an All
+  row, and the Yoshi mount is Off, On or Ride. In dev mode the Expansion heroes option no longer
+  offers all four by itself: Release shows exactly what players get. None of it applies outside
+  dev mode.
+
 ### Changed
 
 - Classic mode: **redrawn select faces** for Mario, Luigi, Link, Samus, Simon, Mega Man, Bass,
@@ -42,10 +55,11 @@ under `## [Unreleased]`.
   to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
   Continue holds the run.
 - Classic's pick performances are the original's own: the select and name boxes close and the
-  hero acts on the ground, whole. Mario jumps into a hidden block, Luigi jumps at a brick column,
-  Simon whips two bricks open and walks onto a pork chop, Samus sinks through the ground, Bill is
-  electrocuted (no colour flash with Reduce flashing), Ryu clings to a wall, Jason hops out of
-  Sophia. Bass and Proto Man no longer teleport (Mega Man's teleport plays once).
+  hero acts on the ground, whole. Mario jumps into a hidden block, Luigi jumps over a brick column
+  onto its top, Simon whips two bricks open and walks onto a pork chop, Samus sinks through the
+  ground, Bill is electrocuted (no colour flash with Reduce flashing), Ryu climbs a wall,
+  Jason hops out of Sophia, Bass double-jumps, and Mega Man, Proto Man and Break Man teleport
+  away (Proto Man to his whistle). Bass no longer plays a teleport. A Random pick shows its hero.
 - Classic: Bill's shots have their own hit and kill sounds.
 - Classic: the last weapons that borrowed another hero's sound have their own: Mega Man's Hard
   Knuckle, Pharaoh Shot, Flame Blast, Magma Bazooka, Water Shield, Screw Crusher, Rush and Super
