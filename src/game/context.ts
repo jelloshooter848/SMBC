@@ -17,6 +17,19 @@ export function rulesOf(ctx: { rules?: Rules | undefined }): Rules {
   return ctx.rules ?? 'current';
 }
 
+/**
+ * BUG-10: dev mode's Toggle heroes "Plays as", by the rules a World plays: the heroes (by id) that
+ * play their other design there ('classic': Classic mode heroes playing their Campaign design;
+ * 'current': campaign heroes playing their Classic kit). Absent outside dev mode.
+ */
+export type HeroSwaps = Partial<Record<Rules, readonly string[]>>;
+
+/** The rules hero `id`'s design is resolved under in a World playing `rules` (BUG-10). */
+export function heroRulesOf(ctx: { heroSwaps?: HeroSwaps | undefined }, id: string, rules: Rules): Rules {
+  if (!ctx.heroSwaps?.[rules]?.includes(id)) return rules;
+  return rules === 'classic' ? 'current' : 'classic';
+}
+
 /** Per-game assist/accessibility options that affect simulation. */
 export interface AssistOptions {
   allowLeftScroll: boolean;
@@ -110,6 +123,11 @@ export interface GameContext {
    * once, in its constructor (World.classic); absent there means the original's values.
    */
   classic?: ClassicSettings;
+  /**
+   * BUG-10: dev mode's Toggle heroes "Plays as" swaps (heroRulesOf), a live view Game keeps of
+   * Settings.classicDev while dev mode is on; absent otherwise (and in every hand-built context).
+   */
+  heroSwaps?: HeroSwaps;
   /**
    * Classic mode's Map Difficulty for the run (G-006): present only in a Classic run with Classic
    * rules (Game.classicMapDifficulty); absent (Normal) everywhere else. A World reads it once.

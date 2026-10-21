@@ -3,7 +3,13 @@ import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 import type { MenuItem } from './menu';
 import type { InputFrame } from '@engine/input/input-manager';
-import { CLASSIC_EXTRAS, EXPANSION_HEROES, expansionReleased } from '../characters/registry';
+import {
+  CLASSIC_CHARACTERS,
+  CLASSIC_EXTRAS,
+  EXPANSION_HEROES,
+  expansionReleased,
+} from '../characters/registry';
+import type { Rules } from '../context';
 import type { CharacterDef } from '../characters/character';
 import { DevLevelPagesScene, devAgainItem } from './dev-play';
 
@@ -34,9 +40,10 @@ export class DevMenuScene extends MenuScene {
         hint: 'Only active while dev mode is on',
       },
       {
-        label: 'Classic heroes',
-        select: () => push(new DevClassicHeroesScene(game, () => game.scenes.pop())),
-        hint: 'Release, On or Off for each Expansion hero, and the Yoshi mount',
+        // BUG-10: was Classic heroes; its Classic page is that page, its Campaign page is new.
+        label: 'Toggle heroes',
+        select: () => push(new DevToggleHeroesScene(game, () => game.scenes.pop())),
+        hint: 'Classic: who is offered, the Yoshi mount and which design each hero plays. Campaign: which design each hero plays',
       },
       {
         label: 'Dev mode off',
@@ -110,7 +117,7 @@ const MOUNTS: readonly Mount[] = ['off', 'on', 'ride'];
 const MOUNT_NAMES: Record<Mount, string> = { off: 'Off', on: 'On', ride: 'Ride' };
 
 /**
- * Dev > Classic heroes (O-06): one row per Expansion hero (EXPANSION_HEROES, the heroes SMBC
+ * Dev > Toggle heroes > Classic (O-06, was Dev > Classic heroes): one row per Expansion hero (EXPANSION_HEROES, the heroes SMBC
  * 3.1.21 never had) with Release / On / Off, an All row (Release, All on, All off; Mixed when they
  * differ) and the Yoshi mount (Off / On / Ride). Saved in Settings.classicDev, read only in dev
  * mode (Game.expansionHeroOffered), so release players always get the release rule.
@@ -195,6 +202,13 @@ export class DevClassicHeroesScene extends MenuScene {
       hint: 'Classic mode: Yoshi eggs hatch from blocks; Ride starts each level riding him. Off plays the original',
     });
     for (const r of rows) TOGGLE_ROWS.add(r);
+    // BUG-10: each Classic hero's Plays as (Classic / Campaign design), on a page of its own.
+    rows.push({
+      label: 'Plays as',
+      value: () => playsAsSummary(game, 'classic'),
+      select: () => game.scenes.push(new DevPlaysAsScene(game, 'classic', () => game.scenes.pop())),
+      hint: 'Each hero plays its Classic or its Campaign design in Classic mode',
+    });
     rows.push({ label: 'Back', select: onBack });
     this.setItems(rows);
   }
@@ -209,6 +223,128 @@ export class DevClassicHeroesScene extends MenuScene {
     const it = this.items[this.index];
     const v = it?.value ? `: ${it.value()}` : '';
     this.game.deps.announcer?.say(`Classic heroes. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`);
+  }
+
+  /** START on a toggle row leaves the page as BACK does, never flipping it (DevMenuScene's rule). */
+  override update(input: InputFrame): void {
+    const it = this.items[this.index];
+    if (this.t + 1 >= 6 && it && TOGGLE_ROWS.has(it) && input.pressed('start') && this.onBack) {
+      this.t++;
+      this.game.ctx.audio.sfx('select');
+      this.onBack();
+      return;
+    }
+    super.update(input);
+  }
+}
+
+/**
+ * BUG-10: Dev > Toggle heroes (was Classic heroes): its Classic page (DevClassicHeroesScene: who
+ * the Classic select offers, the Yoshi mount and each hero's Plays as) and its Campaign page (each
+ * campaign hero's Plays as). Saved in Settings.classicDev; dev mode only.
+ */
+export class DevToggleHeroesScene extends MenuScene {
+  constructor(game: Game, onBack: () => void) {
+    super(game, 'TOGGLE HEROES', [], onBack);
+    this.setItems([
+      {
+        label: 'Classic',
+        select: () => game.scenes.push(new DevClassicHeroesScene(game, () => game.scenes.pop())),
+        hint: 'Release, On or Off for each Expansion hero, the Yoshi mount, and Plays as',
+      },
+      {
+        label: 'Campaign',
+        select: () => game.scenes.push(new DevPlaysAsScene(game, 'current', () => game.scenes.pop())),
+        hint: 'Plays as Campaign or Classic for each campaign hero',
+      },
+      { label: 'Back', select: onBack },
+    ]);
+  }
+
+  override enter(): void {
+    const it = this.items[this.index];
+    this.game.deps.announcer?.say(`Toggle heroes. ${it?.label ?? ''}${it?.hint ? `. ${it.hint}` : ''}`);
+  }
+}
+
+/** The design names, by the rules each is resolved under (the 'current' rules are "Campaign"). */
+const DESIGN_NAMES: Record<Rules, string> = { classic: 'Classic', current: 'Campaign' };
+
+const other = (r: Rules): Rules => (r === 'classic' ? 'current' : 'classic');
+
+/** The heroes with both designs (a Campaign def and a Classic one): the ones Plays as can swap. */
+function swappable(game: Game): CharacterDef[] {
+  return game.deps.characters.filter((c) => CLASSIC_CHARACTERS[c.id] !== undefined);
+}
+
+/** The Settings.classicDev list a page under `rules` keeps: the heroes playing the other design. */
+const SWAP_KEY = { classic: 'playsCampaign', current: 'playsClassic' } as const;
+
+/** "All Classic", "All Campaign" or "Mixed": the Classic page's Plays as row. */
+function playsAsSummary(game: Game, rules: Rules): string {
+  const list = game.deps.settings?.classicDev?.[SWAP_KEY[rules]] ?? [];
+  const heroes = swappable(game);
+  const n = heroes.filter((c) => list.includes(c.id)).length;
+  if (n === 0) return `All ${DESIGN_NAMES[rules]}`;
+  return n === heroes.length ? `All ${DESIGN_NAMES[other(rules)]}` : 'Mixed';
+}
+
+/**
+ * BUG-10, Dev > Toggle heroes > Classic > Plays as (`rules` 'classic') or > Campaign (`rules`
+ * 'current'): one row per hero with both designs, playing its own design (Classic in Classic
+ * mode, Campaign in the campaign) or the other one, so a dev can test either kit in either mode.
+ * Saved in Settings.classicDev (playsCampaign / playsClassic); read only in dev mode
+ * (Game.heroSwaps), from the next level on.
+ */
+export class DevPlaysAsScene extends MenuScene {
+  constructor(
+    game: Game,
+    readonly rules: Rules,
+    onBack: () => void,
+  ) {
+    super(game, rules === 'classic' ? 'CLASSIC: PLAYS AS' : 'CAMPAIGN HEROES', [], onBack);
+    const s = game.deps.settings;
+    if (!s) {
+      this.setItems([{ label: 'Back', select: onBack }]);
+      return;
+    }
+    s.classicDev ??= { yoshiMount: false, heroesOff: [] };
+    const dev = s.classicDev;
+    const key = SWAP_KEY[rules];
+    const own = DESIGN_NAMES[rules];
+    const swap = DESIGN_NAMES[other(rules)];
+    const mode = rules === 'classic' ? 'Classic mode' : 'the campaign';
+    const rows: MenuItem[] = swappable(game).map((def) => {
+      const flip = () => {
+        const was = dev[key] ?? [];
+        const list = was.filter((id) => id !== def.id);
+        if (!was.includes(def.id)) list.push(def.id);
+        if (list.length) dev[key] = list;
+        else delete dev[key];
+        game.deps.applySettings?.();
+      };
+      const row: MenuItem = {
+        label: fitName(def.name, 24 - 'Campaign'.length - 1),
+        value: () => ((dev[key] ?? []).includes(def.id) ? swap : own),
+        adjust: flip,
+        select: () => {
+          flip();
+          this.announce();
+        },
+        hint: `Plays as: ${own} or ${swap}, in ${mode}, from the next level. Dev mode only`,
+      };
+      TOGGLE_ROWS.add(row);
+      return row;
+    });
+    rows.push({ label: 'Back', select: onBack });
+    this.setItems(rows);
+  }
+
+  override enter(): void {
+    const it = this.items[this.index];
+    const v = it?.value ? `: ${it.value()}` : '';
+    const page = this.rules === 'classic' ? 'Classic, plays as' : 'Campaign heroes';
+    this.game.deps.announcer?.say(`${page}. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`);
   }
 
   /** START on a toggle row leaves the page as BACK does, never flipping it (DevMenuScene's rule). */

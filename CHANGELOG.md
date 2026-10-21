@@ -16,6 +16,10 @@ under `## [Unreleased]`.
 - Dev mode: one **Level select** in the Dev menu (BUG-09). It opens Classic, Campaign, Mini games
   and Bonus games; the old one-page list is gone, and the editor's levels it listed are now under
   Campaign > Custom levels.
+- Dev mode: **Classic heroes** is now **Toggle heroes** (BUG-10), with two pages. **Classic** is
+  the old page plus **Plays as**, where each hero can play its Classic or its Campaign design in
+  Classic mode; **Campaign** lets each campaign hero play its Campaign design or its Classic kit.
+  Saved with the other dev toggles; no effect outside dev mode.
 
 ## [0.4.68] - 2026-10-21
 

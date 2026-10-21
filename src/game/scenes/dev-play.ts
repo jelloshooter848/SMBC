@@ -74,7 +74,7 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
   const offered = branch === 'campaign' ? game.deps.characters : game.slotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
-  if (!slot) return `${named} is not offered now. Dev mode, Classic heroes sets who is`;
+  if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
   const def = devLooks(game, slot, rules).find((c) => c.id === look);
   if (!def || (branch === 'campaign' && def !== slot)) return `That look of ${slot.name} is not offered now`;
   const states = powerStatesOf(def, rules);
@@ -140,7 +140,7 @@ export function devAgainItem(game: Game): MenuItem | null {
   return {
     label: 'Again',
     value: () => s.value,
-    // Resolved again on the press: Dev mode, Classic heroes may have changed who is offered since.
+    // Resolved again on the press: Dev mode, Toggle heroes may have changed who is offered since.
     select: () => {
       const now = resolveDevPick(game, p);
       if (typeof now !== 'string' && playDevPick(game, now)) return;

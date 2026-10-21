@@ -97,7 +97,7 @@ import {
 } from '../context';
 import type { ClassicCheatStat } from '@engine/save/settings';
 import type { ClassicSettings } from '@engine/save/original-options';
-import { heroFor } from '../characters/registry';
+import { heroFor, playedHero } from '../characters/registry';
 import { layeredLevel, layerFlags } from '../level/layers';
 import { HURRY_TIME, SPAWN_MARGIN_PX, TIMER_FRAMES } from '../constants';
 import { Decoration } from '../entities/objects/decoration';
@@ -913,9 +913,10 @@ export class World {
     this.bowserFire = BowserFire.forLevel(level);
     // The state holds the roster (Current) defs; the players play the defs for these rules (TG-19).
     const defs: [CharacterDef, string, number][] = [
-      [heroFor(state.character, this.rules), state.powerState, state.hp],
+      [playedHero(ctx, state.character, this.rules), state.powerState, state.hp],
     ];
-    if (state.character2) defs.push([heroFor(state.character2, this.rules), state.powerState2, state.hp2]);
+    if (state.character2)
+      defs.push([playedHero(ctx, state.character2, this.rules), state.powerState2, state.hp2]);
     defs.forEach(([def, power, hp], i) => {
       const tmp = new Player(0, 0, def, power, hp);
       const hb = def.hitbox(tmp);

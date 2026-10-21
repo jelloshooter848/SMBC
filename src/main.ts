@@ -21,7 +21,7 @@ import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
 import { Game } from '@game/scenes/game';
-import { CHARACTERS, heroFor } from '@game/characters/registry';
+import { CHARACTERS, playedHero } from '@game/characters/registry';
 import { urlLevelStart, urlRules, urlYoshi } from '@game/dev-url';
 import { devLockFor, enforceDevLock, urlDevAllowed } from '@game/dev-lock';
 import { DEFAULT_ASSIST } from '@game/context';
@@ -315,7 +315,7 @@ function boot(): void {
     if (classic) game.devClassicGame(c1, level, rules, settings.dev);
     else game.newGame(c1, level, c2, { rules });
     // The full kit of the def played under the run's rules (TG-8).
-    const hero = heroFor(c1, game.liveRules);
+    const hero = playedHero(game.ctx, c1, game.liveRules);
     if (settings.dev && params.get('kit') === 'full' && hero.devKit) {
       game.state.kit = hero.devKit();
       if (game.liveRules === 'classic') {

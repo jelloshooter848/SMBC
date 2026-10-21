@@ -13,15 +13,15 @@ import {
   saveProgress,
   type MapSetId,
 } from '@engine/save/progress';
-import type { CheatFlags, GameContext, GameState, Rules } from '../context';
+import type { CheatFlags, GameContext, GameState, HeroSwaps, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
 import {
   CLASSIC_EXTRAS,
   CLASSIC_SLOTS,
   EXPANSION_HEROES,
   expansionReleased,
-  heroFor,
   isSkin,
+  playedHero,
   skinHost,
   skinsOf,
 } from '../characters/registry';
@@ -415,6 +415,12 @@ export class Game {
     // ctx.classic likewise: Classic mode's options, only while a Classic run plays Classic rules.
     Object.defineProperty(deps.ctx, 'classic', {
       get: () => this.classicOptions,
+      enumerable: true,
+      configurable: true,
+    });
+    // ctx.heroSwaps (BUG-10): dev mode's Toggle heroes "Plays as", only while dev mode is on.
+    Object.defineProperty(deps.ctx, 'heroSwaps', {
+      get: () => this.heroSwaps,
       enumerable: true,
       configurable: true,
     });
@@ -831,6 +837,18 @@ export class Game {
     const s = this.deps.settings;
     // A hand-made settings object (a test harness's) may predate the field: the defaults.
     return (this.devMode && s?.classicDev) || { yoshiMount: false, heroesOff: [] };
+  }
+
+  /**
+   * BUG-10: dev mode's Toggle heroes "Plays as" swaps (ctx.heroSwaps): under Classic rules the
+   * heroes set to play their Campaign design, under Campaign rules those set to play their Classic
+   * kit. Undefined outside dev mode, so release players never get either.
+   */
+  get heroSwaps(): HeroSwaps | undefined {
+    if (!this.devMode) return undefined;
+    const t = this.classicToggles;
+    if (!t.playsCampaign?.length && !t.playsClassic?.length) return undefined;
+    return { classic: t.playsCampaign ?? [], current: t.playsClassic ?? [] };
   }
 
   /** False for a hero not in SMBC 3.1.21 (CharacterDef.notInOriginal) toggled off in the Dev menu. */
@@ -1812,8 +1830,11 @@ export class Game {
     // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
-    const hero = heroFor(character, rules);
+    const hero = playedHero(this.ctx, character, rules);
     this.state = newGameState(character, null, rules);
+    // BUG-10: a hero Toggle heroes swaps starts at the swapped design's power.
+    this.state.powerState = defaultPower(hero);
+    this.state.hp = startHp(hero);
     if (!classic) this.state.lives = 99;
     else this.classicStartLives();
     this.survivalWithoutSelect(classic, character);
@@ -2751,7 +2772,7 @@ export class Game {
     const rules = this.liveRules;
     const fresh = (c: CharacterDef, kit: Record<string, number>): HeroPower => {
       if (this.campaign) return heroStart(c);
-      const d = heroFor(c, rules); // the def played under the run's rules (TG-17a)
+      const d = playedHero(this.ctx, c, rules); // the def played under the run's rules (TG-17a)
       return { powerState: defaultPower(d), hp: startHp(d), kit: keptKit(d, kit) };
     };
     const p1 = fresh(s.character, s.kit);
@@ -2812,7 +2833,7 @@ export class Game {
       return;
     }
     // The default of the def played under the run's rules (TG-17a).
-    const d = heroFor(c, this.liveRules);
+    const d = playedHero(this.ctx, c, this.liveRules);
     const power = defaultPower(d);
     // The same hero picked again keeps what a death keeps (CharacterDef.keepOnDeath).
     if (player === 1) {

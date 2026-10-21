@@ -1,5 +1,5 @@
 import type { CharacterDef } from './character';
-import type { Rules } from '../context';
+import { heroRulesOf, type HeroSwaps, type Rules } from '../context';
 import { MARIO } from './mario';
 import { LUIGI } from './luigi';
 import { LINK } from './link';
@@ -195,6 +195,18 @@ export function skinsOf(def: CharacterDef): readonly CharacterDef[] {
 export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {
   if (rules !== 'classic' || def.rules === 'classic') return def;
   return CLASSIC_CHARACTERS[def.id] ?? def;
+}
+
+/**
+ * The def hero `def` plays in a World under `rules` (BUG-10): heroFor, except that a hero dev
+ * mode's Toggle heroes set to play its other design plays that one (ctx.heroSwaps, heroRulesOf).
+ */
+export function playedHero(
+  ctx: { heroSwaps?: HeroSwaps | undefined },
+  def: CharacterDef,
+  rules: Rules,
+): CharacterDef {
+  return heroFor(def, heroRulesOf(ctx, def.id, rules));
 }
 
 export function characterById(id: string): CharacterDef {

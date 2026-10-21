@@ -7,7 +7,7 @@ import { MEGAMAN_SMBC_CANVAS } from '@content/sprites/smbc-megaman';
 import { RYU_SMBC_CANVAS } from '@content/sprites/smbc-ryu';
 import { SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
 import { shownPortrait, type CharacterDef } from '../characters/character';
-import { heroFor, heroGame, skinGame } from '../characters/registry';
+import { heroGame, playedHero, skinGame } from '../characters/registry';
 import type { Game } from './game';
 import {
   GROUND_Y,
@@ -720,7 +720,8 @@ export class CharacterSelectScene implements Scene {
   private portraitOf(c: CharacterDef): CharacterDef['portrait'] {
     // A Classic run shows each hero's Classic art (R1: drawn at the original's sizes), in the
     // look chosen for it (FU-8).
-    if (!c.portraitFor) return shownPortrait(heroFor(this.game.skinFor(c), this.game.liveRules));
+    if (!c.portraitFor)
+      return shownPortrait(playedHero(this.game.ctx, this.game.skinFor(c), this.game.liveRules));
     const s = this.game.state;
     const second = this.pick?.player === 1 && s.character2 !== null;
     const mine = second ? s.character2 : s.character;
@@ -1375,7 +1376,7 @@ export class CharacterSelectScene implements Scene {
 
   /** The portrait frame Classic mode draws for `c` (its Classic art). */
   private artOf(c: CharacterDef): CharacterDef['portrait'] {
-    return shownPortrait(heroFor(c, this.game.liveRules));
+    return shownPortrait(playedHero(this.game.ctx, c, this.game.liveRules));
   }
 
   /**

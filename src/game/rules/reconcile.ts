@@ -1,6 +1,6 @@
 import { defaultPower, type Rules } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
-import { CLASSIC_EXTRAS, heroFor } from '../characters/registry';
+import { CLASSIC_EXTRAS, playedHero } from '../characters/registry';
 import type { Game } from '../scenes/game';
 
 /**
@@ -14,7 +14,7 @@ export function reconcileRules(game: Game, rules: Rules): void {
   const s = game.state;
   if ((s.rules ?? 'current') !== rules) {
     const reset = (c: CharacterDef) => {
-      const d = heroFor(c, rules);
+      const d = playedHero(game.ctx, c, rules);
       return { powerState: defaultPower(d), hp: startHp(d) };
     };
     const p1 = reset(s.character);
@@ -31,6 +31,23 @@ export function reconcileRules(game: Game, rules: Rules): void {
     if (rules === 'classic') s.rules = 'classic';
     else delete s.rules;
     game.deps.announcer?.say('Rules changed. Power reset.');
+  }
+  // BUG-10: dev mode only, a hero whose Toggle heroes "Plays as" changed since its power was set
+  // (a hit-point hero's power is always 'full', a power-up hero's never) starts at the played
+  // design's power. Outside dev mode the played def never changes, so this never runs.
+  if (game.devMode) {
+    const fits = (c: CharacterDef, power: string) =>
+      (playedHero(game.ctx, c, rules).damage.kind === 'powerup') === (power !== 'full');
+    const start = (c: CharacterDef) => {
+      const d = playedHero(game.ctx, c, rules);
+      return { powerState: defaultPower(d), hp: startHp(d) };
+    };
+    if (!fits(s.character, s.powerState)) {
+      ({ powerState: s.powerState, hp: s.hp } = start(s.character));
+      game.deps.announcer?.say('Hero design changed. Power reset.');
+    }
+    if (s.character2 && !fits(s.character2, s.powerState2))
+      ({ powerState: s.powerState2, hp: s.hp2 } = start(s.character2));
   }
   const extra = (c: CharacterDef | null): c is CharacterDef => !!c && CLASSIC_EXTRAS.includes(c);
   if (!extra(s.character) && !extra(s.character2)) return;
