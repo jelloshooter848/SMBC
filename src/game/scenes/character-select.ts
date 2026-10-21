@@ -1,6 +1,11 @@
 import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import { clipped, type Renderer } from '@engine/gfx/renderer';
+import type { SmbcCanvas } from '@content/sprites/smbc-anchor';
+import { BILL_SMBC_CANVAS } from '@content/sprites/smbc-bill';
+import { MEGAMAN_SMBC_CANVAS } from '@content/sprites/smbc-megaman';
+import { RYU_SMBC_CANVAS } from '@content/sprites/smbc-ryu';
+import { SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
 import { shownPortrait, type CharacterDef } from '../characters/character';
 import { heroFor, heroGame, skinGame } from '../characters/registry';
 import type { Game } from './game';
@@ -140,6 +145,27 @@ type SurvivalBox = { kind: 'cheats' } | { kind: 'news' } | { kind: 'finished'; y
 export const REVIVE_NEWS = ['YOU CAN NOW REVIVE', 'AND STRENGTHEN HEROES.'];
 /** The question before leaving revive mode (MessageBoxMessages.CANCEL_REVIVE). */
 export const REVIVE_DONE_QUESTION = ['ARE YOU FINISHED', 'REVIVING AND', 'STRENGTHENING HEROES?'];
+
+/** Sheets whose frames are drawn on a fixed canvas, the hero's body centred at `cx` (smbc-anchor). */
+const SHOW_CANVASES: Readonly<Record<string, SmbcCanvas>> = {
+  'ryu-classic': RYU_SMBC_CANVAS,
+  'megaman-classic': MEGAMAN_SMBC_CANVAS,
+  'bill-classic': BILL_SMBC_CANVAS,
+};
+
+/**
+ * RC-007: where in frame `frame` (`w` px wide) of sheet `sheet` the hero's body centre is, so a
+ * pick show's frames all stand where its standing art does: a canvas sheet's centre, Simon's
+ * cropped frames' own origins, the Current Simon's whip frames (his body at their left), else the
+ * frame's middle (a trimmed portrait).
+ */
+function showAnchor(sheet: string, frame: string, w: number): number {
+  const canvas = SHOW_CANVASES[sheet];
+  if (canvas && w === canvas.w) return canvas.cx;
+  if (sheet === 'simon-classic') return SIMON_CLASSIC_ORIGIN[frame] ?? w >> 1;
+  if (sheet === 'simon' && frame.includes('whip') && w > 16) return 8;
+  return w >> 1;
+}
 
 export class CharacterSelectScene implements Scene {
   private index = 0;
@@ -1163,12 +1189,10 @@ export class CharacterSelectScene implements Scene {
     let frame = art.frame;
     if (pose.pose === 'raise' && has('raise-arms')) frame = 'raise-arms';
     else if (pose.frame && has(want[pose.frame])) frame = want[pose.frame];
-    const stand = sheet.frames.get(art.frame);
     const f = sheet.frames.get(frame);
-    const sw = stand?.w ?? 16;
     const h = f?.h ?? 32;
-    // A wider frame (Simon's whip reaching ahead, the open tank) keeps the hero's left edge.
-    const left = frame === 'open' ? cx - ((f?.w ?? 32) >> 1) : cx - (sw >> 1);
+    // Every frame stands on the ground with the hero's body centred on cx (showAnchor).
+    const left = cx - showAnchor(art.sheet, frame, f?.w ?? 16);
     const top = 208 - h;
     const tiles = assets.sheet('tiles', `tiles-${this.groundTheme()}`);
     if (pose.block) {
