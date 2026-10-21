@@ -83,9 +83,9 @@ export const MAXED_CAPSULE_SCORE = 1000;
 
 /** No jump (VV-8): one tier of zeros. Walking numbers only matter to the scripted clears. */
 export const VIC_PROFILE: MovementProfile = {
+  ...MARIO.movement,
   // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
   stompBounce: CLASSIC_STOMP_BOUNCE,
-  ...MARIO.movement,
   minWalk: 0,
   maxWalk: FLY_SPEED,
   maxRun: FLY_SPEED,
