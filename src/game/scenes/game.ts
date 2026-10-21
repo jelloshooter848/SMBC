@@ -209,6 +209,11 @@ function keptKit(def: CharacterDef, kit: Readonly<Record<string, number>>): Reco
   return out;
 }
 
+/** BUG-06: whether kept power `k` reads for `def` (a look with another damage kind starts afresh). */
+function fitsHero(def: CharacterDef, k: HeroPower): boolean {
+  return def.damage.kind === 'powerup' ? k.powerState !== 'full' : k.powerState === 'full';
+}
+
 /** Classic mode's random hero draw's seed when play is repeatable (tests: no freshSeeds). */
 const RANDOM_PICK_SEED = 0x5eed1;
 
@@ -366,6 +371,16 @@ export class Game {
    * heroes keeps them). The played heroes' are in `state`.
    */
   heroKits: Record<string, HeroPower> = {};
+  /**
+   * BUG-06: a Classic mode run's power, hit points and kit of each hero not being played, by slot
+   * hero id (a look shares its hero's, as the original's skins share a charNum). The original keeps
+   * every hero's upgrades and ammo in StatManager (obtainedUpgradesVec, ammoVec, _pStateVec by
+   * charNum, StatManager.as 135-147): a level's end resets nothing, a hero change leaves each hero
+   * his own (Character.as 605 reads getObtainedUpgradesDct(charNum)), a death resets only the hero
+   * who died (Character.cleanUp, Character.as 3076-3081), and a new game or a continue resets
+   * everyone (resetAllStats, StatManager.as 280-332, 485-489, 542-548). Empty in every other run.
+   */
+  classicKits: Record<string, HeroPower> = {};
   /**
    * A visit to Kakariko Village under way (0.4.41, town/scene.ts): its scene, kept while the hero
    * is in the secret house's Top Secret Area, and the ? blocks opened there this visit ("x,y";
@@ -821,7 +836,9 @@ export class Game {
     const id = this.slotOf(c).id;
     if (this.survival?.isFallen(id)) return false;
     if (this.survival?.boosted(id)) return true;
-    return id === this.slotOf(this.state.character).id && this.state.powerState === 'fire';
+    if (id === this.slotOf(this.state.character).id) return this.state.powerState === 'fire';
+    // BUG-06: a hero put away keeps his Fire Flower.
+    return this.classicKits[id]?.powerState === 'fire';
   }
 
   /**
@@ -1824,6 +1841,8 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic;
     this.linkRun = false;
+    // BUG-06: a dev start is a new run; no hero keeps a kit from the run it left.
+    this.classicKits = {};
     // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
@@ -1950,6 +1969,14 @@ export class Game {
     this.classicTutorials.newGame();
     const id = this.classicStartable(levelId) ? levelId : '1-1';
     this.startRun(character, id, null, rules, true, dev, true);
+  }
+
+  /**
+   * BUG-06: each hero keeps his own power and kit across hero changes (Game.classicKits): a
+   * Classic mode run under Classic rules, never the campaign.
+   */
+  get keepsHeroKits(): boolean {
+    return this.classicRun && this.campaign === null && this.liveRules === 'classic';
   }
 
   /** G-008: this run writes and clears the resume slot (a Classic mode run; not dev, not a link). */
@@ -2110,6 +2137,8 @@ export class Game {
     this.linkRun = classic && link;
     // Per-set saves: a new run; its first WORLD card writes its set's slot.
     this.resumeSet = null;
+    // BUG-06: a new game resets every hero (StatManager.startNewGameHandler → resetAllStats).
+    this.classicKits = {};
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
     // a hero the select does not offer now plays as its first slot's hero.
     if (classic) character = this.restoreSlotHero(character);
@@ -2163,6 +2192,7 @@ export class Game {
     this.survival = null;
     this.resumeSet = null;
     this.sayFirst = null;
+    this.classicKits = {};
   }
 
   /**
@@ -2190,10 +2220,20 @@ export class Game {
           reviveAllowed: sv.reviveAllowed,
         }
       : undefined;
-    const r = resumeOf(levelId, this.state, this.liveRules, survival, {
-      difficulty: this.classicDifficulty,
-      gameMode: this.deps.settings?.classic.gameMode ?? 'all',
-    });
+    const r = resumeOf(
+      levelId,
+      this.state,
+      this.liveRules,
+      survival,
+      {
+        difficulty: this.classicDifficulty,
+        gameMode: this.deps.settings?.classic.gameMode ?? 'all',
+      },
+      // BUG-06: the other heroes' power and kit, as the original's file keeps every hero's
+      // (StatManager.prepareLoadSaveStats 610-643).
+      // None kept: no field (as a slot from before BUG-06 reads).
+      this.keepsHeroKits && Object.keys(this.classicKits).length > 0 ? this.classicKits : undefined,
+    );
     // The level's own world and stage (before its WORLD card the state still holds the last one's).
     try {
       const lv = this.deps.getLevel(levelId);
@@ -2290,10 +2330,13 @@ export class Game {
     s.stage = r.stage;
     // O-12: a run kept under Current rules goes on under Classic rules outside developer mode,
     // with its level, lives, score and coins; its power and kit (Current's) start afresh.
+    // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
+    this.classicKits = {};
     if (rules === r.rules) {
       s.powerState = r.powerState;
       s.hp = r.hp;
       s.kit = { ...r.kit };
+      if (r.heroKits) this.classicKits = structuredClone(r.heroKits);
     }
     s.warped = r.warped;
     s.checkpoint = r.checkpoint;
@@ -2880,6 +2923,26 @@ export class Game {
     }
     // The default of the def played under the run's rules (TG-17a).
     const d = heroFor(c, this.liveRules);
+    if (this.keepsHeroKits && player === 0) {
+      // BUG-06: the hero left is put away as he is; `c` comes back as he was left.
+      const old = s.character;
+      const left: HeroPower = { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      this.classicKits[this.slotOf(old).id] = left;
+      const key = this.slotOf(c).id;
+      const kept = this.classicKits[key];
+      delete this.classicKits[key];
+      s.character = c;
+      if (kept && fitsHero(d, kept)) {
+        s.powerState = kept.powerState;
+        s.hp = kept.hp;
+        s.kit = { ...kept.kit };
+      } else {
+        s.powerState = defaultPower(d);
+        s.hp = startHp(d);
+        s.kit = old === c ? keptKit(d, s.kit) : {};
+      }
+      return;
+    }
     const power = defaultPower(d);
     // The same hero picked again keeps what a death keeps (CharacterDef.keepOnDeath).
     if (player === 1) {
@@ -2965,6 +3028,8 @@ export class Game {
   private resetForContinue(): void {
     const old = this.state;
     this.state = newGameState(old.character, old.character2, this.liveRules);
+    // BUG-06: every hero's power-ups go too, so a game over's slot carries no heroKits.
+    this.classicKits = {};
     if (this.classicRun) this.classicStartLives();
     this.survival?.reset();
     this.state.warped = old.warped;

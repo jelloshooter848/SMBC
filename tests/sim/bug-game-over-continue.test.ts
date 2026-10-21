@@ -215,3 +215,50 @@ describe('BUG-05 QA (B-I): Survival’s Continue select and runs that keep no sa
     }
   });
 });
+
+describe('BUG-05 with BUG-06’s kept hero kits', () => {
+  it('a game over’s slot carries no heroKits; MAIN MENU → Continue gives every hero his default kit', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, '4-1');
+    h.game.goToLevel('4-3', { mode: 'stand' });
+    // Link's power and kit, put away earlier in the run.
+    h.game.classicKits = { link: { powerState: 'big', hp: 3, kit: { bombs: 4 } } };
+    h.game.state.powerState = 'fire';
+    h.game.state.lives = 0;
+    h.game.gameOver('4-3');
+    const r = loadClassicResume('smb');
+    expect(r?.continued).toBe(true);
+    expect(r).not.toHaveProperty('heroKits');
+    expect(r?.powerState).toBe('small');
+    h.idle(GAME_OVER_CARD_FRAMES + 2);
+    h.tap('down');
+    h.tap('jump');
+    h.idle(8);
+    h.tap('jump');
+    h.idle(8);
+    h.tap('jump');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.classicKits).toEqual({});
+    expect(h.game.state.powerState).toBe('small');
+  });
+
+  it('Continue → the saved hero picked again keeps his power and kit (BUG-03 with BUG-06)', () => {
+    const h = classic();
+    h.game.classicGame(MARIO, '3-1');
+    h.game.state.powerState = 'fire';
+    h.game.goToLevel('3-2', { mode: 'stand' });
+    expect(loadClassicResume('smb')?.powerState).toBe('fire');
+    h.game.showTitle();
+    h.game.showClassicMenu();
+    h.idle(8);
+    h.tap('jump');
+    h.idle(8);
+    h.tap('jump');
+    pickAtContinue(h);
+    h.until(() => h.top() instanceof LevelScene, 900);
+    expect((h.top() as LevelScene).world.level.id).toMatch(/^3-2/);
+    expect(h.game.state.character.id).toBe('mario');
+    expect(h.game.state.powerState).toBe('fire');
+    expect((h.top() as LevelScene).world.players[0]?.powerState).toBe('fire');
+  });
+});

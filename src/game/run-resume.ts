@@ -11,7 +11,8 @@ import type { GameState, Rules } from './context';
  * Classic mode run of that set shows a level's WORLD card (so it always holds the start of the
  * level being played, with its checkpoint), and offered as CONTINUE when the set is picked on the
  * CLASSIC menu (original-saves.ts). A game over writes its continue point (BUG-05); the run's end at the credits clears it. It keeps what the
- * original's file keeps for the hero playing: the level, lives, score, coins, power and kit;
+ * original's file keeps for the hero playing: the level, lives, score, coins, power and kit
+ * (and every other hero's power and kit, BUG-06);
  * Survival's fallen heroes; the rules the run plays; and, as the original's file keeps them with
  * the run (GameSettings.as 407-414), its Map Difficulty and Game mode (RC-002). Developer runs and
  * link runs (`?level=`, RC-004) never write it. Its own keys, never a campaign
@@ -58,10 +59,23 @@ export interface ClassicResume {
   difficulty?: MapDifficulty;
   /** The run's Game mode (RC-002; a slot from before 0.4.68 has none). */
   gameMode?: ClassicGameMode;
+  /**
+   * BUG-06: the power, hit points and kit of each hero not playing, by slot hero id, as the
+   * original's file keeps every hero's upgrades and ammo (StatManager.as 610-643). A slot without
+   * it (older, or a continue's, where every hero starts afresh): every other hero at his default.
+   */
+  heroKits?: Record<string, HeroKit>;
   /** When it was written (Date.now()): which set's run is the latest. Older slots have none. */
   savedAt?: number;
   /** BUG-05: written by a game over at its continue point; going on from it is a continue used. */
   continued?: true;
+}
+
+/** A hero's kept power (Game.classicKits). */
+export interface HeroKit {
+  powerState: string;
+  hp: number;
+  kit: Record<string, number>;
 }
 
 /** The slot for `state` at the WORLD card of `levelId`. */
@@ -71,6 +85,7 @@ export function resumeOf(
   rules: Rules,
   survival?: ClassicResume['survival'],
   run?: { difficulty: MapDifficulty; gameMode: ClassicGameMode },
+  heroKits?: Readonly<Record<string, HeroKit>>,
 ): ClassicResume {
   return {
     v: 1,
@@ -91,7 +106,15 @@ export function resumeOf(
       ? { survival: { fallen: [...survival.fallen], reviveAllowed: survival.reviveAllowed } }
       : {}),
     ...(run ? { difficulty: run.difficulty, gameMode: run.gameMode } : {}),
+    ...(heroKits ? { heroKits: copyKits(heroKits) } : {}),
   };
+}
+
+function copyKits(kits: Readonly<Record<string, HeroKit>>): Record<string, HeroKit> {
+  const out: Record<string, HeroKit> = {};
+  for (const [id, k] of Object.entries(kits))
+    out[id] = { powerState: k.powerState, hp: k.hp, kit: { ...k.kit } };
+  return out;
 }
 
 /** Writes `r` into the slot of its level's map set. */
@@ -121,6 +144,26 @@ export function migrateClassicResume(): void {
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+/** A slot's numbers-only kit (other values dropped). */
+function readKit(v: unknown): Record<string, number> {
+  const kit: Record<string, number> = {};
+  if (v && typeof v === 'object') for (const [k, n] of Object.entries(v)) if (num(n)) kit[k] = n;
+  return kit;
+}
+
+/** A slot's other heroes' kits, each checked (a broken entry is dropped: that hero afresh). */
+function readHeroKits(v: unknown): Record<string, HeroKit> | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const out: Record<string, HeroKit> = {};
+  for (const [id, k] of Object.entries(v as Record<string, unknown>)) {
+    if (!k || typeof k !== 'object') continue;
+    const e = k as Partial<HeroKit>;
+    if (typeof e.powerState !== 'string' || !num(e.hp)) continue;
+    out[id] = { powerState: e.powerState, hp: e.hp, kit: readKit(e.kit) };
+  }
+  return out;
+}
+
 /**
  * Map set `set`'s slot, or null when there is none or it does not read as one (a broken one).
  * Without `set`: the latest written of the sets' slots (the old single slot read the same way).
@@ -144,14 +187,14 @@ function readSlot(key: string): ClassicResume | null {
   if (r.rules !== 'classic' && r.rules !== 'current') return null;
   if (![r.score, r.coins, r.lives, r.world, r.stage, r.hp].every(num) || (r.lives ?? 0) < 1) return null;
   if (typeof r.powerState !== 'string') return null;
-  const kit: Record<string, number> = {};
-  if (r.kit && typeof r.kit === 'object') for (const [k, v] of Object.entries(r.kit)) if (num(v)) kit[k] = v;
+  const kit = readKit(r.kit);
+  const heroKits = readHeroKits(r.heroKits);
   const cp = r.checkpoint;
   const checkpoint =
     cp && typeof cp === 'object' && typeof cp.level === 'string' && num(cp.x)
       ? { level: cp.level, x: cp.x, ...(num(cp.y) ? { y: cp.y } : {}) }
       : null;
-  const { survival: sv, difficulty: d, gameMode: gm, savedAt, ...rest } = r as ClassicResume;
+  const { survival: sv, difficulty: d, gameMode: gm, savedAt, heroKits: _hk, ...rest } = r as ClassicResume;
   return {
     ...rest,
     // An older slot, or a value this version does not know: none (the caller falls back).
@@ -159,6 +202,7 @@ function readSlot(key: string): ClassicResume | null {
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),
     ...(num(savedAt) ? { savedAt } : {}),
     kit,
+    ...(heroKits ? { heroKits } : {}),
     warped: r.warped === true,
     checkpoint,
     ...(sv && Array.isArray(sv.fallen)

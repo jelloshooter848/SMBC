@@ -27,6 +27,7 @@ import { CLASSIC_HURT, CLASSIC_WALK_ANIM, WALK_ABCB, walkPose } from '../classic
 import { BillShot, billShotsOut, CLASSIC_GUNS, clearBillShots, type ClassicGunId } from './classic-weapons';
 import { weaponOf } from '../classic/options';
 import { landSound } from '../classic/sounds';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Classic SMBC Bill (bug-reports/2026-10-07-bill-classic-smbc-rules.md, BI-C1..BI-C32): the
@@ -43,6 +44,8 @@ export const CLASSIC_KIT_CYCLE: readonly ClassicBillWeapon[] = ['spread', 'laser
 
 /** BI-C6, BI-C7, BI-C10, BI-C11: instant 1.25 px/f walk, the original's fixed jump, floor jump in water. */
 export const BILL_CLASSIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   // Unused with instantAccel (BI-C6).
   minWalk: 0x01400,
   walkAccel: 0x01400,

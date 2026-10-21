@@ -48,6 +48,7 @@ import {
 import { ClassicBomb } from './classic-bomb';
 import { samusClassicGuide } from './classic-guide';
 import { SAMUS_CLASSIC_FRAMES, SAMUS_CLASSIC_ORIGIN } from '@content/sprites/samus-classic';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Classic SMBC Samus (2026-10-07-samus-classic-smbc-rules.md, SA-C1..SA-C34), from Samus.as,
@@ -136,6 +137,8 @@ function beamSound(spec: ProjectileSpec): string {
  * cut fy .0001 a second (0.8577 a frame); no coyote time and no jump buffer.
  */
 export const SAMUS_CLASSIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   minWalk: 0x01400,
   walkAccel: 0,
   runAccel: 0,

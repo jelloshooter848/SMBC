@@ -187,6 +187,8 @@ export class Player {
   launched = false;
   /** Set by springLaunch: the gravity of the rise to the apex instead of the hold-gravity (0 = none). */
   private launchGravity = 0;
+  /** MovementProfile.stompHeld: the bounce's tier until its apex or a landing (null: none). */
+  private stompTier: JumpTier | null = null;
   private runTimer = 0;
   private tier: JumpTier;
   /** `tier` is a floor jumper's water tier (SwimProfile.floorJumpOnly). */
@@ -536,7 +538,8 @@ export class Player {
     // is applied after the move. Applying gravity first shaved a frame off every jump (standing
     // apex 62 px instead of the 4 tiles SMB1 clears).
     if (!b.onGround && p.variableJump === 'cut' && this.jumping && b.vy < 0 && !input.held('jump')) b.vy = 0;
-    if (p.softCut !== undefined && !b.onGround && !this.launched) this.softCutStep(input, p.softCut);
+    if (p.softCut !== undefined && !b.onGround && !this.launched && !this.stompTier)
+      this.softCutStep(input, p.softCut);
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
     const holding =
       (p.variableJump === true && this.jumping && input.held('jump') && b.vy < 0) || this.launched;
@@ -577,6 +580,7 @@ export class Player {
     if (b.onGround) {
       this.tier = pickJumpTier(p, b.vx);
       this.jumping = false;
+      this.stompTier = null;
       this.combo = 0;
       b.vy = 0;
       this.jumpReleased = false;
@@ -595,7 +599,9 @@ export class Player {
         b.vy += surface.gravity + (pull?.down ?? 0);
         if (b.vy > surface.fallMax) b.vy = surface.fallMax;
       } else {
-        if (this.launched && this.launchGravity) b.vy += this.launchGravity;
+        const sg = this.stompGravity(input);
+        if (sg !== null) b.vy += sg;
+        else if (this.launched && this.launchGravity) b.vy += this.launchGravity;
         else b.vy += holding ? this.tier.holdGravity : this.tier.fallGravity;
         if (this.fallCap > 0) {
           if (b.vy > this.fallCap) b.vy = this.fallCap;
@@ -763,11 +769,14 @@ export class Player {
     if (this.launched && (b.vy >= 0 || b.onGround)) this.launched = false;
     if (!b.onGround && !this.rising) {
       const surface = this.aboveWater ? p.swim?.surface : undefined;
+      const sg = surface ? null : this.stompGravity(input);
       const g = surface
         ? surface.gravity
-        : this.launched && this.launchGravity
-          ? this.launchGravity
-          : r.gravity;
+        : sg !== null
+          ? sg
+          : this.launched && this.launchGravity
+            ? this.launchGravity
+            : r.gravity;
       b.vy += g + (pull?.down ?? 0);
       const cap = surface ? surface.fallMax : p.maxFall;
       if (b.vy > cap) b.vy = cap;
@@ -790,6 +799,7 @@ export class Player {
     }
     if (b.onGround) {
       this.jumping = false;
+      this.stompTier = null;
       this.combo = 0;
       b.vy = 0;
       this.riseY0 = null;
@@ -1520,11 +1530,46 @@ export class Player {
   }
 
   /**
+   * MovementProfile.stompHeld's gravity this frame while its bounce rises (null when none: the
+   * path's own). The bounce ends at its apex, a landing, a jump or a launch.
+   */
+  private stompGravity(input: InputFrame): number | null {
+    const t = this.stompTier;
+    if (!t) return null;
+    const b = this.body;
+    if (b.onGround || b.vy >= 0 || this.launched || this.rising || this.jumping) {
+      this.stompTier = null;
+      return null;
+    }
+    return input.held('jump') ? t.holdGravity : t.fallGravity;
+  }
+
+  /**
    * Bounce after a stomp. Holding jump bounces higher (uses the hold-gravity mechanic), unless the
    * profile sets a fixed `stompBounce`.
    */
   stompBounce(): void {
     const b = this.body;
+    const held = this.profile.stompHeld;
+    if (held) {
+      // SMB1's bounce (BUG-07): no rise, no rise lines or soft cut from the last jump; the
+      // tier's held or fall gravity to the apex (stompGravity).
+      b.vy = -held.vy;
+      b.onGround = false;
+      // The tier the speed picks (pickJumpTier's rule).
+      const a = Math.abs(b.vx);
+      this.stompTier = held.tiers.find((t) => a < t.maxVx) ?? held.tiers[held.tiers.length - 1] ?? null;
+      this.jumping = false;
+      this.rising = false;
+      this.launched = false;
+      this.riseY0 = null;
+      this.cutting = false;
+      this.jumpReleased = true;
+      this.airJumpsLeft = this.profile.airJumps ?? 0;
+      this.flutterT = 0;
+      this.flutterUsed = false;
+      return;
+    }
     const fixed = this.profile.stompBounce;
     if (fixed !== undefined) {
       // A fixed bounce with normal gravity (ML-C21): no rise, no hold boost, and the last jump's
