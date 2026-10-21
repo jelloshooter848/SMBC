@@ -14,6 +14,9 @@ import { fontDef } from './font';
  *   remix-shadow the stamp's drop shadow
  *   smbc-line    the one-line "SMBC REMIX" logo, 8px text (pause screen)
  *   dust-0..2    the dust puff the stamp kicks up
+ *   classic      the big CLASSIC block word the CLASSIC title smashes down over the REMIX stamp
+ *   classic-squash  the same word squashed flat for its landing frames
+ *   brick-bit    one chip of the stamp it smashes (they fly off on impact)
  *
  * `title-rift` is the wand's rift for the title intro: a jagged, eye-shaped tear in RIFT_STAGES
  * sizes (opening from the centre outward), drawn with four palettes that rotate its four band
@@ -269,6 +272,29 @@ function dust(k: number): Grid {
   return g;
 }
 
+/** CLASSIC (O-04's smash): red block letters in CROSSOVER's chunky style, as wide but less tall. */
+export const CLASSIC_WORD = 'CLASSIC';
+const CLASSIC_STYLE: WordStyle = {
+  sx: 3,
+  sy: 3,
+  bands: [LOGO.orange, LOGO.red, LOGO.red, LOGO.orangeDark],
+  hi: LOGO.gold1,
+  lo: LOGO.redDark,
+  extrude: LOGO.black,
+  depth: 2,
+  outline: LOGO.black,
+};
+
+/** A chip of the REMIX stamp: paper with a red edge, outlined. */
+function brickBit(): Grid {
+  const g = new Grid(6, 6);
+  g.rect(1, 1, 4, 4, LOGO.white);
+  g.rect(1, 1, 4, 1, LOGO.red);
+  g.rect(4, 1, 1, 4, LOGO.red);
+  g.outline(LOGO.black);
+  return g;
+}
+
 function logoFrames(): Record<string, string[]> {
   const f: Record<string, string[]> = {};
   [...CROSSOVER_LETTERS].forEach((ch, i) => (f[`cross-${i}`] = blockWord(ch, CROSS_STYLE).rows()));
@@ -279,6 +305,9 @@ function logoFrames(): Record<string, string[]> {
   f['remix-shadow'] = remixStamp(LOGO.black).rows();
   f['smbc-line'] = smbcLine().rows();
   for (let k = 0; k < 3; k++) f[`dust-${k}`] = dust(k).rows();
+  f.classic = blockWord(CLASSIC_WORD, CLASSIC_STYLE).rows();
+  f['classic-squash'] = blockWord(CLASSIC_WORD, { ...CLASSIC_STYLE, sy: 2 }).rows();
+  f['brick-bit'] = brickBit().rows();
   return f;
 }
 
@@ -307,6 +336,9 @@ const LOGO_NAMES = [
   'dust-0',
   'dust-1',
   'dust-2',
+  'classic',
+  'classic-squash',
+  'brick-bit',
 ];
 
 export const titleLogoDef: SpriteDef = { palette: 'title-logo', frames: lazyFrames(LOGO_NAMES, logoFrames) };

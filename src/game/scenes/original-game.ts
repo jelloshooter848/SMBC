@@ -313,7 +313,7 @@ export class ClassicMenuScene extends MenuScene {
     const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
     const box = drawMenuBox(r, game.ctx.assets, rows, this.index, {
       cx: 128,
-      cy: 150,
+      cy: 160,
       grow,
       t: this.t,
       calm,

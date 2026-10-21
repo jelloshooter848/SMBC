@@ -12,7 +12,7 @@ import {
   WAKE_AHEAD,
   demoDef,
 } from '@game/scenes/title-demo';
-import { ClassicTitleScene, PROMPT_BLINK } from '@game/scenes/original-title';
+import { CLASSIC_AT, ClassicTitleScene, PROMPT_BLINK, SMASH } from '@game/scenes/original-title';
 import { BOX_GROW, boxGrowth, cursorBob, MUSHROOM_CURSOR } from '@game/scenes/menu-box';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TitleScene } from '@game/scenes/title';
@@ -301,5 +301,84 @@ describe('O-04 the CLASSIC title', () => {
     expect((h.top() as ClassicTitleScene).phase).toBe('start');
     expect((h.top() as ClassicTitleScene).touchLabels().jump).toBe('OK');
     expect((h.top() as ClassicTitleScene).touchLabels().attack).toBe('BACK');
+  });
+});
+
+// The owner's CLASSIC smash on O-04: on the way in from the title a big CLASSIC drops onto the
+// REMIX stamp and lands hard, once; skippable; still under Reduce flashing; never replayed.
+describe('O-04 the CLASSIC smash', () => {
+  const frames = (scene: ClassicTitleScene) => draw(scene).sprites.map((s) => s.frame);
+  const stamps = (h: H) => h.audio.sfx.mock.calls.filter((c) => c[0] === 'stamp').length;
+
+  it('plays once from the title: REMIX until it lands, one thud, a shake, then CLASSIC in place', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = false;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    expect(ct.smashPhase()).toBe('drop');
+    expect(frames(ct)).toEqual(expect.arrayContaining(['remix', 'classic']));
+    const shakes: number[] = [];
+    for (let i = 0; i < SMASH.end + 5; i++) {
+      h.idle(1);
+      shakes.push(ct.shake());
+    }
+    expect(stamps(h)).toBe(1);
+    expect(shakes.some((s) => s !== 0)).toBe(true);
+    expect(ct.smashPhase()).toBe('done');
+    expect(ct.shake()).toBe(0);
+    const done = draw(ct).sprites;
+    expect(done.map((s) => s.frame)).not.toContain('remix');
+    expect(done.find((s) => s.frame === 'classic')).toMatchObject(CLASSIC_AT);
+    // The announcement opens with the word.
+    expect(h.said.at(-1)).toMatch(/^Classic\./);
+    // The demo's timing is untouched by it.
+    expect(ct.demo.t).toBe(SMASH.end + 5);
+  });
+
+  it('any press finishes it at once and still opens the Start box', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = false;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    h.idle(3);
+    expect(ct.smashPhase()).toBe('drop');
+    h.tap('jump');
+    expect(ct.smashPhase()).toBe('done');
+    expect(ct.phase).toBe('start');
+    // Skipped before it landed: no thud, no shake.
+    expect(stamps(h)).toBe(0);
+    expect(ct.shake()).toBe(0);
+  });
+
+  it('Reduce flashing: CLASSIC is simply in place, with no fall, shake, chips or thud', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = true;
+    h.game.showClassicTitle();
+    const ct = h.top() as ClassicTitleScene;
+    for (let i = 0; i < SMASH.end; i++) {
+      expect(ct.smashPhase()).toBe('done');
+      expect(ct.shake()).toBe(0);
+      const f = frames(ct);
+      expect(f).toContain('classic');
+      expect(f).not.toContain('brick-bit');
+      expect(f).not.toContain('remix');
+      h.idle(1);
+    }
+    expect(stamps(h)).toBe(0);
+  });
+
+  it('coming back from a run, the select or the map set menu: already in place, never replayed', () => {
+    const h = classic();
+    h.game.ctx.reduceFlashing = false;
+    h.game.showClassicMenu();
+    const under = (h.top() as ClassicMenuScene).over as ClassicTitleScene;
+    expect(under.smashPhase()).toBe('done');
+    h.game.showClassicTitle('start');
+    expect((h.top() as ClassicTitleScene).smashPhase()).toBe('done');
+    // BACK in the Start box returns to the demo of the same title: still no replay.
+    h.tap('attack');
+    expect((h.top() as ClassicTitleScene).phase).toBe('demo');
+    expect((h.top() as ClassicTitleScene).smashPhase()).toBe('done');
+    expect(stamps(h)).toBe(0);
   });
 });

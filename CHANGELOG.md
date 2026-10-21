@@ -18,6 +18,10 @@ under `## [Unreleased]`.
   or a tap on the screen, opens the Start box (Start, Options, Back), and Start opens the map set
   menu as a box over the demo, with a mushroom cursor and the original's move, choose and back
   sounds. Every screen is announced, and BACK steps back one box at a time.
+- Classic mode: on the way in from the title, a big **CLASSIC** smashes down onto the REMIX stamp,
+  with a squash, dust, flying chips, a short shake and the stamp's thud, and stays in its place.
+  Any press finishes it, and that press still opens the Start box. With Reduce flashing it is
+  simply in place, and coming back from a run or a menu it never plays again.
 
 ## [0.4.67] - 2026-10-21
 
