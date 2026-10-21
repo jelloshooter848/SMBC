@@ -522,10 +522,13 @@ describe('per-set saves over the CLASSIC title (B-F, O-04)', () => {
     const h = classic();
     playTo(h, '3-1');
     const reset = vi.spyOn(h.game.classicTutorials, 'newGame');
+    const cleared = vi.spyOn(h.game.classicTutorials, 'clearQueue');
     pick(h, 'smb');
     h.idle(8);
     h.tap('jump');
     expect(reset).not.toHaveBeenCalled();
+    // B-E's release review: a per-set Continue still drops any queued box.
+    expect(cleared).toHaveBeenCalled();
     h.until(() => inLevel(h), 600);
     pick(h, 'smb');
     h.idle(8);

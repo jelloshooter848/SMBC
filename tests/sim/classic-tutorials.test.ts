@@ -74,7 +74,9 @@ function readBox(h: H): string[] {
   expect(b, 'a Tutorials box is up').not.toBeNull();
   const pages = [...(b as TutorialBoxScene).pages];
   for (let i = 0; i < 40 && box(h) === b; i++) {
-    h.idle(TUTORIAL_GUARD_FRAMES + 1);
+    // The next press only once the page takes one (not while it grows or shrinks).
+    for (let k = 0; k < 200 && box(h) === b && !(b as TutorialBoxScene).interactive; k++) h.step();
+    if (box(h) !== b) break;
     h.tap('jump');
   }
   expect(box(h)).not.toBe(b);
@@ -98,7 +100,7 @@ function play(h: TH, hero = MARIO, seen?: string[]): LevelScene {
   if (box(h)) readBox(h);
   const s = h.top() as CharacterSelectScene;
   expect(s).toBeInstanceOf(CharacterSelectScene);
-  h.idle(12);
+  h.idle(40); // the select takes input once it has opened (it grows open without Reduce flashing)
   // The cursor on the hero (the select's rows: right along a row, down to the next).
   for (let i = 0; i < 40 && s.chars[s.cursor]?.id !== hero.id; i++) h.tap(i % 8 === 7 ? 'down' : 'right');
   expect(s.chars[s.cursor]?.id).toBe(hero.id);
@@ -329,7 +331,7 @@ describe('each box waits for a press, is read out and works with touch (O-15)', 
         expect(filled, id).not.toMatch(
           /\{[^}]*\}|\[\[|\]\]|_BTN|\b(button|key) [A-Z]\b|\b[ABXY] (button|to)\b/i,
         );
-        expect(filled, id).not.toMatch(/arrow keys|Exploding Rabbit/i);
+        expect(filled, id).not.toMatch(/arrow keys/i);
         for (const part of filled.split('\n'))
           expect(fontText(part).length, `${id}: ${part}`).toBe(part.toUpperCase().length);
       }
@@ -440,7 +442,7 @@ describe("the box looks like the original's (PlainMessageBox in the SMB NES map 
   });
 });
 
-describe("the words are true for our Classic heroes, in their own buttons' names (O-15 QA)", () => {
+describe("the words are the original's, changed only where our rules or our game require it (O-15)", () => {
   /** A game whose controls in use are `scheme` (touch: names only; keyboard: the key after). */
   function schemed(scheme: 'touch' | 'keyboard', over: Partial<ClassicSettings> = {}): TH {
     const settings: Settings = { ...defaultSettings(), classic: { ...defaultClassicSettings(), ...over } };
@@ -449,100 +451,218 @@ describe("the words are true for our Classic heroes, in their own buttons' names
     return { ...h, settings };
   }
   const pages = (h: H, id: string, hero?: string) =>
-    (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(h.game, t, hero)).join(' ');
+    (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(h.game, t, hero));
 
-  it('Link: the boomerang on SPECIAL, bombs or the bow on TOOLS, bombs never hurt him, the blue ring a stronger sword', () => {
+  /**
+   * TutorialManager.as 49-205, word for word, with each key token ("+JMP_BTN_STR+" and the like) as
+   * `<K>` and only these changes: (a) "the arrow keys" / "arrow keys" are "the directions"; (b) the
+   * typos "Suvival", "Mega man", "Press SPC place", a double space and a stray space are fixed. The
+   * boxes our game makes false are in DEVIATIONS below, not here.
+   */
+  const ORIGINAL: Readonly<Record<string, readonly string[]>> = {
+    characterSelect: ['Use the directions to move the cursor, and press <K> to select a character.'],
+    survival: [
+      'Survival mode:\nWhen a character dies in this mode, they will be unusable until you revive them. Reviving a character costs one life. To revive a character, select the character and press <K>.',
+      'If you revive a character that is already alive, that character will gain 2 random power ups plus ammo. You will only be able to revive characters when you enter a new world (after a bowser level).',
+      "When you're done reviving characters, press <K> to enter character select mode.",
+    ],
+    star: [
+      'A star will give you temporary invincibility. All characters have infinite ammo for the duration of the star.',
+    ],
+    cheat: [
+      'Cheats can be unlocked by meeting certain conditions. To find out the required conditions for a cheat, pause the game, go into the cheats menu and select a locked cheat.',
+    ],
+    mushroom: [
+      'Mushroom:\nA mushroom gives you an extra hit and enhances most characters. By default, if you take damage you will lose the mushroom and some upgrades you collected. You can get most of them back by collecting another mushroom.',
+    ],
+    linkBombBag: ["Bomb Bag:\nThe bomb bag increases Link's bomb capacity."],
+    linkQuiver: ["Quiver:\nThe quiver increases Link's arrow capacity."],
+    linkRedRing: ['Red Ring:\nThe red ring allows Link to shoot sword beams across the screen.'],
+    luigiStart: [
+      'Luigi:\nLuigi can run if you hold <K> while moving. If he has firepower, press <K> to throw fireballs.',
+      'He controls similarly to Mario, but his controls are more loose and he can jump higher.',
+    ],
+    marioStart: [
+      'Mario:\nMario can run if you hold <K> while moving. If he has firepower, press <K> to throw fireballs.',
+    ],
+    megamanPowerUp: [
+      'When Mega Man has a mushroom, hold <K> to charge up his mega buster.',
+      "Note that some Mega Man skins can't charge up their mega buster.",
+    ],
+    megamanChargeKick: ['Charge Kick:\nPress DOWN and <K> to damage enemies while sliding.'],
+    megamanHardKnuckle: [
+      'Hard Knuckle:\nWhile the hard knuckle is on the screen, press UP or DOWN to move it up or down.',
+    ],
+    megamanMetalBlade: ['Metal Blade:\nMetal blades can be thrown in 8 directions.'],
+    megamanPharaohShot: ['Pharaoh Shot:\nYou can hold <K> to charge up the pharaoh shot.'],
+    megamanSuperArm: [
+      'Super Arm:\nPress <K> when touching a brick to pick it up. Press <K> again to throw it.',
+    ],
+    megamanWaterShield: [
+      'Water Shield:\nPress <K> to form a shield around you. Press <K> again to shoot the shield outward.',
+    ],
+    ryuJumpSlash: ['Jump Slash:\nPress <K> while in the air to use the jump slash.'],
+    ryuScroll: ["Scroll:\nThe scroll increases Ryu's ammo capacity."],
+    samusStart: [
+      'Samus:\nSamus can shoot upward while standing, running, and jumping. Press down while crouching to turn into the morph ball. While in morph ball state, you can set bombs with <K>.',
+    ],
+    samusIceBeam: [
+      'Ice Beam:\nShooting enemies with the ice beam will freeze them in place for a short time. Frozen enemies can be used as platforms.',
+    ],
+    samusWaveBeam: [
+      'Wave Beam:\nThe wave beam arcs up and down as it travels across the screen and passes through walls and pipes.',
+    ],
+    samusScrewAttack: ['Screw Attack:\nScrew attack causes spin jumps to damage enemies.'],
+    samusMissileExpansion: ["Missile Expansion:\nThe missile expansion increases Samus' ammo capacity."],
+    sophiaWallClimb: [
+      'Wall Climb:\nHold up while approaching a wall to climb up it. Hold down while approaching a cliff to climb down it. Sophia can climb into gaps by holding the direction toward the gap while driving over it.',
+      'While climbing a wall, press <K> to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press <K>.',
+    ],
+    sophiaCeilingClimb: [
+      'Ceiling Climb:\nJump into a ceiling to grapple to it. To temporarily disable grapple, hold down while in the air.',
+    ],
+    sophiaHover: [
+      'Hover:\nPress and hold <K> while in the air to hover. The hover bar will recharge over time.',
+    ],
+  };
+
+  /**
+   * (c): the boxes with a sentence our game makes false, changed by the least (the original's words
+   * in the comment; docs/classic/TUTORIAL_DEVIATIONS.md gives each reason with its file and line).
+   */
+  const DEVIATIONS: Readonly<Record<string, readonly string[]>> = {
+    // p3: "Mario and Luigi are the only characters..." (false only with Yoshi in the select);
+    // p4: "you can save or load a game and change several options" (no save or load there).
+    firstCharacterStart: [
+      'Each character controls just like they do in their own games. Use the directions to move, and press <K> to jump and <K> to attack. Hold <K> to run with Mario and Luigi.',
+      'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
+      'Note that Mario and Luigi are the only characters that can jump on enemies. For some characters, you can press <K> for an alternate attack and <K> to change weapons.',
+      'You can pause the game by pressing <K>. In the pause menu, you can change several options. If the game runs slowly, try changing music consoles or turn the music off.',
+      'Also, playing with a gamepad is highly recommended. See the Exploding Rabbit website for info on setting that up. If you have questions about the game, feel free to ask them in the Super Mario Bros. Crossover forum.',
+    ],
+    // "Press SEL or SPC to cycle through weapons when you have them."
+    bassStart: [
+      'Bass:\nPress DOWN and <K> to dash. Bass can perform a dash jump if you jump while dashing. Bass can also double jump in the air. Press <K> to use his weapon when you have it.',
+    ],
+    // "He cannot collect a mushroom and will be killed in one hit."
+    billStart: [
+      'Bill:\nBill can shoot in different directions if you hold UP and DOWN while moving. He will be killed in one hit without a mushroom.',
+    ],
+    // p2: "Press SEL to switch subweapons if you have more than one."
+    linkStart: [
+      'Link:\nWhile in the air, Link can perform an upward thrust or downward thrust by pressing UP or DOWN.',
+      'He can throw his boomerang to stun enemies and grab items by pressing <K>. Press <K> to use his subweapon when he has one.',
+    ],
+    // "The blue ring prevents Link from getting damaged by his bombs."
+    linkBlueRing: ["Blue Ring:\nThe blue ring makes Link's sword stronger."],
+    // "Press SPC to shoot an arrow...": (a) only, the bow is on TOOLS here.
+    linkBow: ['Bow and Arrows:\nPress <K> to shoot an arrow across the screen.'],
+    // "Bombs damage Link if he does not have a mushroom."
+    linkBomb: [
+      'Bomb:\nPress <K> to place a bomb. It will explode after a short time. Bombs do not damage Link.',
+    ],
+    // p1: "Press SEL or SPC to cycle through weapons..."; p2: "Press SEL or SPC to switch to Rush Coil."
+    megamanStart: [
+      'Mega Man:\nMega Man can slide by pressing DOWN and <K> while on the ground. Press <K> to use his weapon when you have it.',
+      'Mega Man begins with Rush Coil, which can be used to help Mega Man make some long or high jumps. Tap <K> to call Rush Coil.',
+    ],
+    // p2: "Press SPC or UP and ATK to throw special weapons..." (no UP and ATTACK throw).
+    ryuStart: [
+      'Ryu:\nRyu can climb any wall by jumping toward it. While climbing, press back and <K> to jump backwards off a wall, or press down and <K> to detach from a wall.',
+      "If you're near the top of a wall, press <K> to jump on top of it. Press <K> to throw special weapons when you have enough ammo.",
+    ],
+    // "Press SPC or UP and ATK to use subweapons..."
+    simonStart: [
+      'Simon:\nSimon can double jump if you press <K> while in the air. Press <K> to use subweapons if you have enough ammo.',
+    ],
+    // "...with SPC or DWN and ATK when you have them. Press SEL to switch between them."
+    sophiaStart: ['Sophia:\nSophia can use special weapons with <K> when you have them.'],
+    // "Press SPC or DWN and ATK to fire a homing missile when enemies are on screen. If you have
+    // multiple weapons, press SEL to switch between them."
+    sophiaHomingMissile: ['Homing Missile:\nPress <K> to fire a homing missile.'],
+  };
+
+  it('every box is the original word for word (keys as abilities), or a listed deviation', () => {
     const h = schemed('touch');
-    expect(pages(h, 'linkStart')).toMatch(
-      /pressing BOOMERANG\. Once he has bombs or a bow, press BOMB to use them\./,
-    );
-    expect(pages(h, 'linkBomb')).toMatch(/Press BOMB to place a bomb/);
-    expect(pages(h, 'linkBomb')).toMatch(/never hurt by his own bombs/);
-    expect(pages(h, 'linkBomb')).not.toMatch(/damage Link/);
-    expect(pages(h, 'linkBow')).toMatch(/Press BOW to shoot an arrow/);
-    expect(pages(h, 'linkBlueRing')).toMatch(/sword stronger/);
-    expect(pages(h, 'linkBlueRing')).not.toMatch(/bombs/);
+    const asKeys = (t: string) => t.replace(/\{[^}]*\}/g, '<K>');
+    // Every page fills in for this game (no placeholder left over).
+    for (const id of TUTORIAL_IDS)
+      for (const t of TUTORIAL_TEXT[id] ?? []) expect(fillAbilities(h.game, t), id).not.toMatch(/[{}]|\[\[/);
+    for (const id of TUTORIAL_IDS) {
+      const want = ORIGINAL[id] ?? DEVIATIONS[id];
+      expect(want, `${id} is listed`).toBeDefined();
+      // Placeholders to <K> before filling (the filled names vary with the hero and the scheme).
+      const raw = (TUTORIAL_TEXT[id] ?? []).map((t) =>
+        asKeys(
+          t.replace(/\[\[(!?)([a-z-]+)\|([^\]]*)\]\]/g, (_a, not: string, _n: string, w: string) =>
+            not ? w : '',
+          ),
+        ),
+      );
+      expect(raw, id).toEqual(want);
+    }
+    expect(Object.keys(ORIGINAL).length + Object.keys(DEVIATIONS).length).toBe(TUTORIAL_IDS.length);
+  });
+
+  it('(c) Link: the boomerang on SPECIAL, bombs or the bow on TOOLS, bombs never hurt him, the blue ring a stronger sword', () => {
+    const h = schemed('touch');
+    expect(pages(h, 'linkStart').join(' ')).toMatch(/pressing BOOMERANG\. Press BOMB to use his subweapon/);
+    expect(pages(h, 'linkBomb')[0]).toMatch(/Press BOMB to place a bomb.*Bombs do not damage Link\.$/);
+    expect(pages(h, 'linkBow')[0]).toMatch(/Press BOW to shoot an arrow/);
     const bow = schemed('touch', { weapons: { ...defaultClassicSettings().weapons, link: 'bow' } });
-    expect(pages(bow, 'linkStart')).toMatch(/press BOW to use them/);
+    expect(pages(bow, 'linkStart').join(' ')).toMatch(/Press BOW to use his subweapon/);
     // Keyboard: the name, then the real key.
     const k = schemed('keyboard');
-    expect(pages(k, 'linkBomb')).toMatch(/Press BOMB \([^)]+\) to place a bomb/);
+    expect(pages(k, 'linkBomb')[0]).toMatch(/Press BOMB \([^)]+\) to place a bomb/);
   });
 
-  it('Mega Man: the weapon on SPECIAL, a tap of TOOLS calls Rush, holding it swaps the buttons', () => {
+  it('(c) Mega Man and Bass: the weapon on SPECIAL, a tap of TOOLS calls Rush; the Charge Kick box is the original (on from the Flower)', () => {
     const h = schemed('touch');
-    const start = pages(h, 'megamanStart');
-    expect(start).toMatch(/press BLADE to use his weapon/);
-    expect(start).toMatch(/Hold RUSH to swap the shoot and weapon buttons/);
-    expect(start).toMatch(/Tap RUSH to call Rush/);
-    expect(start).not.toMatch(/cycle through weapons|switch to Rush Coil/);
-    expect(pages(h, 'megamanPowerUp')).toMatch(/hold SHOOT to charge/);
+    expect(pages(h, 'megamanStart').join(' ')).toMatch(
+      /Press BLADE to use his weapon.*Tap RUSH to call Rush Coil\./,
+    );
+    expect(pages(h, 'megamanPowerUp')[0]).toMatch(/hold SHOOT to charge/);
+    expect(pages(h, 'bassStart', 'bass')[0]).toMatch(/Press WATER to use his weapon when you have it\.$/);
     const arm = schemed('touch', { weapons: { ...defaultClassicSettings().weapons, megaman: 'super-arm' } });
-    expect(pages(arm, 'megamanSuperArm')).toMatch(/Press ARM when touching a brick/);
-    expect(pages(arm, 'megamanStart')).toMatch(/press ARM to use his weapon/);
-  });
-
-  it("Bass: dash, dash jump, double jump, rapid fire; the Flower weapon on SPECIAL and SWAP on TOOLS; Mega Man's box for it", () => {
-    const h = schemed('touch');
-    const start = pages(h, 'bassStart', 'bass');
-    expect(start).toMatch(/Hold SHOOT for rapid fire/);
-    expect(start).toMatch(/press WATER to use his weapon\. Press SWAP to swap the shot and weapon buttons\./);
-    expect(start).not.toMatch(/cycle through weapons/);
-    expect(pages(h, 'megamanWaterShield', 'bass')).toMatch(/Press WATER to form a shield/);
-    // The Charge Kick swaps nothing (megaman/classic.ts): no swap line, and the kick box says it starts on.
+    expect(pages(arm, 'megamanSuperArm')[0]).toMatch(/Press ARM when touching a brick/);
     const kick = schemed('touch', {
-      weapons: { ...defaultClassicSettings().weapons, bass: 'charge-kick', megaman: 'charge-kick' },
+      weapons: { ...defaultClassicSettings().weapons, megaman: 'charge-kick' },
     });
-    expect(pages(kick, 'bassStart', 'bass')).not.toMatch(/SWAP|swap/);
-    expect(pages(kick, 'megamanStart', 'megaman')).not.toMatch(/swap/);
-    expect(pages(kick, 'megamanChargeKick', 'megaman')).toMatch(
-      /^Charge Kick:\nIt is on: press DOWN and JUMP to damage enemies while sliding\. Press KICK to turn it off or on\.$/,
-    );
-    expect(pages(kick, 'megamanChargeKick', 'bass')).toMatch(
-      /while dashing\. Press KICK to turn it off or on/,
-    );
-    const mm = schemed('touch', {
-      weapons: { ...defaultClassicSettings().weapons, megaman: 'water-shield' },
-    });
-    expect(pages(mm, 'megamanWaterShield', 'megaman')).toMatch(/Press SHIELD to form a shield/);
+    expect(pages(kick, 'megamanChargeKick', 'megaman')).toEqual([
+      'Charge Kick:\nPress DOWN and JUMP to damage enemies while sliding.',
+    ]);
+    expect(pages(h, 'megamanWaterShield', 'bass')[0]).toMatch(/Press WATER to form a shield/);
   });
 
-  it("every other hero's box: its own buttons and its Classic kit", () => {
+  it('(c) the rest: Bill, Ryu, Simon, Sophia; the first start with Yoshi in the select', () => {
     const h = schemed('touch');
-    expect(pages(h, 'marioStart')).toMatch(/hold RUN while moving\. If he has firepower, press FIRE/);
-    expect(pages(h, 'luigiStart')).toMatch(/hold RUN while moving/);
-    expect(pages(h, 'billStart')).toMatch(/With only his rifle, he will be killed in one hit/);
-    expect(pages(h, 'billStart')).not.toMatch(/cannot collect a mushroom/);
-    expect(pages(h, 'ryuStart')).toMatch(/Press SHURIKEN to throw special weapons/);
-    expect(pages(h, 'ryuStart')).toMatch(/press away from the wall and JUMP/);
-    expect(pages(h, 'samusStart')).toMatch(/set bombs with BOMB/);
-    expect(pages(h, 'simonStart')).toMatch(/Press AXE to use subweapons/);
-    // In Classic play she owns one missile only: no SWAP.
-    expect(pages(h, 'sophiaStart')).toMatch(/fire missiles with MISSILE when you have them\.$/);
-    expect(pages(h, 'sophiaHomingMissile')).toMatch(/Press HOMING to fire a homing missile\.$/);
-    // Ryu's Jump Slash as his art is not thrown.
+    expect(pages(h, 'billStart')[0]).toMatch(/He will be killed in one hit without a mushroom\.$/);
+    expect(pages(h, 'ryuStart')[1]).toMatch(/Press SHURIKEN to throw special weapons/);
     const spin = schemed('touch', {
       weapons: { ...defaultClassicSettings().weapons, ryuStart: 'jump-slash' },
     });
-    expect(pages(spin, 'ryuStart')).toMatch(/Press SPIN in the air for the jump slash/);
-    expect(pages(spin, 'ryuStart')).not.toMatch(/throw/);
-    // True with the Expansion heroes too (Yoshi stomps).
-    expect(pages(h, 'firstCharacterStart')).toMatch(
-      /of the original heroes, only Mario and Luigi can jump on enemies/,
+    expect(pages(spin, 'ryuStart')[1]).toMatch(/Press SPIN to use the jump slash in the air when/);
+    expect(pages(h, 'simonStart')[0]).toMatch(/Press AXE to use subweapons/);
+    expect(pages(h, 'sophiaStart')).toEqual([
+      'Sophia:\nSophia can use special weapons with MISSILE when you have them.',
+    ]);
+    expect(pages(h, 'sophiaHomingMissile')).toEqual([
+      'Homing Missile:\nPress HOMING to fire a homing missile.',
+    ]);
+    expect(pages(h, 'firstCharacterStart')[2]).toMatch(/^Note that Mario and Luigi are the only characters/);
+    const yoshi = Object.assign(Object.create(Object.getPrototypeOf(h.game)) as typeof h.game, h.game);
+    Object.defineProperty(yoshi, 'heroSlots', { get: () => [{ id: 'yoshi' }] });
+    expect(fillAbilities(yoshi, TUTORIAL_TEXT.firstCharacterStart?.[2] ?? '')).toMatch(
+      /^Note that Mario, Luigi and Yoshi are the only characters/,
     );
-    expect(pages(h, 'firstCharacterStart')).not.toMatch(/SPECIAL|TOOLS/);
-    expect(pages(h, 'sophiaWallClimb')).toMatch(/Hold UP while driving into a wall/);
-    expect(pages(h, 'sophiaCeilingClimb')).toMatch(/Jump into a ceiling to grapple to it/);
-    const slash = schemed('touch', {
-      weapons: { ...defaultClassicSettings().weapons, ryuExtra: 'jump-slash' },
-    });
-    expect(pages(slash, 'ryuJumpSlash')).toMatch(/Press SPIN while in the air/);
-    // No "UP and ATTACK" throws, no "down and ATTACK": ours have none.
-    for (const id of ['ryuStart', 'ryuJumpSlash', 'simonStart', 'sophiaStart', 'sophiaHomingMissile'])
-      expect(pages(h, id), id).not.toMatch(/(UP|DOWN) and (ATTACK|SLASH|WHIP|SHOOT)/);
-    // One direction style: capitals, or away from / toward a wall.
-    for (const id of TUTORIAL_IDS)
-      expect(TUTORIAL_TEXT[id]?.join(' '), id).not.toMatch(/\bpress (down|up|back)\b/);
+  });
+
+  it('the boxes for pickups our Classic kits never give are left out', () => {
+    // TutorialManager.as 217, 235, 246, 248, 249: Bill's Rapid, the Energy Balancer, the Morph Ball
+    // (ours has it from the start), the Varia Suit (SA-C16), and Samus's ammo (its trigger is
+    // commented out in the original too, Samus.as 639-644).
+    for (const id of ['billRapid', 'megamanEnergyBalancer', 'samusMorphBall', 'samusVariaSuit', 'samusAmmo'])
+      expect(TUTORIAL_TEXT[id], id).toBeUndefined();
   });
 
   it('a level start box names the hero buttons in play (Link on touch: BOOMERANG, BOMB)', () => {
@@ -687,6 +807,42 @@ describe("the boxes' button names are the heroes' own touch labels, for every Cu
 function mmLabelFromSource(id: string): string | undefined {
   return MM_WEAPONS.find((w) => w.id === id)?.label;
 }
+
+describe('the press that closes a box never makes the hero jump (O-15 release review)', () => {
+  // Mega Man, Ryu and Sophia jump from the jump buffer (JUMP_BUFFER_FRAMES): a press still in it
+  // when the box goes would jump on the level's next frame.
+  for (const hero of [MEGAMAN, RYU, SOPHIA])
+    for (const reduce of [true, false])
+      it(`${hero.name}, Reduce flashing ${reduce ? 'on' : 'off'}: OK closes the start box and the hero stays on the ground`, () => {
+        const h = game(true);
+        h.game.ctx.reduceFlashing = reduce;
+        const l = play(h, hero, ['characterSelect', 'firstCharacterStart']);
+        untilBox(h);
+        readBox(h);
+        expect(h.top()).toBeInstanceOf(LevelScene);
+        const p = l.world.player;
+        const y = p.body.y;
+        for (let i = 0; i < 30; i++) {
+          h.step();
+          expect(p.body.y, `frame ${i}`).toBe(y);
+        }
+      });
+});
+
+describe('a box queued as a run ends never shows in the next run (O-15 release review)', () => {
+  it('leaving for the CLASSIC menu, or resuming from Continue, clears the queue', () => {
+    const h = game(true);
+    play(h, MARIO, ['characterSelect', 'firstCharacterStart', 'marioStart']);
+    h.game.classicTutorials.offer('star', 'mario');
+    expect(h.game.classicTutorials.pending).toEqual(['star']);
+    h.game.showClassicMenu();
+    expect(h.game.classicTutorials.pending).toEqual([]);
+    h.game.classicTutorials.offer('mushroom', 'mario');
+    expect(h.game.classicTutorials.pending).toEqual(['mushroom']);
+    h.game.resumeClassic();
+    expect(h.game.classicTutorials.pending).toEqual([]);
+  });
+});
 
 describe('which boxes have been seen (TutorialManager.saveData / startNewGameHandler)', () => {
   it('each box shows once a game, is saved at once, and a new game shows them all again', () => {

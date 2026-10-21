@@ -108,40 +108,37 @@ function dynamicAbility(
 
 /**
  * The `[[name|words]]` (or `[[!name|words]]`) conditions: the words show only when the condition
- * holds (or does not) for the hero's kit and the Customize Weapons choice.
+ * holds (or does not), so a sentence stays true whatever the Customize Weapons choice or roster.
  */
-function condition(game: Game, name: string, hero: string | undefined): boolean {
+function condition(game: Game, name: string): boolean {
   const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
   switch (name) {
-    case 'swap':
-      // Every Flower weapon swaps buttons with the buster but the Charge Kick (megaman/classic.ts).
-      return (hero === 'bass' ? w.bass : w.megaman) !== 'charge-kick';
-    case 'bass':
-      return hero === 'bass';
     case 'ryu-slash-art':
       return w.ryuStart === 'jump-slash';
+    case 'yoshi':
+      // The Expansion's Yoshi stomps too (yoshi/classic.ts `stomps: true`), when the select has him.
+      return game.heroSlots.some((d) => d.id === 'yoshi');
     default:
       return false;
   }
 }
 
 /**
- * Each box's pages (TutorialManager's *_MSG arrays), by the original's name for it: a hero's start
- * is `<hero id>Start`, Mega Man's Mushroom `megamanPowerUp`, an upgrade its PickupInfo name. A
- * hero's own box names its buttons as its touch buttons do: `{SHOOT:attack}` is the ability SHOOT
- * on the attack action, `{=link-tool}` a name that follows the weapon choice (dynamicAbility).
- *
- * Where our Classic heroes play differently from the words (our buttons, our kits), the words say
- * what ours do; directions are UP, DOWN, LEFT and RIGHT, or "away from" / "toward" a wall.
+ * Each box's pages: TutorialManager.as's *_MSG arrays (41-205), by the original's name for each box
+ * (a hero's start is `<hero id>Start`, Mega Man's Mushroom `megamanPowerUp`, an upgrade its
+ * PickupInfo name). The words are the original's, changed only (a) where they name a key or button
+ * (now the ability or the hero's own button: `{JUMP}`, `{SHOOT:attack}`, or `{=link-tool}`, which
+ * follows the weapon choice, dynamicAbility), (b) for an obvious typo, and (c) where a sentence is
+ * false in our game, by the least change. docs/classic/TUTORIAL_DEVIATIONS.md lists every (c).
  */
 export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   characterSelect: ['Use the directions to move the cursor, and press {OK} to select a character.'],
   firstCharacterStart: [
     'Each character controls just like they do in their own games. Use the directions to move, and press {JUMP} to jump and {ATTACK} to attack. Hold {ATTACK} to run with Mario and Luigi.',
     'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
-    'Note that of the original heroes, only Mario and Luigi can jump on enemies. Some heroes also have a second attack and a tool button: the guide in the pause menu names them.',
-    'You can pause the game by pressing {MENU}. In the pause menu, you can change several options.',
-    'Also, playing with a gamepad is highly recommended.',
+    'Note that [[!yoshi|Mario and Luigi]][[yoshi|Mario, Luigi and Yoshi]] are the only characters that can jump on enemies. For some characters, you can press {SPECIAL} for an alternate attack and {TOOLS} to change weapons.',
+    'You can pause the game by pressing {MENU}. In the pause menu, you can change several options. If the game runs slowly, try changing music consoles or turn the music off.',
+    'Also, playing with a gamepad is highly recommended. See the Exploding Rabbit website for info on setting that up. If you have questions about the game, feel free to ask them in the Super Mario Bros. Crossover forum.',
   ],
   survival: [
     'Survival mode:\nWhen a character dies in this mode, they will be unusable until you revive them. Reviving a character costs one life. To revive a character, select the character and press {OK}.',
@@ -158,20 +155,19 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Mushroom:\nA mushroom gives you an extra hit and enhances most characters. By default, if you take damage you will lose the mushroom and some upgrades you collected. You can get most of them back by collecting another mushroom.',
   ],
   bassStart: [
-    'Bass:\nPress DOWN and {JUMP} to dash. Bass can perform a dash jump if you jump while dashing. Bass can also double jump in the air. Hold {SHOOT:attack} for rapid fire.',
-    'With a fire flower, press {=weapon} to use his weapon.[[swap| Press {SWAP:select} to swap the shot and weapon buttons.]]',
+    'Bass:\nPress DOWN and {JUMP} to dash. Bass can perform a dash jump if you jump while dashing. Bass can also double jump in the air. Press {=weapon} to use his weapon when you have it.',
   ],
   billStart: [
-    'Bill:\nBill can shoot in different directions if you hold UP and DOWN while moving. With only his rifle, he will be killed in one hit.',
+    'Bill:\nBill can shoot in different directions if you hold UP and DOWN while moving. He will be killed in one hit without a mushroom.',
   ],
   linkStart: [
     'Link:\nWhile in the air, Link can perform an upward thrust or downward thrust by pressing UP or DOWN.',
-    'He can throw his boomerang to stun enemies and grab items by pressing {BOOMERANG:special}. Once he has bombs or a bow, press {=link-tool} to use them.',
+    'He can throw his boomerang to stun enemies and grab items by pressing {BOOMERANG:special}. Press {=link-tool} to use his subweapon when he has one.',
   ],
   linkBlueRing: ["Blue Ring:\nThe blue ring makes Link's sword stronger."],
   linkBow: ['Bow and Arrows:\nPress {BOW:select} to shoot an arrow across the screen.'],
   linkBomb: [
-    'Bomb:\nPress {BOMB:select} to place a bomb. It will explode after a short time. Link is never hurt by his own bombs.',
+    'Bomb:\nPress {BOMB:select} to place a bomb. It will explode after a short time. Bombs do not damage Link.',
   ],
   linkBombBag: ["Bomb Bag:\nThe bomb bag increases Link's bomb capacity."],
   linkQuiver: ["Quiver:\nThe quiver increases Link's arrow capacity."],
@@ -184,16 +180,14 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Mario:\nMario can run if you hold {RUN:attack} while moving. If he has firepower, press {FIRE:attack} to throw fireballs.',
   ],
   megamanStart: [
-    'Mega Man:\nMega Man can slide by pressing DOWN and {JUMP} while on the ground. With a fire flower, press {=weapon} to use his weapon.[[swap| Hold {RUSH:select} to swap the shoot and weapon buttons.]]',
-    'Mega Man begins with Rush Coil, which can be used to help Mega Man make some long or high jumps. Tap {RUSH:select} to call Rush.',
+    'Mega Man:\nMega Man can slide by pressing DOWN and {JUMP} while on the ground. Press {=weapon} to use his weapon when you have it.',
+    'Mega Man begins with Rush Coil, which can be used to help Mega Man make some long or high jumps. Tap {RUSH:select} to call Rush Coil.',
   ],
   megamanPowerUp: [
     'When Mega Man has a mushroom, hold {SHOOT:attack} to charge up his mega buster.',
     "Note that some Mega Man skins can't charge up their mega buster.",
   ],
-  megamanChargeKick: [
-    'Charge Kick:\nIt is on: press DOWN and {JUMP} to damage enemies while [[bass|dashing]][[!bass|sliding]]. Press {=weapon} to turn it off or on.',
-  ],
+  megamanChargeKick: ['Charge Kick:\nPress DOWN and {JUMP} to damage enemies while sliding.'],
   megamanHardKnuckle: [
     'Hard Knuckle:\nWhile the hard knuckle is on the screen, press UP or DOWN to move it up or down.',
   ],
@@ -206,13 +200,13 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
     'Water Shield:\nPress {=weapon} to form a shield around you. Press {=weapon} again to shoot the shield outward.',
   ],
   ryuStart: [
-    'Ryu:\nRyu can climb any wall by jumping toward it. While climbing, press away from the wall and {JUMP} to jump backwards off a wall, or press DOWN and {JUMP} to detach from a wall.',
-    "If you're near the top of a wall, press {JUMP} to jump on top of it. [[!ryu-slash-art|Press {=ryu-art} to throw special weapons when you have enough ammo.]][[ryu-slash-art|Press {=ryu-art} in the air for the jump slash when you have enough ammo.]]",
+    'Ryu:\nRyu can climb any wall by jumping toward it. While climbing, press back and {JUMP} to jump backwards off a wall, or press down and {JUMP} to detach from a wall.',
+    "If you're near the top of a wall, press {JUMP} to jump on top of it. Press {=ryu-art} to [[!ryu-slash-art|throw special weapons]][[ryu-slash-art|use the jump slash in the air]] when you have enough ammo.",
   ],
   ryuJumpSlash: ['Jump Slash:\nPress {=ryu-slash} while in the air to use the jump slash.'],
   ryuScroll: ["Scroll:\nThe scroll increases Ryu's ammo capacity."],
   samusStart: [
-    'Samus:\nSamus can shoot upward while standing, running, and jumping. Press DOWN while crouching to turn into the morph ball. While in morph ball state, you can set bombs with {BOMB:attack}.',
+    'Samus:\nSamus can shoot upward while standing, running, and jumping. Press down while crouching to turn into the morph ball. While in morph ball state, you can set bombs with {BOMB:attack}.',
   ],
   samusIceBeam: [
     'Ice Beam:\nShooting enemies with the ice beam will freeze them in place for a short time. Frozen enemies can be used as platforms.',
@@ -225,14 +219,14 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   simonStart: [
     'Simon:\nSimon can double jump if you press {JUMP} while in the air. Press {=simon-start} to use subweapons if you have enough ammo.',
   ],
-  sophiaStart: ['Sophia:\nSophia can fire missiles with {=sophia-missile} when you have them.'],
+  sophiaStart: ['Sophia:\nSophia can use special weapons with {=sophia-missile} when you have them.'],
   sophiaHomingMissile: ['Homing Missile:\nPress {HOMING:special} to fire a homing missile.'],
   sophiaWallClimb: [
-    'Wall Climb:\nHold UP while driving into a wall to climb up it. Hold DOWN while driving off a cliff to climb down it.',
+    'Wall Climb:\nHold up while approaching a wall to climb up it. Hold down while approaching a cliff to climb down it. Sophia can climb into gaps by holding the direction toward the gap while driving over it.',
     'While climbing a wall, press {JUMP} to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press {JUMP}.',
   ],
   sophiaCeilingClimb: [
-    'Ceiling Climb:\nJump into a ceiling to grapple to it. To temporarily disable grapple, hold DOWN while in the air.',
+    'Ceiling Climb:\nJump into a ceiling to grapple to it. To temporarily disable grapple, hold down while in the air.',
   ],
   sophiaHover: [
     'Hover:\nPress and hold {JUMP} while in the air to hover. The hover bar will recharge over time.',
@@ -251,7 +245,7 @@ export function fillAbilities(game: Game, text: string, hero?: string): string {
   const kept = text.replace(
     /\[\[(!?)([a-z-]+)\|([^\]]*)\]\]/g,
     (_all, not: string, name: string, words: string) =>
-      condition(game, name, hero) !== (not === '!') ? words : '',
+      condition(game, name) !== (not === '!') ? words : '',
   );
   return kept.replace(
     /\{(=?)([A-Za-z-]+)(?::([a-z]+))?\}/g,
@@ -364,6 +358,17 @@ export class ClassicTutorials {
       delete s.classicTutorialsSeen;
       saveSettings(s);
     }
+  }
+
+  /**
+   * Leaving a Classic run, or resuming one from Continue: nothing queued carries over (a box queued
+   * just before quitting would show in the next run, worded for the old hero). What was seen stays.
+   */
+  clearQueue(): void {
+    this.queue.length = 0;
+    this.heroOf.clear();
+    this.watch = null;
+    this.wait = 0;
   }
 
   /** Queue box `id` unless it was seen this game, is queued, or has no words (checkTutorial). */
@@ -579,6 +584,9 @@ export class TutorialBoxScene implements Scene {
       this.say();
     }
     this.t++;
+    // While a box is up, no jump press may wait in the hero's jump buffer (JUMP_BUFFER_FRAMES): the
+    // press that closes it would otherwise jump on the level's next frame.
+    for (const f of inputs) f.consumeJumpBuffer();
     const instant = this.game.ctx.reduceFlashing;
     if (this.phase === 'grow') {
       this.scale = instant ? 1 : Math.min(1, this.scale + BOX_GROW_PER_FRAME);
