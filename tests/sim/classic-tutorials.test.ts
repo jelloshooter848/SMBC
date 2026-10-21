@@ -99,7 +99,9 @@ function play(h: TH, hero = MARIO, seen?: string[]): LevelScene {
   const s = h.top() as CharacterSelectScene;
   expect(s).toBeInstanceOf(CharacterSelectScene);
   h.idle(12);
-  for (let i = 0; i < 20 && s.chars[s.cursor]?.id !== hero.id; i++) h.tap('right');
+  // The cursor on the hero (the select's rows: right along a row, down to the next).
+  for (let i = 0; i < 40 && s.chars[s.cursor]?.id !== hero.id; i++) h.tap(i % 8 === 7 ? 'down' : 'right');
+  expect(s.chars[s.cursor]?.id).toBe(hero.id);
   h.tap('jump');
   h.until(() => h.top() instanceof LevelScene || box(h) !== null, 900);
   return h.top() instanceof LevelScene
