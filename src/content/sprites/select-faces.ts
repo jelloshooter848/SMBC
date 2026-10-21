@@ -198,6 +198,34 @@ const simon = [
   'cbubbbbbbbbbbbbbbbbbbubc',
 ];
 
+/** Mega Man: the blue helmet with its light crest and ear discs, a narrow open face and big eyes, the light blue suit. */
+const megaman = [
+  '........aaaaaaaa........',
+  '......aa99999999aa......',
+  '.....a999988889999a.....',
+  '....a99999888899999a....',
+  '...a9999998888999999a...',
+  '...a9999998888999999a...',
+  '..a999999988889999999a..',
+  '..a999a2222222222a999a..',
+  '..a99a222222222222a99a..',
+  '..a99a221122221122a99a..',
+  '..a88a221022220122a88a..',
+  '..a88a221022220122a88a..',
+  '..a88a222222222222a88a..',
+  '..a99a222223322222a99a..',
+  '..a99a322222222223a99a..',
+  '...a99a3222002223a99a...',
+  '...a999an333333na999a...',
+  '....a999aonnnnoa999a....',
+  '.....aaaaa9999aaaaa.....',
+  '....a8888a9999a8888a....',
+  '...a88m888a99a888m88a...',
+  '..a8m88888a99a88888m8a..',
+  '.a88888888a99a88888888a.',
+  'a888888888a99a888888888a',
+];
+
 /** Bill: dark hair under the red bandana (its knot and tails to his right), heavy brows, a stubbled jaw, bare shoulders and his strap. */
 const bill = [
   '.....cccccccccccccc.....',
@@ -282,8 +310,8 @@ const moustached = [
   '.044444444444444444444444',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
-/** Mega Man: the round blue helmet with its light crest, the open face and big eyes. */
-const megaman = [
+/** The round-helmet template Mega Man's skins are built on (their overlays fit its rows). */
+const helmeted = [
   '.......0000000000.......',
   '.....009999999999900....',
   '....0999999888899999....',
@@ -422,7 +450,7 @@ function rimmed(rows: readonly string[], rim: string): string[] {
 }
 
 /** Proto Man: Mega Man's build in red and grey, the dark visor over his eyes, the gold scarf. */
-const protoman = over(recolour(megaman, { '9': '4', '8': 'f' }), [
+const protoman = over(recolour(helmeted, { '9': '4', '8': 'f' }), [
   '',
   '',
   '',
@@ -453,7 +481,7 @@ const protoman = over(recolour(megaman, { '9': '4', '8': 'f' }), [
 const breakman = recolour(protoman, { '4': 'h', f: '5' });
 
 /** Rock: no helmet, his spiky brown hair, a blue shirt. */
-const rock = over(recolour(megaman, { '8': 'm', '9': 'b' }), [
+const rock = over(recolour(helmeted, { '8': 'm', '9': 'b' }), [
   '....0.0.000.0.0.........',
   '...0b0b0bbb0b0b0........',
   '..0bbbbbbbbbbbbbb0......',
@@ -481,7 +509,7 @@ const rock = over(recolour(megaman, { '8': 'm', '9': 'b' }), [
 ]);
 
 /** Cut Man: his helmet in orange and red under the great scissor blades. */
-const cutman = over(recolour(megaman, { '9': 'g', '8': '4' }), [
+const cutman = over(recolour(helmeted, { '9': 'g', '8': '4' }), [
   '...00..........00.......',
   '..0110........0110......',
   '..01110......01110......',
@@ -491,7 +519,7 @@ const cutman = over(recolour(megaman, { '9': 'g', '8': '4' }), [
 ]);
 
 /** Fire Man: dark red with orange, the flame burning on his head. */
-const fireman = over(recolour(megaman, { '9': '5', '8': 'g' }), [
+const fireman = over(recolour(helmeted, { '9': '5', '8': 'g' }), [
   '.........d..............',
   '.......d.dd.d...........',
   '......ddgddgdd..........',
@@ -500,7 +528,7 @@ const fireman = over(recolour(megaman, { '9': '5', '8': 'g' }), [
 ]);
 
 /** Ice Man: a blue parka hood, the white fur ring round his face, a pompom on top. */
-const iceman = over(recolour(megaman, { '8': '9' }), [
+const iceman = over(recolour(helmeted, { '8': '9' }), [
   '.........0110...........',
   '........011110..........',
   '.........0110...........',
@@ -528,7 +556,7 @@ const iceman = over(recolour(megaman, { '8': '9' }), [
 ]);
 
 /** Francesca: the tall witch's hat with its gold band, her pale gold hair. */
-const francesca = over(recolour(megaman, { '9': 'l', '8': 'j' }), [
+const francesca = over(recolour(helmeted, { '9': 'l', '8': 'j' }), [
   '...........000..........',
   '..........0jj0..........',
   '.........0jjj0..........',
@@ -543,7 +571,7 @@ const francesca = over(recolour(megaman, { '9': 'l', '8': 'j' }), [
 const doropie = recolour(francesca, { j: '4' });
 
 /** Rokko Chan: a pink helmet with a red crest, her brown hair out at the sides. */
-const rokko = over(recolour(megaman, { '9': 'i', '8': '4' }), [
+const rokko = over(recolour(helmeted, { '9': 'i', '8': '4' }), [
   '',
   '',
   '',
