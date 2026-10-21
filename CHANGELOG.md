@@ -29,8 +29,8 @@ under `## [Unreleased]`.
   page takes the code, it names SELECT's key, not ATTACK's (a code input there).
 - The REMIX title's rift intro is heard again (BUG-13). When the browser has not started the
   sound yet, the first title waits behind PRESS ANY KEY (TAP TO START on touch); that press
-  starts the sound and the intro from its first frame without skipping it. A later press skips
-  the intro as before.
+  starts the sound and the intro from its first frame, at full level (no sound-start fade),
+  without skipping it. A later press skips the intro as before.
 - The music between the REMIX title and the CLASSIC title no longer cuts (BUG-12). Going to
   CLASSIC, the title theme fades out as CLASSIC falls and the demo's tune rises on its smash;
   with Reduce flashing on, the two simply crossfade. Back to the title, the demo's tune fades

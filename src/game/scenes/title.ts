@@ -242,6 +242,8 @@ export class TitleScene extends MenuScene {
     this.gatePressed = false;
     this.gateHeld = true;
     this.game.ctx.audio.unlock?.();
+    // The intro at full level from its first note: no sound-start fade for it.
+    this.game.ctx.audio.skipStartFade?.();
     this.phase = 'rift';
     this.clock = 0;
     this.game.ctx.audio.playJingle('title-rift');

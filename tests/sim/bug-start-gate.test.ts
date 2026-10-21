@@ -7,7 +7,7 @@ import type { TitleScene } from '@game/scenes/title';
 import { needsStartGate } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { draw, makeGame, useStorage } from './heroes-harness';
-import { FakeContext, fakeAudio, stubAudioGlobals } from './fake-audio';
+import { FakeContext, fakeAudio, stubAudioGlobals, type Param } from './fake-audio';
 
 // BUG-13 (owner): the REMIX title's rift intro was never heard: it played before any press, on a
 // sound the browser still held back, and the first press both started the sound and skipped the
@@ -32,6 +32,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.useRealTimers();
   FakeContext.startState = 'running';
+  FakeContext.resumes = true;
 });
 
 /** The first title of a page load; `browser`: the AudioContext's state once it is made. */
@@ -146,5 +147,28 @@ describe('BUG-13 the start gate', () => {
     // Its listeners are gone with it.
     expect(listeners.keydown ?? []).toHaveLength(0);
     expect(listeners.pointerdown ?? []).toHaveLength(0);
+  });
+
+  it('the intro after the gate plays at full level: no sound-start fade, even as the start’s later events come', () => {
+    FakeContext.resumes = false; // the browser's resume still under way (iOS)
+    const s = launch();
+    s.event('pointerdown');
+    s.h.step();
+    expect(s.title.phase).toBe('rift');
+    const start = s.apu().startFade.gain as unknown as Param;
+    const full = start.calls.slice(-2);
+    expect(full).toEqual([`cancel@${s.ctx().currentTime}`, `set 1@${s.ctx().currentTime}`]);
+    // The same tap's pointerup, touchend and click unlock again: still no fade.
+    const n = start.calls.length;
+    s.audio.unlock();
+    s.audio.unlock();
+    expect(start.calls.length).toBe(n);
+    expect(start.calls.slice(-2)).toEqual(full);
+  });
+
+  it('without the gate (sound running at launch) the sound-start fade is as before', () => {
+    const s = launch({ browser: 'running', unlocked: true });
+    const start = s.apu().startFade.gain as unknown as Param;
+    expect(start.calls.at(-1)).toMatch(/^ramp 1@/);
   });
 });

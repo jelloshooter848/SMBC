@@ -72,7 +72,10 @@ export class FakeContext {
   createPeriodicWave() {
     return {};
   }
+  /** false: resume() stays pending (iOS, before the gesture's resume lands). */
+  static resumes = true;
   resume() {
+    if (!FakeContext.resumes) return new Promise<void>(() => {});
     this.state = 'running';
     return Promise.resolve();
   }

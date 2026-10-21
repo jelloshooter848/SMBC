@@ -35,6 +35,11 @@ export interface AudioSink {
   crossfadeMusic?(id: string, out: number, fadeIn: number): number;
   /** BUG-13: start (or resume) sound from a press the browser may not see as a gesture (a pad). */
   unlock?(): void;
+  /**
+   * BUG-13: the sound that is starting now plays at full level at once, without the 1.2 s
+   * sound-start fade (MUSIC_FADE_IN_S): the start gate's rift intro is meant to be heard.
+   */
+  skipStartFade?(): void;
   /** Play a non-looping jingle; the previous music is not resumed automatically. */
   playJingle(id: string, onEnd?: () => void): void;
   sfx(id: string): void;
@@ -284,12 +289,31 @@ export class AudioManager implements AudioSink {
   /** The music rises from silence over MUSIC_FADE_IN_S (Apu.startFade); sound effects don't. */
   private fadeInMusic(): void {
     if (!this.ctx || !this.apu) return;
+    // The start gate's sound is still starting (skipStartFade): the same start's later events
+    // (pointerup, touchend, click) must not fade it in after all.
+    if (this.fullStart) return;
     const g = this.apu.startFade.gain;
     const t = this.ctx.currentTime;
     g.cancelScheduledValues(t);
     g.setValueAtTime(0, t);
     g.linearRampToValueAtTime(1, t + MUSIC_FADE_IN_S);
   }
+
+  skipStartFade(): void {
+    if (!this.ctx || !this.apu) return;
+    const g = this.apu.startFade.gain;
+    const t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(1, t);
+    if (this.ctx.state === 'running') return;
+    this.fullStart = true;
+    const done = () => {
+      this.fullStart = false;
+    };
+    void this.ctx.resume().then(done, done);
+  }
+  /** skipStartFade's start is still under way (the context not running yet). */
+  private fullStart = false;
 
   /** Plays the silent element again: iOS's audio session back to "playback" (kickMediaSession). */
   private replayMediaSession(): void {
