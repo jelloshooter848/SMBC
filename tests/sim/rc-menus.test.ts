@@ -18,6 +18,15 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
+import { SaveFilesOptions } from '@game/scenes/save-codes';
+import {
+  OFFLINE_NOTICE_CLOSED_LINES,
+  OFFLINE_NOTICE_LINES,
+  STANDALONE_NOTICE_CLOSED_LINES,
+  STANDALONE_NOTICE_LINES,
+  titleNotice,
+  type HomeScreenHooks,
+} from '@game/pwa/home-screen';
 import { CardScene } from '@game/scenes/message';
 import { CHAPTER1_GATE_CARD, CHAPTER1_LINK_CARD } from '@game/scenes/chapter1-gate';
 
@@ -178,5 +187,73 @@ describe('O-03: the gate card no longer says the save files are kept', () => {
     title(h);
     pick(h, 'Campaign');
     expect(h.said.at(-1)).not.toContain('SAVE FILES');
+  });
+});
+
+describe('O-07 (option c): Save files is a dev-mode row until the campaign opens', () => {
+  const every = (h: H) => [
+    new OptionsScene(h.game, () => {}),
+    new OptionsScene(h.game, () => {}, false, true),
+    new OptionsScene(h.game, () => {}, true, true),
+    new OptionsScene(h.game, () => {}, true),
+  ];
+
+  it('no Options (title, Classic, pause) lists Save files outside dev mode', () => {
+    const h = makeGame();
+    for (const o of every(h)) expect(labels(o)).not.toContain('Save files');
+  });
+
+  it('with dev mode on (the campaign open) every Options lists it again and it opens', () => {
+    const h = makeGame(true);
+    for (const o of every(h)) expect(labels(o)).toContain('Save files');
+    title(h);
+    pick(h, 'Options');
+    pick(h, 'Save files');
+    expect(h.top()).toBeInstanceOf(SaveFilesOptions);
+  });
+
+  it("Classic's Continue stays on the CLASSIC menu", () => {
+    const h = makeGame();
+    expect(h.game.campaignOpen).toBe(false);
+    // The Continue slot is Classic's own (run-resume.ts) and is not behind the campaign.
+    expect(typeof h.game.classicResume).toBe('function');
+  });
+
+  function hooks(over: Partial<HomeScreenHooks>): HomeScreenHooks {
+    return {
+      ios: false,
+      phone: false,
+      standalone: false,
+      variant: () => 'hidden',
+      prompt: async () => 'accepted' as const,
+      updateReady: () => false,
+      applyUpdate: () => {},
+      ...over,
+    };
+  }
+
+  it("the Home Screen app's and the download's first notes name no Save files while it is closed", () => {
+    for (const [hk, closed, open] of [
+      [{ ios: true, phone: true, standalone: true }, STANDALONE_NOTICE_CLOSED_LINES, STANDALONE_NOTICE_LINES],
+      [{ fileCopy: true }, OFFLINE_NOTICE_CLOSED_LINES, OFFLINE_NOTICE_LINES],
+    ] as const) {
+      for (const dev of [false, true]) {
+        const h = makeGame(dev);
+        (h.game.deps as { homeScreen?: HomeScreenHooks }).homeScreen = hooks(hk);
+        h.game.showTitle();
+        h.game.scenes.clear();
+        expect(titleNotice(h.game)).toBe(true);
+        const lines = (h.top() as CardScene).lines;
+        expect(lines).toEqual(dev ? open : closed);
+        const said = h.said.at(-1) ?? '';
+        if (dev) expect(said).toMatch(/Save files/);
+        else {
+          expect(lines.join(' ')).not.toMatch(/SAVE FILES/);
+          expect(said).not.toMatch(/Save files/);
+          expect(said).toMatch(/own saves/);
+        }
+        for (const l of lines) expect(l.length).toBeLessThanOrEqual(28);
+      }
+    }
   });
 });

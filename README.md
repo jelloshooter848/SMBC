@@ -63,9 +63,9 @@ armour. How to play (Options, or the pause menu) explains each hero as Classic p
 
 The story campaign below (the world map, save files, the hidden heroes and their mini games) is
 Chapter 1. It opens for everyone in 1.0; until then the title's **Campaign** row and resume links
-show **CAMPAIGN: CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser,
-**Options → Save files** still copies their codes, and a resume link stays in the address so it
-works later. In developer mode (below) Chapter 1 opens as before, for building and testing it.
+show **CAMPAIGN: CHAPTER 1 COMING SOON!**, and nothing is erased or changed: the files stay in the browser
+(Options → **Save files**, which copies their codes, shows in developer mode only until then), and a
+resume link stays in the address so it works later. In developer mode (below) Chapter 1 opens as before, for building and testing it.
 
 ### World map and save files
 
@@ -104,7 +104,7 @@ game), so there is no account and no server: **the code is the save**.
   code, or the whole message with the link in it. Its code is shown on the file's screen too.
   **PASTE CODE** on the list itself asks which file to load the code into.
 - **After each castle** (the first clear of each X-4) a card asks **BACK UP YOUR GAME?** with SHARE
-  SAVE, COPY CODE and NOT NOW. **Options → Save files → Backup reminders** turns it off.
+  SAVE, COPY CODE and NOT NOW, when **Options → Save files → Backup reminders** is on (off by default).
 - **Opening a resume link** asks, after the title, **LOAD THIS SAVE?** and which file to put it
   in, showing what each file holds (with developer mode on until Chapter 1 opens; otherwise it
   says **CHAPTER 1 COMING SOON!** and leaves the link as it is). Nothing is replaced until you answer YES; cancelling changes
@@ -191,8 +191,10 @@ has the same guide for the hero you are playing.
   **Key hints** (off by default) shows the same ability buttons with their current labels and
   bound keys beside the game ("JUMP / Z"), and a key line on the touch buttons. Instructions
   name abilities (JUMP, BACK, TOOLS), with your bound key or pad button when not on touch.
-- **Save files**: share, copy or paste each file's save code, and backup reminders on or off
+- **Save files** (developer mode only until Chapter 1 opens): share, copy or paste each file's save
+  code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
+- **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
@@ -215,8 +217,8 @@ loaded.
   Screen** when the browser offers it.
 
 On iPhone the Home Screen app keeps **its own saves, separate from Safari's** (the game says so
-on its first launch). To bring a Safari save over, use **Options → Save files → PASTE CODE** in
-the app. Home Screen apps are also exempt from Safari's 7-day clean-up of site data, so saves
+on its first launch). Once Chapter 1 is open, bring a Safari save file over with **Options → Save
+files → PASTE CODE** in the app. Home Screen apps are also exempt from Safari's 7-day clean-up of site data, so saves
 there are safer.
 
 A new release downloads in the background; the title then shows **UPDATE READY**: OK reloads
@@ -233,8 +235,8 @@ Each [release](https://github.com/jelloshooter848/SMBC/releases) has a
 **`smbc-remix-vX.Y.Z-offline.zip`** (`smbc-vX.Y.Z-offline.zip` before 0.5.0): unzip it and double-click **`index.html`**. The whole game is in
 that one file, so it plays offline on Windows, macOS and Linux with nothing to install (tested
 in Chrome; it should work in Edge, Firefox and Safari). The downloaded copy keeps **its own
-saves, separate from the website's** (it says so on its first launch); to move a save either
-way, use **Options → Save files → COPY CODE** in one and **PASTE CODE** in the other. Links it shares (resume links, the
+saves, separate from the website's** (it says so on its first launch); once Chapter 1 is open, move a
+save file either way with **Options → Save files → COPY CODE** in one and **PASTE CODE** in the other. Links it shares (resume links, the
 level editor's SHARE) open the website, never a file on your disk. To build it yourself, run
 `pnpm build:offline` (it writes `dist-offline/`; see [docs/RELEASING.md](docs/RELEASING.md)).
 

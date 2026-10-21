@@ -14,6 +14,9 @@ under `## [Unreleased]`.
   to Options. Neither row shows in Classic's options or in a game's Options any more.
 - The title's Chapter 1 row is now **Campaign**; its card reads CAMPAIGN / CHAPTER 1 COMING SOON!
   and no longer says the save files are kept.
+- Options → **Save files** shows only in developer mode until Chapter 1 opens (Classic keeps its
+  Continue); nothing is deleted. The Home Screen app's and the download's first notes no longer
+  point to it while it is hidden.
 
 ## [0.4.67] - 2026-10-21
 

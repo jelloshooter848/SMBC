@@ -27,11 +27,17 @@ export class OptionsScene extends MenuScene {
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
-      {
-        label: 'Save files',
-        select: () => this.push(new SaveFilesOptions(game, () => this.pop(), translucent)),
-        hint: 'Share, copy or paste save codes',
-      },
+      // The campaign's save files (and their backup reminders): only while the campaign is open,
+      // so with dev mode on until Chapter 1 (O-07 option c, O-08). Classic keeps its Continue.
+      ...(game.campaignOpen
+        ? [
+            {
+              label: 'Save files',
+              select: () => this.push(new SaveFilesOptions(game, () => this.pop(), translucent)),
+              hint: 'Share, copy or paste save codes',
+            },
+          ]
+        : []),
       {
         label: 'How to play',
         select: () => this.push(new GuideIndexScene(game, () => this.pop(), classic)),

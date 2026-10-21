@@ -23,10 +23,11 @@ HOW TO PLAY
 
 YOUR SAVES
 
-  This copy keeps its own saves in your browser, apart from the website's. Chapter 1's save files
-  and save codes from earlier versions are kept as they are, ready for when it opens.
+  This copy keeps its own saves in your browser, apart from the website's: Classic's Continue and
+  progress stay with the copy you played them in. Chapter 1's save files and save codes from
+  earlier versions are kept as they are, ready for when it opens.
 
-  To move a save between the website and this copy (either way):
+  Once Chapter 1 is open, to move a save file between the website and this copy (either way):
     1. Where the save is: Options > Save files > COPY CODE.
     2. In the other one: Options > Save files > PASTE CODE, then pick a file to load it into.
 
