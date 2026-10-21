@@ -2194,10 +2194,9 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
-    // A run the Level Select cheat took to another set moves there: one slot holds it, not two.
-    const set = resumeSetOf(levelId);
-    if (this.resumeSet && this.resumeSet !== set) clearClassicResume(this.resumeSet);
-    this.resumeSet = set;
+    // A run the Level Select cheat took to another set writes that set's slot from here on; the
+    // set it left keeps its save as its last WORLD card wrote it (release review of #191).
+    this.resumeSet = resumeSetOf(levelId);
     saveClassicResume(r);
   }
 

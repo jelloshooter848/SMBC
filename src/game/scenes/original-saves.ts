@@ -196,7 +196,8 @@ export class ClassicSetScene extends MenuScene {
 
 /**
  * NEW GAME on a set with a saved run: the run will be overwritten. Cancel is focused (the safe
- * choice); only a press answers, and Back is Cancel too.
+ * choice); only a press answers, and Back is Cancel too. `jump`: the pause's Level Select taking
+ * the run into this set (it goes on there and writes this set's save from then on), worded so.
  */
 export class ClassicOverwriteScene extends MenuScene {
   constructor(
@@ -207,15 +208,22 @@ export class ClassicOverwriteScene extends MenuScene {
     onCancel: () => void,
     /** The CLASSIC title's demo it is over, or null (a full-screen menu). */
     readonly demo: ClassicDemo | null = null,
+    readonly jump = false,
   ) {
     super(game, 'OVERWRITE SAVE?', [], onCancel, demo !== null);
     this.setItems([
       { label: 'Cancel', select: onCancel, hint: 'Keep the saved run' },
-      {
-        label: 'New game',
-        select: onConfirm,
-        hint: `Start ${set.label} again and overwrite the saved run`,
-      },
+      jump
+        ? {
+            label: 'Go',
+            select: onConfirm,
+            hint: `Take this run into ${set.label}; it replaces the saved run there`,
+          }
+        : {
+            label: 'New game',
+            select: onConfirm,
+            hint: `Start ${set.label} again and overwrite the saved run`,
+          },
     ]);
     this.index = 0;
   }
@@ -223,7 +231,9 @@ export class ClassicOverwriteScene extends MenuScene {
   override enter(): void {
     const it = this.items[this.index];
     this.game.deps.announcer?.say(
-      `Overwrite save? A new game of ${this.set.label} overwrites its saved run, ${savedRunSpoken(this.kept)}. ${it?.label ?? ''}. ${it?.hint ?? ''}`,
+      this.jump
+        ? `Overwrite save? A new run of ${this.set.label} replaces its saved run: ${savedRunSpoken(this.kept)}. ${it?.label ?? ''}. ${it?.hint ?? ''}`
+        : `Overwrite save? A new game of ${this.set.label} overwrites its saved run, ${savedRunSpoken(this.kept)}. ${it?.label ?? ''}. ${it?.hint ?? ''}`,
     );
   }
 
@@ -235,9 +245,9 @@ export class ClassicOverwriteScene extends MenuScene {
 
   override render(r: Renderer): void {
     const lines = [
-      'A NEW GAME OF',
+      this.jump ? 'A NEW RUN OF' : 'A NEW GAME OF',
       this.set.label.toUpperCase().slice(0, 28),
-      'OVERWRITES ITS SAVED RUN:',
+      this.jump ? 'REPLACES ITS SAVED RUN:' : 'OVERWRITES ITS SAVED RUN:',
       savedRunLine(this.kept).toUpperCase().slice(0, 28),
       savedRunHow(this.kept).toUpperCase().slice(0, 28),
     ];

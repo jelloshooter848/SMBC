@@ -358,13 +358,35 @@ describe('per-set saves: the Level Select cheat', () => {
     expect(loadClassicResume('smb')?.levelId).toMatch(/^2-1/);
   });
 
-  it('a run it takes to another set moves its slot there', () => {
+  it('a run it takes to another set writes that set’s slot; the set it left keeps its save', () => {
     const h = classic();
     playTo(h, '2-1');
     h.until(() => inLevel(h), 600);
+    const smb = store.get(classicResumeKey('smb'));
+    expect(smb).toMatch(/"levelId":"2-1/);
     h.game.classicLevelSelect('ll-3-1', 'normal');
-    expect(loadClassicResume('smb')).toBeNull();
+    // Release review of #191: set A's slot stays exactly as its last WORLD card wrote it.
+    expect(store.get(classicResumeKey('smb'))).toBe(smb);
     expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
+    // From then on the run writes set B's slot, and its game over clears only B's.
+    h.game.goToLevel('ll-3-2', { mode: 'stand' });
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-2/);
+    expect(store.get(classicResumeKey('smb'))).toBe(smb);
+    h.game.gameOver('ll-3-2');
+    expect(loadClassicResume('lost')).toBeNull();
+    expect(store.get(classicResumeKey('smb'))).toBe(smb);
+  });
+
+  it('an SMB1 run saved at World 7 jumps to Lost 1-1: its World 7 save survives', () => {
+    const h = classic();
+    playTo(h, '7-1', 4);
+    h.until(() => inLevel(h), 600);
+    const smb = store.get(classicResumeKey('smb'));
+    h.game.classicLevelSelect('ll-1-1', 'normal');
+    h.until(() => inLevel(h), 600);
+    expect(store.get(classicResumeKey('smb'))).toBe(smb);
+    expect(loadClassicResume('smb')).toMatchObject({ levelId: expect.stringMatching(/^7-1/), lives: 4 });
+    expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-1-1/);
   });
 
   /** A Lost Levels save at ll-5-1, then an SMB run at 2-1 with the pause's Level Select on `set`. */
@@ -388,7 +410,7 @@ describe('per-set saves: the Level Select cheat', () => {
     expect(w).toBeInstanceOf(ClassicOverwriteScene);
     expect(idx(w)).toBe(0);
     expect(h.said.at(-1)).toMatch(
-      /^Overwrite save\? A new game of The Lost Levels overwrites its saved run, World 5-1/,
+      /^Overwrite save\? A new run of The Lost Levels replaces its saved run: World 5-1/,
     );
     h.idle(8);
     h.tap('jump');
@@ -397,14 +419,19 @@ describe('per-set saves: the Level Select cheat', () => {
     expect(loadClassicResume('smb')?.levelId).toMatch(/^2-1/);
   });
 
-  it('QA: in a run, a confirmed Go to another set moves the run into that set’s slot', () => {
+  it('QA: in a run, a confirmed Go to another set replaces its save; the set left keeps its own', () => {
     const h = classic();
     inRunSelect(h, 'lost', 3, 1);
+    const w = h.top() as ClassicOverwriteScene;
+    expect(labels(w)).toEqual(['Cancel', 'Go']);
+    expect(draw(w).texts.map((x) => x.str)).toEqual(
+      expect.arrayContaining(['A NEW RUN OF', 'THE LOST LEVELS', 'REPLACES ITS SAVED RUN:']),
+    );
     h.idle(8);
     h.tap('down');
     h.tap('jump');
     expect(loadClassicResume('lost')?.levelId).toMatch(/^ll-3-1/);
-    expect(loadClassicResume('smb')).toBeNull();
+    expect(loadClassicResume('smb')?.levelId).toMatch(/^2-1/);
   });
 
   it('in a run, Go within its own set never asks (the run is that set’s save)', () => {
