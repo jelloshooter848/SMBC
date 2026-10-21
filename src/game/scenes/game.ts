@@ -30,6 +30,7 @@ import {
   clearClassicResume,
   loadClassicResume,
   resumeOf,
+  resumeSetOf,
   saveClassicResume,
   type ClassicResume,
 } from '../run-resume';
@@ -829,8 +830,8 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    // G-008: a Classic run that reaches the credits is over; its resume slot goes.
-    if (this.classicRun && !this.classicDev) clearClassicResume();
+    // G-008: a Classic run that reaches the credits is over; its set's resume slot goes.
+    if (this.classicRun && !this.classicDev) this.dropResume(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -2036,6 +2037,7 @@ export class Game {
     this.classicFlow = false;
     this.classicDev = false;
     this.survival = null;
+    this.resumeSet = null;
   }
 
   /**
@@ -2069,12 +2071,25 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
+    this.resumeSet = resumeSetOf(levelId);
     saveClassicResume(r);
   }
 
-  /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
-  classicResume(): ClassicResume | null {
-    const r = loadClassicResume();
+  /** Per-set saves: the map set whose slot the Classic run writes (its last WORLD card's). */
+  private resumeSet: MapSetId | null = null;
+
+  /** G-008: clears the run's set's slot (the set of `levelId` when no WORLD card set it yet). */
+  private dropResume(levelId: string | null): void {
+    const set = this.resumeSet ?? (levelId ? resumeSetOf(levelId) : null);
+    if (set) clearClassicResume(set);
+  }
+
+  /**
+   * G-008, per-set saves: the Classic run kept in map set `set`'s slot (without `set`, the latest
+   * of them), or null when there is none or it no longer plays (its hero or level is gone).
+   */
+  classicResume(set?: MapSetId): ClassicResume | null {
+    const r = loadClassicResume(set);
     if (!r) return null;
     const hero = this.rosterFor(r.rules).find((c) => c.id === r.hero);
     try {
@@ -2089,8 +2104,8 @@ export class Game {
    * CLASSIC > Continue (G-008): the run in the resume slot goes on from the WORLD card of the
    * level it was in, with its lives, score, coins, hero, power and kit, under its own rules.
    */
-  resumeClassic(): boolean {
-    const r = this.classicResume();
+  resumeClassic(set?: MapSetId): boolean {
+    const r = this.classicResume(set);
     const hero = r ? this.rosterFor(r.rules).find((c) => c.id === r.hero) : undefined;
     if (!r || !hero) return false;
     this.tutorialRun = null;
@@ -2098,6 +2113,7 @@ export class Game {
     this.runRules = r.rules;
     this.classicRun = true;
     this.classicDev = false;
+    this.resumeSet = resumeSetOf(r.levelId);
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
@@ -2607,7 +2623,7 @@ export class Game {
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
     // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
-    if (this.classicRun && !this.classicDev) clearClassicResume();
+    if (this.classicRun && !this.classicDev) this.dropResume(levelId);
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

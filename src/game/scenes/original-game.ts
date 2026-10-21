@@ -23,7 +23,7 @@ import {
   rowsOriginal,
 } from './original-options';
 import type { Game } from './game';
-import { worldLabel } from '../hud/world-label';
+import { openClassicSet, savedRunLine } from './classic-set-prompt';
 import type { Renderer } from '@engine/gfx/renderer';
 
 /**
@@ -215,21 +215,18 @@ export class ClassicMenuScene extends MenuScene {
     // the hint, drawn as BEATEN at the row's end (render).
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
     const items: MenuItem[] = [];
-    // G-008: the run kept in the resume slot, from the level it was in (the map sets follow it).
-    const kept = game.classicResume();
-    this.firstSetRow = kept ? 1 : 0;
-    if (kept)
-      items.push({
-        label: 'Continue',
-        select: () => void game.resumeClassic(),
-        hint: `Your last run, from the start of ${kept.levelId.startsWith('ll-') ? 'Lost Levels ' : ''}World ${worldLabel(kept.world)}-${kept.stage} with ${kept.lives} ${kept.lives === 1 ? 'life' : 'lives'}`,
-      });
+    // Per-set saves (O-07, G-008): each set keeps its own run; picking a set that has one asks
+    // CONTINUE / NEW GAME (classic-set-prompt.ts), one with none starts a new game as before.
     items.push(
-      ...MAP_SETS.map((set) => ({
-        label: set.label,
-        select: () => game.classicSelect(set.start, back),
-        hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
-      })),
+      ...MAP_SETS.map((set) => {
+        const kept = game.classicResume(set.id);
+        const saved = kept ? `. Saved run: ${savedRunLine(kept)}` : '';
+        return {
+          label: set.label,
+          select: () => openClassicSet(game, set, { back }),
+          hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${saved}${own}`,
+        };
+      }),
     );
     // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
     // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
@@ -262,10 +259,13 @@ export class ClassicMenuScene extends MenuScene {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 
+  /** Back from a set's CONTINUE / NEW GAME prompt: the highlighted row again. */
+  reannounce(): void {
+    this.announce();
+  }
+
   /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
   private beaten: boolean[] = [];
-  /** The menu row of the first map set (1 under the Continue row, G-008). */
-  private firstSetRow = 0;
 
   /**
    * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
@@ -280,7 +280,7 @@ export class ClassicMenuScene extends MenuScene {
           font,
           BEATEN_MARK,
           MENU_VALUE_RIGHT - BEATEN_MARK.length * 8,
-          CLASSIC_RULES_Y + (i + this.firstSetRow) * MENU_ROW_H,
+          CLASSIC_RULES_Y + i * MENU_ROW_H,
         );
     });
   }
