@@ -32,9 +32,14 @@ import { heroSetSongs } from './hero-sets';
 // A swung shuffle bar: triplet subdivision with kick/snare on the beats and a soft hat on the
 // third triplet. Two half-bars per bar.
 const SWING_BAR = '[v11 k12 r12 v6 h12 v10 s12 r12 v6 h12]2';
-// The REMIX title's bouncy straight backbeat, and its fill.
-const BOUNCE_BAR = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v11 k8 k8 v10 s8 v6 h16 h16';
-const BOUNCE_FILL = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v10 s16 s16 s16 s16 v12 s8 r8';
+// The REMIX hub theme ('title'): a straight backbeat whose kick doubles into the next bar, a
+// half-time bar for its B section, and a snare-run fill.
+const HUB_BAR = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v11 k8 v6 h16 h16 v10 s8 v11 k16 k16';
+const HUB_HALF = 'v11 k8 v6 h8 h8 h8 v10 s8 v6 h8 h8 h8';
+const HUB_FILL = 'v11 k8 v6 h16 h16 v10 s8 v6 h8 v10 s16 s16 v11 s16 s16 v12 s16 s16 s8';
+/** A galloping bass bar for the hub theme: root eighths and sixteenths, the octave on beat 3. */
+const gallop = (lo: string, hi: string): string =>
+  `${lo}8 ${lo}16 ${lo}16 ${lo}8 ${lo}8 ${hi}8 ${lo}8 ${lo}16 ${lo}16 ${lo}8`;
 const SWING_FILL = 'v11 k12 r12 v6 h12 v10 s12 r12 v6 h12 v11 k12 r12 v6 h12 v10 s12 s12 s12';
 
 // Straight driving rock bar (8ths), plus a fill variant with a snare roll on beat 4.
@@ -297,54 +302,100 @@ export const songs: Song[] = [
     id: 'title',
     bpm: 150,
     loop: true,
-    // SMB Crossover REMIX (0.5.0): the title theme re-orchestrated. A brassier two-bar fanfare
-    // (the stamp's record scratch and stinger land on it, sfx 'stamp'), then a bouncier loop of
-    // the A phrase: the melody staccato on a thinner duty, off-beat chord stabs, a dotted
-    // octave-hopping bass and a straight backbeat. The loop point (L) is at bar 3 everywhere.
+    // SMB Crossover REMIX: the hub theme, its own tune (CLASSIC's title keeps 'overworld'). C major
+    // with a mixolydian B flat, straight eighths at 150 (the overworld swings at 168). A new
+    // two-bar brass fanfare (C, then B flat to C; the stamp's scratch and stinger land on its
+    // downbeat, sfx 'stamp'), then a 16-bar loop from bar 3 (L, on every channel):
+    //   A  (3-6)   C Bb F G: a leaping call (C up to high C, a held B flat), horn stabs on the
+    //              off-beats over a galloping bass and a new backbeat;
+    //   A' (7-10)  C Bb F-G C: the call an octave higher, pulse2 doubling it in thirds;
+    //   B  (11-14) Am F Dm G: a syncopated climbing sequence over a half-time beat and long pads;
+    //   C  (15-18) Ab Bb C G7: the heroic lift (flat six, flat seven, home) to a held high G,
+    //              then a run down and up that leads back into bar 3.
     pulse1: `
       @2 v12 q7 x0
-      o5 g16 g16 g8 e8 g8 a8 b8 o6 c4      ; bar 1  fanfare
-      o6 c4. o5 g8 o6 c2                   ; bar 2
+      o5 c16 r16 c16 c16 e8 g8 o6 c4 o5 b-8 o6 c8   ; bar 1  fanfare (C)
+      o6 d4 f8 d8 e2                                ; bar 2  (Bb C)
       L
-      @1 v12 q5
-      o5 g8 g8 r8 e8 g8 r8 a8 b8           ; bar 3
-      o6 c8 o5 b8 a8 g8 e4 r4              ; bar 4
-      o5 a8 a8 r8 f8 a8 r8 b8 o6 c8        ; bar 5
-      o6 d8 c8 o5 b8 g8 a4 r4              ; bar 6
-      o5 e4 g8 a8 o6 c4 o5 a8 g8           ; bar 7
-      o5 e8 d8 c4 r2                       ; bar 8
+      @1 v12 q7
+      o5 c8. e16 g4 o6 c4. o5 g8                    ; bar 3  (C)
+      o6 d4 c8 o5 b-8 ^4 f8 g8                      ; bar 4  (Bb)
+      o5 a4. g8 a8 o6 c8 r8 o5 a8                   ; bar 5  (F)
+      o5 b4 o6 d4 g4. f8                            ; bar 6  (G)
+      o6 e4. c8 o5 g4 o6 c8 e8                      ; bar 7  (C)
+      o6 f4 d8 o5 b-8 o6 d4 c8 o5 b-8               ; bar 8  (Bb)
+      o5 a8 o6 c8 o5 a8 f8 g8 b8 o6 d8 f8           ; bar 9  (F G)
+      o6 e8. d16 c8 o5 g8 o6 c4 r4                  ; bar 10 (C)
+      q8
+      o5 e8 a4 b8 ^8 o6 c4.                         ; bar 11 (Am)
+      o6 c8 o5 b8 a8 f8 ^4 r8 c8                    ; bar 12 (F)
+      o5 d8 f4 a8 ^8 o6 d4.                         ; bar 13 (Dm)
+      o6 d8 c8 o5 b8 g8 ^4 b8 o6 d8                 ; bar 14 (G)
+      q7
+      o6 c4. e-8 ^8 c8 o5 a-8 e-8                   ; bar 15 (Ab)
+      o6 d4. f8 ^8 d8 o5 b-8 f8                     ; bar 16 (Bb)
+      o6 g2 ^8 e8 c8 o5 g8                          ; bar 17 (C)
+      o6 f8 e8 d8 c8 o5 b8 g8 a8 b8                 ; bar 18 (G7)
     `,
     pulse2: `
       @1 v9 q7 x0
-      o5 e16 e16 e8 c8 e8 f8 g8 a4         ; bar 1
-      o5 e4. e8 e2                         ; bar 2
+      o4 g16 r16 g16 g16 o5 c8 e8 e4 d8 e8          ; bar 1
+      o5 b-4 o6 d8 o5 b-8 o6 c2                     ; bar 2
       L
-      @0 v7 q4
-      r8 o4 g8 r8 o5 e8 r8 o4 g8 r8 o5 e8  ; bar 3  (C)
-      r8 o4 g8 r8 o5 e8 r8 o4 b8 r8 o5 d8  ; bar 4  (C G)
-      r8 o4 a8 r8 o5 f8 r8 o4 a8 r8 o5 f8  ; bar 5  (F)
-      r8 o4 b8 r8 o5 d8 r8 o4 b8 r8 o5 f8  ; bar 6  (G7)
-      r8 o4 g8 r8 o5 e8 r8 o4 a8 r8 o5 f8  ; bar 7  (C F)
-      r8 o4 g8 r8 o5 e8 o4 b8 g8 r4        ; bar 8  (C)
+      @2 v7 q5
+      [r8 o4 g8 r16 o5 e16 r8]2                     ; bar 3  horn stabs (C)
+      [r8 o4 f8 r16 o5 d16 r8]2                     ; bar 4  (Bb)
+      [r8 o4 a8 r16 o5 f16 r8]2                     ; bar 5  (F)
+      [r8 o4 b8 r16 o5 d16 r8]2                     ; bar 6  (G)
+      @1 v8 q7
+      o6 c4. o5 g8 e4 g8 o6 c8                      ; bar 7  thirds under the call
+      o6 d4 o5 b-8 f8 b-4 a8 f8                     ; bar 8
+      o5 f8 a8 f8 c8 d8 g8 b8 o6 d8                 ; bar 9
+      o6 c8. o5 b16 g8 e8 e4 r4                     ; bar 10
+      @2 v6 q8
+      o4 a4. o5 c8 ^2                               ; bar 11 pads (Am)
+      o4 a4. o5 c8 ^2                               ; bar 12 (F)
+      o4 f4. a8 ^2                                  ; bar 13 (Dm)
+      o4 g4. b8 ^2                                  ; bar 14 (G)
+      @1 v8 q7
+      o5 a-4. o6 c8 ^8 o5 a-8 e-8 c8                ; bar 15 (Ab)
+      o5 b-4. o6 d8 ^8 o5 b-8 f8 d8                 ; bar 16 (Bb)
+      o6 e2 ^8 c8 o5 g8 e8                          ; bar 17 (C)
+      o6 d8 c8 o5 b8 a8 g8 d8 f8 g8                 ; bar 18 (G7)
     `,
     triangle: `
       q7
-      o2 c16 c16 c8 c8 c8 c8 c4 r8         ; bar 1
-      o2 c4. g8 c2                         ; bar 2
+      o2 c16 r16 c16 c16 c8 c8 c4 o1 b-8 o2 c8      ; bar 1
+      o1 b-4. b-8 o2 c2                             ; bar 2
       L
       q6
-      [o2 c8. g16 o3 c8. o2 g16]2                       ; bar 3
-      o2 c8. g16 o3 c8. o2 g16 o2 g8. d16 g8. d16       ; bar 4
-      [o2 f8. o3 c16 f8. c16]2                          ; bar 5
-      [o2 g8. o3 d16 g8. d16]2                          ; bar 6
-      o2 c8. g16 o3 c8. o2 g16 o2 f8. o3 c16 f8. c16    ; bar 7
-      o2 c8. g16 o3 c8. o2 g16 o2 c4 r4                 ; bar 8
+      ${gallop('o2 c', 'o3 c')}                     ; bar 3  galloping root (C)
+      ${gallop('o1 b-', 'o2 b-')}                   ; bar 4  (Bb)
+      ${gallop('o2 f', 'o3 f')}                     ; bar 5  (F)
+      ${gallop('o2 g', 'o3 g')}                     ; bar 6  (G)
+      ${gallop('o2 c', 'o3 c')}                     ; bar 7  (C)
+      ${gallop('o1 b-', 'o2 b-')}                   ; bar 8  (Bb)
+      o2 f8 f16 f16 f8 o3 f8 o2 g8 g16 g16 g8 o3 g8 ; bar 9  (F G)
+      o2 c8 c16 c16 c8 o3 c8 o2 c4 g4               ; bar 10 (C), up to Am
+      q7
+      o2 a4. a8 e4 g4                               ; bar 11 half-time (Am)
+      o2 f4. f8 c4 e4                               ; bar 12 (F)
+      o2 d4. d8 a4 f4                               ; bar 13 (Dm)
+      o2 g4. g8 d4 b4                               ; bar 14 (G)
+      q6
+      ${gallop('o2 a-', 'o3 a-')}                   ; bar 15 (Ab)
+      ${gallop('o2 b-', 'o3 b-')}                   ; bar 16 (Bb)
+      ${gallop('o2 c', 'o3 c')}                     ; bar 17 (C)
+      o2 g8 g16 g16 g8 g8 o3 g8 o2 g8 a8 b8         ; bar 18 (G7), walk up to C
     `,
     noise: `
-      v11 k16 k16 k8 v10 s8 v6 h8 v10 s8 v11 k4 r8      ; bar 1
-      v10 s4. v6 h8 v11 k2                              ; bar 2
+      v11 k16 r16 k16 k16 v10 s8 v11 k8 v12 s4 v10 s16 s16 s16 s16   ; bar 1
+      v11 k4. v10 s8 v11 k8 v10 s16 s16 s16 s16 v12 s8               ; bar 2
       L
-      [${BOUNCE_BAR}]5 ${BOUNCE_FILL}                   ; bars 3-8
+      [${HUB_BAR}]3 ${HUB_FILL}                     ; bars 3-6
+      [${HUB_BAR}]3 ${HUB_FILL}                     ; bars 7-10
+      [${HUB_HALF}]3 ${HUB_FILL}                    ; bars 11-14
+      [${HUB_BAR}]3 ${HUB_FILL}                     ; bars 15-18
     `,
   },
 

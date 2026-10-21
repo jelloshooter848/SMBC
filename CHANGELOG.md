@@ -8,6 +8,12 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- The REMIX title has its own theme (BUG-14): a new brassy, bouncy hub tune in C with a new
+  two-bar fanfare under the stamp, galloping bass and horn stabs. Going to the CLASSIC title no
+  longer sounds like the same song restarting; CLASSIC keeps its own theme.
+
 ## [0.4.68] - 2026-10-21
 
 ### Added
