@@ -12,6 +12,12 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  *   0 outline   1 white   2 skin   3 skin shade   4 red   5 dark red   6 green   7 dark green
  *   8 light blue   9 blue   a dark blue   b brown   c dark brown   d gold   e grey   f light grey
  *   g orange   h dark grey   i pink   j purple   k cyan   l pale gold   m pale blue
+ *   n peach (skin shade)   o burnt orange (skin rim)   p maroon (red rim)   q lime   r Sophia pink
+ *   s Sophia pink shade   t Sophia pink light   u light brown   v magenta   w light red   x light green
+ *
+ * The 0.5.0 faces (O-11) follow one standard: three tones per material and a 1 px rim in the
+ * material's own dark shade (never the box's black), eyes 2 px wide, a shaded jaw, and each face
+ * in its sprite's colours.
  */
 export const selectFacePalettes: Record<string, string[]> = {
   'select-faces': [
@@ -38,11 +44,78 @@ export const selectFacePalettes: Record<string, string[]> = {
     NES.cyan,
     NES.yellowLight,
     NES.skyLight,
+    NES.peach,
+    NES.orangeBrown,
+    '#881400',
+    NES.greenLight,
+    '#e44a85',
+    '#a8105c',
+    '#f8a4c0',
+    NES.brownLight,
+    NES.magenta,
+    '#f87858',
+    '#58d854',
   ],
 };
 
-/** Mario: the red cap and its white badge, brown hair, the big nose over a black moustache. */
+/** Mario: the red cap and its M badge, brown sideburns, the round nose over the black moustache, a grin, the red shirt and his brown overall straps. */
 const mario = [
+  '......pppppppppppp......',
+  '....pp444411111444pp....',
+  '...p4w44414111414444p...',
+  '..p4w4444144144144444p..',
+  '..p4w4444141414144444p..',
+  '.p4w444441411141444444p.',
+  '.p44444444111114444444p.',
+  'p5555555555555555555555p',
+  '.pccnnnnnnnnnnnnnnnnccp.',
+  '.pcb2221022222201222bcp.',
+  '.pcb222002nnnn200222bcp.',
+  '.pcb32200n2nnnn00223bcp.',
+  '.pco3222nnnnnnnn2223ocp.',
+  '..po322cconnnnocc223op..',
+  '...o3cccccccccccccc3o...',
+  '...o3ccc22222222ccc3o...',
+  '...o3222o111111o2223o...',
+  '....o3322oooooo2233o....',
+  '.....oo3333333333oo.....',
+  '....pp4oooooooooo4pp....',
+  '..pp44w4bc44444cb4w44pp.',
+  '.p444w44bd44444db444w44p',
+  'p4444444cb44444bc4444444',
+  'p4444444bb44444bb4444444',
+];
+
+/** Luigi: Mario's cap in green with his L, a longer nose and a wider moustache, a longer face, the green shirt and his dark overall straps. */
+const luigi = [
+  '......777777777777......',
+  '....7766661111166677....',
+  '...76x666161111166667...',
+  '..76x66661611111666667..',
+  '..76x66661611111666667..',
+  '.76x6666616666116666667.',
+  '.7666666661111166666667.',
+  '777777777777777777777777',
+  '.cccnnnnnnnnnnnnnnnnccc.',
+  '.cbb2221022222201222bbc.',
+  '.cbb222002nnnn200222bbc.',
+  '.cbb32200n2nnnn00223bbc.',
+  '.cbo3222nnnnnnnn2223obc.',
+  '..co3222nnnnnnnn2223oc..',
+  '..co3cccconnnnocccc3oc..',
+  '..occccccccccccccccccco.',
+  '...occ322222222223cco...',
+  '...o33222o1111o22233o...',
+  '....o3322oooooo2233o....',
+  '.....oo3333333333oo.....',
+  '.....77oooooooooo77.....',
+  '...77x6hd666666dh6x77...',
+  '.7766x66hh666666hh66x667',
+  '76666666hh666666hh666667',
+];
+
+/** The moustached template (Dr. Wily's, Mr. X's and Dr. Cossack's looks are built on it). */
+const moustached = [
   '.......0000000000.......',
   '.....00444444444400.....',
   '....0444441111444440....',
@@ -67,34 +140,6 @@ const mario = [
   '..04444499444444449944444',
   '.044444444444444444444444',
   '.044444444444444444444444',
-].map((r) => r.slice(0, 24).padEnd(24, '.'));
-
-/** Luigi: the same cap in green with his L, a taller face and a longer moustache. */
-const luigi = [
-  '.......0000000000.......',
-  '.....00666666666600.....',
-  '....0666661111666660....',
-  '...066666116611666660...',
-  '...066666116111666660...',
-  '..0666666611116666660...',
-  '..06666666666666666660..',
-  '..00000000000006666660..',
-  '..0ccc22222220006666660.',
-  '..0cc2220220222000000...',
-  '.0cc22220220222222220...',
-  '.0c222220220222222220...',
-  '.0c2222222222333222220..',
-  '.0c222222222222222222220',
-  '..0c22222000000000022220',
-  '..0cc2220000000000002220',
-  '...0cc220000000000000220',
-  '....0c22222222222222220.',
-  '.....002222222222222200.',
-  '.....06600022222220066..',
-  '....06666600000000666660',
-  '...0666699666666669966660',
-  '..06666699666666669966666',
-  '.066666666666666666666666',
 ].map((r) => r.slice(0, 24).padEnd(24, '.'));
 
 /** Link: the long green cap falling back, blond fringe, a pointed ear, green tunic. */
@@ -334,6 +379,18 @@ function over(base: readonly string[], layer: readonly string[]): string[] {
     const l = layer[y] ?? '';
     return [...r].map((c, x) => (l[x] === ',' ? '.' : l[x] && l[x] !== '.' ? l[x] : c)).join('');
   });
+}
+
+/** `rows` with each black pixel on the outside edge (next to '.' or the frame's edge) turned `rim`. */
+function rimmed(rows: readonly string[], rim: string): string[] {
+  const at = (x: number, y: number): string => rows[y]?.[x] ?? '.';
+  return rows.map((r, y) =>
+    [...r]
+      .map((c, x) =>
+        c === '0' && [at(x - 1, y), at(x + 1, y), at(x, y - 1), at(x, y + 1)].includes('.') ? rim : c,
+      )
+      .join(''),
+  );
 }
 
 /** Proto Man: Mega Man's build in red and grey, the dark visor over his eyes, the gold scarf. */
@@ -654,8 +711,14 @@ const yoshi = [
  * greens), Quick Man from Bass's helmet in red with its gold crest, Haggle Man from Ryu's hood in
  * red.
  */
-const mario3 = recolour(mario, { c: '0', 9: 'a' });
-const luigi3 = recolour(luigi, { c: '0', 9: 'a', 6: '7' });
+const mario3 = rimmed(
+  [...recolour(mario.slice(0, 19), { c: '0', b: 'h' }), ...recolour(mario.slice(19), { b: '9', c: 'a' })],
+  'h',
+);
+const luigi3 = rimmed(
+  [...recolour(luigi.slice(0, 20), { c: '0', b: 'h' }), ...recolour(luigi.slice(20), { h: 'a' })],
+  'h',
+);
 const zeldaNes = recolour(peach, { l: 'b', 8: '4' });
 const zeldaSnes = recolour(peach, { l: 'd', d: 'f', i: '1', 8: 'j' });
 const zeldaGb = recolour(peach, { 0: '7', l: '7', d: '6', 8: '7', i: '6', 2: 'l', 3: '6', 4: '6', 1: 'l' });
@@ -666,9 +729,9 @@ const haggleman = recolour(ryu, { a: '5', 9: '4', 4: 'd' });
  * (grey hair over a white coat; a purple beret and coat; a brown fur hat and coat), Gemini Man and
  * Skull Man from Bass's helmet (white and blue with a cyan crest; a white skull).
  */
-const wily = recolour(mario, { 4: 'f', 1: 'f', c: 'f' });
-const mrx = recolour(mario, { 4: 'j', 1: 'j', c: 'h' });
-const cossack = recolour(mario, { 4: 'b', 1: 'c', c: 'b' });
+const wily = recolour(moustached, { 4: 'f', 1: 'f', c: 'f' });
+const mrx = recolour(moustached, { 4: 'j', 1: 'j', c: 'h' });
+const cossack = recolour(moustached, { 4: 'b', 1: 'c', c: 'b' });
 const gemini = recolour(bass, { h: '1', d: 'k' });
 const skullman = recolour(bass, { h: 'f', d: '1' });
 
