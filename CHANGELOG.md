@@ -25,8 +25,10 @@ under `## [Unreleased]`.
 - Classic mode plays the original's rules and heroes only: the Classic rules switch and the
   Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
   Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
-  by an earlier version is kept but has no effect; a Continue run kept under Current rules goes on
+  by an earlier version is kept but has no effect; a Continue run kept under Campaign rules goes on
   under Classic rules with its level, lives, score and coins.
+- The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
+  "Current") wherever it is shown or read out.
 
 ## [0.4.67] - 2026-10-21
 

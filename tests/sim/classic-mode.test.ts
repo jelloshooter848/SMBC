@@ -258,9 +258,9 @@ describe('the title and the CLASSIC menu', () => {
     h.idle(8);
     h.tap('right');
     expect(h.settings.classicRules).toBe('current');
-    expect(h.said.at(-1)).toMatch(/^Classic rules: Current/);
+    expect(h.said.at(-1)).toMatch(/^Classic rules: Campaign/);
     t = draw(opts).texts.map((x) => x.str);
-    expect(t).toContain('CURRENT');
+    expect(t).toContain('CAMPAIGN');
     h.tap('jump');
     expect(h.settings.classicRules).toBe('classic');
     pick(h, 'All options');
