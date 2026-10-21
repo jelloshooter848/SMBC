@@ -54,7 +54,7 @@ tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 **CLASSIC** on the title opens the original game's menu: **Super Mario Bros.**, **Super Mario
 Bros. Special** (SMB Special: 32 more levels, with its own enemies and items) and **The Lost
 Levels**, the original's heroes on its select screen (with their alternative looks), its
-**Options** (Classic rules or Current, lives, attack, damage, the weapons, the **Cheats** the
+**Options** (game mode, lives, attack, damage, the weapons, the **Cheats** the
 original unlocks, and **Survival**, where every hero has one life). The heroes play by the
 original's rules: their physics, power states, weapons and swimming, enemy hit points and
 armour. How to play (Options, or the pause menu) explains each hero as Classic plays it.
@@ -232,7 +232,7 @@ dev` and the tests never register it.
 ### Play offline from a download
 
 Each [release](https://github.com/jelloshooter848/SMBC/releases) has a
-**`smbc-remix-vX.Y.Z-offline.zip`** (`smbc-vX.Y.Z-offline.zip` before 0.5.0): unzip it and double-click **`index.html`**. The whole game is in
+**`smbc-remix-vX.Y.Z-offline.zip`** (`smbc-vX.Y.Z-offline.zip` before 0.4.66): unzip it and double-click **`index.html`**. The whole game is in
 that one file, so it plays offline on Windows, macOS and Linux with nothing to install (tested
 in Chrome; it should work in Edge, Firefox and Safari). The downloaded copy keeps **its own
 saves, separate from the website's** (it says so on its first launch); once Chapter 1 is open, move a
@@ -248,8 +248,14 @@ the **Campaign** (Chapter 1) and resume links until 1.0. That is on local and de
 (`pnpm dev`); the released game keeps dev mode for its developer: the code asks for a passphrase
 there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). In dev mode:
 
-- **Level select**: any built-in or custom level, any character, starting power, a full kit
-  (all tools, ammo and magic) and 99 lives.
+- **Level select**: pages for **Classic** (map set, world, level or one of its rooms, then a
+  start page with the hero, look, power, Map difficulty, rules, mode and kit), **Campaign** (the
+  world map or a copy of a save file that never saves, story levels, the village, the tutorial
+  stage, training rooms and custom levels), **Mini games** and **Bonus games**. **Again** replays
+  the last start in one press.
+- **Toggle heroes**: **Classic** sets each Expansion hero to Release, On or Off, the Yoshi mount,
+  and **Plays as** (each hero plays its Classic or its Campaign design in Classic mode);
+  **Campaign** lets each campaign hero play its Campaign design or its Classic kit.
 - **Assists** (active only while dev mode is on): scroll back, infinite lives, infinite time, no
   damage, keep big when losing fire, **safety floor**, coyote time, half-speed slow motion.
   **Safety floor** catches every deadly fall on an invisible one-way floor at the pit's rim (the
@@ -270,7 +276,7 @@ higher, Hammer Bros that charge straight at you, fake Bowsers, Bloopers in the a
 Lakitus and warp pipes that send you backwards. On a save file they are the story's extension:
 after SMB 8-4's ending a road leads from World 8 to Lost World 1, and the Lost worlds open in
 order (1–8, 9, then A–D, each castle opening the next) whatever warp zones you took; D-4 is the
-final ending. From **Dev mode → Level select** they follow the NES rules: 8-4 ends the game, a
+final ending. From **Dev mode → Level select → Classic** they follow the NES rules: 8-4 ends the game, a
 run that used no warp pipe continues into World 9, and every 8-4 clear counts a game beaten;
 Worlds A–D unlock after eight.
 

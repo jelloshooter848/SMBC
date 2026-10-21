@@ -14,7 +14,7 @@ The game ships **Classic mode first**, then new heroes, then the story campaign:
 | **0.6.0 to 0.9.x** | **New heroes** added to the Classic select one release at a time (none before release, so Classic stays the original's roster): Vic Viper, the Warriors of Light, Arthur and Yoshi first, then more from the candidate list                                                            |
 | **1.0.0**          | **Chapter 1, the Mushroom Kingdom:** the story campaign (1-0, then 1-1 to 8-4, the hidden heroes, their mini games, the story) opened for everyone. Its save files, save codes and resume links from 0.4.x load as they are                                                            |
 
-Until 1.0.0 the campaign is built and tested in dev mode only (the title's Chapter 1 row and `#save=` links open
+Until 1.0.0 the campaign is built and tested in dev mode only (the title's Campaign row and `#save=` links open
 it there). Chapters 2 and 3 (the Lost Kingdom and the Far Lands, below) come after 1.0.0; their version numbers are
 proposals.
 
@@ -100,7 +100,7 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
   short form, "SMBC REMIX", is for tight spaces.
 - **Repository (owner, 2026-10-20):** the repository keeps its name, `SMBC`, and the site stays at
   `https://jelloshooter848.github.io/SMBC/`. The release zips carry the brand: `smbc-remix-vX.Y.Z.zip` (and
-  `-offline`) from 0.5.0.
+  `-offline`) since 0.4.66.
 - **Credits on the title screen:** "MADE BY JELLOSHOOTER848", and a line such as "BASED ON SUPER MARIO BROS.
   CROSSOVER BY EXPLODING RABBIT". The full credits roll and the README say the same, alongside the existing
   "unaffiliated fan project, original art and music" notice.

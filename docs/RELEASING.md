@@ -17,8 +17,8 @@ anyone can find again.
 | A build for testers before a release                                                                                                                  | pre-release: `-rc.N` | 0.3.0-rc.1    |
 | Chapter 1, the story campaign, opens for everyone (docs/ROADMAP.md "The plan")                                                                        | `1.0.0`              |               |
 
-The plan (owner, 2026-10-20): **0.5.0** is the Classic remake, **0.6.0 to 0.9.x** add new heroes through the
-Expansion heroes option, and **1.0.0** opens Chapter 1. Until then the campaign shows "CHAPTER 1 COMING SOON!"
+The plan (owner, 2026-10-20): **0.5.0** is the Classic remake, **0.6.0 to 0.9.x** add new heroes (each joins the
+Classic select as it is released, `RELEASED_EXPANSION_HEROES`), and **1.0.0** opens Chapter 1. Until then the campaign shows "CHAPTER 1 COMING SOON!"
 outside dev mode (`Game.campaignOpen`, `src/game/scenes/chapter1-gate.ts`); its save files, codes and links are
 kept untouched. After 1.0.0 the usual SemVer rules apply (major for breaking changes such as dropping old saves).
 
@@ -70,7 +70,7 @@ pnpm -s release:check --tag v0.2.0 --notes
    against `package.json` and the changelog, runs lint, typecheck and tests, builds with
    `RELEASE_TAG`, deploys GitHub Pages, and creates (or updates) the GitHub Release with the
    changelog section as notes and two zips attached: `smbc-remix-vX.Y.Z.zip` (the site) and
-   `smbc-remix-vX.Y.Z-offline.zip` (the download, below). Releases before 0.5.0 named them
+   `smbc-remix-vX.Y.Z-offline.zip` (the download, below). Releases before 0.4.66 named them
    `smbc-vX.Y.Z.zip` and `smbc-vX.Y.Z-offline.zip`. If any check fails nothing is
    deployed: fix it on `main`, delete the tag (`git push --delete origin vX.Y.Z`,
    `git tag -d vX.Y.Z`) and tag again.
@@ -152,7 +152,7 @@ deploys it and creates or updates its GitHub Release. Use this to:
 
 With the GitHub CLI: `gh workflow run release.yml -f tag=v0.1.0`.
 
-Re-running a tag from before 0.5.0 with today's workflow names its zips the new way: the run
+Re-running a tag from before 0.4.66 with today's workflow names its zips the new way: the run
 uploads `smbc-remix-vX.Y.Z.zip` and `smbc-remix-vX.Y.Z-offline.zip` **beside** the release's
 original `smbc-vX.Y.Z.zip` and `smbc-vX.Y.Z-offline.zip` (`--clobber` replaces only files of the
 same name). Both pairs hold the same build; delete the one you don't want from the release page

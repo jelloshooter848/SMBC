@@ -84,7 +84,7 @@ the wooden floor, Toad at the back on the right. The room is a real World (`toad
 screen, `toadHouseRoom()`), so every hero walks and jumps about it with his own moves (a sim per
 hero and chest: `toad-house.test.ts`); nothing in it touches the run. Standing by a chest
 (announced "Box 2. Open it?", the ATTACK button labelled OPEN), OPEN opens it: the other two are
-gone at once (one pick). Its prize rises out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
+gone at once (one pick). Its prize rises out and goes into the inventory with a banner ("YOU GOT A MUSHROOM! / ADDED TO YOUR ITEMS (1)"). In a round for fun (the arena, Dev → Level select → Mini games) nothing is kept: "YOU GOT A MUSHROOM! / (JUST FOR FUN)".
 Chests are rolled from the seed as the house opens, each on its own: mushroom 50%, fire flower
 35%, star 15% (`CHEST_WEIGHTS`). Music `toad-house`; sounds `powerup-appear` (the lid), `bonus-win`.
 
@@ -175,7 +175,7 @@ already waiting, it is lost, and the banner says so.
   next level's start like the file's; one that would do nothing goes back to the dev list, never
   into the file's inventory. Dev mode or the toggle off: both dev lists are cleared. The file's
   items and the dev items together stay at 12: an item won pushes the last dev item out.
-- **Dev → Bonus games**: the three games from the dev menu; one game, then a card listing what it
+- **Dev → Level select → Bonus games**: the three games from the dev menu; one game, then a card listing what it
   won, and back to the list. Nothing sticks: no file is written, the run and the bonus state are
   put back.
 - Dev server: `?bonus=toad-house|memory|slots` (optionally `&seed=N`) plays one over the title

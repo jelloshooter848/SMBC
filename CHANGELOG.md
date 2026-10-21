@@ -23,6 +23,8 @@ under `## [Unreleased]`.
 - Dev mode: Classic options no longer has the **Classic rules** row (BUG-11). Classic mode always
   plays Classic rules; Toggle heroes' Plays as gives one hero its Campaign design instead. A saved
   rules value is ignored and kept as it was; the dev start page's Rules row is unchanged.
+- Docs: the release zips' rename is dated 0.4.66, the title's row is Campaign, and the dev menu
+  pages (Level select, Toggle heroes) are described as they now are (RC-021).
 
 ## [0.4.68] - 2026-10-21
 
