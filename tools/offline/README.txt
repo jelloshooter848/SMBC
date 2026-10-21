@@ -5,7 +5,7 @@ Super Mario Bros. Crossover: REMIX is an unofficial, unaffiliated browser remake
 Super Mario Bros. Crossover by Exploding Rabbit, with original art and music.
 
 CLASSIC on the title screen is the game: Super Mario Bros., Super Mario Bros. Special and The Lost
-Levels with the heroes of the original. Chapter 1, the story mode, is coming soon (version 1.0); save files from earlier
+Levels with the heroes of the original. Chapter 1, the story mode (Campaign on the title), is coming soon (version 1.0); save files from earlier
 versions are kept for it.
 
 This is the whole game in one file, index.html. Play it offline, with nothing to install and no
@@ -23,17 +23,18 @@ HOW TO PLAY
 
 YOUR SAVES
 
-  This copy keeps its own saves in your browser, apart from the website's. Chapter 1's save files
-  and save codes from earlier versions are kept as they are, ready for when it opens.
+  This copy keeps its own saves in your browser, apart from the website's: Classic's Continue and
+  progress stay with the copy you played them in. Chapter 1's save files and save codes from
+  earlier versions are kept as they are, ready for when it opens.
 
-  To move a save between the website and this copy (either way):
+  Once Chapter 1 is open, to move a save file between the website and this copy (either way):
     1. Where the save is: Options > Save files > COPY CODE.
     2. In the other one: Options > Save files > PASTE CODE, then pick a file to load it into.
 
   Saves stay in the browser you play in. Some browsers (Firefox) keep them per folder: to keep
-  your saves when you update, put the new index.html in the same folder as the old one, or carry
-  them over with a save code. Clearing your browser's site data clears the saves too, so copy a
-  code now and then as a backup.
+  your saves when you update, put the new index.html in the same folder as the old one (save codes
+  for Chapter 1's files come with Options > Save files, which opens with Chapter 1). Clearing your
+  browser's site data clears the saves too.
 
 
 BROWSERS

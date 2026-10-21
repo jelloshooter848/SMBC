@@ -25,6 +25,7 @@ import type { CardScene } from '@game/scenes/message';
 import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import { reconcileRules } from '@game/rules/reconcile';
 import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
+import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -70,6 +71,9 @@ function toClassicMenu(h: H): ClassicMenuScene {
   h.idle(TITLE_TIMING.dropEnd + 10);
   expect(h.top()).toBeInstanceOf(TitleScene);
   pick(h, 'Classic');
+  // O-04: the CLASSIC title's demo, then its Start box's START.
+  h.tap('jump');
+  h.tap('jump');
   expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   return h.top() as ClassicMenuScene;
 }
@@ -82,7 +86,9 @@ function choose(h: H, def: CharacterDef): void {
   // One more step than heroes: Classic mode's Random slot ends the ring (FU-4).
   // Classic mode's select says the hero, then its game (the name box): "Link, The Legend of Zelda".
   const said = () => h.said.at(-1)?.split(', ')[0];
-  for (let i = 0; i <= CHARACTERS.length && said() !== def.name; i++) h.tap('right');
+  // RC-006: Right wraps within a row, so Down moves on to the next row every 12 steps.
+  for (let i = 0; i <= 3 * CHARACTERS.length && said() !== def.name; i++)
+    h.tap(i % 12 === 11 ? 'down' : 'right');
   expect(said()).toBe(def.name);
   h.tap('jump');
   // G-050..G-055 (0.5.0): a hero with looks opens them first (OK keeps his own), and the pick
@@ -147,34 +153,35 @@ function exitOf(id: string): string {
 }
 
 describe('the title and the CLASSIC menu', () => {
-  it('CLASSIC comes first (0.5.0, G-112), then Chapter 1, with a hint free of level numbers', () => {
+  it('CLASSIC comes first (0.5.0, G-112), then Campaign (O-02), with a hint free of level numbers', () => {
     const h = classic();
     h.game.showTitle();
     const title = h.top() as TitleScene;
-    expect(labels(title).slice(0, 4)).toEqual(['Classic', 'Chapter 1', 'Custom levels', 'Options']);
+    // O-01: Custom levels moved into Options.
+    expect(labels(title).slice(0, 3)).toEqual(['Classic', 'Campaign', 'Options']);
     const it = items(title)[0] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
-    // Without dev mode: four rows where main's three were (x 80, from y 96, 12 px apart).
+    // Without dev mode: three rows (x 80, from y 96, 12 px apart).
     h.idle(TITLE_TIMING.dropEnd + 10);
     const four = draw(h.top() as TitleScene).texts.filter((t) =>
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     const last = (str: string) => four.filter((t) => t.str === str).at(-1);
-    ['CLASSIC', 'CHAPTER 1', 'CUSTOM LEVELS', 'OPTIONS'].forEach((str, i) =>
+    ['CLASSIC', 'CAMPAIGN', 'OPTIONS'].forEach((str, i) =>
       expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
     );
-    // Five rows with Dev mode: the usual 12 px step, every row above the credits.
+    // Four rows with Dev mode: the usual place and 12 px step, every row above the credits.
     h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     const rows = draw(h.top() as TitleScene).texts.filter((t) =>
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
-    expect(rows.length).toBeGreaterThanOrEqual(5);
+    expect(rows.length).toBeGreaterThanOrEqual(4);
     for (const r of rows) expect(r.y + 8).toBeLessThanOrEqual(148 - 4);
     // (shadows draw 1 px right and down)
-    const ys = [...new Set(rows.filter((r) => r.x === 64).map((r) => r.y))].sort((a, b) => a - b);
+    const ys = [...new Set(rows.filter((r) => r.x === 80).map((r) => r.y))].sort((a, b) => a - b);
     for (let i = 1; i < ys.length; i++) expect((ys[i] as number) - (ys[i - 1] as number)).toBe(12);
     // Clear of the logo above (where CHAPTER 1 stood before 0.5.0).
     expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);
@@ -206,8 +213,11 @@ describe('the title and the CLASSIC menu', () => {
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
     for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
-    // Back (and BACK) returns to the title.
+    // Back (and BACK) returns to the CLASSIC title's Start box (O-04), and its BACK to the title.
     pick(h, 'Back');
+    expect(h.top()).toBeInstanceOf(ClassicTitleScene);
+    h.tap('attack');
+    h.tap('attack');
     expect(h.top()).toBeInstanceOf(TitleScene);
   });
 
@@ -229,8 +239,9 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('Options: Classic rules (Classic SMBC / Current), saved in settings, then every other option', () => {
-    const h = classic();
+  it('Options: Classic rules (Classic SMBC / Campaign), saved in settings, then every other option', () => {
+    // O-12: the Classic rules and Expansion heroes rows are developer mode's.
+    const h = classic({ dev: true });
     toClassicMenu(h);
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
@@ -248,7 +259,7 @@ describe('the title and the CLASSIC menu', () => {
       // O-15 / G-042 (0.5.0): the original's General > Tutorials.
       'Tutorials',
       'Cheats',
-      'All options',
+      'Video, audio, controls',
       'Back',
     ]);
     expect(h.said.at(-1)).toMatch(/^Classic options\. Classic rules: Classic SMBC\./);
@@ -259,12 +270,12 @@ describe('the title and the CLASSIC menu', () => {
     h.idle(8);
     h.tap('right');
     expect(h.settings.classicRules).toBe('current');
-    expect(h.said.at(-1)).toMatch(/^Classic rules: Current/);
+    expect(h.said.at(-1)).toMatch(/^Classic rules: Campaign/);
     t = draw(opts).texts.map((x) => x.str);
-    expect(t).toContain('CURRENT');
+    expect(t).toContain('CAMPAIGN');
     h.tap('jump');
     expect(h.settings.classicRules).toBe('classic');
-    pick(h, 'All options');
+    pick(h, 'Video, audio, controls');
     expect(labels(h.top())).toContain('Video');
     h.idle(8);
     h.tap('attack');
@@ -300,9 +311,10 @@ describe('a Classic run', () => {
     expect(t.some((s) => s.includes('TO FIND'))).toBe(false);
     h.idle(12);
     const names: string[] = [];
-    // Every hero, and the Random slot that ends the ring (FU-4).
-    for (let i = 0; i <= CHARACTERS.length; i++) {
-      h.tap('right');
+    // Every hero, and the Random slot that ends the ring (FU-4); RC-006: each row wraps, so Down
+    // to the second row half way.
+    for (let i = 0; i < 24; i++) {
+      h.tap(i === 11 ? 'down' : 'right');
       names.push(h.said.at(-1)?.split(', ')[0] ?? '');
     }
     expect(new Set(names)).toEqual(new Set([...CHARACTERS.map((c) => c.name), 'Random']));
@@ -343,8 +355,9 @@ describe('a Classic run', () => {
     },
   );
 
-  it('plays Current rules when Options says so', () => {
-    const h = classic({ classicRules: 'current' });
+  it('plays Campaign rules when Options says so', () => {
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.runRules).toBe('current');
     expect(h.game.classicRun).toBe(true);
@@ -617,7 +630,7 @@ describe('QA nits', () => {
 
 describe('the Classic pause menu', () => {
   // G-093, G-031 (0.5.0): the hero's Guide row, and Cheats (with Classic rules), as the original's pause has.
-  it('Continue, Guide, Options, Cheats, Quit to title (and every dev row with dev mode on)', () => {
+  it('Continue, Guide, Options, Cheats, Quit (and every dev row with dev mode on)', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     enterLevel(h);
@@ -625,9 +638,11 @@ describe('the Classic pause menu', () => {
     h.tap('start');
     const pause = h.top() as PauseScene;
     expect(pause).toBeInstanceOf(PauseScene);
-    expect(labels(pause)).toEqual(['Continue', 'Guide', 'Options', 'Cheats', 'Quit to title']);
-    pick(h, 'Quit to title');
-    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(labels(pause)).toEqual(['Continue', 'Guide', 'Options', 'Cheats', 'Quit']);
+    pick(h, 'Quit');
+    // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
+    pick(h, 'Yes');
+    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
     expect(h.game.classicRun).toBe(false);
     expect(h.game.runRules).toBe('current');
 
@@ -644,7 +659,7 @@ describe('the Classic pause menu', () => {
       'Dev mode',
       'Assists',
       'Cheats',
-      'Quit to title',
+      'Quit',
     ]);
   });
 });
@@ -689,13 +704,13 @@ describe('dev Level select: Mode', () => {
 });
 
 describe('the campaign is unaffected', () => {
-  it('Chapter 1 (dev mode, 0.5.0) still opens the file select; a file plays Current, never as a Classic run', () => {
+  it('Campaign (dev mode, 0.5.0, O-02) still opens the file select; a file plays Current, never as a Classic run', () => {
     const h = classic({ dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.classicRun).toBe(true);
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
-    pick(h, 'Chapter 1');
+    pick(h, 'Campaign');
     expect(h.top()).toBeInstanceOf(FileSelectScene);
     file();
     h.game.openFile(1);
@@ -755,13 +770,14 @@ describe('the select screen: Classic extras on a second row', () => {
     expect(h.game.state.character).toBe(EXTRA);
   });
 
-  it('also on the Lost Levels entry; never with Classic rules set to Current', () => {
+  it('also on the Lost Levels entry; never with Classic rules set to Campaign', () => {
     saveProgress({ ...loadProgress(), cleared: ['8-4'] });
     const h = classic();
     toClassicMenu(h);
     pick(h, 'The Lost Levels');
     expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
-    const c = classic({ classicRules: 'current' });
+    // O-12: Classic rules set to Current is developer mode's.
+    const c = classic({ classicRules: 'current', dev: true });
     toClassicMenu(c);
     pick(c, 'Super Mario Bros.');
     expect((c.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
@@ -800,6 +816,8 @@ describe('the select screen: Classic extras on a second row', () => {
       expect(sel.slot(i)).toEqual({ x: c.x + g.cell / 2, y: c.y + g.cell });
     }
     h.idle(12);
+    // RC-006: Left wraps within the row, so Down to the Random slot's row first.
+    h.tap('down');
     h.tap('left');
     expect(h.said.at(-1)).toBe('Random');
     h.tap('left');
@@ -810,11 +828,14 @@ describe('the select screen: Classic extras on a second row', () => {
     for (const x of t) expect(x.y + 8).toBeLessThanOrEqual(240);
     h.tap('right');
     h.tap('right');
+    // Back on the second row's first cell; Up goes to the first row's, Mario.
+    h.tap('up');
     expect(h.said.at(-1)?.split(', ')[0]).toBe(CHARACTERS[0]?.name);
   });
 
-  it('Classic rules Current: the registry, in one row', () => {
-    const h = classic({ classicRules: 'current' });
+  it('Classic rules Campaign: the registry, in one row', () => {
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars).toBe(CHARACTERS);

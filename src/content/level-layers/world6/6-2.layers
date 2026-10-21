@@ -337,8 +337,12 @@
 + buzzy 42 12
 + koopa-red 165 12
 -zone vine 81 5 -> 6-2-sky 4 14
+-zone pipe 19 9 down -> 6-2-bonus 1 0 exit=none
+-zone pipe 153 10 down -> 6-2-bonus2 1 0 exit=none
 +zone vine 144 9 -> 6-2-sky 4 14
++zone pipe 19 9 down -> 6-2-bonus 1 3 exit=stand
 +zone pipe 43 13 down -> 6-2 46 12 exit=up
++zone pipe 153 10 down -> 6-2-bonus2 1 3 exit=stand
 
 [layer horz]
 119 13 #####

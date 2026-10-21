@@ -199,7 +199,9 @@
 + buzzy 74 11
 + buzzy 47 12
 + koopa-red 169 12
+-zone pipe 170 9 down -> ll-8-2-bonus 1 0 exit=none
 +zone checkpoint 118 12
++zone pipe 170 9 down -> ll-8-2-bonus 1 3 exit=stand
 
 [layer horz]
 113 11 B.

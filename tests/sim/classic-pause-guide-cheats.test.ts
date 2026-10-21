@@ -87,9 +87,17 @@ describe('G-031 cheats from the Classic pause', () => {
     expect(level.world.cheats.waterMode).toBe(true);
   });
 
-  it('is not offered under Current rules, where no cheat plays', () => {
-    const h = classic({ classicRules: 'current' });
-    pausedRun(h);
+  it('is not offered under Campaign rules, where no cheat plays', () => {
+    // O-12: Classic rules set to Current is developer mode's: the run starts there, and its
+    // pause is a player's (dev mode off; developer mode's pause offers every cheat).
+    const h = classic({ classicRules: 'current', dev: true });
+    h.game.classicGame(MARIO);
+    expect(h.game.liveRules).toBe('current');
+    h.settings.dev = false;
+    h.until(() => h.top() instanceof LevelScene, 600);
+    h.idle(4);
+    h.tap('start');
+    expect(h.top()).toBeInstanceOf(PauseScene);
     expect(labels(h.top())).not.toContain('Cheats');
   });
 });
@@ -123,10 +131,13 @@ describe('G-093 the Classic guide', () => {
     expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
   });
 
-  it('#179: from Classic > Options > All options: the Classic select’s heroes, with Expansion off and on; a look (Peach) is its slot (Luigi)', () => {
+  it('#179: from Classic > Options > Video, audio, controls: the Classic select’s heroes, with Expansion off and on; a look (Peach) is its slot (Luigi)', () => {
     const open = (expansion: 'on' | 'off', skins?: Record<string, string>) => {
-      const h = classic({ ...(skins ? { classicSkins: skins } : {}) });
+      // O-12: the Expansion heroes row is developer mode's until a hero is released.
+      const h = classic({ ...(skins ? { classicSkins: skins } : {}), dev: true });
       h.settings.classic = { ...h.settings.classic, expansion };
+      // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
+      if (expansion === 'on') h.settings.classicDev.heroesOn = ['vicviper', 'warriors', 'arthur', 'yoshi'];
       h.game.showClassicMenu();
       h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
       pick(h, 'How to play');
@@ -155,8 +166,9 @@ describe('G-093 the Classic guide', () => {
     expect(peach).not.toContain('Peach');
   });
 
-  it('with Classic rules set to Current it lists the Current heroes', () => {
-    const h = classic({ classicRules: 'current' });
+  it('with Classic rules set to Campaign it lists the campaign’s heroes', () => {
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.showClassicMenu();
     h.game.scenes.push(new GuideIndexScene(h.game, () => h.game.scenes.pop(), true));
     const names = labels(h.top()).filter((l) => l !== 'Back');

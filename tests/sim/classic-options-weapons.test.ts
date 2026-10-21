@@ -280,6 +280,9 @@ describe('Customize Weapons menu (CLASSIC > Options > Weapons)', () => {
     h.idle(TITLE_TIMING.dropEnd + 10);
     expect(h.top()).toBeInstanceOf(TitleScene);
     pick(h, 'Classic');
+    // O-04: the CLASSIC title's demo, then its Start box's START.
+    h.tap('jump');
+    h.tap('jump');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
     pick(h, 'Options');
     expect(

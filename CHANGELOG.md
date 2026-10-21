@@ -10,6 +10,16 @@ under `## [Unreleased]`.
 
 ### Added
 
+- Dev mode: the Level select is now a set of pages (O-05). **Classic** goes map set, world, level
+  (or one of its rooms), then a start page with the hero, its look, power, Map difficulty (Hard
+  can now be tested), rules, mode and kit. **Campaign** opens the world map or a copy of a save
+  file that never saves, story levels, the village, the tutorial stage, the training rooms and the
+  games. **Again** replays the last start in one press. The one-page list stays as Level select.
+- Dev mode: a **Classic heroes** page (O-06) in place of the Dev menu's Classic toggles: each
+  Expansion hero is Release (what players get), On (always shown in dev mode) or Off, with an All
+  row, and the Yoshi mount is Off, On or Ride. In dev mode the Expansion heroes option no longer
+  offers all four by itself: Release shows exactly what players get. None of it applies outside
+  dev mode.
 - Classic mode: the original's **Tutorials** option (Classic options > Tutorials, off by default as
   in the original). On, a box in the original's words explains the hero select, the controls at the
   first start, each hero the first time you play them, and the Mushroom, each upgrade, the Star and
@@ -23,6 +33,68 @@ under `## [Unreleased]`.
   Bros. 3 looks with them): shaded skin and materials, a coloured rim that stands out in the black
   box, and each face in its hero's in-game colours. Bass's helmet is now orange and Sophia pink as
   in play, Zelda has her own face, and Quick Man his boomerang crest.
+- Classic mode plays the original's rules and heroes only: the Classic rules switch and the
+  Expansion heroes option are now developer tools, and the four Expansion heroes (Vic Viper, the
+  Warriors of Light, Sir Arthur and Yoshi) are not offered until they are released. A setting saved
+  by an earlier version is kept but has no effect; a Continue run kept under Campaign rules goes on
+  under Classic rules with its level, lives, score and coins.
+- The rules choice that plays the heroes as the campaign does is now called **Campaign** (it was
+  "Current") wherever it is shown or read out.
+- Custom levels moved from the title menu into the title's Options, next to Level editor; Back returns
+  to Options. Neither row shows in Classic's options or in a game's Options any more.
+- The title's Chapter 1 row is now **Campaign**; its card reads CAMPAIGN / CHAPTER 1 COMING SOON!
+  and no longer says the save files are kept.
+- Options → **Save files** shows only in developer mode until Chapter 1 opens (Classic keeps its
+  Continue); nothing is deleted. The Home Screen app's and the download's first notes no longer
+  point to it while it is hidden.
+- The save-backup reminders are off by default; settings saved by earlier versions turn them off
+  once (they can be turned back on in Options → Save files).
+- Classic options: **All options** is now **Video, audio, controls**.
+- The title's Options → How to play lists Classic's heroes with their Classic pages while the
+  campaign is closed, instead of the campaign's guides.
+- Classic's hero select no longer draws an OK prompt under the hero, as the original; revive mode
+  keeps its lines. Its spoken line names the highlighted hero and says what OK does (looks or play).
+- Classic's hero select moves as the original's: Left and Right wrap within the row, and Up or Down
+  from either row goes to the other row.
+- Classic: BACK on the hero select between levels and after a death, and Pause → **Quit** (was Quit
+  to title), ask QUIT TO THE CLASSIC MENU? with NO first; YES goes to the CLASSIC menu, where
+  Continue holds the run.
+- Classic's pick performances are the original's own: the select and name boxes close and the
+  hero acts on the ground, whole. Mario jumps into a hidden block, Luigi jumps over a brick column
+  onto its top, Simon whips two bricks open and walks onto a pork chop, Samus sinks through the
+  ground, Bill is electrocuted (no colour flash with Reduce flashing), Ryu climbs a wall,
+  Jason hops out of Sophia, Bass double-jumps, and Mega Man, Proto Man and Break Man teleport
+  away (Proto Man to his whistle). Bass no longer plays a teleport. A Random pick shows its hero.
+- Classic: Bill's shots have their own hit and kill sounds.
+- Classic: the last weapons that borrowed another hero's sound have their own: Mega Man's Hard
+  Knuckle, Pharaoh Shot, Flame Blast, Magma Bazooka, Water Shield, Screw Crusher, Rush and Super
+  Arm, Samus's bomb blast and Ryu's sword.
+- Classic mode: **CLASSIC now opens a title in the original's style** (O-04). A live World 1-1
+  demo plays behind our logo with no HUD. Mario sets off after five seconds and jumps by
+  himself, and nine more heroes, powered up along the level, wake as the screen reaches them and
+  play their own recorded moves. Nobody takes damage, and the demo starts again at the flag.
+  "Press OK to begin" blinks every half second and stays steady with Reduce flashing. A press,
+  or a tap on the screen, opens the Start box (Start, Options, Back), and Start opens the map set
+  menu as a box over the demo, with a mushroom cursor and the original's move, choose and back
+  sounds. Every screen is announced, and BACK steps back one box at a time.
+- Classic mode: on the way in from the title, a big **CLASSIC** smashes down onto the REMIX stamp,
+  with a squash, dust, flying chips, a short shake and the stamp's thud, and stays in its place.
+  Any press finishes it, and that press still opens the Start box. With Reduce flashing it is
+  simply in place, and coming back from a run or a menu it never plays again.
+
+### Fixed
+
+- Classic mode, Map Difficulty Hard: going down a pipe into a bonus room of The Lost Levels or Super
+  Mario Bros. now puts you inside the room, under its entry pipe, as the original does. Before, six
+  Lost Levels rooms (3-1, 5-3, 7-1, 8-2, 12-1 and 13-2) dropped you onto their roof, and four of
+  them trapped you there until the time ran out.
+- Classic mode: CLASSIC > Continue now goes on with the run's own Map Difficulty and Game mode, and
+  the menus show them, as loading the original's save does. Before, a Hard or Easy run went on as
+  Normal after a reload, and its win was recorded on Normal.
+- Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
+  link's run plays and counts as before, but never writes or clears the Continue slot.
+- A custom level link (`?level=custom-…`) to a level this browser does not have shows an announced
+  LEVEL NOT FOUND card instead of the blank "WORLD IS NOT BUILT YET" one; that card is read out too.
 
 ## [0.4.67] - 2026-10-21
 

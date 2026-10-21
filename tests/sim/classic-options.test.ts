@@ -146,14 +146,15 @@ function classicGame(over: Partial<ClassicSettings> = {}): H & { settings: Setti
 const inLevel = (h: H) => (h.top() as { world?: World }).world !== undefined;
 
 describe('ctx.classic: only a Classic run with Classic rules', () => {
-  it('absent on the title, in free play, in a campaign-shaped run and with Current rules', () => {
+  it('absent on the title, in free play, in a campaign-shaped run and with Campaign rules', () => {
     const h = classicGame({ lives: 7 });
     h.game.showTitle();
     expect(h.game.ctx.classic).toBeUndefined();
     h.game.newGame(MARIO, '1-1', null, { rules: 'classic' });
     expect(h.game.ctx.classic).toBeUndefined();
     expect(h.game.state.lives).toBe(3);
-    // Classic mode with Current rules: no options either.
+    // Classic mode with Current rules (developer mode's, O-12): no options either.
+    h.settings.dev = true;
     h.settings.classicRules = 'current';
     h.game.classicGame(MARIO);
     expect(h.game.classicRun).toBe(true);
@@ -461,6 +462,9 @@ function toClassicOptions(h: H): ClassicOptionsScene {
   h.idle(TITLE_TIMING.dropEnd + 10);
   expect(h.top()).toBeInstanceOf(TitleScene);
   pick(h, 'Classic');
+  // O-04: the CLASSIC title's demo, then its Start box's START.
+  h.tap('jump');
+  h.tap('jump');
   expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   pick(h, 'Options');
   return h.top() as ClassicOptionsScene;

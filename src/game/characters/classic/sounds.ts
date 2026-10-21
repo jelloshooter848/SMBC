@@ -77,8 +77,9 @@ export const CLASSIC_HERO_SOUNDS: Readonly<Record<string, ClassicHeroSounds>> = 
     // Every pickup but a heart plays the sub-weapon sound (Simon.as 1128-1134).
     item: 'cv-weapon',
   },
-  // Bill's hit is an electric shock (Bill.as 899, SFX_BILL_ELECTRECUTE).
-  bill: { hurt: 'bill-shock', death: 'contra-death', item: 'bill-item' },
+  // Bill's hit is an electric shock (Bill.as 899, SFX_BILL_ELECTRECUTE); his shots' hit and kill
+  // are his own (G-072; SoundNames.as 105, 114: SFX_BILL_SHOT_HIT, SFX_BILL_ENEMY_EXPLODE).
+  bill: { hurt: 'bill-shock', hit: 'bill-hit', kill: 'bill-kill', death: 'contra-death', item: 'bill-item' },
   sophia: { death: 'sophia-die' },
   ryu: {
     hurt: 'ng-hurt',
