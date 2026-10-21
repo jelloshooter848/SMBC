@@ -6,12 +6,18 @@ import { AssetRegistry } from '@engine/assets/registry';
 import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
-import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY, SETTINGS_VERSION } from '@engine/save/settings';
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  SETTINGS_KEY,
+  SETTINGS_VERSION,
+} from '@engine/save/settings';
 import type { Action } from '@engine/input/actions';
 import type { Announcer } from '@engine/a11y/announcer';
 import { ScriptedInput } from '@game/sim/headless';
 import { Game } from '@game/scenes/game';
-import { TitleScene } from '@game/scenes/title';
+import type { TitleScene } from '@game/scenes/title';
 import { MenuScene, type MenuItem } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { CharacterSelectScene } from '@game/scenes/character-select';
@@ -268,7 +274,10 @@ describe('O-08: the backup reminders are off by default, with a migration', () =
 
   it('a v2 (or older) file saved with them on turns them off once; the rest of the file is kept', () => {
     for (const v of [1, 2]) {
-      store.set(SETTINGS_KEY, JSON.stringify({ ...defaultSettings(), v, backupReminders: true, announce: false }));
+      store.set(
+        SETTINGS_KEY,
+        JSON.stringify({ ...defaultSettings(), v, backupReminders: true, announce: false }),
+      );
       const s = loadSettings();
       expect(s.backupReminders, `v${v}`).toBe(false);
       expect(s.announce).toBe(false);
@@ -302,7 +311,7 @@ describe('O-13: Classic options "All options" becomes "Video, audio, controls"',
   });
 });
 
-describe('O-14: no campaign guides in Classic (the title\'s How to play while the campaign is closed)', () => {
+describe("O-14: no campaign guides in Classic (the title's How to play while the campaign is closed)", () => {
   const guide = (h: H) => {
     title(h);
     pick(h, 'Options');
@@ -325,5 +334,57 @@ describe('O-14: no campaign guides in Classic (the title\'s How to play while th
     const names = guide(h);
     expect(names).not.toContain('Bass');
     expect(names).toEqual(h.game.roster.map((c) => c.name));
+  });
+});
+
+describe('O-10: no OK prompt line on the select; the spoken line says what OK does', () => {
+  it("Classic's first select names the highlighted hero and says OK: play, with nothing drawn under the hero", () => {
+    const h = makeGame();
+    h.game.classicSelect('1-1', () => h.game.showClassicMenu());
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    const said = h.said.at(-1) ?? '';
+    expect(said).toMatch(/^Select your hero\. Mario, Super Mario Bros\. /);
+    // Mario wears other looks in Classic, so OK opens them.
+    expect(said).toMatch(/OK: (looks|play)\./);
+    expect(said).toMatch(h.game.skinsFor(h.game.heroSlots[0]!).length > 1 ? /OK: looks\./ : /OK: play\./);
+    expect(said).not.toMatch(/OK to begin/);
+    h.idle(30);
+    expect(drawn(h).filter((t) => /^OK\b/.test(t))).toEqual([]);
+  });
+
+  it('a mid-run pick on a hero with looks says OK: looks (it opens the skin menu)', () => {
+    const h = makeGame();
+    const mario = h.game.heroSlots[0] as (typeof h.game.heroSlots)[number];
+    h.game.classicGame(mario, '1-1');
+    const megaman = h.game.heroSlots.find((c) => c.id === 'megaman');
+    expect(megaman).toBeDefined();
+    if (!megaman) return;
+    h.game.scenes.push(
+      new CharacterSelectScene(h.game, { player: 0, current: megaman, onPick: () => {}, random: true }),
+    );
+    const said = h.said.at(-1) ?? '';
+    expect(said).toMatch(/Mega Man/);
+    expect(said).toMatch(/OK: looks\./);
+    expect(said).not.toMatch(/OK to confirm/);
+    h.idle(30);
+    expect(drawn(h).filter((t) => /^OK\b/.test(t))).toEqual([]);
+  });
+
+  it('a hero with no other looks says OK: play', () => {
+    const h = makeGame();
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    const plain = h.game.heroSlots.find((c) => h.game.skinsFor(c).length <= 1);
+    expect(plain).toBeDefined();
+    if (!plain) return;
+    h.game.scenes.push(
+      new CharacterSelectScene(h.game, { player: 0, current: plain, onPick: () => {}, random: true }),
+    );
+    expect(h.said.at(-1)).toMatch(/OK: play\./);
+  });
+
+  it('the campaign select keeps its line (Current rules unchanged)', () => {
+    const h = makeGame(true);
+    h.game.showCharacterSelect();
+    expect(h.said.at(-1)).toMatch(/^Select your hero\. Left and right to choose, OK to begin\./);
   });
 });

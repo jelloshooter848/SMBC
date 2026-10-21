@@ -353,7 +353,8 @@ describe('the original\u2019s rows, box and faces', () => {
     const under = draw(sel)
       .texts.filter((x) => x.y >= NAME_BOX.y + NAME_BOX.h)
       .map((x) => x.str);
-    expect(under.some((x) => x.endsWith('LOOKS'))).toBe(true);
+    // O-10: the pick shows no prompt under it, as the original's.
+    expect(under.some((x) => x.endsWith('LOOKS'))).toBe(false);
   });
 
   it("every hero's game fits the name box", () => {
@@ -450,8 +451,8 @@ describe('the original\u2019s rows, box and faces', () => {
         checked++;
       }
     expect(checked).toBeGreaterThanOrEqual(26);
-    // The prompt is on the ground row.
-    expect(draw(sel).texts.some((x) => x.y === GROUND_TEXT_Y && /^OK\b/.test(x.str))).toBe(true);
+    // O-10: no prompt on the ground row while picking (revive mode keeps its own).
+    expect(draw(sel).texts.some((x) => x.y === GROUND_TEXT_Y && /^OK\b/.test(x.str))).toBe(false);
   });
 
   it("the skin menu's grid starts at the fill's left edge, as the original's", () => {
@@ -488,19 +489,15 @@ describe('the original\u2019s rows, box and faces', () => {
     expect(draw(sel).texts.some((x) => x.str === 'MEGA MAN' && x.y === L.gameY)).toBe(true);
   });
 
-  it('its prompt always fits on the screen, dropping a long key name', () => {
+  it('O-10: the pick shows no OK prompt, with any key name', () => {
     const fits = (sel: CharacterSelectScene) => {
       const t = draw(sel).texts.filter((x) => /^OK\b/.test(x.str));
-      expect(t.length).toBeGreaterThan(0);
-      for (const x of t) {
-        expect(x.x).toBeGreaterThanOrEqual(8);
-        expect(x.x + x.str.length * 8).toBeLessThanOrEqual(248);
-      }
+      expect(t).toEqual([]);
       return t.map((x) => x.str);
     };
     const { h, sel } = classicSelect();
     cursorTo(h, sel, 'megaman');
-    expect(fits(sel).some((x) => x.endsWith('LOOKS'))).toBe(true);
+    expect(fits(sel).some((x) => x.endsWith('LOOKS'))).toBe(false);
     const settings = defaultSettings();
     const keys = settings.input.bindings[0];
     if (keys) keys.keyboard.jump = ['NumpadEnter'];

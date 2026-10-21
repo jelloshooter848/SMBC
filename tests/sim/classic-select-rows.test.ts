@@ -96,7 +96,8 @@ describe('two-row character select', () => {
     expect(sel.firstRow).toBe(sel.chars.length);
     expect(sel.rows).toBe(2);
     expect(h.said.at(-1)).toBe(
-      'Select your hero. Left and right to choose, up and down for the other row, OK to begin.',
+      // O-10: Classic's select names the hero and what OK does on it.
+      'Select your hero. Mario, Super Mario Bros. Left and right to choose, up and down for the other row, OK: play.',
     );
     const f = makeGame();
     f.game.showCharacterSelect();

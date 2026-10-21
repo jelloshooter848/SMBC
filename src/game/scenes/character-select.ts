@@ -690,6 +690,16 @@ export class CharacterSelectScene implements Scene {
   }
 
   /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
+  /**
+   * O-10 (RC-024): what OK does on slot `i` in Classic's select, said in the screen's line:
+   * " OK: looks." where it opens the skin menu, else " OK: play."; nothing outside Classic's
+   * select or in revive mode (which says its own action).
+   */
+  private okSay(i: number): string {
+    if (!this.classicLayout || this._reviving) return '';
+    return this.opensPicker(i) ? ' OK: looks.' : ' OK: play.';
+  }
+
   private rowsHint(): string {
     if (this.rows > 2) return ' up and down for the other rows,';
     return this.rows === 2 ? ' up and down for the other row,' : '';
@@ -768,7 +778,8 @@ export class CharacterSelectScene implements Scene {
       const who = this.game.state.character2 ? `Player ${pick.player + 1}, choose` : 'Choose';
       const name = this.sayName(this.index) || pick.current.name;
       this.game.deps.announcer?.say(
-        `${who} your hero. ${sentence(name)} Left and right to choose,${this.rowsHint()} OK to confirm.` +
+        `${who} your hero. ${sentence(name)} Left and right to choose,${this.rowsHint()}` +
+          (this.classicLayout ? this.okSay(this.index) : ' OK to confirm.') +
           (pick.onMap ? ' Down for return to map.' : '') +
           this.skinHint() +
           this.toFind() +
@@ -779,8 +790,11 @@ export class CharacterSelectScene implements Scene {
     }
     this.index = this.unlocked(this.index);
     this.index2 = this.unlocked(this.index2);
+    // Classic's select names the highlighted hero and what OK does on it (O-10, RC-024).
+    const first = this.classicLayout ? ` ${sentence(this.sayName(this.index))}` : '';
+    const ok = this.classicLayout ? this.okSay(this.index) : ' OK to begin.';
     this.game.deps.announcer?.say(
-      `Select your hero. Left and right to choose,${this.rowsHint()} OK to begin.${this.start ? '' : ' Player two: press menu to join.'}` +
+      `Select your hero.${first} Left and right to choose,${this.rowsHint()}${ok}${this.start ? '' : ' Player two: press menu to join.'}` +
         this.skinHint() +
         this.toFind() +
         this.fallenNote() +
@@ -1392,8 +1406,9 @@ export class CharacterSelectScene implements Scene {
     const hNow = grow < 0.5 ? 8 : Math.round(8 + (boxH - 8) * ((grow - 0.5) / 0.5));
     drawPanel(r, 128 - (w >> 1), by + ((boxH - hNow) >> 1), w, hNow, th);
     // The hero's name in the menu font; the look's name and the game in the selected tint, 14 px
-    // apart (CharNameBox LINE_SPACE 28). Our one prompt goes on the ground under the hero (named by
-    // ability, the real key when not on touch), clear of every hero's head.
+    // apart (CharNameBox LINE_SPACE 28). The pick itself shows no prompt, as the original's (O-10);
+    // revive mode's prompt goes on the ground under the hero (named by ability, the real key when
+    // not on touch), clear of every hero's head.
     if (grow >= 1) {
       lines.forEach((l, k) =>
         this.outlined(
@@ -1403,14 +1418,16 @@ export class CharacterSelectScene implements Scene {
           l.startsWith('"') || k === lines.length - 1 ? 'tint' : 'name',
         ),
       );
-      const ok = abilityHint(this.game, 'OK', 'jump');
-      const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
-      const what = this._reviving ? `TO ${verb}` : this.skinsAt(this.index).length > 1 ? 'LOOKS' : 'TO PICK';
-      // The key hint goes when it would not fit on the screen (a long key name).
-      const keyed = fontText(`${ok} ${what}`);
-      const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
-      // G-055: no prompt while the picked hero acts out its pick.
-      if (!this.show) this.outlined(r, prompt, GROUND_TEXT_Y);
+      if (this._reviving) {
+        const ok = abilityHint(this.game, 'OK', 'jump');
+        const verb = this.isRandom(this.index) || this.fallen(this.index) ? 'REVIVE' : 'POWER UP';
+        const what = `TO ${verb}`;
+        // The key hint goes when it would not fit on the screen (a long key name).
+        const keyed = fontText(`${ok} ${what}`);
+        const prompt = keyed.length <= PROMPT_CHARS ? keyed : fontText(`OK ${what}`);
+        // G-055: no prompt while the picked hero acts out its pick.
+        if (!this.show) this.outlined(r, prompt, GROUND_TEXT_Y);
+      }
     }
     const py = GROUND_TEXT_Y + 10;
     const sv = this.survival;

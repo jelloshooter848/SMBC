@@ -22,6 +22,8 @@ under `## [Unreleased]`.
 - Classic options: **All options** is now **Video, audio, controls**.
 - The title's Options → How to play lists Classic's heroes with their Classic pages while the
   campaign is closed, instead of the campaign's guides.
+- Classic's hero select no longer draws an OK prompt under the hero, as the original; revive mode
+  keeps its lines. Its spoken line names the highlighted hero and says what OK does (looks or play).
 
 ## [0.4.67] - 2026-10-21
 
