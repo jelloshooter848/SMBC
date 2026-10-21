@@ -247,7 +247,7 @@ export class ClassicMenuScene extends MenuScene {
               this.announce();
             }),
           ),
-        hint: 'Classic rules, game mode, more settings, weapons, music set and all settings',
+        hint: 'Classic rules, game mode, more settings, weapons, music set, and video, audio and controls',
       },
       { label: 'Back', select: () => game.showTitle() },
     );

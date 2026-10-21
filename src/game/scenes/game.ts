@@ -179,7 +179,6 @@ export interface GameDeps {
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
 export type ControlScheme = 'touch' | 'gamepad' | 'keyboard';
 
-/** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
 /** RC-005: the card a `?level=custom-` link shows when this browser has no such custom level. */
 export const CUSTOM_LEVEL_MISSING: readonly string[] = [
   'LEVEL NOT FOUND',
@@ -190,6 +189,7 @@ export const CUSTOM_LEVEL_MISSING: readonly string[] = [
   'ASK FOR ITS SHARE LINK.',
 ];
 
+/** A castle's main level id: SMB 'W-4' or the Lost Kingdom's 'll-W-4'. */
 export const isCastle = (id: string): boolean => /^(ll-)?\d+-4$/.test(id);
 
 /**
@@ -1780,26 +1780,22 @@ export class Game {
   }
 
   /**
-   * Menu of saved custom levels; picking one goes to character select then the level. `back`
-   * (title > Options, O-01): the menu opens over Options and Back closes it; without it the menu
-   * replaces the top scene and Back goes to the title.
+   * Menu of saved custom levels (title > Options, O-01), over Options: Back closes it; picking
+   * one goes to character select, then the level.
    */
-  showCustomLevels(back?: () => void): void {
+  showCustomLevels(back: () => void): void {
     const names = Object.keys(loadLibrary().levels).sort();
     const items = names.map((n) => ({
       label: n.slice(0, 14),
       select: () => {
         this.pendingLevel = customLevelId(n);
-        if (back) this.scenes.clear();
+        this.scenes.clear();
         this.showCharacterSelect();
       },
     }));
     if (!items.length) items.push({ label: 'No levels yet', select: () => this.openEditor() });
-    const leave = back ?? (() => this.showTitle());
-    items.push({ label: 'Back', select: leave });
-    const menu = new MenuScene(this, 'CUSTOM LEVELS', items, leave);
-    if (back) this.scenes.push(menu);
-    else this.scenes.replace(menu);
+    items.push({ label: 'Back', select: back });
+    this.scenes.push(new MenuScene(this, 'CUSTOM LEVELS', items, back));
   }
 
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
@@ -2162,7 +2158,6 @@ export class Game {
     return true;
   }
 
-  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
   /**
    * O-16: a Classic run's mid-run select (between levels, after a death) has BACK: it asks to
    * quit (QuitRunScene), NO back to the select. Nothing outside a Classic mode run.
@@ -2181,6 +2176,7 @@ export class Game {
     this.deps.ctx.audio.playMusic('title');
   }
 
+  /** The title's CLASSIC entry: every map set (MAP_SETS), Options, Back. */
   showClassicMenu(): void {
     this.endClassicRun();
     this.runRules = 'current';

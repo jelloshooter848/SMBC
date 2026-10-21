@@ -723,7 +723,6 @@ export class CharacterSelectScene implements Scene {
     return mine === c ? c.portraitFor(second ? s.kit2 : s.kit) : shownPortrait(c);
   }
 
-  /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   /**
    * O-10 (RC-024): what OK does on slot `i` in Classic's select, said in the screen's line:
    * " OK: looks." where it opens the skin menu, else " OK: play."; nothing outside Classic's
@@ -734,6 +733,7 @@ export class CharacterSelectScene implements Scene {
     return this.opensPicker(i) ? ' OK: looks.' : ' OK: play.';
   }
 
+  /** With a second row: " up and down for the other row,"; one row: nothing (today's text). */
   private rowsHint(): string {
     if (this.rows > 2) return ' up and down for the other rows,';
     return this.rows === 2 ? ' up and down for the other row,' : '';
