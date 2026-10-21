@@ -97,7 +97,7 @@ export function devPickSummary(game: Game, p: DevPick): { value: string; said: s
     parts.push(p.classicRun ? 'Classic run' : 'Free play', RULES_LABELS[p.rules]);
     if (p.classicRun && p.rules === 'classic') parts.push(DIFFICULTY_NAMES[p.difficulty]);
   }
-  return { value: p.name.replace(/^.* (?=\S+$)/, ''), said: parts.join(', ') };
+  return { value: p.name, said: parts.join(', ') };
 }
 
 /** The Dev menu's Again row, or none when no start was kept. */
@@ -126,7 +126,8 @@ class DevPage extends MenuScene {
     const it = this.items[this.index];
     const v = it?.value ? `: ${it.value()}` : '';
     const page = this.title.charAt(0) + this.title.slice(1).toLowerCase();
-    this.game.deps.announcer?.say(`${page}. ${it?.label ?? ''}${v}${it?.hint ? `. ${it.hint}` : ''}`);
+    const line = `${it?.label ?? ''}${v}`;
+    this.game.deps.announcer?.say(`${page}. ${it?.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line}`);
   }
 }
 
@@ -358,11 +359,9 @@ export class DevStartScene extends DevPage {
     const items: MenuItem[] = [
       {
         label: 'Start',
-        value: () => target.name.replace(/^.* (?=\S+$)/, ''),
+        value: () => target.name,
         select: () => playDevPick(game, this.pick),
-        get hint() {
-          return `${target.name}. Starts the level`;
-        },
+        hint: 'Starts the level',
       },
       {
         label: 'Hero',

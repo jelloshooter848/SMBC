@@ -96,7 +96,7 @@ describe('O-05: the dev Level select as pages', () => {
       'Kit',
       'Back',
     ]);
-    expect(h.said.at(-1)).toMatch(/^Start\. Start: D-4\. Lost Levels D-4/);
+    expect(h.said.at(-1)).toMatch(/^Start\. Start: Lost Levels D-4\. Starts the level/);
     presses += stepTo(h, 'Hero', () => start.hero.id === 'samus');
     presses += stepTo(h, 'Power', () => start.pick.power === 'fire');
     presses += stepTo(h, 'Map difficulty', () => start.pick.difficulty === 'hard');
