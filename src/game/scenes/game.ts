@@ -2313,13 +2313,16 @@ export class Game {
   }
 
   /**
-   * The scene on top goes, and with it every CLASSIC title and menu under it (each one's exit
-   * runs: its demo World and its pointer listener go), so only one CLASSIC title is ever kept.
+   * The scene on top goes, and with it every CLASSIC title and menu under it and whatever was
+   * opened over them (each one's exit runs: a title's demo World and its pointer listener go), so
+   * only one CLASSIC title is ever kept.
    */
   private leaveClassicTitle(): void {
     this.scenes.pop();
-    while (this.scenes.top instanceof ClassicTitleScene || this.scenes.top instanceof ClassicMenuScene)
-      this.scenes.pop();
+    // Every scene opened from the CLASSIC title goes with it, however deep (Options > Cheats >
+    // Level select > Go leaves the select over all of them).
+    const isTitle = (sc: unknown) => sc instanceof ClassicTitleScene || sc instanceof ClassicMenuScene;
+    while (this.scenes.find(isTitle)) this.scenes.pop();
   }
 
   /**
