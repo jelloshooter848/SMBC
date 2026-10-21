@@ -357,9 +357,10 @@ export class ClassicOptionsScene extends MenuScene {
           : 'The original cheats; play to unlock them',
       },
       {
-        label: 'All options',
+        // O-13: named for what it holds (the original's own options are the rows above).
+        label: 'Video, audio, controls',
         select: () => game.scenes.push(new OptionsScene(game, () => this.back(), false, true)),
-        hint: 'Video, audio, controls and more',
+        hint: 'Video, audio, controls, how to play and asset packs',
       },
       { label: 'Back', select: onBack },
     ]);

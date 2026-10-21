@@ -247,7 +247,7 @@ describe('the title and the CLASSIC menu', () => {
       // G-032 (0.5.0): the original's Disable characters.
       'Disable heroes',
       'Cheats',
-      'All options',
+      'Video, audio, controls',
       'Back',
     ]);
     expect(h.said.at(-1)).toMatch(/^Classic options\. Classic rules: Classic SMBC\./);
@@ -263,7 +263,7 @@ describe('the title and the CLASSIC menu', () => {
     expect(t).toContain('CURRENT');
     h.tap('jump');
     expect(h.settings.classicRules).toBe('classic');
-    pick(h, 'All options');
+    pick(h, 'Video, audio, controls');
     expect(labels(h.top())).toContain('Video');
     h.idle(8);
     h.tap('attack');

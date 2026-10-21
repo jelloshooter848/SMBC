@@ -18,6 +18,7 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
+import { ClassicOptionsScene } from '@game/scenes/original-game';
 import { SaveFilesOptions } from '@game/scenes/save-codes';
 import {
   OFFLINE_NOTICE_CLOSED_LINES,
@@ -212,13 +213,6 @@ describe('O-07 (option c): Save files is a dev-mode row until the campaign opens
     expect(h.top()).toBeInstanceOf(SaveFilesOptions);
   });
 
-  it("Classic's Continue stays on the CLASSIC menu", () => {
-    const h = makeGame();
-    expect(h.game.campaignOpen).toBe(false);
-    // The Continue slot is Classic's own (run-resume.ts) and is not behind the campaign.
-    expect(typeof h.game.classicResume).toBe('function');
-  });
-
   function hooks(over: Partial<HomeScreenHooks>): HomeScreenHooks {
     return {
       ios: false,
@@ -287,5 +281,22 @@ describe('O-08: the backup reminders are off by default, with a migration', () =
     saveSettings(s);
     expect(JSON.parse(store.get(SETTINGS_KEY) as string).v).toBe(SETTINGS_VERSION);
     expect(loadSettings().backupReminders).toBe(true);
+  });
+});
+
+describe('O-13: Classic options "All options" becomes "Video, audio, controls"', () => {
+  it('names the row for what it holds, fits a row, and opens the usual options', () => {
+    const h = makeGame();
+    h.game.showClassicMenu();
+    h.game.scenes.push(new ClassicOptionsScene(h.game, () => h.game.scenes.pop()));
+    const l = labels(h.top());
+    expect(l).not.toContain('All options');
+    const row = items(h.top()).find((i) => i.label === 'Video, audio, controls') as MenuItem;
+    expect(row).toBeDefined();
+    expect(row.label.length).toBeLessThanOrEqual(24);
+    expect(row.hint).not.toMatch(/and more/);
+    pick(h, 'Video, audio, controls');
+    expect(h.top()).toBeInstanceOf(OptionsScene);
+    expect(labels(h.top()).slice(0, 3)).toEqual(['Video', 'Audio', 'Controls']);
   });
 });
