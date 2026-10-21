@@ -239,6 +239,12 @@ export class Game {
    */
   classicDev = false;
   /**
+   * RC-004: the Classic run came from a `?level=` link (devClassicGame). It counts as any Classic
+   * run does, but it never touches the resume slot (no write at its WORLD cards, no clear at its
+   * game over or credits), so a shared link cannot replace the player's CLASSIC > Continue run.
+   */
+  private linkRun = false;
+  /**
    * The rules chosen for this non-campaign run (Classic mode, TG-9 rules model). Run starters set
    * it: devStart's and newGame's `opts.rules`, or the Classic mode flow before it starts a run;
    * showTitle, playtest and playShared put it back to 'current'. Never read directly to decide
@@ -830,7 +836,7 @@ export class Game {
    */
   showEnding(from = ''): void {
     // G-008: a Classic run that reaches the credits is over; its resume slot goes.
-    if (this.classicRun && !this.classicDev) clearClassicResume();
+    if (this.keepsResume) clearClassicResume();
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -1476,7 +1482,7 @@ export class Game {
     // G-008: the next level is the run's place from here, as the original's file holds the level
     // just reached (StatManager's current level moves on at the clear); quitting from the select
     // between levels resumes there.
-    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
+    if (this.keepsResume) this.keepResume(levelId);
     // Survival: a warp pipe to another level allows revival (EventManager.levelTransfer calls
     // StatManager.warpPipeHandler); a cleared level's exit does not (levelExitTo).
     if (pipe && this.survival) this.survival.reviveAllowed = true;
@@ -1725,6 +1731,7 @@ export class Game {
     this.runRules = opts.rules ?? 'current';
     this.classicRun = classic;
     this.classicDev = classic;
+    this.linkRun = false;
     this.classicDifficulty = 'normal';
     const rules = this.liveRules;
     const hero = heroFor(character, rules);
@@ -1838,11 +1845,18 @@ export class Game {
    * shared link on a release build) it counts as any Classic run does, as the original counts a
    * run that its Level Select started anywhere (LevelSelectMenu.as 115-131 only sets the map pack
    * and difficulty and creates the level; StatManager.beatGameHandler 506-529 asks nothing of
-   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect).
+   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect). It never
+   * writes or clears the resume slot (RC-004, linkRun).
    */
   devClassicGame(character: CharacterDef, levelId: string, rules: Rules, dev = true): void {
     this.pendingLevel = null;
-    this.startRun(character, this.classicStartable(levelId) ? levelId : '1-1', null, rules, true, dev);
+    const id = this.classicStartable(levelId) ? levelId : '1-1';
+    this.startRun(character, id, null, rules, true, dev, true);
+  }
+
+  /** G-008: this run writes and clears the resume slot (a Classic mode run; not dev, not a link). */
+  private get keepsResume(): boolean {
+    return this.classicRun && !this.classicDev && !this.linkRun && this.campaign === null;
   }
 
   /**
@@ -1982,12 +1996,14 @@ export class Game {
     rules: Rules | undefined,
     classic: boolean,
     dev: boolean,
+    link = false,
   ): void {
     this.tutorialRun = null;
     this.campaign = null;
     if (rules) this.runRules = rules;
     this.classicRun = classic;
     this.classicDev = classic && dev;
+    this.linkRun = classic && link;
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
     // a hero the select does not offer now plays as its first slot's hero.
     if (classic) character = this.restoreSlotHero(character);
@@ -2035,6 +2051,7 @@ export class Game {
     this.classicRun = false;
     this.classicFlow = false;
     this.classicDev = false;
+    this.linkRun = false;
     this.survival = null;
   }
 
@@ -2111,6 +2128,7 @@ export class Game {
     this.runRules = r.rules;
     this.classicRun = true;
     this.classicDev = false;
+    this.linkRun = false;
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
@@ -2396,7 +2414,7 @@ export class Game {
       return;
     }
     // G-008: a Classic mode run keeps its resume slot at each WORLD card (never a dev run).
-    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
+    if (this.keepsResume) this.keepResume(levelId);
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
     this.deps.announcer?.say(
@@ -2484,7 +2502,7 @@ export class Game {
   respawn(levelId: string, start: LevelStart, player = 0): void {
     this.selectLevel = levelId;
     // G-008: the slot follows the death (its lives) before the select, so quitting there resumes it.
-    if (this.classicRun && !this.classicDev && this.campaign === null) this.keepResume(levelId);
+    if (this.keepsResume) this.keepResume(levelId);
     if (this.quickRespawn) {
       this.goToLevel(levelId, start);
       return;
@@ -2620,7 +2638,7 @@ export class Game {
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
     // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
-    if (this.classicRun && !this.classicDev) clearClassicResume();
+    if (this.keepsResume) clearClassicResume();
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

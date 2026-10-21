@@ -17,6 +17,8 @@ under `## [Unreleased]`.
 - Classic mode: CLASSIC > Continue now goes on with the run's own Map Difficulty and Game mode, as
   the original's save does. Before, a Hard or Easy run went on as Normal after a reload, and its
   win was recorded on Normal.
+- Classic mode: opening a shared level link no longer replaces your CLASSIC > Continue run. The
+  link's run plays and counts as before, but never writes or clears the Continue slot.
 
 ## [0.4.67] - 2026-10-21
 
