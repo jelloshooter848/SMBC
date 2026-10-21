@@ -962,6 +962,8 @@ export class Game {
       // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
       // count and no-continue goals.
       this.cheatEvent({ beat: set });
+      // The game restarts (EventManager.restartGame): the continues count from 0 again (item 8).
+      this.resetContinues();
       this.showClassicUnlocks();
       return;
     }
@@ -2486,6 +2488,8 @@ export class Game {
     this.campaign = null;
     // A new Classic game: every Tutorials box shows again (TutorialManager.startNewGameHandler).
     this.classicTutorials.newGame();
+    // ...and its continues count from 0 again (item 8, owner: EventManager.restartGame).
+    this.resetContinues();
     this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
@@ -3022,6 +3026,19 @@ export class Game {
       cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
       saveSettings(this.deps.settings as Settings);
     }
+  }
+
+  /**
+   * Item 8 (owner, option A): a fresh run's continues count from 0, as the original's
+   * EventManager.restartGame sets StatManager.numContinuesUsed = 0: NEW GAME (also over a game
+   * over's kept run) and the restart after an ending's credits. A kept run (MAIN MENU after a
+   * game over, then its set's Continue) keeps its count.
+   */
+  private resetContinues(): void {
+    const s = this.deps.settings;
+    if (!s || s.classicCheats.continuesUsed === 0) return;
+    s.classicCheats.continuesUsed = 0;
+    saveSettings(s);
   }
 
   /**

@@ -10,6 +10,9 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
+  the run, as the original: NEW GAME and the restart after an ending's credits set the count
+  back to 0. MAIN MENU after a game over keeps the run and its count.
 - Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
   level's end keeps them. Switching to another hero puts the first one's away until he is picked
   again, and another look of the same hero shares them. A death resets only the hero who died. A
