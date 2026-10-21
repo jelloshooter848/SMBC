@@ -168,7 +168,7 @@ describe('the triggers (O-15 / G-042: TutorialManager.as 276-341)', () => {
     expect(h.game.scenes.find((s) => s instanceof CharacterSelectScene)).toBeDefined();
     expect(idsOf(b?.pages ?? [], h)).toEqual(['characterSelect']);
     h.step();
-    expect(h.said.at(-1)).toMatch(/Tutorial\. Use LEFT and RIGHT to move the cursor/);
+    expect(h.said.at(-1)).toMatch(/Tutorial\. Use the directions to move the cursor/);
     readBox(h);
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     // The select's own line is read again as the box closes.

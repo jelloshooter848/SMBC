@@ -47,9 +47,9 @@ const ABILITIES: Readonly<Record<string, readonly [string, Action]>> = {
  * is `<hero id>Start`, Mega Man's Mushroom `megamanPowerUp`, an upgrade its PickupInfo name.
  */
 export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
-  characterSelect: ['Use LEFT and RIGHT to move the cursor, and press {OK} to select a character.'],
+  characterSelect: ['Use the directions to move the cursor, and press {OK} to select a character.'],
   firstCharacterStart: [
-    'Each character controls just like they do in their own games. Use LEFT and RIGHT to move, and press {JUMP} to jump and {ATTACK} to attack. Hold {ATTACK} to run with Mario and Luigi.',
+    'Each character controls just like they do in their own games. Use the directions to move, and press {JUMP} to jump and {ATTACK} to attack. Hold {ATTACK} to run with Mario and Luigi.',
     'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
     'Note that Mario and Luigi are the only characters that can jump on enemies. For some characters, you can press {SPECIAL} for an alternate attack and {TOOLS} to change weapons.',
     'You can pause the game by pressing {MENU}. In the pause menu, you can change several options.',
