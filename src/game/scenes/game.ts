@@ -33,6 +33,7 @@ import {
   clearClassicResume,
   loadClassicResume,
   resumeOf,
+  resumeSetOf,
   saveClassicResume,
   type ClassicResume,
 } from '../run-resume';
@@ -132,6 +133,7 @@ import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
+import { savedRunRestores } from './original-saves';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -575,6 +577,9 @@ export class Game {
    */
   private sayHero: string | null = null;
 
+  /** Said at the start of the next lives card's line, then cleared (Continue's, owner decision). */
+  private sayFirst: string | null = null;
+
   /** Single random: a random hero, to be named on the next lives card. */
   private singleRandomHero(): CharacterDef {
     const c = this.randomHero();
@@ -891,8 +896,8 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    // G-008: a Classic run that reaches the credits is over; its resume slot goes.
-    if (this.keepsResume) clearClassicResume();
+    // G-008: a Classic run that reaches the credits is over; its set's resume slot goes.
+    if (this.keepsResume) this.dropResume(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -2103,6 +2108,8 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic && dev;
     this.linkRun = classic && link;
+    // Per-set saves: a new run; its first WORLD card writes its set's slot.
+    this.resumeSet = null;
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
     // a hero the select does not offer now plays as its first slot's hero.
     if (classic) character = this.restoreSlotHero(character);
@@ -2154,6 +2161,8 @@ export class Game {
     this.classicDev = false;
     this.linkRun = false;
     this.survival = null;
+    this.resumeSet = null;
+    this.sayFirst = null;
   }
 
   /**
@@ -2190,6 +2199,9 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
+    // A run the Level Select cheat took to another set writes that set's slot from here on; the
+    // set it left keeps its save as its last WORLD card wrote it (release review of #191).
+    this.resumeSet = resumeSetOf(levelId);
     saveClassicResume(r);
   }
 
@@ -2201,9 +2213,21 @@ export class Game {
     return this.devMode ? r.rules : 'classic';
   }
 
-  /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
-  classicResume(): ClassicResume | null {
-    const r = loadClassicResume();
+  /** Per-set saves: the map set whose slot the Classic run writes (its last WORLD card's). */
+  private resumeSet: MapSetId | null = null;
+
+  /** G-008: clears the run's set's slot (the set of `levelId` when no WORLD card set it yet). */
+  private dropResume(levelId: string | null): void {
+    const set = this.resumeSet ?? (levelId ? resumeSetOf(levelId) : null);
+    if (set) clearClassicResume(set);
+  }
+
+  /**
+   * G-008, per-set saves: the Classic run kept in map set `set`'s slot (without `set`, the latest
+   * of them), or null when there is none or it no longer plays (its hero or level is gone).
+   */
+  classicResume(set?: MapSetId): ClassicResume | null {
+    const r = loadClassicResume(set);
     if (!r) return null;
     const hero = this.rosterFor(this.resumeRules(r)).find((c) => c.id === r.hero);
     try {
@@ -2219,9 +2243,9 @@ export class Game {
    * level it was in, with its lives, score, coins, hero, power and kit, under its own rules, on
    * its own Map Difficulty and Game mode (RC-002).
    */
-  resumeClassic(): boolean {
+  resumeClassic(set?: MapSetId): boolean {
     this.classicTutorials.clearQueue();
-    const r = this.classicResume();
+    const r = this.classicResume(set);
     const rules = r ? this.resumeRules(r) : 'classic';
     const hero = r ? this.rosterFor(rules).find((c) => c.id === r.hero) : undefined;
     if (!r || !hero) return false;
@@ -2249,6 +2273,7 @@ export class Game {
     this.classicRun = true;
     this.classicDev = false;
     this.linkRun = false;
+    this.resumeSet = resumeSetOf(r.levelId);
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
@@ -2286,7 +2311,11 @@ export class Game {
     this.quickRespawn = false;
     this.backupDue = null;
     this.pendingLevel = null;
-    this.deps.announcer?.say('Continue.');
+    // Continue says what it restored (owner decision): "Continue. Survival, Hard." whenever the
+    // slot carries them (just "Continue." for an older one), as the start of the WORLD card's line
+    // that follows, so a screen reader hears it rather than having it replaced in the same frame.
+    const restores = savedRunRestores(r);
+    this.sayFirst = restores ? `Continue. ${restores}.` : 'Continue.';
     this.goToLevel(r.levelId, { mode: 'stand' });
     return true;
   }
@@ -2312,15 +2341,16 @@ export class Game {
 
   /**
    * The CLASSIC menu (every map set, MAP_SETS; Options; Back), coming back to it from a run or a
-   * select: a box over the CLASSIC title's demo, with the title's Start box under it (O-04).
+   * select: a box over the CLASSIC title's demo, with the title's Start box under it (O-04); on
+   * map set `focus`'s row (Back from that set's select), else the first.
    */
-  showClassicMenu(): void {
+  showClassicMenu(focus?: MapSetId): void {
     this.endClassicRun();
     this.runRules = 'current';
     const title = new ClassicTitleScene(this, 'start', true);
     this.leaveClassicTitle();
     this.scenes.push(title);
-    this.scenes.push(new ClassicMenuScene(this, title, false));
+    this.scenes.push(new ClassicMenuScene(this, title, false, focus));
   }
 
   /**
@@ -2597,8 +2627,10 @@ export class Game {
     if (this.keepsResume) this.keepResume(levelId);
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
+    const first = this.sayFirst ? `${this.sayFirst} ` : '';
+    this.sayFirst = null;
     this.deps.announcer?.say(
-      `${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
+      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
@@ -2819,7 +2851,7 @@ export class Game {
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
     // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
-    if (this.keepsResume) clearClassicResume();
+    if (this.keepsResume) this.dropResume(levelId);
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives

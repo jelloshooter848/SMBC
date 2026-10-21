@@ -532,13 +532,15 @@ describe("the words are the original's, changed only where our rules or our game
    */
   const DEVIATIONS: Readonly<Record<string, readonly string[]>> = {
     // p3: "Mario and Luigi are the only characters..." (false only with Yoshi in the select);
-    // p4: "you can save or load a game and change several options" (no save or load there).
+    // p4: "you can save or load a game and change several options" (no save or load there);
+    // p5: the owner removed "See the Exploding Rabbit website for info on setting that up. If you
+    // have questions about the game, feel free to ask them in the Super Mario Bros. Crossover forum."
     firstCharacterStart: [
       'Each character controls just like they do in their own games. Use the directions to move, and press <K> to jump and <K> to attack. Hold <K> to run with Mario and Luigi.',
       'Some skins control a bit differently than the base character. The descriptions for the differences can be seen on the skin selection menu.',
       'Note that Mario and Luigi are the only characters that can jump on enemies. For some characters, you can press <K> for an alternate attack and <K> to change weapons.',
       'You can pause the game by pressing <K>. In the pause menu, you can change several options. If the game runs slowly, try changing music consoles or turn the music off.',
-      'Also, playing with a gamepad is highly recommended. See the Exploding Rabbit website for info on setting that up. If you have questions about the game, feel free to ask them in the Super Mario Bros. Crossover forum.',
+      'Also, playing with a gamepad is highly recommended.',
     ],
     // "Press SEL or SPC to cycle through weapons when you have them."
     bassStart: [

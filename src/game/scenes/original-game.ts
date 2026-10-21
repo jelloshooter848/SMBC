@@ -23,7 +23,7 @@ import {
   rowsOriginal,
 } from './original-options';
 import type { Game } from './game';
-import { worldLabel } from '../hud/world-label';
+import { openClassicSet, savedRunSpoken } from './original-saves';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { ClassicTitleScene } from './original-title';
@@ -243,10 +243,17 @@ export class ClassicMenuScene extends MenuScene {
     game: Game,
     readonly over: ClassicTitleScene | null = null,
     grow = over !== null,
+    focus?: MapSetId,
   ) {
     super(game, 'CLASSIC', [], () => this.leave(), over !== null);
     this.boxAt = grow ? 0 : null;
     this.build();
+    // Back from a set's select: on that set's row again.
+    if (focus)
+      this.index = Math.max(
+        0,
+        MAP_SETS.findIndex((m) => m.id === focus),
+      );
   }
 
   /** BACK: the Start box under it, or the CLASSIC title. */
@@ -258,28 +265,24 @@ export class ClassicMenuScene extends MenuScene {
   /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
   private build(): void {
     const game = this.game;
-    const back = () => game.showClassicMenu();
     // A run that will not play as the original says so (FU-7: never silently non-original).
     const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
     // the hint, drawn as BEATEN at the row's end (render).
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
     const items: MenuItem[] = [];
-    // G-008: the run kept in the resume slot, from the level it was in (the map sets follow it).
-    const kept = game.classicResume();
-    this.firstSetRow = kept ? 1 : 0;
-    if (kept)
-      items.push({
-        label: 'Continue',
-        select: () => void game.resumeClassic(),
-        hint: `Your last run, from the start of ${kept.levelId.startsWith('ll-') ? 'Lost Levels ' : ''}World ${worldLabel(kept.world)}-${kept.stage} with ${kept.lives} ${kept.lives === 1 ? 'life' : 'lives'}`,
-      });
+    // Per-set saves (O-07, G-008): each set keeps its own run; picking a set that has one asks
+    // CONTINUE / NEW GAME (original-saves.ts), one with none starts a new game as before.
     items.push(
-      ...MAP_SETS.map((set) => ({
-        label: set.label,
-        select: () => game.classicSelect(set.start, back),
-        hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${own}`,
-      })),
+      ...MAP_SETS.map((set) => {
+        const kept = game.classicResume(set.id);
+        const saved = kept ? `. Saved run: ${savedRunSpoken(kept)}` : '';
+        return {
+          label: set.label,
+          select: () => openClassicSet(game, set, { back: () => game.showClassicMenu(set.id) }),
+          hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${saved}${own}`,
+        };
+      }),
     );
     // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
     // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
@@ -312,10 +315,13 @@ export class ClassicMenuScene extends MenuScene {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 
+  /** Back from a set's CONTINUE / NEW GAME prompt: the highlighted row again. */
+  reannounce(): void {
+    this.announce();
+  }
+
   /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
   private beaten: boolean[] = [];
-  /** The menu row of the first map set (1 under the Continue row, G-008). */
-  private firstSetRow = 0;
 
   /**
    * Over the CLASSIC title (O-04): the rows in a box over the demo (each value and BEATEN at the
@@ -325,7 +331,7 @@ export class ClassicMenuScene extends MenuScene {
     const game = this.game;
     const calm = game.ctx.reduceFlashing;
     const rows: BoxRow[] = this.items.map((it, i) => {
-      const set = i - this.firstSetRow;
+      const set = i;
       const value = it.value?.();
       return {
         label: it.label,
@@ -369,7 +375,7 @@ export class ClassicMenuScene extends MenuScene {
           font,
           BEATEN_MARK,
           MENU_VALUE_RIGHT - BEATEN_MARK.length * 8,
-          CLASSIC_RULES_Y + (i + this.firstSetRow) * MENU_ROW_H,
+          CLASSIC_RULES_Y + i * MENU_ROW_H,
         );
     });
   }

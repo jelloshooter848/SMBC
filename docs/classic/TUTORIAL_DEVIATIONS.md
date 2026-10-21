@@ -11,8 +11,7 @@ exactly what the original had, except
   stray space after "Hover:");
 - **(c)** a sentence that is false in our game changes by the least, checked against our kit code.
 
-Kept as in the original, for the owner to decide: the gamepad page's Exploding Rabbit website and
-Super Mario Bros. Crossover forum sentences, and "If the game runs slowly, try changing music
+Kept as in the original, for the owner to decide: "If the game runs slowly, try changing music
 consoles or turn the music off."
 
 `tests/sim/classic-tutorials.test.ts` holds the original's words for every box and fails if any
@@ -36,6 +35,16 @@ box differs from them other than by (a), (b) or a deviation listed here.
 | simonStart             | "Press SPC or UP and ATK to use subweapons if you have enough ammo."                                                                            | "Press AXE (his sub-weapon's button) to use subweapons…"                                                                            | Only SPECIAL throws his sub-weapon (`characters/simon/classic.ts:333`, `:457`).                                                                                                              |
 | sophiaStart            | "Sophia can use special weapons with SPC or DWN and ATK when you have them. Press SEL to switch between them."                                  | "Sophia can use special weapons with MISSILE when you have them."                                                                   | SPECIAL fires the missile and DOWN and ATTACK does not (`characters/sophia/classic.ts:189`). She owns one missile in Classic play (`:127`), so there is nothing to switch (`:183`).          |
 | sophiaHomingMissile    | "Press SPC or DWN and ATK to fire a homing missile when enemies are on screen. If you have multiple weapons, press SEL to switch between them." | "Press HOMING to fire a homing missile."                                                                                            | SPECIAL only (`characters/sophia/classic.ts:189`). It fires with no enemy on screen too (`:88-110`). One missile only (`:127`).                                                              |
+
+## Removed by owner decision
+
+The first start's last page (`firstCharacterStart` p5, the gamepad page) keeps only its first
+sentence, "Also, playing with a gamepad is highly recommended." The owner removed the two that
+point outside the game:
+
+- "See the Exploding Rabbit website for info on setting that up."
+- "If you have questions about the game, feel free to ask them in the Super Mario Bros. Crossover
+  forum."
 
 Boxes kept word for word that were questioned:
 

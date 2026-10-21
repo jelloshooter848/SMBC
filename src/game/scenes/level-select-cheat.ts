@@ -3,6 +3,7 @@ import { MenuScene } from './menu';
 import { LevelScene } from './level';
 import type { Game } from './game';
 import { MAP_SETS, mapDifficultyItem, mapSetOf, type MapSet } from './original-game';
+import { ClassicOverwriteScene } from './original-saves';
 
 /*
  * The Level Select cheat (G-007): the original's 17th cheat (Cheats.as:47), unlocked by beating
@@ -112,7 +113,34 @@ export class LevelSelectScene extends MenuScene {
     const game = this.game;
     const target = levelSelectTarget(game, this.set, this.world, this.level);
     const difficulty = this.classic ? this.difficulty : 'normal';
-    game.classicLevelSelect(target, difficulty);
+    const go = () => game.classicLevelSelect(target, difficulty);
+    // Per-set saves: Go asks first (Cancel focused) whenever it would overwrite a saved run: from
+    // the menus (a new run), and in a run (the pause menu) going to another set that has its own
+    // (the run writes that set's slot from then on; the set it leaves keeps its save). In a run
+    // within its own set, the run just goes on.
+    const here = game.classicRun
+      ? (game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined)
+      : undefined;
+    const sameSet = here !== undefined && mapSetOf(here.world.level.id).id === this.set.id;
+    const kept = sameSet ? null : game.classicResume(this.set.id);
+    if (!kept) return go();
+    game.scenes.push(
+      new ClassicOverwriteScene(
+        game,
+        this.set,
+        kept,
+        () => {
+          game.scenes.pop();
+          go();
+        },
+        () => {
+          game.scenes.pop();
+          this.announce();
+        },
+        null,
+        here !== undefined,
+      ),
+    );
   }
 
   override enter(): void {

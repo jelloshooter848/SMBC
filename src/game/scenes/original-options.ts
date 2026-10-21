@@ -118,7 +118,8 @@ const WHEN_HIT_HINTS: Record<string, string> = {
 };
 
 /** The Game Mode value names, fuller than a row has room for in the menu (spoken in hints). */
-const GAME_MODE_NAMES: Record<string, string> = {
+/** Game mode names as menus show and read them. */
+export const GAME_MODE_NAMES: Record<string, string> = {
   all: 'All heroes',
   survival: 'Survival',
   single: 'Single hero',

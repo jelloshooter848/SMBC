@@ -81,6 +81,16 @@ under `## [Unreleased]`.
   with a squash, dust, flying chips, a short shake and the stamp's thud, and stays in its place.
   Any press finishes it, and that press still opens the Start box. With Reduce flashing it is
   simply in place, and coming back from a run or a menu it never plays again.
+- Classic mode: **one save per map set**. Super Mario Bros., SMB Special and The Lost Levels each
+  keep their own run, written at each WORLD card as before. Picking a set that has one asks
+  **CONTINUE / NEW GAME**; NEW GAME warns first that the set's saved run will be overwritten, with
+  Cancel picked. A set with no save starts a new game as before, and the CLASSIC menu no longer has
+  its own Continue row. The Level Select cheat asks the same before it would overwrite another
+  saved run, from the menus or from a run's pause. When a run's Level Select takes it into another
+  set, the set it leaves keeps its save as it was, and the run saves into the new set from then on.
+  A run saved by an earlier version moves into its set's save.
+- Classic mode: **Continue says what it restores**: the run's game mode and Map Difficulty are read
+  out as it resumes ("Continue. Survival, Hard."), for every save that keeps them.
 
 ### Fixed
 

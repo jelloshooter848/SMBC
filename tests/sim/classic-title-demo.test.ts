@@ -498,7 +498,9 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
         const menu = h.top() as ClassicMenuScene;
         const status = (menu as unknown as { status: string }).status;
         if (status) seen.status++;
-        if (labels(menu)[0] === 'Continue') seen.continue++;
+        // Per-set saves (B-G): no Continue row; the saved run's set says so in its hint.
+        if ((menu as unknown as { items: { hint?: string }[] }).items[0]?.hint?.includes('Saved run'))
+          seen.continue++;
         const y = lineYs(h);
         // The box's last row (BACK) is above the lines under the box.
         expect(y.lastRow).toBeDefined();
@@ -514,7 +516,7 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
         }
       }
     }
-    // Both cases were drawn: the Campaign-rules status line (dev mode) and the Continue row.
+    // Both cases were drawn: the Campaign-rules status line (dev mode) and a saved run.
     expect(seen.status).toBeGreaterThan(0);
     expect(seen.continue).toBeGreaterThan(0);
   });
