@@ -304,7 +304,7 @@ function boot(): void {
     // roster for them (the Classic extras too). `&mode=classic` (dev mode only): a Classic mode
     // run, as the dev Level select's Mode row (its rules: `rules=`, else Options' Classic rules).
     const classic = start === 'classic';
-    const rules = urlRules(params, settings.dev) ?? (classic ? settings.classicRules : 'current');
+    const rules = urlRules(params, settings.dev) ?? (classic ? game.classicRules : 'current');
     // `&yoshi=1|ride` (dev mode only): the Classic Yoshi mount for this session (YM-1).
     game.yoshiUrl = urlYoshi(params, settings.dev);
     const roster = game.rosterFor(rules);

@@ -18,6 +18,8 @@ import {
   CLASSIC_EXTRAS,
   CLASSIC_SLOTS,
   EXPANSION_HEROES,
+  expansionReleased,
+  RELEASED_EXPANSION_HEROES,
   heroFor,
   isSkin,
   skinHost,
@@ -597,7 +599,7 @@ export class Game {
   slotsFor(rules: Rules): CharacterDef[] {
     const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
-    const ids = [...CLASSIC_SLOTS, ...(this.expansionHeroes ? EXPANSION_HEROES : [])];
+    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter((id) => this.expansionHeroOffered(id))];
     const slots: CharacterDef[] = [];
     for (const id of ids) {
       const def = roster.find((c) => c.id === id && !isSkin(c));
@@ -616,9 +618,29 @@ export class Game {
    */
   private classicFlow = false;
 
-  /** Options > Expansion heroes is on (the heroes the original never had are offered). */
+  /**
+   * Options > Expansion heroes is on and in force (the heroes the original never had are offered).
+   * O-12: outside developer mode only once a hero is released (RELEASED_EXPANSION_HEROES), so a
+   * setting saved by an earlier version is ignored, never rewritten.
+   */
   get expansionHeroes(): boolean {
-    return this.deps.settings?.classic.expansion === 'on';
+    return this.expansionRowShown && this.deps.settings?.classic.expansion === 'on';
+  }
+
+  /** O-12: the Options > Expansion heroes row shows (developer mode, or a hero released). */
+  get expansionRowShown(): boolean {
+    return this.devMode || RELEASED_EXPANSION_HEROES.length > 0;
+  }
+
+  /**
+   * O-12: the one place that decides whether Expansion hero `id` gets a select slot (so the
+   * select, Random, Survival, Disable heroes and the guides): with the option in force, a released
+   * hero; in developer mode every one (the Dev menu's toggles can still leave one out, rosterFor).
+   * O-06's dev Release / On / Off overrides belong here.
+   */
+  expansionHeroOffered(id: string): boolean {
+    if (!this.expansionHeroes) return false;
+    return this.devMode || expansionReleased(id);
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -1984,9 +2006,13 @@ export class Game {
     );
   }
 
-  /** The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). */
+  /**
+   * The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). O-12:
+   * that row is developer mode's only; outside it a Classic run always plays Classic rules (a
+   * saved 'current' is ignored, never rewritten). Every read of the setting goes through here.
+   */
   get classicRules(): Rules {
-    return this.deps.settings?.classicRules ?? 'classic';
+    return this.devMode ? (this.deps.settings?.classicRules ?? 'classic') : 'classic';
   }
 
   private startRun(
@@ -2092,11 +2118,19 @@ export class Game {
     saveClassicResume(r);
   }
 
+  /**
+   * The rules a kept run goes on under: its own in developer mode; outside it Classic rules, the
+   * only ones a release Classic run plays (O-12: a slot saved under Current rules too).
+   */
+  private resumeRules(r: ClassicResume): Rules {
+    return this.devMode ? r.rules : 'classic';
+  }
+
   /** G-008: the Classic run kept in the resume slot, or null (CLASSIC > Continue). */
   classicResume(): ClassicResume | null {
     const r = loadClassicResume();
     if (!r) return null;
-    const hero = this.rosterFor(r.rules).find((c) => c.id === r.hero);
+    const hero = this.rosterFor(this.resumeRules(r)).find((c) => c.id === r.hero);
     try {
       this.deps.getLevel(r.levelId);
     } catch {
@@ -2112,7 +2146,8 @@ export class Game {
    */
   resumeClassic(): boolean {
     const r = this.classicResume();
-    const hero = r ? this.rosterFor(r.rules).find((c) => c.id === r.hero) : undefined;
+    const rules = r ? this.resumeRules(r) : 'classic';
+    const hero = r ? this.rosterFor(rules).find((c) => c.id === r.hero) : undefined;
     if (!r || !hero) return false;
     const settings = this.deps.settings;
     // RC-002: the run's Map Difficulty (a slot from before it was kept: the menu's, as it shows).
@@ -2125,7 +2160,7 @@ export class Game {
     }
     this.tutorialRun = null;
     this.campaign = null;
-    this.runRules = r.rules;
+    this.runRules = rules;
     this.classicRun = true;
     this.classicDev = false;
     this.linkRun = false;
@@ -2140,16 +2175,20 @@ export class Game {
     s.lives = r.lives;
     s.world = r.world;
     s.stage = r.stage;
-    s.powerState = r.powerState;
-    s.hp = r.hp;
-    s.kit = { ...r.kit };
+    // O-12: a run kept under Current rules goes on under Classic rules outside developer mode,
+    // with its level, lives, score and coins; its power and kit (Current's) start afresh.
+    if (rules === r.rules) {
+      s.powerState = r.powerState;
+      s.hp = r.hp;
+      s.kit = { ...r.kit };
+    }
     s.warped = r.warped;
     s.checkpoint = r.checkpoint;
     this.survival = null;
     if (r.survival && this.survivalMode) {
       const sv = this.newSurvival();
       // A fallen look is its slot's hero (an older run kept Peach by her own id: Luigi's slot).
-      const roster = this.rosterFor(r.rules);
+      const roster = this.rosterFor(rules);
       const fallen = r.survival.fallen.map((id) => {
         const d = roster.find((c) => c.id === id);
         return d ? this.slotOf(d).id : id;

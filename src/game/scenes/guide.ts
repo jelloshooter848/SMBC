@@ -68,7 +68,7 @@ export class GuideIndexScene extends MenuScene {
   constructor(game: Game, onBack: () => void, classic = false) {
     super(game, 'HOW TO PLAY', [], onBack);
     const fromMenu = classic && !game.classicRun && game.campaign === null;
-    const rules = fromMenu ? (game.deps.settings?.classicRules ?? 'classic') : game.liveRules;
+    const rules = fromMenu ? game.classicRules : game.liveRules;
     const heroes = fromMenu ? game.slotsFor(rules) : game.classicRun ? game.heroSlots : game.roster;
     this.setItems([
       ...heroes

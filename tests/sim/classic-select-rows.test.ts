@@ -14,7 +14,12 @@ isolateClassicRegistry();
 const idx = (s: CharacterSelectScene) => (s as unknown as { index: number }).index;
 
 function classicSelect(classicRules: 'classic' | 'current' = 'classic') {
-  const settings = { ...defaultSettings(), classicRules };
+  // O-12: Classic rules set to Current is developer mode's.
+  const settings = {
+    ...defaultSettings(),
+    classicRules,
+    ...(classicRules === 'current' ? { dev: true } : {}),
+  };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   h.game.classicSelect('1-1', () => h.game.showClassicMenu());
   const sel = h.top() as CharacterSelectScene;

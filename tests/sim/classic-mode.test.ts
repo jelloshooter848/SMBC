@@ -230,7 +230,8 @@ describe('the title and the CLASSIC menu', () => {
   });
 
   it('Options: Classic rules (Classic SMBC / Current), saved in settings, then every other option', () => {
-    const h = classic();
+    // O-12: the Classic rules and Expansion heroes rows are developer mode's.
+    const h = classic({ dev: true });
     toClassicMenu(h);
     pick(h, 'Options');
     const opts = h.top() as ClassicOptionsScene;
@@ -342,7 +343,8 @@ describe('a Classic run', () => {
   );
 
   it('plays Current rules when Options says so', () => {
-    const h = classic({ classicRules: 'current' });
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.runRules).toBe('current');
     expect(h.game.classicRun).toBe(true);
@@ -759,7 +761,8 @@ describe('the select screen: Classic extras on a second row', () => {
     toClassicMenu(h);
     pick(h, 'The Lost Levels');
     expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
-    const c = classic({ classicRules: 'current' });
+    // O-12: Classic rules set to Current is developer mode's.
+    const c = classic({ classicRules: 'current', dev: true });
     toClassicMenu(c);
     pick(c, 'Super Mario Bros.');
     expect((c.top() as CharacterSelectScene).chars).not.toContain(EXTRA);
@@ -812,7 +815,8 @@ describe('the select screen: Classic extras on a second row', () => {
   });
 
   it('Classic rules Current: the registry, in one row', () => {
-    const h = classic({ classicRules: 'current' });
+    // O-12: Classic rules set to Current is developer mode's.
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars).toBe(CHARACTERS);
