@@ -992,6 +992,13 @@ export class Game {
   }
 
   showTitle(): void {
+    this.leaveRun();
+    this.scenes.clear();
+    this.scenes.push(new TitleScene(this));
+  }
+
+  /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */
+  private leaveRun(): void {
     this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
@@ -1009,8 +1016,6 @@ export class Game {
     this.devAllHeroes = false;
     this.bonus = newBonusState();
     this.town = null;
-    this.scenes.clear();
-    this.scenes.push(new TitleScene(this));
   }
 
   /**
@@ -2169,8 +2174,11 @@ export class Game {
 
   /** O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written). */
   quitClassicRun(): void {
-    this.showTitle();
-    this.showClassicMenu();
+    this.leaveRun();
+    this.scenes.clear();
+    this.scenes.push(new ClassicMenuScene(this));
+    // The menus' music, as on the way in from the title.
+    this.deps.ctx.audio.playMusic('title');
   }
 
   showClassicMenu(): void {
