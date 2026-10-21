@@ -200,7 +200,7 @@ export function classicOptionsOn(game: Game): boolean {
 
 /** The Tutorials row's spoken help (O-15 / G-042). */
 export const TUTORIALS_HINT =
-  'On: a box explains the select, the controls, each hero and each upgrade the first time in a game';
+  'On: boxes explain the select, the controls, each hero and each upgrade, once per game';
 
 /**
  * The Tutorials row (O-15 / G-042; the original's General > Tutorials, GeneralOptions.as 25): Off
