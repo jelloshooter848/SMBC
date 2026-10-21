@@ -17,6 +17,8 @@ under `## [Unreleased]`.
 - Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy as in
   SMB1, higher while JUMP is held (BUG-07). This deliberately departs from the original, which
   bounces the same either way, by owner decision.
+- Classic mode: a saved run's power-ups are checked when it loads. A hero no select offers, or a
+  power that hero cannot have, starts at that hero's default.
 
 ### Fixed
 
