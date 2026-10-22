@@ -12,6 +12,7 @@ import type { Game } from './game';
 import { GuideIndexScene } from './guide';
 import { homeScreenItems } from '../pwa/home-screen';
 import { SaveFilesOptions } from './save-codes';
+import { AboutScene } from './about';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -66,6 +67,12 @@ export class OptionsScene extends MenuScene {
               hint: 'Play the levels you made in the level editor',
             },
             { label: 'Level editor', select: () => game.openEditor() },
+            // 0.4.72 (owner, title option A): the version and the credits left the title for here.
+            {
+              label: 'About',
+              select: () => this.push(new AboutScene(game, () => this.pop())),
+              hint: 'Version and credits',
+            },
           ]),
       { label: 'Back', select: onBack },
     ]);

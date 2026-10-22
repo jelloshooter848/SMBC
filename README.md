@@ -364,8 +364,8 @@ The live site updates only when a version is released. Versions follow SemVer (p
 bump for new content or a save-format change, a patch for fixes), every pull request notes its
 user-facing changes in a fragment in [changes/](changes/README.md) that the release stamps into
 [CHANGELOG.md](CHANGELOG.md), and pushing a tag `vX.Y.Z` builds, deploys
-and publishes the GitHub Release. The title screen shows `V0.2.0` on a release and
-`V0.2.0-DEV.<commit>` on any other build. See [docs/RELEASING.md](docs/RELEASING.md) for the
+and publishes the GitHub Release. Options > About shows `VERSION 0.2.0` on a release and
+`VERSION 0.2.0-DEV.<commit>` on any other build. See [docs/RELEASING.md](docs/RELEASING.md) for the
 rules and the release steps. What's planned next, and ideas kept for later, are in
 [docs/ROADMAP.md](docs/ROADMAP.md).
 

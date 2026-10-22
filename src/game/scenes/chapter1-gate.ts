@@ -12,7 +12,10 @@ import type { Game } from './game';
  * mode on everything opens as before.
  */
 
-/** The box's bottom edge: clear of the title's version line (y 228). */
+/**
+ * The box's bottom edge: clear of the title's bottom line (y 228; the version line until 0.4.72,
+ * now on Options > About, where "DEV MODE UNLOCKED" flashes).
+ */
 export const CARD_BOTTOM = 222;
 
 /** The card the title's Campaign row shows (at most 28 chars a line; O-02, O-03). */

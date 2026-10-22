@@ -129,39 +129,25 @@ describe('title hero row', () => {
 });
 
 describe('title text', () => {
-  it('shows the menu, credits and the build version', () => {
+  it('shows the menu only: the credits and the version are on Options > About (0.4.72)', () => {
     const h = makeGame();
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
     const t = texts(h.game.scenes.top as TitleScene).map((x) => x.str);
+    for (const s of ['CLASSIC', 'CAMPAIGN', 'OPTIONS']) expect(t).toContain(s);
     for (const s of [
-      'CLASSIC',
-      'CAMPAIGN',
-      'OPTIONS',
       'MADE BY JELLOSHOOTER848',
       'BASED ON SUPER MARIO BROS.',
       'CROSSOVER BY EXPLODING RABBIT',
     ])
-      expect(t).toContain(s);
+      expect(t).not.toContain(s);
     expect(t).not.toContain('UNOFFICIAL FAN PROJECT');
     expect(t).not.toContain('PRE-RELEASE'); // 0.5.0, G-104
     expect(t).not.toContain('DEV MODE');
     const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
     const version = `V${__APP_VERSION__}`.toUpperCase();
     expect(version.startsWith(`V${pkg.version}`)).toBe(true);
-    expect(t).toContain(version);
-  });
-
-  it('puts the build version bottom right, with no PRE-RELEASE footer (0.5.0, G-104)', () => {
-    const h = makeGame();
-    h.game.showTitle();
-    h.idle(TITLE_TIMING.dropEnd + 10);
-    const all = texts(h.game.scenes.top as TitleScene);
-    // Shadowed text draws twice (shadow first): the last draw is the text itself.
-    const v = `V${__APP_VERSION__}`.toUpperCase();
-    const version = all.filter((x) => x.str === v).at(-1);
-    expect(version).toMatchObject({ x: 252 - (v.length * 8 - 1), y: 228 });
-    expect(all.some((x) => x.str === 'PRE-RELEASE')).toBe(false);
+    expect(t).not.toContain(version);
   });
 
   it('announces the screen and the highlighted entry', () => {
@@ -365,10 +351,10 @@ describe('the title speaker: sound on / off without a menu (0.4.35)', () => {
     expect(h.said.at(-1)).toBe('Sound on.');
   });
 
-  it('the speaker shows in the corner with its key; a tap or click on it toggles', () => {
+  it('the speaker shows in the corner (no key label since 0.4.72); a tap or click on it toggles', () => {
     const h = withSettings();
     const t = texts(h.title).map((x) => x.str);
-    expect(t).toContain('(RIGHT SHIFT)');
+    expect(t).not.toContain('(RIGHT SHIFT)');
     const box = h.title.speakerBox;
     expect(box.x + box.w).toBeLessThanOrEqual(256);
     expect(box.y).toBeLessThan(24);

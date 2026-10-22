@@ -2,7 +2,7 @@
 
 The live site on GitHub Pages changes only when a version is released. Each release has a tag
 (`v0.2.0`), a section in [CHANGELOG.md](../CHANGELOG.md), a GitHub Release with those notes and a
-zipped build, and the same version on the title screen, so a tester's report always names a build
+zipped build, and the same version on Options > About, so a tester's report always names a build
 anyone can find again.
 
 ## Version numbers
@@ -215,12 +215,13 @@ Players keep their progress across releases:
 
 ## The version in the game
 
-The title screen shows the build at the bottom right (`__APP_VERSION__`, set in `vite.config.ts`):
+Options > About (from the title screen) shows the build as `VERSION ...` (`__APP_VERSION__`, set
+in `vite.config.ts`):
 
 - a release build (built with `RELEASE_TAG=vX.Y.Z`, or from a commit that carries the tag
-  `vX.Y.Z` matching `package.json`) shows **`V0.2.0`**;
-- any other build (`pnpm dev`, CI, a branch) shows **`V0.2.0-DEV.<commit>`**, where the version is
+  `vX.Y.Z` matching `package.json`) shows **`VERSION 0.2.0`**;
+- any other build (`pnpm dev`, CI, a branch) shows **`VERSION 0.2.0-DEV.<commit>`**, where the version is
   the last one set in `package.json`, so the build is newer than that release;
-- without git it shows `V0.2.0-DEV`.
+- without git it shows `VERSION 0.2.0-DEV`.
 
 Bug reports quote this string (see [bug-reports/README.md](../bug-reports/README.md)).

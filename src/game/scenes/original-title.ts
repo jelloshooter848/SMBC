@@ -10,7 +10,7 @@ import type { MenuItem } from './menu';
 import { abilityHint, controlScheme } from './hints';
 import { menuTouchLabels } from '../touch-labels';
 import { ClassicDemo, MARIO_WAIT } from './title-demo';
-import { boxCentreUnderLogo, boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
+import { boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
 import { joinMusic, TITLE_MUSIC } from './title-music';
 
@@ -54,6 +54,16 @@ export const SMASH = { drop: 16, squash: 4, shake: 10, end: 44 } as const;
  * 92 x 44 at 160, 54).
  */
 export const CLASSIC_AT = { x: 79, y: 62 } as const;
+/** CLASSIC's height (the 'classic' frame, 173 x 29). */
+const CLASSIC_H = 29;
+/** The demo's ground (1-1's row 13, as the REMIX title's TITLE_GROUND_Y). */
+const GROUND_Y = 208;
+/**
+ * 0.4.72 (owner, Start box option A): the Start box's centre y, half way between CLASSIC's foot
+ * and the ground, so the demo's heroes and ground stay in view. The map set box and the boxes
+ * after it keep their place under the logo (menu-box.ts BOX_TOP).
+ */
+export const START_BOX_CY = Math.round((CLASSIC_AT.y + CLASSIC_H + GROUND_Y) / 2);
 /** Where it starts its fall (above the screen). */
 const CLASSIC_FROM_Y = -32;
 /** The stamp's chips: start (screen px, on the stamp) and speed (px a frame); they fall with gravity. */
@@ -155,8 +165,13 @@ export class ClassicTitleScene implements Scene {
     if (this.fromRemix && this.smashing) {
       audio.fadeOutMusic?.(TITLE_MUSIC.fallOut);
       this.overworldDue = true;
-    } else if (this.fromRemix) joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
-    else audio.playMusic('overworld');
+    } else if (this.fromRemix) {
+      joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
+      this.overworldAsked = true;
+    } else {
+      audio.playMusic('overworld');
+      this.overworldAsked = true;
+    }
     if (this.quiet) return;
     if (this.phase === 'start') this.announce(true);
     else this.sayDemo();
@@ -172,11 +187,19 @@ export class ClassicTitleScene implements Scene {
   private readonly fromRemix: boolean;
   /** The overworld waits for CLASSIC's impact (BUG-12). */
   private overworldDue = false;
+  /**
+   * The overworld has been asked for (0.4.72): BACK before the smash's impact leaves the REMIX
+   * theme playing, and the way back (title.ts) only brings it up again.
+   */
+  overworldAsked = false;
+  /** BACK came while CLASSIC was still falling: it never landed on the stamp (0.4.72). */
+  backBeforeImpact = false;
 
   /** The impact (or the smash cut short by a press): the overworld rises, the smash its downbeat. */
   private startOverworld(): void {
     if (!this.overworldDue) return;
     this.overworldDue = false;
+    this.overworldAsked = true;
     this.game.ctx.audio.playMusic('overworld', TITLE_MUSIC.impactIn);
   }
 
@@ -269,8 +292,12 @@ export class ClassicTitleScene implements Scene {
         this.game.ctx.audio.sfx('stamp');
       }
       // Any press finishes it, and still does what it does (OK still opens the Start box). BACK
-      // before the impact: no overworld at all, the REMIX theme just comes back up (BUG-12).
-      if (input.pressed('attack') || input.pressed('select')) this.overworldDue = false;
+      // before the impact: no overworld at all, the REMIX theme just comes back up (BUG-12), and
+      // CLASSIC never landed (0.4.72: the REMIX title then skips its break, title.ts).
+      if (input.pressed('attack') || input.pressed('select')) {
+        if (this.smashPhase() === 'drop') this.backBeforeImpact = true;
+        this.overworldDue = false;
+      }
       if (this.t >= SMASH.end || this.tapped || Actions.some((a) => input.pressed(a))) this.finishSmash();
     }
     if (this.phase === 'demo') {
@@ -393,7 +420,7 @@ export class ClassicTitleScene implements Scene {
       const rows: BoxRow[] = this.items.map((it) => ({ label: it.label }));
       drawMenuBox(r, this.game.ctx.assets, rows, this.index, {
         cx: BOX_CX,
-        cy: boxCentreUnderLogo(rows),
+        cy: START_BOX_CY,
         grow: boxGrowth(this.t - this.boxAt, this.game.ctx.reduceFlashing),
         t: this.t,
         calm: this.game.ctx.reduceFlashing,

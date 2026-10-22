@@ -3,8 +3,7 @@ import { PALETTES, SPRITES } from '@content/sprites';
 import { AssetRegistry } from '@engine/assets/registry';
 import { DEFAULT_ASSIST } from '@game/context';
 import { defaultSettings } from '@engine/save/settings';
-import { MUSIC_FADE_IN_S } from '@engine/audio/audio-manager';
-import { TitleScene } from '@game/scenes/title';
+import { BACK, TitleScene } from '@game/scenes/title';
 import { ClassicTitleScene, SMASH } from '@game/scenes/original-title';
 import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
 import { TITLE_MUSIC } from '@game/scenes/title-music';
@@ -139,24 +138,25 @@ describe('BUG-12 REMIX to CLASSIC with Reduce flashing (no smash)', () => {
 });
 
 describe('BUG-12 CLASSIC to REMIX (Back)', () => {
-  it('the overworld fades out over 0.4 s, then the theme rises with its usual fade-in', () => {
+  // 0.4.72 (owner, back transition option A) replaced BUG-12's fade-out and fade-in here: the
+  // overworld is cut under CLASSIC's shatter, and the theme comes in on the stamp's slam from
+  // bar 3 (tests/sim/title-back.test.ts has the rest).
+  it('the overworld is cut under the shatter; the theme comes in on the slam, from its loop point', () => {
     const s = setup();
     s.classic();
+    s.sfx.mockClear();
     s.h.tap('attack'); // BACK on the demo
     const title = s.h.top() as TitleScene;
     expect(title).toBeInstanceOf(TitleScene);
-    expect(s.fade().calls.at(-1)).toBe(`ramp 0@${s.now() + TITLE_MUSIC.backOut}`);
-    vi.advanceTimersByTime(TITLE_MUSIC.backOut * 1000 - 10);
+    expect(s.fade().calls.at(-1)).toBe(`ramp 0@${s.now() + TITLE_MUSIC.shatterOut}`);
+    s.h.idle(BACK.slam - 2);
     expect(s.current()).toBe('overworld');
-    vi.advanceTimersByTime(10);
-    expect(s.current()).toBe('title');
-    expect(s.fade().calls.slice(-2)).toEqual([`set 0@${s.now()}`, `ramp 1@${s.now() + MUSIC_FADE_IN_S}`]);
-    // The drop waits for the fade-out, so its stamp still lands on the theme's fanfare.
-    s.sfx.mockClear();
-    s.h.idle(TITLE_TIMING.dropStamp);
     expect(s.sfx).not.toHaveBeenCalledWith('stamp');
-    s.h.idle(Math.round(TITLE_MUSIC.backOut * 60) + 1);
+    s.h.idle(1);
+    expect(s.current()).toBe('title');
     expect(s.sfx).toHaveBeenCalledWith('stamp');
+    expect(s.plays.mock.calls.at(-1)?.[2]).toBe(true);
+    expect(s.fade().calls.at(-1)).toBe(`set 1@${s.now()}`);
   });
 
   it('pressing through the fade-out never leaves the music silent or two songs going', () => {
@@ -183,6 +183,7 @@ describe('BUG-12 CLASSIC to REMIX (Back)', () => {
     expect(s.apu().musicGain.gain.value).toBe(0.8);
     expect(s.apu().master.gain.value).toBeCloseTo(0.3);
     vi.advanceTimersByTime(1000);
+    s.h.idle(BACK.slam); // 0.4.72: the theme comes in on the stamp's slam
     expect(s.current()).toBe('title');
     expect(s.apu().musicGain.gain.value).toBe(0.8);
   });

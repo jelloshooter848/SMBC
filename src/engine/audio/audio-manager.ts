@@ -17,8 +17,11 @@ export interface AudioSink {
    * Play a looping song. `fadeIn` (seconds, BUG-12): it rises from silence through the music fade
    * (as fadeOutMusic's, so volume and mute are untouched); the same song already playing rises
    * back from where it is, never restarted. Without it the song starts at full level.
+   * `fromLoop` (0.4.72): a new song starts at its loop point (`L`), skipping its intro (the REMIX
+   * theme's fanfare on the way back from CLASSIC). A song from an asset pack's audio file, or one
+   * with no loop point, starts at its beginning.
    */
-  playMusic(id: string, fadeIn?: number): void;
+  playMusic(id: string, fadeIn?: number, fromLoop?: boolean): void;
   stopMusic(): void;
   /**
    * Fade the music out to silence over `seconds` (the world map's page changes). The next
@@ -355,7 +358,7 @@ export class AudioManager implements AudioSink {
     this.musicMap = map;
   }
 
-  playMusic(asked: string, fadeIn = 0): void {
+  playMusic(asked: string, fadeIn = 0, fromLoop = false): void {
     this.cancelCrossfade();
     const id = this.musicMap ? this.musicMap(asked) : asked;
     if (id === null) return this.stopMusic();
@@ -377,7 +380,7 @@ export class AudioManager implements AudioSink {
     if (!s) return;
     this.seq.onEnd = null;
     this.seq.tempoScale = this.tempoScale;
-    this.seq.play(s);
+    this.seq.play(s, undefined, fromLoop);
   }
 
   stopMusic(): void {
