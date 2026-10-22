@@ -12,7 +12,7 @@ import {
 } from '@content/sprites/title-logo';
 import { fxPalette } from '@content/sprites/palette-fx';
 import { MenuScene, type MenuItem } from './menu';
-import { abilityHint, boundKey, controlScheme } from './hints';
+import { abilityHint, controlScheme } from './hints';
 import { OptionsScene } from './options';
 import { FileSelectScene } from './file-select';
 import { showChapter1Gate } from './chapter1-gate';
@@ -35,8 +35,6 @@ import {
 import { joinMusic, TITLE_MUSIC } from './title-music';
 
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
-const MADE = 'MADE BY JELLOSHOOTER848';
-const BASED = ['BASED ON SUPER MARIO BROS.', 'CROSSOVER BY EXPLODING RABBIT'];
 
 /** Where the logo pieces rest. */
 const CROSS_X = 17;
@@ -47,13 +45,16 @@ const STAMP_X = 160;
 /** The stamp frame's top (its right end is lifted by the shear). */
 const STAMP_Y = 54;
 const MENU_X = 80;
-const MENU_Y = 96;
-const MENU_STEP = 12;
 /**
- * Five rows (Dev mode on): the block moves up a little and left, clear of the stamp, so its last
- * row stays above the credits with the usual row step.
+ * 0.4.72 (owner, title option A): with the credits gone to Options > About, the menu sits in the
+ * middle of the sky between the stamp and the heroes.
  */
-const MENU_FIVE = { x: 64, y: 86 } as const;
+export const MENU_Y = 118;
+const MENU_STEP = 12;
+/** Five rows: the block moves up a little and left, so its last row stays clear of the heroes. */
+const MENU_FIVE = { x: 64, y: 106 } as const;
+/** "DEV MODE UNLOCKED" flashes here (on the ground, where the version was), clear of the menu. */
+const UNLOCKED_Y = 228;
 /** The rift's centre on screen (where letters and heroes fly out from). */
 const RIFT_CX = 128;
 const RIFT_CY = 50;
@@ -123,7 +124,6 @@ export class TitleScene extends MenuScene {
   private clock = 0;
   /** Frame of the stamp's landing on the current timeline. */
   private stampAt: number;
-  private readonly version = `V${__APP_VERSION__}`.toUpperCase();
 
   constructor(
     game: Game,
@@ -255,8 +255,8 @@ export class TitleScene extends MenuScene {
     this.game.deps.announcer?.say(
       [
         `${TITLE_NAME}.`,
+        // The credit stays in what is said (the version is on Options > About, 0.4.72).
         'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit.',
-        `Version ${__APP_VERSION__}.`,
         this.phase === 'rift' ? 'Press any button to skip the intro.' : '',
         this.game.deps.settings?.audio
           ? `Sound ${this.muted ? 'off' : 'on'}. ${controlScheme(this.game) === 'touch' ? 'SOUND' : abilityHint(this.game, 'SOUND', 'select')} ${this.muted ? 'turns it on' : 'mutes it'}.`
@@ -333,7 +333,10 @@ export class TitleScene extends MenuScene {
     this.unbindGate = null;
   }
 
-  /** The speaker icon and, with keys or a pad, its key under it ("(RIGHT SHIFT)"). */
+  /**
+   * The speaker icon. 0.4.72 (owner): no key label beside it any more; SELECT still toggles it and
+   * the title still says which key does (sayTitle).
+   */
   private speaker(r: Renderer, dy: number): void {
     const b = SPEAKER;
     const x = b.x;
@@ -362,12 +365,6 @@ export class TitleScene extends MenuScene {
         if (cx === 12 && (this.t >> 5) % 2 === 1 && !this.calm) continue;
         r.rect(x + cx, y + cy, 1, h, '#fcfcfc');
       }
-    }
-    const key = boundKey(this.game, 'select');
-    if (key) {
-      const s = `(${key})`;
-      // Beside the icon on its row, so the two read as one control: "(RIGHT SHIFT) [speaker]".
-      this.text(r, s, b.x - 3 - s.length * 8, b.y + 2 + dy, undefined, true);
     }
   }
 
@@ -692,7 +689,6 @@ export class TitleScene extends MenuScene {
   }
 
   private menu(r: Renderer, dy: number): void {
-    // Five rows (with Dev mode) close up so the last stays clear of the credits below.
     const five = this.items.length > 4;
     const x = five ? MENU_FIVE.x : MENU_X;
     const top = five ? MENU_FIVE.y : MENU_Y;
@@ -703,15 +699,10 @@ export class TitleScene extends MenuScene {
     });
   }
 
-  private credits(r: Renderer, dy: number): void {
-    // "DEV MODE UNLOCKED" flashes in the credit line's place, clear of the menu's five rows.
-    const unlocked = this.unlockedFlash > 0 && (this.calm || (this.unlockedFlash >> 3) % 2 === 0);
-    this.ctext(r, unlocked ? 'DEV MODE UNLOCKED' : MADE, 148 + dy, 'gold', true);
-    this.ctext(r, BASED[0] as string, 160 + dy);
-    this.ctext(r, BASED[1] as string, 169 + dy);
-    // The build version, bottom right (0.5.0, G-104: no PRE-RELEASE footer beside it any more).
-    const v = this.version;
-    this.text(r, v, 252 - (v.length * 8 - 1), 228 + dy, undefined, true);
+  /** "DEV MODE UNLOCKED", flashing for a moment after the code (steady with Reduce flashing). */
+  private unlockedLine(r: Renderer, dy: number): void {
+    const on = this.unlockedFlash > 0 && (this.calm || (this.unlockedFlash >> 3) % 2 === 0);
+    if (on) this.ctext(r, 'DEV MODE UNLOCKED', UNLOCKED_Y + dy, 'gold', true);
   }
 
   override render(r: Renderer): void {
@@ -743,10 +734,10 @@ export class TitleScene extends MenuScene {
     this.logo(r, dy);
     if (this.phase === 'rift' && t < T.fadeFrom) {
       if (this.boltFlash()) r.rect(0, 0, 256, 240, '#fcfcfc');
-      return; // the menu and credits appear with the field
+      return; // the menu appears with the field
     }
     this.menu(r, dy);
-    this.credits(r, dy);
+    this.unlockedLine(r, dy);
     this.speaker(r, dy);
   }
 }
