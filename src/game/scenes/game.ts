@@ -154,7 +154,6 @@ import {
   openClearedFile,
   ReplayDeathScene,
   showReplayLevels,
-  storageNote,
   type ReplayRun,
 } from './original-replay';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
@@ -2907,11 +2906,6 @@ export class Game {
   /** Puts liveAssists into play (main.ts; nothing in the sims without the hook). */
   applyAssists(): void {
     this.deps.applyAssists?.();
-  }
-
-  /** v0.4.74 (item 69): the file box opened while storage cannot be read: the box saying so. */
-  showStorageUnreadable(files: ClassicFilesScene): void {
-    this.scenes.push(storageNote(this, files));
   }
 
   /**

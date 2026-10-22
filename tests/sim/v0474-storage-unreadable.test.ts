@@ -10,7 +10,6 @@ import {
 import type { ClassicResume } from '@game/run-resume';
 import type { MenuItem } from '@game/scenes/menu';
 import { ClassicFilesScene, UNREADABLE_STORAGE_LINE } from '@game/scenes/original-files-menu';
-import { ClassicNoteScene } from '@game/scenes/original-replay';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { draw, store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';
@@ -18,9 +17,10 @@ import { classic, openFiles, readNote } from './cleared-nav';
 
 // v0.4.74 item 69 (owner-approved; rule 33a: written before the fix). When storage reads throw
 // (getItem throws) but writes still work, every file read as empty: the file box showed NEW
-// GAME on used files, and a new game there wrote over the real file. Now the file box says
-// "SAVES CAN'T BE READ RIGHT NOW" in a Classic box (read out, waiting for OK), and refuses new
-// games and erases until reads work again. Nothing is written over a file it cannot read.
+// GAME on used files, and a new game there wrote over the real file. Now the file box itself
+// says "SAVES CAN'T BE READ RIGHT NOW" (on its line, and read out as it opens; it still opens,
+// as classic-set-box-count.test.ts asks), and refuses new games and erases until reads work
+// again. Nothing is written over a file it cannot read.
 
 useStorage();
 afterEach(() => store.clear());
@@ -70,22 +70,17 @@ function openBroken(h: ReturnType<typeof classic>): ClassicFilesScene {
 }
 
 describe('69: reads throw, writes work', () => {
-  it('the file box opens with the Classic box, read out, waiting for OK; no file shows NEW GAME', () => {
+  it('the file box says so (shown and read out); no file shows NEW GAME', () => {
     saveClassicFile({ ...F1, rules: originalFileRules(), continues: 0, run: run() });
     const before = store.get(classicFileKey(F1));
     const h = classic();
     breakReads();
     h.game.showClassicMenu();
     choose(h, 'Super Mario Bros.');
-    expect(h.top()).toBeInstanceOf(ClassicNoteScene);
-    const note = h.top() as ClassicNoteScene;
-    expect(note.lines.join(' ')).toMatch(/SAVES CAN'T BE READ RIGHT NOW/);
-    expect(h.said.join(' ')).toMatch(/Saves can't be read right now/i);
-    h.idle(900);
-    expect(h.top()).toBe(note);
-    readNote(h);
     expect(h.top()).toBeInstanceOf(ClassicFilesScene);
     const box = h.top() as ClassicFilesScene;
+    expect(h.said.at(-1)).toMatch(/Saves can't be read right now/i);
+    expect(h.said.at(-1)).toMatch(/kept/i);
     const values = items(box)
       .slice(0, 3)
       .map((i) => i.value?.());
@@ -155,13 +150,12 @@ describe('69: reads throw, writes work', () => {
     expect(screen(box)).not.toContain(UNREADABLE_STORAGE_LINE);
   });
 
-  it('BACK on the box goes back to the file box (still refusing)', () => {
+  it('BACK on the box goes back to the set box', () => {
     const h = classic();
     breakReads();
     openBroken(h);
-    expect(h.top()).toBeInstanceOf(ClassicNoteScene);
-    h.idle(40);
+    h.idle(10);
     h.tap('attack');
-    expect(h.top()).toBeInstanceOf(ClassicFilesScene);
+    expect(h.top()).not.toBeInstanceOf(ClassicFilesScene);
   });
 });

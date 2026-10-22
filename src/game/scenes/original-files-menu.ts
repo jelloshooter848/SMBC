@@ -209,6 +209,7 @@ export const WAITING_LINE = 'A GAME IS WAITING FOR A FILE';
 /** v0.4.74 (item 69): storage cannot be read now, said and shown (at most 31 columns). */
 export const STORAGE_UNREADABLE = "Saves can't be read right now";
 export const UNREADABLE_STORAGE_LINE = "SAVES CAN'T BE READ RIGHT NOW";
+const STORAGE_KEPT = 'Your files are kept as they are. New games and erasing wait until they can be read';
 
 /** "File 2" */
 const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
@@ -455,10 +456,15 @@ export class ClassicFilesScene extends ClassicBox {
     this.setItems(items);
   }
 
-  /** Item 69: opened while storage cannot be read: the Classic box saying so, over this one. */
+  /**
+   * Item 69: opened while storage cannot be read, this box is the one that says so: on the line
+   * under it (UNREADABLE_STORAGE_LINE), and read out as it opens.
+   */
   override enter(): void {
     if (this.blocked) {
-      this.game.showStorageUnreadable(this);
+      this.game.deps.announcer?.say(
+        `${this.spokenTitle}. ${STORAGE_UNREADABLE}. ${STORAGE_KEPT}. ${this.spoken()}`,
+      );
       return;
     }
     super.enter();
@@ -543,13 +549,7 @@ export class ClassicFilesScene extends ClassicBox {
    */
   eraseFile(slot: ClassicFileSlot): void {
     // Item 69: what cannot be read is never erased (a refusal, said as one).
-    if (!storageReadable()) {
-      closeTo(this.game, this);
-      this.refresh();
-      this.game.ctx.audio.sfx('bump');
-      this.game.deps.announcer?.say(`${STORAGE_UNREADABLE}. ${fileName(slot)} is kept as it is.`);
-      return;
-    }
+    if (!storageReadable()) return this.erased(slot, false);
     const ref: ClassicFileRef = { set: this.set.id, slot };
     eraseClassicFile(ref);
     // #205: storage that cannot be read confirms nothing: that is a failed erase too.

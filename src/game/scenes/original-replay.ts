@@ -232,22 +232,6 @@ export function clearedNote(
   });
 }
 
-/**
- * v0.4.74 (item 69): the file box opened while storage cannot be read (getItem throws): a Classic
- * box saying so, read out, waiting for OK (or BACK); the box under it refuses new games and
- * erases until reads work again.
- */
-export function storageNote(game: Game, files: ClassicFilesScene): ClassicNoteScene {
-  return new ClassicNoteScene(
-    game,
-    [
-      "Saves can't be read right now.",
-      'Your files are kept as they are. New games and erasing wait until they can be read.',
-    ],
-    { under: files, lead: files.set.label.replace(/\.$/, ''), onDone: () => files.comeBack() },
-  );
-}
-
 /** v0.4.74 (item 60): the unlock, said after the credits with the cleared message. */
 export const ADVANCED_UNLOCKED = (slot: number) =>
   `Beating it on Hard unlocked ADVANCED CHEATS for File ${slot} only!`;
