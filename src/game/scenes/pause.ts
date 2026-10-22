@@ -35,14 +35,18 @@ export class PauseScene extends MenuScene {
   private rebuild(): void {
     const game = this.game;
     const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
+    this.entryTitle = null;
     // A Classic mode run: the original's short pause, plus every developer row while dev mode is on.
     if (game.classicRun && !game.playtestDone) {
+      // 38f: it opens saying its name, then the focused row ("Paused. Continue").
+      this.entryTitle = 'Paused';
       items.push(...this.reserveItem());
       // The hero's own How to play page, as the run's rules play it (G-093).
       items.push(...this.guideItems());
       items.push({
         label: 'Options',
-        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true, true)),
+        // 38f review: BACK says the pause's focused row again.
+        select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
       // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
       if (game.deps.settings?.classicCheats.levelSelect)
@@ -86,7 +90,8 @@ export class PauseScene extends MenuScene {
       // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
       items.push({
         label: 'Quit',
-        select: () => confirmQuitRun(game, 'Paused.'),
+        // 38f: NO says "Paused." and the focused row (Quit), as the pause opens.
+        select: () => confirmQuitRun(game, null),
         // G-008, B-L: the run's file holds this level's start, only when the run has one
         // (Game.keepsResume: not a developer, link or practice run).
         hint: game.keepsResume

@@ -2360,6 +2360,7 @@ export class Game {
     this.classicKits = {};
     // B-L: the run's file and rules go with it.
     this.classicFile = null;
+    this.playedFile = null;
     this.runFileRules = null;
     this.fileContinues = 0;
     this.practiceRun = false;
@@ -2451,8 +2452,25 @@ export class Game {
     // 36a: a run with no file (a practice run from the menus' Level Select): the set of the level
     // it is playing (its main level's, for a sub-area), else of the level its select was for.
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
-    const id = scene ? (scene.level.parent ?? scene.level.id) : this.selectLevel;
+    // 38d: with no level on the stack (MAIN MENU after a game over), the level the run last
+    // played: a `?level=` link run has no select level, and it played its link's set.
+    const id = scene ? (scene.level.parent ?? scene.level.id) : (this.runLevel ?? this.selectLevel);
     return id ? mapSetOf(id).id : undefined;
+  }
+
+  /** 38d: the main level of the last level any run went to (goToLevel), for runSet. */
+  private runLevel: string | null = null;
+
+  /**
+   * 38e: the file of the Classic run that was just left for the CLASSIC menu (Quit, or MAIN MENU
+   * after its game over); any other way out of a run (the title) forgets it.
+   */
+  private playedFile: ClassicFileRef | null = null;
+
+  /** 38e: the slot of set `set` the last Classic run played in, for its file box's focus. */
+  playedSlot(set: MapSetId): ClassicFileSlot | undefined {
+    const f = this.classicFile ?? this.playedFile;
+    return f?.set === set ? f.slot : undefined;
   }
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
@@ -2691,9 +2709,11 @@ export class Game {
    */
   quitClassicRun(): void {
     const set = this.runSet;
+    const played = this.classicFile;
     this.leaveRun();
     this.scenes.clear();
     this.showClassicMenu(set);
+    this.playedFile = played;
   }
 
   /**
@@ -2702,7 +2722,10 @@ export class Game {
    * map set `focus`'s row (Back from that set's select), else the first.
    */
   showClassicMenu(focus?: MapSetId): void {
+    // 38e: leaving a run for the CLASSIC menu, its set's file box opens on the file it played.
+    const played = this.classicFile;
     this.endClassicRun();
+    this.playedFile = played;
     this.runRules = 'current';
     const title = new ClassicTitleScene(this, 'start', true);
     this.leaveClassicTitle();
@@ -2987,6 +3010,7 @@ export class Game {
       this.scenes.push(new MessageScene(this, lines, () => this.showTitle()));
       return;
     }
+    this.runLevel = level.parent ?? level.id;
     // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
     // with their scripted watch-mode start, whatever start the caller asked for; so does an area
     // beamed down into (a teleport pad's arrival, the 3-1 space station).

@@ -9,7 +9,7 @@ import { FONT_COLOURS, type FontColour } from '@content/sprites/font';
 import { APP_ICON, APP_ICON_COLOURS } from '@content/sprites/app-icon';
 import { CardScene, cardContinues, CARD_GUARD_FRAMES } from '../scenes/message';
 import { abilityHint } from '../scenes/hints';
-import type { MenuItem } from '../scenes/menu';
+import type { MenuItem, MenuScene } from '../scenes/menu';
 import type { Game } from '../scenes/game';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 
@@ -199,12 +199,19 @@ export function updateNoticeDue(game: Game): boolean {
   return !!hs && !updateLater.has(game) && hs.updateReady();
 }
 
+/** 38f: a title notice closes: the title says its name and focused row (it was covered whole). */
+function closeToTitle(game: Game): void {
+  game.scenes.pop();
+  const top = game.scenes.top as Partial<MenuScene> | undefined;
+  top?.announcePage?.();
+}
+
 /** The title is ready: its notices, one at a time (true: a card is up). */
 export function titleNotice(game: Game): boolean {
   if (offlineNoticeDue(game)) {
     const close = () => {
       setFlag(game, 'offlineDone');
-      game.scenes.pop();
+      closeToTitle(game);
     };
     if (game.campaignOpen) card(game, OFFLINE_NOTICE_LINES, OFFLINE_NOTICE_SAID, close, { top: true });
     else card(game, OFFLINE_NOTICE_CLOSED_LINES, OFFLINE_NOTICE_CLOSED_SAID, close, { top: true });
@@ -213,7 +220,7 @@ export function titleNotice(game: Game): boolean {
   if (standaloneNoticeDue(game)) {
     const close = () => {
       setFlag(game, 'noticeDone');
-      game.scenes.pop();
+      closeToTitle(game);
     };
     if (game.campaignOpen) card(game, STANDALONE_NOTICE_LINES, STANDALONE_NOTICE_SAID, close, { top: true });
     else card(game, STANDALONE_NOTICE_CLOSED_LINES, STANDALONE_NOTICE_CLOSED_SAID, close, { top: true });
@@ -230,7 +237,8 @@ export function titleNotice(game: Game): boolean {
         game.deps.announcer?.say('Updating.');
         game.deps.homeScreen?.applyUpdate();
       },
-      { top: true, onBack: () => game.scenes.pop() },
+      // 38f review: BACK (later) says the title and its focused row, as the other notes do.
+      { top: true, onBack: () => closeToTitle(game) },
     );
     return true;
   }

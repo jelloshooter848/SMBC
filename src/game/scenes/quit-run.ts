@@ -78,17 +78,20 @@ export class QuitRunScene extends MenuScene {
 }
 
 /**
- * Opens the card over the current scene. NO (or BACK) closes it, saying so; YES leaves the run
- * for the CLASSIC menu.
+ * Opens the card over the current scene. NO (or BACK) closes it, saying `back`; with `back` null
+ * (38f), the menu under it says its title and focused row (MenuScene.announcePage). YES leaves
+ * the run for the CLASSIC menu.
  */
-export function confirmQuitRun(game: Game, back = 'Back to the game.'): void {
+export function confirmQuitRun(game: Game, back: string | null = 'Back to the game.'): void {
   game.ctx.audio.sfx('pause');
   game.scenes.push(
     new QuitRunScene(
       game,
       () => {
         game.scenes.pop();
-        game.deps.announcer?.say(back);
+        const top = game.scenes.top;
+        if (back !== null) game.deps.announcer?.say(back);
+        else if (top instanceof MenuScene) top.announcePage();
       },
       () => game.quitClassicRun(),
     ),

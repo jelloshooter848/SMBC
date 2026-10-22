@@ -61,7 +61,7 @@ export class DevMenuScene extends MenuScene {
         },
         hint: 'Hides developer mode until the code is entered again',
       },
-      { label: 'Back', select: () => game.scenes.pop() },
+      { label: 'Back', select: () => backToMenu(game) },
     ]);
   }
 
