@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { changeNotes } from '../release/change-notes';
 import { getLevel, levelIds, specialLevelIds } from '@content/levels';
 import { px } from '@engine/math/units';
 import { loadProgress } from '@engine/save/progress';
@@ -359,8 +359,8 @@ describe('G-020: All Hammer Bros comes from beating Special only (StatManager.as
   });
 
   it('the CHANGELOG says so', () => {
-    // Any section: the line moves from [Unreleased] into a dated section when a release is stamped.
-    const log = readFileSync(new URL('../../CHANGELOG.md', import.meta.url), 'utf8');
+    // Any section or fragment: a note in changes/ moves into a dated section when a release is stamped.
+    const log = changeNotes();
     const entry = log.split(/\n(?=- )/).find((item) => /All Hammer Bros/.test(item));
     expect(entry).toMatch(/Special/);
   });

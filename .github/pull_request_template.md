@@ -7,4 +7,4 @@
 <!-- Commands run, levels or screens checked, browsers and devices. -->
 
 - [ ] `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
-- [ ] CHANGELOG.md updated under [Unreleased] (or not user-facing)
+- [ ] A change note added in `changes/<slug>.md` (see changes/README.md; never edit CHANGELOG.md), or not user-facing

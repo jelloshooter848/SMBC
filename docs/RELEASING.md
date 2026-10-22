@@ -26,20 +26,31 @@ kept untouched. After 1.0.0 the usual SemVer rules apply (major for breaking cha
 
 [CHANGELOG.md](../CHANGELOG.md) follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/):
 
-- Every pull request with a user-facing change adds a line under `## [Unreleased]`, in the right
-  group: `### Added`, `### Changed`, `### Fixed` or `### Removed` (create the group if it is
-  missing). Write for players: what changed, not which files. Internal-only changes (tests,
-  tooling, refactors) need no entry. The pull request template has a checkbox for this.
-- `## [Unreleased]` always exists, even when empty.
-- A release renames the Unreleased entries to `## [x.y.z] - YYYY-MM-DD` (the release date) and
-  starts a new empty `## [Unreleased]` above it.
+- Every pull request with a user-facing change adds a **fragment**, a new file
+  `changes/<slug>.md`, instead of editing CHANGELOG.md (since v0.4.71). Its first line is the
+  group, `### Added`, `### Changed`, `### Fixed` or `### Removed`, followed by `- ` bullets
+  ([changes/README.md](../changes/README.md) has the format). Write for players: what changed,
+  not which files. Internal-only changes (tests, tooling, refactors) need no entry. The pull
+  request template has a checkbox for this. New files never conflict, so pull requests built
+  side by side merge in any order.
+- `## [Unreleased]` always exists and stays empty: only the release stamp writes into
+  CHANGELOG.md.
+- A release (`pnpm changelog:stamp`) turns the fragments into `## [x.y.z] - YYYY-MM-DD` (the
+  release date) under `## [Unreleased]`, with the groups in Keep a Changelog order (Added,
+  Changed, Removed, Fixed) and the bullets of a group ordered by fragment file name, then
+  deletes the fragments.
 - The link footers at the bottom compare tags: `[Unreleased]` compares the newest tag with `HEAD`,
-  and each version links to its release (or compares it with the previous tag).
+  and each version links to its release (or compares it with the previous tag). The stamp
+  updates them.
+
+`pnpm changelog:preview` prints the next release's section as the fragments stand.
 
 `pnpm release:check` (run by CI on every push and pull request) checks that `package.json` has a
-valid SemVer version and that CHANGELOG.md has `## [Unreleased]`. With `--tag vX.Y.Z` it also
-checks that the tag is `v` + the `package.json` version and that a dated `## [X.Y.Z]` section
-exists; `--notes` prints that section, which becomes the GitHub Release notes:
+valid SemVer version, that CHANGELOG.md has an empty `## [Unreleased]` (a pull request that adds
+lines there fails: use a fragment) and that every fragment in `changes/` is well formed. With
+`--tag vX.Y.Z` it instead checks that the tag is `v` + the `package.json` version and that a
+dated `## [X.Y.Z]` section exists; `--notes` prints that section, which becomes the GitHub
+Release notes:
 
 ```sh
 pnpm release:check
@@ -48,15 +59,21 @@ pnpm -s release:check --tag v0.2.0 --notes
 
 ## Releasing a version
 
-1. Open a pull request named **Release vX.Y.Z** that only:
-   - sets `"version": "X.Y.Z"` in `package.json`;
-   - in CHANGELOG.md, turns `## [Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD`, adds a new empty
-     `## [Unreleased]` above it, and updates the footers:
-     ```
-     [Unreleased]: https://github.com/jelloshooter848/SMBC/compare/vX.Y.Z...HEAD
-     [X.Y.Z]: https://github.com/jelloshooter848/SMBC/compare/vPREVIOUS...vX.Y.Z
-     ```
-   - passes `pnpm release:check --tag vX.Y.Z` locally.
+1. Open a pull request named **Release vX.Y.Z** made by the stamp, and nothing else:
+   ```sh
+   pnpm changelog:stamp X.Y.Z YYYY-MM-DD --dry-run   # print the new section, write nothing
+   pnpm changelog:stamp X.Y.Z YYYY-MM-DD
+   pnpm release:check --tag vX.Y.Z
+   ```
+   The stamp sets `"version": "X.Y.Z"` in `package.json`, writes the fragments into a new
+   `## [X.Y.Z] - YYYY-MM-DD` section under the empty `## [Unreleased]`, deletes them, and
+   updates the footers:
+   ```
+   [Unreleased]: https://github.com/jelloshooter848/SMBC/compare/vX.Y.Z...HEAD
+   [X.Y.Z]: https://github.com/jelloshooter848/SMBC/compare/vPREVIOUS...vX.Y.Z
+   ```
+   It refuses when there are no fragments, a fragment is malformed, `## [Unreleased]` has text,
+   or the version already has a section.
 2. Merge it into `main`. Nothing deploys yet.
 3. Tag the merge commit and push the tag:
    ```sh
@@ -170,15 +187,18 @@ redeploy the newest tag by hand afterwards.
 
 A release candidate is a normal release with a `-rc.N` suffix:
 
-1. A **Release vX.Y.Z-rc.N** pull request sets `package.json` to `X.Y.Z-rc.N` and moves the
-   Unreleased entries into `## [X.Y.Z-rc.N] - YYYY-MM-DD`.
+1. A **Release vX.Y.Z-rc.N** pull request runs `pnpm changelog:stamp X.Y.Z-rc.N YYYY-MM-DD`,
+   which sets `package.json` to `X.Y.Z-rc.N` and moves the fragments into
+   `## [X.Y.Z-rc.N] - YYYY-MM-DD`.
 2. Merge, then tag and push `vX.Y.Z-rc.N`.
 3. The workflow marks the GitHub Release as a **pre-release** (any tag with a `-`). Note that it
    still deploys the live site, which then shows `VX.Y.Z-RC.N`.
 
 When the final version ships, its `## [X.Y.Z]` section lists everything since the previous final
 release (the rc entries plus anything newer), so its notes stand alone; the rc sections stay
-below it as history.
+below it as history. The rc stamp already deleted the rc's fragments, so after
+`pnpm changelog:stamp X.Y.Z` (which writes only the newer ones) copy the rc sections' bullets
+into the new section by hand, in their groups.
 
 ## Save and settings compatibility
 

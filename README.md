@@ -324,7 +324,8 @@ pnpm typecheck
 pnpm build        # static site in dist/
 pnpm check:levels # parse every bundled .map and check level landmarks
 pnpm check:assets # refuse binary art/audio in the repo
-pnpm release:check # package.json version and CHANGELOG.md format (docs/RELEASING.md)
+pnpm release:check # package.json version, CHANGELOG.md format and changes/ fragments (docs/RELEASING.md)
+pnpm changelog:preview # the next release's changelog section, from changes/*.md
 node tools/smoke/screenshot.mjs out/   # headless Playwright smoke run with screenshots
 ```
 
@@ -361,7 +362,8 @@ Only the normal-difficulty layer is used; the generated `.map` files are committ
 
 The live site updates only when a version is released. Versions follow SemVer (pre-1.0: a minor
 bump for new content or a save-format change, a patch for fixes), every pull request notes its
-user-facing changes in [CHANGELOG.md](CHANGELOG.md), and pushing a tag `vX.Y.Z` builds, deploys
+user-facing changes in a fragment in [changes/](changes/README.md) that the release stamps into
+[CHANGELOG.md](CHANGELOG.md), and pushing a tag `vX.Y.Z` builds, deploys
 and publishes the GitHub Release. The title screen shows `V0.2.0` on a release and
 `V0.2.0-DEV.<commit>` on any other build. See [docs/RELEASING.md](docs/RELEASING.md) for the
 rules and the release steps. What's planned next, and ideas kept for later, are in
