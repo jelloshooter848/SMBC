@@ -14,6 +14,8 @@ under `## [Unreleased]`.
   power and items, as the earlier entry said, instead of keeping that hero's saved power.
 - Classic mode: quitting a run, or MAIN MENU after its game over, comes back to the CLASSIC menu
   on that run's own map set (Special, Lost Levels), not on Super Mario Bros.
+- Classic: leaving the Cheats page's code entry with BACK plays the original's bump, not the menu
+  blip.
 
 ## [0.4.69] - 2026-10-22
 

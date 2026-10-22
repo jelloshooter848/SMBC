@@ -171,8 +171,9 @@ export class CheatsScene extends MenuScene {
     if (!pressed.length) return;
     // Select (BACK) leaves the code entry, back to the menu (the code's B and A are Attack, Jump).
     if (pressed.includes('select')) {
+      // The original's way out of the code (cancelCodeInput) plays the bump (SFX_GAME_HIT_CEILING).
       this.endCode();
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx('bump');
       this.game.deps.announcer?.say('Back. Enter code.');
       return;
     }
