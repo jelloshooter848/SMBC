@@ -431,7 +431,7 @@ export class ClassicFilesScene extends ClassicBox {
     const ref: ClassicFileRef = { set: this.set.id, slot };
     const diff = new ClassicDifficultyScene(this.game, ref, draft, this);
     this.game.scenes.push(diff);
-    if (atRules) diff.openRules(true);
+    if (atRules) diff.openRules();
   }
 
   /** Per file: anything stored there (used, or unreadable), so ERASE FILE can empty it. */
@@ -537,9 +537,9 @@ export class ClassicDifficultyScene extends ClassicBox {
     this.index = Math.max(0, MAP_DIFFICULTIES.indexOf(draft.difficulty));
   }
 
-  /** The file's rules box, over this one; `atStart`: on its START (back from the hero select). */
-  openRules(atStart = false): void {
-    this.game.scenes.push(new ClassicFileRulesScene(this.game, this.ref, this.draft, this, atStart));
+  /** The file's rules box, over this one, on its START (item 53; also back from the hero select). */
+  openRules(): void {
+    this.game.scenes.push(new ClassicFileRulesScene(this.game, this.ref, this.draft, this));
   }
 }
 
@@ -556,7 +556,6 @@ export class ClassicFileRulesScene extends ClassicBox {
     readonly ref: ClassicFileRef,
     readonly draft: ClassicFileRules,
     readonly below: ClassicDifficultyScene,
-    atStart = false,
   ) {
     super(game, `File ${ref.slot} rules`, () => {
       closeTo(game, below);
@@ -564,12 +563,13 @@ export class ClassicFileRulesScene extends ClassicBox {
     });
     this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts. Left and right to change`;
     this.refresh();
-    // 38c: back from the new game's hero select, on START again (the row that opened it).
-    if (atStart)
-      this.index = Math.max(
-        0,
-        this.items.findIndex((i) => i.label === 'Start'),
-      );
+    // v0.4.74 item 53 (owner): the box opens on START, so a file with the original's rules starts
+    // at once; the settings are above it (UP). 38c: back from the new game's hero select it is on
+    // START again too.
+    this.index = Math.max(
+      0,
+      this.items.findIndex((i) => i.label === 'Start'),
+    );
   }
 
   private get options(): OptionStore {

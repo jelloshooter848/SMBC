@@ -277,6 +277,10 @@ export class Game {
    * other start (endClassicRun, startRun, resumes, play-tests, shared levels).
    */
   private devFreePlay = false;
+  /** A dev START page free play start is playing (v0.4.74 item 61: its hero is any hero). */
+  get devFreePlaying(): boolean {
+    return this.devFreePlay;
+  }
   /**
    * 0.4.72 (owner item 6): the dev START page's Mount for this start: 'ride' starts every area
    * riding Yoshi (the mount on, as the Dev menu's Ride); 'none' starts without him (a Ride toggle
@@ -742,6 +746,21 @@ export class Game {
     });
   }
 
+  /**
+   * v0.4.74 item 61 (owner): the dev START page's Hero row offers every hero there is under
+   * `rules`, released or not, whatever Dev > Toggle heroes says (Toggle heroes is for Classic and
+   * campaign play only). The heroes in the select's order (slotsFor), on devRosterFor.
+   */
+  devAllSlotsFor(rules: Rules): CharacterDef[] {
+    return this.slotsFor(rules, () => true, this.devRosterFor(rules));
+  }
+
+  /** rosterFor `rules` with every Classic extra, the ones Toggle heroes set Off too (item 61). */
+  devRosterFor(rules: Rules): CharacterDef[] {
+    if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
+    return [...this.deps.characters, ...CLASSIC_EXTRAS];
+  }
+
   /** `slots` without the heroes the Classic run's Disable heroes turned off (G-032). */
   private withoutDisabled(slots: CharacterDef[]): CharacterDef[] {
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
@@ -760,8 +779,8 @@ export class Game {
   slotsFor(
     rules: Rules,
     offered: (id: string) => boolean = (id) => this.expansionHeroOffered(id),
+    roster: CharacterDef[] = this.rosterFor(rules),
   ): CharacterDef[] {
-    const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
     const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter(offered)];
     const slots: CharacterDef[] = [];

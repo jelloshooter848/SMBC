@@ -237,6 +237,8 @@ describe("the Game mode row (a new file's rules box, B-L)", () => {
     expect(row().label).toBe('Game mode');
     expect(row().value?.()).toBe('All heroes');
     h.idle(8);
+    // v0.4.74 item 53: the box opens on START; UP to Game mode.
+    for (let i = 0; i < 6 && idx(o) !== 0; i++) h.tap('up');
     expect(h.said.at(-1)).toMatch(/Game mode: All heroes\. All heroes: choose before every level and life/);
     const mode = () => o.draft.options.gameMode;
     // Survival (v0.4.63, tests/sim/classic-survival.test.ts) comes second, as in the original's menu.

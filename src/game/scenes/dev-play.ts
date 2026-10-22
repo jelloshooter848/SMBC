@@ -57,8 +57,8 @@ export function loadDevPick(game: Game): DevPick | null {
 
 /**
  * Kept pick `p` as it can start now, or why it cannot: it must name a level this build has and a
- * hero the START page offers now (Game.devSlotsFor: a hero set Off in Toggle heroes is not), with
- * one of that hero's looks. A power the played def does not have
+ * hero the START page offers (Game.devAllSlotsFor, v0.4.74 item 61: every hero, whatever Toggle
+ * heroes says), with one of that hero's looks. A power the played def does not have
  * falls back to its first state.
  */
 export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
@@ -76,10 +76,11 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
       return `${name} is not in this build`;
     }
   }
-  const offered = branch === 'campaign' ? game.deps.characters : game.devSlotsFor(rules);
+  // v0.4.74 item 61: every hero, as the START page's Hero row offers them.
+  const offered = branch === 'campaign' ? game.deps.characters : game.devAllSlotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
-  if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
+  if (!slot) return `${named} is not in this build`;
   const def = devLooks(game, slot, rules).find((c) => c.id === look);
   if (!def || (branch === 'campaign' && def !== slot)) return `That look of ${slot.name} is not offered now`;
   const states = powerStatesOf(game, def, rules);
@@ -123,14 +124,14 @@ export function canMount(game: Game, look: CharacterDef, rules: Rules): boolean 
 
 /** Slot hero `hero`'s looks on the roster under `rules` (its own first). */
 function devLooks(game: Game, hero: CharacterDef, rules: Rules): readonly CharacterDef[] {
-  const roster = game.rosterFor(rules);
+  const roster = game.devRosterFor(rules);
   const list = skinsOf(hero).filter((d) => d === hero || roster.includes(d));
   return list.length ? list : [hero];
 }
 
 /** Starts `pick` (and keeps it for Again); false, starting nothing, when its look is not on the roster. */
 export function playDevPick(game: Game, pick: DevPick): boolean {
-  const def = game.rosterFor(pick.rules).find((c) => c.id === pick.look);
+  const def = game.devRosterFor(pick.rules).find((c) => c.id === pick.look);
   if (!def) return false;
   saveJson(DEV_LAST_KEY, pick);
   game.devStart(pick.level, def, pick.power, pick.kit, undefined, {
@@ -144,7 +145,7 @@ export function playDevPick(game: Game, pick: DevPick): boolean {
 
 /** The Again row's short value and its spoken line. */
 export function devPickSummary(game: Game, p: DevPick): { value: string; said: string } {
-  const look = game.rosterFor(p.rules).find((c) => c.id === p.look);
+  const look = game.devRosterFor(p.rules).find((c) => c.id === p.look);
   const who = look?.name ?? p.look;
   const parts = [p.name, who, p.power];
   if (p.branch === 'classic') {
@@ -643,12 +644,12 @@ export class DevStartScene extends DevPage {
   }
 
   /**
-   * The heroes the select would offer this start (Game.devSlotsFor, 0.4.72: every hero not set
-   * Off; the campaign's roster).
+   * The heroes this start offers (v0.4.74 item 61, Game.devAllSlotsFor: every hero, released or
+   * not, whatever Toggle heroes says; the campaign's roster).
    */
   get heroes(): CharacterDef[] {
     if (this.target.branch === 'campaign') return this.game.deps.characters;
-    return this.game.devSlotsFor(this.rules);
+    return this.game.devAllSlotsFor(this.rules);
   }
 
   get hero(): CharacterDef {

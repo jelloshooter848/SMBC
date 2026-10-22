@@ -44,7 +44,8 @@ describe('38c: BACK from a new file’s select lands on START', () => {
       expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     });
 
-  it('a rules box opened from the difficulty box still starts on Game mode', () => {
+  // v0.4.74 item 53 (owner): it opens on START now, as it does back from the select.
+  it('a rules box opened from the difficulty box starts on START (item 53)', () => {
     const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
     h.game.showClassicMenu();
     choose(h, 'Super Mario Bros.');
@@ -52,6 +53,6 @@ describe('38c: BACK from a new file’s select lands on START', () => {
     choose(h, 'Normal');
     const r = h.top();
     expect(r).toBeInstanceOf(ClassicFileRulesScene);
-    expect(items(r)[idx(r)]?.label).toBe('Game mode');
+    expect(items(r)[idx(r)]?.label).toBe('Start');
   });
 });

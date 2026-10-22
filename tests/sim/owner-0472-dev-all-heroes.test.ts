@@ -107,6 +107,7 @@ describe('owner 0.4.72 item 5: dev mode hero selects offer every hero', () => {
     };
     expect(typeof resolveDevPick(h.game, p)).not.toBe('string');
     settings.classicDev = { yoshiMount: false, heroesOff: ['yoshi'] };
-    expect(resolveDevPick(h.game, p)).toMatch(/Yoshi is not offered now/);
+    // v0.4.74 item 61 (owner): the START page offers every hero; Off is for Classic and campaign play.
+    expect(typeof resolveDevPick(h.game, p)).not.toBe('string');
   });
 });
