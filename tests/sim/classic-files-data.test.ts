@@ -208,12 +208,12 @@ describe('B-L migration', () => {
     expect(store.has(classicResumeKey('smb'))).toBe(false);
   });
 
-  it("a slot's own #196 count wins over the shared one; a broken slot is just removed", () => {
+  it("a slot's own #196 count wins over the shared one; a broken slot is kept (31c)", () => {
     put(classicResumeKey('special'), run({ levelId: 'sp-1-1', continues: 4 }));
     put(classicResumeKey('lost'), { v: 1, broken: true });
     migrateClassicFiles(shared());
     expect(loadClassicFile({ set: 'special', slot: 1 })?.continues).toBe(4);
-    expect(store.has(classicResumeKey('lost'))).toBe(false);
+    expect(raw(classicResumeKey('lost'))).toEqual({ v: 1, broken: true });
     expect(listClassicFiles('lost').every((f) => f === null)).toBe(true);
   });
 

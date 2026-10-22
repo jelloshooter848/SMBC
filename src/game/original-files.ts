@@ -190,7 +190,7 @@ export interface SharedClassicRules {
  * count. No file is ever overwritten (31a-b, v0.4.71): a set with no empty file (an unreadable
  * one counts as used) keeps the old key as it is, logged once, and it moves into the next file
  * ERASE FILE frees (oldRunsWaiting tells the file box). An old key goes only once its run is
- * written; a broken one is just removed. Returns whether
+ * written; one that does not read as a run is kept as it is (31c). Returns whether
  * anything was migrated.
  */
 export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => SharedClassicRules)): boolean {
@@ -202,7 +202,8 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
     if (!hasKey(key)) return;
     const raw = loadJson<unknown>(key);
     const r = parseResume(raw);
-    if (!r) return removeKey(key);
+    // 31c: an old key that does not read as a run (damaged, or a newer build's) is kept as it is.
+    if (!r) return noteOnce(key, raw, `Classic files: ${key} cannot be read; it is kept`);
     const into = set ?? resumeSetOf(r.levelId);
     const placed = placeRun(into, r, shared());
     if (placed === 'full')
