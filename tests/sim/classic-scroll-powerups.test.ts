@@ -129,6 +129,22 @@ describe('item 77: a power-up left behind under Classic scroll-back', () => {
       }
     });
 
+  it('ahead of the screen (a block struck at the start of 1-1, or the camera gone back) it moves within a screen, parks beyond', () => {
+    for (const [d, moving] of [
+      [4, true],
+      [15, true],
+      [20, false],
+    ] as const) {
+      const w = world(flatLevel({}, 200));
+      standAt(w, 40, 13);
+      const u = PowerUp.hopOut(w.camera.right + px(d * 16), px(13 * 16), 'mushroom');
+      w.spawn(u);
+      hold(w, [], 10);
+      expect(u.alive, `${d} tiles`).toBe(true);
+      expect(w.entities.includes(u), `${d} tiles`).toBe(moving);
+    }
+  });
+
   it('a power-up off the screen that walks into a pit is still lost', () => {
     const lv = flatLevel({}, 200);
     for (const y of [13, 14]) for (const x of [80, 81]) lv.tiles[y * lv.width + x] = T.AIR;

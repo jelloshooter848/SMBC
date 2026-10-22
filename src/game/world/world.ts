@@ -474,7 +474,8 @@ export const DOOR_TRANSFER_FRAMES = 24;
 
 /**
  * Classic scroll-back (v0.4.74 item 77, owner-approved deviation): a power-up keeps moving while
- * it is within one screen past the camera's left edge, and only beyond that is parked. The
+ * it is within one screen past the camera's left edge (or its right one, after the camera went
+ * back), and only beyond that is parked. The
  * original takes every object off the stage 2 tiles off screen (AnimatedObject.checkStgPos), but
  * then a player who outran a power-up and waited ahead for it would wait forever.
  */
@@ -2773,8 +2774,12 @@ export class World {
    */
   private outOfReach(e: Entity): boolean {
     const b = e.body;
-    const behind = e instanceof PowerUp ? POWERUP_REACH_PX : (e.despawnMargin ?? 0);
-    if (b.x + b.w < this.camera.x - px(behind)) return true;
+    // A power-up: a screen either side (it comes out of a block that was struck on screen).
+    if (e instanceof PowerUp)
+      return (
+        b.x + b.w < this.camera.x - px(POWERUP_REACH_PX) || b.x > this.camera.right + px(POWERUP_REACH_PX)
+      );
+    if (b.x + b.w < this.camera.x - px(e.despawnMargin ?? 0)) return true;
     return b.x > this.camera.right + px(SPAWN_MARGIN_PX + 32);
   }
 
