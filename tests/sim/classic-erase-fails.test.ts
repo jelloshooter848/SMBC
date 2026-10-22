@@ -248,3 +248,22 @@ describe('39a review: a failed erase shows it under the box too', () => {
     expect(shown(box)).not.toMatch(/COULD NOT BE ERASED/);
   });
 });
+
+// #205 review: fully broken storage (getItem throws as well, after the box opened): the erase
+// cannot be confirmed, so it is said to have failed, never "File 2 erased".
+describe('39a review: fully broken storage', () => {
+  it('getItem and removeItem throw: "could not be erased"', () => {
+    fullSet();
+    const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
+    h.game.showClassicMenu();
+    choose(h, 'Super Mario Bros.');
+    const box = h.top() as ClassicFilesScene;
+    choose(h, 'Erase file');
+    choose(h, 'File 2');
+    refuse(['getItem', 'removeItem', 'setItem']);
+    choose(h, 'Yes');
+    expect(h.top()).toBe(box);
+    expect(h.said.at(-1)).toMatch(/^File 2 could not be erased\./);
+    expect(h.said.at(-1)).not.toMatch(/^File 2 erased/);
+  });
+});

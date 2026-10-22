@@ -6,7 +6,7 @@ import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original
 import {
   CLASSIC_FILE_SLOTS,
   eraseClassicFile,
-  hasClassicFile,
+  classicFileGone,
   loadClassicFile,
   oldRunsWaiting,
   originalFileRules,
@@ -400,7 +400,8 @@ export class ClassicFilesScene extends ClassicBox {
   eraseFile(slot: ClassicFileSlot): void {
     const ref: ClassicFileRef = { set: this.set.id, slot };
     eraseClassicFile(ref);
-    this.erased(slot, !hasClassicFile(ref));
+    // #205: storage that cannot be read confirms nothing: that is a failed erase too.
+    this.erased(slot, classicFileGone(ref));
   }
 
   /**
@@ -415,20 +416,21 @@ export class ClassicFilesScene extends ClassicBox {
     this.refresh();
     this.index = slot - 1;
     const erased = `${fileName(slot)} erased.`;
+    if (!emptied) {
+      this.note = { slot, moved: false };
+      this.game.ctx.audio.sfx('bump');
+      this.game.deps.announcer?.say(`${fileName(slot)} could not be erased. ${this.spoken()}`);
+      return;
+    }
     if (this.game.classicFileState({ set: this.set.id, slot }) === 'empty') {
       this.note = null;
       this.game.deps.announcer?.say(`${erased} ${this.spoken()}`);
       return;
     }
-    if (emptied) {
-      this.note = { slot, moved: true };
-      const hint = this.items[this.index]?.hint ?? '';
-      this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
-      return;
-    }
-    this.note = { slot, moved: false };
-    this.game.ctx.audio.sfx('bump');
-    this.game.deps.announcer?.say(`${fileName(slot)} could not be erased. ${this.spoken()}`);
+    // Gone right after the erase and something in it now: an old save moved in on this read.
+    this.note = { slot, moved: true };
+    const hint = this.items[this.index]?.hint ?? '';
+    this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
   }
 }
 
