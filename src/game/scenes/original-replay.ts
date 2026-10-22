@@ -244,7 +244,7 @@ export function storageNote(game: Game, files: ClassicFilesScene): ClassicNoteSc
       "Saves can't be read right now.",
       'Your files are kept as they are. New games and erasing wait until they can be read.',
     ],
-    { under: files, lead: files.title, onDone: () => files.comeBack() },
+    { under: files, lead: files.set.label.replace(/\.$/, ''), onDone: () => files.comeBack() },
   );
 }
 

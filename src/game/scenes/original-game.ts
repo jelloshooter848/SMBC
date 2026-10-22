@@ -1,3 +1,4 @@
+import { storageReadable } from '@engine/save/storage';
 import {
   loadProgress,
   recordBeat,
@@ -213,7 +214,12 @@ export class ClassicMenuScene extends MenuScene {
       const used = CLASSIC_FILE_SLOTS.filter(
         (slot) => game.classicFileState({ set: set.id, slot }) !== 'empty',
       ).length;
-      const files = used === 0 ? 'No files used' : `${used} ${used === 1 ? 'file' : 'files'} used`;
+      // v0.4.74 (item 69): storage that cannot be read would count every file as empty.
+      const files = !storageReadable()
+        ? "Saves can't be read right now"
+        : used === 0
+          ? 'No files used'
+          : `${used} ${used === 1 ? 'file' : 'files'} used`;
       return {
         label: set.label,
         // 38e: on the file just played, after a run.
