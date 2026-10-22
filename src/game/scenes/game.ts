@@ -2329,8 +2329,21 @@ export class Game {
       ...ref,
       rules: this.classicRunRules,
       continues: this.fileContinues,
+      tutorialsSeen: this.classicTutorials.seen,
       run: continued ? { ...r, continued: true } : r,
     });
+  }
+
+  /**
+   * B-L: the Tutorials boxes seen this game go into the run's file at once (TutorialManager
+   * saves them with the original's file); a run with no file keeps them in memory only. Before
+   * the file's first WORLD card there is nothing to write; that card writes them with the run.
+   */
+  keepTutorialsSeen(seen: readonly string[]): void {
+    const ref = this.classicFile;
+    if (!ref || !this.keepsResume) return;
+    const f = loadClassicFile(ref);
+    if (f) saveClassicFile({ ...f, tutorialsSeen: seen });
   }
 
   /**
@@ -2358,6 +2371,7 @@ export class Game {
       ...(s?.classicHeroesOff ? { heroesOff: s.classicHeroesOff } : {}),
       difficulty: s?.classicMapDifficulty ?? 'normal',
       continuesUsed: s?.classicCheats.continuesUsed ?? 0,
+      ...(s?.classicTutorialsSeen ? { tutorialsSeen: s.classicTutorialsSeen } : {}),
     }));
   }
 
@@ -2418,6 +2432,8 @@ export class Game {
   resumeClassic(ref: ClassicFileRef): boolean {
     this.classicTutorials.clearQueue();
     const f = this.classicFileAt(ref);
+    // The boxes this file's game has seen come back with it (TutorialManager.loadData).
+    if (f) this.classicTutorials.restore(f.tutorialsSeen);
     const r = f?.run;
     const rules = r ? this.resumeRules(r) : 'classic';
     const hero = r ? this.rosterFor(rules).find((c) => c.id === r.hero) : undefined;

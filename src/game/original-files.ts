@@ -58,6 +58,11 @@ export interface ClassicFile {
   rules: ClassicFileRules;
   /** Continues used in this file's run (Infinite Lives unlocks only at 0). */
   continues: number;
+  /**
+   * The Tutorials boxes shown in this file's game (TutorialManager.saveData keeps them in the
+   * original's save): each shows once per game. A new file starts with none.
+   */
+  tutorialsSeen: string[];
   /** Where the run is. */
   run: ClassicResume;
   /** When it was last written (Date.now()). */
@@ -115,19 +120,26 @@ function parseFile(raw: unknown, ref: ClassicFileRef): ClassicFile | null {
     slot: ref.slot,
     rules: parseFileRules(f.rules),
     continues: Number.isInteger(c) && (c as number) >= 0 ? Math.min(999999, c as number) : 0,
+    tutorialsSeen: strings(f.tutorialsSeen),
     run,
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
   };
 }
 
 /** Writes file `f` (stamped now); false when storage refused it. */
-export function saveClassicFile(f: Omit<ClassicFile, 'savedAt' | 'v'> & { savedAt?: number }): boolean {
+export function saveClassicFile(
+  f: Omit<ClassicFile, 'savedAt' | 'v' | 'tutorialsSeen'> & {
+    savedAt?: number;
+    tutorialsSeen?: readonly string[];
+  },
+): boolean {
   const out: ClassicFile = {
     v: 1,
     set: f.set,
     slot: f.slot,
     rules: copyFileRules(f.rules),
     continues: f.continues,
+    tutorialsSeen: strings(f.tutorialsSeen),
     run: { ...f.run },
     savedAt: f.savedAt ?? Date.now(),
   };
@@ -154,6 +166,11 @@ export function listClassicFiles(set: MapSetId): (ClassicFile | null)[] {
   return CLASSIC_FILE_SLOTS.map((slot) => loadClassicFile({ set, slot }));
 }
 
+/** A list of ids as stored: its strings, each once. */
+function strings(v: unknown): string[] {
+  return Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === 'string'))] : [];
+}
+
 /** What migration takes from the shared settings for a run that had no rules of its own. */
 export interface SharedClassicRules {
   classic: ClassicSettings;
@@ -161,6 +178,8 @@ export interface SharedClassicRules {
   difficulty: MapDifficulty;
   /** The retired shared count (classicCheats.continuesUsed), read only here. */
   continuesUsed: number;
+  /** The old shared Tutorials seen list (Settings.classicTutorialsSeen), read only here. */
+  tutorialsSeen?: readonly string[];
 }
 
 /**
@@ -199,8 +218,15 @@ function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 
   const savedAt = r.savedAt ?? 0;
   // A file with anything in it (an unreadable one too) is not empty.
   let slot: ClassicFileSlot | undefined = CLASSIC_FILE_SLOTS.find((s) => !hasClassicFile({ set, slot: s }));
+  // Full, with an unreadable file: the old run takes the first unreadable one (a readable run is
+  // never dropped for a file nothing can play).
+  const broken = CLASSIC_FILE_SLOTS.findIndex((_, i) => files[i] === null);
+  if (slot === undefined && broken >= 0) {
+    slot = CLASSIC_FILE_SLOTS[broken] as ClassicFileSlot;
+    console.warn(`Classic files: ${set} is full; unreadable FILE ${slot} was replaced by a saved run`);
+  }
   if (slot === undefined) {
-    // Full: the oldest readable file goes only for a newer run (an unreadable one is left alone).
+    // Full of readable files: the oldest goes only for a newer run (else the old run is dropped).
     let oldest = -1;
     files.forEach((f, i) => {
       if (f && (oldest < 0 || f.savedAt < (files[oldest] as ClassicFile).savedAt)) oldest = i;
@@ -225,6 +251,7 @@ function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 
     slot,
     rules,
     continues: r.continues ?? Math.max(0, Math.floor(shared.continuesUsed) || 0),
+    tutorialsSeen: shared.tutorialsSeen ?? [],
     run: r,
     ...(savedAt ? { savedAt } : {}),
   });

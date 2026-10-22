@@ -95,8 +95,8 @@ function idsOf(pages: readonly string[], h: H): string[] {
 /** Into a Classic run's first level with `hero` (closing the select's box on the way). */
 function play(h: TH, hero = MARIO, seen?: string[]): LevelScene {
   h.game.classicSelect('1-1', () => h.game.showClassicMenu());
-  // Boxes already seen this game (set after the new game cleared them).
-  if (seen) h.settings.classicTutorialsSeen = [...seen];
+  // Boxes already seen this game (set after the new game cleared them; B-L: the run's own list).
+  if (seen) h.game.classicTutorials.restore(seen);
   if (box(h)) readBox(h);
   const s = h.top() as CharacterSelectScene;
   expect(s).toBeInstanceOf(CharacterSelectScene);
@@ -847,16 +847,14 @@ describe('a box queued as a run ends never shows in the next run (O-15 release r
 });
 
 describe('which boxes have been seen (TutorialManager.saveData / startNewGameHandler)', () => {
-  it('each box shows once a game, is saved at once, and a new game shows them all again', () => {
+  it("each box shows once a game, and a new game shows them all again (B-L: the list is the run's)", () => {
     const h = game(true);
     play(h);
     untilBox(h);
     readBox(h);
-    expect(loadSettings().classicTutorialsSeen).toEqual([
-      'characterSelect',
-      'firstCharacterStart',
-      'marioStart',
-    ]);
+    expect(h.game.classicTutorials.seen).toEqual(['characterSelect', 'firstCharacterStart', 'marioStart']);
+    // A run with no file (this one) keeps it in memory: the shared setting is never written.
+    expect(loadSettings().classicTutorialsSeen).toBeUndefined();
     // The next level start: nothing new for Mario.
     h.game.goToLevel('1-2', { mode: 'stand' });
     h.until(() => h.top() instanceof LevelScene, 600);
