@@ -2509,9 +2509,9 @@ export class Game {
     this.classicKits = {};
     // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
     // at his own default, not with the saved hero's power and kit.
-    const swapped = this.slotOf(played) !== this.slotOf(hero);
+    const unoffered = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
-      if (!swapped) {
+      if (!unoffered) {
         s.powerState = r.powerState;
         s.hp = r.hp;
         s.kit = { ...r.kit };
