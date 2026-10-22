@@ -244,8 +244,11 @@ export class ClassicFilesScene extends ClassicBox {
   private files: (ClassicFile | null)[] = [];
   /** Every file that reads, playable or not (31d), for ERASE FILE and the line under the box. */
   private readable: (ClassicFile | null)[] = [];
-  /** 31a: the file an old save just moved into (after ERASE), shown under it until the cursor moves. */
-  private movedInto: ClassicFileSlot | null = null;
+  /**
+   * After ERASE, shown under its file until the cursor moves: 31a, an old save just moved into it;
+   * 39a, the erase was refused (storage).
+   */
+  private note: { slot: ClassicFileSlot; moved: boolean } | null = null;
 
   constructor(
     game: Game,
@@ -327,7 +330,10 @@ export class ClassicFilesScene extends ClassicBox {
 
   protected override statusLine(): string {
     const slot = this.slotAt(this.index);
-    if (slot && slot === this.movedInto) return `OLD SAVE MOVED INTO ${fileName(slot).toUpperCase()}`;
+    if (slot && slot === this.note?.slot)
+      return this.note.moved
+        ? `OLD SAVE MOVED INTO ${fileName(slot).toUpperCase()}`
+        : `${fileName(slot).toUpperCase()} COULD NOT BE ERASED`;
     const f = slot ? this.readable[slot - 1] : null;
     return f ? fileDetailLine(this.game, f) : '';
   }
@@ -374,45 +380,45 @@ export class ClassicFilesScene extends ClassicBox {
   }
 
   protected override announce(): void {
-    if (this.movedInto !== null && this.slotAt(this.index) !== this.movedInto) this.movedInto = null;
+    if (this.note !== null && this.slotAt(this.index) !== this.note.slot) this.note = null;
     super.announce();
   }
 
   /**
-   * ERASE FILE's YES: file `slot` emptied, then the box again on it (erased). 39a: what waits
-   * for a free file is counted first, and whether the file is gone is read right after the erase,
-   * so a refused erase (storage throwing) is never told as an old save moving in.
+   * ERASE FILE's YES: file `slot` emptied, then the box again on it (erased). 39a: whether the
+   * file is gone is read right after the erase, so a refused erase (storage throwing) is never
+   * told as an old save moving in.
    */
   eraseFile(slot: ClassicFileSlot): void {
     const ref: ClassicFileRef = { set: this.set.id, slot };
-    const waiting = oldRunsWaiting(this.set.id);
     eraseClassicFile(ref);
-    this.erased(slot, waiting, !hasClassicFile(ref));
+    this.erased(slot, !hasClassicFile(ref));
   }
 
   /**
    * After ERASE: the box again, on the erased file, saying so. 31a: an old save that was waiting
    * for a free file (its set was full) has moved into it on this read: that is said, then the
-   * file as it is now. 39a: only when the file was empty right after the erase (`emptied`) and
-   * fewer old saves wait now than `waiting` before it; a file still there was not erased.
+   * file as it is now. 39a: only when the file was empty right after the erase (`emptied`), so
+   * what is in it now came in on this read (even when its old key could not be removed); a file
+   * still there right after the erase was not erased.
    */
-  private erased(slot: ClassicFileSlot, waiting: number, emptied: boolean): void {
+  private erased(slot: ClassicFileSlot, emptied: boolean): void {
     closeTo(this.game, this);
     this.refresh();
     this.index = slot - 1;
     const erased = `${fileName(slot)} erased.`;
     if (this.game.classicFileState({ set: this.set.id, slot }) === 'empty') {
-      this.movedInto = null;
+      this.note = null;
       this.game.deps.announcer?.say(`${erased} ${this.spoken()}`);
       return;
     }
-    if (emptied && oldRunsWaiting(this.set.id) < waiting) {
-      this.movedInto = slot;
+    if (emptied) {
+      this.note = { slot, moved: true };
       const hint = this.items[this.index]?.hint ?? '';
       this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
       return;
     }
-    this.movedInto = null;
+    this.note = { slot, moved: false };
     this.game.ctx.audio.sfx('bump');
     this.game.deps.announcer?.say(`${fileName(slot)} could not be erased. ${this.spoken()}`);
   }

@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
-import { classicFileKey, loadClassicFile, originalFileRules, saveClassicFile } from '@game/original-files';
+import {
+  classicFileKey,
+  listClassicFiles,
+  loadClassicFile,
+  migrateClassicFiles,
+  oldRunsWaiting,
+  originalFileRules,
+  saveClassicFile,
+} from '@game/original-files';
+import { defaultClassicSettings } from '@engine/save/original-options';
 import { classicResumeKey, type ClassicResume } from '@game/run-resume';
 import type { MenuItem } from '@game/scenes/menu';
 import type { ClassicFilesScene } from '@game/scenes/original-files-menu';
@@ -163,5 +172,79 @@ describe('39a: ERASE FILE as before when storage works', () => {
     fullSet();
     const { h } = eraseFile2();
     expect(h.said.at(-1)).toMatch(/^File 2 erased\. File 2: NEW GAME/);
+  });
+});
+
+// Review of 39a: the old save copied in, but its old key cannot be removed. The file WAS erased
+// and now holds the old save: that is "moved in", never "could not be erased"; and the same old
+// run is never copied again into the next file that is freed.
+describe('39a: the old key cannot be removed after the copy', () => {
+  const oldKey = classicResumeKey('smb');
+  const score77 = () => listClassicFiles('smb').filter((f) => f?.run.score === 77).length;
+
+  it('ERASE File 2: moved in (said and shown), not "could not be erased"', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fullSet();
+    waiting();
+    refuse(['removeItem'], (k) => k === oldKey);
+    const { h, box } = eraseFile2();
+    const said = h.said.at(-1) ?? '';
+    expect(said).toMatch(/^File 2 erased\. A game saved by an older version moved into File 2: /);
+    expect(said).not.toMatch(/could not be erased/);
+    expect(shown(box)).toMatch(/OLD SAVE MOVED INTO FILE 2/);
+    expect(loadClassicFile(F2)?.run.score).toBe(77);
+    // The key is still there (storage refused it), but it no longer waits: it is in File 2.
+    expect(store.has(oldKey)).toBe(true);
+    expect(oldRunsWaiting('smb')).toBe(0);
+  });
+
+  it('then ERASE File 3: erased, empty; the old run is not copied in a second time', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fullSet();
+    waiting();
+    refuse(['removeItem'], (k) => k === oldKey);
+    const { h } = eraseFile2();
+    choose(h, 'Erase file');
+    choose(h, 'File 3');
+    choose(h, 'Yes');
+    expect(h.said.at(-1)).toMatch(/^File 3 erased\. File 3: NEW GAME/);
+    expect(loadClassicFile({ set: 'smb', slot: 3 })).toBeNull();
+    expect(score77()).toBe(1);
+  });
+
+  it('migration on its own: a kept key already in a file is never placed again', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    waiting();
+    refuse(['removeItem'], (k) => k === oldKey);
+    const shared = () => ({
+      classic: defaultClassicSettings(),
+      difficulty: 'normal' as const,
+      continuesUsed: 0,
+    });
+    expect(migrateClassicFiles(shared)).toBe(true);
+    expect(score77()).toBe(1);
+    for (let i = 0; i < 4; i++) migrateClassicFiles(shared);
+    expect(score77()).toBe(1);
+    expect(listClassicFiles('smb').filter(Boolean)).toHaveLength(1);
+    expect(oldRunsWaiting('smb')).toBe(0);
+  });
+
+  it('an old run not in any file still waits (the check is the run itself)', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fullSet();
+    waiting();
+    // File 2 holds another run: the key still waits.
+    expect(oldRunsWaiting('smb')).toBe(1);
+  });
+});
+
+describe('39a review: a failed erase shows it under the box too', () => {
+  it('COULD NOT BE ERASED on the status line, until the cursor moves', () => {
+    fullSet();
+    refuse(['removeItem']);
+    const { h, box } = eraseFile2();
+    expect(shown(box)).toMatch(/FILE 2 COULD NOT BE ERASED/);
+    h.tap('down');
+    expect(shown(box)).not.toMatch(/COULD NOT BE ERASED/);
   });
 });

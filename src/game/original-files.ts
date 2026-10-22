@@ -205,6 +205,12 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
     // 31c: an old key that does not read as a run (damaged, or a newer build's) is kept as it is.
     if (!r) return noteOnce(key, raw, `Classic files: ${key} cannot be read; it is kept`);
     const into = set ?? resumeSetOf(r.levelId);
+    // 39a review: already copied into a file of its set, its key not removed then (storage
+    // refused): it is migrated; never copied again into the next file that is freed.
+    if (inAFile(into, r)) {
+      removeKey(key);
+      return;
+    }
     const placed = placeRun(into, r, shared());
     if (placed === 'full')
       return noteOnce(key, raw, `Classic files: ${into} is full; ${key} waits for a free file`);
@@ -228,6 +234,31 @@ function noteOnce(key: string, raw: unknown, message: string): void {
   console.warn(message);
 }
 
+/** The run as a file holds it: none of the old slot-only fields (saveClassicFile). */
+function fileRun(r: ClassicResume): Partial<ClassicResume> {
+  const run: Partial<ClassicResume> = { ...r };
+  delete run.difficulty;
+  delete run.gameMode;
+  delete run.continues;
+  delete run.savedAt;
+  return run;
+}
+
+/**
+ * 39a review: whether old run `r` is already in a file of `set` (copied in by an earlier
+ * migration whose key could not be removed): that file holds the same run, saved at the same
+ * time when the old slot has a time.
+ */
+function inAFile(set: MapSetId, r: ClassicResume): boolean {
+  const want = JSON.stringify(fileRun(r));
+  return CLASSIC_FILE_SLOTS.some((slot) => {
+    const f = loadJson<{ run?: unknown; savedAt?: unknown }>(classicFileKey({ set, slot }));
+    if (!f || typeof f !== 'object') return false;
+    if (r.savedAt && f.savedAt !== r.savedAt) return false;
+    return JSON.stringify(f.run) === want;
+  });
+}
+
 /**
  * 31a: how many old saves (readable, so they will migrate) are waiting for a free file of `set`,
  * which is full: each moves into the next file that is freed.
@@ -236,10 +267,13 @@ export function oldRunsWaiting(set: MapSetId): number {
   let n = 0;
   if (hasKey(CLASSIC_RESUME_KEY)) {
     const r = parseResume(loadJson<unknown>(CLASSIC_RESUME_KEY));
-    if (r && resumeSetOf(r.levelId) === set) n++;
+    if (r && resumeSetOf(r.levelId) === set && !inAFile(set, r)) n++;
   }
   const key = classicResumeKey(set);
-  if (hasKey(key) && parseResume(loadJson<unknown>(key))) n++;
+  if (hasKey(key)) {
+    const r = parseResume(loadJson<unknown>(key));
+    if (r && !inAFile(set, r)) n++;
+  }
   return n;
 }
 
