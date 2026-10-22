@@ -6,9 +6,10 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { DevStartScene } from '@game/scenes/dev-play';
 import { file, makeGame, useStorage } from './heroes-harness';
 
-// 0.4.72 owner item 5: in dev mode every hero select offers every hero, locked or not: the
-// Expansion heroes whether released or not (only Dev > Toggle heroes' Off hides one), and the
-// campaign's captives unlocked on the select. Classic Options > Disable heroes still applies.
+// 0.4.72 owner item 5: in dev mode every Classic hero select (the select, the dev START page)
+// offers the Expansion heroes whether released or not (only Dev > Toggle heroes' Off hides one).
+// Classic Options > Disable heroes still applies; the campaign's captives stay locked (its file's
+// dev All heroes toggle unlocks them).
 // Random, Single random and Survival keep the offered list (heroSlots). Outside dev mode nothing
 // changes (classic-expansion-lock.test.ts keeps the release guards).
 
@@ -71,28 +72,22 @@ describe('owner 0.4.72 item 5: dev mode hero selects offer every hero', () => {
     for (const id of EXPANSION_HEROES) expect(ids(start.heroes)).toContain(id);
   });
 
-  it("the campaign select: captives are unlocked in dev mode (the file's own lock and count are not)", () => {
+  it("the campaign select keeps its captives locked (the file's dev All heroes toggle unlocks them)", () => {
     const settings: Settings = { ...defaultSettings(), dev: true };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
     file();
     h.game.openFile(1);
     const luigi = CHARACTERS.find((c) => c.id === 'luigi') as CharacterDef;
-    expect(h.game.heroLocked(luigi)).toBe(true);
-    expect(h.game.selectLocked(luigi)).toBe(false);
-    const toFind = h.game.heroesToFind;
-    expect(toFind).toBeGreaterThan(0);
     const sel = new CharacterSelectScene(h.game, {
       player: 0,
       current: h.game.state.character,
       onPick: () => {},
     });
     const locked = (sel as unknown as { locked(i: number): boolean }).locked.bind(sel);
-    expect(sel.chars.some((_, i) => locked(i))).toBe(false);
-    expect(h.game.heroesToFind).toBe(toFind);
-    // Dev mode off: locked as before.
-    settings.dev = false;
-    expect(h.game.selectLocked(luigi)).toBe(true);
-    expect(sel.chars.some((_, i) => locked(i))).toBe(true);
+    expect(sel.chars.indexOf(luigi)).toBeGreaterThanOrEqual(0);
+    expect(locked(sel.chars.indexOf(luigi))).toBe(true);
+    h.game.devAllHeroes = true;
+    expect(locked(sel.chars.indexOf(luigi))).toBe(false);
   });
 
   it('a kept dev start (Again) with a hero back on Release still starts; set Off it does not', async () => {

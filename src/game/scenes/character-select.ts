@@ -424,8 +424,7 @@ export class CharacterSelectScene implements Scene {
   private locked(i: number): boolean {
     if (this.isRandom(i)) return false;
     const c = this.chars[i];
-    // 0.4.72: never in dev mode (Game.selectLocked).
-    return !c || this.game.selectLocked(c);
+    return !c || this.game.heroLocked(c);
   }
 
   /**

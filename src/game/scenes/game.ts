@@ -710,16 +710,6 @@ export class Game {
     });
   }
 
-  /**
-   * 0.4.72 (owner item 5): hero `def` is drawn locked (a silhouette, skipped) on the select. In
-   * dev mode never (a campaign captive too; heroLocked, heroesToFind and the story are
-   * untouched), else heroLocked.
-   */
-  selectLocked(def: CharacterDef): boolean {
-    if (!this.devMode) return this.heroLocked(def);
-    return CLASSIC_EXTRAS.includes(def) && !this.roster.includes(def);
-  }
-
   /** `slots` without the heroes the Classic run's Disable heroes turned off (G-032). */
   private withoutDisabled(slots: CharacterDef[]): CharacterDef[] {
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
