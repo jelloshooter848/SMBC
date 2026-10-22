@@ -10,10 +10,6 @@ under `## [Unreleased]`.
 
 ### Changed
 
-- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
-  the run, as the original: NEW GAME and the restart after an ending's credits set the count
-  back to 0. MAIN MENU after a game over keeps the run and its count. Each map set's saved run
-  keeps its own count, so a NEW GAME on another set no longer clears it.
 - Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
   level's end keeps them. Switching to another hero puts the first one's away until he is picked
   again, and another look of the same hero shares them. A death resets only the hero who died. A
@@ -25,6 +21,13 @@ under `## [Unreleased]`.
   either way, by owner decision.
 - Classic mode: a saved run's power-ups are checked when it loads. A hero no select offers, or a
   power that hero cannot have, starts at that hero's default.
+- The REMIX title has its own theme (BUG-14): a new brassy, bouncy hub tune in C with a new
+  two-bar fanfare under the stamp, galloping bass and horn stabs. Going to the CLASSIC title no
+  longer sounds like the same song restarting; CLASSIC keeps its own theme.
+- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
+  the run, as the original: NEW GAME and the restart after an ending's credits set the count
+  back to 0. MAIN MENU after a game over keeps the run and its count. Each map set's saved run
+  keeps its own count, so a NEW GAME on another set no longer clears it.
 - Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
   joins the Classic select once it is released; an Expansion heroes value saved by an earlier
   version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
