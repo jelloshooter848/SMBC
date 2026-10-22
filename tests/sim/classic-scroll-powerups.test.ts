@@ -9,6 +9,7 @@ import { runSim, ScriptedInput, type InputScript } from '@game/sim/headless';
 import type { Action } from '@engine/input/actions';
 import type { LevelData } from '@game/level/schema';
 import type { World } from '@game/world/world';
+import { T } from '@game/level/tiles';
 import { flatLevel } from './classic-plumber-harness';
 
 /*
@@ -37,20 +38,21 @@ function hold(w: World, keys: Action[], n: number, each?: (f: number) => boolean
 }
 
 /** Puts the hero standing at column `tx`, feet on row `feetRow`'s top, the camera settled there. */
-function standAt(w: World, tx: number, feetRow: number): void {
+function standAt(w: World, tx: number, feetRow: number, settle = 90): void {
   const b = w.player.body;
   b.x = px(tx * 16);
   b.y = px(feetRow * 16) - b.h;
   b.vx = 0;
   b.vy = 0;
   w.player.invuln = 100000;
-  hold(w, [], 90);
+  hold(w, [], settle);
 }
 
 const powerUps = (w: World) => w.entities.filter((e): e is PowerUp => e instanceof PowerUp && e.alive);
 
 /** 8-2's brick 1-up (column 44, row 5), struck from below; returns the 1-up once it is out. */
 function oneUp(w: World): PowerUp {
+  standAt(w, 40, 13);
   w.strikeBlock(44, 5, w.player, false);
   hold(w, [], 34);
   const u = powerUps(w).find((e) => e.item === '1up');
@@ -65,7 +67,7 @@ describe('item 77: a power-up left behind under Classic scroll-back', () => {
     const u = oneUp(w);
     w.state.lives = 3;
     // Ahead on the bricks: the 1-up is 6 to 8 tiles behind the screen's left edge.
-    standAt(w, 60, 5);
+    standAt(w, 66, 5);
     const behind = (w.camera.x - (u.body.x + u.body.w)) / px(16);
     expect(behind).toBeGreaterThan(4);
     expect(behind).toBeLessThan(16);
@@ -83,15 +85,24 @@ describe('item 77: a power-up left behind under Classic scroll-back', () => {
     const w = world(getLevel('8-2'));
     const u = oneUp(w);
     w.state.lives = 3;
-    standAt(w, 100, 13);
+    standAt(w, 100, 13, 300);
     expect(w.camera.x - (u.body.x + u.body.w)).toBeGreaterThan(px(256));
     const at = { x: u.body.x, y: u.body.y };
     hold(w, [], 300);
     expect(u.alive).toBe(true);
     expect(w.entities).not.toContain(u);
     expect({ x: u.body.x, y: u.body.y }).toEqual(at);
-    // Back on the bricks ahead of it: it is back on the stage, walking, and taken.
-    standAt(w, 64, 5);
+    // Walk back (the camera follows), then up on the bricks ahead of it: it is back on the
+    // stage, walking, and taken.
+    // (jumping the pipes on the way.)
+    for (let i = 0; i < 40 && w.player.body.x >= px(62 * 16); i++) {
+      hold(w, ['left', 'jump'], 20, () => w.player.body.x < px(62 * 16));
+      hold(w, ['left'], 10, () => w.player.body.x < px(62 * 16));
+    }
+    expect(w.player.body.x).toBeLessThan(px(62 * 16));
+    w.player.body.y = px(5 * 16) - w.player.body.h;
+    w.player.body.vx = 0;
+    hold(w, [], 30);
     expect(w.entities).toContain(u);
     const got = hold(w, [], 600, () => w.state.lives === 4);
     expect(got).toBeLessThan(600);
@@ -119,12 +130,14 @@ describe('item 77: a power-up left behind under Classic scroll-back', () => {
     });
 
   it('a power-up off the screen that walks into a pit is still lost', () => {
-    const floor = '#'.repeat(80) + '..' + '#'.repeat(118);
-    const w = world(flatLevel({ 13: floor, 14: floor }, 200));
-    standAt(w, 110, 13);
-    // Two tiles left of the pit, 5 tiles behind the screen: it walks right and falls in.
+    const lv = flatLevel({}, 200);
+    for (const y of [13, 14]) for (const x of [80, 81]) lv.tiles[y * lv.width + x] = T.AIR;
+    const w = world(lv);
+    standAt(w, 95, 13);
+    // Beside the pit, 4 to 16 tiles behind the screen: it walks right and falls in.
     const u = PowerUp.hopOut(px(79 * 16), px(13 * 16), 'mushroom');
     expect(w.camera.x - (u.body.x + u.body.w)).toBeGreaterThan(px(64));
+    expect(w.camera.x - (u.body.x + u.body.w)).toBeLessThan(px(256));
     w.spawn(u);
     hold(w, [], 200);
     expect(u.alive).toBe(false);
