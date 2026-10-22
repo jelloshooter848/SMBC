@@ -33,7 +33,7 @@ import {
 } from '../classic/yoshi-tongue';
 import { EGG_CAP, THROW_FRAMES, spit, throwEgg } from './classic-weapons';
 import { YOSHI_CLASSIC_GUIDE } from './classic-guide';
-import { SMB1_STOMP_HELD } from '../classic/stomp';
+import { MARIO_PROFILE } from '../mario/profile';
 
 /**
  * Classic Yoshi, a Classic-only hero (bug-reports/2026-10-19-yoshi-build-classic-character.md,
@@ -117,8 +117,8 @@ export const YOSHI_CLASSIC_PROFILE: MovementProfile = {
   softCut: 60000,
   turnInAir: false,
   jumpBuffer: false,
-  // BUG-07 (owner decision): SMB1's held stomp bounce.
-  stompHeld: SMB1_STOMP_HELD,
+  // BUG-07 (owner decision): the campaign's held stomp bounce (Current Mario's).
+  stompHeld: MARIO_PROFILE,
   swim: YOSHI_SWIM,
   flutter: YOSHI_FLUTTER,
 };
