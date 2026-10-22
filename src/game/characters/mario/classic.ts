@@ -129,7 +129,8 @@ export function plumberClassicProfile(c: PlumberConstants): MovementProfile {
     ...(c.softCut !== undefined ? { softCut: c.softCut } : {}),
     turnInAir: false,
     jumpBuffer: false,
-    stompBounce: 0x02800, // bouncePwr 300: 2.5 px/f
+    // BUG-07 (owner decision): the campaign's held stomp bounce, not the original's bouncePwr 300.
+    stompHeld: MARIO_PROFILE,
     crouchJump: true,
   };
 }

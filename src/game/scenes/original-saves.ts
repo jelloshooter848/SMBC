@@ -8,7 +8,7 @@ import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import { DIFFICULTY_NAMES, type MapSet } from './original-game';
 import { GAME_MODE_NAMES } from './original-options';
-import { BOX_BACK_Y, boxLayout, drawMenuBox, type BoxRow } from './menu-box';
+import { BOX_BACK_Y, BOX_TOP, boxLayout, boxSize, drawMenuBox, type BoxRow } from './menu-box';
 import { abilityHint } from './hints';
 
 /*
@@ -113,7 +113,8 @@ function renderOverDemo(
   const assets = game.ctx.assets;
   const calm = game.ctx.reduceFlashing;
   const shown = lines.map((l) => l.toUpperCase().slice(0, 30)).filter(Boolean);
-  const top = 40;
+  // Under the logo (BUG-02), as every box over the demo is, the choices right under the words.
+  const top = BOX_TOP;
   const bandH = shown.length * 12 + 10;
   r.rect(8, top, 240, bandH, 'rgba(0,0,0,0.92)');
   const line = (str: string, y: number) => {
@@ -123,7 +124,7 @@ function renderOverDemo(
   };
   shown.forEach((l, i) => line(l, top + 6 + i * 12));
   const rows: BoxRow[] = items.map((it) => ({ label: it.label }));
-  const at = boxLayout(rows, false, top + bandH + 30);
+  const at = boxLayout(rows, false, top + bandH + 2 + boxSize(rows).h / 2);
   drawMenuBox(r, assets, rows, index, { cx: 128, cy: at.cy, grow: 1, t, calm });
   line(abilityHint(game, 'BACK', 'attack'), BOX_BACK_Y);
 }
@@ -145,6 +146,13 @@ export class ClassicSetScene extends MenuScene {
     actions: SetActions,
   ) {
     super(game, set.label.toUpperCase(), [], actions.onBack, demo !== null);
+    // RC-040: the box's moves and BACK sound as the Start box's (MessageBoxSounds).
+    if (demo) {
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
+    }
     const items: MenuItem[] = [
       {
         label: 'Continue',
@@ -221,6 +229,12 @@ export class ClassicOverwriteScene extends MenuScene {
     readonly jump = false,
   ) {
     super(game, 'OVERWRITE SAVE?', [], onCancel, demo !== null);
+    if (demo) {
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
+    }
     this.setItems([
       { label: 'Cancel', select: onCancel, hint: 'Keep the saved run' },
       jump

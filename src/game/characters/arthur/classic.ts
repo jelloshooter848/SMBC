@@ -36,6 +36,7 @@ import {
   WEAPON_NAMES,
   type ArthurWeaponId,
 } from './classic-weapons';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Sir Arthur, a Classic-only hero (bug-reports/2026-10-19-arthur-build-classic-character.md,
@@ -57,6 +58,8 @@ const GRAVITY = 0x00355;
 const MAX_FALL = 0x05d55;
 
 export const ARTHUR_CLASSIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   // Instant speed: the ramp fields are never read with instantAccel.
   minWalk: ARTHUR_WALK,
   walkAccel: ARTHUR_WALK,

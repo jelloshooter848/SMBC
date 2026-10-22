@@ -13,13 +13,33 @@ export const MUSIC_FADE_IN_S = 1.2;
 export interface AudioSink {
   /** 'off' until unlocked, then the AudioContext state ('running', 'suspended', 'interrupted'...). */
   readonly state?: string;
-  playMusic(id: string): void;
+  /**
+   * Play a looping song. `fadeIn` (seconds, BUG-12): it rises from silence through the music fade
+   * (as fadeOutMusic's, so volume and mute are untouched); the same song already playing rises
+   * back from where it is, never restarted. Without it the song starts at full level.
+   */
+  playMusic(id: string, fadeIn?: number): void;
   stopMusic(): void;
   /**
    * Fade the music out to silence over `seconds` (the world map's page changes). The next
    * playMusic, playJingle or stopMusic puts the level back; volume and mute are untouched.
    */
   fadeOutMusic?(seconds: number): void;
+  /**
+   * BUG-12: a crossfade to song `id`: the song playing fades out over `out` seconds, then `id`
+   * starts and rises over `fadeIn`. The same song already playing just comes back up (never
+   * restarted); with nothing playing it starts at once with its fade-in. Any playMusic,
+   * playJingle, stopMusic or fadeOutMusic before the switch cancels it, so a fade never leaves
+   * the music silent or two songs going. Returns the seconds until `id` starts (0: at once).
+   */
+  crossfadeMusic?(id: string, out: number, fadeIn: number): number;
+  /** BUG-13: start (or resume) sound from a press the browser may not see as a gesture (a pad). */
+  unlock?(): void;
+  /**
+   * BUG-13: the sound that is starting now plays at full level at once, without the 1.2 s
+   * sound-start fade (MUSIC_FADE_IN_S): the start gate's rift intro is meant to be heard.
+   */
+  skipStartFade?(): void;
   /** Play a non-looping jingle; the previous music is not resumed automatically. */
   playJingle(id: string, onEnd?: () => void): void;
   sfx(id: string): void;
@@ -269,12 +289,31 @@ export class AudioManager implements AudioSink {
   /** The music rises from silence over MUSIC_FADE_IN_S (Apu.startFade); sound effects don't. */
   private fadeInMusic(): void {
     if (!this.ctx || !this.apu) return;
+    // The start gate's sound is still starting (skipStartFade): the same start's later events
+    // (pointerup, touchend, click) must not fade it in after all.
+    if (this.fullStart) return;
     const g = this.apu.startFade.gain;
     const t = this.ctx.currentTime;
     g.cancelScheduledValues(t);
     g.setValueAtTime(0, t);
     g.linearRampToValueAtTime(1, t + MUSIC_FADE_IN_S);
   }
+
+  skipStartFade(): void {
+    if (!this.ctx || !this.apu) return;
+    const g = this.apu.startFade.gain;
+    const t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(1, t);
+    if (this.ctx.state === 'running') return;
+    this.fullStart = true;
+    const done = () => {
+      this.fullStart = false;
+    };
+    void this.ctx.resume().then(done, done);
+  }
+  /** skipStartFade's start is still under way (the context not running yet). */
+  private fullStart = false;
 
   /** Plays the silent element again: iOS's audio session back to "playback" (kickMediaSession). */
   private replayMediaSession(): void {
@@ -316,7 +355,8 @@ export class AudioManager implements AudioSink {
     this.musicMap = map;
   }
 
-  playMusic(asked: string): void {
+  playMusic(asked: string, fadeIn = 0): void {
+    this.cancelCrossfade();
     const id = this.musicMap ? this.musicMap(asked) : asked;
     if (id === null) return this.stopMusic();
     if (!this.seq) {
@@ -324,12 +364,13 @@ export class AudioManager implements AudioSink {
       return;
     }
     if (this.currentMusic === id && (this.seq.playing || this.fileMusic)) {
-      this.unfade(0.05); // mid-fade: the same song comes back up
+      this.unfade(fadeIn > 0 ? fadeIn : 0.05); // mid-fade: the same song comes back up
       return;
     }
     this.seq.stop();
     this.stopFileMusic();
     this.unfade();
+    if (fadeIn > 0) this.riseFromSilence(fadeIn);
     this.currentMusic = id;
     if (this.playFile(id, true)) return;
     const s = this.song(id);
@@ -340,6 +381,7 @@ export class AudioManager implements AudioSink {
   }
 
   stopMusic(): void {
+    this.cancelCrossfade();
     this.pendingMusic = null;
     this.currentMusic = null;
     this.fileToken++;
@@ -349,12 +391,49 @@ export class AudioManager implements AudioSink {
   }
 
   fadeOutMusic(seconds: number): void {
+    this.cancelCrossfade();
     if (!this.ctx || !this.apu) return;
     const g = this.apu.musicFade.gain;
     const now = this.ctx.currentTime;
     g.cancelScheduledValues(now);
     g.setValueAtTime(g.value, now);
     g.linearRampToValueAtTime(0, now + Math.max(0.01, seconds));
+  }
+
+  crossfadeMusic(asked: string, out: number, fadeIn: number): number {
+    const id = this.musicMap ? this.musicMap(asked) : asked;
+    const playing = this.currentMusic !== null && (!!this.seq?.playing || this.fileMusic !== null);
+    // Before the first unlock, with nothing playing, or onto the song already playing: no gap.
+    if (!this.seq || !playing || id === null || id === this.currentMusic || out <= 0) {
+      this.playMusic(asked, fadeIn);
+      return 0;
+    }
+    this.fadeOutMusic(out);
+    const token = this.crossToken;
+    this.crossTimer = setTimeout(() => {
+      this.crossTimer = null;
+      if (token === this.crossToken) this.playMusic(asked, fadeIn);
+    }, out * 1000);
+    return out;
+  }
+
+  /** A crossfade's switch still to come (crossfadeMusic) is called off. */
+  private cancelCrossfade(): void {
+    this.crossToken++;
+    if (this.crossTimer !== null) clearTimeout(this.crossTimer);
+    this.crossTimer = null;
+  }
+  private crossToken = 0;
+  private crossTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** The music fade from silence to full over `seconds` (a new song's fade-in, BUG-12). */
+  private riseFromSilence(seconds: number): void {
+    if (!this.ctx || !this.apu) return;
+    const g = this.apu.musicFade.gain;
+    const now = this.ctx.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(0, now);
+    g.linearRampToValueAtTime(1, now + seconds);
   }
 
   /** The music fade back to full: at once (the voices are silent), or over `ramp` seconds. */
@@ -370,6 +449,7 @@ export class AudioManager implements AudioSink {
   }
 
   playJingle(asked: string, onEnd?: () => void): void {
+    this.cancelCrossfade();
     const id = this.musicMap ? this.musicMap(asked) : asked;
     if (id === null) this.stopMusic();
     if (!this.seq || id === null) {
