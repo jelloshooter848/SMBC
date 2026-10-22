@@ -33,6 +33,7 @@ import {
 } from '../classic/yoshi-tongue';
 import { EGG_CAP, THROW_FRAMES, spit, throwEgg } from './classic-weapons';
 import { YOSHI_CLASSIC_GUIDE } from './classic-guide';
+import { SMB1_STOMP_HELD } from '../classic/stomp';
 
 /**
  * Classic Yoshi, a Classic-only hero (bug-reports/2026-10-19-yoshi-build-classic-character.md,
@@ -62,6 +63,9 @@ export const LAY_FRAMES = 20;
 export const EGGS_SMALL = 3;
 export const EGGS_BIG = 6;
 export const EGGS_START = 3;
+/** The ground pound's bounce off an enemy (YO-9): bouncePwr 300, 2.5 px/f, jump held or not. */
+export const POUND_BOUNCE = 0x02800;
+
 /** The ground pound's feet (YO-9): 800 with pierce 10. */
 export const POUND_DAMAGE = 800;
 
@@ -113,7 +117,8 @@ export const YOSHI_CLASSIC_PROFILE: MovementProfile = {
   softCut: 60000,
   turnInAir: false,
   jumpBuffer: false,
-  stompBounce: 0x02800,
+  // BUG-07 (owner decision): SMB1's held stomp bounce.
+  stompHeld: SMB1_STOMP_HELD,
   swim: YOSHI_SWIM,
   flutter: YOSHI_FLUTTER,
 };
@@ -356,7 +361,9 @@ const BEHAVIOUR: CharacterBehaviour = {
     if (pound(p) !== 2) return;
     endPound(p);
     p.refitHitbox();
-    p.stompBounce();
+    // A fixed 2.5 px/f bounce, as before BUG-07: a pound is no stomp, and only a stomp takes
+    // SMB1's held bounce (owner).
+    p.stompBounce(POUND_BOUNCE);
   },
   canJump: (p) => pound(p) === 0 && !laying(p),
   onGrabVine: (p) => resetMoves(p),

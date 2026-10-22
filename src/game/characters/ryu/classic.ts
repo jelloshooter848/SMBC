@@ -51,6 +51,7 @@ import {
   type ClassicPowerKit,
 } from '../classic/power';
 import { weaponOf } from '../classic/options';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Classic SMBC Ryu (2026-10-07-ryu-classic-smbc-rules.md, RY-C1..RY-C38). Constants from Ryu.as
@@ -110,6 +111,8 @@ export const RYU_WALL_CLIMB: WallClimbProfile = {
 
 /** Ryu's Classic movement (RY-C4..RY-C7, RY-C17). */
 export const RYU_CLASSIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   minWalk: CLASSIC_WALK,
   walkAccel: CLASSIC_WALK,
   runAccel: CLASSIC_WALK,

@@ -224,6 +224,16 @@ see Open questions.)
   speed. A stomp does not reset `released` or the min line of the last jump: a Mario still holding jump from that
   jump who lets go during the bounce, while above that jump's min line, gets the soft cut (ML-C10). Under water
   there is no stomp (ML-C15).
+  - **Owner decision (BUG-07): changed on purpose.** The owner believes the original's lack of SMB1's
+    held stomp bounce was an oversight, not a design choice, so Classic restores SMB1's behaviour for the SMB
+    heroes: Mario, Luigi, their looks, Peach, Yoshi and the Yoshi mount. A stomp sets `vy` = −4 px/f (SMB1's
+    `$FC`). Up to the landing, gravity is the speed tier's held force (JumpMForceData `$20/$20/$1E/$28/$28`) while
+    JUMP is held, and its fall force (FallMForceData `$70/$70/$60/$90/$90`) once JUMP is let go or the apex
+    passes. A release latches the fall force, so pressing JUMP again adds no height. Held, the bounce goes higher.
+    The last jump's min line and soft cut no longer apply to the bounce. Yoshi's ground pound keeps the fixed
+    2.5 px/f bounce (YO-9; a pound is not a stomp). The other heroes, which stomp only with Everyone Can Stomp,
+    keep the original's fixed bouncePwr: 300, or Link's 325 (`Link.as:221`, `409`). See
+    `src/game/characters/classic/stomp.ts`.
 
 ### Special abilities
 

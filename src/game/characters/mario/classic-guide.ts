@@ -30,7 +30,7 @@ export function plumberClassicGuide(name: string, note: string): CharacterGuide 
       { item: 'drops', does: 'None. Stomp enemies in a row without landing for bigger scores.' },
     ],
     tips: [
-      'A stomp bounces you only a little, whether jump is held or not.',
+      'Hold JUMP as you land on an enemy to bounce higher.',
       'Under water every jump is a swim stroke, and stomping does not work.',
     ],
     demo: ['idle', 'walk', 'jump', 'attack', 'crouch'],
