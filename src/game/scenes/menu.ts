@@ -237,6 +237,12 @@ export class MenuScene implements Scene {
     };
   }
 
+  /** Puts the cursor on the row labelled `label`, when there is one (a page rebuilt to come back to). */
+  focusLabel(label: string): void {
+    const i = this.items.findIndex((it) => it.label === label);
+    if (i >= 0) this.index = i;
+  }
+
   setItems(items: MenuItem[]): void {
     this.items = items;
     this.index = Math.min(this.index, Math.max(0, items.length - 1));

@@ -597,7 +597,8 @@ export class LevelScene implements Scene {
     else if (game.campaign) game.levelCleared(this.level.id);
     // The cleared level goes along: in Survival a castle brings revival back (Game.levelExitTo).
     else if (game.classicRun) game.levelExitTo(next, this.level);
-    else game.goToLevel(next, { mode: 'stand' });
+    // v0.4.74 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    else if (!game.backToLevelSelect()) game.goToLevel(next, { mode: 'stand' });
   }
 
   /**

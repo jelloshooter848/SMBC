@@ -145,6 +145,7 @@ import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { filesBoxFor, fileRulesSpoken, type ClassicFilesScene } from './original-files-menu';
+import { openDevLevelSelect, openPracticeLevelSelect } from './level-select-return';
 import {
   clearedNote,
   openClearedFile,
@@ -277,6 +278,49 @@ export class Game {
    * other start (endClassicRun, startRun, resumes, play-tests, shared levels).
    */
   private devFreePlay = false;
+  /**
+   * v0.4.74 items 63 / 64: this run goes back to the level select it was started from (a clear,
+   * Quit, the last castle's credits): a practice run of the menus' Level Select cheat, or a dev
+   * START page start.
+   */
+  get levelSelectBack(): boolean {
+    return this.practiceSelectRun || (this.devFreePlay && this.devBack !== null);
+  }
+
+  /** A practice run of the menus' Level Select cheat (not a CLEARED file's replay). */
+  private get practiceSelectRun(): boolean {
+    return this.practiceRun && this.replay === null && this.campaign === null && this.practiceFrom !== null;
+  }
+
+  /** v0.4.74 items 63 / 64: the dev START page's start just begun (playDevPick) goes back there. */
+  keepDevReturn(branch: 'classic' | 'campaign', level: string): void {
+    if (this.devFreePlay) this.devBack = { branch, level };
+  }
+
+  /**
+   * v0.4.74 items 63 / 64: back to the level select this run was started from, its cursor on the
+   * level just played (the one under the scenes on top, else the one picked), which it says. The
+   * run is left as Quit leaves it; nothing is written. False (doing nothing) for any other run.
+   */
+  backToLevelSelect(): boolean {
+    if (!this.levelSelectBack) return false;
+    const here = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const played = here ? (here.world.level.parent ?? here.world.level.id) : null;
+    if (this.practiceSelectRun) {
+      const at = played ?? (this.practiceFrom as string);
+      this.leaveRun();
+      this.scenes.clear();
+      const title = new ClassicTitleScene(this, 'start', true);
+      this.scenes.push(title);
+      openPracticeLevelSelect(this, title, at);
+      return true;
+    }
+    const back = this.devBack as { branch: 'classic' | 'campaign'; level: string };
+    this.showTitle();
+    openDevLevelSelect(this, back, played ?? back.level);
+    return true;
+  }
+
   /** A dev START page free play start is playing (v0.4.74 item 61: its hero is any hero). */
   get devFreePlaying(): boolean {
     return this.devFreePlay;
@@ -307,6 +351,16 @@ export class Game {
    * counts for nothing (no beat, no cheat counts, no unlocks), as a developer run.
    */
   practiceRun = false;
+  /**
+   * v0.4.74 items 63 / 64: the level the menus' Level Select cheat started this practice run on
+   * (null: none). Read only with practiceRun and no replay (levelSelectBack).
+   */
+  private practiceFrom: string | null = null;
+  /**
+   * v0.4.74 items 63 / 64: a dev START page start (keepDevReturn): its branch and level, for the
+   * way back to Dev > Level select. Read only while that free play plays (devFreePlay).
+   */
+  private devBack: { branch: 'classic' | 'campaign'; level: string } | null = null;
   /**
    * v0.4.73 (owner C): the level replay of a CLEARED file playing (or its select), with the
    * file, world and level it was picked from. Only with practiceRun (replayRun reads both): it
@@ -1098,7 +1152,11 @@ export class Game {
     if (this.classicRun) {
       // A developer-started run counts for nothing: the title, as free play. So does a practice
       // run (the menus' Level Select, B-L owner).
-      if (this.classicDev || this.practiceRun) return this.showTitle();
+      // v0.4.74 items 63 / 64: a practice run of the menus' Level select goes back there.
+      if (this.classicDev || this.practiceRun) {
+        if (!this.backToLevelSelect()) this.showTitle();
+        return;
+      }
       const set = mapSetOf(from).id;
       // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
       recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
@@ -1135,7 +1193,8 @@ export class Game {
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
-    this.showTitle();
+    // v0.4.74 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    if (!this.backToLevelSelect()) this.showTitle();
   }
 
   /**
@@ -1182,7 +1241,9 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    if (from === 'll-8-4' && !campaign) {
+    // v0.4.74 items 63 / 64: a dev START page start's castle is a clear like any other: its card,
+    // then Dev > Level select (no games-beaten tally: a dev run writes nothing).
+    if (from === 'll-8-4' && !campaign && !this.levelSelectBack) {
       const warped = s.warped;
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, warped);
@@ -1213,7 +1274,11 @@ export class Game {
         this.scenes.pop(); // the card; the level (if any) stays beneath the credits
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
-    } else then = () => (campaign ? this.returnToMap() : this.showTitle());
+    } else
+      then = () => {
+        if (campaign) this.returnToMap();
+        else if (!this.backToLevelSelect()) this.showTitle();
+      };
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
@@ -1808,6 +1873,8 @@ export class Game {
   levelExitTo(levelId: string, cleared?: { world: number; stage: number }): void {
     // v0.4.73 (owner C, 48A): a replayed level's clear goes back to its world's level box.
     if (this.replayRun) return this.replayCleared();
+    // v0.4.74 items 63 / 64: a practice run of the menus' Level select goes back there.
+    if (cleared && this.backToLevelSelect()) return;
     if (cleared) this.survival?.levelCleared(cleared.world, cleared.stage);
     if (this.classicRun && this.campaign === null) return this.warpToLevel(levelId, { mode: 'stand' }, false);
     this.goToLevel(levelId, { mode: 'stand' });
@@ -2010,6 +2077,8 @@ export class Game {
     this.classicDev = classic;
     this.linkRun = false;
     this.devFreePlay = !classic;
+    // Items 63 / 64: only the START page's own starts go back to it (playDevPick: keepDevReturn).
+    this.devBack = null;
     // 0.4.72 (owner item 6): the START page's Mount row; null leaves the Dev menu's toggle alone.
     this.devYoshi = opts.mount === 'yoshi' ? 'ride' : opts.mount === 'none' ? 'none' : null;
     // B-L: a dev start has no file and reads the old shared options.
@@ -2401,7 +2470,12 @@ export class Game {
       this.goToLevel(levelId, { mode: 'stand' });
       return;
     }
-    this.classicSelect(levelId, () => this.showClassicMenu(), { practice: true, rules: originalFileRules() });
+    // v0.4.74 items 63 / 64: the run goes back to the Level select (its select's BACK too).
+    this.practiceFrom = levelId;
+    this.classicSelect(levelId, () => this.backToLevelSelect() || this.showClassicMenu(), {
+      practice: true,
+      rules: originalFileRules(),
+    });
   }
 
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
@@ -2840,6 +2914,8 @@ export class Game {
   quitClassicRun(): void {
     // v0.4.73: leaving a level replay goes back to its CLEARED file on the file box.
     if (this.replayRun) return this.leaveReplay('files');
+    // v0.4.74 items 63 / 64: a practice run of the menus' Level select goes back there.
+    if (this.backToLevelSelect()) return;
     const set = this.runSet;
     const played = this.classicFile;
     this.leaveRun();

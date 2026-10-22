@@ -44,15 +44,27 @@ export class LevelSelectScene extends MenuScene {
     // From a level (the pause menu): its map set, world and level (LevelSelectMenu.as:35-46).
     const here = game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
     const id = here?.world.level.id;
-    if (id) {
-      this.set = mapSetOf(id);
-      const m = /(\d+)-(\d+)/.exec(id.slice(this.set.start.replace(/\d+-\d+$/, '').length));
-      if (m) {
-        this.world = Math.min(Math.max(1, Number(m[1])), this.set.lastWorld);
-        this.level = Math.min(Math.max(1, Number(m[2])), 4);
-      }
-    }
+    if (id) this.setLevel(id);
     this.build();
+  }
+
+  private setLevel(id: string): void {
+    this.set = mapSetOf(id);
+    const m = /(\d+)-(\d+)/.exec(id.slice(this.set.start.replace(/\d+-\d+$/, '').length));
+    if (m) {
+      this.world = Math.min(Math.max(1, Number(m[1])), this.set.lastWorld);
+      this.level = Math.min(Math.max(1, Number(m[2])), 4);
+    }
+  }
+
+  /**
+   * v0.4.74 items 63 / 64: back from a practice run, on level `id` (its map set, world and
+   * level), the cursor on GO, which says it ("Go: 1-2").
+   */
+  showLevel(id: string): void {
+    this.setLevel(id);
+    this.build();
+    this.focusLabel('Go');
   }
 
   private build(): void {

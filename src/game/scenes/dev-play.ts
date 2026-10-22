@@ -140,6 +140,8 @@ export function playDevPick(game: Game, pick: DevPick): boolean {
     difficulty: pick.difficulty,
     ...(pick.branch === 'classic' ? { mount: pick.mount ?? 'none' } : {}),
   });
+  // v0.4.74 items 63 / 64: a clear, Quit and the last credits come back to Dev > Level select.
+  game.keepDevReturn(pick.branch, pick.level);
   return true;
 }
 

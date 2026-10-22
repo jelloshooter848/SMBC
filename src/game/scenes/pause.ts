@@ -120,7 +120,9 @@ export class PauseScene extends MenuScene {
         // (Game.keepsResume: not a developer, link or practice run).
         hint: game.keepsResume
           ? 'Back to the Classic menu; your file picks the run up from this level'
-          : 'Back to the Classic menu',
+          : game.levelSelectBack
+            ? 'Back to the level select'
+            : 'Back to the Classic menu',
       });
       this.setItems(items);
       return;
@@ -186,7 +188,12 @@ export class PauseScene extends MenuScene {
     } else
       items.push({
         label: 'Quit',
-        select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()),
+        select: () => {
+          if (game.playtestDone) game.playtestDone();
+          // v0.4.74 items 63 / 64: a dev START page start goes back to Dev > Level select.
+          else if (!game.backToLevelSelect()) game.showTitle();
+        },
+        ...(game.levelSelectBack && !game.playtestDone ? { hint: 'Back to the level select' } : {}),
       });
     this.setItems(items);
   }
