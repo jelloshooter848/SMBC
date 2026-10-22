@@ -21,6 +21,7 @@ import type { World } from '@game/world/world';
  * checked as recorded and again with `rules: 'campaign'` passed explicitly (TG-37).
  */
 
+// "current" in the file names is the old name for Campaign (item 76); the fixture is kept as recorded.
 const FIXTURE = fileURLToPath(new URL('./fixtures/current-parity.json', import.meta.url));
 const RECORD = process.env.RECORD_PARITY === '1';
 

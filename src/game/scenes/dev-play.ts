@@ -178,7 +178,7 @@ export function devAgainItem(game: Game): MenuItem | null {
 }
 
 /** The START page's Rules row values and hint (dev Classic starts, TG rules model). */
-// Owner decision: the 'campaign' rules are shown and said as "Campaign" (the value stays).
+// Owner decision: the 'campaign' rules are shown and said as "Campaign" (item 76: the value too).
 export const RULES_LABELS: Record<Rules, string> = { campaign: 'Campaign', classic: 'Classic SMBC' };
 export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
 
