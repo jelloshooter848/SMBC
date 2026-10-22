@@ -12,8 +12,10 @@ import { choose } from './classic-files-nav';
 // 0.4.72 review fix 2 (save safety): a Classic file run played in dev mode as a hero only dev
 // mode's select offers (an unreleased Expansion hero, Release state) is marked so (its run's
 // devHero). With dev mode off it does not play as Mario and is never rewritten: its row says NOT
-// RELEASED and how to play it. Dev mode on again: it plays as that hero. A file without the mark
-// (P1, polish-resume-unoffered-hero.test.ts) keeps P1's policy: it plays as the first slot's hero.
+// RELEASED and how to play it. Dev mode on again: it plays as that hero. Since 0.4.73 (item 40)
+// a file of an unreleased Expansion hero without the mark is NOT RELEASED too
+// (unreleased-hero-unmarked-file.test.ts); P1 (polish-resume-unoffered-hero.test.ts) applies only
+// to heroes that are neither offered nor Expansion heroes.
 
 useStorage();
 afterEach(() => store.clear());

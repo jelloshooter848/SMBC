@@ -804,9 +804,10 @@ export class Game {
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
-    // A hero the select does not offer now (an unreleased Expansion hero from a link; a file of one
-    // is NOT RELEASED instead, item 40): the first slot's hero, Mario, in his chosen look, so Survival has a
-    // hero standing and the select shows who plays.
+    // A hero the select does not offer now: the first slot's hero, Mario, in his chosen look, so
+    // Survival has a hero standing and the select shows who plays. Item 40: a file of an unreleased
+    // Expansion hero never gets here (NOT RELEASED); what still does is a `?char=` link or dev
+    // start naming one, and a file whose hero its own Disable heroes left out (P1).
     // A hero the dev select offers (selectSlots: dev mode shows every hero not set Off) plays.
     const slots = this.selectSlots;
     if (!slots.includes(host)) {
@@ -2621,7 +2622,9 @@ export class Game {
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
     // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
-    // at his own default, not with the saved hero's power and kit.
+    // at his own default, not with the saved hero's power and kit. Item 40: only a hero that is no
+    // Expansion hero gets here from a file (one its own Disable heroes left out, P1); an
+    // unreleased Expansion hero's file is NOT RELEASED (fileProblem).
     const unoffered = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
       if (!unoffered) {

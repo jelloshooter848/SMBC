@@ -57,4 +57,20 @@ describe('P1: a saved run for a hero no select offers', () => {
     expect(g.resumeClassic(REF)).toBe(true);
     expect(g.state.powerState).toBe('fire');
   });
+
+  it("P1 still: a hero that is no Expansion hero and no slot offers (left out by the file's own Disable heroes) plays as Mario", () => {
+    const settings = defaultSettings();
+    const h = makeGame({ deps: { settings, applySettings: () => {} } });
+    const g = h.game;
+    g.classicGame(MARIO);
+    h.until(() => h.top() instanceof LevelScene, 600);
+    const run = { ...resumeOf('1-2', g.state, 'classic'), hero: 'luigi', powerState: 'fire' };
+    saveClassicFile({ ...REF, rules: { ...originalFileRules(), heroesOff: ['luigi'] }, continues: 0, run });
+    g.showTitle();
+    expect(EXPANSION_HEROES).not.toContain('luigi');
+    expect(g.classicFileProblem(REF)).toBeNull();
+    expect(g.resumeClassic(REF)).toBe(true);
+    expect(g.state.character.id).toBe('mario');
+    expect(g.state.powerState).toBe('small');
+  });
 });
