@@ -42,8 +42,8 @@ import { fullHero, randomScenarios, sampleScenario, scenarios, type Scenario } f
 import { campaignAt, pctProfile } from './scenarios2';
 import { Rng } from '@engine/rng';
 
-const DIR = '/tmp/claude-0/-home-user-SMBC/ed1be232-9526-5dbb-b2cc-de87896d1401/scratchpad/savecode';
-const SAMPLE = '/tmp/claude-0/-home-user-SMBC/ed1be232-9526-5dbb-b2cc-de87896d1401/scratchpad/sample/sample-save.json';
+const DIR = new URL('.', import.meta.url).pathname.replace(/\/$/, ''); // research/savecode/harness
+const SAMPLE = `${DIR}/../sample/sample-save.json`;
 
 let checks = 0;
 const failures: string[] = [];

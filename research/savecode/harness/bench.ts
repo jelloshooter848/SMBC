@@ -36,9 +36,9 @@ import {
 import { applyPolicy, BL_KEYS, blSchema, profileDefault, profileSchema, RESUME_KEYS, resumeSchema, saveSchema, SETS, type Policy } from './schema';
 import { firstCastle, freshSave, fullSave, midSave, randomScenarios, sampleScenario, scenarios, resume, blFile, type Scenario } from './scenarios';
 
-const DIR = '/tmp/claude-0/-home-user-SMBC/ed1be232-9526-5dbb-b2cc-de87896d1401/scratchpad/savecode';
-const SAMPLE = '/tmp/claude-0/-home-user-SMBC/ed1be232-9526-5dbb-b2cc-de87896d1401/scratchpad/sample/sample-save.json';
-const SAMPLE_CODE = '/tmp/claude-0/-home-user-SMBC/ed1be232-9526-5dbb-b2cc-de87896d1401/scratchpad/sample/sample-save-code.txt';
+const DIR = new URL('.', import.meta.url).pathname.replace(/\/$/, ''); // research/savecode/harness
+const SAMPLE = `${DIR}/../sample/sample-save.json`;
+const SAMPLE_CODE = `${DIR}/../sample/sample-save-code.txt`;
 
 // ------------------------------------------------------------------ in-memory localStorage (for the game's real loaders)
 
