@@ -37,7 +37,7 @@ import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
-import { yoshiClearHop, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
+import { yoshiClearHop, yoshiEggShown, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
 import {
   CLASSIC_EXPANSION_HEROES,
   CLASSIC_HERO_GAMES,
@@ -73,6 +73,7 @@ installClassicRules({
   },
   armoured: isArmoured,
   worldLoaded: yoshiWorldLoaded,
+  blockShown: yoshiEggShown,
   clearHop: yoshiClearHop,
 });
 

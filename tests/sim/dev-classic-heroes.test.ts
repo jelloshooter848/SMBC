@@ -155,14 +155,21 @@ describe('O-06: Dev > Classic heroes', () => {
     expect(row(page, 'Yoshi mount').value?.()).toBe('Ride');
   });
 
-  it('the dev START page offers the same heroes (one rule for every list)', async () => {
+  it("the dev START page offers the dev select's heroes: every hero not set Off (0.4.72)", async () => {
     const { h, page, settings } = devGame();
     settings.classic.expansion = 'off';
     row(page, 'Vic Viper').adjust?.(1);
     const { DevStartScene } = await import('@game/scenes/dev-play');
     const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
-    expect(start.heroes.map((c) => c.id)).toEqual(ids(h));
-    expect(start.heroes.map((c) => c.id)).toContain('vicviper');
+    expect(start.heroes.map((c) => c.id)).toEqual(h.game.devSlotsFor('classic').map((c) => c.id));
+    // 0.4.72 (owner): Release heroes too (yoshi, arthur, warriors), not only the On one.
+    for (const id of EXPANSION_HEROES) expect(start.heroes.map((c) => c.id)).toContain(id);
+    row(page, 'Yoshi').adjust?.(-1); // Release -> Off
+    expect(start.heroes.map((c) => c.id)).not.toContain('yoshi');
+    // Dev mode off: the release rule (the dev pickers' list is slotsFor itself).
+    settings.dev = false;
+    expect(h.game.devSlotsFor('classic').map((c) => c.id)).toEqual(ids(h));
+    for (const id of EXPANSION_HEROES) expect(ids(h)).not.toContain(id);
   });
 });
 

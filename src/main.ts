@@ -303,7 +303,8 @@ function boot(): void {
   if (level && start) {
     // `&rules=classic|current` (dev mode only, dev-url.ts): the run's rules; `char` reads the
     // roster for them (the Classic extras too). `&mode=classic` (dev mode only): a Classic mode
-    // run, as the dev Level select's Mode row (its rules: `rules=`, else Classic rules).
+    // run (its rules: `rules=`, else Classic rules). The dev Level select has no Mode row since
+    // 0.4.72 (its starts are free play); only this link starts a dev Classic run.
     const classic = start === 'classic';
     const rules = urlRules(params, settings.dev) ?? (classic ? game.classicRules : 'current');
     // `&yoshi=1|ride` (dev mode only): the Classic Yoshi mount for this session (YM-1).

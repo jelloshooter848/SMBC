@@ -69,7 +69,8 @@ export class GuideIndexScene extends MenuScene {
     super(game, 'HOW TO PLAY', [], onBack);
     const fromMenu = classic && !game.classicRun && game.campaign === null;
     const rules = fromMenu ? game.classicRules : game.liveRules;
-    const heroes = fromMenu ? game.slotsFor(rules) : game.classicRun ? game.heroSlots : game.roster;
+    // 0.4.72: a Classic run lists its select's heroes (selectSlots: in dev mode the dev select's).
+    const heroes = fromMenu ? game.slotsFor(rules) : game.classicRun ? game.selectSlots : game.roster;
     this.setItems([
       ...heroes
         .map((hero) => heroFor(hero, rules))

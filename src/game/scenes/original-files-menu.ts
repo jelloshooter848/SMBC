@@ -19,7 +19,7 @@ import { resumeSetOf } from '../run-resume';
 import { CLASSIC_EXTRAS } from '../characters/registry';
 import { worldLabel } from '../hud/world-label';
 import { MenuScene, type MenuItem } from './menu';
-import type { Game } from './game';
+import type { FileProblem, Game } from './game';
 import { demoUnder, renderBoxedMenu, type DemoBackdrop } from './original-box-menu';
 import { DIFFICULTY_NAMES, MAP_SETS, type MapSet } from './original-game';
 import {
@@ -124,11 +124,19 @@ const UNREADABLE = 'UNREADABLE';
 function problemRow(
   game: Game,
   f: ClassicFile,
-  problem: 'hero-off' | 'hero' | 'level',
+  problem: FileProblem,
 ): {
   value: string;
   why: string;
 } {
+  if (problem === 'not-released') {
+    // 0.4.72: played in dev mode by a hero players do not have yet; never played as another.
+    const name = fileHeroName(game, f);
+    return {
+      value: 'NOT RELEASED',
+      why: `Its hero, ${name}, is not released yet. Turn dev mode on to play it`,
+    };
+  }
   if (problem === 'hero-off') {
     const name = fileHeroName(game, f);
     return {

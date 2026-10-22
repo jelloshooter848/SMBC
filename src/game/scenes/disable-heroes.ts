@@ -79,7 +79,8 @@ export class ClassicHeroesScene extends MenuScene {
   private build(): void {
     const game = this.game;
     const rules = game.classicRules;
-    const heroes = game.slotsFor(rules);
+    // 0.4.72: in dev mode the dev select's heroes (every hero not set Off), so each can be turned off.
+    const heroes = game.devSlotsFor(rules);
     const items: MenuItem[] = heroes.map((c) => ({
       label: c.name,
       value: () => (this.off.includes(c.id) ? 'Off' : 'On'),

@@ -20,7 +20,9 @@ import { loadSave, SAVE_SLOTS } from '../save/save-files';
  * areas), then the START page. Campaign: the world map or a file on a scratch copy that never
  * saves, a story level (world, level, START), the village, the tutorial stage, the training rooms,
  * the mini and bonus games. The START page picks the hero (the select's slot heroes), its look,
- * power, Map difficulty, rules, mode and kit. "Again" on the Dev menu replays the last start.
+ * power, Map difficulty, rules and kit. 0.4.72 (owner item 7): no Mode row; every dev start is
+ * free play (99 lives, straight back after a death), with Map difficulty under Classic rules.
+ * "Again" on the Dev menu replays the last start.
  * Dev mode only: every page is reached from the Dev menu, which needs dev mode on.
  */
 
@@ -37,8 +39,11 @@ export interface DevPick {
   power: string;
   kit: boolean;
   rules: Rules;
+  /** Always false since 0.4.72 (no Mode row: free play); a kept true is read as false. */
   classicRun: boolean;
   difficulty: MapDifficulty;
+  /** 0.4.72 (owner item 6): the Mount row's Yoshi (absent: None). */
+  mount?: 'yoshi';
 }
 
 /** Where the last dev start is kept (this browser only; dev mode only reads it). */
@@ -52,8 +57,8 @@ export function loadDevPick(game: Game): DevPick | null {
 
 /**
  * Kept pick `p` as it can start now, or why it cannot: it must name a level this build has and a
- * hero the START page offers now (Game.slotsFor, so expansionHeroOffered: a hero set back to
- * Release or to Off is not), with one of that hero's looks. A power the played def does not have
+ * hero the START page offers now (Game.devSlotsFor: a hero set Off in Toggle heroes is not), with
+ * one of that hero's looks. A power the played def does not have
  * falls back to its first state.
  */
 export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
@@ -71,7 +76,7 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
       return `${name} is not in this build`;
     }
   }
-  const offered = branch === 'campaign' ? game.deps.characters : game.slotsFor(rules);
+  const offered = branch === 'campaign' ? game.deps.characters : game.devSlotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
   if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
@@ -87,8 +92,10 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
     power: states.includes(power) ? power : (states[0] as string),
     kit: p.kit === true,
     rules,
-    classicRun: p.classicRun === true,
-    difficulty: difficulty as MapDifficulty,
+    // 0.4.72: every dev start is free play (a start kept as a Classic run plays as free play).
+    classicRun: false,
+    difficulty: rules === 'classic' ? (difficulty as MapDifficulty) : 'normal',
+    ...(p.mount === 'yoshi' && canMount(game, def, rules) ? { mount: 'yoshi' as const } : {}),
   };
 }
 
@@ -101,6 +108,17 @@ const HP_STATES = ['full', 'half', '1 hp'];
  */
 export function powerStatesOf(game: Game, look: CharacterDef, rules: Rules): string[] {
   return playedHero(game.ctx, look, rules).damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
+}
+
+/**
+ * 0.4.72 (owner item 6): `look` can start riding Yoshi under `rules`: the Classic Yoshi mount's
+ * own test (yoshi-mount.ts mayRide: a Classic def that does not opt out with `rides: false`), on
+ * the def played (Toggle heroes' Plays as).
+ */
+export function canMount(game: Game, look: CharacterDef, rules: Rules): boolean {
+  if (rules !== 'classic') return false;
+  const d = playedHero(game.ctx, look, rules);
+  return d.rides !== false && d.rules === 'classic';
 }
 
 /** Slot hero `hero`'s looks on the roster under `rules` (its own first). */
@@ -119,6 +137,7 @@ export function playDevPick(game: Game, pick: DevPick): boolean {
     rules: pick.rules,
     classic: pick.classicRun,
     difficulty: pick.difficulty,
+    ...(pick.branch === 'classic' ? { mount: pick.mount ?? 'none' } : {}),
   });
   return true;
 }
@@ -129,8 +148,9 @@ export function devPickSummary(game: Game, p: DevPick): { value: string; said: s
   const who = look?.name ?? p.look;
   const parts = [p.name, who, p.power];
   if (p.branch === 'classic') {
-    parts.push(p.classicRun ? 'Classic run' : 'Free play', RULES_LABELS[p.rules]);
-    if (p.classicRun && p.rules === 'classic') parts.push(DIFFICULTY_NAMES[p.difficulty]);
+    parts.push(RULES_LABELS[p.rules]);
+    if (p.rules === 'classic') parts.push(DIFFICULTY_NAMES[p.difficulty]);
+    if (p.mount === 'yoshi') parts.push('riding Yoshi');
   }
   return { value: p.name, said: parts.join(', ') };
 }
@@ -495,16 +515,18 @@ export class DevTrainingScene extends DevPage {
 
 /**
  * The START page: Start, Hero (the select's slot heroes), Look (that hero's skins), Power, then
- * for a Classic start Map difficulty, Rules and Mode, and Kit. A campaign start plays Current
- * rules as free play (99 lives).
+ * for a Classic start Mount (None / Yoshi, 0.4.72), Map difficulty and Rules, and Kit. Every
+ * start plays as free play (99 lives, straight back after a death; 0.4.72 owner item 7: the Mode
+ * row is gone); a campaign start plays Current rules.
  */
 export class DevStartScene extends DevPage {
   private heroIndex = 0;
   private lookIndex = 0;
   private powerIndex = 0;
   private fullKit = false;
+  /** 0.4.72 (owner item 6): the Mount row (None / Yoshi). */
+  private yoshi = false;
   private rules: Rules;
-  private classicRun: boolean;
   private difficulty: MapDifficulty = 'normal';
 
   constructor(
@@ -514,7 +536,9 @@ export class DevStartScene extends DevPage {
     super(game, 'Start', [], false);
     const classic = target.branch === 'classic';
     this.rules = classic ? 'classic' : 'current';
-    this.classicRun = classic;
+    // The Mount row starts as the Dev menu's Yoshi mount: Ride gives Yoshi (0.4.72 review).
+    const t = game.classicToggles;
+    this.yoshi = t.yoshiMount && t.yoshiRide === true;
     const cycle = (i: number, d: number, n: number) => (n ? (i + d + n) % n : 0);
     const items: MenuItem[] = [
       {
@@ -549,6 +573,21 @@ export class DevStartScene extends DevPage {
       adjust: (d) => (this.powerIndex = cycle(this.powerIndex, d, this.powerStates.length)),
     });
     if (classic) {
+      const can = () => this.canMount;
+      items.push({
+        label: 'Mount',
+        value: () => (this.canMount ? (this.yoshi ? 'Yoshi' : 'None') : '-'),
+        adjust: () => {
+          if (this.canMount) this.yoshi = !this.yoshi;
+        },
+        get hint() {
+          return can()
+            ? 'None or Yoshi: Yoshi starts the level riding him'
+            : 'Only with Classic SMBC rules, for a hero who rides';
+        },
+      });
+    }
+    if (classic) {
       const live = () => this.difficultyLive;
       const heroName = () => this.hero.name;
       items.push(
@@ -563,7 +602,7 @@ export class DevStartScene extends DevPage {
           get hint() {
             return live()
               ? 'Easy, Normal or Hard: each plays the original version of every level'
-              : 'Only a Classic run with Classic SMBC rules: else Normal';
+              : 'Only with Classic SMBC rules: else Normal';
           },
         },
         {
@@ -589,12 +628,6 @@ export class DevStartScene extends DevPage {
             return `${RULES_HINT}. Hero: ${heroName()}`;
           },
         },
-        {
-          label: 'Mode',
-          value: () => (this.classicRun ? 'Classic run' : 'Free play'),
-          adjust: () => (this.classicRun = !this.classicRun),
-          hint: 'Classic run: its lives, continues and select. Free play: 99 lives',
-        },
       );
     }
     items.push(
@@ -609,10 +642,13 @@ export class DevStartScene extends DevPage {
     this.setItems(items);
   }
 
-  /** The heroes the select would offer this start (Game.slotsFor; the campaign's roster). */
+  /**
+   * The heroes the select would offer this start (Game.devSlotsFor, 0.4.72: every hero not set
+   * Off; the campaign's roster).
+   */
   get heroes(): CharacterDef[] {
     if (this.target.branch === 'campaign') return this.game.deps.characters;
-    return this.game.slotsFor(this.rules);
+    return this.game.devSlotsFor(this.rules);
   }
 
   get hero(): CharacterDef {
@@ -642,9 +678,17 @@ export class DevStartScene extends DevPage {
     return this.powerStates[this.powerIndex] ?? (this.powerStates[0] as string);
   }
 
-  /** Map difficulty plays only in a Classic run under Classic rules (GameContext.mapDifficulty). */
+  /** The Mount row can start riding Yoshi now (canMount). */
+  get canMount(): boolean {
+    return this.target.branch === 'classic' && canMount(this.game, this.look, this.rules);
+  }
+
+  /**
+   * Map difficulty plays under Classic rules (GameContext.mapDifficulty; 0.4.72: in a dev free
+   * play start too).
+   */
   get difficultyLive(): boolean {
-    return this.classicRun && this.rules === 'classic';
+    return this.rules === 'classic';
   }
 
   private get difficultyNow(): MapDifficulty {
@@ -653,7 +697,6 @@ export class DevStartScene extends DevPage {
 
   /** The start these rows make. */
   get pick(): DevPick {
-    const classic = this.target.branch === 'classic';
     return {
       branch: this.target.branch,
       level: this.target.level,
@@ -663,8 +706,9 @@ export class DevStartScene extends DevPage {
       power: this.power,
       kit: this.fullKit,
       rules: this.rules,
-      classicRun: classic && this.classicRun,
+      classicRun: false,
       difficulty: this.difficultyNow,
+      ...(this.yoshi && this.canMount ? { mount: 'yoshi' as const } : {}),
     };
   }
 }
