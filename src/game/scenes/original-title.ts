@@ -166,7 +166,9 @@ export class ClassicTitleScene implements Scene {
       audio.fadeOutMusic?.(TITLE_MUSIC.fallOut);
       this.overworldDue = true;
     } else if (this.fromRemix) {
-      joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
+      this.overworldFrom = Math.round(
+        joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn) * 60,
+      );
       this.overworldAsked = true;
     } else {
       audio.playMusic('overworld');
@@ -194,6 +196,14 @@ export class ClassicTitleScene implements Scene {
   overworldAsked = false;
   /** BACK came while CLASSIC was still falling: it never landed on the stamp (0.4.72). */
   backBeforeImpact = false;
+  /** Reduce flashing's crossfade: the frame the overworld comes in (0: at once). */
+  private overworldFrom = 0;
+  /**
+   * 0.4.74: with Reduce flashing (no smash), BACK while the REMIX theme was still fading out,
+   * before the overworld came in: the calm way's "BACK during the fall". The REMIX title skips
+   * its way back and only brings its theme up again, as after BACK during the fall.
+   */
+  backMidCrossfade = false;
 
   /** The impact (or the smash cut short by a press): the overworld rises, the smash its downbeat. */
   private startOverworld(): void {
@@ -303,6 +313,7 @@ export class ClassicTitleScene implements Scene {
     if (this.phase === 'demo') {
       if (input.pressed('jump') || input.pressed('start') || this.tapped) this.openStart();
       else if (input.pressed('attack') || input.pressed('select')) {
+        if (this.t <= this.overworldFrom) this.backMidCrossfade = true;
         this.game.ctx.audio.sfx('bump');
         this.game.showTitle();
       }

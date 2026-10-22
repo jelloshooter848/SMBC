@@ -39,6 +39,36 @@ export interface Renderer {
    * recording ones) draws opaque: callers use `translucent` below.
    */
   alpha?(alpha: number, draw: () => void): void;
+  /**
+   * Optional (0.4.74): runs `draw` with the origin moved to (x, y), turned by `angle` radians
+   * (clockwise) and scaled by (sx, sy) in the turned axes, so `draw` works about (0, 0). A
+   * renderer without it only moves the origin: callers use `transformed` below.
+   */
+  transform?(
+    x: number,
+    y: number,
+    angle: number,
+    sx: number,
+    sy: number,
+    draw: (local: Renderer) => void,
+  ): void;
+}
+
+/**
+ * `draw` about (x, y), turned and scaled where `r` can (Renderer.transform); else only moved
+ * there (the null and recording renderers, so a test still sees where it is drawn).
+ */
+export function transformed(
+  r: Renderer,
+  x: number,
+  y: number,
+  angle: number,
+  sx: number,
+  sy: number,
+  draw: (local: Renderer) => void,
+): void {
+  if (r.transform) r.transform(x, y, angle, sx, sy, draw);
+  else draw(new OffsetRenderer(r, x, y));
 }
 
 /** `draw` through `r` at opacity `alpha` where `r` can (Renderer.alpha), else opaque. */
@@ -111,6 +141,16 @@ export class OffsetRenderer implements Renderer {
   }
   alpha(alpha: number, draw: () => void): void {
     translucent(this.inner, alpha, draw);
+  }
+  transform(
+    x: number,
+    y: number,
+    angle: number,
+    sx: number,
+    sy: number,
+    draw: (local: Renderer) => void,
+  ): void {
+    transformed(this.inner, x + this.dx, y + this.dy, angle, sx, sy, draw);
   }
 }
 
@@ -207,6 +247,25 @@ export class CanvasRenderer implements Renderer {
     ctx.globalAlpha *= alpha;
     try {
       draw();
+    } finally {
+      ctx.restore();
+    }
+  }
+  transform(
+    x: number,
+    y: number,
+    angle: number,
+    sx: number,
+    sy: number,
+    draw: (local: Renderer) => void,
+  ): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(x, y);
+    if (angle) ctx.rotate(angle);
+    ctx.scale(sx, sy);
+    try {
+      draw(this);
     } finally {
       ctx.restore();
     }
