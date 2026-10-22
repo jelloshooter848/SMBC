@@ -264,7 +264,9 @@ export const OLD_DEFAULT_MASTER = 0.8;
 export function defaultSettings(): Settings {
   return {
     v: SETTINGS_VERSION,
-    video: { integerScale: true, palette: 'default', reduceFlashing: false, showFps: false },
+    // integerScale false is Picture size: FILL, the default since 0.4.73 (owner). Saved files
+    // keep their value: no migration (owner's choice B).
+    video: { integerScale: false, palette: 'default', reduceFlashing: false, showFps: false },
     audio: { master: DEFAULT_MASTER, music: 1, sfx: 1, muted: false },
     input: {
       bindings: [defaultBindings(0), defaultBindings(1)],

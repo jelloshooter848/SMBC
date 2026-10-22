@@ -142,7 +142,7 @@ export class MenuScene implements Scene {
   }
 
   /**
-   * The page's title as it is said on entry, before the focused row ("Video. Integer scale: On"),
+   * The page's title as it is said on entry, before the focused row ("Video. Picture size: Fill"),
    * as the boxes say theirs; null: the focused row only.
    */
   protected entryTitle: string | null = null;

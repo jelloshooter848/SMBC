@@ -101,9 +101,12 @@ class VideoOptions extends MenuScene {
     const s = settings(game);
     this.setItems([
       {
-        label: 'Integer scale',
-        value: () => onOff(s.video.integerScale),
+        // 0.4.73 (owner): was "Integer scale: On/Off". FILL fills the screen (fractional scale,
+        // the default); SHARP keeps whole pixels and may leave a border. Stored as integerScale.
+        label: 'Picture size',
+        value: () => (s.video.integerScale ? 'Sharp' : 'Fill'),
         adjust: () => void ((s.video.integerScale = !s.video.integerScale), apply(game)),
+        hint: 'Fill: bigger picture. Sharp: crisp, even pixels, may leave a border',
       },
       {
         label: 'Palette',

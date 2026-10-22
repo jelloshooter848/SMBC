@@ -193,7 +193,8 @@ has the same guide for the hero you are playing.
 
 ### Options (title screen or pause)
 
-- **Video**: integer scaling, colour-blind safe palettes (deuteranopia, protanopia,
+- **Video**: picture size (FILL fills the screen; SHARP keeps crisp, even pixels and may
+  leave a border), colour-blind safe palettes (deuteranopia, protanopia,
   tritanopia) and high contrast, reduced flashing, FPS counter, screen-reader announcements.
 - **Audio**: master, music and sound volumes, mute.
 - **Controls**: full keyboard and gamepad remapping; touch pad auto/on/off, size, and fixed

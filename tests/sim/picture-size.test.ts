@@ -13,7 +13,7 @@ import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
-// 0.4.74 (owner, items 78-80): Options > Video's "Integer scale: ON/OFF" row is "Picture size:
+// 0.4.73 (owner, items 78-80): Options > Video's "Integer scale: ON/OFF" row is "Picture size:
 // FILL / SHARP". FILL (integerScale false) fills the screen; SHARP (integerScale true) keeps
 // whole pixels and may leave a border. A new player starts on FILL; saved settings keep their
 // value (no migration, owner's choice B).
