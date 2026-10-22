@@ -2528,7 +2528,8 @@ export class Game {
    * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
    * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
    * ('level'). 0.4.72: its run was played in dev mode by a hero only dev mode offers (devHero)
-   * and dev mode is off now ('not-released'). Null when it plays, or when there is no readable
+   * and dev mode is off now ('not-released'); 0.4.73 item 40: so is any run of an unreleased
+   * Expansion hero, marked or not. Null when it plays, or when there is no readable
    * file there.
    */
   classicFileProblem(ref: ClassicFileRef): FileProblem | null {
@@ -2547,9 +2548,12 @@ export class Game {
     const rules = this.resumeRules(r);
     const hero = this.rosterFor(rules).find((c) => c.id === r.hero);
     if (hero) {
-      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's);
-      // an unmarked one whose hero no select offers plays as the first slot's hero (P1).
-      if (r.devHero && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
+      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's).
+      // 0.4.73 item 40: so does an unmarked one whose hero is an unreleased Expansion hero (a
+      // file saved by v0.4.71 or earlier), never played as another hero or rewritten. Only a
+      // hero that is neither offered nor an Expansion hero plays as the first slot's (P1).
+      const waits = r.devHero === true || this.devOnlyHero(hero);
+      if (waits && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
       return null;
     }
     const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
