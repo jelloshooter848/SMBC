@@ -2287,6 +2287,7 @@ export class Game {
     this.classicKits = {};
     // B-L: the run's file and rules go with it.
     this.classicFile = null;
+    this.playedFile = null;
     this.runFileRules = null;
     this.fileContinues = 0;
     this.practiceRun = false;
@@ -2382,6 +2383,18 @@ export class Game {
 
   /** 38d: the main level of the last level any run went to (goToLevel), for runSet. */
   private runLevel: string | null = null;
+
+  /**
+   * 38e: the file of the Classic run that was just left for the CLASSIC menu (Quit, or MAIN MENU
+   * after its game over); any other way out of a run (the title) forgets it.
+   */
+  private playedFile: ClassicFileRef | null = null;
+
+  /** 38e: the slot of set `set` the last Classic run played in, for its file box's focus. */
+  playedSlot(set: MapSetId): ClassicFileSlot | undefined {
+    const f = this.classicFile ?? this.playedFile;
+    return f?.set === set ? f.slot : undefined;
+  }
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
@@ -2608,9 +2621,11 @@ export class Game {
    */
   quitClassicRun(): void {
     const set = this.runSet;
+    const played = this.classicFile;
     this.leaveRun();
     this.scenes.clear();
     this.showClassicMenu(set);
+    this.playedFile = played;
   }
 
   /**
@@ -2619,7 +2634,10 @@ export class Game {
    * map set `focus`'s row (Back from that set's select), else the first.
    */
   showClassicMenu(focus?: MapSetId): void {
+    // 38e: leaving a run for the CLASSIC menu, its set's file box opens on the file it played.
+    const played = this.classicFile;
     this.endClassicRun();
+    this.playedFile = played;
     this.runRules = 'current';
     const title = new ClassicTitleScene(this, 'start', true);
     this.leaveClassicTitle();

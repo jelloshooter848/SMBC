@@ -216,7 +216,8 @@ export class ClassicMenuScene extends MenuScene {
       const files = used === 0 ? 'No files used' : `${used} ${used === 1 ? 'file' : 'files'} used`;
       return {
         label: set.label,
-        select: () => game.scenes.push(filesBoxFor(game, set.id)),
+        // 38e: on the file just played, after a run.
+        select: () => game.scenes.push(filesBoxFor(game, set.id, game.playedSlot(set.id))),
         hint: `${set.about}${beatHint(classicBeatStatus(set.id))}. ${files}`,
       };
     });
