@@ -30,15 +30,19 @@ import { TitleScene } from './title';
 import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
 import { resumeOf, type ClassicResume } from '../run-resume';
 import {
+  classicFileKept,
   copyFileRules,
   eraseClassicFile,
   hasClassicFile,
   listClassicFiles,
   loadClassicFile,
+  loadClearedFile,
   migrateClassicFiles,
   originalFileRules,
   saveClassicFile,
+  saveClearedFile,
   type ClassicFile,
+  type ClearedFile,
   type ClassicFileRef,
   type ClassicFileRules,
   type ClassicFileSlot,
@@ -141,6 +145,13 @@ import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { filesBoxFor, fileRulesSpoken, type ClassicFilesScene } from './original-files-menu';
+import {
+  clearedNote,
+  openClearedFile,
+  ReplayDeathScene,
+  showReplayLevels,
+  type ReplayRun,
+} from './original-replay';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -292,6 +303,22 @@ export class Game {
    * counts for nothing (no beat, no cheat counts, no unlocks), as a developer run.
    */
   practiceRun = false;
+  /**
+   * v0.4.73 (owner C): the level replay of a CLEARED file playing (or its select), with the
+   * file, world and level it was picked from. Only with practiceRun (replayRun reads both): it
+   * writes no file, counts for nothing, and has free play's lives.
+   */
+  private replay: ReplayRun | null = null;
+  /**
+   * v0.4.73: the worlds this file run has had a WORLD card in (ClassicResume.worlds), for its
+   * CLEARED file's replay (The Lost Levels' World 9 and A-D only when reached).
+   */
+  private runWorlds: number[] = [];
+  /**
+   * v0.4.73 (owner B): the file this run's ending made CLEARED (and whether storage took it),
+   * for the message after the credits and the cheat cards.
+   */
+  private clearedNews: { ref: ClassicFileRef; saved: boolean } | null = null;
   /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
   private levelSelectUnlocked = false;
   /**
@@ -1022,8 +1049,11 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    // G-008, B-L: a Classic run that reaches the credits is over; its file is emptied.
-    if (this.keepsResume) this.dropResume();
+    // v0.4.73 (owner C, 48A): a replayed level's castle goes back to its world's level box.
+    if (this.replayRun) return this.replayCleared();
+    // G-008, B-L: a Classic run that reaches the credits is over. v0.4.73 (owner 46B): its file
+    // is kept as CLEARED, never emptied.
+    if (this.keepsResume) this.clearFile(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -1699,6 +1729,8 @@ export class Game {
    * two picks next.
    */
   warpToLevel(levelId: string, start: LevelStart, pipe = true): void {
+    // v0.4.73: a replayed level left by a warp pipe (a warp zone) is over, as a clear is.
+    if (this.replayRun) return this.replayCleared();
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
     this.selectLevel = levelId;
@@ -1755,6 +1787,8 @@ export class Game {
    * (EventManager.beatLevel → StatManager.beatLevelHandler).
    */
   levelExitTo(levelId: string, cleared?: { world: number; stage: number }): void {
+    // v0.4.73 (owner C, 48A): a replayed level's clear goes back to its world's level box.
+    if (this.replayRun) return this.replayCleared();
     if (cleared) this.survival?.levelCleared(cleared.world, cleared.stage);
     if (this.classicRun && this.campaign === null) return this.warpToLevel(levelId, { mode: 'stand' }, false);
     this.goToLevel(levelId, { mode: 'stand' });
@@ -2090,6 +2124,8 @@ export class Game {
       this.classicFile = { set: file.ref.set, slot: file.ref.slot };
       this.runFileRules = copyFileRules(file.rules ?? originalFileRules());
       this.practiceRun = false;
+      this.replay = null;
+      this.runWorlds = [];
       this.fileContinues = 0;
       this.classicDifficulty = this.runFileRules.difficulty;
     }
@@ -2368,6 +2404,8 @@ export class Game {
     this.runFileRules = null;
     this.fileContinues = 0;
     this.practiceRun = false;
+    this.replay = null;
+    this.clearedNews = null;
   }
 
   /**
@@ -2392,6 +2430,18 @@ export class Game {
   private keepResume(levelId: string, continued = false): void {
     const ref = this.classicFile;
     if (!ref) return;
+    const r = this.runNow(levelId, ref);
+    saveClassicFile({
+      ...ref,
+      rules: this.classicRunRules,
+      continues: this.fileContinues,
+      tutorialsSeen: this.classicTutorials.seen,
+      run: continued ? { ...r, continued: true } : r,
+    });
+  }
+
+  /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
+  private runNow(levelId: string, ref: ClassicFileRef): ClassicResume {
     const sv = this.survival;
     const survival = sv
       ? {
@@ -2421,13 +2471,52 @@ export class Game {
     // A mark the file has is never dropped (a later write by another hero keeps it).
     if (this.devOnlyHero(this.state.character) || loadClassicFile(ref)?.run.devHero === true)
       r.devHero = true;
-    saveClassicFile({
+    // v0.4.73: the worlds reached (its CLEARED file's replay offers Lost World 9 and A-D by them).
+    if (!this.runWorlds.includes(r.world)) this.runWorlds.push(r.world);
+    r.worlds = [...this.runWorlds];
+    return r;
+  }
+
+  /**
+   * v0.4.73 (owner 46B, 47A): the set is beaten (its ending, before the credits): the run's file
+   * is kept as CLEARED, with the run as it is now (score, lives, hero), once. A file CLEARED
+   * already (another tab's run) stays as it was; storage refusing the write leaves the file's
+   * last run in it (nothing lost), and the message after the credits says it was not saved.
+   */
+  private clearFile(from: string): void {
+    const ref = this.classicFile;
+    if (!ref) return;
+    let main = from;
+    try {
+      main = this.deps.getLevel(from).parent ?? from;
+    } catch {
+      /* kept as given */
+    }
+    const ok = saveClearedFile({
       ...ref,
       rules: this.classicRunRules,
       continues: this.fileContinues,
       tutorialsSeen: this.classicTutorials.seen,
-      run: continued ? { ...r, continued: true } : r,
+      run: this.runNow(main, ref),
     });
+    this.clearedNews = { ref: { ...ref }, saved: ok || loadClearedFile(ref) !== null };
+  }
+
+  /**
+   * v0.4.73 (owner B): after the credits and the cheat cards of a beaten set: that set's file box
+   * on the CLEARED file, with the message box over it (read out, waiting for OK). A run with no
+   * file to clear (a link run) goes to the title as before.
+   */
+  private afterClassicBeat(): void {
+    const news = this.clearedNews;
+    this.clearedNews = null;
+    if (!news) return this.showTitle();
+    // The run is over: its level (still under the credits when no cheat card followed) and
+    // everything else it left go, as on any way back to the menus (quitClassicRun).
+    this.leaveRun();
+    this.scenes.clear();
+    const files = this.showClassicFiles(news.ref.set, news.ref.slot);
+    this.scenes.push(clearedNote(this, files, news.ref, news.saved));
   }
 
   /**
@@ -2479,7 +2568,9 @@ export class Game {
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
-    if (this.classicFile) eraseClassicFile(this.classicFile);
+    const ref = this.classicFile;
+    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run.
+    if (ref && !classicFileKept(ref)) eraseClassicFile(ref);
   }
 
   /**
@@ -2513,10 +2604,21 @@ export class Game {
    * Only an empty file is ever treated as empty, so a new game never overwrites the others;
    * ERASE FILE empties them.
    */
-  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unplayable' | 'unreadable' {
+  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'cleared' | 'unplayable' | 'unreadable' {
     if (this.classicFileAt(ref)) return 'used';
+    // v0.4.73 (owner 46B): its set was beaten in it; only ERASE FILE empties it.
+    if (this.classicClearedAt(ref)) return 'cleared';
     if (loadClassicFile(ref)) return 'unplayable';
     return hasClassicFile(ref) ? 'unreadable' : 'empty';
+  }
+
+  /**
+   * v0.4.73: file `ref` when it is CLEARED (whatever its hero: the replay's select offers the
+   * heroes its rules do), else null.
+   */
+  classicClearedAt(ref: ClassicFileRef): ClearedFile | null {
+    this.migrateClassicFiles();
+    return loadClearedFile(ref);
   }
 
   /** B-L: file `ref` when it is used and still plays, else null. */
@@ -2598,6 +2700,8 @@ export class Game {
     this.classicFile = { set: ref.set, slot: ref.slot };
     this.fileContinues = f.continues;
     this.practiceRun = false;
+    this.replay = null;
+    this.runWorlds = [...(r.worlds ?? [])];
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = rules;
@@ -2718,12 +2822,97 @@ export class Game {
    * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
    */
   quitClassicRun(): void {
+    // v0.4.73: leaving a level replay goes back to its CLEARED file on the file box.
+    if (this.replayRun) return this.leaveReplay('files');
     const set = this.runSet;
     const played = this.classicFile;
     this.leaveRun();
     this.scenes.clear();
     this.showClassicMenu(set);
     this.playedFile = played;
+  }
+
+  /**
+   * v0.4.73 (owner C): the level replay of a CLEARED file being played (or its select), else
+   * null. Only a Classic practice-style run has one: it writes no file and counts for nothing.
+   */
+  get replayRun(): ReplayRun | null {
+    return this.practiceRun && this.campaign === null ? this.replay : null;
+  }
+
+  /**
+   * v0.4.73 (owner C, 51A, 49A): a CLEARED file's level `levelId` (World `world`, level `stage`)
+   * picked on its level box: the Classic hero select, then the level, with the file's rules (its
+   * Map difficulty, More settings, Weapons and Disable heroes; its Game mode played as the normal
+   * hero pick), free play's lives and the normal timer. BACK from the select: the level box.
+   * Nothing is written: no file (classicFile null), no beat, no cheat counts (practiceRun).
+   */
+  replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string): void {
+    const f = this.classicClearedAt(ref);
+    if (!f) {
+      // Erased (or changed) by another tab since this box was drawn: said, and the file box again.
+      this.deps.ctx.audio.sfx('bump');
+      this.showClassicFiles(ref.set, ref.slot).sayWith(`File ${ref.slot} is no longer cleared.`);
+      return;
+    }
+    const rules = copyFileRules(f.rules);
+    rules.options.gameMode = originalFileRules().options.gameMode;
+    this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage), {
+      rules,
+      practice: true,
+      replay: { ref: { set: ref.set, slot: ref.slot }, world, stage, levelId },
+      tutorialsSeen: f.tutorialsSeen,
+    });
+  }
+
+  /**
+   * v0.4.73 (49A): a death in a replayed level costs no life: its box over the level, RETRY
+   * (`levelId` at `start`: the checkpoint, or the level's first area), SELECT CHARACTER, RETURN
+   * TO MENU; BACK steps back to the level box.
+   */
+  replayDied(levelId: string, start: LevelStart): void {
+    const rp = this.replayRun;
+    if (!rp) return;
+    this.selectLevel = levelId;
+    this.scenes.push(new ReplayDeathScene(this, rp, levelId, start));
+  }
+
+  /** The death box's RETRY: the replayed level again, the same hero. */
+  replayRetry(levelId: string, start: LevelStart): void {
+    this.goToLevel(levelId, start);
+  }
+
+  /** The death box's SELECT CHARACTER, then the level: the picked hero starts at his default. */
+  replayHero(c: CharacterDef, levelId: string, start: LevelStart): void {
+    this.heroChosen = true;
+    if (c !== this.state.character) this.setHero(0, c);
+    this.goToLevel(levelId, start);
+  }
+
+  /** v0.4.73 (owner C, D): a CLEARED file picked on its file box: (the instructions,) the world box. */
+  openClearedFile(files: ClassicFilesScene, f: ClearedFile): void {
+    openClearedFile(this, files, f);
+  }
+
+  /** v0.4.73 (48A): a replayed level cleared (or left by a warp zone): its world's level box. */
+  private replayCleared(): void {
+    this.leaveReplay('next');
+  }
+
+  /**
+   * Leaves the level replay for its CLEARED file: the file box on the file ('files'), or that
+   * world's level box on the level played ('levels') or on the one after it ('next': a clear).
+   */
+  leaveReplay(to: 'files' | 'levels' | 'next'): void {
+    const rp = this.replay;
+    this.leaveRun();
+    this.scenes.clear();
+    if (!rp) return this.showClassicMenu();
+    if (to === 'files') {
+      this.showClassicFiles(rp.ref.set, rp.ref.slot);
+      return;
+    }
+    showReplayLevels(this, rp.ref, rp.world, rp.stage, to === 'next');
   }
 
   /**
@@ -2791,7 +2980,14 @@ export class Game {
   classicSelect(
     levelId: string,
     back: () => void,
-    run: { file?: ClassicFileRef; rules?: ClassicFileRules; practice?: boolean } = {},
+    run: {
+      file?: ClassicFileRef;
+      rules?: ClassicFileRules;
+      practice?: boolean;
+      /** v0.4.73: a CLEARED file's level replay (with practice), and its file's Tutorials seen. */
+      replay?: ReplayRun;
+      tutorialsSeen?: readonly string[];
+    } = {},
   ): void {
     // The run's rules are set before the pick, so the roster (Game.roster) offers the Classic
     // extras on the very first select.
@@ -2803,6 +2999,9 @@ export class Game {
     this.classicFile = run.file ? { set: run.file.set, slot: run.file.slot } : null;
     this.runFileRules = run.rules ? copyFileRules(run.rules) : null;
     this.practiceRun = run.practice === true;
+    this.replay = run.practice === true && run.replay ? { ...run.replay } : null;
+    if (run.tutorialsSeen) this.classicTutorials.restore(run.tutorialsSeen);
+    this.runWorlds = [];
     this.fileContinues = 0;
     this.classicDifficulty = this.classicRunRules.difficulty;
     this.runRules = this.classicRules;
@@ -2879,7 +3078,7 @@ export class Game {
       );
       return;
     }
-    if (!id) return this.showTitle();
+    if (!id) return this.afterClassicBeat();
     const lines = unlockedLines(id);
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
     this.deps.ctx.audio.sfx('1up');
@@ -3129,6 +3328,8 @@ export class Game {
    * coins and the checkpoint are kept. Dev-mode starts respawn straight away.
    */
   respawn(levelId: string, start: LevelStart, player = 0): void {
+    // v0.4.73: a replayed level's death has its own box (RETRY, SELECT CHARACTER, RETURN TO MENU).
+    if (this.replayRun) return this.replayDied(levelId, start);
     this.selectLevel = levelId;
     // G-008: the slot follows the death (its lives) before the select, so quitting there resumes it.
     if (this.keepsResume) this.keepResume(levelId);
