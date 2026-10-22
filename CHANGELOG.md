@@ -18,6 +18,9 @@ under `## [Unreleased]`.
   blip.
 - Classic: the Cheats page's code entry is announced with BACK's key, as the page shows it
   ("BACK (RIGHT SHIFT) to stop" on a keyboard, just BACK on touch).
+- Screen reader: the Video, Audio, Controls and Assists pages, the Dev menu and its Level select,
+  Mini games, Bonus games and Toggle heroes pages say their title with the focused row when they
+  open, and the page under them says its focused row again on the way back, as the boxes do.
 
 ## [0.4.69] - 2026-10-22
 

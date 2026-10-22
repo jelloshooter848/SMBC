@@ -1,6 +1,6 @@
 import { MAP_DIFFICULTIES, type MapDifficulty } from '@engine/save/settings';
 import { loadJson, saveJson } from '@engine/save/storage';
-import { MenuScene, type MenuItem } from './menu';
+import { MenuScene, backToMenu, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
@@ -169,7 +169,7 @@ class DevPage extends MenuScene {
   private readonly spoken: string;
 
   constructor(game: Game, title: string, items: MenuItem[], translucent: boolean) {
-    super(game, title.toUpperCase(), items, () => game.scenes.pop(), translucent);
+    super(game, title.toUpperCase(), items, () => backToMenu(game), translucent);
     this.spoken = title;
   }
 
@@ -188,7 +188,7 @@ function push(game: Game, page: MenuScene, translucent: boolean): void {
   game.scenes.push(page);
 }
 
-const back = (game: Game): MenuItem => ({ label: 'Back', select: () => game.scenes.pop() });
+const back = (game: Game): MenuItem => ({ label: 'Back', select: () => backToMenu(game) });
 
 /**
  * Area `id` as its row shows and says it: its set's prefix off, the world as the menus name it

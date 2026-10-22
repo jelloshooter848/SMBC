@@ -141,15 +141,34 @@ export class MenuScene implements Scene {
     this.translucent = translucent;
   }
 
+  /**
+   * The page's title as it is said on entry, before the focused row ("Video. Integer scale: On"),
+   * as the boxes say theirs; null: the focused row only.
+   */
+  protected entryTitle: string | null = null;
+
   enter(): void {
-    this.announce();
+    const line = this.focusLine();
+    if (this.entryTitle && line) this.game.deps.announcer?.say(`${this.entryTitle}. ${line}`);
+    else this.announce();
+  }
+
+  /** The focused row as said: its label, value and hint. */
+  private focusLine(): string {
+    const it = this.items[this.index];
+    if (!it) return '';
+    const v = it.value ? `: ${it.value()}` : '';
+    return `${it.label}${v}${it.hint ? `. ${it.hint}` : ''}`;
   }
 
   protected announce(): void {
-    const it = this.items[this.index];
-    if (!it) return;
-    const v = it.value ? `: ${it.value()}` : '';
-    this.game.deps.announcer?.say(`${it.label}${v}${it.hint ? `. ${it.hint}` : ''}`);
+    const line = this.focusLine();
+    if (line) this.game.deps.announcer?.say(line);
+  }
+
+  /** Says the focused row again (back on this page from one opened over it: backToMenu). */
+  announceFocus(): void {
+    this.announce();
   }
 
   /** A picks the highlighted entry, or steps a setting that has no action (CHANGE). */
@@ -254,4 +273,14 @@ export class MenuScene implements Scene {
     const back = this.onBack ? abilityHint(this.game, 'BACK', this.backAction) : '';
     if (back && (this.t >> 5) % 2 === 0) r.text(font, back, 24, at.backY);
   }
+}
+
+/**
+ * Leaves the page on top for the one under it, which says its focused row again (as the boxes
+ * do on the way back), when it is a menu.
+ */
+export function backToMenu(game: Game): void {
+  game.scenes.pop();
+  const top = game.scenes.top;
+  if (top instanceof MenuScene) top.announceFocus();
 }
