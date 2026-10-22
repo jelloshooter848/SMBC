@@ -6,6 +6,7 @@ import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original
 import {
   CLASSIC_FILE_SLOTS,
   eraseClassicFile,
+  classicFileGone,
   loadClassicFile,
   oldRunsWaiting,
   originalFileRules,
@@ -18,7 +19,7 @@ import { resumeSetOf } from '../run-resume';
 import { CLASSIC_EXTRAS } from '../characters/registry';
 import { worldLabel } from '../hud/world-label';
 import { MenuScene, type MenuItem } from './menu';
-import type { Game } from './game';
+import type { FileProblem, Game } from './game';
 import { demoUnder, renderBoxedMenu, type DemoBackdrop } from './original-box-menu';
 import { DIFFICULTY_NAMES, MAP_SETS, type MapSet } from './original-game';
 import {
@@ -123,11 +124,19 @@ const UNREADABLE = 'UNREADABLE';
 function problemRow(
   game: Game,
   f: ClassicFile,
-  problem: 'hero-off' | 'hero' | 'level',
+  problem: FileProblem,
 ): {
   value: string;
   why: string;
 } {
+  if (problem === 'not-released') {
+    // 0.4.72: played in dev mode by a hero players do not have yet; never played as another.
+    const name = fileHeroName(game, f);
+    return {
+      value: 'NOT RELEASED',
+      why: `Its hero, ${name}, is not released yet. Turn dev mode on to play it`,
+    };
+  }
   if (problem === 'hero-off') {
     const name = fileHeroName(game, f);
     return {
@@ -147,7 +156,7 @@ const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
 
 /**
  * 31a: an old save (from before the files) whose set was full waits for a free file and moves
- * into the one ERASE FILE frees. The words for it, said and shown.
+ * into the next file that is freed. The words for it, said and shown.
  */
 const OLD_SAVE = 'A game saved by an older version';
 
@@ -243,8 +252,11 @@ export class ClassicFilesScene extends ClassicBox {
   private files: (ClassicFile | null)[] = [];
   /** Every file that reads, playable or not (31d), for ERASE FILE and the line under the box. */
   private readable: (ClassicFile | null)[] = [];
-  /** 31a: the file an old save just moved into (after ERASE), shown under it until the cursor moves. */
-  private movedInto: ClassicFileSlot | null = null;
+  /**
+   * After ERASE, shown under its file until the cursor moves: 31a, an old save just moved into it;
+   * 39a, the erase was refused (storage).
+   */
+  private note: { slot: ClassicFileSlot; moved: boolean } | null = null;
 
   constructor(
     game: Game,
@@ -326,7 +338,10 @@ export class ClassicFilesScene extends ClassicBox {
 
   protected override statusLine(): string {
     const slot = this.slotAt(this.index);
-    if (slot && slot === this.movedInto) return `OLD SAVE MOVED INTO ${fileName(slot).toUpperCase()}`;
+    if (slot && slot === this.note?.slot)
+      return this.note.moved
+        ? `OLD SAVE MOVED INTO ${fileName(slot).toUpperCase()}`
+        : `${fileName(slot).toUpperCase()} COULD NOT BE ERASED`;
     const f = slot ? this.readable[slot - 1] : null;
     return f ? fileDetailLine(this.game, f) : '';
   }
@@ -348,7 +363,7 @@ export class ClassicFilesScene extends ClassicBox {
     const ref: ClassicFileRef = { set: this.set.id, slot };
     const diff = new ClassicDifficultyScene(this.game, ref, draft, this);
     this.game.scenes.push(diff);
-    if (atRules) diff.openRules();
+    if (atRules) diff.openRules(true);
   }
 
   /** Per file: anything stored there (used, or unreadable), so ERASE FILE can empty it. */
@@ -373,26 +388,47 @@ export class ClassicFilesScene extends ClassicBox {
   }
 
   protected override announce(): void {
-    if (this.movedInto !== null && this.slotAt(this.index) !== this.movedInto) this.movedInto = null;
+    if (this.note !== null && this.slotAt(this.index) !== this.note.slot) this.note = null;
     super.announce();
+  }
+
+  /**
+   * ERASE FILE's YES: file `slot` emptied, then the box again on it (erased). 39a: whether the
+   * file is gone is read right after the erase, so a refused erase (storage throwing) is never
+   * told as an old save moving in.
+   */
+  eraseFile(slot: ClassicFileSlot): void {
+    const ref: ClassicFileRef = { set: this.set.id, slot };
+    eraseClassicFile(ref);
+    // #205: storage that cannot be read confirms nothing: that is a failed erase too.
+    this.erased(slot, classicFileGone(ref));
   }
 
   /**
    * After ERASE: the box again, on the erased file, saying so. 31a: an old save that was waiting
    * for a free file (its set was full) has moved into it on this read: that is said, then the
-   * file as it is now.
+   * file as it is now. 39a: only when the file was empty right after the erase (`emptied`), so
+   * what is in it now came in on this read (even when its old key could not be removed); a file
+   * still there right after the erase was not erased.
    */
-  erased(slot: ClassicFileSlot): void {
+  private erased(slot: ClassicFileSlot, emptied: boolean): void {
     closeTo(this.game, this);
     this.refresh();
     this.index = slot - 1;
     const erased = `${fileName(slot)} erased.`;
+    if (!emptied) {
+      this.note = { slot, moved: false };
+      this.game.ctx.audio.sfx('bump');
+      this.game.deps.announcer?.say(`${fileName(slot)} could not be erased. ${this.spoken()}`);
+      return;
+    }
     if (this.game.classicFileState({ set: this.set.id, slot }) === 'empty') {
-      this.movedInto = null;
+      this.note = null;
       this.game.deps.announcer?.say(`${erased} ${this.spoken()}`);
       return;
     }
-    this.movedInto = slot;
+    // Gone right after the erase and something in it now: an old save moved in on this read.
+    this.note = { slot, moved: true };
     const hint = this.items[this.index]?.hint ?? '';
     this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
   }
@@ -433,9 +469,9 @@ export class ClassicDifficultyScene extends ClassicBox {
     this.index = Math.max(0, MAP_DIFFICULTIES.indexOf(draft.difficulty));
   }
 
-  /** The file's rules box, over this one. */
-  openRules(): void {
-    this.game.scenes.push(new ClassicFileRulesScene(this.game, this.ref, this.draft, this));
+  /** The file's rules box, over this one; `atStart`: on its START (back from the hero select). */
+  openRules(atStart = false): void {
+    this.game.scenes.push(new ClassicFileRulesScene(this.game, this.ref, this.draft, this, atStart));
   }
 }
 
@@ -452,6 +488,7 @@ export class ClassicFileRulesScene extends ClassicBox {
     readonly ref: ClassicFileRef,
     readonly draft: ClassicFileRules,
     readonly below: ClassicDifficultyScene,
+    atStart = false,
   ) {
     super(game, `File ${ref.slot} rules`, () => {
       closeTo(game, below);
@@ -459,6 +496,12 @@ export class ClassicFileRulesScene extends ClassicBox {
     });
     this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts. Left and right to change`;
     this.refresh();
+    // 38c: back from the new game's hero select, on START again (the row that opened it).
+    if (atStart)
+      this.index = Math.max(
+        0,
+        this.items.findIndex((i) => i.label === 'Start'),
+      );
   }
 
   private get options(): OptionStore {
@@ -599,8 +642,7 @@ export class ClassicEraseConfirmScene extends ClassicBox {
       {
         label: 'Yes',
         select: () => {
-          eraseClassicFile({ set: files.set.id, slot });
-          files.erased(slot);
+          files.eraseFile(slot);
         },
         hint: `Erase ${fileName(slot)} for good`,
       },

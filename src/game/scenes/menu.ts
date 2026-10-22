@@ -171,6 +171,16 @@ export class MenuScene implements Scene {
     this.announce();
   }
 
+  /**
+   * 38f: says the page's title, then its focused row, as on entry (back on this page from a card
+   * or a question that covered it whole: the offline note, the quit confirm's NO).
+   */
+  announcePage(): void {
+    const line = this.focusLine();
+    if (this.entryTitle && line) this.game.deps.announcer?.say(`${this.entryTitle}. ${line}`);
+    else this.announce();
+  }
+
   /** A picks the highlighted entry, or steps a setting that has no action (CHANGE). */
   touchLabels(): TouchLabels {
     const it = this.items[this.index];

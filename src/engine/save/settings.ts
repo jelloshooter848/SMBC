@@ -30,6 +30,8 @@ export interface AssistSettings {
   fireRevertsToBig: boolean;
   /** An invisible floor over deadly pits and lava (AssistOptions.safetyFloor). */
   safetyFloor: boolean;
+  /** 0.4.72: what every block holds is shown over it, hidden blocks too (AssistOptions.showHidden). */
+  showHidden: boolean;
   /** 1 = normal, 2 = half speed (one physics step every other frame). */
   slowMotion: 1 | 2;
 }
@@ -279,6 +281,7 @@ export function defaultSettings(): Settings {
       coyoteFrames: 0,
       fireRevertsToBig: false,
       safetyFloor: false,
+      showHidden: false,
       slowMotion: 1,
     },
     packs: [],

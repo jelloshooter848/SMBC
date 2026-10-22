@@ -67,6 +67,12 @@ export interface ClassicResume {
   /** Item 25: the playing hero's power and kit were earned in a Plays as design (GameState.swapped). */
   swapped?: true;
   /**
+   * 0.4.72: written in dev mode by a hero only dev mode's select offers (an unreleased Expansion
+   * hero). Outside dev mode such a file does not play (Game.fileProblem 'not-released') and is
+   * never rewritten; without the mark a hero no select offers plays as the first slot's (P1).
+   */
+  devHero?: true;
+  /**
    * An old per-set slot's continues (#196's item 8). Migration reads it; a file keeps its count
    * beside the run (ClassicFile.continues), never here.
    */
@@ -234,6 +240,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
     continues: cn,
     continued: cd,
     swapped: sw,
+    devHero: dh,
     ...rest
   } = r as ClassicResume;
   return {
@@ -242,6 +249,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
     ...(Number.isInteger(cn) && (cn as number) >= 0 ? { continues: cn } : {}),
     ...(cd === true ? { continued: true as const } : {}),
     ...(sw === true ? { swapped: true as const } : {}),
+    ...(dh === true ? { devHero: true as const } : {}),
     // An older slot, or a value this version does not know: none (the caller falls back).
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),

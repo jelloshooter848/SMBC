@@ -720,6 +720,9 @@ function startFloorTurn(p: Player, st: SophiaState, c: Controls, map: TileMap): 
   const floorRow = tileAt(feet);
   const first = tileAt(f > 0 ? b.x + b.w - 1 : b.x);
   const last = tileAt(f > 0 ? b.x : b.x + b.w - 1);
+  // The stage's bottom row has no face below the screen to wrap onto: she drives off and falls,
+  // as the original does (its floor goes on below the screen), never under the stage.
+  if (floorRow >= map.height - 1) return false;
   for (let col = first; f > 0 ? col >= last : col <= last; col -= f) {
     if (!climbable(map, col, floorRow)) continue;
     if (map.collisionAt(col + f, floorRow) !== 'none') return false;
@@ -856,8 +859,11 @@ function wall(p: Player, st: SophiaState, input: InputFrame, map: TileMap): void
           return;
       }
     }
-    // Outside corner: the wall ends ahead.
-    const edge = edgeAhead(map, wcol, true, d < 0 ? b.y + b.h - 1 : b.y, front, d);
+    // Outside corner: the wall ends ahead. A wall that runs down to the bottom of the stage has
+    // no end there: she drives on off the screen and falls (the original's walls go on below
+    // it), never round onto the bottom row's underside (as canGrip keeps the grip off it).
+    const end = edgeAhead(map, wcol, true, d < 0 ? b.y + b.h - 1 : b.y, front, d);
+    const edge = d > 0 && end !== null && end >= tileToSub(map.height) ? null : end;
     const dy = velToSub(b.vy);
     if (edge !== null && (d < 0 ? b.y + dy <= edge : b.y + b.h + dy >= edge)) {
       // Clamp to the edge, then wrap round it (forward held) or stop there. A box already past

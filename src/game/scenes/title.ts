@@ -11,7 +11,7 @@ import {
   RIFT_STAGES,
 } from '@content/sprites/title-logo';
 import { fxPalette } from '@content/sprites/palette-fx';
-import { MenuScene, type MenuItem } from './menu';
+import { MenuScene, backToMenu, type MenuItem } from './menu';
 import { abilityHint, controlScheme } from './hints';
 import { OptionsScene } from './options';
 import { FileSelectScene } from './file-select';
@@ -157,6 +157,8 @@ export class TitleScene extends MenuScene {
     private classic: ClassicTitleScene | null = null,
   ) {
     super(game, '', [], null);
+    // 38f: the page's name when a notice that covered it closes (enter says the whole title).
+    this.entryTitle = TITLE_NAME;
     // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
     // stands in colour; with dev mode on (the campaign playable) the row shows the best file's.
     const all = game.deps.characters.map((c) => c.id);
@@ -219,7 +221,8 @@ export class TitleScene extends MenuScene {
       },
       {
         label: 'Options',
-        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop())),
+        // 38f: back from Options, the title says its focused row again.
+        select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game))),
         hint: 'Settings, how to play, custom levels and the level editor',
       },
     ];

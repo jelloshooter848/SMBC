@@ -1,4 +1,4 @@
-import { hasKey, loadJson, removeKey, saveJson } from '@engine/save/storage';
+import { hasKey, keyAbsent, loadJson, removeKey, saveJson } from '@engine/save/storage';
 import { MAP_SET_IDS, type MapSetId } from '@engine/save/progress';
 import {
   defaultClassicSettings,
@@ -67,6 +67,41 @@ export interface ClassicFile {
   run: ClassicResume;
   /** When it was last written (Date.now()). */
   savedAt: number;
+  /**
+   * #205: the old save (pre-files key) this file was copied from, and a fingerprint of that
+   * key's stored text. Kept through every later save of the file; it goes when the file is
+   * erased. Only this marks an old key as already migrated (never the run's content).
+   */
+  fromOld?: OldSaveMark;
+}
+
+/** #205: which old save a file was copied from (its key and stored text's fingerprint). */
+export interface OldSaveMark {
+  key: string;
+  fp: string;
+}
+
+/** A stable fingerprint of an old key's stored text (FNV-1a, 32 bits, as hex). */
+function fingerprint(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+/** The mark old key `key` would leave, from its stored value as read; null when it is gone. */
+function markOf(key: string, raw: unknown): OldSaveMark | null {
+  return raw === null || raw === undefined ? null : { key, fp: fingerprint(JSON.stringify(raw)) };
+}
+
+/** A stored file's mark, when it has a well-formed one. */
+function storedMark(raw: unknown): OldSaveMark | null {
+  const m = raw && typeof raw === 'object' ? (raw as { fromOld?: unknown }).fromOld : null;
+  if (!m || typeof m !== 'object') return null;
+  const { key, fp } = m as { key?: unknown; fp?: unknown };
+  return typeof key === 'string' && typeof fp === 'string' ? { key, fp } : null;
 }
 
 /** The original's rules (GameSettings.resetDifficultySettings; Normal, every hero on). */
@@ -123,6 +158,7 @@ function parseFile(raw: unknown, ref: ClassicFileRef): ClassicFile | null {
     tutorialsSeen: strings(f.tutorialsSeen),
     run,
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
+    ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
   };
 }
 
@@ -133,6 +169,8 @@ export function saveClassicFile(
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
+  // #205: the file's old-save mark stays through every save that does not set its own.
+  const fromOld = f.fromOld ?? storedMark(loadJson<unknown>(classicFileKey(f)));
   const out: ClassicFile = {
     v: 1,
     set: f.set,
@@ -142,6 +180,7 @@ export function saveClassicFile(
     tutorialsSeen: strings(f.tutorialsSeen),
     run: { ...f.run },
     savedAt: f.savedAt ?? Date.now(),
+    ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
   };
   // The run carries none of the old slot-only fields (the file holds them).
   delete out.run.difficulty;
@@ -154,6 +193,11 @@ export function saveClassicFile(
 /** Whether anything is stored for file `ref` (a broken file too). */
 export function hasClassicFile(ref: ClassicFileRef): boolean {
   return hasKey(classicFileKey(ref));
+}
+
+/** #205: whether file `ref` is known to be empty (false when storage cannot be read). */
+export function classicFileGone(ref: ClassicFileRef): boolean {
+  return keyAbsent(classicFileKey(ref));
 }
 
 /** ERASE FILE: file `ref` is empty again. */
@@ -189,9 +233,9 @@ export interface SharedClassicRules {
  * Classic options as they are now, and its continues the slot's own count (#196), else the shared
  * count. No file is ever overwritten (31a-b, v0.4.71): a set with no empty file (an unreadable
  * one counts as used) keeps the old key as it is, logged once, and it moves into the next file
- * ERASE FILE frees (oldRunsWaiting tells the file box). An old key goes only once its run is
- * written; one that does not read as a run is kept as it is (31c). Returns whether
- * anything was migrated.
+ * that is freed (by ERASE FILE, or a run ending; oldRunsWaiting tells the file box). An old key
+ * goes only once its run is written; one that does not read as a run is kept as it is (31c).
+ * Returns whether anything was migrated.
  */
 export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => SharedClassicRules)): boolean {
   let moved = false;
@@ -205,7 +249,14 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
     // 31c: an old key that does not read as a run (damaged, or a newer build's) is kept as it is.
     if (!r) return noteOnce(key, raw, `Classic files: ${key} cannot be read; it is kept`);
     const into = set ?? resumeSetOf(r.levelId);
-    const placed = placeRun(into, r, shared());
+    const mark = markOf(key, raw) as OldSaveMark;
+    // #205: a file of its set was copied from this very key and text (its removal was refused
+    // then): it is migrated. Only the removal is retried; it is never copied again.
+    if (markedIn(into, mark)) {
+      removeKey(key);
+      return;
+    }
+    const placed = placeRun(into, r, shared(), mark);
     if (placed === 'full')
       return noteOnce(key, raw, `Classic files: ${into} is full; ${key} waits for a free file`);
     if (placed !== 'placed') return;
@@ -229,17 +280,34 @@ function noteOnce(key: string, raw: unknown, message: string): void {
 }
 
 /**
+ * #205: whether a file of `set` carries `mark` (the same old key and the same stored text): the
+ * old save was copied there. Decided by provenance only, never by the run's content.
+ */
+function markedIn(set: MapSetId, mark: OldSaveMark): boolean {
+  return CLASSIC_FILE_SLOTS.some((slot) => {
+    const m = storedMark(loadJson<unknown>(classicFileKey({ set, slot })));
+    return m !== null && m.key === mark.key && m.fp === mark.fp;
+  });
+}
+
+/**
  * 31a: how many old saves (readable, so they will migrate) are waiting for a free file of `set`,
- * which is full: each moves into the next file ERASE FILE frees.
+ * which is full: each moves into the next file that is freed.
  */
 export function oldRunsWaiting(set: MapSetId): number {
   let n = 0;
   if (hasKey(CLASSIC_RESUME_KEY)) {
-    const r = parseResume(loadJson<unknown>(CLASSIC_RESUME_KEY));
-    if (r && resumeSetOf(r.levelId) === set) n++;
+    const raw = loadJson<unknown>(CLASSIC_RESUME_KEY);
+    const r = parseResume(raw);
+    if (r && resumeSetOf(r.levelId) === set && !markedIn(set, markOf(CLASSIC_RESUME_KEY, raw) as OldSaveMark))
+      n++;
   }
   const key = classicResumeKey(set);
-  if (hasKey(key) && parseResume(loadJson<unknown>(key))) n++;
+  if (hasKey(key)) {
+    const raw = loadJson<unknown>(key);
+    const r = parseResume(raw);
+    if (r && !markedIn(set, markOf(key, raw) as OldSaveMark)) n++;
+  }
   return n;
 }
 
@@ -247,7 +315,12 @@ export function oldRunsWaiting(set: MapSetId): number {
  * One old run into the first empty file of `set`: 'placed'; 'full' when every file has something
  * in it (an unreadable one too: it is never overwritten); 'failed' when storage refused it.
  */
-function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 'placed' | 'full' | 'failed' {
+function placeRun(
+  set: MapSetId,
+  r: ClassicResume,
+  shared: SharedClassicRules,
+  fromOld: OldSaveMark,
+): 'placed' | 'full' | 'failed' {
   // A file with anything in it is not empty: an unreadable one too (a newer build's after a
   // downgrade may read again there), so it is never overwritten (31b).
   const slot = CLASSIC_FILE_SLOTS.find((s) => !hasClassicFile({ set, slot: s }));
@@ -268,6 +341,7 @@ function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 
     tutorialsSeen: shared.tutorialsSeen ?? [],
     run: r,
     ...(savedAt ? { savedAt } : {}),
+    fromOld,
   });
   return ok ? 'placed' : 'failed';
 }

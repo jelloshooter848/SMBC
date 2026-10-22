@@ -25,6 +25,18 @@ export function removeKey(key: string): void {
   }
 }
 
+/**
+ * Whether `key` is known to hold nothing: false when something is stored there, and false too
+ * when storage cannot be read (so a refused erase is never taken for a done one).
+ */
+export function keyAbsent(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === null;
+  } catch {
+    return false;
+  }
+}
+
 /** Whether anything is stored under `key` (false when storage is unavailable). */
 export function hasKey(key: string): boolean {
   try {

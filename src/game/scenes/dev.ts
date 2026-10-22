@@ -61,7 +61,7 @@ export class DevMenuScene extends MenuScene {
         },
         hint: 'Hides developer mode until the code is entered again',
       },
-      { label: 'Back', select: () => game.scenes.pop() },
+      { label: 'Back', select: () => backToMenu(game) },
     ]);
   }
 
@@ -184,7 +184,7 @@ export class DevClassicHeroesScene extends MenuScene {
         select: () => this.picked(() => flip(1)),
         get hint() {
           const players = expansionReleased(def.id) ? 'released to players' : 'not released to players';
-          return `Release: as players get it, ${released(def)} now; ${players}. On: always in dev mode. Off: hidden`;
+          return `Release: as players get it, ${released(def)} now; ${players}. Dev mode's hero select shows every hero not Off. On: always in dev mode. Off: hidden`;
         },
       });
     }

@@ -1,12 +1,31 @@
+import type { Renderer } from '@engine/gfx/renderer';
+import { FONT_COLOURS } from '@content/sprites/font';
 import { MenuScene } from './menu';
 import type { Game } from './game';
+import { abilityHint } from './hints';
+import { drawMenuBox, type BoxRow } from './menu-box';
 
 /*
  * O-16: leaving a Classic run asks first. The mid-run select's BACK and Pause > Quit open this
  * NO / YES card (NO first, as the original's Quit Game box puts CANCEL first: MenuBox.as
  * 320-330). YES goes to the CLASSIC menu; the run's save file was written before the select
  * and at the level's start (Game.keepResume), so quitting loses nothing.
+ *
+ * 0.4.72 (owner): the card is a CLASSIC box (menu-box.ts), not the see-through panel: the
+ * question on the box's gold header row, the mushroom cursor on NO / YES, the promise on a line
+ * of its own at the box's foot, the original's box sounds (as the CLASSIC
+ * boxes set them) and the BACK line under it. It is see-through: over the mid-run select the
+ * select stays in view around it; over Pause > Quit the pause menu is not drawn under it (the
+ * scene stack draws only the top scene and the first opaque one below: here the level), so the
+ * level shows around the box. It is drawn open at
+ * once (no growing open), so the question is on screen the frame it is said.
  */
+
+/**
+ * Where the card's box is centred (screen px): over the select's name box, so its BACK line
+ * falls in the open sky above the ground.
+ */
+export const QUIT_BOX_CY = 146;
 
 /** The question, and the line under it when the run is kept (Game.keepsResume: not dev, link or practice runs). */
 export const QUIT_RUN_TITLE = 'QUIT TO THE CLASSIC MENU?';
@@ -25,6 +44,30 @@ export class QuitRunScene extends MenuScene {
       true,
     );
     this.status = game.keepsResume ? QUIT_RUN_KEPT : '';
+    // The original's box sounds (MessageBoxSounds SN_CHANGE_SELECTION, SN_CANCEL_ITEM; RC-040).
+    this.moveSfx = 'fireball';
+    this.backSfx = 'bump';
+  }
+
+  /** The CLASSIC box over the scene under it (0.4.72), with the BACK line beneath. */
+  override render(r: Renderer): void {
+    const game = this.game;
+    const calm = game.ctx.reduceFlashing;
+    const rows: BoxRow[] = this.items.map((it) => ({ label: it.label }));
+    const at = drawMenuBox(r, game.ctx.assets, rows, this.index, {
+      cx: 128,
+      cy: QUIT_BOX_CY,
+      grow: 1,
+      t: this.t,
+      calm,
+      header: this.title,
+      ...(this.status ? { footer: this.status } : {}),
+    });
+    const back = abilityHint(game, 'BACK', this.backAction);
+    const x = Math.round(128 - (back.length * 8) / 2);
+    const y = at.y + at.h + 4;
+    r.text(game.ctx.assets.sheet('font', FONT_COLOURS.black), back, x + 1, y + 1);
+    r.text(game.ctx.assets.sheet('font'), back, x, y);
   }
 
   override enter(): void {
@@ -35,17 +78,20 @@ export class QuitRunScene extends MenuScene {
 }
 
 /**
- * Opens the card over the current scene. NO (or BACK) closes it, saying so; YES leaves the run
- * for the CLASSIC menu.
+ * Opens the card over the current scene. NO (or BACK) closes it, saying `back`; with `back` null
+ * (38f), the menu under it says its title and focused row (MenuScene.announcePage). YES leaves
+ * the run for the CLASSIC menu.
  */
-export function confirmQuitRun(game: Game, back = 'Back to the game.'): void {
+export function confirmQuitRun(game: Game, back: string | null = 'Back to the game.'): void {
   game.ctx.audio.sfx('pause');
   game.scenes.push(
     new QuitRunScene(
       game,
       () => {
         game.scenes.pop();
-        game.deps.announcer?.say(back);
+        const top = game.scenes.top;
+        if (back !== null) game.deps.announcer?.say(back);
+        else if (top instanceof MenuScene) top.announcePage();
       },
       () => game.quitClassicRun(),
     ),
