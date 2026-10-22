@@ -71,6 +71,11 @@ export interface ClassicResume {
   savedAt?: number;
   /** BUG-05: written by a game over at its continue point; going on from it is a continue used. */
   continued?: true;
+  /**
+   * Item 8: the continues this run has used (Infinite Lives' goal), kept per set as the slot is.
+   * A slot from before it has none (Game.resumeClassic keeps the current count).
+   */
+  continues?: number;
 }
 
 /** A hero's kept power (Game.classicKits). */
@@ -247,9 +252,19 @@ function readSlot(key: string): ClassicResume | null {
     cp && typeof cp === 'object' && typeof cp.level === 'string' && num(cp.x)
       ? { level: cp.level, x: cp.x, ...(num(cp.y) ? { y: cp.y } : {}) }
       : null;
-  const { survival: sv, difficulty: d, gameMode: gm, savedAt, heroKits: _hk, ...rest } = r as ClassicResume;
+  const {
+    survival: sv,
+    difficulty: d,
+    gameMode: gm,
+    savedAt,
+    heroKits: _hk,
+    continues: cn,
+    ...rest
+  } = r as ClassicResume;
   return {
     ...rest,
+    // Item 8: a count that is not a whole number of 0 or more reads as none.
+    ...(Number.isInteger(cn) && (cn as number) >= 0 ? { continues: cn } : {}),
     // An older slot, or a value this version does not know: none (the caller falls back).
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),
