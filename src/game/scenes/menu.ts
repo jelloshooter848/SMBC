@@ -168,6 +168,11 @@ export class MenuScene implements Scene {
     return this.title;
   }
 
+  /** Where the box is centred (screen y): mid-screen over the level; null: under the CLASSIC logo. */
+  protected boxCentre(): number | null {
+    return BOX_CY;
+  }
+
   constructor(
     protected readonly game: Game,
     readonly title: string,
@@ -291,6 +296,7 @@ export class MenuScene implements Scene {
   render(r: Renderer): void {
     if (this.classicBox) {
       const header = this.boxHeader();
+      const cy = this.boxCentre();
       renderBoxedMenu(r, this.game, {
         ...(header ? { header } : {}),
         items: this.items,
@@ -299,7 +305,7 @@ export class MenuScene implements Scene {
         status: this.status,
         age: this.t,
         backAction: this.backAction,
-        cy: BOX_CY,
+        ...(cy !== null ? { cy } : {}),
         back: this.onBack !== null,
       });
       return;

@@ -8,7 +8,7 @@ import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX, customLevelId, loadLibrary } from '../level/library';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
-import { levelSelectTarget, worldName } from './level-select-cheat';
+import { levelSelectTarget, worldName } from './level-targets';
 import { DevMiniGamesScene } from './dev-minigames';
 import { DevBonusGamesScene } from '../bonus/dev';
 import { hasTraining, runTraining } from '../tutorial/training';
@@ -183,7 +183,7 @@ export function devAgainItem(game: Game): MenuItem | null {
 export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
 export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
 
-/** The short map set names (the cheat's Level select has the same). */
+/** The short map set names. */
 const SET_NAMES: Record<string, string> = { smb: 'SMB', special: 'Special', lost: 'Lost Levels' };
 
 /** A dev page: a MenuScene that says its title as it opens, then its row. */

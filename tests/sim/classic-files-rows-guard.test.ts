@@ -77,7 +77,6 @@ function walk(h: H, path: string, seen: string[], depth = 0): void {
 
 function game(dev: boolean): H & { settings: Settings } {
   const settings: Settings = { ...defaultSettings(), dev };
-  settings.classicCheats.levelSelect = true;
   for (const k of Object.keys(
     settings.classicCheats.unlocked,
   ) as (keyof typeof settings.classicCheats.unlocked)[])
@@ -115,9 +114,9 @@ describe('B-L no per-file row outside a file’s creation', () => {
       const seen: string[] = [];
       walk(h, 'Pause', seen);
       expect(seen).toEqual([]);
-      // Walked for real: the pause offers its Options and the Level Select page.
+      // Walked for real: the pause offers its Options and Cheats (v0.4.74 item 94: no Level Select page).
       const labels = items(new PauseScene(h.game, level.world)).map((i) => i.label);
-      expect(labels).toEqual(expect.arrayContaining(['Options', 'Level select']));
+      expect(labels).toEqual(expect.arrayContaining(['Options', 'Cheats']));
     });
   }
 

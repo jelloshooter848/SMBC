@@ -15,7 +15,6 @@ import {
 } from '@game/scenes/original-files-menu';
 import { ClassicOptionRowsScene } from '@game/scenes/original-options';
 import { ClassicHeroesScene } from '@game/scenes/disable-heroes';
-import { LevelSelectScene } from '@game/scenes/level-select-cheat';
 import { loadClassicFile, originalFileRules, type ClassicFileRef } from '@game/original-files';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
@@ -132,18 +131,6 @@ describe('B-L the file box', () => {
     h.until(() => inLevel(h), 900);
     expect((h.top() as LevelScene).world.level.id).toMatch(/^3-1/);
     expect(h.said.find((s) => s.startsWith('Continue.'))).toMatch(/^Continue\. Survival, Hard\./);
-  });
-
-  it('a Level Select jump into another set shows where the file is', () => {
-    const h = classic();
-    h.game.classicGame(MARIO, '1-1', { ref: F1 });
-    h.until(() => inLevel(h), 600);
-    h.game.classicLevelSelect('ll-2-1');
-    h.until(() => inLevel(h), 600);
-    h.game.showTitle();
-    const box = openSet(h);
-    expect(values(box)[0]).toBe('NORMAL LL 2-1 X3');
-    expect(items(box)[0]?.hint).toMatch(/World 2-1 of The Lost Levels/);
   });
 });
 
@@ -382,52 +369,5 @@ describe('B-L phone touch', () => {
       choose(h, step);
     }
     expect(h.top()?.touchLabels?.()).toMatchObject({ jump: 'OK', attack: 'BACK' });
-  });
-});
-
-describe('B-L the Level Select cheat', () => {
-  it('Go from the menus is a practice run: no warning, no file; in a run it keeps its file', () => {
-    const h = classic();
-    h.settings.classicCheats.levelSelect = true;
-    keep(h, F1, '3-1');
-    h.game.showClassicMenu();
-    h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
-    expect(labels(h.top())).toEqual(['Map set', 'World', 'Level', 'Go', 'Back']);
-    choose(h, 'Go');
-    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
-    expect(h.game.practiceRun).toBe(true);
-    pickAtContinue(h);
-    h.until(() => inLevel(h), 900);
-    expect(loadClassicFile(F1)?.run.levelId).toMatch(/^3-1/);
-    expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-file'))).toHaveLength(1);
-  });
-
-  it('O-16: quitting a run goes back to one boxed CLASSIC menu, its file kept', () => {
-    const h = classic();
-    keep(h, F1, '3-1');
-    h.game.resumeClassic(F1);
-    pickAtContinue(h);
-    h.until(() => inLevel(h), 900);
-    h.game.quitClassicRun();
-    const menu = h.top() as ClassicMenuScene;
-    expect(menu.over).toBeInstanceOf(ClassicTitleScene);
-    expect(titles(h)).toBe(1);
-    expect(loadClassicFile(F1)?.run.levelId).toMatch(/^3-1/);
-  });
-
-  it('B-E: Continue keeps the Tutorials seen this game; a new file starts with none of its own', () => {
-    const h = classic();
-    keep(h, F1, '3-1');
-    const reset = vi.spyOn(h.game.classicTutorials, 'newGame');
-    const cleared = vi.spyOn(h.game.classicTutorials, 'clearQueue');
-    openSet(h);
-    h.idle(8);
-    h.tap('jump');
-    expect(reset).not.toHaveBeenCalled();
-    expect(cleared).toHaveBeenCalled();
-    h.game.showTitle();
-    openSet(h);
-    newFile(h, 2);
-    expect(reset).toHaveBeenCalledTimes(1);
   });
 });

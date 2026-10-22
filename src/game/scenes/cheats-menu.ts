@@ -12,7 +12,6 @@ import { abilityHint } from './hints';
 import { wrapText } from '../hud/text';
 import { CHEATS, allUnlocked, lockedText, unlockAll, type CheatInfo } from '../cheats';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
-import { LevelSelectScene } from './level-select-cheat';
 
 /** What a locked row shows in place of its name (MenuBoxItems.HIDDEN_CHEAT). */
 export const HIDDEN_CHEAT = '?????';
@@ -72,16 +71,7 @@ export class CheatsScene extends MenuScene {
         select: () => this.beginCode(),
         hint: 'Enter the secret code to unlock every cheat',
       });
-    // The Level Select cheat once unlocked (G-007): its page. Mid-run it goes on from there.
-    if (c?.levelSelect)
-      items.push({
-        label: 'Level select',
-        select: () =>
-          this.game.scenes.push(
-            new LevelSelectScene(this.game, () => this.game.scenes.pop(), this.opts.translucent === true),
-          ),
-        hint: "Practise any level of any map set, with the original's rules",
-      });
+    // v0.4.74 item 94 (owner): no Level Select cheat (a CLEARED file's replay is the level select).
     items.push({ label: 'Back', select: () => this.onBack?.() });
     this.setItems(items);
     this.status = this.opts.all ? 'Dev mode: all cheats' : '';

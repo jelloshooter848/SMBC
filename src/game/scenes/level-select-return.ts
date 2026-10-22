@@ -1,9 +1,7 @@
 import type { Game } from './game';
-import { MenuScene, backToMenu } from './menu';
-import { ClassicOptionsScene, MAP_SETS, mapSetOf, type MapSet } from './original-game';
-import type { ClassicTitleScene } from './original-title';
-import { CheatsScene } from './cheats-menu';
-import { LevelSelectScene, worldName } from './level-select-cheat';
+import type { MenuScene } from './menu';
+import { MAP_SETS, mapSetOf, type MapSet } from './original-game';
+import { worldName } from './level-targets';
 import { DevMenuScene } from './dev';
 import {
   DevCampaignScene,
@@ -17,19 +15,12 @@ import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX } from '../level/library';
 
 /*
- * v0.4.74 items 63 / 64 (owner; a deviation from the original the owner accepts): both level
- * selects take their runs back to themselves. A level cleared, Quit, and the last castle's credits
- * go back to the level select the run was started from, its cursor on the level just played,
- * which it says (the page's own opening line). The pages under it are rebuilt as the player
- * reached them, so BACK steps back one page at a time.
- *
- * - The Classic menu's Level Select cheat (CLASSIC > Options > Cheats > Level select): a practice
- *   run. Back to that box over the CLASSIC title, its Map set, World and Level on the level, the
- *   cursor on GO.
- * - Dev > Level select's START page (a free play start, Again too): back to that world's level
- *   page (Dev > Level select > Classic or Campaign > ...), the cursor on the level.
- *
- * Neither run writes anything (practice and dev runs never do).
+ * v0.4.74 items 63 / 64 (owner): Dev > Level select takes its starts back to itself. A level
+ * cleared, Quit, and the last castle's credits go back to the world's level page the start was
+ * made from (Again too), its cursor on the level just played, which it says (the page's own
+ * opening line). The pages under it are rebuilt as the player reached them (Dev mode > Level
+ * select > Classic or Campaign > ...), so BACK steps back one page at a time. Nothing is written.
+ * (Item 94 removed the Level Select cheat, whose practice runs also came back to it.)
  */
 
 /** World and level of area `id` in map set `set` ("ll-10-2-intro": 10, 2), or null. */
@@ -48,28 +39,6 @@ export function worldStageOf(set: MapSet, id: string): { world: number; stage: n
 function focus(page: MenuScene, label: string): MenuScene {
   page.focusLabel(label);
   return page;
-}
-
-/**
- * The menus' Level select again, over CLASSIC > Options > Cheats over the CLASSIC title (`title`,
- * just pushed): on level `levelId`, the cursor on GO.
- */
-export function openPracticeLevelSelect(game: Game, title: ClassicTitleScene, levelId: string): void {
-  // Each box finds the title under it as it is made (demoUnder), so each is made once the one
-  // under it is up. Their BACK is the one the title's own rows give them.
-  game.scenes.push(
-    focus(
-      new ClassicOptionsScene(game, () => {
-        game.scenes.pop();
-        title.announce();
-      }),
-      'Cheats',
-    ),
-  );
-  game.scenes.push(focus(new CheatsScene(game, () => backToMenu(game), { all: game.devMode }), 'Level select'));
-  const select = new LevelSelectScene(game, () => game.scenes.pop());
-  select.showLevel(levelId);
-  game.scenes.push(select);
 }
 
 /**

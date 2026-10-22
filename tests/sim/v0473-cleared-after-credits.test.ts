@@ -113,14 +113,6 @@ describe('B: after the credits', () => {
 });
 
 describe('B: developer and practice runs keep the title', () => {
-  it('a practice run (the menus’ Level Select)', () => {
-    const h = classic((s) => (s.classicCheats.levelSelect = true));
-    h.game.showClassicMenu();
-    h.game.classicLevelSelect('8-4');
-    expect(h.game.practiceRun).toBe(true);
-    (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
-    expect(h.top()).toBeInstanceOf(TitleScene);
-  });
 
   it('a developer Classic run', () => {
     const h = classic();

@@ -45,7 +45,8 @@ describe('BUG-04 the select HUD shows the coming level', () => {
     expect(hudLevel(h)).toBe('3-2');
   });
 
-  it('a new game, and a Level Select jump from the menus: that level', () => {
+  // v0.4.74 item 94: the Level Select jump went with the cheat.
+  it('a new game: that level', () => {
     const h = classic();
     // A run played earlier left its state at 5-3.
     h.game.classicGame(MARIO, '5-3');
@@ -53,9 +54,6 @@ describe('BUG-04 the select HUD shows the coming level', () => {
     h.game.showClassicMenu();
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     expect(hudLevel(h)).toBe('1-1');
-    h.game.showClassicMenu();
-    h.game.classicLevelSelect('7-2');
-    expect(hudLevel(h)).toBe('7-2');
   });
 
   it('The Lost Levels: its lettered worlds, as the level HUD shows them', () => {

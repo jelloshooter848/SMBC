@@ -1,20 +1,21 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { defaultSettings, type Settings } from '@engine/save/settings';
+import { defaultSettings, loadSettings, SETTINGS_KEY, type Settings } from '@engine/save/settings';
+import { allUnlocked, CHEATS, unlockAll } from '@game/cheats';
+import { originalFileRules } from '@game/original-files';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { CheatsScene } from '@game/scenes/cheats-menu';
 import { DevMenuScene } from '@game/scenes/dev';
+import { GuideIndexScene, GuideScene } from '@game/scenes/guide';
+import { ClassicTutorialHeroesScene } from '@game/scenes/how-to-play-boxes';
 import { DEV_LAST_KEY, DevLevelPage, DevStartScene } from '@game/scenes/dev-play';
 import { LevelScene } from '@game/scenes/level';
-import { LevelSelectScene } from '@game/scenes/level-select-cheat';
-import { MenuScene, type MenuItem } from '@game/scenes/menu';
+import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { ClassicFileRulesScene } from '@game/scenes/original-files-menu';
-import { ClassicOptionsScene } from '@game/scenes/original-game';
-import { ClassicTitleScene } from '@game/scenes/original-title';
+import { recordClassicBeat } from '@game/scenes/original-game';
 import { PauseScene } from '@game/scenes/pause';
-import { QuitRunScene, QUIT_PRACTICE_TITLE } from '@game/scenes/quit-run';
-import { CharacterSelectScene } from '@game/scenes/character-select';
+import { QuitRunScene } from '@game/scenes/quit-run';
 import { TitleScene } from '@game/scenes/title';
 import {
   guidePages,
@@ -24,7 +25,7 @@ import {
 } from '@game/tutorial/original-tutorials';
 import { draw, file, intoBonus, makeGame, store, useStorage, type H } from './heroes-harness';
 
-// v0.4.74 PR B (menus): items 53, 54, 55, 61, 63/64 and 67.
+// v0.4.74 PR B (menus): items 53, 54, 55, 61, 63/64 (dev Level select), 67, 82 and 94.
 
 useStorage();
 afterEach(() => store.clear());
@@ -48,15 +49,6 @@ function pick(h: H, label: string): void {
   h.idle(8);
   for (let i = 0; i < list.length && idx(h.top()) !== at; i++) h.tap('down');
   h.tap('jump');
-}
-
-function chooseHero(h: H): void {
-  h.until(() => h.top() instanceof CharacterSelectScene, 600);
-  // OK on the hero, then OK on its look (the select's look picker).
-  for (let i = 0; i < 3 && h.top() instanceof CharacterSelectScene; i++) {
-    h.idle(12);
-    h.tap('jump');
-  }
 }
 
 function inLevel(h: H): LevelScene {
@@ -310,82 +302,165 @@ describe('items 63 / 64: the dev Level select takes its runs back to itself', ()
   });
 });
 
-describe('items 63 / 64: the menus’ Level Select cheat takes its practice runs back to itself', () => {
-  function practice(h: H & { settings: Settings }): LevelScene {
-    h.settings.classicCheats.levelSelect = true;
+describe('item 94: the Level Select cheat is gone', () => {
+  const SIXTEEN = [
+    'allGroundIsBricks',
+    'allHammerBros',
+    'allWeaponsPierce',
+    'alwaysBreakBricks',
+    'bouncyPits',
+    'classicSamus',
+    'classicScreenScroll',
+    'classicSimon',
+    'everyoneCanStomp',
+    'evilHammerBros',
+    'extraCheckpoints',
+    'infiniteAmmo',
+    'infiniteLives',
+    'infiniteTime',
+    'invincible',
+    'waterMode',
+  ];
+
+  /** Settings as an old version stored them, the Level Select cheat unlocked. */
+  function oldBlob(): Settings {
+    const old = defaultSettings() as unknown as { classicCheats: Record<string, unknown> };
+    old.classicCheats.levelSelect = true;
+    store.set(SETTINGS_KEY, JSON.stringify(old));
+    return loadSettings();
+  }
+
+  it('an old settings blob with the cheat unlocked loads cleanly', () => {
+    const s = oldBlob();
+    expect(s.classicCheats.unlocked.everyoneCanStomp).toBe(true);
+    for (const id of SIXTEEN) expect(typeof s.classicCheats.unlocked[id as keyof typeof s.classicCheats.unlocked]).toBe('boolean');
+  });
+
+  it('no Level select row in CHEATS, with or without the old flag, or with dev mode’s every cheat', () => {
+    for (const all of [false, true]) {
+      const h = classic(oldBlob());
+      h.game.scenes.push(new CheatsScene(h.game, () => h.game.scenes.pop(), { all }));
+      expect(labels(h.top())).not.toContain('Level select');
+      const h2 = classic();
+      h2.game.scenes.push(new CheatsScene(h2.game, () => h2.game.scenes.pop(), { all }));
+      expect(labels(h2.top())).not.toContain('Level select');
+    }
+  });
+
+  it('no Level select row in the Classic pause, with the old flag too', () => {
+    const h = classic(oldBlob());
+    pausedClassicRun(h);
+    expect(labels(h.top())).not.toContain('Level select');
+    const d = classic({ ...oldBlob(), dev: true });
+    pausedClassicRun(d);
+    expect(labels(d.top())).not.toContain('Level select');
+  });
+
+  it('the other 16 cheats are as they were; the code unlocking them is every cheat', () => {
+    expect(CHEATS.map((c) => c.id)).toEqual(SIXTEEN);
+    const c = defaultSettings().classicCheats;
+    expect(allUnlocked(c)).toBe(false);
+    for (const id of SIXTEEN) c.unlocked[id as keyof typeof c.unlocked] = true;
+    expect(allUnlocked(c)).toBe(true);
+    const d = defaultSettings().classicCheats;
+    unlockAll(d);
+    expect(allUnlocked(d)).toBe(true);
+    expect('levelSelect' in d).toBe(false);
+  });
+
+  it('beating every set on Hard shows no Level Select card and grants nothing', () => {
+    const h = classic();
+    recordClassicBeat('smb', 'hard');
+    recordClassicBeat('special', 'hard');
+    const rules = originalFileRules();
+    rules.difficulty = 'hard';
+    h.game.classicGame(MARIO, '8-4', { ref: { set: 'lost', slot: 1 }, rules });
+    inLevel(h);
+    (h.game as unknown as { afterCredits(from: string): void }).afterCredits('ll-13-4');
+    for (let i = 0; i < 30; i++) {
+      h.idle(70);
+      h.tap('jump');
+    }
+    expect(h.said.join('\n')).not.toMatch(/Level Select/i);
+    expect(JSON.stringify(h.settings.classicCheats)).not.toMatch(/levelSelect/);
+  });
+
+  it('the dev Level select keeps its return (items 63 / 64)', () => {
+    const h = classic({ dev: true });
+    h.game.showTitle();
+    h.game.showDevMenu();
+    pick(h, 'Level select');
+    pick(h, 'Classic');
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'World 2');
+    pick(h, '2-3');
+    pick(h, 'Start');
+    const l = inLevel(h);
+    clear(l, '2-4');
+    expect(h.top()).toBeInstanceOf(DevLevelPage);
+    expect(focused(h.top())).toBe('2-3');
+  });
+});
+
+describe('item 82: Classic Options > How to play is the Classic tutorial boxes', () => {
+  /** The hero list's rows (no Back). */
+  const heroes = (h: H) => labels(h.top()).filter((l) => l !== 'Back');
+
+  it('CLASSIC > Options > Video, audio, controls > How to play: a box of the select’s heroes, each its tutorial', () => {
+    const h = classic();
     h.game.showClassicTitle('start');
     pick(h, 'Options');
-    pick(h, 'Cheats');
-    pick(h, 'Level select');
-    h.idle(8);
-    h.tap('down');
-    h.tap('right'); // World 2
-    h.tap('down');
-    h.tap('right'); // Level 2
-    pick(h, 'Go');
-    chooseHero(h);
-    return inLevel(h);
-  }
-  const onGo = (h: H, level: string) => {
-    const page = h.top() as LevelSelectScene;
-    expect(page).toBeInstanceOf(LevelSelectScene);
-    expect(focused(page)).toBe('Go');
-    expect(items(page)[3]?.value?.()).toBe(level);
-    expect(h.said.at(-1)).toMatch(new RegExp(`^Level select\\. Go: ${level}\\.`));
-    // Over Cheats over Options over the CLASSIC title: BACK steps back one box.
+    pick(h, 'Video, audio, controls');
+    pick(h, 'How to play');
+    const list = h.top() as ClassicTutorialHeroesScene;
+    expect(list).toBeInstanceOf(ClassicTutorialHeroesScene);
+    expect(list.boxed).toBe(true);
+    expect(heroes(h)).toEqual(h.game.slotsFor('classic').map((c) => c.name));
+    expect(h.said.at(-1)).toMatch(/^How to play\. Mario/);
+    // The CLASSIC title's demo shows round the box (its logo too), as the other CLASSIC boxes.
+    const shot = draw(list);
+    expect(shot.texts.map((t) => t.str)).toContain('MARIO');
+    pick(h, 'Link');
+    const box = h.top() as TutorialBoxScene;
+    expect(box).toBeInstanceOf(TutorialBoxScene);
+    expect(box.pages).toEqual(guidePages(h.game, 'link'));
+    // SKIP: back on the list, on Link; BACK: one box back.
+    h.idle(TUTORIAL_GUARD_FRAMES + 2);
+    h.tap('attack');
+    expect(h.top()).toBe(list);
+    expect(focused(list)).toBe('Link');
     h.idle(8);
     h.tap('attack');
-    expect(h.top()).toBeInstanceOf(CheatsScene);
-    expect(focused(h.top())).toBe('Level select');
-    h.idle(8);
-    h.tap('attack');
-    expect(h.top()).toBeInstanceOf(ClassicOptionsScene);
-    h.idle(8);
-    h.tap('attack');
-    expect(h.top()).toBeInstanceOf(ClassicTitleScene);
-  };
-
-  it('a cleared level goes back to the Level select, on that level', () => {
-    const h = classic();
-    const l = practice(h);
-    expect(l.level.id).toMatch(/^2-2/);
-    const before = written();
-    clear(l, '2-3');
-    expect(h.game.practiceRun).toBe(false);
-    onGo(h, '2-2');
-    expect(written()).toEqual(before);
+    expect(h.top()).toBeInstanceOf(OptionsScene);
   });
 
-  it('Quit asks “Quit to the level select?”, then goes there', () => {
+  it('Classic pause > Options > How to play: the same list (the run’s select), a box over the level', () => {
     const h = classic();
-    practice(h);
-    h.idle(4);
-    h.tap('start');
-    pick(h, 'Quit');
-    const card = h.top() as QuitRunScene;
-    expect(card.title).toBe(QUIT_PRACTICE_TITLE);
-    expect(h.said.at(-1)).toBe('Quit to the level select? No');
-    h.idle(8);
-    h.tap('down');
-    h.tap('jump');
-    onGo(h, '2-2');
+    pausedClassicRun(h, LINK);
+    pick(h, 'Options');
+    pick(h, 'How to play');
+    const list = h.top() as ClassicTutorialHeroesScene;
+    expect(list).toBeInstanceOf(ClassicTutorialHeroesScene);
+    expect(list.boxed).toBe(true);
+    expect(list.translucent).toBe(true);
+    expect(heroes(h)).toEqual(h.game.selectSlots.map((c) => c.name));
+    pick(h, 'Samus');
+    expect((h.top() as TutorialBoxScene).pages[0]).toMatch(/^Samus:/);
   });
 
-  it('after the last castle’s credits: the Level select, not the title', () => {
-    const h = classic();
-    practice(h);
-    (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
-    expect(h.top()).toBeInstanceOf(LevelSelectScene);
-  });
-
-  it('BACK from its hero select goes back to the Level select too', () => {
-    const h = classic();
-    h.settings.classicCheats.levelSelect = true;
-    h.game.classicLevelSelect('3-1');
-    h.until(() => h.top() instanceof CharacterSelectScene, 600);
-    h.idle(12);
-    h.tap('attack');
-    expect(h.top()).toBeInstanceOf(LevelSelectScene);
-    expect(items(h.top())[3]?.value?.()).toBe('3-1');
+  it('the campaign’s Options and pause keep GuideIndexScene and GuideScene', () => {
+    const h = makeGame();
+    file();
+    const l = intoBonus(h);
+    h.game.scenes.push(new PauseScene(h.game, l.world));
+    pick(h, 'Options');
+    pick(h, 'How to play');
+    expect(h.top()).toBeInstanceOf(GuideIndexScene);
+    pick(h, 'Mario');
+    expect(h.top()).toBeInstanceOf(GuideScene);
+    h.game.scenes.clear();
+    h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
+    pick(h, 'How to play');
+    expect(h.top()).toBeInstanceOf(GuideIndexScene);
   });
 });

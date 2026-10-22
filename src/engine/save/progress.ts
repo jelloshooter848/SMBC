@@ -124,7 +124,8 @@ export function recordBeat(p: Progress, set: MapSetId, difficulty: BeatDifficult
 
 /**
  * Whether every map set has been beaten on at least `difficulty` (StatManager
- * allMapPacksBeatOnHard, which opens the Level Select cheat). `sets` defaults to every set.
+ * allMapPacksBeatOnHard; v0.4.74 item 94: it no longer opens a Level Select cheat). `sets`
+ * defaults to every set.
  */
 export function allSetsBeaten(
   p: Progress,

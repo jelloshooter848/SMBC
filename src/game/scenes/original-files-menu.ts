@@ -46,7 +46,7 @@ import { ClassicHeroesScene, type HeroesOffStore } from './disable-heroes';
  * "ERASE FILE N?" with NO first. BACK steps back one box everywhere.
  */
 
-/** The short name of a map set, for a run the Level Select cheat took into another set. */
+/** The short name of a map set, for a run that went into another set. */
 export const SET_SHORT: Record<MapSetId, string> = { smb: 'SMB', special: 'SP', lost: 'LL' };
 
 const setOf = (id: MapSetId): MapSet => MAP_SETS.find((m) => m.id === id) ?? (MAP_SETS[0] as MapSet);

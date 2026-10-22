@@ -16,7 +16,7 @@ import { boxGrowth, drawMenuBox, drawMushroom, type BoxRow } from './menu-box';
 import { demoUnder, type DemoBackdrop } from './original-box-menu';
 import { ClassicBox, closeTo, type ClassicFilesScene } from './original-files-menu';
 import { MAP_SETS, type MapSet } from './original-game';
-import { levelSelectTarget, worldName } from './level-select-cheat';
+import { levelSelectTarget, worldName } from './level-targets';
 import { QUIT_BOX_CY } from './quit-run';
 import { DEFAULT_SELECT_THEME, drawPanel } from './select-grid';
 

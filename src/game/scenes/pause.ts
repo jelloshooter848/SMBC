@@ -3,7 +3,6 @@ import { AssistOptionsScene, OptionsScene } from './options';
 import { confirmQuitRun } from './quit-run';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
-import { LevelSelectScene } from './level-select-cheat';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -72,13 +71,7 @@ export class PauseScene extends MenuScene {
         // 38f review: BACK says the pause's focused row again.
         select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
-      // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
-      if (game.deps.settings?.classicCheats.levelSelect)
-        items.push({
-          label: 'Level select',
-          select: () => game.scenes.push(new LevelSelectScene(game, () => game.scenes.pop(), true)),
-          hint: 'Go to any level, keeping your lives and score',
-        });
+      // v0.4.74 item 94 (owner): no Level Select cheat row (PauseMenu.as:37-38 had one).
       items.push(...this.devItems());
       // The cheats mid-run (G-031: the original's Pause > Options > Cheats): the unlocked ones,
       // with Classic rules (the only rules cheats play under). Invincible and the assist-like
@@ -120,9 +113,7 @@ export class PauseScene extends MenuScene {
         // (Game.keepsResume: not a developer, link or practice run).
         hint: game.keepsResume
           ? 'Back to the Classic menu; your file picks the run up from this level'
-          : game.levelSelectBack
-            ? 'Back to the level select'
-            : 'Back to the Classic menu',
+          : 'Back to the Classic menu',
       });
       this.setItems(items);
       return;
