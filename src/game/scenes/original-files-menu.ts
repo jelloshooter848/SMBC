@@ -6,6 +6,7 @@ import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original
 import {
   CLASSIC_FILE_SLOTS,
   eraseClassicFile,
+  oldRunsWaiting,
   originalFileRules,
   type ClassicFile,
   type ClassicFileRef,
@@ -116,6 +117,12 @@ const UNREADABLE = 'UNREADABLE';
 const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
 
 /**
+ * 31a: an old save (from before the files) whose set was full waits for a free file and moves
+ * into the one ERASE FILE frees. The words for it, said and shown.
+ */
+const OLD_SAVE = 'A game saved by an older version';
+
+/**
  * A Classic box page over the CLASSIC title's demo (BUG-01's boxes): the original's sounds, the
  * demo playing on under it, the rows drawn by renderBoxedMenu with the page's name on top and a
  * status line under the box. Away from the demo (never in play) the usual full-screen page.
@@ -205,6 +212,8 @@ function closeTo(game: Game, scene: MenuScene): void {
 export class ClassicFilesScene extends ClassicBox {
   protected readonly spokenTitle: string;
   private files: (ClassicFile | null)[] = [];
+  /** 31a: the file an old save just moved into (after ERASE), shown under it until the cursor moves. */
+  private movedInto: ClassicFileSlot | null = null;
 
   constructor(
     game: Game,
@@ -256,11 +265,12 @@ export class ClassicFilesScene extends ClassicBox {
           };
     });
     const used = this.inUse.some(Boolean);
+    const waiting = oldRunsWaiting(this.set.id) > 0;
     items.push(
       {
         label: 'Erase file',
         select: () => this.erase(),
-        hint: used ? 'Choose a file to erase' : 'Every file is empty',
+        hint: `${used ? 'Choose a file to erase' : 'Every file is empty'}${waiting ? `. ${OLD_SAVE} is waiting for a free file` : ''}`,
       },
       { label: 'Back', select: () => this.onBack?.(), hint: 'To the map sets' },
     );
@@ -269,6 +279,7 @@ export class ClassicFilesScene extends ClassicBox {
 
   protected override statusLine(): string {
     const slot = this.slotAt(this.index);
+    if (slot && slot === this.movedInto) return `OLD SAVE MOVED INTO ${fileName(slot).toUpperCase()}`;
     const f = slot ? this.files[slot - 1] : null;
     return f ? fileDetailLine(this.game, f) : '';
   }
@@ -314,12 +325,29 @@ export class ClassicFilesScene extends ClassicBox {
     return this.files;
   }
 
-  /** After ERASE: the box again, on the erased file, saying so. */
+  protected override announce(): void {
+    if (this.movedInto !== null && this.slotAt(this.index) !== this.movedInto) this.movedInto = null;
+    super.announce();
+  }
+
+  /**
+   * After ERASE: the box again, on the erased file, saying so. 31a: an old save that was waiting
+   * for a free file (its set was full) has moved into it on this read: that is said, then the
+   * file as it is now.
+   */
   erased(slot: ClassicFileSlot): void {
     closeTo(this.game, this);
     this.refresh();
     this.index = slot - 1;
-    this.game.deps.announcer?.say(`${fileName(slot)} erased. ${this.spoken()}`);
+    const erased = `${fileName(slot)} erased.`;
+    if (this.game.classicFileState({ set: this.set.id, slot }) === 'empty') {
+      this.movedInto = null;
+      this.game.deps.announcer?.say(`${erased} ${this.spoken()}`);
+      return;
+    }
+    this.movedInto = slot;
+    const hint = this.items[this.index]?.hint ?? '';
+    this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
   }
 }
 
@@ -515,7 +543,10 @@ export class ClassicEraseConfirmScene extends ClassicBox {
       picker.comeBack();
     });
     const what = file ? fileSpoken(game, file) : 'It cannot be read';
-    this.spokenTitle = `Erase file ${slot}? ${what}. It cannot be undone`;
+    // 31a: an old save waiting for a free file moves into this one once it is erased.
+    const then =
+      oldRunsWaiting(files.set.id) > 0 ? `. ${OLD_SAVE} will then move into ${fileName(slot)}` : '';
+    this.spokenTitle = `Erase file ${slot}? ${what}. It cannot be undone${then}`;
     this.setItems([
       { label: 'No', select: () => this.onBack?.(), hint: 'Keep the file' },
       {

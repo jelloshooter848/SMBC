@@ -187,9 +187,11 @@ export interface SharedClassicRules {
  * set; each per-set slot (0.4.68 on) goes into FILE 1 of its set, or the next empty file. A
  * migrated file keeps the slot's Map difficulty and Game mode; its other rules are the shared
  * Classic options as they are now, and its continues the slot's own count (#196), else the shared
- * count. A set with all three files used keeps the newest: the slot replaces the oldest file only
- * when it is newer (logged either way). An old key goes only once its run is written (or dropped
- * as older); a broken one is just removed. Returns whether anything was migrated.
+ * count. A readable file is never overwritten (31a, v0.4.71): a set with all three files
+ * readable keeps the old key as it is, logged once, and it moves into the next file ERASE FILE
+ * frees (oldRunsWaiting tells the file box); a full set with an unreadable file gives it the run.
+ * An old key goes only once its run is written; a broken one is just removed. Returns whether
+ * anything was migrated.
  */
 export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => SharedClassicRules)): boolean {
   let moved = false;
@@ -198,10 +200,14 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
   const shared = () => (got ??= typeof sharedRules === 'function' ? sharedRules() : sharedRules);
   const take = (key: string, set: MapSetId | null) => {
     if (!hasKey(key)) return;
-    const r = parseResume(loadJson<unknown>(key));
+    const raw = loadJson<unknown>(key);
+    const r = parseResume(raw);
     if (!r) return removeKey(key);
     const into = set ?? resumeSetOf(r.levelId);
-    if (!placeRun(into, r, shared())) return;
+    const placed = placeRun(into, r, shared());
+    if (placed === 'full')
+      return noteOnce(key, raw, `Classic files: ${into} is full; ${key} waits for a free file`);
+    if (placed !== 'placed') return;
     moved = true;
     removeKey(key);
   };
@@ -212,33 +218,45 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
   return moved;
 }
 
-/** One old run into a file of `set`; false when it could not be written (the old key stays). */
-function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): boolean {
-  const files = listClassicFiles(set);
-  const savedAt = r.savedAt ?? 0;
-  // A file with anything in it (an unreadable one too) is not empty.
+/** What has been logged already (migration runs at every read; each kept key is logged once). */
+const noted = new Set<string>();
+function noteOnce(key: string, raw: unknown, message: string): void {
+  const id = `${key}|${JSON.stringify(raw) ?? ''}`;
+  if (noted.has(id)) return;
+  noted.add(id);
+  console.warn(message);
+}
+
+/**
+ * 31a: how many old saves (readable, so they will migrate) are waiting for a free file of `set`,
+ * which is full: each moves into the next file ERASE FILE frees.
+ */
+export function oldRunsWaiting(set: MapSetId): number {
+  let n = 0;
+  if (hasKey(CLASSIC_RESUME_KEY)) {
+    const r = parseResume(loadJson<unknown>(CLASSIC_RESUME_KEY));
+    if (r && resumeSetOf(r.levelId) === set) n++;
+  }
+  const key = classicResumeKey(set);
+  if (hasKey(key) && parseResume(loadJson<unknown>(key))) n++;
+  return n;
+}
+
+/**
+ * One old run into the first empty file of `set`: 'placed'; 'full' when every file has something
+ * in it (an unreadable one too: it is never overwritten); 'failed' when storage refused it.
+ */
+function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 'placed' | 'full' | 'failed' {
   let slot: ClassicFileSlot | undefined = CLASSIC_FILE_SLOTS.find((s) => !hasClassicFile({ set, slot: s }));
-  // Full, with an unreadable file: the old run takes the first unreadable one (a readable run is
-  // never dropped for a file nothing can play).
+  // Full, with an unreadable file: the old run takes the first unreadable one.
+  const files = listClassicFiles(set);
   const broken = CLASSIC_FILE_SLOTS.findIndex((_, i) => files[i] === null);
   if (slot === undefined && broken >= 0) {
     slot = CLASSIC_FILE_SLOTS[broken] as ClassicFileSlot;
     console.warn(`Classic files: ${set} is full; unreadable FILE ${slot} was replaced by a saved run`);
   }
-  if (slot === undefined) {
-    // Full of readable files: the oldest goes only for a newer run (else the old run is dropped).
-    let oldest = -1;
-    files.forEach((f, i) => {
-      if (f && (oldest < 0 || f.savedAt < (files[oldest] as ClassicFile).savedAt)) oldest = i;
-    });
-    const old = oldest < 0 ? null : (files[oldest] as ClassicFile);
-    if (!old || savedAt <= old.savedAt) {
-      console.warn(`Classic files: ${set} is full; an older saved run was not migrated`);
-      return true;
-    }
-    slot = CLASSIC_FILE_SLOTS[oldest] as ClassicFileSlot;
-    console.warn(`Classic files: ${set} is full; FILE ${slot} was replaced by a newer saved run`);
-  }
+  if (slot === undefined) return 'full';
+  const savedAt = r.savedAt ?? 0;
   const options = { ...shared.classic, weapons: { ...shared.classic.weapons } };
   if (r.gameMode) options.gameMode = r.gameMode;
   const rules = parseFileRules({
@@ -246,7 +264,7 @@ function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 
     options,
     heroesOff: [...(shared.heroesOff ?? [])],
   });
-  return saveClassicFile({
+  const ok = saveClassicFile({
     set,
     slot,
     rules,
@@ -255,4 +273,5 @@ function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 
     run: r,
     ...(savedAt ? { savedAt } : {}),
   });
+  return ok ? 'placed' : 'failed';
 }

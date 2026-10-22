@@ -178,7 +178,7 @@ describe('B-L migration', () => {
     expect(loadClassicFile({ set: 'smb', slot: 2 })?.run.score).toBe(5);
   });
 
-  it('a full set keeps the newest and logs it', () => {
+  it('a full set overwrites no file and keeps the old key, logged once (31a)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const slot of [1, 2, 3] as const)
       saveClassicFile({
@@ -189,17 +189,23 @@ describe('B-L migration', () => {
         run: run({ score: slot }),
         savedAt: slot * 10,
       });
-    // Older than every file: dropped (its key goes), logged.
+    // Older than every file: kept, not dropped.
     put(classicResumeKey('smb'), { ...run({ score: 99 }), savedAt: 5 });
     migrateClassicFiles(shared());
     expect(listClassicFiles('smb').map((f) => f?.run.score)).toEqual([1, 2, 3]);
-    expect(store.has(classicResumeKey('smb'))).toBe(false);
+    expect(store.has(classicResumeKey('smb'))).toBe(true);
     expect(warn).toHaveBeenCalledTimes(1);
-    // Newer than the oldest (FILE 1, at 10): it takes FILE 1's place.
+    // Newer than the oldest: still no file is overwritten; it waits for a free file.
     put(classicResumeKey('smb'), { ...run({ score: 77 }), savedAt: 25 });
     migrateClassicFiles(shared());
-    expect(listClassicFiles('smb').map((f) => f?.run.score)).toEqual([77, 2, 3]);
+    expect(listClassicFiles('smb').map((f) => f?.run.score)).toEqual([1, 2, 3]);
+    expect(store.has(classicResumeKey('smb'))).toBe(true);
     expect(warn).toHaveBeenCalledTimes(2);
+    // Erase FILE 1: it moves in there.
+    eraseClassicFile({ set: 'smb', slot: 1 });
+    migrateClassicFiles(shared());
+    expect(listClassicFiles('smb').map((f) => f?.run.score)).toEqual([77, 2, 3]);
+    expect(store.has(classicResumeKey('smb'))).toBe(false);
   });
 
   it("a slot's own #196 count wins over the shared one; a broken slot is just removed", () => {
