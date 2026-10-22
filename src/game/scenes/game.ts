@@ -145,6 +145,7 @@ import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { filesBoxFor, fileRulesSpoken, type ClassicFilesScene } from './original-files-menu';
+import { clearedNote } from './original-replay';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -301,6 +302,11 @@ export class Game {
    * CLEARED file's replay (The Lost Levels' World 9 and A-D only when reached).
    */
   private runWorlds: number[] = [];
+  /**
+   * v0.4.73 (owner B): the file this run's ending made CLEARED (and whether storage took it),
+   * for the message after the credits and the cheat cards.
+   */
+  private clearedNews: { ref: ClassicFileRef; saved: boolean } | null = null;
   /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
   private levelSelectUnlocked = false;
   /**
@@ -2377,6 +2383,7 @@ export class Game {
     this.runFileRules = null;
     this.fileContinues = 0;
     this.practiceRun = false;
+    this.clearedNews = null;
   }
 
   /**
@@ -2470,8 +2477,21 @@ export class Game {
       tutorialsSeen: this.classicTutorials.seen,
       run: this.runNow(main, ref),
     });
-    if (!ok && !loadClearedFile(ref))
-      console.warn(`Classic files: ${ref.set} file ${ref.slot} could not be saved as cleared`);
+    this.clearedNews = { ref: { ...ref }, saved: ok || loadClearedFile(ref) !== null };
+  }
+
+  /**
+   * v0.4.73 (owner B): after the credits and the cheat cards of a beaten set: that set's file box
+   * on the CLEARED file, with the message box over it (read out, waiting for OK). A run with no
+   * file to clear (a link run) goes to the title as before.
+   */
+  private afterClassicBeat(): void {
+    const news = this.clearedNews;
+    this.clearedNews = null;
+    if (!news) return this.showTitle();
+    this.deps.ctx.audio.stopMusic();
+    const files = this.showClassicFiles(news.ref.set, news.ref.slot);
+    this.scenes.push(clearedNote(this, files, news.ref, news.saved));
   }
 
   /**
@@ -2932,7 +2952,7 @@ export class Game {
       );
       return;
     }
-    if (!id) return this.showTitle();
+    if (!id) return this.afterClassicBeat();
     const lines = unlockedLines(id);
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
     this.deps.ctx.audio.sfx('1up');
