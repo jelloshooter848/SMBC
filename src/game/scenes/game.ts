@@ -225,6 +225,9 @@ function fitsHero(def: CharacterDef, k: HeroPower): boolean {
 const RANDOM_PICK_SEED = 0x5eed1;
 
 /** Orchestrates scenes and carries GameState between levels. */
+/** Why a Classic file that reads cannot play now (Game.classicFileProblem, 31d; 0.4.72). */
+export type FileProblem = 'hero-off' | 'hero' | 'level' | 'not-released';
+
 export class Game {
   readonly scenes = new SceneStack();
   /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
@@ -775,6 +778,15 @@ export class Game {
    */
   heroReleased(id: string): boolean {
     return expansionReleased(id);
+  }
+
+  /**
+   * 0.4.72: hero `c` is offered only by dev mode's select: dev mode is on and its slot is an
+   * Expansion hero players do not have yet (whether in Release or On state).
+   */
+  devOnlyHero(c: CharacterDef): boolean {
+    const id = this.slotOf(c).id;
+    return this.devMode && EXPANSION_HEROES.includes(id) && !this.heroReleased(id);
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -2399,6 +2411,8 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
+    // 0.4.72: a hero only dev mode's select offers marks the run (fileProblem 'not-released').
+    if (this.devOnlyHero(this.state.character)) r.devHero = true;
     saveClassicFile({
       ...ref,
       rules: this.classicRunRules,
@@ -2490,22 +2504,31 @@ export class Game {
   /**
    * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
    * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
-   * ('level'). Null when it plays, or when there is no readable file there.
+   * ('level'). 0.4.72: its run was played in dev mode by a hero only dev mode offers (devHero)
+   * and dev mode is off now ('not-released'). Null when it plays, or when there is no readable
+   * file there.
    */
-  classicFileProblem(ref: ClassicFileRef): 'hero-off' | 'hero' | 'level' | null {
+  classicFileProblem(ref: ClassicFileRef): FileProblem | null {
     this.migrateClassicFiles();
     const f = loadClassicFile(ref);
     return f ? this.fileProblem(f) : null;
   }
 
-  private fileProblem(f: ClassicFile): 'hero-off' | 'hero' | 'level' | null {
+  private fileProblem(f: ClassicFile): FileProblem | null {
     const r = f.run;
     try {
       this.deps.getLevel(r.levelId);
     } catch {
       return 'level';
     }
-    if (this.rosterFor(this.resumeRules(r)).some((c) => c.id === r.hero)) return null;
+    const rules = this.resumeRules(r);
+    const hero = this.rosterFor(rules).find((c) => c.id === r.hero);
+    if (hero) {
+      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's);
+      // an unmarked one whose hero no select offers plays as the first slot's hero (P1).
+      if (r.devHero && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
+      return null;
+    }
     const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
     return off ? 'hero-off' : 'hero';
   }
