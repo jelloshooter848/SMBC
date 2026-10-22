@@ -20,7 +20,8 @@ import { loadSave, SAVE_SLOTS } from '../save/save-files';
  * areas), then the START page. Campaign: the world map or a file on a scratch copy that never
  * saves, a story level (world, level, START), the village, the tutorial stage, the training rooms,
  * the mini and bonus games. The START page picks the hero (the select's slot heroes), its look,
- * power, Map difficulty, rules, mode and kit. "Again" on the Dev menu replays the last start.
+ * power, Map difficulty, rules and kit. 0.4.72 (owner item 7): no Mode row; every dev start is
+ * free play (99 lives, straight back after a death), with Map difficulty under Classic rules. "Again" on the Dev menu replays the last start.
  * Dev mode only: every page is reached from the Dev menu, which needs dev mode on.
  */
 
@@ -37,6 +38,7 @@ export interface DevPick {
   power: string;
   kit: boolean;
   rules: Rules;
+  /** Always false since 0.4.72 (no Mode row: free play); a kept true is read as false. */
   classicRun: boolean;
   difficulty: MapDifficulty;
 }
@@ -87,8 +89,9 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
     power: states.includes(power) ? power : (states[0] as string),
     kit: p.kit === true,
     rules,
-    classicRun: p.classicRun === true,
-    difficulty: difficulty as MapDifficulty,
+    // 0.4.72: every dev start is free play (a start kept as a Classic run plays as free play).
+    classicRun: false,
+    difficulty: rules === 'classic' ? (difficulty as MapDifficulty) : 'normal',
   };
 }
 
@@ -129,8 +132,8 @@ export function devPickSummary(game: Game, p: DevPick): { value: string; said: s
   const who = look?.name ?? p.look;
   const parts = [p.name, who, p.power];
   if (p.branch === 'classic') {
-    parts.push(p.classicRun ? 'Classic run' : 'Free play', RULES_LABELS[p.rules]);
-    if (p.classicRun && p.rules === 'classic') parts.push(DIFFICULTY_NAMES[p.difficulty]);
+    parts.push(RULES_LABELS[p.rules]);
+    if (p.rules === 'classic') parts.push(DIFFICULTY_NAMES[p.difficulty]);
   }
   return { value: p.name, said: parts.join(', ') };
 }
@@ -495,8 +498,9 @@ export class DevTrainingScene extends DevPage {
 
 /**
  * The START page: Start, Hero (the select's slot heroes), Look (that hero's skins), Power, then
- * for a Classic start Map difficulty, Rules and Mode, and Kit. A campaign start plays Current
- * rules as free play (99 lives).
+ * for a Classic start Map difficulty and Rules, and Kit. Every start plays as free play (99 lives,
+ * straight back after a death; 0.4.72 owner item 7: the Mode row is gone); a campaign start plays
+ * Current rules.
  */
 export class DevStartScene extends DevPage {
   private heroIndex = 0;
@@ -504,7 +508,6 @@ export class DevStartScene extends DevPage {
   private powerIndex = 0;
   private fullKit = false;
   private rules: Rules;
-  private classicRun: boolean;
   private difficulty: MapDifficulty = 'normal';
 
   constructor(
@@ -514,7 +517,6 @@ export class DevStartScene extends DevPage {
     super(game, 'Start', [], false);
     const classic = target.branch === 'classic';
     this.rules = classic ? 'classic' : 'current';
-    this.classicRun = classic;
     const cycle = (i: number, d: number, n: number) => (n ? (i + d + n) % n : 0);
     const items: MenuItem[] = [
       {
@@ -563,7 +565,7 @@ export class DevStartScene extends DevPage {
           get hint() {
             return live()
               ? 'Easy, Normal or Hard: each plays the original version of every level'
-              : 'Only a Classic run with Classic SMBC rules: else Normal';
+              : 'Only with Classic SMBC rules: else Normal';
           },
         },
         {
@@ -588,12 +590,6 @@ export class DevStartScene extends DevPage {
           get hint() {
             return `${RULES_HINT}. Hero: ${heroName()}`;
           },
-        },
-        {
-          label: 'Mode',
-          value: () => (this.classicRun ? 'Classic run' : 'Free play'),
-          adjust: () => (this.classicRun = !this.classicRun),
-          hint: 'Classic run: its lives, continues and select. Free play: 99 lives',
         },
       );
     }
@@ -645,9 +641,12 @@ export class DevStartScene extends DevPage {
     return this.powerStates[this.powerIndex] ?? (this.powerStates[0] as string);
   }
 
-  /** Map difficulty plays only in a Classic run under Classic rules (GameContext.mapDifficulty). */
+  /**
+   * Map difficulty plays under Classic rules (GameContext.mapDifficulty; 0.4.72: in a dev free
+   * play start too).
+   */
   get difficultyLive(): boolean {
-    return this.classicRun && this.rules === 'classic';
+    return this.rules === 'classic';
   }
 
   private get difficultyNow(): MapDifficulty {
@@ -656,7 +655,6 @@ export class DevStartScene extends DevPage {
 
   /** The start these rows make. */
   get pick(): DevPick {
-    const classic = this.target.branch === 'classic';
     return {
       branch: this.target.branch,
       level: this.target.level,
@@ -666,7 +664,7 @@ export class DevStartScene extends DevPage {
       power: this.power,
       kit: this.fullKit,
       rules: this.rules,
-      classicRun: classic && this.classicRun,
+      classicRun: false,
       difficulty: this.difficultyNow,
     };
   }

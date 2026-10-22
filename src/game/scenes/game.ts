@@ -258,6 +258,12 @@ export class Game {
    */
   classicDifficulty: MapDifficulty = 'normal';
   /**
+   * 0.4.72 (owner item 7): a dev START page start is playing (always free play since the Mode row
+   * went): its Map difficulty plays under Classic rules (ctx.mapDifficulty). Cleared by every
+   * other start (endClassicRun, startRun, resumes, play-tests, shared levels).
+   */
+  private devFreePlay = false;
+  /**
    * B-L: the save file this Classic run belongs to (its set and slot): every WORLD card and a
    * game over's continue point write it, the credits empty it. Null for a practice run (the
    * menus' Level Select), a developer run and a link run, which never write a file.
@@ -468,7 +474,11 @@ export class Game {
     });
     // ctx.mapDifficulty: the Classic run's Map Difficulty (G-006), only while it plays Classic rules.
     Object.defineProperty(deps.ctx, 'mapDifficulty', {
-      get: () => (this.classicRun && this.liveRules === 'classic' ? this.classicDifficulty : undefined),
+      // 0.4.72 (owner item 7): a dev free play start under Classic rules plays it too.
+      get: () =>
+        (this.classicRun || this.devFreePlay) && this.campaign === null && this.liveRules === 'classic'
+          ? this.classicDifficulty
+          : undefined,
       enumerable: true,
       configurable: true,
     });
@@ -1929,6 +1939,7 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic;
     this.linkRun = false;
+    this.devFreePlay = !classic;
     // B-L: a dev start has no file and reads the old shared options.
     this.classicFile = null;
     this.runFileRules = null;
@@ -1936,7 +1947,8 @@ export class Game {
     this.fileContinues = 0;
     // BUG-06: a dev start is a new run; no hero keeps a kit from the run it left.
     this.classicKits = {};
-    // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
+    // O-05: the dev START page's Map difficulty (it plays under Classic rules: a Classic run, or
+    // since 0.4.72 a free play start too).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
     const hero = playedHero(this.ctx, character, rules);
@@ -2266,6 +2278,7 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic && dev;
     this.linkRun = classic && link;
+    this.devFreePlay = false;
     // BUG-06: a new game resets every hero (StatManager.startNewGameHandler → resetAllStats).
     this.classicKits = {};
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
@@ -2324,6 +2337,7 @@ export class Game {
     this.classicFlow = false;
     this.classicDev = false;
     this.linkRun = false;
+    this.devFreePlay = false;
     this.survival = null;
     this.sayFirst = null;
     this.classicKits = {};
@@ -2534,6 +2548,7 @@ export class Game {
     this.classicRun = true;
     this.classicDev = false;
     this.linkRun = false;
+    this.devFreePlay = false;
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).

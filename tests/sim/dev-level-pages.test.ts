@@ -77,7 +77,8 @@ describe('O-05: the dev Level select as pages', () => {
     expect(labels(h.top()).slice(0, 2)).toEqual(['Classic', 'Campaign']);
   });
 
-  it('keys: Lost Levels D-4 as Samus with the Fire Flower on Hard in a Classic run, in under 30 presses, read out', () => {
+  // 0.4.72 (owner item 7): no Mode row; the start is free play, and Map difficulty plays in it.
+  it('keys: Lost Levels D-4 as Samus with the Fire Flower on Hard, in under 30 presses, read out', () => {
     const h = dev();
     h.game.showDevMenu();
     let presses = pick(h, 'Level select'); // BUG-09
@@ -97,7 +98,6 @@ describe('O-05: the dev Level select as pages', () => {
       'Power',
       'Map difficulty',
       'Rules',
-      'Mode',
       'Kit',
       'Back',
     ]);
@@ -110,7 +110,8 @@ describe('O-05: the dev Level select as pages', () => {
     expect(presses).toBeLessThan(30);
     const l = enterLevel(h);
     expect(l.level.id.startsWith('ll-13-4')).toBe(true);
-    expect(h.game.classicRun).toBe(true);
+    expect(h.game.classicRun).toBe(false);
+    expect(h.game.state.lives).toBe(99);
     expect(h.game.liveRules).toBe('classic');
     expect(h.game.ctx.mapDifficulty).toBe('hard');
     expect(l.world.mapDifficulty).toBe('hard');
@@ -137,15 +138,16 @@ describe('O-05: the dev Level select as pages', () => {
     expect(seen.size).toBe(start.looks.length);
   });
 
-  it('Map difficulty plays only in a Classic run under Classic rules: else Normal, and it says so', () => {
+  // 0.4.72 (owner item 7): every start is free play; Map difficulty plays under Classic rules.
+  it('Map difficulty plays under Classic rules: else Normal, and it says so', () => {
     const h = dev();
     const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
     const row = (l: string) => items(start).find((i) => i.label === l) as MenuItem;
     row('Map difficulty').adjust?.(1);
     expect(start.pick.difficulty).toBe('hard');
-    row('Mode').adjust?.(1); // Free play
+    row('Rules').adjust?.(1); // Campaign
     expect(row('Map difficulty').value?.()).toBe('Normal');
-    expect(row('Map difficulty').hint).toMatch(/Classic run with Classic SMBC rules/);
+    expect(row('Map difficulty').hint).toMatch(/Only with Classic SMBC rules/);
     expect(start.pick.difficulty).toBe('normal');
     row('Start').select?.();
     enterLevel(h);
@@ -167,7 +169,7 @@ describe('O-05: the dev Level select as pages', () => {
     h.game.showDevMenu();
     const menu = h.top() as MenuScene;
     expect(labels(menu)[0]).toBe('Again');
-    expect(items(menu)[0]?.hint).toMatch(/Special 2-3, Mario, small, Classic run, Classic SMBC, Easy/);
+    expect(items(menu)[0]?.hint).toMatch(/Special 2-3, Mario, small, Classic SMBC, Easy/);
     h.idle(8);
     h.tap('jump');
     const l = enterLevel(h);
