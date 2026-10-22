@@ -13,6 +13,7 @@ import { CheatsScene } from './cheats-menu';
 import { MUSIC_SET_ROW, optionItem } from './original-options';
 import type { Game } from './game';
 import { filesBoxFor } from './original-files-menu';
+import { CLASSIC_FILE_SLOTS } from '../original-files';
 import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
@@ -207,7 +208,11 @@ export class ClassicMenuScene extends MenuScene {
     // Map difficulty and Options are no longer here: a file's rules are chosen when it starts,
     // and the shared options are in the Start box's OPTIONS.
     const items: MenuItem[] = MAP_SETS.map((set) => {
-      const used = game.classicFiles(set.id).filter((f) => f !== null).length;
+      // 38b: every file in use counts, an UNREADABLE, HERO OFF or CANNOT PLAY one too (a new
+      // game never takes them), not only the ones that play now.
+      const used = CLASSIC_FILE_SLOTS.filter(
+        (slot) => game.classicFileState({ set: set.id, slot }) !== 'empty',
+      ).length;
       const files = used === 0 ? 'No files used' : `${used} ${used === 1 ? 'file' : 'files'} used`;
       return {
         label: set.label,
