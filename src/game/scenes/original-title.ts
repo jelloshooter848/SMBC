@@ -192,6 +192,8 @@ export class ClassicTitleScene implements Scene {
    * theme playing, and the way back (title.ts) only brings it up again.
    */
   overworldAsked = false;
+  /** BACK came while CLASSIC was still falling: it never landed on the stamp (0.4.72). */
+  backBeforeImpact = false;
 
   /** The impact (or the smash cut short by a press): the overworld rises, the smash its downbeat. */
   private startOverworld(): void {
@@ -290,8 +292,12 @@ export class ClassicTitleScene implements Scene {
         this.game.ctx.audio.sfx('stamp');
       }
       // Any press finishes it, and still does what it does (OK still opens the Start box). BACK
-      // before the impact: no overworld at all, the REMIX theme just comes back up (BUG-12).
-      if (input.pressed('attack') || input.pressed('select')) this.overworldDue = false;
+      // before the impact: no overworld at all, the REMIX theme just comes back up (BUG-12), and
+      // CLASSIC never landed (0.4.72: the REMIX title then skips its break, title.ts).
+      if (input.pressed('attack') || input.pressed('select')) {
+        if (this.smashPhase() === 'drop') this.backBeforeImpact = true;
+        this.overworldDue = false;
+      }
       if (this.t >= SMASH.end || this.tapped || Actions.some((a) => input.pressed(a))) this.finishSmash();
     }
     if (this.phase === 'demo') {

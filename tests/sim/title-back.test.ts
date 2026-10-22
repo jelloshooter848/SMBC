@@ -150,6 +150,36 @@ describe('the way back from CLASSIC (option A)', () => {
     expect(title.phase).toBe('ready');
   });
 
+  it("BACK during CLASSIC's fall: nothing was hit, so no break; the finished title, its theme back up", () => {
+    const s = setup();
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    s.h.idle(4);
+    const classic = s.h.top() as ClassicTitleScene;
+    expect(classic.smashPhase()).toBe('drop');
+    s.music.length = 0;
+    s.sfx.length = 0;
+    s.h.step(['attack']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('ready');
+    expect(s.music).toEqual(['title']); // the same song: it comes back up, never restarted
+    const actors = (title as unknown as { actors: { x: number; walking: boolean; slot: { x: number } }[] })
+      .actors;
+    for (const a of actors) expect(a.walking || a.x !== a.slot.x).toBe(false);
+    for (let i = 0; i < 40; i++) {
+      const f = frames(title);
+      expect(f).toContain('remix');
+      for (const no of ['classic', 'classic-squash', 'remix-2x', 'brick-bit', 'dust-0'])
+        expect(f).not.toContain(no);
+      expect(title.shake()).toBe(0);
+      s.h.step();
+    }
+    expect(s.sfx).not.toContain('stamp');
+    expect(s.music).toEqual(['title']);
+  });
+
   it('the first launch (the rift intro, the full fanfare) and the plain title are as they were', () => {
     const s = setup();
     s.h.game.showTitle();

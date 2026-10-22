@@ -154,7 +154,7 @@ export class TitleScene extends MenuScene {
      * The CLASSIC title this one comes back from (0.4.72): its still frame is the backdrop CLASSIC
      * breaks over, and its overworld is cut for the REMIX theme (the back transition).
      */
-    private readonly classic: ClassicTitleScene | null = null,
+    private classic: ClassicTitleScene | null = null,
   ) {
     super(game, '', [], null);
     // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
@@ -163,17 +163,32 @@ export class TitleScene extends MenuScene {
     this.heroes = heroRow(game.deps.characters, game.campaignOpen ? titleFreed(listSaves()) : all);
     const intro = game.deps.titleIntro === true && !game.titleIntroPlayed;
     game.titleIntroPlayed = true;
-    const back = !intro && classic !== null;
-    this.phase = intro ? (needsStartGate(game.ctx.audio) ? 'gate' : 'rift') : back ? 'back' : 'drop';
-    // With Reduce flashing the way back is an instant swap: the stamp is on from the first frame.
-    this.stampAt = intro ? T.riftStamp : back ? (game.ctx.reduceFlashing ? 0 : BACK.slam) : T.dropStamp;
+    // BACK while CLASSIC was still falling: it never hit the stamp, so nothing breaks; the
+    // finished title at once (the stamp was there all along), its theme coming back up.
+    const unhit = !intro && classic !== null && classic.backBeforeImpact && !classic.overworldAsked;
+    if (unhit) this.classic = null;
+    const back = !intro && this.classic !== null;
+    if (intro) {
+      this.phase = needsStartGate(game.ctx.audio) ? 'gate' : 'rift';
+      this.stampAt = T.riftStamp;
+    } else if (back) {
+      this.phase = 'back';
+      // With Reduce flashing the way back is an instant swap: the stamp on from the first frame.
+      this.stampAt = game.ctx.reduceFlashing ? 0 : BACK.slam;
+    } else if (unhit) {
+      this.phase = 'ready';
+      this.stampAt = -T.dustFrames - T.stampShake; // landed long ago: no shake, no dust
+    } else {
+      this.phase = 'drop';
+      this.stampAt = T.dropStamp;
+    }
     const level = game.deps.getLevel('1-1');
     this.scenery = level.decor.filter((d) => d.x * 16 < 256 && d.y * 16 < 240);
     this.sceneryPalette = decorPalette(level.theme);
     let walker = 0;
     this.actors = this.heroes.map((slot, i) => {
       // Back from CLASSIC the heroes are already standing in their places (no walk-in).
-      const walks = !intro && !back && slot.freed;
+      const walks = !intro && !back && !unhit && slot.freed;
       return {
         slot,
         p: poser(slot.def),
