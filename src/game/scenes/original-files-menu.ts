@@ -6,6 +6,7 @@ import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original
 import {
   CLASSIC_FILE_SLOTS,
   eraseClassicFile,
+  hasClassicFile,
   loadClassicFile,
   oldRunsWaiting,
   originalFileRules,
@@ -378,11 +379,24 @@ export class ClassicFilesScene extends ClassicBox {
   }
 
   /**
+   * ERASE FILE's YES: file `slot` emptied, then the box again on it (erased). 39a: what waits
+   * for a free file is counted first, and whether the file is gone is read right after the erase,
+   * so a refused erase (storage throwing) is never told as an old save moving in.
+   */
+  eraseFile(slot: ClassicFileSlot): void {
+    const ref: ClassicFileRef = { set: this.set.id, slot };
+    const waiting = oldRunsWaiting(this.set.id);
+    eraseClassicFile(ref);
+    this.erased(slot, waiting, !hasClassicFile(ref));
+  }
+
+  /**
    * After ERASE: the box again, on the erased file, saying so. 31a: an old save that was waiting
    * for a free file (its set was full) has moved into it on this read: that is said, then the
-   * file as it is now.
+   * file as it is now. 39a: only when the file was empty right after the erase (`emptied`) and
+   * fewer old saves wait now than `waiting` before it; a file still there was not erased.
    */
-  erased(slot: ClassicFileSlot): void {
+  private erased(slot: ClassicFileSlot, waiting: number, emptied: boolean): void {
     closeTo(this.game, this);
     this.refresh();
     this.index = slot - 1;
@@ -392,9 +406,15 @@ export class ClassicFilesScene extends ClassicBox {
       this.game.deps.announcer?.say(`${erased} ${this.spoken()}`);
       return;
     }
-    this.movedInto = slot;
-    const hint = this.items[this.index]?.hint ?? '';
-    this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
+    if (emptied && oldRunsWaiting(this.set.id) < waiting) {
+      this.movedInto = slot;
+      const hint = this.items[this.index]?.hint ?? '';
+      this.game.deps.announcer?.say(`${erased} ${OLD_SAVE} moved into ${fileName(slot)}: ${hint}.`);
+      return;
+    }
+    this.movedInto = null;
+    this.game.ctx.audio.sfx('bump');
+    this.game.deps.announcer?.say(`${fileName(slot)} could not be erased. ${this.spoken()}`);
   }
 }
 
@@ -606,8 +626,7 @@ export class ClassicEraseConfirmScene extends ClassicBox {
       {
         label: 'Yes',
         select: () => {
-          eraseClassicFile({ set: files.set.id, slot });
-          files.erased(slot);
+          files.eraseFile(slot);
         },
         hint: `Erase ${fileName(slot)} for good`,
       },
