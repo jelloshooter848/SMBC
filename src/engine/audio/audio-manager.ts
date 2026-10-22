@@ -54,6 +54,8 @@ export interface AudioSink {
    * first (null from it: silence). Null removes the map. Without one every id plays as given.
    */
   setMusicMap?(map: MusicMap | null): void;
+  /** The song and sound ids registered now (an asset pack may replace any of them; item 92). */
+  registeredIds?(): { songs: string[]; sfx: string[] };
 }
 
 /** A song id to the song to play in its place (null: none). */
@@ -161,6 +163,10 @@ export class AudioManager implements AudioSink {
   }
   registerSfx(list: Sfx[]): void {
     for (const s of list) this.sfxLib.set(s.id, s);
+  }
+
+  registeredIds(): { songs: string[]; sfx: string[] } {
+    return { songs: [...this.songs.keys()], sfx: [...this.sfxLib.keys()] };
   }
 
   /** Replace the set of file overrides (from enabled asset packs). */

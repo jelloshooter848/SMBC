@@ -149,7 +149,7 @@ export function readZip(bytes: Uint8Array): ZipRead[] {
  */
 export function asPickedFolder(folder: string, entries: { path: string; data: Uint8Array }[]): File[] {
   return entries.map((e) => {
-    const f = new File([e.data], e.path.split('/').pop() as string);
+    const f = new File([e.data as BlobPart], e.path.split('/').pop() as string);
     Object.defineProperty(f, 'webkitRelativePath', { value: `${folder}/${e.path}` });
     return f;
   });

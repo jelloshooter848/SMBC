@@ -69,6 +69,11 @@ export class AssetRegistry {
     this.sheets.clear();
   }
 
+  /** The named palettes as they are now (a pack's recolours included), for the pack template. */
+  paletteTable(): Readonly<Record<string, readonly string[]>> {
+    return this.palettes.default;
+  }
+
   ids(): string[] {
     return [...this.defs.keys()];
   }

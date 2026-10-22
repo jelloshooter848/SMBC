@@ -362,8 +362,10 @@ class PacksOptions extends MenuScene {
     });
     items.push({
       label: 'Export template',
-      select: () => void exportTemplate(game.ctx.assets, game.ctx.assets.ids()),
-      hint: 'Downloads PNGs to repaint',
+      // Item 92: one download, smbc-remix-pack-template.zip (the ids it lists read live).
+      select: () =>
+        void exportTemplate(game.ctx.assets, game.ctx.audio.registeredIds?.() ?? { songs: [], sfx: [] }),
+      hint: 'Downloads a zip of pictures to repaint',
     });
     for (const name of this.names) {
       items.push({
