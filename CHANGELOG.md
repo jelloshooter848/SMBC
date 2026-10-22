@@ -21,6 +21,8 @@ under `## [Unreleased]`.
 - Screen reader: the Video, Audio, Controls and Assists pages, the Dev menu and its Level select,
   Mini games, Bonus games and Toggle heroes pages say their title with the focused row when they
   open, and the page under them says its focused row again on the way back, as the boxes do.
+- Screen reader: skipping the REMIX title's intro says the focused menu row, so "Press any button
+  to skip the intro" is no longer left as the last thing said.
 
 ## [0.4.69] - 2026-10-22
 
