@@ -3,6 +3,7 @@ import { FONT_COLOURS, type FontColour } from '@content/sprites/font';
 import { MenuScene } from './menu';
 import type { Game } from './game';
 import { CreditsScene } from './credits';
+import { abilityHint } from './hints';
 
 /**
  * The About page's lines (0.4.72, owner: title option A). What left the REMIX title (the version,
@@ -35,6 +36,8 @@ const LINES_Y = 44;
 const LINE_H = 10;
 const ROWS_Y = 182;
 const ROW_H = 14;
+/** The BACK hint's line (MenuScene's full-screen backY). */
+const BACK_Y = 216;
 
 /** Options > About: the game's credit and version, a Credits row (the roll) and Back. */
 export class AboutScene extends MenuScene {
@@ -87,5 +90,7 @@ export class AboutScene extends MenuScene {
       if (i === this.index) r.text(font, '>', 76, y);
       r.text(font, it.label.toUpperCase(), 88, y);
     });
+    // The BACK hint, blinking, where every Options page has it (MenuScene).
+    if ((this.t >> 5) % 2 === 0) r.text(font, abilityHint(this.game, 'BACK', this.backAction), 24, BACK_Y);
   }
 }

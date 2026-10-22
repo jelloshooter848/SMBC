@@ -63,6 +63,11 @@ describe('the way back from CLASSIC (option A)', () => {
     // The squash, then seven pieces (one a letter) with a chip each, the CLASSIC frame held still.
     expect(frames(title)).toContain('classic-squash');
     s.h.idle(BACK.squash);
+    // The break's first frame: the seven pieces, their chips not yet out (not on the letters' feet).
+    const cracked = frames(title);
+    expect(cracked.filter((f) => f === 'classic')).toHaveLength(7);
+    expect(cracked).not.toContain('brick-bit');
+    s.h.step();
     const broken = frames(title);
     expect(broken.filter((f) => f === 'classic')).toHaveLength(7);
     expect(broken.filter((f) => f === 'brick-bit')).toHaveLength(7);
@@ -87,6 +92,32 @@ describe('the way back from CLASSIC (option A)', () => {
     expect(s.sfx.filter((x) => x === 'stamp')).toEqual(['stamp']);
     s.h.idle(TITLE_TIMING.dustFrames);
     expect(title.phase).toBe('ready');
+  });
+
+  it('the speaker is hidden and cannot be tapped during the break; the CLASSIC title is let go on the slam', () => {
+    const s = setup();
+    const { title } = back(s);
+    const box = title.speakerBox;
+    const at = [box.x + box.w / 2, box.y + box.h / 2] as const;
+    expect(title.speakerShown).toBe(false);
+    expect(title.tapAt(...at)).toBe(false);
+    expect(draw(title).sprites.length).toBeGreaterThan(0);
+    const held = () => (title as unknown as { classic: unknown }).classic;
+    expect(held()).not.toBeNull();
+    while (clock(title) < BACK.slam) s.h.step();
+    expect(held()).toBeNull();
+    expect(title.speakerShown).toBe(true);
+    expect(title.tapAt(...at)).toBe(true);
+    s.h.idle(5); // still drawn without it
+    expect(frames(title)).toContain('remix');
+  });
+
+  it('a skip during the break lets the CLASSIC title go too', () => {
+    const s = setup();
+    const { title } = back(s);
+    s.h.step();
+    s.h.step(['jump']);
+    expect((title as unknown as { classic: unknown }).classic).toBeNull();
   });
 
   it('no full title reload: the logo is in place and the heroes already stand (no walk-in)', () => {

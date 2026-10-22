@@ -264,6 +264,8 @@ export class TitleScene extends MenuScene {
   private slam(): void {
     if (this.slammed) return;
     this.slammed = true;
+    // The CLASSIC title's frame is no longer drawn: let it (its demo World) go.
+    this.classic = null;
     const audio = this.game.ctx.audio;
     // The same song still playing (BACK before the impact) only comes back up, never restarted.
     audio.playMusic('title', 0, true);
@@ -370,8 +372,15 @@ export class TitleScene extends MenuScene {
     this.game.deps.announcer?.say(s.audio.muted ? 'Sound off.' : 'Sound on.');
   }
 
-  /** A tap or click at screen (x, y): on the speaker it toggles the sound (true). */
+  /** The speaker is on screen (not behind the gate, in the rift, or during the way back's break). */
+  get speakerShown(): boolean {
+    if (this.phase === 'gate' || this.phase === 'rift') return false;
+    return !(this.phase === 'back' && this.clock < this.stampAt);
+  }
+
+  /** A tap or click at screen (x, y): on the speaker, while it shows, it toggles the sound (true). */
   tapAt(x: number, y: number): boolean {
+    if (!this.speakerShown) return false;
     const b = SPEAKER;
     // A little slack around the icon: a fingertip is bigger than 16 px.
     if (x < b.x - 6 || x > b.x + b.w + 4 || y < b.y - 4 || y > b.y + b.h + 6) return false;
@@ -387,7 +396,7 @@ export class TitleScene extends MenuScene {
     const viewport = this.game.deps.viewport;
     if (!canvas || !viewport || this.unbindPointer) return;
     const down = (e: PointerEvent) => {
-      if (this.game.scenes.top !== this || this.phase === 'rift' || this.phase === 'gate') return;
+      if (this.game.scenes.top !== this || !this.speakerShown) return;
       const s = viewport.toScreen(e.clientX, e.clientY);
       if (this.tapAt(s.x, s.y)) e.preventDefault();
     };
@@ -789,11 +798,14 @@ export class TitleScene extends MenuScene {
     if (k < BACK.squash) {
       const flat = sheet.frames.get('classic-squash')?.h ?? 22;
       r.sprite(sheet, 'classic-squash', CLASSIC_AT.x, CLASSIC_AT.y + h - flat);
-    } else
-      for (const p of this.classicPieces(k - BACK.squash, w)) {
+    } else {
+      const a = k - BACK.squash;
+      for (const p of this.classicPieces(a, w)) {
         clipped(r, p.clipX, p.y, p.clipW, h, () => r.sprite(sheet, 'classic', p.wordX, p.y));
-        r.sprite(sheet, 'brick-bit', p.chipX, p.chipY);
+        // The chips fly from the first frame the pieces move (not sitting on the letters' feet).
+        if (a > 0) r.sprite(sheet, 'brick-bit', p.chipX, p.chipY);
       }
+    }
     if (k >= this.stampAt - T.stampPop) {
       const f = sheet.frames.get('remix');
       r.sprite(sheet, 'remix-2x', STAMP_X - ((f?.w ?? 92) >> 1), STAMP_Y - ((f?.h ?? 44) >> 1));

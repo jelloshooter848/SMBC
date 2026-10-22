@@ -166,6 +166,14 @@ describe('Options > About', () => {
     expect(strs).not.toContain('ORIGINAL ART AND MUSIC.');
     expect(strs).toContain(`VERSION ${__APP_VERSION__}`.toUpperCase());
     expect(labels(about)).toEqual(['Credits', 'Back']);
+    // The BACK hint, as on every Options page (it blinks).
+    const t = (about as unknown as { t: number }).t;
+    if ((t >> 5) % 2 === 0) expect(strs).toContain('BACK (X)');
+    (about as unknown as { t: number }).t = 0;
+    const hint = texts(about).find((x) => x.str === 'BACK (X)');
+    expect(hint).toMatchObject({ x: 24, y: 216 });
+    (about as unknown as { t: number }).t = 32;
+    expect(texts(about).some((x) => x.str === 'BACK (X)')).toBe(false);
     // Every line fits the screen.
     for (const t of texts(about)) {
       expect(t.x).toBeGreaterThanOrEqual(0);
