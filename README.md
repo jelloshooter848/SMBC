@@ -206,6 +206,12 @@ has the same guide for the hero you are playing.
   code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
+- **Save data** (the title's Options only): **Export backup** saves everything the game keeps in
+  this browser (settings, Campaign saves, Classic files, cheats, progress, custom levels) to one
+  `smbc-remix-backup-YYYY-MM-DD.json` file, and each asset pack as its own `.zip` if you choose;
+  **Import backup** checks a backup file whole, asks before replacing everything, and changes
+  nothing if it is damaged or from a newer version (it does not restore asset packs); **Erase all
+  data** asks twice (offering a backup first), and asks separately about asset packs.
 - **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
@@ -374,9 +380,10 @@ rules and the release steps. What's planned next, and ideas kept for later, are 
 The game is playable out of the box with its built-in art. If you own other sprite sheets or
 music you may load them locally without them ever entering the repository:
 
-- **In the game**: Options → Asset packs → _Export template_ downloads one PNG per sprite sheet
-  (with the frame layout) plus a `manifest.json`. Repaint the PNGs, keep the layout, put them in
-  a folder with the manifest and use _Import pack_. Packs are stored in the browser (IndexedDB).
+- **In the game**: Options → Asset packs → _Export template_ downloads
+  `smbc-remix-pack-template.zip`: one PNG and frame layout per sprite sheet, a `manifest.json`,
+  and a `README.txt` listing every song, sound and palette a pack can replace. Unzip it, repaint
+  the PNGs keeping the layout, and pick the folder with _Import pack_. Packs are stored in the browser (IndexedDB).
 - **In development**: drop pack folders in `user-packs/` (gitignored) and list them in
   `user-packs/index.json`; `pnpm dev` imports them automatically.
 

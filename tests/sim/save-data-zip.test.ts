@@ -72,7 +72,7 @@ describe('makeZip', () => {
 
 function pack(name: string, files: Record<string, string | Uint8Array>, manifest?: unknown): StoredPack {
   const blobs: Record<string, Blob> = {};
-  for (const [p, d] of Object.entries(files)) blobs[p] = new Blob([d]);
+  for (const [p, d] of Object.entries(files)) blobs[p] = new Blob([d as BlobPart]);
   return {
     name,
     manifest: manifest ?? {

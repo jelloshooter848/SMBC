@@ -11,6 +11,7 @@ import { AssetRegistry } from '@engine/assets/registry';
 import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
 import { loadSettings, saveSettings, type Settings } from '@engine/save/settings';
+import { DATA_EPOCH_KEY, onStaleStorage, storageIsStale } from '@engine/save/storage';
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
 import { getLevel as getBuiltinLevel, levelIds, specialLevelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
@@ -44,6 +45,12 @@ function boot(): void {
   if (!canvas) throw new Error('#screen canvas missing');
   const overlay = document.getElementById('overlay') as HTMLElement;
   const settings: Settings = loadSettings();
+  // SAVE DATA (items 87-88): once another tab imports a backup or erases all data, this tab's
+  // state is stale; its writes are refused (engine/save/storage.ts) and it reloads to the new data.
+  onStaleStorage(() => location.reload());
+  window.addEventListener('storage', (e) => {
+    if (e.key === DATA_EPOCH_KEY || e.key === null) storageIsStale();
+  });
   // The dev-mode lock (0.5.0, game/dev-lock.ts): open on local builds; on a release, only the
   // passphrase (its salted hash in __DEV_LOCK_HASH__) opens it, and a dev flag it didn't open is off.
   const devLock = devLockFor(__RELEASE_BUILD__, __DEV_LOCK_HASH__);

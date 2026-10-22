@@ -351,7 +351,7 @@ describe('import: all or nothing', () => {
     adoptDataEpoch();
     saveJson(SETTINGS_KEY, { v: 3, other: true });
     writeSave(newSave(2, 'link', null));
-    saveLibrary({ v: 1, levels: { big: 'y'.repeat(4000) } });
+    saveLibrary({ v: 1, levels: { big: 'y'.repeat(40000) } });
     const p = parseBackup(buildBackup({ gameVersion: VERSION, now: NOW }).text, VERSION);
     installStorage(ls);
     adoptDataEpoch();

@@ -13,6 +13,7 @@ import { GuideIndexScene } from './guide';
 import { homeScreenItems } from '../pwa/home-screen';
 import { SaveFilesOptions } from './save-codes';
 import { AboutScene } from './about';
+import { SaveDataOptions } from './save-data';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -61,6 +62,12 @@ export class OptionsScene extends MenuScene {
       ...(translucent || classic
         ? []
         : [
+            // Owner items 86-88: export, import or erase everything the game keeps here.
+            {
+              label: 'Save data',
+              select: () => this.push(new SaveDataOptions(game, () => this.pop())),
+              hint: 'Export, import or erase all game data on this device',
+            },
             {
               label: 'Custom levels',
               select: () => game.showCustomLevels(() => this.pop()),
