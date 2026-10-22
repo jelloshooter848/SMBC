@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.70] - 2026-10-22
+
 ### Changed
 
 - Touch d-pad for Sophia III (an experiment): she never crouches, so her pad is an even
@@ -1971,7 +1973,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.69...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.70...HEAD
+[0.4.70]: https://github.com/jelloshooter848/SMBC/compare/v0.4.69...v0.4.70
 [0.4.69]: https://github.com/jelloshooter848/SMBC/compare/v0.4.68...v0.4.69
 [0.4.68]: https://github.com/jelloshooter848/SMBC/compare/v0.4.67...v0.4.68
 [0.4.67]: https://github.com/jelloshooter848/SMBC/compare/v0.4.66...v0.4.67
