@@ -64,7 +64,9 @@ export function keepCleared(
 /** The stored text of every Classic file and old key (to check nothing was written). */
 export function stored(): string {
   return JSON.stringify(
-    [...store.entries()].filter(([k]) => k.startsWith('smbc-classic-')).sort(([a], [b]) => a.localeCompare(b)),
+    [...store.entries()]
+      .filter(([k]) => k.startsWith('smbc-classic-'))
+      .sort(([a], [b]) => a.localeCompare(b)),
   );
 }
 

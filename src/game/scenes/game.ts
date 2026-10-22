@@ -30,15 +30,19 @@ import { TitleScene } from './title';
 import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
 import { resumeOf, type ClassicResume } from '../run-resume';
 import {
+  classicFileKept,
   copyFileRules,
   eraseClassicFile,
   hasClassicFile,
   listClassicFiles,
   loadClassicFile,
+  loadClearedFile,
   migrateClassicFiles,
   originalFileRules,
   saveClassicFile,
+  saveClearedFile,
   type ClassicFile,
+  type ClearedFile,
   type ClassicFileRef,
   type ClassicFileRules,
   type ClassicFileSlot,
@@ -292,6 +296,11 @@ export class Game {
    * counts for nothing (no beat, no cheat counts, no unlocks), as a developer run.
    */
   practiceRun = false;
+  /**
+   * v0.4.73: the worlds this file run has had a WORLD card in (ClassicResume.worlds), for its
+   * CLEARED file's replay (The Lost Levels' World 9 and A-D only when reached).
+   */
+  private runWorlds: number[] = [];
   /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
   private levelSelectUnlocked = false;
   /**
@@ -1020,8 +1029,9 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    // G-008, B-L: a Classic run that reaches the credits is over; its file is emptied.
-    if (this.keepsResume) this.dropResume();
+    // G-008, B-L: a Classic run that reaches the credits is over. v0.4.73 (owner 46B): its file
+    // is kept as CLEARED, never emptied.
+    if (this.keepsResume) this.clearFile(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -2088,6 +2098,7 @@ export class Game {
       this.classicFile = { set: file.ref.set, slot: file.ref.slot };
       this.runFileRules = copyFileRules(file.rules ?? originalFileRules());
       this.practiceRun = false;
+      this.runWorlds = [];
       this.fileContinues = 0;
       this.classicDifficulty = this.runFileRules.difficulty;
     }
@@ -2390,6 +2401,18 @@ export class Game {
   private keepResume(levelId: string, continued = false): void {
     const ref = this.classicFile;
     if (!ref) return;
+    const r = this.runNow(levelId, ref);
+    saveClassicFile({
+      ...ref,
+      rules: this.classicRunRules,
+      continues: this.fileContinues,
+      tutorialsSeen: this.classicTutorials.seen,
+      run: continued ? { ...r, continued: true } : r,
+    });
+  }
+
+  /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
+  private runNow(levelId: string, ref: ClassicFileRef): ClassicResume {
     const sv = this.survival;
     const survival = sv
       ? {
@@ -2419,13 +2442,36 @@ export class Game {
     // A mark the file has is never dropped (a later write by another hero keeps it).
     if (this.devOnlyHero(this.state.character) || loadClassicFile(ref)?.run.devHero === true)
       r.devHero = true;
-    saveClassicFile({
+    // v0.4.73: the worlds reached (its CLEARED file's replay offers Lost World 9 and A-D by them).
+    if (!this.runWorlds.includes(r.world)) this.runWorlds.push(r.world);
+    r.worlds = [...this.runWorlds];
+    return r;
+  }
+
+  /**
+   * v0.4.73 (owner 46B, 47A): the set is beaten (its ending, before the credits): the run's file
+   * is kept as CLEARED, with the run as it is now (score, lives, hero), once. A file CLEARED
+   * already (another tab's run) stays as it was; storage refusing the write leaves the file's
+   * last run in it (nothing lost), and the message after the credits says it was not saved.
+   */
+  private clearFile(from: string): void {
+    const ref = this.classicFile;
+    if (!ref) return;
+    let main = from;
+    try {
+      main = this.deps.getLevel(from).parent ?? from;
+    } catch {
+      /* kept as given */
+    }
+    const ok = saveClearedFile({
       ...ref,
       rules: this.classicRunRules,
       continues: this.fileContinues,
       tutorialsSeen: this.classicTutorials.seen,
-      run: continued ? { ...r, continued: true } : r,
+      run: this.runNow(main, ref),
     });
+    if (!ok && !loadClearedFile(ref))
+      console.warn(`Classic files: ${ref.set} file ${ref.slot} could not be saved as cleared`);
   }
 
   /**
@@ -2477,7 +2523,9 @@ export class Game {
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
-    if (this.classicFile) eraseClassicFile(this.classicFile);
+    const ref = this.classicFile;
+    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run.
+    if (ref && !classicFileKept(ref)) eraseClassicFile(ref);
   }
 
   /**
@@ -2511,10 +2559,21 @@ export class Game {
    * Only an empty file is ever treated as empty, so a new game never overwrites the others;
    * ERASE FILE empties them.
    */
-  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unplayable' | 'unreadable' {
+  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'cleared' | 'unplayable' | 'unreadable' {
     if (this.classicFileAt(ref)) return 'used';
+    // v0.4.73 (owner 46B): its set was beaten in it; only ERASE FILE empties it.
+    if (this.classicClearedAt(ref)) return 'cleared';
     if (loadClassicFile(ref)) return 'unplayable';
     return hasClassicFile(ref) ? 'unreadable' : 'empty';
+  }
+
+  /**
+   * v0.4.73: file `ref` when it is CLEARED (whatever its hero: the replay's select offers the
+   * heroes its rules do), else null.
+   */
+  classicClearedAt(ref: ClassicFileRef): ClearedFile | null {
+    this.migrateClassicFiles();
+    return loadClearedFile(ref);
   }
 
   /** B-L: file `ref` when it is used and still plays, else null. */
@@ -2592,6 +2651,7 @@ export class Game {
     this.classicFile = { set: ref.set, slot: ref.slot };
     this.fileContinues = f.continues;
     this.practiceRun = false;
+    this.runWorlds = [...(r.worlds ?? [])];
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = rules;
@@ -2795,6 +2855,7 @@ export class Game {
     this.classicFile = run.file ? { set: run.file.set, slot: run.file.slot } : null;
     this.runFileRules = run.rules ? copyFileRules(run.rules) : null;
     this.practiceRun = run.practice === true;
+    this.runWorlds = [];
     this.fileContinues = 0;
     this.classicDifficulty = this.classicRunRules.difficulty;
     this.runRules = this.classicRules;

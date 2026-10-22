@@ -19,6 +19,7 @@ import type { MenuItem } from '@game/scenes/menu';
 import { ClassicEraseConfirmScene, ClassicEraseScene } from '@game/scenes/original-files-menu';
 import { store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';
+import { pickAtContinue } from './continue-select';
 import { beat, classic, closeUnlockCards, inLevel, keepCleared, openFiles, run, stored } from './cleared-nav';
 
 // v0.4.73 PR 2 (A, owner 46B, 47A, 50A): beating a map set keeps its file as CLEARED, never
@@ -43,7 +44,10 @@ const shared = () => ({
   continuesUsed: 0,
 });
 const waiting = () =>
-  store.set(classicResumeKey('smb'), JSON.stringify({ ...run({ levelId: '3-1', world: 3, stage: 1 }), savedAt: 5 }));
+  store.set(
+    classicResumeKey('smb'),
+    JSON.stringify({ ...run({ levelId: '3-1', world: 3, stage: 1 }), savedAt: 5 }),
+  );
 
 /** The stubbed storage, with some of its calls refusing. */
 function refuse(calls: ('getItem' | 'setItem' | 'removeItem')[], only?: (k: string) => boolean): void {
@@ -89,7 +93,8 @@ describe('A: beating a set keeps the file as CLEARED', () => {
 
   it('a credits roll with an old save waiting: nothing moves into the CLEARED file', () => {
     const h = classic();
-    for (const ref of [B, C]) saveClassicFile({ ...ref, rules: originalFileRules(), continues: 0, run: run() });
+    for (const ref of [B, C])
+      saveClassicFile({ ...ref, rules: originalFileRules(), continues: 0, run: run() });
     h.game.classicGame(MARIO, '8-4', { ref: A });
     h.until(() => inLevel(h), 900);
     waiting();
@@ -127,23 +132,31 @@ describe('A: a CLEARED file is never overwritten', () => {
   it('by saveClassicFile itself (any writer, any tab)', () => {
     keepCleared(A);
     const before = stored();
-    expect(saveClassicFile({ ...A, rules: originalFileRules(), continues: 0, run: run({ levelId: '1-1' }) })).toBe(
-      false,
-    );
+    expect(
+      saveClassicFile({ ...A, rules: originalFileRules(), continues: 0, run: run({ levelId: '1-1' }) }),
+    ).toBe(false);
     expect(stored()).toBe(before);
   });
 
   it('by a second clear: the first stays as it was', () => {
     keepCleared(A, { score: 111 });
     const before = stored();
-    expect(saveClearedFile({ ...A, rules: originalFileRules(), continues: 0, run: run({ score: 222 }) })).toBe(false);
+    expect(
+      saveClearedFile({ ...A, rules: originalFileRules(), continues: 0, run: run({ score: 222 }) }),
+    ).toBe(false);
     expect(stored()).toBe(before);
   });
 
   it('by a stale tab: a run of the same file reaching a WORLD card, a game over, or the ending', () => {
-    saveClassicFile({ ...A, rules: originalFileRules(), continues: 0, run: run({ levelId: '1-1', world: 1, stage: 1 }) });
+    saveClassicFile({
+      ...A,
+      rules: originalFileRules(),
+      continues: 0,
+      run: run({ levelId: '1-1', world: 1, stage: 1 }),
+    });
     const h = classic();
     expect(h.game.resumeClassic(A)).toBe(true);
+    pickAtContinue(h);
     h.until(() => inLevel(h), 900);
     // Another tab beat the set in this file meanwhile.
     store.delete(classicFileKey(A));
@@ -177,7 +190,8 @@ describe('A: a CLEARED file is never overwritten', () => {
     expect(loadClearedFile(A)).toBeNull();
     expect(saveClassicFile({ ...A, rules: originalFileRules(), continues: 0, run: run() })).toBe(false);
     expect(saveClearedFile({ ...A, rules: originalFileRules(), continues: 0, run: run() })).toBe(false);
-    for (const ref of [B, C]) saveClassicFile({ ...ref, rules: originalFileRules(), continues: 0, run: run() });
+    for (const ref of [B, C])
+      saveClassicFile({ ...ref, rules: originalFileRules(), continues: 0, run: run() });
     waiting();
     migrateClassicFiles(shared);
     expect(store.get(classicFileKey(A))).toBe(newer);

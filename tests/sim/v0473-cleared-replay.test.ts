@@ -148,7 +148,11 @@ describe('C: the world and level boxes', () => {
     const h = classic();
     openFiles(h, 'lost');
     choose(h, 'File 1');
-    expect(labels(h.top())).toEqual([...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((w) => `World ${w}`), 'World A', 'Back']);
+    expect(labels(h.top())).toEqual([
+      ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((w) => `World ${w}`),
+      'World A',
+      'Back',
+    ]);
   });
 
   it('a Lost file that never reached World 9 has no World 9 (Level Select to D-4)', () => {
@@ -157,7 +161,11 @@ describe('C: the world and level boxes', () => {
     const h = classic();
     openFiles(h, 'lost');
     choose(h, 'File 1');
-    expect(labels(h.top())).toEqual([...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`), 'World D', 'Back']);
+    expect(labels(h.top())).toEqual([
+      ...[1, 2, 3, 4, 5, 6, 7, 8].map((w) => `World ${w}`),
+      'World D',
+      'Back',
+    ]);
   });
 
   it('a Lost file from before reach was kept (unknown): Worlds 1-8', () => {

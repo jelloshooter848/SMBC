@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import {
-  originalFileRules,
-  saveClassicFile,
-  type ClassicFileRef,
-} from '@game/original-files';
+import { originalFileRules, saveClassicFile, type ClassicFileRef } from '@game/original-files';
 import { classicResumeKey, type ClassicResume } from '@game/run-resume';
 import type { MenuItem } from '@game/scenes/menu';
 import {
