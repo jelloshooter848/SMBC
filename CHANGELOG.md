@@ -8,6 +8,11 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Classic mode: a saved run for a hero no select offers now plays as Mario from Mario's default
+  power and items, as the earlier entry said, instead of keeping that hero's saved power.
+
 ## [0.4.69] - 2026-10-22
 
 ### Changed

@@ -2355,10 +2355,15 @@ export class Game {
     // with its level, lives, score and coins; its power and kit (Current's) start afresh.
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
+    // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
+    // at his own default, not with the saved hero's power and kit.
+    const swapped = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
-      s.powerState = r.powerState;
-      s.hp = r.hp;
-      s.kit = { ...r.kit };
+      if (!swapped) {
+        s.powerState = r.powerState;
+        s.hp = r.hp;
+        s.kit = { ...r.kit };
+      }
       if (r.heroKits) this.classicKits = structuredClone(r.heroKits);
     }
     s.warped = r.warped;
