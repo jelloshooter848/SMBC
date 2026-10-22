@@ -42,19 +42,64 @@ export interface DpadDirs {
 export const NO_DIRS: Readonly<DpadDirs> = { left: false, right: false, up: false, down: false, run: false };
 
 /**
- * Directions held for a thumb at (dx, dy) px from the pad centre (screen axes, +y down) on a pad
- * of `radius` px. Eight sectors by angle: left/right wide, up/down narrower, diagonals only in
- * the bands between; the down-diagonals also need a firmer push, and a far push left/right adds `run`.
+ * The d-pad's angle zones. The default guards against crouching by accident: left and right are
+ * wide (±60°), and the down-diagonals need a firmer push. A hero who never crouches can ask for
+ * EIGHT_WAY_DPAD_ZONES instead (Scene.touchDpad): even 45° sectors, every diagonal as easy as up.
  */
-export function dpadDirs(dx: number, dy: number, radius: number): DpadDirs {
+export interface DpadZones {
+  /** Left/right are held within this many degrees of horizontal. */
+  horizontalMaxDeg: number;
+  /** Up is held at this elevation or steeper. */
+  upMinDeg: number;
+  /** Down is held at this elevation or steeper. */
+  downMinDeg: number;
+  /** The down-diagonals (down while left/right is held) need this fraction of the radius. */
+  downMinR: number;
+}
+
+/** Which zone set the pad reads (a scene asks for one; absent: 'default'). */
+export type DpadZoneId = 'default' | 'eight-way';
+
+export const DEFAULT_DPAD_ZONES: Readonly<DpadZones> = {
+  horizontalMaxDeg: DPAD_HORIZONTAL_MAX_DEG,
+  upMinDeg: DPAD_UP_MIN_DEG,
+  downMinDeg: DPAD_DOWN_MIN_DEG,
+  downMinR: DPAD_DOWN_MIN_R,
+};
+
+/** Even eight-way sectors: straight within ±22.5°, diagonals 22.5°-67.5°, no firmer push for down. */
+export const EIGHT_WAY_DPAD_ZONES: Readonly<DpadZones> = {
+  horizontalMaxDeg: 67.5,
+  upMinDeg: 22.5,
+  downMinDeg: 22.5,
+  downMinR: DPAD_DEAD,
+};
+
+export const DPAD_ZONES: Readonly<Record<DpadZoneId, Readonly<DpadZones>>> = {
+  default: DEFAULT_DPAD_ZONES,
+  'eight-way': EIGHT_WAY_DPAD_ZONES,
+};
+
+/**
+ * Directions held for a thumb at (dx, dy) px from the pad centre (screen axes, +y down) on a pad
+ * of `radius` px. Eight sectors by angle (`zones`; by default left/right wide, up/down narrower,
+ * diagonals only in the bands between, the down-diagonals also needing a firmer push), and a far
+ * push left/right adds `run`.
+ */
+export function dpadDirs(
+  dx: number,
+  dy: number,
+  radius: number,
+  zones: DpadZones = DEFAULT_DPAD_ZONES,
+): DpadDirs {
   const r = Math.hypot(dx, dy) / radius;
   if (!(r >= DPAD_DEAD) || !Number.isFinite(r)) return { ...NO_DIRS };
   const elev = (Math.atan2(Math.abs(dy), Math.abs(dx)) * 180) / Math.PI; // 0 = horizontal, 90 = vertical
-  const horizontal = elev <= DPAD_HORIZONTAL_MAX_DEG;
+  const horizontal = elev <= zones.horizontalMaxDeg;
   const left = horizontal && dx < 0;
   const right = horizontal && dx > 0;
-  const up = dy < 0 && elev >= DPAD_UP_MIN_DEG;
-  const down = dy > 0 && elev >= DPAD_DOWN_MIN_DEG && (!horizontal || r >= DPAD_DOWN_MIN_R);
+  const up = dy < 0 && elev >= zones.upMinDeg;
+  const down = dy > 0 && elev >= zones.downMinDeg && (!horizontal || r >= zones.downMinR);
   const run = r >= DPAD_RUN_R && (left || right);
   return { left, right, up, down, run };
 }

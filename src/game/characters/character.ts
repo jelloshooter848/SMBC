@@ -10,6 +10,7 @@ import type { Projectile } from '../entities/projectiles/projectile';
 import type { Rng } from '@engine/rng';
 import type { ToolInfo } from './toolbelt';
 import type { TouchLabels } from '@engine/input/touch';
+import type { DpadZoneId } from '@engine/input/touch-logic';
 import type { TileMap } from '../world/tilemap';
 import type { AudioSink } from '@engine/audio/audio-manager';
 import type { VineArt } from '../entities/objects/vine';
@@ -298,6 +299,12 @@ export interface CharacterDef {
    * Start "MENU", B and C hidden, Select "TOOLS" with two or more tools (touch-labels.ts).
    */
   touchLabels?(p: Player, world: World): TouchLabels;
+  /**
+   * Which zones the touch d-pad reads for this hero right now (touch-logic DPAD_ZONES); absent:
+   * 'default', whose down-diagonals need a firmer push so running never crouches by accident. A
+   * hero who never crouches can ask for 'eight-way', where every diagonal is as easy as up.
+   */
+  touchDpad?(p: Player): DpadZoneId;
   /**
    * How the hero looks this frame (Classic SMBC's hit looks, PS-C13: 65 % opacity, a flicker).
    * Absent: Player.visible's blink while invulnerable. `alpha` 1 draws as usual.

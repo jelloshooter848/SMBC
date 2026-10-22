@@ -10,6 +10,11 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Touch d-pad for Sophia III (an experiment): she never crouches, so her pad is an even
+  eight-way pad. Down and a direction, which she needs to drive down a cliff face or into a gap
+  with Wall Climb, is now as easy to hold as Up and a direction, with no firmer push. Jason on
+  foot and every other hero keep the usual pad, whose down-diagonals still need a firmer push so
+  running never crouches by accident.
 - Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
   level's end keeps them. Switching to another hero puts the first one's away until he is picked
   again, and another look of the same hero shares them. A death resets only the hero who died. A

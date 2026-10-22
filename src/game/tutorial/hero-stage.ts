@@ -3,6 +3,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
+import type { DpadZoneId } from '@engine/input/touch-logic';
 import { px, tileToSub } from '@engine/math/units';
 import { parseTextMap } from '../level/textmap';
 import type { EntitySpawn, LevelData } from '../level/schema';
@@ -364,6 +365,13 @@ export class HeroStageScene implements Scene, TutorialHost {
       this.explainers.heldTouchLabels() ??
       levelTouchLabels(this.world.players[0], this.world)
     );
+  }
+
+  /** The hero picks the d-pad's zones, as in a level (CharacterDef.touchDpad). */
+  touchDpad(): DpadZoneId {
+    if (this.over || this.director.heldTouchLabels() || this.explainers.heldTouchLabels()) return 'default';
+    const p = this.world.players[0];
+    return (p && p.def.touchDpad?.(p)) ?? 'default';
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {

@@ -11,6 +11,7 @@ import {
   DPAD_RUN_R,
   FLOAT_ZONE_FRACTION,
   NO_DIRS,
+  DPAD_ZONES,
   dpadDirs,
   clampCentre,
   followCentre,
@@ -25,6 +26,7 @@ import {
   touchPadVisible,
   type ButtonTarget,
   type DpadDirs,
+  type DpadZoneId,
   type LabelSlot,
   type LastInput,
   type MeasureEm,
@@ -82,6 +84,10 @@ export class TouchSource implements InputSource {
   private keySig = '';
   private readonly labeler: ButtonLabeler;
   private dirs: DpadDirs = { ...NO_DIRS };
+  /** The d-pad's zone set, from the scene on top (setDpadZones). */
+  private zones: DpadZoneId = 'default';
+  /** Where the d-pad's thumb was (client px), so a zone change re-reads a still thumb. */
+  private thumbAt: { x: number; y: number } | null = null;
   private visible = false;
   private mode: TouchMode = 'auto';
   private style: DpadStyle = 'fixed';
@@ -223,6 +229,16 @@ export class TouchSource implements InputSource {
     this.update();
   }
 
+  /** The scene's d-pad zones (Scene.touchDpad); cheap to call every frame. */
+  setDpadZones(id: DpadZoneId): void {
+    if (id === this.zones) return;
+    this.zones = id;
+    // A thumb already on the pad is read again with the new zones.
+    if (!this.thumbAt) return;
+    this.moveDpad(this.thumbAt.x, this.thumbAt.y);
+    this.update();
+  }
+
   /** Key hints: each button's keyboard key as a small second line (null turns them off). */
   setKeyHints(keys: Partial<Record<Action, string>> | null): void {
     const sig = keys ? JSON.stringify(keys) : '';
@@ -319,7 +335,10 @@ export class TouchSource implements InputSource {
     const p = this.pointers.get(e.pointerId);
     if (!p) return;
     this.pointers.delete(e.pointerId);
-    if (p.kind === 'dpad') this.setDirs({ ...NO_DIRS }, 0, 0);
+    if (p.kind === 'dpad') {
+      this.thumbAt = null;
+      this.setDirs({ ...NO_DIRS }, 0, 0);
+    }
     this.update();
     if (p.kind === 'btn' && p.action && e.type === 'pointerup') this.onButton?.(p.action, false);
   }
@@ -350,7 +369,9 @@ export class TouchSource implements InputSource {
       const rest = this.restCentre();
       this.pad.style.transform = `translate(${p.cx - rest.x}px, ${p.cy - rest.y}px)`;
     }
-    this.setDirs(dpadDirs(x - p.cx, y - p.cy, p.radius), x - p.cx, y - p.cy, p.radius);
+    this.thumbAt = { x, y };
+    const d = dpadDirs(x - p.cx, y - p.cy, p.radius, DPAD_ZONES[this.zones]);
+    this.setDirs(d, x - p.cx, y - p.cy, p.radius);
   }
 
   /** Update held directions and the pad's feedback (wedges, thumb dot, run ring, a buzz). */
@@ -392,6 +413,7 @@ export class TouchSource implements InputSource {
 
   private releaseAll(): void {
     this.pointers.clear();
+    this.thumbAt = null;
     this.setDirs({ ...NO_DIRS }, 0, 0);
     this.latched.clear();
     this.update();

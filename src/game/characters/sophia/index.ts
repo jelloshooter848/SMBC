@@ -308,6 +308,10 @@ export const SOPHIA: CharacterDef = {
     return activeTool(killer, tools(killer))?.id === 'homing' ? 'homing-ammo' : 'triple-ammo';
   },
   guide: SOPHIA_GUIDE,
+  // The tank never crouches, so its touch d-pad is an even eight-way pad: Down and a direction
+  // (down a cliff face, into a gap: Wall Climb) is as easy to hold as Up and a direction. On foot
+  // Jason keeps the usual pad.
+  touchDpad: (p) => (sophiaState(p).jason ? 'default' : 'eight-way'),
   touchLabels(p) {
     // On foot Jason has his gun and EXIT (back in beside the tank); no missiles.
     if (sophiaState(p).jason) return { attack: 'SHOOT', special: null, select: 'EXIT' };
