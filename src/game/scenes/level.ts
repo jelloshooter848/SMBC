@@ -539,6 +539,17 @@ export class LevelScene implements Scene {
           this.tutorial.respawn();
           break;
         }
+        // v0.4.73: a CLEARED file's level replay is free play: no life is lost, and its own box
+        // follows (Game.replayDied: RETRY at the checkpoint or the first area, and the rest).
+        if (game.replayRun) {
+          const cp = s.checkpoint;
+          const main = cp?.level ?? this.level.parent ?? this.level.id;
+          game.respawn(
+            cp ? main : game.firstArea(main),
+            cp ? { x: cp.x, y: cp.y ?? 12, mode: 'stand', clearEnemies: 'all' } : { mode: 'stand' },
+          );
+          break;
+        }
         // Classic mode's Survival: the hero falls instead, and no life is lost (Game.survivalFall).
         const fell = game.survivalFall();
         // The World's assists: Classic mode's Infinite Lives cheat folds in there (cheatAssist).

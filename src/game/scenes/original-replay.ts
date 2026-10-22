@@ -3,15 +3,20 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { FONT_COLOURS } from '@content/sprites/font';
-import type { ClassicFileRef } from '../original-files';
+import { replayWorlds, type ClassicFileRef, type ClearedFile } from '../original-files';
 import { fontText, wrapText } from '../hud/text';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
+import type { LevelStart } from './level';
+import { CharacterSelectScene } from './character-select';
 import type { Game } from './game';
 import { abilityHint } from './hints';
-import { boxGrowth, drawMushroom } from './menu-box';
+import { MenuScene, type MenuItem } from './menu';
+import { boxGrowth, drawMenuBox, drawMushroom, type BoxRow } from './menu-box';
 import { demoUnder, type DemoBackdrop } from './original-box-menu';
-import type { ClassicFilesScene } from './original-files-menu';
+import { ClassicBox, closeTo, type ClassicFilesScene } from './original-files-menu';
 import { MAP_SETS, type MapSet } from './original-game';
+import { levelSelectTarget, worldName } from './level-select-cheat';
+import { QUIT_BOX_CY } from './quit-run';
 import { DEFAULT_SELECT_THEME, drawPanel } from './select-grid';
 
 /*
@@ -27,6 +32,15 @@ import { DEFAULT_SELECT_THEME, drawPanel } from './select-grid';
  * Every box is read out and waits for a press (never a timer), BACK steps back one box, and with
  * Reduce flashing a box is open at once. Nothing here writes the file.
  */
+
+/** The level replay being played: its CLEARED file, and the world and level picked. */
+export interface ReplayRun {
+  ref: ClassicFileRef;
+  world: number;
+  stage: number;
+  /** The area the level starts in (its intro, or its first area). */
+  levelId: string;
+}
 
 /** A note box's text columns (the widest line a Classic box holds, with its margins). */
 export const NOTE_COLS = 26;
@@ -193,4 +207,196 @@ export function clearedNote(
     under: files,
     onDone: () => files.comeBack(),
   });
+}
+
+/** C: a CLEARED file picked on its file box: its world box. */
+export function openClearedFile(game: Game, files: ClassicFilesScene, f: ClearedFile): void {
+  game.scenes.push(new ClassicReplayWorldsScene(game, files, f));
+}
+
+/** "World 3", "World A". */
+const worldLabel = (w: number) => `World ${worldName(w)}`;
+
+/** C (1): a CLEARED file's worlds; BACK to the file box. */
+export class ClassicReplayWorldsScene extends ClassicBox {
+  protected readonly spokenTitle: string;
+
+  constructor(
+    game: Game,
+    readonly files: ClassicFilesScene,
+    readonly file: ClearedFile,
+    focus?: number,
+  ) {
+    super(game, `Replay file ${file.slot}`, () => {
+      closeTo(game, files);
+      files.comeBack();
+    });
+    const set = setOf(file.set);
+    this.spokenTitle = `Replay ${set.label.replace(/\.$/, '')}, file ${file.slot}. Choose a world`;
+    const worlds = replayWorlds(file);
+    const items: MenuItem[] = worlds.map((w) => ({
+      label: worldLabel(w),
+      select: () => this.openWorld(w),
+      hint: 'Choose a level of it',
+    }));
+    items.push({ label: 'Back', select: () => this.onBack?.(), hint: 'To the files' });
+    this.setItems(items);
+    if (focus !== undefined) this.index = Math.max(0, worlds.indexOf(focus));
+  }
+
+  protected override statusLine(): string {
+    return `FILE ${this.file.slot} CLEARED`;
+  }
+
+  /** World `w`'s level box over this one, on level `focus` (its first by default). */
+  openWorld(w: number, focus?: number, lead?: string): ClassicReplayLevelsScene {
+    const box = new ClassicReplayLevelsScene(this.game, this, w, focus, lead);
+    this.game.scenes.push(box);
+    return box;
+  }
+}
+
+/** C (2): a world's levels (true level starts only); BACK to the world box. */
+export class ClassicReplayLevelsScene extends ClassicBox {
+  protected readonly spokenTitle: string;
+
+  constructor(
+    game: Game,
+    readonly worlds: ClassicReplayWorldsScene,
+    readonly world: number,
+    focus?: number,
+    lead?: string,
+  ) {
+    super(game, worldLabel(world), () => {
+      closeTo(game, worlds);
+      worlds.comeBack();
+    });
+    this.spokenTitle = `${lead ? `${lead} ` : ''}${worldLabel(world)}. Choose a level`;
+    const file = worlds.file;
+    const set = setOf(file.set);
+    const prefix = set.start.replace(/\d+-\d+$/, '');
+    const stages = [1, 2, 3, 4].filter((n) => {
+      try {
+        game.deps.getLevel(`${prefix}${world}-${n}`);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    const ref: ClassicFileRef = { set: file.set, slot: file.slot };
+    const items: MenuItem[] = stages.map((n) => ({
+      label: `${worldName(world)}-${n}`,
+      select: () => game.replaySelect(ref, world, n, levelSelectTarget(game, set, world, n)),
+      hint: 'Choose your hero and play it',
+    }));
+    items.push({ label: 'Back', select: () => this.onBack?.(), hint: 'To the worlds' });
+    this.setItems(items);
+    if (focus !== undefined) this.index = Math.max(0, stages.indexOf(focus));
+  }
+}
+
+/**
+ * C: back to a CLEARED file's level box for World `world` (BACK from the hero select, a clear,
+ * the death box's BACK), the file box and world box under it, on level `stage`; `next`: on the
+ * level after it (a clear), when the world has one.
+ */
+export function showReplayLevels(
+  game: Game,
+  ref: ClassicFileRef,
+  world: number,
+  stage: number,
+  next = false,
+): void {
+  const files = game.showClassicFiles(ref.set, ref.slot);
+  const f = game.classicClearedAt(ref);
+  if (!f) return;
+  const worlds = new ClassicReplayWorldsScene(game, files, f, world);
+  game.scenes.push(worlds);
+  const box = worlds.openWorld(world, stage, next ? 'Level clear!' : undefined);
+  if (next) {
+    const label = `${worldName(world)}-${stage + 1}`;
+    const at = (box as unknown as { items: MenuItem[] }).items.findIndex((i) => i.label === label);
+    if (at >= 0) box.focusRow(at);
+  }
+}
+
+/**
+ * C (49A): a death in a replayed level: RETRY, SELECT CHARACTER (its BACK comes back here),
+ * RETURN TO MENU (the file box, on the file). BACK steps back to the level box. A Classic box over
+ * the level, as the Quit card is.
+ */
+export class ReplayDeathScene extends MenuScene {
+  constructor(
+    game: Game,
+    readonly replay: ReplayRun,
+    readonly levelId: string,
+    readonly start: LevelStart,
+  ) {
+    super(
+      game,
+      `Replay ${worldName(replay.world)}-${replay.stage}`,
+      [],
+      () => game.leaveReplay('levels'),
+      true,
+    );
+    this.setItems([
+      { label: 'Retry', select: () => game.replayRetry(levelId, start), hint: 'Play the level again' },
+      {
+        label: 'Select character',
+        select: () => this.pickHero(),
+        hint: 'Choose a hero, then play the level again',
+      },
+      { label: 'Return to menu', select: () => game.leaveReplay('files'), hint: 'To the files' },
+    ]);
+    this.moveSfx = 'fireball';
+    this.backSfx = 'bump';
+  }
+
+  override enter(): void {
+    const it = this.items[this.index];
+    this.game.deps.announcer?.say(
+      `${this.title}. No life is lost. ${it?.label ?? ''}. ${it?.hint ?? ''}. ${abilityHint(this.game, 'BACK', 'attack')} for the levels.`,
+    );
+  }
+
+  /** Back here from the hero select. */
+  comeBack(): void {
+    this.announcePage();
+  }
+
+  private pickHero(): void {
+    const game = this.game;
+    game.scenes.push(
+      new CharacterSelectScene(game, {
+        player: 0,
+        current: game.state.character,
+        onPick: (c) => game.replayHero(c, this.levelId, this.start),
+        onCancel: () => {
+          closeTo(game, this);
+          this.comeBack();
+        },
+        random: true,
+        training: false,
+      }),
+    );
+  }
+
+  override render(r: Renderer): void {
+    const game = this.game;
+    const calm = game.ctx.reduceFlashing;
+    const rows: BoxRow[] = this.items.map((it) => ({ label: it.label }));
+    const at = drawMenuBox(r, game.ctx.assets, rows, this.index, {
+      cx: 128,
+      cy: QUIT_BOX_CY,
+      grow: 1,
+      t: this.t,
+      calm,
+      header: this.title,
+    });
+    const back = abilityHint(game, 'BACK', this.backAction);
+    const x = Math.round(128 - (back.length * 8) / 2);
+    const y = at.y + at.h + 4;
+    r.text(game.ctx.assets.sheet('font', FONT_COLOURS.black), back, x + 1, y + 1);
+    r.text(game.ctx.assets.sheet('font'), back, x, y);
+  }
 }

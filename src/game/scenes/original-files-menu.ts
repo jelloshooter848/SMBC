@@ -320,10 +320,7 @@ export class ClassicFilesScene extends ClassicBox {
         return {
           label: fileName(slot),
           value: () => clearedRowValue(cleared),
-          select: () => {
-            game.ctx.audio.sfx('bump');
-            game.deps.announcer?.say(`${fileName(slot)} is cleared.`);
-          },
+          select: () => game.openClearedFile(this, cleared),
           hint: `${clearedSpoken(game, cleared)}. ${CLEARED_HINT}`,
         };
       if (kept && problem) {
