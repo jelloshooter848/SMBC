@@ -481,6 +481,11 @@ type PipeAnim = {
   /** Frames left hidden in the pipe before the transfer (PIPE_LEV_TRANS_DELAY); null while moving. */
   hold: number | null;
   target: WorldEvent & { type: 'pipe' };
+  /**
+   * A hop in place before the hero goes in (v0.4.74 item 74: off the Classic Yoshi mount, who
+   * waits at the pipe): `t` of `n` frames, from feet-row y `y0`. Absent: straight in.
+   */
+  hop?: { t: number; n: number; y0: number };
 };
 /**
  * A teleport pad's beam (entities/objects/teleporter.ts). `up`: the rider is hidden, the streak
@@ -3651,6 +3656,8 @@ export class World {
   }
 
   private enterPipe(p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): void {
+    // Classic rules: a Yoshi mount rider bound for a castle, water or bonus area hops off first.
+    const hop = this.rules === 'classic' ? (classicRules().pipeEntry?.(this, p, z, dir) ?? 0) : 0;
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
@@ -3668,6 +3675,7 @@ export class World {
       from: dir === 'down' ? p.body.y : p.body.x,
       hold: null,
       target: { type: 'pipe', target: z.target },
+      ...(hop > 0 ? { hop: { t: 0, n: hop, y0: p.body.y } } : {}),
     };
   }
 
@@ -3680,6 +3688,17 @@ export class World {
   private updatePipeAnim(): void {
     const a = this.pipeAnim as PipeAnim;
     const p = a.player;
+    if (a.hop) {
+      // A low hop in place (16 px at its top), then into the pipe from where it started.
+      const h = a.hop;
+      h.t++;
+      const up = Math.round((px(16) * 4 * h.t * (h.n - h.t)) / (h.n * h.n));
+      p.body.y = h.y0 - up;
+      p.body.onGround = h.t >= h.n;
+      if (h.t < h.n) return;
+      p.body.y = h.y0;
+      delete a.hop;
+    }
     a.t++;
     if (a.hold !== null) {
       if (--a.hold <= 0) {
@@ -4075,8 +4094,7 @@ export class World {
           if (e.alive && (e instanceof Decoration || e instanceof Firework)) e.update();
         if (c.t >= (c.fireworks > 0 ? 1 + c.fireworks * FIREWORK_FRAMES + 60 : 90)) {
           c.phase = 'done';
-          const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-          this.events.push({ type: 'exit', next: this.exitNext(exit?.next) });
+          this.events.push({ type: 'exit', next: this.clearNext() });
         }
         break;
       }
@@ -4392,6 +4410,12 @@ export class World {
    * Where an exit marked `marked` leads: a Classic mode run's way on in place of `end` at an
    * ordinary castle or flagpole (classicEnd: Lost Levels 8-4 and 9-4, G-001/G-002).
    */
+  /** The level the flagpole's clear leads to (its `exit` zone's `next`, else the run's next). */
+  clearNext(): string {
+    const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
+    return this.exitNext(exit?.next);
+  }
+
   private exitNext(marked = 'end'): string {
     return marked === 'end' ? (this.classicEnd?.next ?? marked) : marked;
   }

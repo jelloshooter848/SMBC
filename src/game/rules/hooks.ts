@@ -4,7 +4,7 @@ import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import type { TileMap } from '../world/tilemap';
 import type { CharacterDef } from '../characters/character';
-import type { EntitySpawn } from '../level/schema';
+import type { EntitySpawn, PipeDir, Zone } from '../level/schema';
 import type { BlockContent } from '../level/tiles';
 import type { ClassicSettings } from '@engine/save/original-options';
 
@@ -99,6 +99,12 @@ export interface ClassicRulesHooks {
    * (YM-21). Optional.
    */
   clearHop?(world: World, p: Player): void;
+  /**
+   * `p` starts into the pipe `z` (World.enterPipe): a Classic Yoshi mount rider bound for a
+   * castle, water or bonus area gets off and Yoshi waits at the pipe (v0.4.74 item 74). Returns
+   * the frames of the hop off before going in (0: straight in, as always). Optional.
+   */
+  pipeEntry?(world: World, p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): number;
   /**
    * The sound of a hit that took an enemy's hit points (World.hitSound): the hero's own (G-072),
    * or undefined for the shared `hurt-enemy`. Optional.
