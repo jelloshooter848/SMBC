@@ -326,6 +326,9 @@ describe("C: the replay plays the file's rules, free play, and never writes the 
     h.game.levelExitTo('1-3', { world: 1, stage: 2 });
     expect(h.top()).toBeInstanceOf(ClassicReplayLevelsScene);
     expect(labels(h.top())).toContain('1-1');
+    // On the next level, and said so.
+    expect(labels(h.top())[index(h.top())]).toBe('1-3');
+    expect(h.said.at(-1)).toMatch(/^Level clear! World 1\. Choose a level\. 1-3/);
     expect(stored()).toBe(before);
   });
 

@@ -238,11 +238,6 @@ export abstract class ClassicBox extends MenuScene {
     this.game.deps.announcer?.say(this.spoken());
   }
 
-  /** Puts the cursor on row `i` (said with the page as it opens). */
-  focusRow(i: number): void {
-    this.index = Math.max(0, Math.min(i, this.items.length - 1));
-  }
-
   /** Back to this page from one over it: its rows again, then the highlighted one read. */
   comeBack(): void {
     this.refresh();

@@ -348,12 +348,17 @@ export function showReplayLevels(
   if (!f) return;
   const worlds = new ClassicReplayWorldsScene(game, files, f, world);
   game.scenes.push(worlds);
-  const box = worlds.openWorld(world, stage, next ? 'Level clear!' : undefined);
-  if (next) {
-    const label = `${worldName(world)}-${stage + 1}`;
-    const at = (box as unknown as { items: MenuItem[] }).items.findIndex((i) => i.label === label);
-    if (at >= 0) box.focusRow(at);
-  }
+  // A clear: on the level after it, when the world has one (focused before the box is read out).
+  const prefix = setOf(ref.set).start.replace(/\d+-\d+$/, '');
+  let focus = stage;
+  if (next)
+    try {
+      game.deps.getLevel(`${prefix}${world}-${stage + 1}`);
+      focus = stage + 1;
+    } catch {
+      /* the world's last level: stay on it */
+    }
+  worlds.openWorld(world, focus, next ? 'Level clear!' : undefined);
 }
 
 /**
