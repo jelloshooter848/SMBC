@@ -2370,7 +2370,12 @@ export class Game {
 
   /** The map set the Classic run's file belongs to, for the CLASSIC menu's focus on leaving it. */
   get runSet(): MapSetId | undefined {
-    return this.classicFile?.set;
+    if (this.classicFile) return this.classicFile.set;
+    // 36a: a run with no file (a practice run from the menus' Level Select): the set of the level
+    // it is playing (its main level's, for a sub-area), else of the level its select was for.
+    const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const id = scene ? (scene.level.parent ?? scene.level.id) : this.selectLevel;
+    return id ? mapSetOf(id).id : undefined;
   }
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
