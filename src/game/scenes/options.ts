@@ -12,6 +12,8 @@ import type { Game } from './game';
 import { GuideIndexScene } from './guide';
 import { homeScreenItems } from '../pwa/home-screen';
 import { SaveFilesOptions } from './save-codes';
+import { mock } from '../mock/mock';
+import { AboutScene } from '../mock/about';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -64,6 +66,10 @@ export class OptionsScene extends MenuScene {
             },
             { label: 'Level editor', select: () => game.openEditor() },
           ]),
+      // MOCKUP (claude/mockups-0471, item 1 A/B): the version and the credits live here now.
+      ...(mock('title') === 'A' || mock('title') === 'B'
+        ? [{ label: 'About', select: () => this.push(new AboutScene(game, () => this.pop())), hint: 'Version and credits' }]
+        : []),
       { label: 'Back', select: onBack },
     ]);
   }

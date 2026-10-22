@@ -13,6 +13,10 @@ import { ClassicDemo, MARIO_WAIT } from './title-demo';
 import { boxCentreUnderLogo, boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
 import { joinMusic, TITLE_MUSIC } from './title-music';
+import { mock } from '../mock/mock';
+
+/** MOCKUP (claude/mockups-0471, item 3): the Start box's place. */
+const START = mock('start');
 
 /**
  * The CLASSIC title in the original's style (O-04; level/TitleLevel.as, messageBoxes/StartMenu.as):
@@ -391,9 +395,13 @@ export class ClassicTitleScene implements Scene {
     // The Start box, while it is up and no menu is over it.
     if (this.phase === 'start' && this.game.scenes.top === this) {
       const rows: BoxRow[] = this.items.map((it) => ({ label: it.label }));
+      // MOCKUP: A centred between CLASSIC and the ground, B on the begin prompt's line, C bigger.
+      const cy =
+        START === 'A' ? 150 : START === 'B' ? PROMPT_Y + 4 : START === 'C' ? 146 : boxCentreUnderLogo(rows);
       drawMenuBox(r, this.game.ctx.assets, rows, this.index, {
+        ...(START === 'C' ? { rowH: 16, margin: 16 } : {}),
         cx: BOX_CX,
-        cy: boxCentreUnderLogo(rows),
+        cy,
         grow: boxGrowth(this.t - this.boxAt, this.game.ctx.reduceFlashing),
         t: this.t,
         calm: this.game.ctx.reduceFlashing,

@@ -1109,10 +1109,12 @@ export class Game {
   showTitle(): void {
     // BUG-12: back from the CLASSIC title (or a box over it), its overworld fades into the theme.
     // Its music is not stopped here: the title's crossfade takes it from where it is.
-    const fromClassic = this.scenes.find((s) => s instanceof ClassicTitleScene) !== undefined;
+    const classic = this.scenes.find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene | undefined;
+    const fromClassic = classic !== undefined;
     this.leaveRun(fromClassic);
     this.scenes.clear();
-    this.scenes.push(new TitleScene(this, fromClassic));
+    // MOCKUP (claude/mockups-0471): the CLASSIC scene is handed over for the back transitions.
+    this.scenes.push(new TitleScene(this, fromClassic, classic));
   }
 
   /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */

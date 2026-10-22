@@ -96,7 +96,7 @@ function rowsShown(rows: readonly BoxRow[], header?: string): number {
 }
 
 /** A box's size for these rows (screen px); a `header` takes a row of its own at the top. */
-export function boxSize(rows: readonly BoxRow[], header?: string): { w: number; h: number } {
+export function boxSize(rows: readonly BoxRow[], header?: string, rowH = BOX_ROW_H, margin = MARGIN): { w: number; h: number } {
   const cols = Math.max(
     1,
     ...rows.map((row) => {
@@ -104,9 +104,9 @@ export function boxSize(rows: readonly BoxRow[], header?: string): { w: number; 
       return row.label.length + (right ? right.length + 2 : 0);
     }),
   );
-  const w = Math.max(cols * 8 + CURSOR_W, header ? header.length * 8 : 0) + MARGIN * 2;
+  const w = Math.max(cols * 8 + CURSOR_W, header ? header.length * 8 : 0) + margin * 2;
   const shown = rowsShown(rows, header) + (header ? 1 : 0);
-  return { w: Math.min(BOX_MAX_W, w), h: shown * BOX_ROW_H + BOX_PAD * 2 };
+  return { w: Math.min(BOX_MAX_W, w), h: shown * rowH + BOX_PAD * 2 };
 }
 
 export interface BoxOptions {
@@ -120,6 +120,9 @@ export interface BoxOptions {
   calm: boolean;
   /** The page's name on the box's first row, in gold, centred (BUG-01's sub-pages). */
   header?: string;
+  /** MOCKUP: a taller row step and a wider margin (Start box mock C). */
+  rowH?: number;
+  margin?: number;
 }
 
 /** Draw a menu box; returns where it is (screen px, full size). */
@@ -130,7 +133,9 @@ export function drawMenuBox(
   index: number,
   o: BoxOptions,
 ): { x: number; y: number; w: number; h: number } {
-  const { w, h } = boxSize(rows, o.header);
+  const rowH = o.rowH ?? BOX_ROW_H;
+  const margin = o.margin ?? MARGIN;
+  const { w, h } = boxSize(rows, o.header, rowH, margin);
   const x = Math.round(o.cx - w / 2);
   const y = Math.max(0, Math.min(240 - h, Math.round(o.cy - h / 2)));
   const gw = Math.max(2, Math.round(w * o.grow));
@@ -154,13 +159,13 @@ export function drawMenuBox(
     );
   }
   rows.slice(first, first + shown).forEach((row, i) => {
-    const ry = y + BOX_PAD + (i + head) * BOX_ROW_H + ROW_TEXT_DY;
+    const ry = y + BOX_PAD + (i + head) * rowH + ROW_TEXT_DY + ((rowH - BOX_ROW_H) >> 1);
     const sel = first + i === index;
     const sheet = row.disabled ? grey : sel ? pink : plain;
-    const lx = x + MARGIN + CURSOR_W;
-    if (sel) drawMushroom(r, x + MARGIN, ry, o.t, o.calm);
+    const lx = x + margin + CURSOR_W;
+    if (sel) drawMushroom(r, x + margin, ry, o.t, o.calm);
     text(row.label.toUpperCase(), lx, ry, sheet);
-    let right = x + w - MARGIN;
+    let right = x + w - margin;
     if (row.mark) {
       right -= row.mark.length * 8;
       text(row.mark, right, ry, sheet);

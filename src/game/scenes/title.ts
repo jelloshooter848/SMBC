@@ -33,6 +33,20 @@ import {
   type HeroSlot,
 } from './title-anim';
 import { joinMusic, TITLE_MUSIC } from './title-music';
+import type { ClassicTitleScene } from './original-title';
+import { mock } from '../mock/mock';
+import { AboutScene } from '../mock/about';
+
+/** MOCKUP: the back transitions (claude/mockups-0471, item 2): A lift + slam, B swap, C pipe wipe. */
+const BACK = mock('back');
+/** MOCKUP: the title layouts (item 1): A minimal, B one credit line, C ABOUT on the menu. */
+const TITLE = mock('title');
+/** MOCKUP: the REMIX field drawn as 1-1's first screen (item 2's background answer). */
+const MATCH_BG = mock('bg') === 'match' || BACK !== '';
+/** Where CLASSIC rests on the CLASSIC title (original-title.ts CLASSIC_AT). */
+const CLASSIC_REST = { x: 79, y: 62 } as const;
+/** The short REMIX credit line (title mock B). */
+const RABBIT_LINE = 'ORIGINAL GAME: EXPLODING RABBIT';
 
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
 const MADE = 'MADE BY JELLOSHOOTER848';
@@ -59,6 +73,8 @@ const RIFT_CX = 128;
 const RIFT_CY = 50;
 
 const SKY = '#5c94fc';
+/** MOCKUP: frames the pipe wipe (back mock C) takes. */
+const WIPE = 30;
 
 /**
  * The speaker in the top-right corner (0.4.35, owner): sound on / off without a menu, the same
@@ -73,7 +89,7 @@ const SPEAKER_BODY = ['....##', '...###', '######', '######', '######', '######'
  * (the page load's first title, before any press). Then the rift (the intro), the quick drop
  * (every later title), and the finished screen.
  */
-export type TitlePhase = 'gate' | 'rift' | 'drop' | 'ready';
+export type TitlePhase = 'gate' | 'rift' | 'drop' | 'back' | 'ready';
 
 /**
  * BUG-13: the page load's first title waits behind a start gate when its sound is not running
@@ -129,6 +145,8 @@ export class TitleScene extends MenuScene {
     game: Game,
     /** Back from the CLASSIC title: its overworld fades out, then the theme rises (BUG-12). */
     private readonly fromClassic = false,
+    /** MOCKUP: the CLASSIC title we came back from (its demo is the backdrop of the back mocks). */
+    private readonly classic?: ClassicTitleScene,
   ) {
     super(game, '', [], null);
     // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
@@ -139,9 +157,15 @@ export class TitleScene extends MenuScene {
     game.titleIntroPlayed = true;
     this.phase = intro ? (needsStartGate(game.ctx.audio) ? 'gate' : 'rift') : 'drop';
     this.stampAt = intro ? T.riftStamp : T.dropStamp;
+    const back = !intro && fromClassic && BACK !== '' && classic !== undefined;
+    if (back) {
+      this.phase = 'back';
+      const calm = game.ctx.reduceFlashing;
+      this.stampAt = BACK === 'A' ? (calm ? 1 : 16) : BACK === 'B' ? (calm ? 12 : 18) : -100;
+    }
     let walker = 0;
     this.actors = this.heroes.map((slot, i) => {
-      const walks = !intro && slot.freed;
+      const walks = !intro && !back && slot.freed;
       return {
         slot,
         p: poser(slot.def),
@@ -153,6 +177,14 @@ export class TitleScene extends MenuScene {
       };
     });
     this.rebuild();
+  }
+
+  /** MOCKUP: the back transition's last frame. */
+  private get backEnd(): number {
+    const calm = this.game.ctx.reduceFlashing;
+    if (BACK === 'A') return this.stampAt + (calm ? 6 : T.dustFrames);
+    if (BACK === 'B') return this.stampAt + (calm ? 4 : 12);
+    return calm ? 1 : WIPE + 2;
   }
 
   private rebuild(): void {
@@ -176,6 +208,12 @@ export class TitleScene extends MenuScene {
         hint: 'Settings, how to play, custom levels and the level editor',
       },
     ];
+    if (TITLE === 'C')
+      items.push({
+        label: 'About',
+        select: () => game.scenes.push(new AboutScene(game, () => game.scenes.pop())),
+        hint: 'Version and credits',
+      });
     if (game.devMode) items.push({ label: 'Dev mode', select: () => game.showDevMenu() });
     this.setItems(items);
   }
@@ -190,7 +228,12 @@ export class TitleScene extends MenuScene {
     }
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
-    else if (this.fromClassic) {
+    else if (this.phase === 'back') {
+      // MOCKUP: A cuts the overworld under the lift and the theme comes in on the slam; B and C
+      // crossfade over the swap / wipe (a mid-loop start or a sting needs new audio support).
+      if (BACK === 'A') audio.fadeOutMusic?.(0.2);
+      else joinMusic(audio, 'title', 0.25, 0.25);
+    } else if (this.fromClassic) {
       // The drop waits for the overworld's fade-out, so the stamp still lands on the fanfare.
       const wait = joinMusic(audio, 'title', TITLE_MUSIC.backOut, TITLE_MUSIC.backIn);
       this.hold = Math.round(wait * 60);
@@ -423,9 +466,10 @@ export class TitleScene extends MenuScene {
     this.clock++;
     const t = this.clock;
     if (t === this.stampAt) {
-      if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
+      if (this.phase === 'rift' || (this.phase === 'back' && BACK === 'A')) this.game.ctx.audio.playMusic('title');
       this.game.ctx.audio.sfx('stamp');
     }
+    if (this.phase === 'back' && t >= this.backEnd) this.phase = 'ready';
     if (this.phase === 'rift' && t >= T.riftEnd) this.phase = 'ready';
     if (this.phase === 'drop' && t >= T.dropEnd) this.phase = 'ready';
     for (const a of this.actors) {
@@ -484,7 +528,7 @@ export class TitleScene extends MenuScene {
       this.unlockDev('');
       return; // the final press of the code must not also activate a menu item
     }
-    if (this.phase === 'drop' && Actions.some((a) => input.pressed(a))) this.finish();
+    if ((this.phase === 'drop' || this.phase === 'back') && Actions.some((a) => input.pressed(a))) this.finish();
     if (input.pressed('select')) {
       this.toggleSound();
       return;
@@ -524,6 +568,19 @@ export class TitleScene extends MenuScene {
     const assets = this.game.ctx.assets;
     r.clear(SKY);
     const decor = assets.sheet('decor');
+    if (MATCH_BG) {
+      // MOCKUP: 1-1's own first screen (1-1.map [decor], camera at 0): every piece on the ground,
+      // standing still, so the REMIX and CLASSIC titles share one backdrop.
+      r.sprite(decor, 'hill-big', 0, 160 + dy);
+      r.sprite(decor, 'cloud-1', 128, 40 + dy);
+      r.sprite(decor, 'bush-3', 176, 192 + dy);
+      const tl = assets.sheet('tiles');
+      for (let x = 0; x < 256; x += 16) {
+        r.sprite(tl, 'ground', x, TITLE_GROUND_Y + dy);
+        r.sprite(tl, 'ground', x, TITLE_GROUND_Y + 16 + dy);
+      }
+      return;
+    }
     const drift = (speed: number, x: number) => {
       const period = 256 + 64;
       return ((((x - this.clock * speed) % period) + period) % period) - 48;
@@ -589,7 +646,7 @@ export class TitleScene extends MenuScene {
   private letterPos(i: number): { x: number; y: number } | null {
     const t = this.clock;
     const restX = CROSS_X + i * CROSSOVER_ADVANCE;
-    if (this.phase === 'ready') return { x: restX, y: CROSS_Y };
+    if (this.phase === 'ready' || this.phase === 'back') return { x: restX, y: CROSS_Y };
     if (this.phase === 'rift') {
       const lt = t - (T.lettersFrom + i * T.letterGap);
       if (lt < 0) return null;
@@ -613,7 +670,7 @@ export class TitleScene extends MenuScene {
 
   private tagY(): number | null {
     const t = this.clock;
-    if (this.phase === 'ready') return TAG_Y;
+    if (this.phase === 'ready' || this.phase === 'back') return TAG_Y;
     const from = this.phase === 'rift' ? T.lettersFrom + CROSSOVER_LETTERS.length * T.letterGap + 10 : 0;
     const lt = t - from;
     if (lt < 0) return null;
@@ -689,8 +746,10 @@ export class TitleScene extends MenuScene {
   private menu(r: Renderer, dy: number): void {
     // Five rows (with Dev mode) close up so the last stays clear of the credits below.
     const five = this.items.length > 4;
-    const x = five ? MENU_FIVE.x : MENU_X;
-    const top = five ? MENU_FIVE.y : MENU_Y;
+    const x = five && TITLE !== 'C' ? MENU_FIVE.x : MENU_X;
+    // MOCKUP: with the credits gone the menu sits in the middle of the sky between stamp and heroes.
+    const top =
+      TITLE === 'A' ? 118 : TITLE === 'B' ? 114 : TITLE === 'C' ? (five ? 104 : 110) : five ? MENU_FIVE.y : MENU_Y;
     this.items.forEach((it, i) => {
       const y = top + i * MENU_STEP + dy;
       if (i === this.index && (this.t >> 4) % 2 === 0) this.text(r, '>', x - 12, y, undefined, true);
@@ -701,12 +760,109 @@ export class TitleScene extends MenuScene {
   private credits(r: Renderer, dy: number): void {
     // "DEV MODE UNLOCKED" flashes in the credit line's place, clear of the menu's five rows.
     const unlocked = this.unlockedFlash > 0 && (this.calm || (this.unlockedFlash >> 3) % 2 === 0);
+    if (TITLE) {
+      // MOCKUP: the version and MADE BY move to About; B keeps one short credit line at the bottom.
+      if (unlocked) this.ctext(r, 'DEV MODE UNLOCKED', 160 + dy, 'gold', true);
+      if (TITLE === 'B') this.ctext(r, RABBIT_LINE, 228 + dy, undefined, true);
+      return;
+    }
     this.ctext(r, unlocked ? 'DEV MODE UNLOCKED' : MADE, 148 + dy, 'gold', true);
     this.ctext(r, BASED[0] as string, 160 + dy);
     this.ctext(r, BASED[1] as string, 169 + dy);
     // The build version, bottom right (0.5.0, G-104: no PRE-RELEASE footer beside it any more).
     const v = this.version;
     this.text(r, v, 252 - (v.length * 8 - 1), 228 + dy, undefined, true);
+  }
+
+  /** MOCKUP: the REMIX title's usual frame (field, heroes, logo, menu, credits, speaker). */
+  private remixFrame(r: Renderer): void {
+    const dy = this.shake();
+    this.field(r, dy);
+    this.heroesDraw(r, dy);
+    this.logo(r, dy);
+    this.menu(r, dy);
+    this.credits(r, dy);
+    this.speaker(r, dy);
+  }
+
+  private staticLogo(r: Renderer, dy = 0): void {
+    const sheet = this.game.ctx.assets.sheet('title-logo');
+    r.sprite(sheet, 'smb-tag', TAG_X, TAG_Y + dy);
+    for (let i = 0; i < CROSSOVER_LETTERS.length; i++)
+      r.sprite(sheet, `cross-${i}`, CROSS_X + i * CROSSOVER_ADVANCE, CROSS_Y + dy);
+  }
+
+  /**
+   * MOCKUP (item 2): the way back from CLASSIC. True: this frame is drawn here; false: the usual
+   * render draws it (the transition is over its swap).
+   */
+  private renderBack(r: Renderer): boolean {
+    const k = this.clock;
+    const calm = this.calm;
+    const classic = this.classic as ClassicTitleScene;
+    const sheet = this.game.ctx.assets.sheet('title-logo');
+    if (BACK === 'A') {
+      // The demo holds still under a lift: CLASSIC dips, then flies up and off; REMIX slams on.
+      if (k >= this.stampAt) {
+        this.remixFrame(r);
+        return true;
+      }
+      classic.demo.render(r);
+      this.staticLogo(r);
+      if (k < 3) {
+        const full = sheet.frames.get('classic')?.h ?? 29;
+        const flat = sheet.frames.get('classic-squash')?.h ?? 22;
+        r.sprite(sheet, 'classic-squash', CLASSIC_REST.x, CLASSIC_REST.y + full - flat);
+      } else {
+        const a = (k - 3) / 11;
+        r.sprite(sheet, 'classic', CLASSIC_REST.x, Math.round(CLASSIC_REST.y - a * a * 110));
+      }
+      if (!calm && k >= this.stampAt - T.stampPop) {
+        const f = sheet.frames.get('remix');
+        r.sprite(sheet, 'remix-2x', STAMP_X - ((f?.w ?? 92) >> 1), STAMP_Y - ((f?.h ?? 44) >> 1));
+      }
+      return true;
+    }
+    if (BACK === 'B') {
+      // The swap: CLASSIC slides up and away as REMIX drops into its place; the field is 1-1's,
+      // so nothing behind them moves, and the heroes are simply there.
+      if (k >= this.stampAt) {
+        this.remixFrame(r);
+        return true;
+      }
+      this.field(r, 0);
+      this.heroesDraw(r, 0);
+      this.staticLogo(r);
+      const e = k / this.stampAt;
+      r.sprite(sheet, 'classic', CLASSIC_REST.x, Math.round(CLASSIC_REST.y - e * e * 100));
+      const ry = Math.round(-50 + (STAMP_Y + 50) * e * e);
+      r.sprite(sheet, 'remix-shadow', STAMP_X + 2, ry + 2);
+      r.sprite(sheet, 'remix', STAMP_X, ry);
+      return true;
+    }
+    // C: a pipe sweeps right to left; behind it the REMIX title, ahead of it CLASSIC as it was.
+    if (calm || k >= WIPE) return false;
+    const ctx = (r as unknown as { ctx?: CanvasRenderingContext2D }).ctx;
+    const bx = Math.round(256 + 16 - (256 + 48) * (k / WIPE));
+    if (!ctx) return false;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, Math.max(0, bx), 240);
+    ctx.clip();
+    classic.renderBackdrop(r);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bx, 0, 256, 240);
+    ctx.clip();
+    this.remixFrame(r);
+    ctx.restore();
+    const tiles = this.game.ctx.assets.sheet('tiles');
+    for (let y = 0; y < 240; y += 16) {
+      r.sprite(tiles, 'pipe-body-left', bx - 16, y);
+      r.sprite(tiles, 'pipe-body-right', bx, y);
+    }
+    return true;
   }
 
   override render(r: Renderer): void {
@@ -716,6 +872,7 @@ export class TitleScene extends MenuScene {
       this.ctext(r, this.gateText, 116, undefined, true);
       return;
     }
+    if (this.phase === 'back' && this.renderBack(r)) return;
     const dy = this.shake();
     const t = this.clock;
     this.field(r, dy);

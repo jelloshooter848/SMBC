@@ -206,7 +206,7 @@ function boot(): void {
     touch.applyLayout(layout);
   }
 
-  const loop = new FixedLoop({
+  const stepper = {
     step() {
       input.beginFrame();
       game.scenes.update([input.player(0), input.player(1)]);
@@ -237,7 +237,29 @@ function boot(): void {
         fpsAt = now;
       }
     },
-  });
+  };
+  const loop = new FixedLoop(stepper);
+  if (import.meta.env.DEV) {
+    const w = window as unknown as Record<string, unknown>;
+    w.__loop = loop;
+    w.__settings = settings;
+    // The game's own 256x240 back buffer as a PNG data URL (mockup screenshots).
+    w.__grab = async () => {
+      const b = viewport.back;
+      const blob =
+        'convertToBlob' in b ? await b.convertToBlob() : await new Promise<Blob>((res) => b.toBlob((x) => res(x as Blob)));
+      return await new Promise<string>((res) => {
+        const fr = new FileReader();
+        fr.onload = () => res(fr.result as string);
+        fr.readAsDataURL(blob);
+      });
+    };
+    w.__step = (n = 1) => {
+      loop.stop();
+      for (let i = 0; i < n; i++) stepper.step();
+      stepper.render();
+    };
+  }
 
   let packToken = 0;
   function applySettings(): void {
