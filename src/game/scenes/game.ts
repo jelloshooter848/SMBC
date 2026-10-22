@@ -2250,6 +2250,10 @@ export class Game {
     // A run the Level Select cheat took to another set writes that set's slot from here on; the
     // set it left keeps its save as its last WORLD card wrote it (release review of #191).
     this.resumeSet = resumeSetOf(levelId);
+    // Item 8: the run's continues go with its set's slot, so another set's NEW GAME (which
+    // resets the count) does not lose them for this run.
+    const used = this.deps.settings?.classicCheats.continuesUsed;
+    if (used !== undefined) r.continues = used;
     saveClassicResume(continued ? { ...r, continued: true } : r);
   }
 
@@ -2314,6 +2318,12 @@ export class Game {
         changed = true;
       }
       if (changed) this.deps.applySettings?.();
+      // Item 8: the run's own continues (Infinite Lives' goal) come back with it, before the
+      // select counts a game over's continue. A slot from before it keeps the current count.
+      if (r.continues !== undefined && settings.classicCheats.continuesUsed !== r.continues) {
+        settings.classicCheats.continuesUsed = r.continues;
+        saveSettings(settings);
+      }
     }
     this.tutorialRun = null;
     this.campaign = null;
