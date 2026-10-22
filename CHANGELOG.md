@@ -8,6 +8,8 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+## [0.4.69] - 2026-10-22
+
 ### Changed
 
 - Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
@@ -1909,7 +1911,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.68...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.69...HEAD
+[0.4.69]: https://github.com/jelloshooter848/SMBC/compare/v0.4.68...v0.4.69
 [0.4.68]: https://github.com/jelloshooter848/SMBC/compare/v0.4.67...v0.4.68
 [0.4.67]: https://github.com/jelloshooter848/SMBC/compare/v0.4.66...v0.4.67
 [0.4.66]: https://github.com/jelloshooter848/SMBC/compare/v0.4.64...v0.4.66
