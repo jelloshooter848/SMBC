@@ -189,9 +189,9 @@ export interface SharedClassicRules {
  * Classic options as they are now, and its continues the slot's own count (#196), else the shared
  * count. No file is ever overwritten (31a-b, v0.4.71): a set with no empty file (an unreadable
  * one counts as used) keeps the old key as it is, logged once, and it moves into the next file
- * ERASE FILE frees (oldRunsWaiting tells the file box). An old key goes only once its run is
- * written; one that does not read as a run is kept as it is (31c). Returns whether
- * anything was migrated.
+ * that is freed (by ERASE FILE, or a run ending; oldRunsWaiting tells the file box). An old key
+ * goes only once its run is written; one that does not read as a run is kept as it is (31c).
+ * Returns whether anything was migrated.
  */
 export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => SharedClassicRules)): boolean {
   let moved = false;
@@ -230,7 +230,7 @@ function noteOnce(key: string, raw: unknown, message: string): void {
 
 /**
  * 31a: how many old saves (readable, so they will migrate) are waiting for a free file of `set`,
- * which is full: each moves into the next file ERASE FILE frees.
+ * which is full: each moves into the next file that is freed.
  */
 export function oldRunsWaiting(set: MapSetId): number {
   let n = 0;

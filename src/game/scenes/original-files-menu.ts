@@ -148,7 +148,7 @@ const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
 
 /**
  * 31a: an old save (from before the files) whose set was full waits for a free file and moves
- * into the one ERASE FILE frees. The words for it, said and shown.
+ * into the next file that is freed. The words for it, said and shown.
  */
 const OLD_SAVE = 'A game saved by an older version';
 
