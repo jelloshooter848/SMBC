@@ -141,7 +141,8 @@ levels) every hero stays playable. See [docs/HEROES.md](docs/HEROES.md).
 
 ### Characters
 
-**Options → How to play** opens a guide for every hero: its controls with the keys
+**How to play** (in the Options of Classic mode, the world map and the pause menu; not on the
+title screen) opens a guide for every hero: its controls with the keys
 you have bound, what the mushroom, flower and star do for it, and its tool belt. The pause menu
 has the same guide for the hero you are playing.
 
@@ -207,7 +208,8 @@ has the same guide for the hero you are playing.
   code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
-- **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
+- **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
+  menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a folder, export repaintable templates, toggle packs.
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own

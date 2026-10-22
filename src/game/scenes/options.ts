@@ -42,16 +42,17 @@ export class OptionsScene extends MenuScene {
             },
           ]
         : []),
-      {
-        label: 'How to play',
-        // O-14: while the campaign is closed, the title's How to play is Classic's (its select's
-        // heroes and their Classic pages), as Classic's own options are.
-        select: () =>
-          this.push(
-            new GuideIndexScene(game, () => this.pop(), classic || (!translucent && !game.campaignOpen)),
-          ),
-        hint: 'Controls and power-ups for every hero',
-      },
+      // 0.4.73 (owner, item 81): not in the REMIX title's Options (neither translucent nor
+      // Classic's); the Campaign's Options (world map, pause) and Classic's keep it.
+      ...(translucent || classic
+        ? [
+            {
+              label: 'How to play',
+              select: () => this.push(new GuideIndexScene(game, () => this.pop(), classic)),
+              hint: 'Controls and power-ups for every hero',
+            },
+          ]
+        : []),
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
       // iPhone Home Screen support (0.4.44): only where it can help (hidden in the app itself).
       ...homeScreenItems(game, (s) => (this.status = s)),
