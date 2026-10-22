@@ -16,7 +16,8 @@ import { BitReader, BitWriter, widthFor } from '@game/save/code-bits';
 import { Rng } from '@engine/rng';
 import { binom, deepEq, enc as enc1, OPT, rankWidth, type S } from './codec';
 import { bitsOf, pickFields } from './codec2';
-import { applyPolicy, CLASSIC_HEROES, CLASSIC_LEVELS, KIT_KEYS, type Policy } from './schema';
+import { applyPolicy, CLASSIC_HEROES, CLASSIC_LEVELS, CLASSIC_TUTORIAL_IDS, KIT_KEYS, type Policy } from './schema';
+import { TUTORIAL_IDS } from '@game/tutorial/original-tutorials';
 import { canonLoaded, hybridBits, hybridFromBits, loadAll, normaliseLoaded, packB64, SAVE_KEYS, unpackB64 } from './bench';
 import {
   b64Len,
@@ -963,6 +964,68 @@ export async function run(): Promise<string> {
         T.controls[`${corpus}/${shape} (dict = trained on random200; rkdict = trained on rk even half; rk rows = odd half)`] = o;
       }
     T.sizes.dictionaries = Object.fromEntries(Object.entries(dictsBy).flatMap(([tn, ds]) => Object.entries(ds).map(([k, d]) => [`${tn}/${k}`, d] as const)).map(([k, d]) => [k, { bytes: d.length, gzip: gzipSync(d, { level: 9 }).length }]));
+  }
+
+  // ---- K gap: round 1's K has no dictionary for classicTutorialsSeen (every id is an escaped string); fill it from the game's TUTORIAL_IDS
+  {
+    const genIds = ['select', 'first-start', 'mario', 'link', 'samus', 'upgrade'];
+    T.Kgap = { tutorial_ids: TUTORIAL_IDS.length, generator_ids_in_registry: genIds.filter((x) => TUTORIAL_IDS.includes(x)) };
+    CLASSIC_TUTORIAL_IDS.push(...TUTORIAL_IDS);
+    try {
+      for (const [c, s] of GROUPS.slice(0, 4)) {
+        const rs = sel(c, s);
+        const r1 = rs.map((r) => b64Len(hybridBits(r.data, POL), true).len);
+        const mg = rs.map((r, i) => {
+          const bits = encodeProfile(r.data, POL, M, {});
+          if (i % 8 === 0) check(sameState(decodeProfile(bits, POL, M, 8), r.data), 'Kgap decode');
+          return Math.min(r1[i] as number, b64Len(bits, true).len);
+        });
+        T.Kgap[`${c}/${s}`] = { r1_vs_r1: vs(r1, col(rs, 'r1')), mg_vs_mg: vs(mg, col(rs, 'mg')), profiles_with_tutorials_seen: rs.filter((r) => r.data['smbc.settings']?.classicTutorialsSeen?.length).length };
+      }
+    } finally {
+      CLASSIC_TUTORIAL_IDS.length = 0;
+    }
+  }
+
+  // ---- named profiles and completion groups: R1, guarded M / H, A1, and range coding (no table; and a table trained on random200)
+  {
+    const oA: ModelOpts = { ctx: 'path', adapt: true };
+    const table = (() => {
+      const counts = new Map<string, [number, number]>();
+      for (const r of rows.filter((x) => x.corpus === 'random200')) for (const [k, [a, b]] of rcEncode(r.mCalls, oA).model.counts) {
+        const c = counts.get(k) ?? [0, 0];
+        c[0] += a;
+        c[1] += b;
+        counts.set(k, c);
+      }
+      return trainTable(counts);
+    })();
+    const oF: ModelOpts = { ctx: 'path', adapt: true, init: table };
+    for (const r of rows) {
+      r.bA = Math.min(r.mg, lenOf(rcEncode(r.mCalls, oA).bytes));
+      r.bF = Math.min(r.mg, lenOf(rcEncode(r.mCalls, oF).bytes));
+    }
+    T.named = Object.fromEntries(
+      rows
+        .filter((r) => r.corpus === 'named')
+        .map((r) => [`${r.name} / ${r.shape}`, { r1: r.r1, m: r.m, m_guarded: r.mg, h_guarded: r.hg, a1_guarded: r.a1g, rc_adaptive_guarded: r.bA, rc_table_random200_guarded: r.bF }]),
+    );
+    T.byPct = {};
+    for (const corpus of ['progress', 'rk'])
+      for (const shape of ['current', 'bl'])
+        for (const p of [10, 25, 50, 75, 90, 99, 100]) {
+          const rs = sel(corpus, shape).filter((r) => new RegExp(`(^|rk )${p}% `).test(r.name));
+          T.byPct[`${corpus}/${shape} ${p}%`] = { n: rs.length, r1: stats(col(rs, 'r1')).median, m_guarded: stats(col(rs, 'mg')).median, rc_adaptive_guarded: stats(col(rs, 'bA')).median, rc_table_guarded: stats(col(rs, 'bF')).median };
+        }
+    for (const [c, s] of GROUPS) {
+      const rs = sel(c, s);
+      T[`rc summary ${c}/${s}`] = {
+        rc_adaptive_guarded_vs_m_guarded: vs(col(rs, 'bA'), col(rs, 'mg')),
+        rc_adaptive_guarded_vs_r1: vs(col(rs, 'bA'), col(rs, 'r1')),
+        rc_table_random200_guarded_vs_m_guarded: c === 'random200' ? 'trained on this corpus: see B' : vs(col(rs, 'bF'), col(rs, 'mg')),
+      };
+    }
+    T.sizes.implementation_source_gzip = Object.fromEntries(['rc.ts', 'trace.ts', 'layouts.ts', 'codec2.ts'].map((f) => [f, gzipSync(readFileSync(`${DIR}/${f}`), { level: 9 }).length]));
   }
 
   // ---- the best combination per profile among methods that need no new decoder semantics vs those that do

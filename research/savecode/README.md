@@ -54,6 +54,8 @@ Deliver `reports/SAVE_CODE_ROUND3.md`. Put the brief's four-way classification a
 | `harness/codec.ts`, `schema.ts`, `scenarios.ts`, `bench.ts` | Round-1 prototype codec and benchmark |
 | `harness/codec2.ts`, `scenarios2.ts`, `bench2.ts` | Round-2 additions |
 | `harness/results.json`, `results2.json` | Raw measured outputs of rounds 1 and 2 |
+| `reports/SAVE_CODE_ROUND3.md` | **Round-3 report** (classification and recommendation at the top) |
+| `harness/trace.ts`, `layouts.ts`, `rc.ts`, `scenarios3.ts`, `bench3.ts`, `train_zstd_dict.py`, `results3.json` | Round-3 additions: call tracing, layouts (A2), range coder (B), the independent rk corpus, the benchmark and its raw output |
 | `harness/zz-savecode-bench.test.ts.shim` | The vitest shim: it imports `process.env.BENCH_FILE` and calls `run()` |
 | `sample/` | The synthetic sample: JSON, plus its 2,941-char `z` code |
 | `design/classic-files-design.md` | The owner-approved B-L design |
