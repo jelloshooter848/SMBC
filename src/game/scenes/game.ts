@@ -804,7 +804,8 @@ export class Game {
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
-    // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
+    // A hero the select does not offer now (an unreleased Expansion hero from a link; a file of one
+    // is NOT RELEASED instead, item 40): the first slot's hero, Mario, in his chosen look, so Survival has a
     // hero standing and the select shows who plays.
     // A hero the dev select offers (selectSlots: dev mode shows every hero not set Off) plays.
     const slots = this.selectSlots;
