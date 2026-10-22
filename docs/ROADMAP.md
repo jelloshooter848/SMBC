@@ -1,7 +1,7 @@
 # Roadmap and ideas
 
 This file lists what is planned next and the ideas we have agreed to keep for later. Versions are proposals:
-the owner picks the version number at release time. When an idea is built, move it to CHANGELOG.md and delete it
+the owner picks the version number at release time. When an idea is built, move it to a change note in changes/ and delete it
 here.
 
 ## The plan (owner, 2026-10-20)

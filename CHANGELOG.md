@@ -3,8 +3,9 @@
 All notable changes to this project are documented in this file. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html) with the pre-1.0 rules in
-[docs/RELEASING.md](docs/RELEASING.md). Every pull request with a user-facing change adds a line
-under `## [Unreleased]`.
+[docs/RELEASING.md](docs/RELEASING.md). Every pull request with a user-facing change adds a
+fragment in [changes/](changes/README.md) instead of editing this file; a release stamps the
+fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 

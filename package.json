@@ -17,7 +17,9 @@
     "typecheck": "tsc --noEmit",
     "check:levels": "vitest run src/content/levels",
     "check:assets": "node tools/check-no-binaries.mjs",
-    "release:check": "node tools/release/check.mjs"
+    "release:check": "node tools/release/check.mjs",
+    "changelog:preview": "node tools/release/changelog.mjs preview",
+    "changelog:stamp": "node tools/release/changelog.mjs stamp"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
