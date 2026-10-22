@@ -2157,7 +2157,18 @@ export class Game {
     if (classic) character = this.restoreSlotHero(character);
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
-    this.state = newGameState(character, character2, this.liveRules);
+    const rulesNow = this.liveRules;
+    this.state = newGameState(character, character2, rulesNow);
+    // BUG-10: each hero starts at the power of the design it plays (Toggle heroes' Plays as), as a
+    // dev start does, so reconcileRules finds nothing to reset on a brand-new run.
+    const hero = playedHero(this.ctx, character, rulesNow);
+    this.state.powerState = defaultPower(hero);
+    this.state.hp = startHp(hero);
+    if (character2) {
+      const hero2 = playedHero(this.ctx, character2, rulesNow);
+      this.state.powerState2 = defaultPower(hero2);
+      this.state.hp2 = startHp(hero2);
+    }
     if (classic) this.classicStartLives();
     if (paid !== null) this.state.lives = paid;
     else this.survivalWithoutSelect(classic, character);
@@ -2276,6 +2287,11 @@ export class Game {
   /** Per-set saves: the map set whose slot the Classic run writes (its last WORLD card's). */
   private resumeSet: MapSetId | null = null;
 
+  /** The map set the Classic run plays (its save slot's), for the CLASSIC menu's focus on leaving it. */
+  get runSet(): MapSetId | undefined {
+    return this.resumeSet ?? undefined;
+  }
+
   /** G-008: clears the run's set's slot (the set of `levelId` when no WORLD card set it yet). */
   private dropResume(levelId: string | null): void {
     const set = this.resumeSet ?? (levelId ? resumeSetOf(levelId) : null);
@@ -2355,10 +2371,15 @@ export class Game {
     // with its level, lives, score and coins; its power and kit (Current's) start afresh.
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
+    // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
+    // at his own default, not with the saved hero's power and kit.
+    const swapped = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
-      s.powerState = r.powerState;
-      s.hp = r.hp;
-      s.kit = { ...r.kit };
+      if (!swapped) {
+        s.powerState = r.powerState;
+        s.hp = r.hp;
+        s.kit = { ...r.kit };
+      }
       if (r.heroKits) this.classicKits = structuredClone(r.heroKits);
     }
     s.warped = r.warped;
@@ -2452,9 +2473,10 @@ export class Game {
    * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
    */
   quitClassicRun(): void {
+    const set = this.runSet;
     this.leaveRun();
     this.scenes.clear();
-    this.showClassicMenu();
+    this.showClassicMenu(set);
   }
 
   /**

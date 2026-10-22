@@ -36,6 +36,13 @@ box differs from them other than by (a), (b) or a deviation listed here.
 | sophiaStart            | "Sophia can use special weapons with SPC or DWN and ATK when you have them. Press SEL to switch between them."                                  | "Sophia can use special weapons with MISSILE when you have them."                                                                   | SPECIAL fires the missile and DOWN and ATTACK does not (`characters/sophia/classic.ts:189`). She owns one missile in Classic play (`:127`), so there is nothing to switch (`:183`).          |
 | sophiaHomingMissile    | "Press SPC or DWN and ATK to fire a homing missile when enemies are on screen. If you have multiple weapons, press SEL to switch between them." | "Press HOMING to fire a homing missile."                                                                                            | SPECIAL only (`characters/sophia/classic.ts:189`). It fires with no enemy on screen too (`:88-110`). One missile only (`:127`).                                                              |
 
+## Changed by owner decision
+
+**sophiaWallClimb** p1: the original's "Hold down while approaching a cliff to climb down it."
+now reads "Hold down and the direction toward the cliff to climb down it." Down alone never takes
+the tank over the edge. Down and the direction toward the cliff does (`characters/sophia/drive.ts:704`),
+and the touch pad's even eight-way zones for the tank make that diagonal easy to hold.
+
 ## Removed by owner decision
 
 The first start's last page (`firstCharacterStart` p5, the gamepad page) keeps only its first
@@ -49,7 +56,7 @@ point outside the game:
 Boxes kept word for word that were questioned:
 
 - **megamanChargeKick:** "Press DOWN and JUMP to damage enemies while sliding." This is true: the Flower turns the kick on (`characters/megaman/classic.ts:624`).
-- **ryuStart p1** ("press back… press down") and **sophiaWallClimb** (with its gaps sentence): both are true of our Ryu and Sophia (`characters/sophia/drive.ts:504-509`, `:697-699`).
+- **ryuStart p1** ("press back… press down") and **sophiaWallClimb**'s gaps sentence: both are true of our Ryu and Sophia (`characters/sophia/drive.ts:504-509`, `:697-699`). Its cliff sentence changed by owner decision (above).
 
 ## Boxes left out
 

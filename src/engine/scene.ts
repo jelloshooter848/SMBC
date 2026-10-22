@@ -1,6 +1,7 @@
 import type { InputFrame } from './input/input-manager';
 import type { Renderer } from './gfx/renderer';
 import type { TouchLabels } from './input/touch';
+import type { DpadZoneId } from './input/touch-logic';
 
 export interface Scene {
   enter?(): void;
@@ -15,6 +16,8 @@ export interface Scene {
    * left out keep the menu defaults (main.ts, MENU_TOUCH_LABELS). Touch drives player 1 only.
    */
   touchLabels?(): TouchLabels;
+  /** Which zones the touch d-pad reads while this scene is on top; absent: 'default'. */
+  touchDpad?(): DpadZoneId;
   /**
    * The confirm action that must run inside the player's own input event (sharing, the
    * clipboard: iOS allows them only there), while the cursor sits on it; null or absent: none.

@@ -219,6 +219,7 @@ function boot(): void {
       const keys = settings.input.keyHints ? keyHintMap(settings.input.bindings[0]?.keyboard) : null;
       if (touch.shown) {
         touch.setLabels(labels);
+        touch.setDpadZones(game.scenes.top?.touchDpad?.() ?? 'default');
         touch.setKeyHints(keys);
       }
       keyHints.update(keys && !touch.shown ? keyHintItems(labels, keys) : null);

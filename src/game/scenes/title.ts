@@ -459,8 +459,11 @@ export class TitleScene extends MenuScene {
       this.t++;
       // The gate's press, still held (or seen a frame late), is not a skip: a later one is.
       if (this.gateHeld) this.gateHeld = Actions.some((a) => input.held(a));
-      if (!this.gateHeld && Actions.some((a) => input.pressed(a))) this.finish();
-      else this.tick();
+      if (!this.gateHeld && Actions.some((a) => input.pressed(a))) {
+        this.finish();
+        // The intro's "press any button to skip" is stale now: the menu's focused row instead.
+        this.announce();
+      } else this.tick();
       return; // the press that skips never reaches the menu
     }
     this.tick();

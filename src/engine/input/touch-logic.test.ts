@@ -7,6 +7,7 @@ import {
   DPAD_HORIZONTAL_MAX_DEG,
   DPAD_RUN_R,
   DPAD_UP_MIN_DEG,
+  EIGHT_WAY_DPAD_ZONES,
   FACE_BUTTON,
   LABEL_LONG_WORD_MIN_PX,
   LABEL_MIN_PX,
@@ -95,6 +96,41 @@ describe('dpadDirs: angle zones', () => {
   it('covers all eight directions', () => {
     const seen = new Set<string>();
     for (let deg = 0; deg < 360; deg += 5) seen.add(held(at(deg, 0.7)));
+    expect([...seen].sort()).toEqual(
+      ['down', 'left', 'left+down', 'left+up', 'right', 'right+down', 'right+up', 'up'].sort(),
+    );
+  });
+});
+
+describe('dpadDirs: eight-way zones (a hero who never crouches: Sophia III)', () => {
+  const at8 = (deg: number, r: number) => {
+    const t = (deg * Math.PI) / 180;
+    return dpadDirs(Math.cos(t) * r * R, -Math.sin(t) * r * R, R, EIGHT_WAY_DPAD_ZONES);
+  };
+
+  it('even 45° sectors: straight within ±22.5°, diagonals between', () => {
+    expect(held(at8(0, 0.5))).toBe('right');
+    expect(held(at8(20, 0.5))).toBe('right');
+    expect(held(at8(25, 0.5))).toBe('right+up');
+    expect(held(at8(65, 0.5))).toBe('right+up');
+    expect(held(at8(70, 0.5))).toBe('up');
+    expect(held(at8(270, 0.5))).toBe('down');
+    expect(held(at8(180 + 45, 0.5))).toBe('left+down');
+  });
+
+  it('the down-diagonals need no firmer push than the dead zone', () => {
+    // Where the default pad reads plain right (a light push down-right), this one holds both.
+    expect(held(at(-50, 0.3))).toBe('right');
+    expect(held(at8(-50, 0.3))).toBe('right+down');
+    expect(held(at8(-45, DPAD_DEAD + 0.01))).toBe('right+down');
+    expect(held(at8(-45, DPAD_DEAD * 0.9))).toBe('none');
+  });
+
+  it('a far push still runs, and all eight directions are there', () => {
+    expect(held(at8(0, 1))).toBe('right+run');
+    expect(held(at8(-45, 1))).toBe('right+down+run');
+    const seen = new Set<string>();
+    for (let deg = 0; deg < 360; deg += 5) seen.add(held(at8(deg, 0.5)));
     expect([...seen].sort()).toEqual(
       ['down', 'left', 'left+down', 'left+up', 'right', 'right+down', 'right+up', 'up'].sort(),
     );

@@ -1,5 +1,5 @@
 import type { Game } from '../scenes/game';
-import { MenuScene } from '../scenes/menu';
+import { MenuScene, backToMenu } from '../scenes/menu';
 import { MessageScene } from '../scenes/message';
 import { snapshot } from '../scenes/free-hero';
 import { abilityHint } from '../scenes/hints';
@@ -30,14 +30,15 @@ export class DevBonusGamesScene extends MenuScene {
     game: Game,
     private readonly fromPause = false,
   ) {
-    super(game, 'BONUS GAMES', [], () => game.scenes.pop(), fromPause);
+    super(game, 'BONUS GAMES', [], () => backToMenu(game), fromPause);
+    this.entryTitle = 'Bonus games';
     this.setItems([
       ...BONUS_KINDS.map((kind) => ({
         label: label(BONUS_TITLES[kind]),
         select: () => this.play(kind),
         hint: 'Plays one game; nothing is saved',
       })),
-      { label: 'Back', select: () => game.scenes.pop() },
+      { label: 'Back', select: () => backToMenu(game) },
     ]);
   }
 

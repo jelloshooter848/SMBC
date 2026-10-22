@@ -1,4 +1,4 @@
-import { MenuScene } from './menu';
+import { MenuScene, backToMenu } from './menu';
 import { AssistOptionsScene } from './options';
 import type { Game } from './game';
 import type { MenuItem } from './menu';
@@ -20,6 +20,7 @@ import { DevLevelPagesScene, devAgainItem } from './dev-play';
 export class DevMenuScene extends MenuScene {
   constructor(game: Game, fromPause = false) {
     super(game, 'DEV MODE', [], () => game.scenes.pop(), fromPause);
+    this.entryTitle = 'Dev mode';
     const push = (s: MenuScene) => {
       s.translucent = this.translucent;
       game.scenes.push(s);
@@ -36,13 +37,13 @@ export class DevMenuScene extends MenuScene {
       },
       {
         label: 'Assists',
-        select: () => push(new AssistOptionsScene(game, () => game.scenes.pop())),
+        select: () => push(new AssistOptionsScene(game, () => backToMenu(game))),
         hint: 'Only active while dev mode is on',
       },
       {
         // BUG-10: was Classic heroes; its Classic page is that page, its Campaign page is new.
         label: 'Toggle heroes',
-        select: () => push(new DevToggleHeroesScene(game, () => game.scenes.pop())),
+        select: () => push(new DevToggleHeroesScene(game, () => backToMenu(game))),
         hint: 'Classic: who is offered, the Yoshi mount and which design each hero plays. Campaign: which design each hero plays',
       },
       {
@@ -206,7 +207,7 @@ export class DevClassicHeroesScene extends MenuScene {
     rows.push({
       label: 'Plays as',
       value: () => playsAsSummary(game, 'classic'),
-      select: () => game.scenes.push(new DevPlaysAsScene(game, 'classic', () => game.scenes.pop())),
+      select: () => game.scenes.push(new DevPlaysAsScene(game, 'classic', () => backToMenu(game))),
       hint: 'Each hero plays its Classic or its Campaign design in Classic mode',
     });
     rows.push({ label: 'Back', select: onBack });
@@ -251,12 +252,12 @@ export class DevToggleHeroesScene extends MenuScene {
     this.setItems([
       {
         label: 'Classic',
-        select: () => game.scenes.push(new DevClassicHeroesScene(game, () => game.scenes.pop())),
+        select: () => game.scenes.push(new DevClassicHeroesScene(game, () => backToMenu(game))),
         hint: 'Release, On or Off for each Expansion hero, the Yoshi mount, and Plays as',
       },
       {
         label: 'Campaign',
-        select: () => game.scenes.push(new DevPlaysAsScene(game, 'current', () => game.scenes.pop())),
+        select: () => game.scenes.push(new DevPlaysAsScene(game, 'current', () => backToMenu(game))),
         hint: 'Plays as Campaign or Classic for each campaign hero',
       },
       { label: 'Back', select: onBack },

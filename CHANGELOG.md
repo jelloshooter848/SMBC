@@ -8,6 +8,38 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Touch d-pad for Sophia III (an experiment): she never crouches, so her pad is an even
+  eight-way pad. Down and a direction, which she needs to drive down a cliff face or into a gap
+  with Wall Climb, is now as easy to hold as Up and a direction, with no firmer push. Jason on
+  foot and every other hero keep the usual pad, whose down-diagonals still need a firmer push so
+  running never crouches by accident.
+- Classic mode Tutorials: Sophia's Wall Climb box now says to hold down and the direction
+  toward the cliff to climb down it, which is what the tank needs (owner decision).
+
+### Fixed
+
+- Classic mode: a saved run for a hero no select offers now plays as Mario from Mario's default
+  power and items, as the earlier entry said, instead of keeping that hero's saved power.
+- Classic mode: quitting a run, or MAIN MENU after its game over, comes back to the CLASSIC menu
+  on that run's own map set (Special, Lost Levels), not on Super Mario Bros.
+- Classic: leaving the Cheats page's code entry with BACK plays the original's bump, not the menu
+  blip.
+- Classic: the Cheats page's code entry is announced with BACK's key, as the page shows it
+  ("BACK (RIGHT SHIFT) to stop" on a keyboard, just BACK on touch).
+- Screen reader: the Video, Audio, Controls and Assists pages, the Dev menu and its Level select,
+  Mini games, Bonus games and Toggle heroes pages say their title with the focused row when they
+  open, and the page under them says its focused row again on the way back, as the boxes do.
+- Screen reader: skipping the REMIX title's intro says the focused menu row, so "Press any button
+  to skip the intro" is no longer left as the last thing said.
+- Docs: the README says a checkout exactly at a release tag builds locked, even under `pnpm dev`.
+- Dev mode: Level select > Campaign > Custom levels lists and says each level by the name it was
+  saved under ("My Test"), not its id ("my-test"); a level with no saved name keeps its id.
+- Dev mode: with a hero's Toggle heroes Plays as flipped, a new Classic or free-play run now
+  starts that hero at the power of the design he plays, so a brand-new run no longer says
+  "Hero design changed. Power reset."
+
 ## [0.4.69] - 2026-10-22
 
 ### Changed

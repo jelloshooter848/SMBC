@@ -171,7 +171,7 @@ describe('the Cheats page', () => {
     h.idle(8);
     for (let i = 0; i < labels(page).indexOf('Enter code'); i++) h.tap('down');
     h.tap('jump');
-    expect(h.said.at(-1)).toBe('Enter the code. BACK to stop.');
+    expect(h.said.at(-1)).toBe('Enter the code. BACK (RIGHT SHIFT) to stop.');
     // Touch: BACK is Select, the one button the code does not use.
     expect(page.touchLabels().select).toBe('BACK');
     expect(draw(page).texts.some((x) => x.str.startsWith('BACK'))).toBe(true);

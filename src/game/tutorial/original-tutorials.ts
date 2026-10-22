@@ -223,7 +223,7 @@ export const TUTORIAL_TEXT: Readonly<Record<string, readonly string[]>> = {
   sophiaStart: ['Sophia:\nSophia can use special weapons with {=sophia-missile} when you have them.'],
   sophiaHomingMissile: ['Homing Missile:\nPress {HOMING:special} to fire a homing missile.'],
   sophiaWallClimb: [
-    'Wall Climb:\nHold up while approaching a wall to climb up it. Hold down while approaching a cliff to climb down it. Sophia can climb into gaps by holding the direction toward the gap while driving over it.',
+    'Wall Climb:\nHold up while approaching a wall to climb up it. Hold down and the direction toward the cliff to climb down it. Sophia can climb into gaps by holding the direction toward the gap while driving over it.',
     'While climbing a wall, press {JUMP} to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press {JUMP}.',
   ],
   sophiaCeilingClimb: [
