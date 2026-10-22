@@ -11,8 +11,10 @@ import { TitleScene, TITLE_NAME } from '@game/scenes/title';
 import {
   OFFLINE_NOTICE_CLOSED_LINES,
   OFFLINE_NOTICE_LINES,
+  UPDATE_LINES,
   type HomeScreenHooks,
 } from '@game/pwa/home-screen';
+import { ClassicOptionsScene } from '@game/scenes/original-game';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // v0.4.72 38f: pages and boxes say their title and focused row on entry, and the focused row
@@ -159,5 +161,45 @@ describe('38f: the Classic pause', () => {
     const h = game({ ...defaultSettings(), dev: true });
     h.game.scenes.push(new PauseScene(h.game));
     expect(h.said.at(-1)).toBe('Continue');
+  });
+});
+
+// The break-it review of 38f: the same, in three more places.
+describe('38f review: more ways back', () => {
+  it('Classic pause > Options > BACK: the pause says its focused row (Options)', () => {
+    const h = game();
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
+    h.until(() => h.top() instanceof LevelScene, 900);
+    h.idle(4);
+    h.tap('start');
+    pick(h, 'Options');
+    expect(h.top()).toBeInstanceOf(OptionsScene);
+    const n = h.said.length;
+    h.idle(8);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(PauseScene);
+    expect(h.said.length).toBeGreaterThan(n);
+    expect(h.said.at(-1)).toMatch(/^Options/);
+  });
+
+  it('BACK on the update card: the title says its name and focused row', () => {
+    const h = game({}, { updateReady: () => true });
+    h.game.showTitle();
+    h.until(
+      () => h.top() instanceof CardScene && (h.top() as CardScene).lines.join('|') === UPDATE_LINES.join('|'),
+      900,
+    );
+    h.idle(CARD_GUARD_FRAMES + 1);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(TitleScene);
+    expect(h.said.at(-1)).toBe(`${TITLE_NAME}. Classic. The original game, as it was`);
+  });
+
+  it("Classic options > Video, audio, controls: the page says that row's name", () => {
+    const h = game();
+    h.game.scenes.push(new ClassicOptionsScene(h.game, () => h.game.scenes.pop()));
+    pick(h, 'Video, audio, controls');
+    expect(h.top()).toBeInstanceOf(OptionsScene);
+    expect(h.said.at(-1)).toMatch(/^Video, audio, controls\. Video/);
   });
 });

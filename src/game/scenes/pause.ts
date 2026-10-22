@@ -45,7 +45,8 @@ export class PauseScene extends MenuScene {
       items.push(...this.guideItems());
       items.push({
         label: 'Options',
-        select: () => game.scenes.push(new OptionsScene(game, () => game.scenes.pop(), true, true)),
+        // 38f review: BACK says the pause's focused row again.
+        select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
       // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
       if (game.deps.settings?.classicCheats.levelSelect)

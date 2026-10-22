@@ -237,7 +237,8 @@ export function titleNotice(game: Game): boolean {
         game.deps.announcer?.say('Updating.');
         game.deps.homeScreen?.applyUpdate();
       },
-      { top: true, onBack: () => game.scenes.pop() },
+      // 38f review: BACK (later) says the title and its focused row, as the other notes do.
+      { top: true, onBack: () => closeToTitle(game) },
     );
     return true;
   }
