@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
+import { startHp } from '@game/characters/character';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { classicResumeKey, loadClassicResume, resumeOf } from '@game/run-resume';
@@ -173,6 +174,9 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     expect(g.state.powerState).toBe('small');
   });
 
+  // Release review: an entry is kept only for a Classic select slot, with a power its hero has.
+  // Every Classic hero is a power-up hero, whose hp means nothing (startHp: always 0): any
+  // number reads as 0, so a negative one is kept as 0 (a hit-point hero's is checked below).
   it('a broken entry in the slot is dropped (that hero starts afresh)', () => {
     const h = classic();
     marioRun(h);
@@ -180,13 +184,60 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
       ...resumeOf('1-2', h.game.state, 'classic'),
       heroKits: {
         link: { powerState: 'big', hp: 'x' },
-        luigi: { powerState: 'fire', hp: 0, kit: { a: 1, b: 'no' } },
+        samus: { powerState: 'huge', hp: 0 },
+        luigi: { powerState: 'fire', hp: -1 },
+        bill: { powerState: 'big', hp: 3 },
+        simon: { powerState: 'fire', hp: 0, kit: { a: 1, b: 'no' } },
       },
     };
     store.set(classicResumeKey('smb'), JSON.stringify(r));
     expect(loadClassicResume('smb')?.heroKits).toEqual({
-      luigi: { powerState: 'fire', hp: 0, kit: { a: 1 } },
+      luigi: { powerState: 'fire', hp: 0, kit: {} },
+      bill: { powerState: 'big', hp: 0, kit: {} },
+      simon: { powerState: 'fire', hp: 0, kit: { a: 1 } },
     });
+  });
+
+  it('an id that is no Classic select slot is dropped (an unknown hero, or a look)', () => {
+    const h = classic();
+    marioRun(h);
+    const r = {
+      ...resumeOf('1-2', h.game.state, 'classic'),
+      heroKits: {
+        nobody: { powerState: 'fire', hp: 0, kit: {} },
+        peach: { powerState: 'fire', hp: 0, kit: {} },
+        bass: { powerState: 'big', hp: 0, kit: {} },
+      },
+    };
+    store.set(classicResumeKey('smb'), JSON.stringify(r));
+    expect(loadClassicResume('smb')?.heroKits).toEqual({ bass: { powerState: 'big', hp: 0, kit: {} } });
+  });
+
+  it("the slot's own power and hp that do not read for its hero are its default", () => {
+    const h = classic();
+    marioRun(h);
+    const put = (over: Record<string, unknown>) =>
+      store.set(
+        classicResumeKey('smb'),
+        JSON.stringify({ ...resumeOf('1-2', h.game.state, 'classic'), ...over }),
+      );
+    put({ powerState: 'huge' });
+    expect(loadClassicResume('smb')).toMatchObject({ powerState: 'small', hp: 0 });
+    // A power-up hero's hp means nothing: any number reads as 0, his power kept.
+    for (const hp of [0, -2, 3]) {
+      put({ powerState: 'fire', hp });
+      expect(loadClassicResume('smb'), String(hp)).toMatchObject({ powerState: 'fire', hp: 0 });
+    }
+    // A hit-point hero (a developer run under Current rules): 0 < hp <= its max.
+    const max = startHp(LINK);
+    for (const hp of [0, -3, max + 1]) {
+      put({ rules: 'current', hero: 'link', powerState: 'full', hp });
+      expect(loadClassicResume('smb'), String(hp)).toMatchObject({ powerState: 'full', hp: max });
+    }
+    put({ rules: 'current', hero: 'link', powerState: 'full', hp: 2 });
+    expect(loadClassicResume('smb')).toMatchObject({ powerState: 'full', hp: 2 });
+    put({ rules: 'current', hero: 'link', powerState: 'fire', hp: 2 });
+    expect(loadClassicResume('smb')).toMatchObject({ powerState: 'full', hp: max });
   });
 
   it("a dev start from a Classic run's pause takes no kits from that run", () => {

@@ -10,7 +10,7 @@ import {
   LINK_CLASSIC_STOMP_BOUNCE,
   SMB1_STOMP_HELD,
 } from '@game/characters/classic/stomp';
-import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
+import { POUND_BOUNCE, YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { parseTextMap } from '@game/level/textmap';
 import type { LevelData } from '@game/level/schema';
@@ -80,6 +80,64 @@ function bounce(def: CharacterDef, held: boolean): { vy: number; rise: number } 
   return { vy, rise: top - peak };
 }
 
+/**
+ * The hero falls onto a still Goomba holding `pre`, then from the stomp holds `after(frame)`: the
+ * bounce's peak above the stomp point.
+ */
+function riseWith(def: CharacterDef, pre: Action[], after: (f: number) => Action[]): number {
+  const w = world(def);
+  const input = new ScriptedInput({ steps: [] });
+  const step = (keys: Action[]) => {
+    input.setHeld(keys);
+    input.next();
+    w.update([input]);
+  };
+  step([]);
+  const g = w.entities.find((e) => e instanceof Goomba) as Goomba;
+  g.walkSpeed = 0;
+  g.body.vx = 0;
+  g.body.x = w.player.body.x;
+  for (let f = 0; f < 200 && w.feats.stomps === 0; f++) step(pre);
+  expect(w.feats.stomps).toBe(1);
+  const b = w.player.body;
+  const top = b.y;
+  let peak = b.y;
+  for (let f = 0; f < 120 && b.vy < 0; f++) {
+    step(after(f));
+    peak = Math.min(peak, b.y);
+  }
+  return top - peak;
+}
+
+/** Yoshi pounds a Goomba from above, `keys` held: the bounce's first vy and its peak. */
+function poundBounce(keys: Action[]): { vy: number; rise: number } {
+  const w = world(YOSHI_CLASSIC);
+  const input = new ScriptedInput({ steps: [] });
+  const step = (k: Action[]) => {
+    input.setHeld(k);
+    input.next();
+    w.update([input]);
+  };
+  step([]);
+  const g = w.entities.find((e) => e instanceof Goomba) as Goomba;
+  g.walkSpeed = 0;
+  g.body.vx = 0;
+  g.body.x = w.player.body.x;
+  step(['down']);
+  const b = w.player.body;
+  for (let f = 0; f < 200 && !(!g.alive && b.vy < 0); f++) step(keys);
+  expect(g.alive).toBe(false);
+  expect(w.feats.stomps).toBe(0);
+  const vy = b.vy;
+  const top = b.y;
+  let peak = b.y;
+  for (let f = 0; f < 120 && b.vy < 0; f++) {
+    step(keys);
+    peak = Math.min(peak, b.y);
+  }
+  return { vy, rise: top - peak };
+}
+
 describe('BUG-07: the Classic stomp bounce', () => {
   it('every Classic hero that cannot stomp has a fixed bounce: 300 (0x2800), Link and his looks 325', () => {
     for (const d of classicDefs()) {
@@ -126,6 +184,28 @@ describe('BUG-07: the Classic stomp bounce', () => {
       expect(held.rise).toBeGreaterThan(free.rise * 2);
     });
   }
+
+  for (const id of ['mario', 'luigi']) {
+    const d = heroFor(CHARACTERS.find((c) => c.id === id) as CharacterDef, 'classic');
+    it(`${id}: a release latches the fall gravity; pressing JUMP again adds no height`, () => {
+      const held = riseWith(d, ['jump'], () => ['jump']);
+      const released = riseWith(d, ['jump'], (f) => (f < 4 ? ['jump'] : []));
+      const again = riseWith(d, ['jump'], (f) => (f < 4 || f >= 8 ? ['jump'] : []));
+      expect(again).toBe(released);
+      expect(released).toBeLessThan(held);
+      // Not held at the stomp: the fall gravity from the start, a press later adds nothing.
+      expect(riseWith(d, [], (f) => (f >= 3 ? ['jump'] : []))).toBe(riseWith(d, [], () => []));
+    });
+  }
+
+  it("Yoshi's ground pound keeps its fixed 2.5 px/f bounce, jump held or not (YO-9)", () => {
+    const free = poundBounce([]);
+    const held = poundBounce(['jump']);
+    expect(POUND_BOUNCE).toBe(CLASSIC_STOMP_BOUNCE);
+    expect(free.vy).toBe(-POUND_BOUNCE);
+    expect(held.vy).toBe(-POUND_BOUNCE);
+    expect(held.rise).toBe(free.rise);
+  });
 
   for (const cur of CHARACTERS.filter((c) => !heroFor(c, 'classic').stomps)) {
     const d = heroFor(cur, 'classic');

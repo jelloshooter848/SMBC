@@ -2,7 +2,9 @@ import { hasKey, loadJson, removeKey, saveJson } from '@engine/save/storage';
 import { MAP_SET_IDS, type MapSetId } from '@engine/save/progress';
 import { CLASSIC_GAME_MODES, type ClassicGameMode } from '@engine/save/original-options';
 import type { MapDifficulty } from '@engine/save/settings';
-import type { GameState, Rules } from './context';
+import { defaultPower, type GameState, type Rules } from './context';
+import { startHp, type CharacterDef } from './characters/character';
+import { CHARACTERS, CLASSIC_EXTRAS, heroFor, isSkin } from './characters/registry';
 
 /**
  * Classic mode's resume slots (G-008; per-set saves, O-07): the original saves a run from Pause > Load / Save and
@@ -151,15 +153,60 @@ function readKit(v: unknown): Record<string, number> {
   return kit;
 }
 
-/** A slot's other heroes' kits, each checked (a broken entry is dropped: that hero afresh). */
+/**
+ * The def hero `id` plays under `rules`: a roster hero's (its Classic def under Classic rules) or
+ * a Classic-only extra or look by its own id. Undefined for an id no select offers.
+ */
+function heroDef(id: string, rules: Rules): CharacterDef | undefined {
+  const roster = CHARACTERS.find((c) => c.id === id);
+  if (roster) return heroFor(roster, rules);
+  return CLASSIC_EXTRAS.find((c) => c.id === id);
+}
+
+/**
+ * The Classic select slot hero `id` (Game.classicKits' keys: a roster hero's id, or a Classic-only
+ * extra's that is no other hero's look), as Classic rules play it; undefined for any other id.
+ */
+function slotDef(id: string): CharacterDef | undefined {
+  const roster = CHARACTERS.find((c) => c.id === id);
+  if (roster) return heroFor(roster, 'classic');
+  return CLASSIC_EXTRAS.find((c) => c.id === id && !isSkin(c));
+}
+
+/**
+ * `powerState` and `hp` checked for `def` (null when they do not read for it). A power-up hero's
+ * power must be one of its states; his hp means nothing (startHp: always 0), so any number reads
+ * as 0. A hit-point hero must be at full power with 0 < hp <= its max (the kit's maxHp when it
+ * has grown).
+ */
+function checkedPower(
+  def: CharacterDef,
+  powerState: unknown,
+  hp: unknown,
+  kit: Record<string, number>,
+): { powerState: string; hp: number } | null {
+  if (typeof powerState !== 'string' || !num(hp)) return null;
+  const d = def.damage;
+  if (d.kind === 'powerup') return d.states.includes(powerState) ? { powerState, hp: startHp(def) } : null;
+  const max = kit.maxHp ?? d.max;
+  return powerState === defaultPower(def) && hp > 0 && hp <= max ? { powerState, hp } : null;
+}
+
+/**
+ * A slot's other heroes' kits (always Classic rules'), each checked: an id that is no Classic
+ * select slot is dropped, and so is an entry whose power or hp does not read for its hero (that
+ * hero starts at his default).
+ */
 function readHeroKits(v: unknown): Record<string, HeroKit> | null {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   const out: Record<string, HeroKit> = {};
   for (const [id, k] of Object.entries(v as Record<string, unknown>)) {
-    if (!k || typeof k !== 'object') continue;
+    const def = slotDef(id);
+    if (!def || !k || typeof k !== 'object') continue;
     const e = k as Partial<HeroKit>;
-    if (typeof e.powerState !== 'string' || !num(e.hp)) continue;
-    out[id] = { powerState: e.powerState, hp: e.hp, kit: readKit(e.kit) };
+    const kit = readKit(e.kit);
+    const power = checkedPower(def, e.powerState, e.hp, kit);
+    if (power) out[id] = { ...power, kit };
   }
   return out;
 }
@@ -189,6 +236,12 @@ function readSlot(key: string): ClassicResume | null {
   if (typeof r.powerState !== 'string') return null;
   const kit = readKit(r.kit);
   const heroKits = readHeroKits(r.heroKits);
+  // The playing hero's own power and hp, checked as the others' are: one that does not read for
+  // its hero is that hero's default (an unknown hero is left to Game.classicResume, which drops it).
+  const def = heroDef(r.hero, r.rules);
+  const power = def
+    ? (checkedPower(def, r.powerState, r.hp, kit) ?? { powerState: defaultPower(def), hp: startHp(def) })
+    : {};
   const cp = r.checkpoint;
   const checkpoint =
     cp && typeof cp === 'object' && typeof cp.level === 'string' && num(cp.x)
@@ -201,6 +254,7 @@ function readSlot(key: string): ClassicResume | null {
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),
     ...(num(savedAt) ? { savedAt } : {}),
+    ...power,
     kit,
     ...(heroKits ? { heroKits } : {}),
     warped: r.warped === true,

@@ -63,6 +63,9 @@ export const LAY_FRAMES = 20;
 export const EGGS_SMALL = 3;
 export const EGGS_BIG = 6;
 export const EGGS_START = 3;
+/** The ground pound's bounce off an enemy (YO-9): bouncePwr 300, 2.5 px/f, jump held or not. */
+export const POUND_BOUNCE = 0x02800;
+
 /** The ground pound's feet (YO-9): 800 with pierce 10. */
 export const POUND_DAMAGE = 800;
 
@@ -358,7 +361,9 @@ const BEHAVIOUR: CharacterBehaviour = {
     if (pound(p) !== 2) return;
     endPound(p);
     p.refitHitbox();
-    p.stompBounce();
+    // A fixed 2.5 px/f bounce, as before BUG-07: a pound is no stomp, and only a stomp takes
+    // SMB1's held bounce (owner).
+    p.stompBounce(POUND_BOUNCE);
   },
   canJump: (p) => pound(p) === 0 && !laying(p),
   onGrabVine: (p) => resetMoves(p),

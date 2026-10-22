@@ -87,9 +87,9 @@ import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
  * and fall cap 700 px/s; our take-off is the jump speed less one frame of gravity (MM-C10).
  */
 export const MEGAMAN_CLASSIC_PROFILE: MovementProfile = {
+  ...MEGAMAN_PROFILE,
   // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
   stompBounce: CLASSIC_STOMP_BOUNCE,
-  ...MEGAMAN_PROFILE,
   jump: [{ maxVx: Infinity, initial: 0x05355, holdGravity: 0x00355, fallGravity: 0x00355 }],
   maxFall: 0x05d55,
   fallReset: 0x05d55,
