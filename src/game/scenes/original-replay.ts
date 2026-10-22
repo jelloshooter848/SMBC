@@ -2,6 +2,7 @@ import type { Scene } from '@engine/scene';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
+import { loadJson, saveJson } from '@engine/save/storage';
 import { FONT_COLOURS } from '@content/sprites/font';
 import { replayWorlds, type ClassicFileRef, type ClearedFile } from '../original-files';
 import { fontText, wrapText } from '../hud/text';
@@ -40,6 +41,21 @@ export interface ReplayRun {
   stage: number;
   /** The area the level starts in (its intro, or its first area). */
   levelId: string;
+}
+
+/** Where the instructions are marked as read (once, for every CLEARED file: D). */
+export const REPLAY_HELP_KEY = 'smbc-classic-replay-help';
+
+/** Read this session when storage does not keep the mark (so they still show once). */
+const helpReadHere = new WeakMap<Game, true>();
+
+function helpRead(game: Game): boolean {
+  return helpReadHere.has(game) || loadJson<unknown>(REPLAY_HELP_KEY) === true;
+}
+
+function markHelpRead(game: Game): void {
+  helpReadHere.set(game, true);
+  saveJson(REPLAY_HELP_KEY, true);
 }
 
 /** A note box's text columns (the widest line a Classic box holds, with its margins). */
@@ -209,9 +225,29 @@ export function clearedNote(
   });
 }
 
-/** C: a CLEARED file picked on its file box: its world box. */
+/** D: the instructions, before the first world box any CLEARED file opens. */
+export const REPLAY_HELP: readonly string[] = [
+  "A cleared file lets you replay any level of its map set, with that file's rules.",
+  'Choose a world, then a level, then your hero. Lives are unlimited.',
+  'If you lose a life: retry, select character, or return to menu. A clear goes back to the levels.',
+  'The file stays cleared: nothing here changes it. Back goes back one box.',
+];
+
+/** C, D: a CLEARED file picked on its file box: the instructions the first time, then its worlds. */
 export function openClearedFile(game: Game, files: ClassicFilesScene, f: ClearedFile): void {
-  game.scenes.push(new ClassicReplayWorldsScene(game, files, f));
+  const worlds = () => game.scenes.push(new ClassicReplayWorldsScene(game, files, f));
+  if (helpRead(game)) return worlds();
+  game.scenes.push(
+    new ClassicNoteScene(game, REPLAY_HELP, {
+      under: files,
+      lead: `File ${f.slot}, cleared. How the replay works`,
+      onDone: () => {
+        markHelpRead(game);
+        worlds();
+      },
+      onBack: () => files.comeBack(),
+    }),
+  );
 }
 
 /** "World 3", "World A". */
