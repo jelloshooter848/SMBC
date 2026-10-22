@@ -19,7 +19,8 @@ import { DevLevelPagesScene, devAgainItem } from './dev-play';
  */
 export class DevMenuScene extends MenuScene {
   constructor(game: Game, fromPause = false) {
-    super(game, 'DEV MODE', [], () => game.scenes.pop(), fromPause);
+    // 32a: BACK to the title or the pause menu says its focused row again.
+    super(game, 'DEV MODE', [], () => backToMenu(game), fromPause);
     this.entryTitle = 'Dev mode';
     const push = (s: MenuScene) => {
       s.translucent = this.translucent;
