@@ -1,0 +1,2103 @@
+{
+  "profiles": {
+    "fresh": {
+      "current/exact": {
+        "json_minified_bytes": 3450,
+        "z_encodeShare": 1656,
+        "z_level9": 1656,
+        "z_level9_Kdictionary": 57,
+        "binary_bits": 884,
+        "binary_base32": 184,
+        "binary_base64url": 157,
+        "binary_deflate_base64url": 164,
+        "binary_best_base64url": 157,
+        "delta_bits": 1,
+        "delta_base32": 8,
+        "delta_base64url": 11,
+        "delta_deflate_base64url": 13,
+        "delta_best_base64url": 11,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 3374,
+        "z_encodeShare": 1608,
+        "z_level9": 1608,
+        "z_level9_Kdictionary": 64,
+        "binary_bits": 876,
+        "binary_base32": 183,
+        "binary_base64url": 156,
+        "binary_deflate_base64url": 163,
+        "binary_best_base64url": 156,
+        "delta_bits": 1,
+        "delta_base32": 8,
+        "delta_base64url": 11,
+        "delta_deflate_base64url": 13,
+        "delta_best_base64url": 11,
+        "hybrid_bits": 4,
+        "hybrid_base32": 8,
+        "hybrid_base64url": 11,
+        "hybrid_deflate_base64url": 13,
+        "hybrid_best_base64url": 11,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 1940,
+        "z_encodeShare": 1008,
+        "z_level9": 1008,
+        "z_level9_Kdictionary": 45,
+        "binary_bits": 214,
+        "binary_base32": 50,
+        "binary_base64url": 45,
+        "binary_deflate_base64url": 48,
+        "binary_best_base64url": 45,
+        "delta_bits": 1,
+        "delta_base32": 8,
+        "delta_base64url": 11,
+        "delta_deflate_base64url": 13,
+        "delta_best_base64url": 11,
+        "hybrid_bits": 4,
+        "hybrid_base32": 8,
+        "hybrid_base64url": 11,
+        "hybrid_deflate_base64url": 13,
+        "hybrid_best_base64url": 11,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 3450,
+        "z_encodeShare": 1656,
+        "z_level9": 1656,
+        "z_level9_Kdictionary": 57,
+        "binary_bits": 884,
+        "binary_base32": 184,
+        "binary_base64url": 157,
+        "binary_deflate_base64url": 164,
+        "binary_best_base64url": 157,
+        "delta_bits": 1,
+        "delta_base32": 8,
+        "delta_base64url": 11,
+        "delta_deflate_base64url": 13,
+        "delta_best_base64url": 11
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 3374,
+        "z_encodeShare": 1608,
+        "z_level9": 1608,
+        "z_level9_Kdictionary": 64,
+        "binary_bits": 876,
+        "binary_base32": 183,
+        "binary_base64url": 156,
+        "binary_deflate_base64url": 163,
+        "binary_best_base64url": 156,
+        "delta_bits": 1,
+        "delta_base32": 8,
+        "delta_base64url": 11,
+        "delta_deflate_base64url": 13,
+        "delta_best_base64url": 11,
+        "hybrid_bits": 4,
+        "hybrid_base32": 8,
+        "hybrid_base64url": 11,
+        "hybrid_deflate_base64url": 13,
+        "hybrid_best_base64url": 11,
+        "hybrid_loader_equivalent": 1
+      },
+      "bl/portable": {
+        "json_minified_bytes": 1940,
+        "z_encodeShare": 1008,
+        "z_level9": 1008,
+        "z_level9_Kdictionary": 45,
+        "binary_bits": 214,
+        "binary_base32": 50,
+        "binary_base64url": 45,
+        "binary_deflate_base64url": 48,
+        "binary_best_base64url": 45,
+        "delta_bits": 1,
+        "delta_base32": 8,
+        "delta_base64url": 11,
+        "delta_deflate_base64url": 13,
+        "delta_best_base64url": 11,
+        "hybrid_bits": 4,
+        "hybrid_base32": 8,
+        "hybrid_base64url": 11,
+        "hybrid_deflate_base64url": 13,
+        "hybrid_best_base64url": 11,
+        "hybrid_loader_equivalent": 1
+      }
+    },
+    "typical (mid-game)": {
+      "current/exact": {
+        "json_minified_bytes": 5374,
+        "z_encodeShare": 2632,
+        "z_level9": 2632,
+        "z_level9_Kdictionary": 749,
+        "binary_bits": 2021,
+        "binary_base32": 412,
+        "binary_base64url": 347,
+        "binary_deflate_base64url": 336,
+        "binary_best_base64url": 336,
+        "delta_bits": 1277,
+        "delta_base32": 263,
+        "delta_base64url": 223,
+        "delta_deflate_base64url": 208,
+        "delta_best_base64url": 208,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 5143,
+        "z_encodeShare": 2501,
+        "z_level9": 2501,
+        "z_level9_Kdictionary": 735,
+        "binary_bits": 1809,
+        "binary_base32": 369,
+        "binary_base64url": 312,
+        "binary_deflate_base64url": 301,
+        "binary_best_base64url": 301,
+        "delta_bits": 1072,
+        "delta_base32": 222,
+        "delta_base64url": 188,
+        "delta_deflate_base64url": 171,
+        "delta_best_base64url": 171,
+        "hybrid_bits": 647,
+        "hybrid_base32": 137,
+        "hybrid_base64url": 117,
+        "hybrid_deflate_base64url": 124,
+        "hybrid_best_base64url": 117,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 3712,
+        "z_encodeShare": 1908,
+        "z_level9": 1908,
+        "z_level9_Kdictionary": 703,
+        "binary_bits": 1147,
+        "binary_base32": 237,
+        "binary_base64url": 201,
+        "binary_deflate_base64url": 185,
+        "binary_best_base64url": 185,
+        "delta_bits": 1043,
+        "delta_base32": 216,
+        "delta_base64url": 184,
+        "delta_deflate_base64url": 168,
+        "delta_best_base64url": 168,
+        "hybrid_bits": 618,
+        "hybrid_base32": 131,
+        "hybrid_base64url": 113,
+        "hybrid_deflate_base64url": 120,
+        "hybrid_best_base64url": 113,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 5532,
+        "z_encodeShare": 2696,
+        "z_level9": 2695,
+        "z_level9_Kdictionary": 768,
+        "binary_bits": 2058,
+        "binary_base32": 419,
+        "binary_base64url": 353,
+        "binary_deflate_base64url": 344,
+        "binary_best_base64url": 344,
+        "delta_bits": 1303,
+        "delta_base32": 268,
+        "delta_base64url": 227,
+        "delta_deflate_base64url": 213,
+        "delta_best_base64url": 213
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 5301,
+        "z_encodeShare": 2565,
+        "z_level9": 2565,
+        "z_level9_Kdictionary": 757,
+        "binary_bits": 1846,
+        "binary_base32": 377,
+        "binary_base64url": 317,
+        "binary_deflate_base64url": 307,
+        "binary_best_base64url": 307,
+        "delta_bits": 1098,
+        "delta_base32": 227,
+        "delta_base64url": 193,
+        "delta_deflate_base64url": 176,
+        "delta_best_base64url": 176,
+        "hybrid_bits": 673,
+        "hybrid_base32": 142,
+        "hybrid_base64url": 123,
+        "hybrid_deflate_base64url": 129,
+        "hybrid_best_base64url": 123
+      },
+      "bl/portable": {
+        "json_minified_bytes": 3870,
+        "z_encodeShare": 1976,
+        "z_level9": 1976,
+        "z_level9_Kdictionary": 724,
+        "binary_bits": 1184,
+        "binary_base32": 244,
+        "binary_base64url": 207,
+        "binary_deflate_base64url": 191,
+        "binary_best_base64url": 191,
+        "delta_bits": 1069,
+        "delta_base32": 221,
+        "delta_base64url": 188,
+        "delta_deflate_base64url": 173,
+        "delta_best_base64url": 173,
+        "hybrid_bits": 644,
+        "hybrid_base32": 136,
+        "hybrid_base64url": 117,
+        "hybrid_deflate_base64url": 124,
+        "hybrid_best_base64url": 117
+      }
+    },
+    "late / end-game": {
+      "current/exact": {
+        "json_minified_bytes": 12778,
+        "z_encodeShare": 4504,
+        "z_level9": 4493,
+        "z_level9_Kdictionary": 2596,
+        "binary_bits": 6259,
+        "binary_base32": 1259,
+        "binary_base64url": 1053,
+        "binary_deflate_base64url": 1004,
+        "binary_best_base64url": 1004,
+        "delta_bits": 5479,
+        "delta_base32": 1103,
+        "delta_base64url": 923,
+        "delta_deflate_base64url": 887,
+        "delta_best_base64url": 887,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 12237,
+        "z_encodeShare": 4339,
+        "z_level9": 4329,
+        "z_level9_Kdictionary": 2549,
+        "binary_bits": 5639,
+        "binary_base32": 1135,
+        "binary_base64url": 949,
+        "binary_deflate_base64url": 884,
+        "binary_best_base64url": 884,
+        "delta_bits": 4870,
+        "delta_base32": 982,
+        "delta_base64url": 821,
+        "delta_deflate_base64url": 789,
+        "delta_best_base64url": 789,
+        "hybrid_bits": 3052,
+        "hybrid_base32": 618,
+        "hybrid_base64url": 519,
+        "hybrid_deflate_base64url": 525,
+        "hybrid_best_base64url": 519,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 10806,
+        "z_encodeShare": 3745,
+        "z_level9": 3735,
+        "z_level9_Kdictionary": 2519,
+        "binary_bits": 4977,
+        "binary_base32": 1003,
+        "binary_base64url": 840,
+        "binary_deflate_base64url": 771,
+        "binary_best_base64url": 771,
+        "delta_bits": 4841,
+        "delta_base32": 976,
+        "delta_base64url": 817,
+        "delta_deflate_base64url": 788,
+        "delta_best_base64url": 788,
+        "hybrid_bits": 3023,
+        "hybrid_base32": 612,
+        "hybrid_base64url": 513,
+        "hybrid_deflate_base64url": 520,
+        "hybrid_best_base64url": 513,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 18922,
+        "z_encodeShare": 5031,
+        "z_level9": 5012,
+        "z_level9_Kdictionary": 3013,
+        "binary_bits": 9508,
+        "binary_base32": 1909,
+        "binary_base64url": 1595,
+        "binary_deflate_base64url": 1445,
+        "binary_best_base64url": 1445,
+        "delta_bits": 8683,
+        "delta_base32": 1744,
+        "delta_base64url": 1457,
+        "delta_deflate_base64url": 1304,
+        "delta_best_base64url": 1304
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 18237,
+        "z_encodeShare": 4860,
+        "z_level9": 4844,
+        "z_level9_Kdictionary": 2965,
+        "binary_bits": 8492,
+        "binary_base32": 1706,
+        "binary_base64url": 1425,
+        "binary_deflate_base64url": 1312,
+        "binary_best_base64url": 1312,
+        "delta_bits": 7678,
+        "delta_base32": 1543,
+        "delta_base64url": 1289,
+        "delta_deflate_base64url": 1180,
+        "delta_best_base64url": 1180,
+        "hybrid_bits": 5860,
+        "hybrid_base32": 1180,
+        "hybrid_base64url": 987,
+        "hybrid_deflate_base64url": 929,
+        "hybrid_best_base64url": 929
+      },
+      "bl/portable": {
+        "json_minified_bytes": 16806,
+        "z_encodeShare": 4268,
+        "z_level9": 4249,
+        "z_level9_Kdictionary": 2936,
+        "binary_bits": 7830,
+        "binary_base32": 1574,
+        "binary_base64url": 1315,
+        "binary_deflate_base64url": 1189,
+        "binary_best_base64url": 1189,
+        "delta_bits": 7649,
+        "delta_base32": 1537,
+        "delta_base64url": 1285,
+        "delta_deflate_base64url": 1171,
+        "delta_best_base64url": 1171,
+        "hybrid_bits": 5831,
+        "hybrid_base32": 1174,
+        "hybrid_base64url": 981,
+        "hybrid_deflate_base64url": 925,
+        "hybrid_best_base64url": 925
+      }
+    },
+    "unusual settings + key bindings": {
+      "current/exact": {
+        "json_minified_bytes": 5664,
+        "z_encodeShare": 2975,
+        "z_level9": 2975,
+        "z_level9_Kdictionary": 1507,
+        "binary_bits": 2624,
+        "binary_base32": 532,
+        "binary_base64url": 447,
+        "binary_deflate_base64url": 445,
+        "binary_best_base64url": 445,
+        "delta_bits": 2608,
+        "delta_base32": 529,
+        "delta_base64url": 444,
+        "delta_deflate_base64url": 441,
+        "delta_best_base64url": 441,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 5433,
+        "z_encodeShare": 2852,
+        "z_level9": 2852,
+        "z_level9_Kdictionary": 1487,
+        "binary_bits": 2412,
+        "binary_base32": 490,
+        "binary_base64url": 412,
+        "binary_deflate_base64url": 408,
+        "binary_best_base64url": 408,
+        "delta_bits": 2403,
+        "delta_base32": 488,
+        "delta_base64url": 411,
+        "delta_deflate_base64url": 405,
+        "delta_best_base64url": 405,
+        "hybrid_bits": 1978,
+        "hybrid_base32": 403,
+        "hybrid_base64url": 340,
+        "hybrid_deflate_base64url": 347,
+        "hybrid_best_base64url": 340,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 3851,
+        "z_encodeShare": 2067,
+        "z_level9": 2067,
+        "z_level9_Kdictionary": 971,
+        "binary_bits": 1493,
+        "binary_base32": 306,
+        "binary_base64url": 259,
+        "binary_deflate_base64url": 247,
+        "binary_best_base64url": 247,
+        "delta_bits": 1464,
+        "delta_base32": 300,
+        "delta_base64url": 253,
+        "delta_deflate_base64url": 241,
+        "delta_best_base64url": 241,
+        "hybrid_bits": 1039,
+        "hybrid_base32": 215,
+        "hybrid_base64url": 183,
+        "hybrid_deflate_base64url": 189,
+        "hybrid_best_base64url": 183,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 5796,
+        "z_encodeShare": 3017,
+        "z_level9": 3017,
+        "z_level9_Kdictionary": 1492,
+        "binary_bits": 2609,
+        "binary_base32": 529,
+        "binary_base64url": 445,
+        "binary_deflate_base64url": 443,
+        "binary_best_base64url": 443,
+        "delta_bits": 2582,
+        "delta_base32": 524,
+        "delta_base64url": 440,
+        "delta_deflate_base64url": 437,
+        "delta_best_base64url": 437
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 5565,
+        "z_encodeShare": 2893,
+        "z_level9": 2893,
+        "z_level9_Kdictionary": 1477,
+        "binary_bits": 2397,
+        "binary_base32": 487,
+        "binary_base64url": 409,
+        "binary_deflate_base64url": 405,
+        "binary_best_base64url": 405,
+        "delta_bits": 2377,
+        "delta_base32": 483,
+        "delta_base64url": 407,
+        "delta_deflate_base64url": 401,
+        "delta_best_base64url": 401,
+        "hybrid_bits": 1952,
+        "hybrid_base32": 398,
+        "hybrid_base64url": 335,
+        "hybrid_deflate_base64url": 341,
+        "hybrid_best_base64url": 335
+      },
+      "bl/portable": {
+        "json_minified_bytes": 3983,
+        "z_encodeShare": 2111,
+        "z_level9": 2111,
+        "z_level9_Kdictionary": 960,
+        "binary_bits": 1478,
+        "binary_base32": 303,
+        "binary_base64url": 256,
+        "binary_deflate_base64url": 244,
+        "binary_best_base64url": 244,
+        "delta_bits": 1438,
+        "delta_base32": 295,
+        "delta_base64url": 249,
+        "delta_deflate_base64url": 236,
+        "delta_best_base64url": 236,
+        "hybrid_bits": 1013,
+        "hybrid_base32": 210,
+        "hybrid_base64url": 179,
+        "hybrid_deflate_base64url": 185,
+        "hybrid_best_base64url": 179
+      }
+    },
+    "max values": {
+      "current/exact": {
+        "json_minified_bytes": 21107,
+        "z_encodeShare": 4855,
+        "z_level9": 4848,
+        "z_level9_Kdictionary": 3513,
+        "binary_bits": 11935,
+        "binary_base32": 2395,
+        "binary_base64url": 1999,
+        "binary_deflate_base64url": 1395,
+        "binary_best_base64url": 1395,
+        "delta_bits": 11988,
+        "delta_base32": 2405,
+        "delta_base64url": 2008,
+        "delta_deflate_base64url": 1773,
+        "delta_best_base64url": 1773,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 20458,
+        "z_encodeShare": 4684,
+        "z_level9": 4676,
+        "z_level9_Kdictionary": 3423,
+        "binary_bits": 10835,
+        "binary_base32": 2175,
+        "binary_base64url": 1816,
+        "binary_deflate_base64url": 1583,
+        "binary_best_base64url": 1583,
+        "delta_bits": 10871,
+        "delta_base32": 2182,
+        "delta_base64url": 1821,
+        "delta_deflate_base64url": 1656,
+        "delta_best_base64url": 1656,
+        "hybrid_bits": 7185,
+        "hybrid_base32": 1445,
+        "hybrid_base64url": 1208,
+        "hybrid_deflate_base64url": 1137,
+        "hybrid_best_base64url": 1137,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 18963,
+        "z_encodeShare": 3917,
+        "z_level9": 3908,
+        "z_level9_Kdictionary": 2909,
+        "binary_bits": 9948,
+        "binary_base32": 1997,
+        "binary_base64url": 1668,
+        "binary_deflate_base64url": 1432,
+        "binary_best_base64url": 1432,
+        "delta_bits": 9964,
+        "delta_base32": 2000,
+        "delta_base64url": 1671,
+        "delta_deflate_base64url": 1501,
+        "delta_best_base64url": 1501,
+        "hybrid_bits": 6278,
+        "hybrid_base32": 1263,
+        "hybrid_base64url": 1056,
+        "hybrid_deflate_base64url": 968,
+        "hybrid_best_base64url": 968,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 32562,
+        "z_encodeShare": 5755,
+        "z_level9": 5731,
+        "z_level9_Kdictionary": 4360,
+        "binary_bits": 18439,
+        "binary_base32": 3695,
+        "binary_base64url": 3083,
+        "binary_deflate_base64url": 2147,
+        "binary_best_base64url": 2147,
+        "delta_bits": 18652,
+        "delta_base32": 3738,
+        "delta_base64url": 3119,
+        "delta_deflate_base64url": 2496,
+        "delta_best_base64url": 2496
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 31769,
+        "z_encodeShare": 5585,
+        "z_level9": 5564,
+        "z_level9_Kdictionary": 4275,
+        "binary_bits": 16943,
+        "binary_base32": 3396,
+        "binary_base64url": 2833,
+        "binary_deflate_base64url": 2225,
+        "binary_best_base64url": 2225,
+        "delta_bits": 17139,
+        "delta_base32": 3435,
+        "delta_base64url": 2867,
+        "delta_deflate_base64url": 2251,
+        "delta_best_base64url": 2251,
+        "hybrid_bits": 13453,
+        "hybrid_base32": 2698,
+        "hybrid_base64url": 2252,
+        "hybrid_deflate_base64url": 1752,
+        "hybrid_best_base64url": 1752
+      },
+      "bl/portable": {
+        "json_minified_bytes": 30274,
+        "z_encodeShare": 4813,
+        "z_level9": 4791,
+        "z_level9_Kdictionary": 3747,
+        "binary_bits": 16056,
+        "binary_base32": 3219,
+        "binary_base64url": 2685,
+        "binary_deflate_base64url": 2079,
+        "binary_best_base64url": 2079,
+        "delta_bits": 16232,
+        "delta_base32": 3254,
+        "delta_base64url": 2715,
+        "delta_deflate_base64url": 2097,
+        "delta_best_base64url": 2097,
+        "hybrid_bits": 12546,
+        "hybrid_base32": 2517,
+        "hybrid_base64url": 2101,
+        "hybrid_deflate_base64url": 1608,
+        "hybrid_best_base64url": 1608
+      }
+    },
+    "fully unlocked (100%, runs finished)": {
+      "current/exact": {
+        "json_minified_bytes": 16411,
+        "z_encodeShare": 3759,
+        "z_level9": 3757,
+        "z_level9_Kdictionary": 1980,
+        "binary_bits": 6886,
+        "binary_base32": 1385,
+        "binary_base64url": 1157,
+        "binary_deflate_base64url": 1081,
+        "binary_best_base64url": 1081,
+        "delta_bits": 6170,
+        "delta_base32": 1242,
+        "delta_base64url": 1039,
+        "delta_deflate_base64url": 991,
+        "delta_best_base64url": 991,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 15942,
+        "z_encodeShare": 3640,
+        "z_level9": 3639,
+        "z_level9_Kdictionary": 1968,
+        "binary_bits": 6464,
+        "binary_base32": 1300,
+        "binary_base64url": 1087,
+        "binary_deflate_base64url": 1004,
+        "binary_best_base64url": 1004,
+        "delta_bits": 5759,
+        "delta_base32": 1159,
+        "delta_base64url": 969,
+        "delta_deflate_base64url": 919,
+        "delta_best_base64url": 919,
+        "hybrid_bits": 2073,
+        "hybrid_base32": 422,
+        "hybrid_base64url": 356,
+        "hybrid_deflate_base64url": 363,
+        "hybrid_best_base64url": 356,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 14511,
+        "z_encodeShare": 3052,
+        "z_level9": 3052,
+        "z_level9_Kdictionary": 1940,
+        "binary_bits": 5802,
+        "binary_base32": 1168,
+        "binary_base64url": 977,
+        "binary_deflate_base64url": 893,
+        "binary_best_base64url": 893,
+        "delta_bits": 5730,
+        "delta_base32": 1154,
+        "delta_base64url": 965,
+        "delta_deflate_base64url": 912,
+        "delta_best_base64url": 912,
+        "hybrid_bits": 2044,
+        "hybrid_base32": 416,
+        "hybrid_base64url": 351,
+        "hybrid_deflate_base64url": 357,
+        "hybrid_best_base64url": 351,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 16411,
+        "z_encodeShare": 3759,
+        "z_level9": 3757,
+        "z_level9_Kdictionary": 1980,
+        "binary_bits": 6886,
+        "binary_base32": 1385,
+        "binary_base64url": 1157,
+        "binary_deflate_base64url": 1081,
+        "binary_best_base64url": 1081,
+        "delta_bits": 6170,
+        "delta_base32": 1242,
+        "delta_base64url": 1039,
+        "delta_deflate_base64url": 991,
+        "delta_best_base64url": 991
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 15942,
+        "z_encodeShare": 3640,
+        "z_level9": 3639,
+        "z_level9_Kdictionary": 1968,
+        "binary_bits": 6464,
+        "binary_base32": 1300,
+        "binary_base64url": 1087,
+        "binary_deflate_base64url": 1004,
+        "binary_best_base64url": 1004,
+        "delta_bits": 5759,
+        "delta_base32": 1159,
+        "delta_base64url": 969,
+        "delta_deflate_base64url": 919,
+        "delta_best_base64url": 919,
+        "hybrid_bits": 2073,
+        "hybrid_base32": 422,
+        "hybrid_base64url": 356,
+        "hybrid_deflate_base64url": 363,
+        "hybrid_best_base64url": 356,
+        "hybrid_loader_equivalent": 1
+      },
+      "bl/portable": {
+        "json_minified_bytes": 14511,
+        "z_encodeShare": 3052,
+        "z_level9": 3052,
+        "z_level9_Kdictionary": 1940,
+        "binary_bits": 5802,
+        "binary_base32": 1168,
+        "binary_base64url": 977,
+        "binary_deflate_base64url": 893,
+        "binary_best_base64url": 893,
+        "delta_bits": 5730,
+        "delta_base32": 1154,
+        "delta_base64url": 965,
+        "delta_deflate_base64url": 912,
+        "delta_best_base64url": 912,
+        "hybrid_bits": 2044,
+        "hybrid_base32": 416,
+        "hybrid_base64url": 351,
+        "hybrid_deflate_base64url": 357,
+        "hybrid_best_base64url": 351,
+        "hybrid_loader_equivalent": 1
+      }
+    },
+    "Survival runs": {
+      "current/exact": {
+        "json_minified_bytes": 7374,
+        "z_encodeShare": 3004,
+        "z_level9": 3004,
+        "z_level9_Kdictionary": 1135,
+        "binary_bits": 3535,
+        "binary_base32": 715,
+        "binary_base64url": 599,
+        "binary_deflate_base64url": 584,
+        "binary_best_base64url": 584,
+        "delta_bits": 2778,
+        "delta_base32": 563,
+        "delta_base64url": 473,
+        "delta_deflate_base64url": 451,
+        "delta_best_base64url": 451,
+        "loader_equivalent": 1
+      },
+      "current/semantic": {
+        "json_minified_bytes": 7095,
+        "z_encodeShare": 2871,
+        "z_level9": 2871,
+        "z_level9_Kdictionary": 1113,
+        "binary_bits": 3191,
+        "binary_base32": 646,
+        "binary_base64url": 541,
+        "binary_deflate_base64url": 525,
+        "binary_best_base64url": 525,
+        "delta_bits": 2441,
+        "delta_base32": 496,
+        "delta_base64url": 417,
+        "delta_deflate_base64url": 392,
+        "delta_best_base64url": 392,
+        "hybrid_bits": 2016,
+        "hybrid_base32": 411,
+        "hybrid_base64url": 345,
+        "hybrid_deflate_base64url": 343,
+        "hybrid_best_base64url": 343,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 5664,
+        "z_encodeShare": 2288,
+        "z_level9": 2285,
+        "z_level9_Kdictionary": 1081,
+        "binary_bits": 2529,
+        "binary_base32": 513,
+        "binary_base64url": 432,
+        "binary_deflate_base64url": 409,
+        "binary_best_base64url": 409,
+        "delta_bits": 2412,
+        "delta_base32": 490,
+        "delta_base64url": 412,
+        "delta_deflate_base64url": 384,
+        "delta_best_base64url": 384,
+        "hybrid_bits": 1987,
+        "hybrid_base32": 405,
+        "hybrid_base64url": 341,
+        "hybrid_deflate_base64url": 337,
+        "hybrid_best_base64url": 337,
+        "hybrid_loader_equivalent": 1,
+        "loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 13611,
+        "z_encodeShare": 3509,
+        "z_level9": 3499,
+        "z_level9_Kdictionary": 1515,
+        "binary_bits": 6724,
+        "binary_base32": 1352,
+        "binary_base64url": 1131,
+        "binary_deflate_base64url": 988,
+        "binary_best_base64url": 988,
+        "delta_bits": 5800,
+        "delta_base32": 1168,
+        "delta_base64url": 976,
+        "delta_deflate_base64url": 801,
+        "delta_best_base64url": 801
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 13188,
+        "z_encodeShare": 3379,
+        "z_level9": 3369,
+        "z_level9_Kdictionary": 1496,
+        "binary_bits": 5984,
+        "binary_base32": 1204,
+        "binary_base64url": 1007,
+        "binary_deflate_base64url": 877,
+        "binary_best_base64url": 877,
+        "delta_bits": 5067,
+        "delta_base32": 1021,
+        "delta_base64url": 855,
+        "delta_deflate_base64url": 748,
+        "delta_best_base64url": 748,
+        "hybrid_bits": 4642,
+        "hybrid_base32": 936,
+        "hybrid_base64url": 784,
+        "hybrid_deflate_base64url": 701,
+        "hybrid_best_base64url": 701
+      },
+      "bl/portable": {
+        "json_minified_bytes": 11757,
+        "z_encodeShare": 2796,
+        "z_level9": 2788,
+        "z_level9_Kdictionary": 1467,
+        "binary_bits": 5322,
+        "binary_base32": 1072,
+        "binary_base64url": 897,
+        "binary_deflate_base64url": 767,
+        "binary_best_base64url": 767,
+        "delta_bits": 5038,
+        "delta_base32": 1015,
+        "delta_base64url": 849,
+        "delta_deflate_base64url": 740,
+        "delta_best_base64url": 740,
+        "hybrid_bits": 4613,
+        "hybrid_base32": 930,
+        "hybrid_base64url": 779,
+        "hybrid_deflate_base64url": 693,
+        "hybrid_best_base64url": 693
+      }
+    },
+    "supplied sample": {
+      "current/exact": {
+        "json_minified_bytes": 7330,
+        "z_encodeShare": 2583,
+        "z_level9": 2579,
+        "z_level9_Kdictionary": 611,
+        "binary_bits": 2902,
+        "binary_base32": 588,
+        "binary_base64url": 493,
+        "binary_deflate_base64url": 500,
+        "binary_best_base64url": 493,
+        "delta_bits": 1833,
+        "delta_base32": 374,
+        "delta_base64url": 316,
+        "delta_deflate_base64url": 315,
+        "delta_best_base64url": 315
+      },
+      "current/semantic": {
+        "json_minified_bytes": 6789,
+        "z_encodeShare": 2444,
+        "z_level9": 2441,
+        "z_level9_Kdictionary": 592,
+        "binary_bits": 2282,
+        "binary_base32": 464,
+        "binary_base64url": 391,
+        "binary_deflate_base64url": 397,
+        "binary_best_base64url": 391,
+        "delta_bits": 1224,
+        "delta_base32": 252,
+        "delta_base64url": 213,
+        "delta_deflate_base64url": 203,
+        "delta_best_base64url": 203,
+        "hybrid_bits": 1436,
+        "hybrid_base32": 295,
+        "hybrid_base64url": 249,
+        "hybrid_deflate_base64url": 236,
+        "hybrid_best_base64url": 236,
+        "hybrid_loader_equivalent": 1
+      },
+      "current/portable": {
+        "json_minified_bytes": 5355,
+        "z_encodeShare": 1852,
+        "z_level9": 1848,
+        "z_level9_Kdictionary": 579,
+        "binary_bits": 1620,
+        "binary_base32": 332,
+        "binary_base64url": 280,
+        "binary_deflate_base64url": 287,
+        "binary_best_base64url": 280,
+        "delta_bits": 1217,
+        "delta_base32": 251,
+        "delta_base64url": 213,
+        "delta_deflate_base64url": 201,
+        "delta_best_base64url": 201,
+        "hybrid_bits": 1429,
+        "hybrid_base32": 293,
+        "hybrid_base64url": 248,
+        "hybrid_deflate_base64url": 235,
+        "hybrid_best_base64url": 235,
+        "hybrid_loader_equivalent": 1
+      },
+      "bl/exact": {
+        "json_minified_bytes": 11819,
+        "z_encodeShare": 2955,
+        "z_level9": 2941,
+        "z_level9_Kdictionary": 876,
+        "binary_bits": 5765,
+        "binary_base32": 1161,
+        "binary_base64url": 971,
+        "binary_deflate_base64url": 793,
+        "binary_best_base64url": 793,
+        "delta_bits": 4691,
+        "delta_base32": 946,
+        "delta_base64url": 792,
+        "delta_deflate_base64url": 593,
+        "delta_best_base64url": 593
+      },
+      "bl/semantic": {
+        "json_minified_bytes": 11134,
+        "z_encodeShare": 2795,
+        "z_level9": 2777,
+        "z_level9_Kdictionary": 829,
+        "binary_bits": 4749,
+        "binary_base32": 957,
+        "binary_base64url": 801,
+        "binary_deflate_base64url": 653,
+        "binary_best_base64url": 653,
+        "delta_bits": 3686,
+        "delta_base32": 745,
+        "delta_base64url": 624,
+        "delta_deflate_base64url": 472,
+        "delta_best_base64url": 472,
+        "hybrid_bits": 3898,
+        "hybrid_base32": 787,
+        "hybrid_base64url": 660,
+        "hybrid_deflate_base64url": 509,
+        "hybrid_best_base64url": 509
+      },
+      "bl/portable": {
+        "json_minified_bytes": 9700,
+        "z_encodeShare": 2205,
+        "z_level9": 2184,
+        "z_level9_Kdictionary": 815,
+        "binary_bits": 4087,
+        "binary_base32": 825,
+        "binary_base64url": 691,
+        "binary_deflate_base64url": 536,
+        "binary_best_base64url": 536,
+        "delta_bits": 3679,
+        "delta_base32": 743,
+        "delta_base64url": 623,
+        "delta_deflate_base64url": 471,
+        "delta_best_base64url": 471,
+        "hybrid_bits": 3891,
+        "hybrid_base32": 786,
+        "hybrid_base64url": 659,
+        "hybrid_deflate_base64url": 503,
+        "hybrid_best_base64url": 503
+      }
+    }
+  },
+  "random": {
+    "current/exact": {
+      "json_minified_bytes": {
+        "min": 4212,
+        "median": 9565,
+        "max": 17607,
+        "n": 200
+      },
+      "z_encodeShare": {
+        "min": 2025,
+        "median": 3868,
+        "max": 4725,
+        "n": 200
+      },
+      "z_level9": {
+        "min": 2025,
+        "median": 3864,
+        "max": 4724,
+        "n": 200
+      },
+      "z_level9_Kdictionary": {
+        "min": 300,
+        "median": 2027,
+        "max": 3260,
+        "n": 200
+      },
+      "binary_bits": {
+        "min": 1389,
+        "median": 4241,
+        "max": 7959,
+        "n": 200
+      },
+      "binary_base32": {
+        "min": 285,
+        "median": 856,
+        "max": 1599,
+        "n": 200
+      },
+      "binary_base64url": {
+        "min": 241,
+        "median": 717,
+        "max": 1336,
+        "n": 200
+      },
+      "binary_deflate_base64url": {
+        "min": 248,
+        "median": 684,
+        "max": 1240,
+        "n": 200
+      },
+      "binary_best_base64url": {
+        "min": 241,
+        "median": 684,
+        "max": 1240,
+        "n": 200
+      },
+      "delta_bits": {
+        "min": 647,
+        "median": 3664,
+        "max": 7931,
+        "n": 200
+      },
+      "delta_base32": {
+        "min": 137,
+        "median": 740,
+        "max": 1594,
+        "n": 200
+      },
+      "delta_base64url": {
+        "min": 117,
+        "median": 620,
+        "max": 1332,
+        "n": 200
+      },
+      "delta_deflate_base64url": {
+        "min": 124,
+        "median": 589,
+        "max": 1220,
+        "n": 200
+      },
+      "delta_best_base64url": {
+        "min": 117,
+        "median": 589,
+        "max": 1220,
+        "n": 200
+      }
+    },
+    "current/semantic": {
+      "json_minified_bytes": {
+        "min": 4022,
+        "median": 9080,
+        "max": 17066,
+        "n": 200
+      },
+      "z_encodeShare": {
+        "min": 1952,
+        "median": 3723,
+        "max": 4584,
+        "n": 200
+      },
+      "z_level9": {
+        "min": 1953,
+        "median": 3720,
+        "max": 4577,
+        "n": 200
+      },
+      "z_level9_Kdictionary": {
+        "min": 293,
+        "median": 2012,
+        "max": 3224,
+        "n": 200
+      },
+      "binary_bits": {
+        "min": 1315,
+        "median": 3759,
+        "max": 7339,
+        "n": 200
+      },
+      "binary_base32": {
+        "min": 271,
+        "median": 759,
+        "max": 1475,
+        "n": 200
+      },
+      "binary_base64url": {
+        "min": 229,
+        "median": 636,
+        "max": 1233,
+        "n": 200
+      },
+      "binary_deflate_base64url": {
+        "min": 236,
+        "median": 612,
+        "max": 1049,
+        "n": 200
+      },
+      "binary_best_base64url": {
+        "min": 229,
+        "median": 612,
+        "max": 1049,
+        "n": 200
+      },
+      "delta_bits": {
+        "min": 483,
+        "median": 3121,
+        "max": 7322,
+        "n": 200
+      },
+      "delta_base32": {
+        "min": 104,
+        "median": 632,
+        "max": 1472,
+        "n": 200
+      },
+      "delta_base64url": {
+        "min": 91,
+        "median": 531,
+        "max": 1231,
+        "n": 200
+      },
+      "delta_deflate_base64url": {
+        "min": 97,
+        "median": 507,
+        "max": 1160,
+        "n": 200
+      },
+      "delta_best_base64url": {
+        "min": 91,
+        "median": 507,
+        "max": 1160,
+        "n": 200
+      },
+      "hybrid_bits": {
+        "min": 581,
+        "median": 2047,
+        "max": 4435,
+        "n": 200
+      },
+      "hybrid_base32": {
+        "min": 124,
+        "median": 417,
+        "max": 895,
+        "n": 200
+      },
+      "hybrid_base64url": {
+        "min": 107,
+        "median": 351,
+        "max": 749,
+        "n": 200
+      },
+      "hybrid_deflate_base64url": {
+        "min": 113,
+        "median": 357,
+        "max": 756,
+        "n": 200
+      },
+      "hybrid_best_base64url": {
+        "min": 107,
+        "median": 351,
+        "max": 749,
+        "n": 200
+      },
+      "hybrid_loader_equivalent": {
+        "min": 1,
+        "median": 1,
+        "max": 1,
+        "n": 200
+      }
+    },
+    "current/portable": {
+      "json_minified_bytes": {
+        "min": 2591,
+        "median": 7648,
+        "max": 15635,
+        "n": 200
+      },
+      "z_encodeShare": {
+        "min": 1351,
+        "median": 3125,
+        "max": 3819,
+        "n": 200
+      },
+      "z_level9": {
+        "min": 1351,
+        "median": 3123,
+        "max": 3812,
+        "n": 200
+      },
+      "z_level9_Kdictionary": {
+        "min": 264,
+        "median": 1944,
+        "max": 2696,
+        "n": 200
+      },
+      "binary_bits": {
+        "min": 653,
+        "median": 3084,
+        "max": 6422,
+        "n": 200
+      },
+      "binary_base32": {
+        "min": 138,
+        "median": 624,
+        "max": 1292,
+        "n": 200
+      },
+      "binary_base64url": {
+        "min": 119,
+        "median": 524,
+        "max": 1080,
+        "n": 200
+      },
+      "binary_deflate_base64url": {
+        "min": 123,
+        "median": 480,
+        "max": 939,
+        "n": 200
+      },
+      "binary_best_base64url": {
+        "min": 119,
+        "median": 480,
+        "max": 939,
+        "n": 200
+      },
+      "delta_bits": {
+        "min": 483,
+        "median": 2896,
+        "max": 6385,
+        "n": 200
+      },
+      "delta_base32": {
+        "min": 104,
+        "median": 587,
+        "max": 1285,
+        "n": 200
+      },
+      "delta_base64url": {
+        "min": 91,
+        "median": 492,
+        "max": 1075,
+        "n": 200
+      },
+      "delta_deflate_base64url": {
+        "min": 97,
+        "median": 465,
+        "max": 991,
+        "n": 200
+      },
+      "delta_best_base64url": {
+        "min": 91,
+        "median": 465,
+        "max": 991,
+        "n": 200
+      },
+      "hybrid_bits": {
+        "min": 552,
+        "median": 1843,
+        "max": 3498,
+        "n": 200
+      },
+      "hybrid_base32": {
+        "min": 118,
+        "median": 376,
+        "max": 707,
+        "n": 200
+      },
+      "hybrid_base64url": {
+        "min": 101,
+        "median": 317,
+        "max": 593,
+        "n": 200
+      },
+      "hybrid_deflate_base64url": {
+        "min": 108,
+        "median": 320,
+        "max": 600,
+        "n": 200
+      },
+      "hybrid_best_base64url": {
+        "min": 101,
+        "median": 316,
+        "max": 593,
+        "n": 200
+      },
+      "hybrid_loader_equivalent": {
+        "min": 1,
+        "median": 1,
+        "max": 1,
+        "n": 200
+      }
+    },
+    "bl/exact": {
+      "json_minified_bytes": {
+        "min": 4229,
+        "median": 12157,
+        "max": 21409,
+        "n": 200
+      },
+      "z_encodeShare": {
+        "min": 2131,
+        "median": 4300,
+        "max": 5285,
+        "n": 200
+      },
+      "z_level9": {
+        "min": 2131,
+        "median": 4299,
+        "max": 5280,
+        "n": 200
+      },
+      "z_level9_Kdictionary": {
+        "min": 300,
+        "median": 2335,
+        "max": 3732,
+        "n": 200
+      },
+      "binary_bits": {
+        "min": 1488,
+        "median": 5555,
+        "max": 9968,
+        "n": 200
+      },
+      "binary_base32": {
+        "min": 305,
+        "median": 1119,
+        "max": 2001,
+        "n": 200
+      },
+      "binary_base64url": {
+        "min": 257,
+        "median": 936,
+        "max": 1671,
+        "n": 200
+      },
+      "binary_deflate_base64url": {
+        "min": 264,
+        "median": 875,
+        "max": 1529,
+        "n": 200
+      },
+      "binary_best_base64url": {
+        "min": 257,
+        "median": 875,
+        "max": 1529,
+        "n": 200
+      },
+      "delta_bits": {
+        "min": 721,
+        "median": 4911,
+        "max": 9762,
+        "n": 200
+      },
+      "delta_base32": {
+        "min": 152,
+        "median": 990,
+        "max": 1960,
+        "n": 200
+      },
+      "delta_base64url": {
+        "min": 131,
+        "median": 828,
+        "max": 1637,
+        "n": 200
+      },
+      "delta_deflate_base64url": {
+        "min": 137,
+        "median": 792,
+        "max": 1433,
+        "n": 200
+      },
+      "delta_best_base64url": {
+        "min": 131,
+        "median": 792,
+        "max": 1433,
+        "n": 200
+      }
+    },
+    "bl/semantic": {
+      "json_minified_bytes": {
+        "min": 4022,
+        "median": 11624,
+        "max": 20748,
+        "n": 200
+      },
+      "z_encodeShare": {
+        "min": 2024,
+        "median": 4148,
+        "max": 5144,
+        "n": 200
+      },
+      "z_level9": {
+        "min": 2024,
+        "median": 4149,
+        "max": 5139,
+        "n": 200
+      },
+      "z_level9_Kdictionary": {
+        "min": 293,
+        "median": 2315,
+        "max": 3699,
+        "n": 200
+      },
+      "binary_bits": {
+        "min": 1342,
+        "median": 4872,
+        "max": 9018,
+        "n": 200
+      },
+      "binary_base32": {
+        "min": 276,
+        "median": 982,
+        "max": 1811,
+        "n": 200
+      },
+      "binary_base64url": {
+        "min": 233,
+        "median": 821,
+        "max": 1513,
+        "n": 200
+      },
+      "binary_deflate_base64url": {
+        "min": 240,
+        "median": 772,
+        "max": 1399,
+        "n": 200
+      },
+      "binary_best_base64url": {
+        "min": 233,
+        "median": 771,
+        "max": 1399,
+        "n": 200
+      },
+      "delta_bits": {
+        "min": 582,
+        "median": 4282,
+        "max": 8955,
+        "n": 200
+      },
+      "delta_base32": {
+        "min": 124,
+        "median": 864,
+        "max": 1799,
+        "n": 200
+      },
+      "delta_base64url": {
+        "min": 107,
+        "median": 724,
+        "max": 1503,
+        "n": 200
+      },
+      "delta_deflate_base64url": {
+        "min": 113,
+        "median": 687,
+        "max": 1329,
+        "n": 200
+      },
+      "delta_best_base64url": {
+        "min": 107,
+        "median": 687,
+        "max": 1329,
+        "n": 200
+      },
+      "hybrid_bits": {
+        "min": 653,
+        "median": 3107,
+        "max": 6459,
+        "n": 200
+      },
+      "hybrid_base32": {
+        "min": 138,
+        "median": 629,
+        "max": 1299,
+        "n": 200
+      },
+      "hybrid_base64url": {
+        "min": 119,
+        "median": 528,
+        "max": 1087,
+        "n": 200
+      },
+      "hybrid_deflate_base64url": {
+        "min": 125,
+        "median": 516,
+        "max": 1009,
+        "n": 200
+      },
+      "hybrid_best_base64url": {
+        "min": 119,
+        "median": 513,
+        "max": 1009,
+        "n": 200
+      },
+      "hybrid_loader_equivalent": {
+        "min": 1,
+        "median": 1,
+        "max": 1,
+        "n": 1
+      }
+    },
+    "bl/portable": {
+      "json_minified_bytes": {
+        "min": 2591,
+        "median": 10190,
+        "max": 19317,
+        "n": 200
+      },
+      "z_encodeShare": {
+        "min": 1435,
+        "median": 3527,
+        "max": 4519,
+        "n": 200
+      },
+      "z_level9": {
+        "min": 1435,
+        "median": 3524,
+        "max": 4500,
+        "n": 200
+      },
+      "z_level9_Kdictionary": {
+        "min": 264,
+        "median": 2239,
+        "max": 3181,
+        "n": 200
+      },
+      "binary_bits": {
+        "min": 680,
+        "median": 4140,
+        "max": 8356,
+        "n": 200
+      },
+      "binary_base32": {
+        "min": 144,
+        "median": 836,
+        "max": 1679,
+        "n": 200
+      },
+      "binary_base64url": {
+        "min": 123,
+        "median": 700,
+        "max": 1403,
+        "n": 200
+      },
+      "binary_deflate_base64url": {
+        "min": 129,
+        "median": 649,
+        "max": 1291,
+        "n": 200
+      },
+      "binary_best_base64url": {
+        "min": 123,
+        "median": 649,
+        "max": 1291,
+        "n": 200
+      },
+      "delta_bits": {
+        "min": 553,
+        "median": 3971,
+        "max": 8242,
+        "n": 200
+      },
+      "delta_base32": {
+        "min": 118,
+        "median": 802,
+        "max": 1656,
+        "n": 200
+      },
+      "delta_base64url": {
+        "min": 103,
+        "median": 672,
+        "max": 1384,
+        "n": 200
+      },
+      "delta_deflate_base64url": {
+        "min": 109,
+        "median": 627,
+        "max": 1287,
+        "n": 200
+      },
+      "delta_best_base64url": {
+        "min": 103,
+        "median": 627,
+        "max": 1287,
+        "n": 200
+      },
+      "hybrid_bits": {
+        "min": 624,
+        "median": 2855,
+        "max": 5518,
+        "n": 200
+      },
+      "hybrid_base32": {
+        "min": 132,
+        "median": 579,
+        "max": 1111,
+        "n": 200
+      },
+      "hybrid_base64url": {
+        "min": 113,
+        "median": 485,
+        "max": 929,
+        "n": 200
+      },
+      "hybrid_deflate_base64url": {
+        "min": 120,
+        "median": 485,
+        "max": 871,
+        "n": 200
+      },
+      "hybrid_best_base64url": {
+        "min": 113,
+        "median": 480,
+        "max": 871,
+        "n": 200
+      },
+      "hybrid_loader_equivalent": {
+        "min": 1,
+        "median": 1,
+        "max": 1,
+        "n": 1
+      }
+    }
+  },
+  "slots": {
+    "campaign": {
+      "fresh": {
+        "existing_code_chars": 23,
+        "existing_code_with_dashes": 27,
+        "existing_plus_score_chars": 26,
+        "score": 0,
+        "generic_delta_chars": 6,
+        "generic_delta_with_dashes": 7
+      },
+      "firstCastle": {
+        "existing_code_chars": 36,
+        "existing_code_with_dashes": 43,
+        "existing_plus_score_chars": 40,
+        "score": 31250,
+        "generic_delta_chars": 78,
+        "generic_delta_with_dashes": 93
+      },
+      "mid": {
+        "existing_code_chars": 58,
+        "existing_code_with_dashes": 69,
+        "existing_plus_score_chars": 63,
+        "score": 212400,
+        "generic_delta_chars": 154,
+        "generic_delta_with_dashes": 184
+      },
+      "full": {
+        "existing_code_chars": 96,
+        "existing_code_with_dashes": 115,
+        "existing_plus_score_chars": 103,
+        "score": 4812350,
+        "generic_delta_chars": 355,
+        "generic_delta_with_dashes": 425
+      }
+    },
+    "classic": {
+      "start of a run (1-1, no kits)": {
+        "ClassicResume (main, no heroKits), semantic": {
+          "chars": 19,
+          "with_dashes": 22,
+          "json_bytes": 244,
+          "z_chars": 229
+        },
+        "ClassicResume + PR #193 heroKits, semantic": {
+          "chars": 19,
+          "with_dashes": 22,
+          "json_bytes": 244,
+          "z_chars": 229
+        },
+        "ClassicResume + heroKits, exact (savedAt kept)": {
+          "chars": 32,
+          "with_dashes": 38,
+          "json_bytes": 268,
+          "z_chars": 256
+        },
+        "planned B-L file, semantic": {
+          "chars": 19,
+          "with_dashes": 22,
+          "json_bytes": 409,
+          "z_chars": 312
+        }
+      },
+      "mid run (3-2, checkpoint, 2 kits)": {
+        "ClassicResume (main, no heroKits), semantic": {
+          "chars": 33,
+          "with_dashes": 39,
+          "json_bytes": 272,
+          "z_chars": 257
+        },
+        "ClassicResume + PR #193 heroKits, semantic": {
+          "chars": 50,
+          "with_dashes": 59,
+          "json_bytes": 406,
+          "z_chars": 325
+        },
+        "ClassicResume + heroKits, exact (savedAt kept)": {
+          "chars": 63,
+          "with_dashes": 75,
+          "json_bytes": 430,
+          "z_chars": 351
+        },
+        "planned B-L file, semantic": {
+          "chars": 47,
+          "with_dashes": 56,
+          "json_bytes": 544,
+          "z_chars": 384
+        }
+      },
+      "late run (8-3, 8 kits, hard)": {
+        "ClassicResume (main, no heroKits), semantic": {
+          "chars": 30,
+          "with_dashes": 35,
+          "json_bytes": 253,
+          "z_chars": 241
+        },
+        "ClassicResume + PR #193 heroKits, semantic": {
+          "chars": 94,
+          "with_dashes": 112,
+          "json_bytes": 756,
+          "z_chars": 421
+        },
+        "ClassicResume + heroKits, exact (savedAt kept)": {
+          "chars": 108,
+          "with_dashes": 129,
+          "json_bytes": 780,
+          "z_chars": 447
+        },
+        "planned B-L file, semantic": {
+          "chars": 112,
+          "with_dashes": 134,
+          "json_bytes": 970,
+          "z_chars": 480
+        }
+      },
+      "Survival (ll-4-1, 5 fallen, 6 kits)": {
+        "ClassicResume (main, no heroKits), semantic": {
+          "chars": 21,
+          "with_dashes": 25,
+          "json_bytes": 309,
+          "z_chars": 285
+        },
+        "ClassicResume + PR #193 heroKits, semantic": {
+          "chars": 65,
+          "with_dashes": 77,
+          "json_bytes": 683,
+          "z_chars": 407
+        },
+        "ClassicResume + heroKits, exact (savedAt kept)": {
+          "chars": 78,
+          "with_dashes": 93,
+          "json_bytes": 707,
+          "z_chars": 431
+        },
+        "planned B-L file, semantic": {
+          "chars": 86,
+          "with_dashes": 103,
+          "json_bytes": 903,
+          "z_chars": 505
+        }
+      },
+      "max (15 kits, every rule changed)": {
+        "ClassicResume (main, no heroKits), semantic": {
+          "chars": 41,
+          "with_dashes": 49,
+          "json_bytes": 289,
+          "z_chars": 263
+        },
+        "ClassicResume + PR #193 heroKits, semantic": {
+          "chars": 188,
+          "with_dashes": 225,
+          "json_bytes": 1333,
+          "z_chars": 501
+        },
+        "ClassicResume + heroKits, exact (savedAt kept)": {
+          "chars": 201,
+          "with_dashes": 241,
+          "json_bytes": 1357,
+          "z_chars": 528
+        },
+        "planned B-L file, semantic": {
+          "chars": 200,
+          "with_dashes": 239,
+          "json_bytes": 1683,
+          "z_chars": 765
+        }
+      }
+    },
+    "sampleBL": [
+      88,
+      90,
+      91,
+      91,
+      90,
+      91,
+      91,
+      91,
+      92
+    ],
+    "sampleCurrent": [
+      70,
+      73,
+      74
+    ]
+  },
+  "corruption": {
+    "z_sample_one_char": {
+      "trials": 2000,
+      "rejected": 1865,
+      "accepted_but_different": 135,
+      "accepted_identical": 0
+    },
+    "z_sample_truncated": {
+      "trials": 500,
+      "rejected": 500,
+      "accepted": 0
+    },
+    "profile_b64_crc32": {
+      "code_chars": 821,
+      "one_char": {
+        "typo": 3000
+      },
+      "two_chars": {
+        "typo": 3000
+      },
+      "adjacent_swap": {
+        "typo": 1000
+      },
+      "truncated": {
+        "typo": 1000
+      },
+      "random_garbage": {
+        "typo": 3000
+      },
+      "version_2": "newer"
+    },
+    "classic_slot_b32_crc16": {
+      "code_chars": 105,
+      "code": "BVS44-ER600-JPZY0-H8KJH-54EG0-GM9T8-W8K51-P4G02-26C4W-W3ZB4-15F17-H0B0G-BR9W8-2R8GJ-508P2-8C0GJ-J7808-A4RWN-C4H11-1362E-E1ZNJ",
+      "one_char_exhaustive": {
+        "typo": 3255
+      },
+      "two_chars": {
+        "typo": 5000
+      },
+      "adjacent_swap_exhaustive": {
+        "typo": 96
+      },
+      "truncated_every_length": {
+        "typo": 104
+      },
+      "random_same_length": {
+        "typo": 20000
+      },
+      "version_2": "newer",
+      "lower_case_with_spaces_O_for_0": "accepted_same"
+    },
+    "campaign_existing_one_char_exhaustive": {
+      "code_chars": 58,
+      "typo": 1798
+    }
+  },
+  "crypto": {
+    "payload_bytes": 131,
+    "plaintext_b64_chars": 184,
+    "aesgcm_salt16_iv12_tag16_b64_chars": 237,
+    "aesgcm_salt8_ivfixed_tag12_b64_chars": 205,
+    "plaintext_b32_chars": 217,
+    "aesgcm_salt16_iv12_tag16_b32_chars": 288,
+    "aesgcm_salt8_ivfixed_tag12_b32_chars": 250,
+    "pbkdf2_sha256_600k_ms_node": 107,
+    "pin4_space": 10000,
+    "pin6_space": 1000000,
+    "worst_case_hours_pin4_one_js_core": 0.3,
+    "worst_case_days_pin6_one_js_core": 1.2
+  },
+  "notes": [],
+  "sample": {
+    "code_chars": 2941,
+    "decodes_to_same_json": true,
+    "minified_bytes": 11819,
+    "reencoded_encodeShare": 2955,
+    "reencoded_zlib9": 2941
+  },
+  "breakdown": {
+    "fresh/current/semantic": {
+      "smbc.settings": 2,
+      "smbc.progress": 2
+    },
+    "fresh/bl/semantic": {
+      "smbc.settings": 2,
+      "smbc.progress": 2
+    },
+    "typical (mid-game)/current/semantic": {
+      "smbc.settings": 137,
+      "smbc.progress": 16,
+      "smbc.save.1": 753,
+      "smbc.save.1 (campaign codec)": 325,
+      "smbc-classic-resume-smb": 152
+    },
+    "typical (mid-game)/bl/semantic": {
+      "smbc.settings": 137,
+      "smbc.progress": 16,
+      "smbc.save.1": 753,
+      "smbc.save.1 (campaign codec)": 325,
+      "smbc-classic-file-smb-1": 178
+    },
+    "late / end-game/current/semantic": {
+      "smbc.settings": 447,
+      "smbc.progress": 31,
+      "smbc.save.1": 1754,
+      "smbc.save.1 (campaign codec)": 525,
+      "smbc.save.2": 753,
+      "smbc.save.2 (campaign codec)": 325,
+      "smbc.save.3": 371,
+      "smbc.save.3 (campaign codec)": 207,
+      "smbc-classic-resume-smb": 482,
+      "smbc-classic-resume-special": 567,
+      "smbc-classic-resume-lost": 455
+    },
+    "late / end-game/bl/semantic": {
+      "smbc.settings": 447,
+      "smbc.progress": 31,
+      "smbc.save.1": 1754,
+      "smbc.save.1 (campaign codec)": 525,
+      "smbc.save.2": 753,
+      "smbc.save.2 (campaign codec)": 325,
+      "smbc.save.3": 371,
+      "smbc.save.3 (campaign codec)": 207,
+      "smbc-classic-file-smb-1": 460,
+      "smbc-classic-file-smb-2": 508,
+      "smbc-classic-file-smb-3": 452,
+      "smbc-classic-file-special-1": 527,
+      "smbc-classic-file-special-2": 432,
+      "smbc-classic-file-special-3": 470,
+      "smbc-classic-file-lost-1": 414,
+      "smbc-classic-file-lost-2": 486,
+      "smbc-classic-file-lost-3": 569
+    },
+    "unusual settings + key bindings/current/semantic": {
+      "smbc.settings": 1477,
+      "smbc.progress": 2,
+      "smbc.save.1": 753,
+      "smbc.save.1 (campaign codec)": 325,
+      "smbc-classic-resume-smb": 158
+    },
+    "unusual settings + key bindings/bl/semantic": {
+      "smbc.settings": 1477,
+      "smbc.progress": 2,
+      "smbc.save.1": 753,
+      "smbc.save.1 (campaign codec)": 325,
+      "smbc-classic-file-smb-1": 132
+    },
+    "max values/current/semantic": {
+      "smbc.settings": 2854,
+      "smbc.progress": 137,
+      "smbc.save.1": 1756,
+      "smbc.save.1 (campaign codec)": 527,
+      "smbc.save.2": 1756,
+      "smbc.save.2 (campaign codec)": 527,
+      "smbc.save.3": 1758,
+      "smbc.save.3 (campaign codec)": 527,
+      "smbc-classic-resume-smb": 786,
+      "smbc-classic-resume-special": 970,
+      "smbc-classic-resume-lost": 844
+    },
+    "max values/bl/semantic": {
+      "smbc.settings": 2854,
+      "smbc.progress": 137,
+      "smbc.save.1": 1756,
+      "smbc.save.1 (campaign codec)": 527,
+      "smbc.save.2": 1756,
+      "smbc.save.2 (campaign codec)": 527,
+      "smbc.save.3": 1758,
+      "smbc.save.3 (campaign codec)": 527,
+      "smbc-classic-file-smb-1": 992,
+      "smbc-classic-file-smb-2": 1064,
+      "smbc-classic-file-smb-3": 936,
+      "smbc-classic-file-special-1": 1080,
+      "smbc-classic-file-special-2": 933,
+      "smbc-classic-file-special-3": 931,
+      "smbc-classic-file-lost-1": 954,
+      "smbc-classic-file-lost-2": 927,
+      "smbc-classic-file-lost-3": 1057
+    },
+    "fully unlocked (100%, runs finished)/current/semantic": {
+      "smbc.settings": 447,
+      "smbc.progress": 35,
+      "smbc.save.1": 1754,
+      "smbc.save.1 (campaign codec)": 525,
+      "smbc.save.2": 1754,
+      "smbc.save.2 (campaign codec)": 525,
+      "smbc.save.3": 1756,
+      "smbc.save.3 (campaign codec)": 525
+    },
+    "fully unlocked (100%, runs finished)/bl/semantic": {
+      "smbc.settings": 447,
+      "smbc.progress": 35,
+      "smbc.save.1": 1754,
+      "smbc.save.1 (campaign codec)": 525,
+      "smbc.save.2": 1754,
+      "smbc.save.2 (campaign codec)": 525,
+      "smbc.save.3": 1756,
+      "smbc.save.3 (campaign codec)": 525
+    },
+    "Survival runs/current/semantic": {
+      "smbc.settings": 447,
+      "smbc.progress": 16,
+      "smbc.save.1": 753,
+      "smbc.save.1 (campaign codec)": 325,
+      "smbc-classic-resume-smb": 341,
+      "smbc-classic-resume-special": 427,
+      "smbc-classic-resume-lost": 445
+    },
+    "Survival runs/bl/semantic": {
+      "smbc.settings": 447,
+      "smbc.progress": 16,
+      "smbc.save.1": 753,
+      "smbc.save.1 (campaign codec)": 325,
+      "smbc-classic-file-smb-1": 394,
+      "smbc-classic-file-smb-2": 481,
+      "smbc-classic-file-smb-3": 388,
+      "smbc-classic-file-special-1": 453,
+      "smbc-classic-file-special-2": 428,
+      "smbc-classic-file-special-3": 424,
+      "smbc-classic-file-lost-1": 398,
+      "smbc-classic-file-lost-2": 426,
+      "smbc-classic-file-lost-3": 453
+    },
+    "supplied sample/current/semantic": {
+      "smbc.settings": 32,
+      "smbc.progress": 61,
+      "smbc.save.1": 93,
+      "smbc.save.1 (campaign codec)": 156,
+      "smbc.save.2": 97,
+      "smbc.save.2 (campaign codec)": 173,
+      "smbc.save.3": 105,
+      "smbc.save.3 (campaign codec)": 175,
+      "smbc-classic-resume-smb": 264,
+      "smbc-classic-resume-special": 280,
+      "smbc-classic-resume-lost": 282
+    },
+    "supplied sample/bl/semantic": {
+      "smbc.settings": 32,
+      "smbc.progress": 61,
+      "smbc.save.1": 93,
+      "smbc.save.1 (campaign codec)": 156,
+      "smbc.save.2": 97,
+      "smbc.save.2 (campaign codec)": 173,
+      "smbc.save.3": 105,
+      "smbc.save.3 (campaign codec)": 175,
+      "smbc-classic-file-smb-1": 352,
+      "smbc-classic-file-smb-2": 364,
+      "smbc-classic-file-smb-3": 370,
+      "smbc-classic-file-special-1": 368,
+      "smbc-classic-file-special-2": 364,
+      "smbc-classic-file-special-3": 366,
+      "smbc-classic-file-lost-1": 370,
+      "smbc-classic-file-lost-2": 368,
+      "smbc-classic-file-lost-3": 372
+    }
+  },
+  "negative_controls": {
+    "loader_detects_dropped_level": true,
+    "loader_detects_cheat_unlock": true,
+    "loader_detects_classic_herokit": true,
+    "deepEq_detects_number": true
+  },
+  "checks": {
+    "total": 13442,
+    "failed": 0,
+    "failures": []
+  }
+}

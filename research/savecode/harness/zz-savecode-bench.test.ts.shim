@@ -1,0 +1,6 @@
+import { it, expect } from 'vitest';
+it('bench', async () => {
+  const m = await import(process.env.BENCH_FILE as string);
+  const r = await m.run();
+  expect(r).toBe('see results.json');
+}, 1200000);

@@ -1,0 +1,1076 @@
+{
+  "app": "smbc-remix",
+  "v": 1,
+  "exported": "2026-10-22",
+  "data": {
+    "smbc.settings": {
+      "v": 3,
+      "video": {
+        "integerScale": true,
+        "palette": "default",
+        "reduceFlashing": false,
+        "showFps": false
+      },
+      "audio": {
+        "master": 0.4,
+        "music": 1,
+        "sfx": 1,
+        "muted": false
+      },
+      "input": {
+        "bindings": [
+          {
+            "keyboard": {
+              "left": [
+                "ArrowLeft",
+                "KeyA"
+              ],
+              "right": [
+                "ArrowRight",
+                "KeyD"
+              ],
+              "up": [
+                "ArrowUp",
+                "KeyW"
+              ],
+              "down": [
+                "ArrowDown",
+                "KeyS"
+              ],
+              "jump": [
+                "KeyZ",
+                "Space",
+                "KeyK"
+              ],
+              "attack": [
+                "KeyX",
+                "ShiftLeft",
+                "KeyJ"
+              ],
+              "special": [
+                "KeyC",
+                "KeyL"
+              ],
+              "start": [
+                "Enter",
+                "Escape"
+              ],
+              "select": [
+                "ShiftRight",
+                "Backspace"
+              ],
+              "run": []
+            },
+            "gamepad": {
+              "left": [
+                "pad:14",
+                "pad:axis0-"
+              ],
+              "right": [
+                "pad:15",
+                "pad:axis0+"
+              ],
+              "up": [
+                "pad:12",
+                "pad:axis1-"
+              ],
+              "down": [
+                "pad:13",
+                "pad:axis1+"
+              ],
+              "jump": [
+                "pad:0",
+                "pad:1"
+              ],
+              "attack": [
+                "pad:2",
+                "pad:3"
+              ],
+              "special": [
+                "pad:5",
+                "pad:4"
+              ],
+              "start": [
+                "pad:9"
+              ],
+              "select": [
+                "pad:8"
+              ],
+              "run": []
+            },
+            "gamepadIndex": null
+          },
+          {
+            "keyboard": {
+              "left": [
+                "Numpad4"
+              ],
+              "right": [
+                "Numpad6"
+              ],
+              "up": [
+                "Numpad8"
+              ],
+              "down": [
+                "Numpad5",
+                "Numpad2"
+              ],
+              "jump": [
+                "Numpad0"
+              ],
+              "attack": [
+                "NumpadDecimal"
+              ],
+              "special": [
+                "NumpadEnter"
+              ],
+              "start": [
+                "NumpadAdd"
+              ],
+              "select": [
+                "NumpadSubtract"
+              ],
+              "run": []
+            },
+            "gamepad": {
+              "left": [
+                "pad:14",
+                "pad:axis0-"
+              ],
+              "right": [
+                "pad:15",
+                "pad:axis0+"
+              ],
+              "up": [
+                "pad:12",
+                "pad:axis1-"
+              ],
+              "down": [
+                "pad:13",
+                "pad:axis1+"
+              ],
+              "jump": [
+                "pad:0",
+                "pad:1"
+              ],
+              "attack": [
+                "pad:2",
+                "pad:3"
+              ],
+              "special": [
+                "pad:5",
+                "pad:4"
+              ],
+              "start": [
+                "pad:9"
+              ],
+              "select": [
+                "pad:8"
+              ],
+              "run": []
+            },
+            "gamepadIndex": null
+          }
+        ],
+        "touch": "auto",
+        "touchScale": 1,
+        "dpad": "fixed",
+        "keyHints": false
+      },
+      "assist": {
+        "allowLeftScroll": false,
+        "infiniteLives": false,
+        "invulnerable": false,
+        "infiniteTime": false,
+        "coyoteFrames": 0,
+        "fireRevertsToBig": false,
+        "safetyFloor": false,
+        "slowMotion": 1
+      },
+      "packs": [],
+      "announce": true,
+      "dev": false,
+      "devUnlock": "",
+      "backupReminders": false,
+      "homeScreen": {
+        "tipDone": false,
+        "noticeDone": false,
+        "offlineDone": false
+      },
+      "classicRules": "classic",
+      "classicMapDifficulty": "hard",
+      "classicCheats": {
+        "on": {
+          "allGroundIsBricks": false,
+          "allHammerBros": false,
+          "allWeaponsPierce": false,
+          "alwaysBreakBricks": false,
+          "bouncyPits": false,
+          "classicSamus": false,
+          "classicScreenScroll": false,
+          "classicSimon": false,
+          "everyoneCanStomp": false,
+          "evilHammerBros": false,
+          "extraCheckpoints": false,
+          "infiniteAmmo": false,
+          "infiniteLives": false,
+          "infiniteTime": false,
+          "invincible": false,
+          "waterMode": false
+        },
+        "unlocked": {
+          "allGroundIsBricks": false,
+          "allHammerBros": false,
+          "allWeaponsPierce": false,
+          "alwaysBreakBricks": false,
+          "bouncyPits": false,
+          "classicSamus": true,
+          "classicScreenScroll": true,
+          "classicSimon": true,
+          "everyoneCanStomp": true,
+          "evilHammerBros": false,
+          "extraCheckpoints": false,
+          "infiniteAmmo": false,
+          "infiniteLives": false,
+          "infiniteTime": false,
+          "invincible": false,
+          "waterMode": false
+        },
+        "stats": {
+          "enemiesDefeated": 0,
+          "enemiesStomped": 0,
+          "armouredDefeated": 0,
+          "bricksBroken": 0,
+          "ammoPickups": 0,
+          "cheepsDefeated": 0,
+          "hammerBrosDefeated": 0
+        },
+        "beaten": {
+          "smb": true,
+          "special": false,
+          "lost": true
+        },
+        "continuesUsed": 0,
+        "levelSelect": false
+      },
+      "classic": {
+        "lives": 3,
+        "whenHit": "lose-everything",
+        "attack": "normal",
+        "drops": "normal",
+        "enemySpeed": "normal",
+        "piranhas": "some",
+        "goombas": "off",
+        "gameMode": "all",
+        "musicSet": "character",
+        "expansion": "off",
+        "weapons": {
+          "bass": "water-shield",
+          "billFirst": "mg",
+          "billSecond": "spread",
+          "link": "bomb",
+          "megaman": "metal-blade",
+          "ryuStart": "shuriken",
+          "ryuExtra": "windmill",
+          "samus": "wave",
+          "simonStart": "hand-axe",
+          "simonExtra": "cross",
+          "sophia": "triple"
+        }
+      },
+      "classicDev": {
+        "yoshiMount": false,
+        "heroesOff": []
+      }
+    },
+    "smbc.progress": {
+      "v": 1,
+      "bestScore": 987650,
+      "lastCharacter": "link",
+      "reached": {},
+      "cleared": [],
+      "lost": {
+        "world9": true,
+        "letters": false,
+        "beaten": 2
+      },
+      "classicBeat": {
+        "smb": "hard",
+        "special": "none",
+        "lost": "normal"
+      }
+    },
+    "smbc.save.1": {
+      "v": 4,
+      "slot": 1,
+      "created": 1792627409905,
+      "updated": 1792627409905,
+      "character": "mario",
+      "character2": null,
+      "lives": 4,
+      "score": 123450,
+      "coins": 37,
+      "powerState": "small",
+      "hp": 0,
+      "kit": {
+        "found": 1
+      },
+      "powerState2": "small",
+      "hp2": 0,
+      "kit2": {},
+      "cleared": [
+        "1-0",
+        "1-1",
+        "1-2"
+      ],
+      "pages": [
+        "smb-1"
+      ],
+      "secrets": [],
+      "position": {
+        "page": "smb-1",
+        "node": "start"
+      },
+      "gameCleared": false,
+      "lastNode": {},
+      "pendingReveal": [],
+      "devUnlockAll": false,
+      "devAllHeroes": false,
+      "devGateOpen": false,
+      "freed": [
+        "mario"
+      ],
+      "tutorials": [
+        "mario"
+      ],
+      "met": [
+        "mario"
+      ],
+      "inventoryUnlocked": false,
+      "bonusOpen": true,
+      "bonusGuard": false,
+      "heroInventory": {},
+      "heroItemsNext": {},
+      "bonusNext": 0,
+      "spadeBoard": 0,
+      "spadeTaken": [],
+      "devInventory": false,
+      "heroKits": {},
+      "wallet": false,
+      "explained": []
+    },
+    "smbc.save.2": {
+      "v": 4,
+      "slot": 2,
+      "created": 1792627409906,
+      "updated": 1792627409906,
+      "character": "link",
+      "character2": null,
+      "lives": 5,
+      "score": 246900,
+      "coins": 38,
+      "powerState": "full",
+      "hp": 6,
+      "kit": {
+        "found": 1
+      },
+      "powerState2": "small",
+      "hp2": 0,
+      "kit2": {},
+      "cleared": [
+        "1-0",
+        "1-1",
+        "1-2",
+        "1-3",
+        "1-4"
+      ],
+      "pages": [
+        "smb-1"
+      ],
+      "secrets": [],
+      "position": {
+        "page": "smb-1",
+        "node": "start"
+      },
+      "gameCleared": false,
+      "lastNode": {},
+      "pendingReveal": [],
+      "devUnlockAll": false,
+      "devAllHeroes": false,
+      "devGateOpen": false,
+      "freed": [
+        "mario",
+        "link"
+      ],
+      "tutorials": [
+        "link"
+      ],
+      "met": [
+        "mario",
+        "link"
+      ],
+      "inventoryUnlocked": false,
+      "bonusOpen": true,
+      "bonusGuard": false,
+      "heroInventory": {},
+      "heroItemsNext": {},
+      "bonusNext": 0,
+      "spadeBoard": 0,
+      "spadeTaken": [],
+      "devInventory": false,
+      "heroKits": {},
+      "wallet": false,
+      "explained": []
+    },
+    "smbc.save.3": {
+      "v": 4,
+      "slot": 3,
+      "created": 1792627409906,
+      "updated": 1792627409906,
+      "character": "megaman",
+      "character2": null,
+      "lives": 6,
+      "score": 370350,
+      "coins": 39,
+      "powerState": "full",
+      "hp": 28,
+      "kit": {
+        "found": 1
+      },
+      "powerState2": "small",
+      "hp2": 0,
+      "kit2": {},
+      "cleared": [
+        "1-0",
+        "1-1",
+        "1-2",
+        "1-3",
+        "1-4",
+        "2-1",
+        "2-2"
+      ],
+      "pages": [
+        "smb-1"
+      ],
+      "secrets": [],
+      "position": {
+        "page": "smb-1",
+        "node": "start"
+      },
+      "gameCleared": false,
+      "lastNode": {},
+      "pendingReveal": [],
+      "devUnlockAll": false,
+      "devAllHeroes": false,
+      "devGateOpen": false,
+      "freed": [
+        "mario",
+        "megaman"
+      ],
+      "tutorials": [
+        "megaman"
+      ],
+      "met": [
+        "mario",
+        "megaman"
+      ],
+      "inventoryUnlocked": false,
+      "bonusOpen": true,
+      "bonusGuard": false,
+      "heroInventory": {},
+      "heroItemsNext": {},
+      "bonusNext": 0,
+      "spadeBoard": 0,
+      "spadeTaken": [],
+      "devInventory": false,
+      "heroKits": {},
+      "wallet": false,
+      "explained": []
+    },
+    "smbc-classic-file-smb-1": {
+      "v": 1,
+      "levelId": "3-2",
+      "hero": "mario",
+      "score": 87650,
+      "coins": 13,
+      "lives": 3,
+      "powerState": "big",
+      "hp": 3,
+      "kit": {
+        "tier": 1,
+        "ammo": 21
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1216,
+        "y": 192
+      },
+      "continues": 0,
+      "rules": {
+        "difficulty": "easy",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000001
+    },
+    "smbc-classic-file-smb-2": {
+      "v": 1,
+      "levelId": "4-3",
+      "hero": "luigi",
+      "score": 175300,
+      "coins": 14,
+      "lives": 4,
+      "powerState": "fire",
+      "hp": 3,
+      "kit": {
+        "tier": 2,
+        "ammo": 22
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1232,
+        "y": 192
+      },
+      "continues": 0,
+      "rules": {
+        "difficulty": "normal",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000002
+    },
+    "smbc-classic-file-smb-3": {
+      "v": 1,
+      "levelId": "5-4",
+      "hero": "link",
+      "score": 262950,
+      "coins": 15,
+      "lives": 5,
+      "powerState": "big",
+      "hp": 3,
+      "kit": {
+        "tier": 0,
+        "ammo": 23
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1248,
+        "y": 192
+      },
+      "continues": 1,
+      "rules": {
+        "difficulty": "hard",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000003
+    },
+    "smbc-classic-file-special-1": {
+      "v": 1,
+      "levelId": "sp-3-1",
+      "hero": "samus",
+      "score": 350600,
+      "coins": 16,
+      "lives": 6,
+      "powerState": "fire",
+      "hp": 3,
+      "kit": {
+        "tier": 1,
+        "ammo": 24
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1264,
+        "y": 192
+      },
+      "continues": 0,
+      "rules": {
+        "difficulty": "easy",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000004
+    },
+    "smbc-classic-file-special-2": {
+      "v": 1,
+      "levelId": "sp-4-2",
+      "hero": "simon",
+      "score": 438250,
+      "coins": 17,
+      "lives": 2,
+      "powerState": "big",
+      "hp": 3,
+      "kit": {
+        "tier": 2,
+        "ammo": 25
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1280,
+        "y": 192
+      },
+      "continues": 0,
+      "rules": {
+        "difficulty": "normal",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000005
+    },
+    "smbc-classic-file-special-3": {
+      "v": 1,
+      "levelId": "sp-5-3",
+      "hero": "megaman",
+      "score": 525900,
+      "coins": 18,
+      "lives": 3,
+      "powerState": "fire",
+      "hp": 3,
+      "kit": {
+        "tier": 0,
+        "ammo": 26
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1296,
+        "y": 192
+      },
+      "continues": 1,
+      "rules": {
+        "difficulty": "hard",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000006
+    },
+    "smbc-classic-file-lost-1": {
+      "v": 1,
+      "levelId": "ll-3-4",
+      "hero": "bill",
+      "score": 613550,
+      "coins": 19,
+      "lives": 4,
+      "powerState": "big",
+      "hp": 3,
+      "kit": {
+        "tier": 1,
+        "ammo": 27
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1312,
+        "y": 192
+      },
+      "continues": 0,
+      "rules": {
+        "difficulty": "easy",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000007
+    },
+    "smbc-classic-file-lost-2": {
+      "v": 1,
+      "levelId": "ll-4-1",
+      "hero": "ryu",
+      "score": 701200,
+      "coins": 20,
+      "lives": 5,
+      "powerState": "fire",
+      "hp": 3,
+      "kit": {
+        "tier": 2,
+        "ammo": 28
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1328,
+        "y": 192
+      },
+      "continues": 0,
+      "rules": {
+        "difficulty": "normal",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000008
+    },
+    "smbc-classic-file-lost-3": {
+      "v": 1,
+      "levelId": "ll-5-2",
+      "hero": "sophia",
+      "score": 788850,
+      "coins": 21,
+      "lives": 6,
+      "powerState": "big",
+      "hp": 3,
+      "kit": {
+        "tier": 0,
+        "ammo": 29
+      },
+      "heroKits": {
+        "mario": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 0
+          }
+        },
+        "luigi": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 1
+          }
+        },
+        "link": {
+          "powerState": "big",
+          "hp": 3,
+          "kit": {
+            "tier": 2
+          }
+        },
+        "samus": {
+          "powerState": "fire",
+          "hp": 3,
+          "kit": {
+            "tier": 3
+          }
+        }
+      },
+      "checkpoint": {
+        "x": 1344,
+        "y": 192
+      },
+      "continues": 1,
+      "rules": {
+        "difficulty": "hard",
+        "gameMode": "allHeroes",
+        "more": {
+          "lives": 3,
+          "attack": "original",
+          "whenHit": "original",
+          "drops": "original",
+          "piranhas": "original",
+          "goombas": "original",
+          "enemySpeed": "original"
+        },
+        "weapons": {},
+        "disabled": []
+      },
+      "savedAt": 1792000000009
+    }
+  }
+}

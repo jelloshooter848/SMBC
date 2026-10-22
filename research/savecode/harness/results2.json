@@ -1,0 +1,5187 @@
+{
+  "sections": {
+    "random200/current": {
+      "settings.device": {
+        "n": 200,
+        "r1": 48726,
+        "chosen": 48476
+      },
+      "settings.options": {
+        "n": 200,
+        "r1": 7200,
+        "chosen": 7200
+      },
+      "settings.achieve": {
+        "n": 200,
+        "r1": 45700,
+        "chosen": 45100
+      },
+      "progress": {
+        "n": 200,
+        "r1": 5250,
+        "chosen": 5279
+      },
+      "campaign": {
+        "n": 489,
+        "r1": 150629,
+        "chosen": 116164
+      },
+      "classic": {
+        "n": 458,
+        "r1": 155402,
+        "chosen": 146430
+      }
+    },
+    "random200/bl": {
+      "settings.device": {
+        "n": 200,
+        "r1": 48726,
+        "chosen": 48476
+      },
+      "settings.options": {
+        "n": 200,
+        "r1": 7200,
+        "chosen": 7200
+      },
+      "settings.achieve": {
+        "n": 200,
+        "r1": 45700,
+        "chosen": 45100
+      },
+      "progress": {
+        "n": 200,
+        "r1": 5250,
+        "chosen": 5279
+      },
+      "campaign": {
+        "n": 489,
+        "r1": 150629,
+        "chosen": 116164
+      },
+      "bl": {
+        "n": 937,
+        "r1": 359027,
+        "chosen": 303332
+      }
+    },
+    "progressPct/current": {
+      "settings.device": {
+        "n": 190,
+        "r1": 1886,
+        "chosen": 2076
+      },
+      "settings.options": {
+        "n": 190,
+        "r1": 190,
+        "chosen": 380
+      },
+      "settings.achieve": {
+        "n": 190,
+        "r1": 57175,
+        "chosen": 54475
+      },
+      "progress": {
+        "n": 190,
+        "r1": 4815,
+        "chosen": 4593
+      },
+      "campaign": {
+        "n": 377,
+        "r1": 226192,
+        "chosen": 200469
+      },
+      "classic": {
+        "n": 411,
+        "r1": 135888,
+        "chosen": 129845
+      }
+    },
+    "progressPct/bl": {
+      "settings.device": {
+        "n": 190,
+        "r1": 1886,
+        "chosen": 2076
+      },
+      "settings.options": {
+        "n": 190,
+        "r1": 190,
+        "chosen": 380
+      },
+      "settings.achieve": {
+        "n": 190,
+        "r1": 57175,
+        "chosen": 54475
+      },
+      "progress": {
+        "n": 190,
+        "r1": 4815,
+        "chosen": 4593
+      },
+      "campaign": {
+        "n": 377,
+        "r1": 226192,
+        "chosen": 200469
+      },
+      "bl": {
+        "n": 808,
+        "r1": 297522,
+        "chosen": 258816
+      }
+    }
+  },
+  "groups": {
+    "named/current/semantic": {
+      "r1": {
+        "n": 8,
+        "min": 11,
+        "median": 340,
+        "p95": 519,
+        "max": 1137
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 8,
+        "min": 13,
+        "median": 385,
+        "p95": 907,
+        "max": 1652
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 8,
+        "min": 13,
+        "median": 357,
+        "p95": 601,
+        "max": 952
+      },
+      "C. per-section multi-K": {
+        "n": 8,
+        "min": 13,
+        "median": 197,
+        "p95": 601,
+        "max": 1120
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 8,
+        "min": 15,
+        "median": 213,
+        "p95": 517,
+        "max": 1115
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 8,
+        "min": 15,
+        "median": 337,
+        "p95": 519,
+        "max": 1135
+      },
+      "F. E + cross-slot": {
+        "n": 8,
+        "min": 15,
+        "median": 196,
+        "p95": 467,
+        "max": 885
+      },
+      "G. D + modular/derived refs": {
+        "n": 8,
+        "min": 15,
+        "median": 325,
+        "p95": 513,
+        "max": 1096
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 8,
+        "min": 15,
+        "median": 188,
+        "p95": 467,
+        "max": 875
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 8,
+        "min": 15,
+        "median": 188,
+        "p95": 467,
+        "max": 879
+      },
+      "H. adaptive: everything": {
+        "n": 8,
+        "min": 15,
+        "median": 179,
+        "p95": 460,
+        "max": 875
+      },
+      "A. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 340,
+        "p95": 519,
+        "max": 1137
+      },
+      "B. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 340,
+        "p95": 519,
+        "max": 952
+      },
+      "C. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 197,
+        "p95": 519,
+        "max": 1120
+      },
+      "D. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 213,
+        "p95": 517,
+        "max": 1115
+      },
+      "E. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 337,
+        "p95": 519,
+        "max": 1135
+      },
+      "F. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 196,
+        "p95": 467,
+        "max": 885
+      },
+      "G. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 325,
+        "p95": 513,
+        "max": 1096
+      },
+      "K. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 188,
+        "p95": 467,
+        "max": 875
+      },
+      "M. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 188,
+        "p95": 467,
+        "max": 879
+      },
+      "H. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 179,
+        "p95": 460,
+        "max": 875
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 179,
+        "p95": 460,
+        "max": 875
+      },
+      "saving_pct": {
+        "n": 8,
+        "min": 0,
+        "median": 9.912536443148689,
+        "p95": 30.93220338983051,
+        "max": 49.71910112359551
+      }
+    },
+    "named/current/portable": {
+      "r1": {
+        "n": 8,
+        "min": 11,
+        "median": 235,
+        "p95": 513,
+        "max": 968
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 8,
+        "min": 13,
+        "median": 236,
+        "p95": 907,
+        "max": 1492
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 8,
+        "min": 13,
+        "median": 232,
+        "p95": 595,
+        "max": 792
+      },
+      "C. per-section multi-K": {
+        "n": 8,
+        "min": 13,
+        "median": 195,
+        "p95": 597,
+        "max": 959
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 8,
+        "min": 15,
+        "median": 183,
+        "p95": 508,
+        "max": 960
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 8,
+        "min": 13,
+        "median": 213,
+        "p95": 513,
+        "max": 972
+      },
+      "F. E + cross-slot": {
+        "n": 8,
+        "min": 13,
+        "median": 181,
+        "p95": 461,
+        "max": 728
+      },
+      "G. D + modular/derived refs": {
+        "n": 8,
+        "min": 15,
+        "median": 213,
+        "p95": 508,
+        "max": 937
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 8,
+        "min": 15,
+        "median": 183,
+        "p95": 461,
+        "max": 713
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 8,
+        "min": 15,
+        "median": 181,
+        "p95": 461,
+        "max": 712
+      },
+      "H. adaptive: everything": {
+        "n": 8,
+        "min": 15,
+        "median": 173,
+        "p95": 456,
+        "max": 717
+      },
+      "A. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 196,
+        "p95": 513,
+        "max": 968
+      },
+      "B. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 199,
+        "p95": 513,
+        "max": 792
+      },
+      "C. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 183,
+        "p95": 513,
+        "max": 959
+      },
+      "D. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 183,
+        "p95": 508,
+        "max": 960
+      },
+      "E. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 213,
+        "p95": 513,
+        "max": 968
+      },
+      "F. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 181,
+        "p95": 461,
+        "max": 728
+      },
+      "G. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 213,
+        "p95": 508,
+        "max": 937
+      },
+      "K. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 183,
+        "p95": 461,
+        "max": 713
+      },
+      "M. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 181,
+        "p95": 461,
+        "max": 712
+      },
+      "H. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 173,
+        "p95": 456,
+        "max": 717
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 173,
+        "p95": 456,
+        "max": 717
+      },
+      "saving_pct": {
+        "n": 8,
+        "min": 0,
+        "median": 9.495548961424332,
+        "p95": 30.638297872340427,
+        "max": 50.712250712250714
+      }
+    },
+    "named/bl/semantic": {
+      "r1": {
+        "n": 8,
+        "min": 11,
+        "median": 356,
+        "p95": 929,
+        "max": 1752
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 8,
+        "min": 13,
+        "median": 515,
+        "p95": 1149,
+        "max": 2332
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 8,
+        "min": 13,
+        "median": 388,
+        "p95": 960,
+        "max": 1653
+      },
+      "C. per-section multi-K": {
+        "n": 8,
+        "min": 13,
+        "median": 388,
+        "p95": 961,
+        "max": 1819
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 8,
+        "min": 15,
+        "median": 333,
+        "p95": 921,
+        "max": 1789
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 8,
+        "min": 15,
+        "median": 353,
+        "p95": 917,
+        "max": 1803
+      },
+      "F. E + cross-slot": {
+        "n": 8,
+        "min": 15,
+        "median": 289,
+        "p95": 755,
+        "max": 1321
+      },
+      "G. D + modular/derived refs": {
+        "n": 8,
+        "min": 15,
+        "median": 333,
+        "p95": 899,
+        "max": 1791
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 8,
+        "min": 15,
+        "median": 289,
+        "p95": 753,
+        "max": 1325
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 8,
+        "min": 15,
+        "median": 289,
+        "p95": 755,
+        "max": 1327
+      },
+      "H. adaptive: everything": {
+        "n": 8,
+        "min": 15,
+        "median": 289,
+        "p95": 729,
+        "max": 1317
+      },
+      "A. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 356,
+        "p95": 929,
+        "max": 1752
+      },
+      "B. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 356,
+        "p95": 929,
+        "max": 1653
+      },
+      "C. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 335,
+        "p95": 929,
+        "max": 1752
+      },
+      "D. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 333,
+        "p95": 921,
+        "max": 1752
+      },
+      "E. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 353,
+        "p95": 917,
+        "max": 1752
+      },
+      "F. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 289,
+        "p95": 755,
+        "max": 1321
+      },
+      "G. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 333,
+        "p95": 899,
+        "max": 1752
+      },
+      "K. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 289,
+        "p95": 753,
+        "max": 1325
+      },
+      "M. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 289,
+        "p95": 755,
+        "max": 1327
+      },
+      "H. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 289,
+        "p95": 729,
+        "max": 1317
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 289,
+        "p95": 729,
+        "max": 1317
+      },
+      "saving_pct": {
+        "n": 8,
+        "min": 0,
+        "median": 17.83166904422254,
+        "p95": 43.222003929273086,
+        "max": 49.71910112359551
+      }
+    },
+    "named/bl/portable": {
+      "r1": {
+        "n": 8,
+        "min": 11,
+        "median": 351,
+        "p95": 925,
+        "max": 1608
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 8,
+        "min": 13,
+        "median": 511,
+        "p95": 1143,
+        "max": 2185
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 8,
+        "min": 13,
+        "median": 353,
+        "p95": 953,
+        "max": 1504
+      },
+      "C. per-section multi-K": {
+        "n": 8,
+        "min": 13,
+        "median": 227,
+        "p95": 955,
+        "max": 1661
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 8,
+        "min": 15,
+        "median": 183,
+        "p95": 916,
+        "max": 1644
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 8,
+        "min": 13,
+        "median": 348,
+        "p95": 916,
+        "max": 1653
+      },
+      "F. E + cross-slot": {
+        "n": 8,
+        "min": 13,
+        "median": 191,
+        "p95": 745,
+        "max": 1161
+      },
+      "G. D + modular/derived refs": {
+        "n": 8,
+        "min": 15,
+        "median": 320,
+        "p95": 889,
+        "max": 1629
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 8,
+        "min": 15,
+        "median": 183,
+        "p95": 751,
+        "max": 1161
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 8,
+        "min": 15,
+        "median": 183,
+        "p95": 744,
+        "max": 1156
+      },
+      "H. adaptive: everything": {
+        "n": 8,
+        "min": 15,
+        "median": 177,
+        "p95": 725,
+        "max": 1160
+      },
+      "A. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 351,
+        "p95": 925,
+        "max": 1608
+      },
+      "B. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 351,
+        "p95": 925,
+        "max": 1504
+      },
+      "C. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 179,
+        "p95": 925,
+        "max": 1608
+      },
+      "D. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 183,
+        "p95": 916,
+        "max": 1608
+      },
+      "E. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 348,
+        "p95": 916,
+        "max": 1608
+      },
+      "F. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 191,
+        "p95": 745,
+        "max": 1161
+      },
+      "G. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 320,
+        "p95": 889,
+        "max": 1608
+      },
+      "K. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 183,
+        "p95": 751,
+        "max": 1161
+      },
+      "M. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 183,
+        "p95": 744,
+        "max": 1156
+      },
+      "H. guarded min(_, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 177,
+        "p95": 725,
+        "max": 1160
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 8,
+        "min": 11,
+        "median": 177,
+        "p95": 725,
+        "max": 1160
+      },
+      "saving_pct": {
+        "n": 8,
+        "min": 0,
+        "median": 18.614718614718615,
+        "p95": 42.54473161033797,
+        "max": 50.712250712250714
+      }
+    },
+    "random200/current/semantic": {
+      "r1": {
+        "n": 200,
+        "min": 107,
+        "median": 351,
+        "p95": 549,
+        "max": 749
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 200,
+        "min": 87,
+        "median": 489,
+        "p95": 864,
+        "max": 1173
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 200,
+        "min": 87,
+        "median": 387,
+        "p95": 595,
+        "max": 791
+      },
+      "C. per-section multi-K": {
+        "n": 200,
+        "min": 87,
+        "median": 385,
+        "p95": 585,
+        "max": 797
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 200,
+        "min": 88,
+        "median": 336,
+        "p95": 540,
+        "max": 748
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 200,
+        "min": 88,
+        "median": 341,
+        "p95": 545,
+        "max": 687
+      },
+      "F. E + cross-slot": {
+        "n": 200,
+        "min": 87,
+        "median": 311,
+        "p95": 511,
+        "max": 629
+      },
+      "G. D + modular/derived refs": {
+        "n": 200,
+        "min": 80,
+        "median": 327,
+        "p95": 528,
+        "max": 720
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 200,
+        "min": 88,
+        "median": 311,
+        "p95": 511,
+        "max": 629
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 200,
+        "min": 88,
+        "median": 311,
+        "p95": 511,
+        "max": 629
+      },
+      "H. adaptive: everything": {
+        "n": 200,
+        "min": 80,
+        "median": 305,
+        "p95": 504,
+        "max": 623
+      },
+      "A. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 349,
+        "p95": 549,
+        "max": 749
+      },
+      "B. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 348,
+        "p95": 536,
+        "max": 749
+      },
+      "C. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 343,
+        "p95": 547,
+        "max": 749
+      },
+      "D. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 335,
+        "p95": 527,
+        "max": 748
+      },
+      "E. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 341,
+        "p95": 545,
+        "max": 687
+      },
+      "F. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 311,
+        "p95": 511,
+        "max": 629
+      },
+      "G. guarded min(_, r1)": {
+        "n": 200,
+        "min": 80,
+        "median": 327,
+        "p95": 528,
+        "max": 720
+      },
+      "K. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 311,
+        "p95": 511,
+        "max": 629
+      },
+      "M. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 311,
+        "p95": 511,
+        "max": 629
+      },
+      "H. guarded min(_, r1)": {
+        "n": 200,
+        "min": 80,
+        "median": 305,
+        "p95": 504,
+        "max": 623
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 200,
+        "min": 80,
+        "median": 305,
+        "p95": 504,
+        "max": 623
+      },
+      "saving_pct": {
+        "n": 200,
+        "min": 0,
+        "median": 8.88888888888889,
+        "p95": 24.03560830860534,
+        "max": 37.913486005089055
+      }
+    },
+    "random200/current/portable": {
+      "r1": {
+        "n": 200,
+        "min": 101,
+        "median": 316,
+        "p95": 428,
+        "max": 593
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 200,
+        "min": 85,
+        "median": 455,
+        "p95": 795,
+        "max": 1005
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 200,
+        "min": 87,
+        "median": 356,
+        "p95": 492,
+        "max": 631
+      },
+      "C. per-section multi-K": {
+        "n": 200,
+        "min": 87,
+        "median": 349,
+        "p95": 479,
+        "max": 636
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 200,
+        "min": 88,
+        "median": 312,
+        "p95": 429,
+        "max": 593
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 200,
+        "min": 88,
+        "median": 312,
+        "p95": 428,
+        "max": 524
+      },
+      "F. E + cross-slot": {
+        "n": 200,
+        "min": 87,
+        "median": 288,
+        "p95": 381,
+        "max": 473
+      },
+      "G. D + modular/derived refs": {
+        "n": 200,
+        "min": 80,
+        "median": 304,
+        "p95": 421,
+        "max": 559
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 200,
+        "min": 88,
+        "median": 289,
+        "p95": 381,
+        "max": 475
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 200,
+        "min": 87,
+        "median": 289,
+        "p95": 381,
+        "max": 475
+      },
+      "H. adaptive: everything": {
+        "n": 200,
+        "min": 80,
+        "median": 281,
+        "p95": 376,
+        "max": 467
+      },
+      "A. guarded min(_, r1)": {
+        "n": 200,
+        "min": 85,
+        "median": 315,
+        "p95": 428,
+        "max": 593
+      },
+      "B. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 313,
+        "p95": 428,
+        "max": 593
+      },
+      "C. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 313,
+        "p95": 423,
+        "max": 593
+      },
+      "D. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 311,
+        "p95": 423,
+        "max": 593
+      },
+      "E. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 311,
+        "p95": 425,
+        "max": 524
+      },
+      "F. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 288,
+        "p95": 381,
+        "max": 473
+      },
+      "G. guarded min(_, r1)": {
+        "n": 200,
+        "min": 80,
+        "median": 304,
+        "p95": 417,
+        "max": 559
+      },
+      "K. guarded min(_, r1)": {
+        "n": 200,
+        "min": 88,
+        "median": 289,
+        "p95": 381,
+        "max": 475
+      },
+      "M. guarded min(_, r1)": {
+        "n": 200,
+        "min": 87,
+        "median": 289,
+        "p95": 381,
+        "max": 475
+      },
+      "H. guarded min(_, r1)": {
+        "n": 200,
+        "min": 80,
+        "median": 281,
+        "p95": 376,
+        "max": 467
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 200,
+        "min": 80,
+        "median": 281,
+        "p95": 376,
+        "max": 467
+      },
+      "saving_pct": {
+        "n": 200,
+        "min": 0,
+        "median": 9.646302250803858,
+        "p95": 25,
+        "max": 38.402061855670105
+      }
+    },
+    "random200/bl/semantic": {
+      "r1": {
+        "n": 200,
+        "min": 119,
+        "median": 513,
+        "p95": 773,
+        "max": 1009
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 200,
+        "min": 104,
+        "median": 663,
+        "p95": 1049,
+        "max": 1391
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 200,
+        "min": 104,
+        "median": 552,
+        "p95": 808,
+        "max": 1016
+      },
+      "C. per-section multi-K": {
+        "n": 200,
+        "min": 104,
+        "median": 549,
+        "p95": 803,
+        "max": 1024
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 200,
+        "min": 105,
+        "median": 512,
+        "p95": 765,
+        "max": 997
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 200,
+        "min": 105,
+        "median": 508,
+        "p95": 744,
+        "max": 980
+      },
+      "F. E + cross-slot": {
+        "n": 200,
+        "min": 105,
+        "median": 460,
+        "p95": 679,
+        "max": 879
+      },
+      "G. D + modular/derived refs": {
+        "n": 200,
+        "min": 103,
+        "median": 503,
+        "p95": 751,
+        "max": 981
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 200,
+        "min": 105,
+        "median": 460,
+        "p95": 683,
+        "max": 869
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 200,
+        "min": 105,
+        "median": 460,
+        "p95": 683,
+        "max": 873
+      },
+      "H. adaptive: everything": {
+        "n": 200,
+        "min": 103,
+        "median": 453,
+        "p95": 669,
+        "max": 843
+      },
+      "A. guarded min(_, r1)": {
+        "n": 200,
+        "min": 104,
+        "median": 513,
+        "p95": 773,
+        "max": 1009
+      },
+      "B. guarded min(_, r1)": {
+        "n": 200,
+        "min": 104,
+        "median": 512,
+        "p95": 773,
+        "max": 979
+      },
+      "C. guarded min(_, r1)": {
+        "n": 200,
+        "min": 104,
+        "median": 513,
+        "p95": 768,
+        "max": 979
+      },
+      "D. guarded min(_, r1)": {
+        "n": 200,
+        "min": 105,
+        "median": 508,
+        "p95": 747,
+        "max": 979
+      },
+      "E. guarded min(_, r1)": {
+        "n": 200,
+        "min": 105,
+        "median": 508,
+        "p95": 744,
+        "max": 980
+      },
+      "F. guarded min(_, r1)": {
+        "n": 200,
+        "min": 105,
+        "median": 460,
+        "p95": 679,
+        "max": 879
+      },
+      "G. guarded min(_, r1)": {
+        "n": 200,
+        "min": 103,
+        "median": 503,
+        "p95": 748,
+        "max": 979
+      },
+      "K. guarded min(_, r1)": {
+        "n": 200,
+        "min": 105,
+        "median": 460,
+        "p95": 683,
+        "max": 869
+      },
+      "M. guarded min(_, r1)": {
+        "n": 200,
+        "min": 105,
+        "median": 460,
+        "p95": 683,
+        "max": 873
+      },
+      "H. guarded min(_, r1)": {
+        "n": 200,
+        "min": 103,
+        "median": 453,
+        "p95": 669,
+        "max": 843
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 200,
+        "min": 103,
+        "median": 453,
+        "p95": 669,
+        "max": 843
+      },
+      "saving_pct": {
+        "n": 200,
+        "min": 0,
+        "median": 12.474849094567404,
+        "p95": 23.093681917211327,
+        "max": 32.33743409490334
+      }
+    },
+    "random200/bl/portable": {
+      "r1": {
+        "n": 200,
+        "min": 113,
+        "median": 480,
+        "p95": 687,
+        "max": 871
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 200,
+        "min": 99,
+        "median": 627,
+        "p95": 979,
+        "max": 1285
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 200,
+        "min": 100,
+        "median": 516,
+        "p95": 741,
+        "max": 849
+      },
+      "C. per-section multi-K": {
+        "n": 200,
+        "min": 100,
+        "median": 517,
+        "p95": 747,
+        "max": 919
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 200,
+        "min": 100,
+        "median": 479,
+        "p95": 680,
+        "max": 877
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 200,
+        "min": 100,
+        "median": 476,
+        "p95": 679,
+        "max": 879
+      },
+      "F. E + cross-slot": {
+        "n": 200,
+        "min": 100,
+        "median": 424,
+        "p95": 572,
+        "max": 743
+      },
+      "G. D + modular/derived refs": {
+        "n": 200,
+        "min": 97,
+        "median": 471,
+        "p95": 672,
+        "max": 876
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 200,
+        "min": 100,
+        "median": 424,
+        "p95": 572,
+        "max": 741
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 200,
+        "min": 100,
+        "median": 424,
+        "p95": 572,
+        "max": 741
+      },
+      "H. adaptive: everything": {
+        "n": 200,
+        "min": 97,
+        "median": 415,
+        "p95": 557,
+        "max": 728
+      },
+      "A. guarded min(_, r1)": {
+        "n": 200,
+        "min": 99,
+        "median": 480,
+        "p95": 687,
+        "max": 871
+      },
+      "B. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 477,
+        "p95": 687,
+        "max": 845
+      },
+      "C. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 476,
+        "p95": 685,
+        "max": 871
+      },
+      "D. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 473,
+        "p95": 673,
+        "max": 871
+      },
+      "E. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 473,
+        "p95": 675,
+        "max": 871
+      },
+      "F. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 424,
+        "p95": 572,
+        "max": 743
+      },
+      "G. guarded min(_, r1)": {
+        "n": 200,
+        "min": 97,
+        "median": 467,
+        "p95": 672,
+        "max": 871
+      },
+      "K. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 424,
+        "p95": 572,
+        "max": 741
+      },
+      "M. guarded min(_, r1)": {
+        "n": 200,
+        "min": 100,
+        "median": 424,
+        "p95": 572,
+        "max": 741
+      },
+      "H. guarded min(_, r1)": {
+        "n": 200,
+        "min": 97,
+        "median": 415,
+        "p95": 557,
+        "max": 728
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 200,
+        "min": 97,
+        "median": 415,
+        "p95": 557,
+        "max": 728
+      },
+      "saving_pct": {
+        "n": 200,
+        "min": 0,
+        "median": 13.10344827586207,
+        "p95": 23.11111111111111,
+        "max": 32.6241134751773
+      }
+    },
+    "progressPct/current/semantic": {
+      "r1": {
+        "n": 190,
+        "min": 144,
+        "median": 375,
+        "p95": 623,
+        "max": 699
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 190,
+        "min": 132,
+        "median": 451,
+        "p95": 931,
+        "max": 1055
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 190,
+        "min": 132,
+        "median": 357,
+        "p95": 588,
+        "max": 681
+      },
+      "C. per-section multi-K": {
+        "n": 190,
+        "min": 132,
+        "median": 357,
+        "p95": 589,
+        "max": 683
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 190,
+        "min": 133,
+        "median": 352,
+        "p95": 591,
+        "max": 684
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 190,
+        "min": 133,
+        "median": 371,
+        "p95": 612,
+        "max": 695
+      },
+      "F. E + cross-slot": {
+        "n": 190,
+        "min": 133,
+        "median": 364,
+        "p95": 595,
+        "max": 688
+      },
+      "G. D + modular/derived refs": {
+        "n": 190,
+        "min": 133,
+        "median": 352,
+        "p95": 587,
+        "max": 681
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 572,
+        "max": 679
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 572,
+        "max": 679
+      },
+      "H. adaptive: everything": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 569,
+        "max": 673
+      },
+      "A. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 375,
+        "p95": 623,
+        "max": 699
+      },
+      "B. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 351,
+        "p95": 588,
+        "max": 681
+      },
+      "C. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 351,
+        "p95": 589,
+        "max": 683
+      },
+      "D. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 352,
+        "p95": 591,
+        "max": 684
+      },
+      "E. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 371,
+        "p95": 612,
+        "max": 695
+      },
+      "F. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 364,
+        "p95": 595,
+        "max": 688
+      },
+      "G. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 352,
+        "p95": 587,
+        "max": 681
+      },
+      "K. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 572,
+        "max": 679
+      },
+      "M. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 572,
+        "max": 679
+      },
+      "H. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 569,
+        "max": 673
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 345,
+        "p95": 569,
+        "max": 673
+      },
+      "saving_pct": {
+        "n": 190,
+        "min": 0,
+        "median": 5.128205128205129,
+        "p95": 20.954003407155025,
+        "max": 29.398663697104677
+      }
+    },
+    "progressPct/current/portable": {
+      "r1": {
+        "n": 190,
+        "min": 144,
+        "median": 373,
+        "p95": 620,
+        "max": 697
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 190,
+        "min": 129,
+        "median": 448,
+        "p95": 933,
+        "max": 1052
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 190,
+        "min": 129,
+        "median": 353,
+        "p95": 585,
+        "max": 679
+      },
+      "C. per-section multi-K": {
+        "n": 190,
+        "min": 131,
+        "median": 353,
+        "p95": 587,
+        "max": 680
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 190,
+        "min": 131,
+        "median": 348,
+        "p95": 588,
+        "max": 681
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 190,
+        "min": 131,
+        "median": 369,
+        "p95": 609,
+        "max": 695
+      },
+      "F. E + cross-slot": {
+        "n": 190,
+        "min": 131,
+        "median": 361,
+        "p95": 595,
+        "max": 685
+      },
+      "G. D + modular/derived refs": {
+        "n": 190,
+        "min": 132,
+        "median": 349,
+        "p95": 584,
+        "max": 679
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 190,
+        "min": 131,
+        "median": 345,
+        "p95": 569,
+        "max": 676
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 190,
+        "min": 131,
+        "median": 345,
+        "p95": 569,
+        "max": 676
+      },
+      "H. adaptive: everything": {
+        "n": 190,
+        "min": 132,
+        "median": 341,
+        "p95": 567,
+        "max": 671
+      },
+      "A. guarded min(_, r1)": {
+        "n": 190,
+        "min": 129,
+        "median": 373,
+        "p95": 620,
+        "max": 697
+      },
+      "B. guarded min(_, r1)": {
+        "n": 190,
+        "min": 129,
+        "median": 349,
+        "p95": 585,
+        "max": 679
+      },
+      "C. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 348,
+        "p95": 587,
+        "max": 680
+      },
+      "D. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 348,
+        "p95": 588,
+        "max": 681
+      },
+      "E. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 369,
+        "p95": 609,
+        "max": 695
+      },
+      "F. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 361,
+        "p95": 595,
+        "max": 685
+      },
+      "G. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 349,
+        "p95": 584,
+        "max": 679
+      },
+      "K. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 345,
+        "p95": 569,
+        "max": 676
+      },
+      "M. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 345,
+        "p95": 569,
+        "max": 676
+      },
+      "H. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 341,
+        "p95": 567,
+        "max": 671
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 341,
+        "p95": 567,
+        "max": 671
+      },
+      "saving_pct": {
+        "n": 190,
+        "min": 0,
+        "median": 4.849884526558891,
+        "p95": 20.71917808219178,
+        "max": 29.530201342281877
+      }
+    },
+    "progressPct/bl/semantic": {
+      "r1": {
+        "n": 190,
+        "min": 148,
+        "median": 487,
+        "p95": 888,
+        "max": 1093
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 190,
+        "min": 133,
+        "median": 592,
+        "p95": 1141,
+        "max": 1385
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 190,
+        "min": 133,
+        "median": 484,
+        "p95": 841,
+        "max": 1067
+      },
+      "C. per-section multi-K": {
+        "n": 190,
+        "min": 133,
+        "median": 483,
+        "p95": 841,
+        "max": 1055
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 190,
+        "min": 135,
+        "median": 468,
+        "p95": 845,
+        "max": 1037
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 190,
+        "min": 135,
+        "median": 485,
+        "p95": 888,
+        "max": 1075
+      },
+      "F. E + cross-slot": {
+        "n": 190,
+        "min": 135,
+        "median": 452,
+        "p95": 824,
+        "max": 987
+      },
+      "G. D + modular/derived refs": {
+        "n": 190,
+        "min": 135,
+        "median": 468,
+        "p95": 848,
+        "max": 1047
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 190,
+        "min": 135,
+        "median": 447,
+        "p95": 783,
+        "max": 961
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 190,
+        "min": 135,
+        "median": 447,
+        "p95": 785,
+        "max": 961
+      },
+      "H. adaptive: everything": {
+        "n": 190,
+        "min": 135,
+        "median": 444,
+        "p95": 788,
+        "max": 936
+      },
+      "A. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 487,
+        "p95": 888,
+        "max": 1093
+      },
+      "B. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 476,
+        "p95": 841,
+        "max": 1067
+      },
+      "C. guarded min(_, r1)": {
+        "n": 190,
+        "min": 133,
+        "median": 476,
+        "p95": 841,
+        "max": 1055
+      },
+      "D. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 468,
+        "p95": 845,
+        "max": 1037
+      },
+      "E. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 485,
+        "p95": 885,
+        "max": 1075
+      },
+      "F. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 452,
+        "p95": 824,
+        "max": 987
+      },
+      "G. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 468,
+        "p95": 848,
+        "max": 1047
+      },
+      "K. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 447,
+        "p95": 783,
+        "max": 961
+      },
+      "M. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 447,
+        "p95": 785,
+        "max": 961
+      },
+      "H. guarded min(_, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 444,
+        "p95": 788,
+        "max": 936
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 190,
+        "min": 135,
+        "median": 444,
+        "p95": 788,
+        "max": 936
+      },
+      "saving_pct": {
+        "n": 190,
+        "min": 0,
+        "median": 8.991228070175438,
+        "p95": 20.21772939346812,
+        "max": 27.79850746268657
+      }
+    },
+    "progressPct/bl/portable": {
+      "r1": {
+        "n": 190,
+        "min": 145,
+        "median": 483,
+        "p95": 889,
+        "max": 1085
+      },
+      "A. single-K, round-2 delta ops": {
+        "n": 190,
+        "min": 129,
+        "median": 588,
+        "p95": 1144,
+        "max": 1385
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "n": 190,
+        "min": 131,
+        "median": 481,
+        "p95": 840,
+        "max": 1059
+      },
+      "C. per-section multi-K": {
+        "n": 190,
+        "min": 131,
+        "median": 480,
+        "p95": 841,
+        "max": 1064
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "n": 190,
+        "min": 132,
+        "median": 467,
+        "p95": 843,
+        "max": 1052
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 190,
+        "min": 131,
+        "median": 483,
+        "p95": 884,
+        "max": 1085
+      },
+      "F. E + cross-slot": {
+        "n": 190,
+        "min": 131,
+        "median": 451,
+        "p95": 821,
+        "max": 999
+      },
+      "G. D + modular/derived refs": {
+        "n": 190,
+        "min": 132,
+        "median": 467,
+        "p95": 849,
+        "max": 1044
+      },
+      "K. D + cross-slot (no modular)": {
+        "n": 190,
+        "min": 132,
+        "median": 443,
+        "p95": 788,
+        "max": 961
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "n": 190,
+        "min": 132,
+        "median": 443,
+        "p95": 787,
+        "max": 959
+      },
+      "H. adaptive: everything": {
+        "n": 190,
+        "min": 132,
+        "median": 441,
+        "p95": 787,
+        "max": 943
+      },
+      "A. guarded min(_, r1)": {
+        "n": 190,
+        "min": 129,
+        "median": 483,
+        "p95": 889,
+        "max": 1085
+      },
+      "B. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 475,
+        "p95": 840,
+        "max": 1059
+      },
+      "C. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 475,
+        "p95": 841,
+        "max": 1064
+      },
+      "D. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 467,
+        "p95": 843,
+        "max": 1052
+      },
+      "E. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 483,
+        "p95": 884,
+        "max": 1085
+      },
+      "F. guarded min(_, r1)": {
+        "n": 190,
+        "min": 131,
+        "median": 451,
+        "p95": 821,
+        "max": 999
+      },
+      "G. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 467,
+        "p95": 849,
+        "max": 1044
+      },
+      "K. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 443,
+        "p95": 788,
+        "max": 961
+      },
+      "M. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 443,
+        "p95": 787,
+        "max": 959
+      },
+      "H. guarded min(_, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 441,
+        "p95": 787,
+        "max": 943
+      },
+      "J. shipped = min(I, r1)": {
+        "n": 190,
+        "min": 132,
+        "median": 441,
+        "p95": 787,
+        "max": 943
+      },
+      "saving_pct": {
+        "n": 190,
+        "min": 0,
+        "median": 8.968609865470851,
+        "p95": 20.12480499219969,
+        "max": 27.66355140186916
+      }
+    }
+  },
+  "named": {
+    "fresh/current/semantic": {
+      "r1": 11,
+      "A. single-K, round-2 delta ops": 13,
+      "B. whole-profile multi-K (one selector)": 13,
+      "C. per-section multi-K": 13,
+      "D. C + campaign codec + round-1 reps": 15,
+      "E. base + codec + r1 (round-2 delta ops only)": 15,
+      "F. E + cross-slot": 15,
+      "G. D + modular/derived refs": 15,
+      "K. D + cross-slot (no modular)": 15,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 15,
+      "H. adaptive: everything": 15,
+      "shipped": 11
+    },
+    "typical (mid-game)/current/semantic": {
+      "r1": 117,
+      "A. single-K, round-2 delta ops": 169,
+      "B. whole-profile multi-K (one selector)": 164,
+      "C. per-section multi-K": 163,
+      "D. C + campaign codec + round-1 reps": 117,
+      "E. base + codec + r1 (round-2 delta ops only)": 117,
+      "F. E + cross-slot": 117,
+      "G. D + modular/derived refs": 117,
+      "K. D + cross-slot (no modular)": 117,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 117,
+      "H. adaptive: everything": 117,
+      "shipped": 117
+    },
+    "late / end-game/current/semantic": {
+      "r1": 519,
+      "A. single-K, round-2 delta ops": 793,
+      "B. whole-profile multi-K (one selector)": 601,
+      "C. per-section multi-K": 601,
+      "D. C + campaign codec + round-1 reps": 517,
+      "E. base + codec + r1 (round-2 delta ops only)": 519,
+      "F. E + cross-slot": 467,
+      "G. D + modular/derived refs": 513,
+      "K. D + cross-slot (no modular)": 467,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 467,
+      "H. adaptive: everything": 460,
+      "shipped": 460
+    },
+    "unusual settings + key bindings/current/semantic": {
+      "r1": 340,
+      "A. single-K, round-2 delta ops": 401,
+      "B. whole-profile multi-K (one selector)": 392,
+      "C. per-section multi-K": 392,
+      "D. C + campaign codec + round-1 reps": 337,
+      "E. base + codec + r1 (round-2 delta ops only)": 337,
+      "F. E + cross-slot": 337,
+      "G. D + modular/derived refs": 337,
+      "K. D + cross-slot (no modular)": 337,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 337,
+      "H. adaptive: everything": 337,
+      "shipped": 337
+    },
+    "max values/current/semantic": {
+      "r1": 1137,
+      "A. single-K, round-2 delta ops": 1652,
+      "B. whole-profile multi-K (one selector)": 952,
+      "C. per-section multi-K": 1120,
+      "D. C + campaign codec + round-1 reps": 1115,
+      "E. base + codec + r1 (round-2 delta ops only)": 1135,
+      "F. E + cross-slot": 885,
+      "G. D + modular/derived refs": 1096,
+      "K. D + cross-slot (no modular)": 875,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 879,
+      "H. adaptive: everything": 875,
+      "shipped": 875
+    },
+    "fully unlocked (100%, runs finished)/current/semantic": {
+      "r1": 356,
+      "A. single-K, round-2 delta ops": 907,
+      "B. whole-profile multi-K (one selector)": 357,
+      "C. per-section multi-K": 180,
+      "D. C + campaign codec + round-1 reps": 187,
+      "E. base + codec + r1 (round-2 delta ops only)": 353,
+      "F. E + cross-slot": 196,
+      "G. D + modular/derived refs": 325,
+      "K. D + cross-slot (no modular)": 188,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 188,
+      "H. adaptive: everything": 179,
+      "shipped": 179
+    },
+    "Survival runs/current/semantic": {
+      "r1": 343,
+      "A. single-K, round-2 delta ops": 385,
+      "B. whole-profile multi-K (one selector)": 379,
+      "C. per-section multi-K": 380,
+      "D. C + campaign codec + round-1 reps": 341,
+      "E. base + codec + r1 (round-2 delta ops only)": 343,
+      "F. E + cross-slot": 309,
+      "G. D + modular/derived refs": 345,
+      "K. D + cross-slot (no modular)": 309,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 309,
+      "H. adaptive: everything": 309,
+      "shipped": 309
+    },
+    "supplied sample/current/semantic": {
+      "r1": 236,
+      "A. single-K, round-2 delta ops": 200,
+      "B. whole-profile multi-K (one selector)": 200,
+      "C. per-section multi-K": 197,
+      "D. C + campaign codec + round-1 reps": 213,
+      "E. base + codec + r1 (round-2 delta ops only)": 213,
+      "F. E + cross-slot": 163,
+      "G. D + modular/derived refs": 213,
+      "K. D + cross-slot (no modular)": 164,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 163,
+      "H. adaptive: everything": 163,
+      "shipped": 163
+    },
+    "fresh/current/portable": {
+      "r1": 11,
+      "A. single-K, round-2 delta ops": 13,
+      "B. whole-profile multi-K (one selector)": 13,
+      "C. per-section multi-K": 13,
+      "D. C + campaign codec + round-1 reps": 15,
+      "E. base + codec + r1 (round-2 delta ops only)": 13,
+      "F. E + cross-slot": 13,
+      "G. D + modular/derived refs": 15,
+      "K. D + cross-slot (no modular)": 15,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 15,
+      "H. adaptive: everything": 15,
+      "shipped": 11
+    },
+    "typical (mid-game)/current/portable": {
+      "r1": 113,
+      "A. single-K, round-2 delta ops": 161,
+      "B. whole-profile multi-K (one selector)": 157,
+      "C. per-section multi-K": 159,
+      "D. C + campaign codec + round-1 reps": 112,
+      "E. base + codec + r1 (round-2 delta ops only)": 112,
+      "F. E + cross-slot": 112,
+      "G. D + modular/derived refs": 112,
+      "K. D + cross-slot (no modular)": 112,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 112,
+      "H. adaptive: everything": 112,
+      "shipped": 112
+    },
+    "late / end-game/current/portable": {
+      "r1": 513,
+      "A. single-K, round-2 delta ops": 785,
+      "B. whole-profile multi-K (one selector)": 595,
+      "C. per-section multi-K": 597,
+      "D. C + campaign codec + round-1 reps": 508,
+      "E. base + codec + r1 (round-2 delta ops only)": 513,
+      "F. E + cross-slot": 461,
+      "G. D + modular/derived refs": 508,
+      "K. D + cross-slot (no modular)": 461,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 461,
+      "H. adaptive: everything": 456,
+      "shipped": 456
+    },
+    "unusual settings + key bindings/current/portable": {
+      "r1": 183,
+      "A. single-K, round-2 delta ops": 236,
+      "B. whole-profile multi-K (one selector)": 232,
+      "C. per-section multi-K": 231,
+      "D. C + campaign codec + round-1 reps": 183,
+      "E. base + codec + r1 (round-2 delta ops only)": 181,
+      "F. E + cross-slot": 181,
+      "G. D + modular/derived refs": 183,
+      "K. D + cross-slot (no modular)": 183,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 181,
+      "H. adaptive: everything": 183,
+      "shipped": 183
+    },
+    "max values/current/portable": {
+      "r1": 968,
+      "A. single-K, round-2 delta ops": 1492,
+      "B. whole-profile multi-K (one selector)": 792,
+      "C. per-section multi-K": 959,
+      "D. C + campaign codec + round-1 reps": 960,
+      "E. base + codec + r1 (round-2 delta ops only)": 972,
+      "F. E + cross-slot": 728,
+      "G. D + modular/derived refs": 937,
+      "K. D + cross-slot (no modular)": 713,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 712,
+      "H. adaptive: everything": 717,
+      "shipped": 717
+    },
+    "fully unlocked (100%, runs finished)/current/portable": {
+      "r1": 351,
+      "A. single-K, round-2 delta ops": 907,
+      "B. whole-profile multi-K (one selector)": 353,
+      "C. per-section multi-K": 177,
+      "D. C + campaign codec + round-1 reps": 183,
+      "E. base + codec + r1 (round-2 delta ops only)": 348,
+      "F. E + cross-slot": 191,
+      "G. D + modular/derived refs": 320,
+      "K. D + cross-slot (no modular)": 183,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 183,
+      "H. adaptive: everything": 173,
+      "shipped": 173
+    },
+    "Survival runs/current/portable": {
+      "r1": 337,
+      "A. single-K, round-2 delta ops": 381,
+      "B. whole-profile multi-K (one selector)": 376,
+      "C. per-section multi-K": 377,
+      "D. C + campaign codec + round-1 reps": 339,
+      "E. base + codec + r1 (round-2 delta ops only)": 335,
+      "F. E + cross-slot": 304,
+      "G. D + modular/derived refs": 341,
+      "K. D + cross-slot (no modular)": 304,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 304,
+      "H. adaptive: everything": 305,
+      "shipped": 305
+    },
+    "supplied sample/current/portable": {
+      "r1": 235,
+      "A. single-K, round-2 delta ops": 196,
+      "B. whole-profile multi-K (one selector)": 199,
+      "C. per-section multi-K": 195,
+      "D. C + campaign codec + round-1 reps": 213,
+      "E. base + codec + r1 (round-2 delta ops only)": 213,
+      "F. E + cross-slot": 163,
+      "G. D + modular/derived refs": 213,
+      "K. D + cross-slot (no modular)": 163,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 163,
+      "H. adaptive: everything": 163,
+      "shipped": 163
+    },
+    "fresh/bl/semantic": {
+      "r1": 11,
+      "A. single-K, round-2 delta ops": 13,
+      "B. whole-profile multi-K (one selector)": 13,
+      "C. per-section multi-K": 13,
+      "D. C + campaign codec + round-1 reps": 15,
+      "E. base + codec + r1 (round-2 delta ops only)": 15,
+      "F. E + cross-slot": 15,
+      "G. D + modular/derived refs": 15,
+      "K. D + cross-slot (no modular)": 15,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 15,
+      "H. adaptive: everything": 15,
+      "shipped": 11
+    },
+    "typical (mid-game)/bl/semantic": {
+      "r1": 123,
+      "A. single-K, round-2 delta ops": 173,
+      "B. whole-profile multi-K (one selector)": 168,
+      "C. per-section multi-K": 167,
+      "D. C + campaign codec + round-1 reps": 121,
+      "E. base + codec + r1 (round-2 delta ops only)": 121,
+      "F. E + cross-slot": 121,
+      "G. D + modular/derived refs": 121,
+      "K. D + cross-slot (no modular)": 121,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 121,
+      "H. adaptive: everything": 121,
+      "shipped": 121
+    },
+    "late / end-game/bl/semantic": {
+      "r1": 929,
+      "A. single-K, round-2 delta ops": 1149,
+      "B. whole-profile multi-K (one selector)": 960,
+      "C. per-section multi-K": 961,
+      "D. C + campaign codec + round-1 reps": 921,
+      "E. base + codec + r1 (round-2 delta ops only)": 917,
+      "F. E + cross-slot": 755,
+      "G. D + modular/derived refs": 899,
+      "K. D + cross-slot (no modular)": 753,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 755,
+      "H. adaptive: everything": 729,
+      "shipped": 729
+    },
+    "unusual settings + key bindings/bl/semantic": {
+      "r1": 335,
+      "A. single-K, round-2 delta ops": 395,
+      "B. whole-profile multi-K (one selector)": 388,
+      "C. per-section multi-K": 388,
+      "D. C + campaign codec + round-1 reps": 333,
+      "E. base + codec + r1 (round-2 delta ops only)": 333,
+      "F. E + cross-slot": 333,
+      "G. D + modular/derived refs": 333,
+      "K. D + cross-slot (no modular)": 333,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 333,
+      "H. adaptive: everything": 333,
+      "shipped": 333
+    },
+    "max values/bl/semantic": {
+      "r1": 1752,
+      "A. single-K, round-2 delta ops": 2332,
+      "B. whole-profile multi-K (one selector)": 1653,
+      "C. per-section multi-K": 1819,
+      "D. C + campaign codec + round-1 reps": 1789,
+      "E. base + codec + r1 (round-2 delta ops only)": 1803,
+      "F. E + cross-slot": 1321,
+      "G. D + modular/derived refs": 1791,
+      "K. D + cross-slot (no modular)": 1325,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 1327,
+      "H. adaptive: everything": 1317,
+      "shipped": 1317
+    },
+    "fully unlocked (100%, runs finished)/bl/semantic": {
+      "r1": 356,
+      "A. single-K, round-2 delta ops": 907,
+      "B. whole-profile multi-K (one selector)": 357,
+      "C. per-section multi-K": 180,
+      "D. C + campaign codec + round-1 reps": 187,
+      "E. base + codec + r1 (round-2 delta ops only)": 353,
+      "F. E + cross-slot": 196,
+      "G. D + modular/derived refs": 325,
+      "K. D + cross-slot (no modular)": 188,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 188,
+      "H. adaptive: everything": 179,
+      "shipped": 179
+    },
+    "Survival runs/bl/semantic": {
+      "r1": 701,
+      "A. single-K, round-2 delta ops": 735,
+      "B. whole-profile multi-K (one selector)": 736,
+      "C. per-section multi-K": 736,
+      "D. C + campaign codec + round-1 reps": 672,
+      "E. base + codec + r1 (round-2 delta ops only)": 672,
+      "F. E + cross-slot": 573,
+      "G. D + modular/derived refs": 692,
+      "K. D + cross-slot (no modular)": 575,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 573,
+      "H. adaptive: everything": 576,
+      "shipped": 576
+    },
+    "supplied sample/bl/semantic": {
+      "r1": 509,
+      "A. single-K, round-2 delta ops": 515,
+      "B. whole-profile multi-K (one selector)": 517,
+      "C. per-section multi-K": 513,
+      "D. C + campaign codec + round-1 reps": 509,
+      "E. base + codec + r1 (round-2 delta ops only)": 516,
+      "F. E + cross-slot": 289,
+      "G. D + modular/derived refs": 481,
+      "K. D + cross-slot (no modular)": 289,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 289,
+      "H. adaptive: everything": 289,
+      "shipped": 289
+    },
+    "fresh/bl/portable": {
+      "r1": 11,
+      "A. single-K, round-2 delta ops": 13,
+      "B. whole-profile multi-K (one selector)": 13,
+      "C. per-section multi-K": 13,
+      "D. C + campaign codec + round-1 reps": 15,
+      "E. base + codec + r1 (round-2 delta ops only)": 13,
+      "F. E + cross-slot": 13,
+      "G. D + modular/derived refs": 15,
+      "K. D + cross-slot (no modular)": 15,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 15,
+      "H. adaptive: everything": 15,
+      "shipped": 11
+    },
+    "typical (mid-game)/bl/portable": {
+      "r1": 117,
+      "A. single-K, round-2 delta ops": 167,
+      "B. whole-profile multi-K (one selector)": 163,
+      "C. per-section multi-K": 164,
+      "D. C + campaign codec + round-1 reps": 116,
+      "E. base + codec + r1 (round-2 delta ops only)": 116,
+      "F. E + cross-slot": 116,
+      "G. D + modular/derived refs": 117,
+      "K. D + cross-slot (no modular)": 116,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 116,
+      "H. adaptive: everything": 117,
+      "shipped": 117
+    },
+    "late / end-game/bl/portable": {
+      "r1": 925,
+      "A. single-K, round-2 delta ops": 1143,
+      "B. whole-profile multi-K (one selector)": 953,
+      "C. per-section multi-K": 955,
+      "D. C + campaign codec + round-1 reps": 916,
+      "E. base + codec + r1 (round-2 delta ops only)": 916,
+      "F. E + cross-slot": 745,
+      "G. D + modular/derived refs": 889,
+      "K. D + cross-slot (no modular)": 751,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 744,
+      "H. adaptive: everything": 725,
+      "shipped": 725
+    },
+    "unusual settings + key bindings/bl/portable": {
+      "r1": 179,
+      "A. single-K, round-2 delta ops": 233,
+      "B. whole-profile multi-K (one selector)": 227,
+      "C. per-section multi-K": 227,
+      "D. C + campaign codec + round-1 reps": 177,
+      "E. base + codec + r1 (round-2 delta ops only)": 177,
+      "F. E + cross-slot": 177,
+      "G. D + modular/derived refs": 177,
+      "K. D + cross-slot (no modular)": 177,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 177,
+      "H. adaptive: everything": 177,
+      "shipped": 177
+    },
+    "max values/bl/portable": {
+      "r1": 1608,
+      "A. single-K, round-2 delta ops": 2185,
+      "B. whole-profile multi-K (one selector)": 1504,
+      "C. per-section multi-K": 1661,
+      "D. C + campaign codec + round-1 reps": 1644,
+      "E. base + codec + r1 (round-2 delta ops only)": 1653,
+      "F. E + cross-slot": 1161,
+      "G. D + modular/derived refs": 1629,
+      "K. D + cross-slot (no modular)": 1161,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 1156,
+      "H. adaptive: everything": 1160,
+      "shipped": 1160
+    },
+    "fully unlocked (100%, runs finished)/bl/portable": {
+      "r1": 351,
+      "A. single-K, round-2 delta ops": 907,
+      "B. whole-profile multi-K (one selector)": 353,
+      "C. per-section multi-K": 177,
+      "D. C + campaign codec + round-1 reps": 183,
+      "E. base + codec + r1 (round-2 delta ops only)": 348,
+      "F. E + cross-slot": 191,
+      "G. D + modular/derived refs": 320,
+      "K. D + cross-slot (no modular)": 183,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 183,
+      "H. adaptive: everything": 173,
+      "shipped": 173
+    },
+    "Survival runs/bl/portable": {
+      "r1": 693,
+      "A. single-K, round-2 delta ops": 735,
+      "B. whole-profile multi-K (one selector)": 725,
+      "C. per-section multi-K": 732,
+      "D. C + campaign codec + round-1 reps": 661,
+      "E. base + codec + r1 (round-2 delta ops only)": 672,
+      "F. E + cross-slot": 568,
+      "G. D + modular/derived refs": 688,
+      "K. D + cross-slot (no modular)": 573,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 571,
+      "H. adaptive: everything": 564,
+      "shipped": 564
+    },
+    "supplied sample/bl/portable": {
+      "r1": 503,
+      "A. single-K, round-2 delta ops": 511,
+      "B. whole-profile multi-K (one selector)": 515,
+      "C. per-section multi-K": 508,
+      "D. C + campaign codec + round-1 reps": 509,
+      "E. base + codec + r1 (round-2 delta ops only)": 513,
+      "F. E + cross-slot": 288,
+      "G. D + modular/derived refs": 477,
+      "K. D + cross-slot (no modular)": 289,
+      "M. minimal: codec + r1 + 100% templates + cross-slot": 289,
+      "H. adaptive: everything": 289,
+      "shipped": 289
+    }
+  },
+  "wins": {
+    "named/current/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 1,
+        "equal": 0,
+        "longer": 7
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 2,
+        "equal": 0,
+        "longer": 6
+      },
+      "C. per-section multi-K": {
+        "shorter": 3,
+        "equal": 0,
+        "longer": 5
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 4,
+        "equal": 3,
+        "longer": 1
+      },
+      "F. E + cross-slot": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 5,
+        "equal": 1,
+        "longer": 2
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "H. adaptive: everything": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 6,
+        "equal": 2,
+        "longer": 0
+      }
+    },
+    "named/current/portable": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 1,
+        "equal": 0,
+        "longer": 7
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 2,
+        "equal": 0,
+        "longer": 6
+      },
+      "C. per-section multi-K": {
+        "shorter": 3,
+        "equal": 0,
+        "longer": 5
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 5,
+        "equal": 1,
+        "longer": 2
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 5,
+        "equal": 1,
+        "longer": 2
+      },
+      "F. E + cross-slot": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 5,
+        "equal": 1,
+        "longer": 2
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "H. adaptive: everything": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 6,
+        "equal": 2,
+        "longer": 0
+      }
+    },
+    "named/bl/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 0,
+        "equal": 0,
+        "longer": 8
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 1,
+        "equal": 0,
+        "longer": 7
+      },
+      "C. per-section multi-K": {
+        "shorter": 1,
+        "equal": 0,
+        "longer": 7
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 5,
+        "equal": 1,
+        "longer": 2
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 5,
+        "equal": 0,
+        "longer": 3
+      },
+      "F. E + cross-slot": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 6,
+        "equal": 0,
+        "longer": 2
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "H. adaptive: everything": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 7,
+        "equal": 1,
+        "longer": 0
+      }
+    },
+    "named/bl/portable": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 0,
+        "equal": 0,
+        "longer": 8
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 1,
+        "equal": 0,
+        "longer": 7
+      },
+      "C. per-section multi-K": {
+        "shorter": 1,
+        "equal": 0,
+        "longer": 7
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 5,
+        "equal": 0,
+        "longer": 3
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 5,
+        "equal": 0,
+        "longer": 3
+      },
+      "F. E + cross-slot": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 5,
+        "equal": 1,
+        "longer": 2
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 7,
+        "equal": 0,
+        "longer": 1
+      },
+      "H. adaptive: everything": {
+        "shorter": 6,
+        "equal": 1,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 6,
+        "equal": 2,
+        "longer": 0
+      }
+    },
+    "random200/current/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 21,
+        "equal": 0,
+        "longer": 179
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 28,
+        "equal": 0,
+        "longer": 172
+      },
+      "C. per-section multi-K": {
+        "shorter": 40,
+        "equal": 2,
+        "longer": 158
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 138,
+        "equal": 25,
+        "longer": 37
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 141,
+        "equal": 30,
+        "longer": 29
+      },
+      "F. E + cross-slot": {
+        "shorter": 188,
+        "equal": 6,
+        "longer": 6
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 173,
+        "equal": 9,
+        "longer": 18
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 186,
+        "equal": 6,
+        "longer": 8
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 188,
+        "equal": 4,
+        "longer": 8
+      },
+      "H. adaptive: everything": {
+        "shorter": 196,
+        "equal": 2,
+        "longer": 2
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 196,
+        "equal": 4,
+        "longer": 0
+      }
+    },
+    "random200/current/portable": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 21,
+        "equal": 0,
+        "longer": 179
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 28,
+        "equal": 0,
+        "longer": 172
+      },
+      "C. per-section multi-K": {
+        "shorter": 41,
+        "equal": 3,
+        "longer": 156
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 127,
+        "equal": 42,
+        "longer": 31
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 145,
+        "equal": 25,
+        "longer": 30
+      },
+      "F. E + cross-slot": {
+        "shorter": 189,
+        "equal": 7,
+        "longer": 4
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 172,
+        "equal": 14,
+        "longer": 14
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 185,
+        "equal": 11,
+        "longer": 4
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 185,
+        "equal": 11,
+        "longer": 4
+      },
+      "H. adaptive: everything": {
+        "shorter": 196,
+        "equal": 1,
+        "longer": 3
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 196,
+        "equal": 4,
+        "longer": 0
+      }
+    },
+    "random200/bl/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 20,
+        "equal": 1,
+        "longer": 179
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 36,
+        "equal": 1,
+        "longer": 163
+      },
+      "C. per-section multi-K": {
+        "shorter": 46,
+        "equal": 2,
+        "longer": 152
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 138,
+        "equal": 12,
+        "longer": 50
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 145,
+        "equal": 14,
+        "longer": 41
+      },
+      "F. E + cross-slot": {
+        "shorter": 198,
+        "equal": 0,
+        "longer": 2
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 164,
+        "equal": 4,
+        "longer": 32
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 198,
+        "equal": 0,
+        "longer": 2
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 198,
+        "equal": 0,
+        "longer": 2
+      },
+      "H. adaptive: everything": {
+        "shorter": 199,
+        "equal": 0,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 199,
+        "equal": 1,
+        "longer": 0
+      }
+    },
+    "random200/bl/portable": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 20,
+        "equal": 0,
+        "longer": 180
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 34,
+        "equal": 1,
+        "longer": 165
+      },
+      "C. per-section multi-K": {
+        "shorter": 44,
+        "equal": 3,
+        "longer": 153
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 129,
+        "equal": 24,
+        "longer": 47
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 134,
+        "equal": 25,
+        "longer": 41
+      },
+      "F. E + cross-slot": {
+        "shorter": 198,
+        "equal": 0,
+        "longer": 2
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 161,
+        "equal": 5,
+        "longer": 34
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 197,
+        "equal": 1,
+        "longer": 2
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 197,
+        "equal": 1,
+        "longer": 2
+      },
+      "H. adaptive: everything": {
+        "shorter": 199,
+        "equal": 1,
+        "longer": 0
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 199,
+        "equal": 1,
+        "longer": 0
+      }
+    },
+    "progressPct/current/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 18,
+        "equal": 3,
+        "longer": 169
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 124,
+        "equal": 7,
+        "longer": 59
+      },
+      "C. per-section multi-K": {
+        "shorter": 126,
+        "equal": 8,
+        "longer": 56
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 174,
+        "equal": 11,
+        "longer": 5
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 172,
+        "equal": 13,
+        "longer": 5
+      },
+      "F. E + cross-slot": {
+        "shorter": 184,
+        "equal": 5,
+        "longer": 1
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 177,
+        "equal": 12,
+        "longer": 1
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 180,
+        "equal": 7,
+        "longer": 3
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 180,
+        "equal": 8,
+        "longer": 2
+      },
+      "H. adaptive: everything": {
+        "shorter": 183,
+        "equal": 6,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 183,
+        "equal": 7,
+        "longer": 0
+      }
+    },
+    "progressPct/current/portable": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 18,
+        "equal": 2,
+        "longer": 170
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 124,
+        "equal": 4,
+        "longer": 62
+      },
+      "C. per-section multi-K": {
+        "shorter": 125,
+        "equal": 6,
+        "longer": 59
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 174,
+        "equal": 14,
+        "longer": 2
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 176,
+        "equal": 6,
+        "longer": 8
+      },
+      "F. E + cross-slot": {
+        "shorter": 186,
+        "equal": 3,
+        "longer": 1
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 180,
+        "equal": 9,
+        "longer": 1
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 178,
+        "equal": 10,
+        "longer": 2
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 178,
+        "equal": 11,
+        "longer": 1
+      },
+      "H. adaptive: everything": {
+        "shorter": 183,
+        "equal": 6,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 183,
+        "equal": 7,
+        "longer": 0
+      }
+    },
+    "progressPct/bl/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 19,
+        "equal": 0,
+        "longer": 171
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 120,
+        "equal": 6,
+        "longer": 64
+      },
+      "C. per-section multi-K": {
+        "shorter": 124,
+        "equal": 6,
+        "longer": 60
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 162,
+        "equal": 15,
+        "longer": 13
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 146,
+        "equal": 22,
+        "longer": 22
+      },
+      "F. E + cross-slot": {
+        "shorter": 187,
+        "equal": 3,
+        "longer": 0
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 163,
+        "equal": 14,
+        "longer": 13
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 187,
+        "equal": 3,
+        "longer": 0
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 186,
+        "equal": 4,
+        "longer": 0
+      },
+      "H. adaptive: everything": {
+        "shorter": 188,
+        "equal": 2,
+        "longer": 0
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 188,
+        "equal": 2,
+        "longer": 0
+      }
+    },
+    "progressPct/bl/portable": {
+      "A. single-K, round-2 delta ops": {
+        "shorter": 19,
+        "equal": 0,
+        "longer": 171
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "shorter": 122,
+        "equal": 5,
+        "longer": 63
+      },
+      "C. per-section multi-K": {
+        "shorter": 125,
+        "equal": 3,
+        "longer": 62
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "shorter": 159,
+        "equal": 21,
+        "longer": 10
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "shorter": 149,
+        "equal": 22,
+        "longer": 19
+      },
+      "F. E + cross-slot": {
+        "shorter": 186,
+        "equal": 4,
+        "longer": 0
+      },
+      "G. D + modular/derived refs": {
+        "shorter": 166,
+        "equal": 11,
+        "longer": 13
+      },
+      "K. D + cross-slot (no modular)": {
+        "shorter": 187,
+        "equal": 3,
+        "longer": 0
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "shorter": 186,
+        "equal": 4,
+        "longer": 0
+      },
+      "H. adaptive: everything": {
+        "shorter": 189,
+        "equal": 0,
+        "longer": 1
+      },
+      "J. shipped = min(I, r1)": {
+        "shorter": 189,
+        "equal": 1,
+        "longer": 0
+      }
+    }
+  },
+  "stat": {
+    "named/current/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:fresh": 15,
+        "classic:K0": 14
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 2,
+        "whole:mid": 3,
+        "whole:full": 3
+      },
+      "C. per-section multi-K": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:half": 4,
+        "classic:K0": 14,
+        "progress:allDone": 3,
+        "campaign:full": 7,
+        "campaign:fresh": 4,
+        "settings.achieve:allUnlocked": 2
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 12,
+        "classic:K0": 10,
+        "progress:allDone": 3,
+        "classic:r1": 4,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:fresh": 3
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 12,
+        "classic:K0": 10,
+        "classic:r1": 4,
+        "campaign:fresh": 3
+      },
+      "F. E + cross-slot": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 8,
+        "classic:K0": 4,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "campaign:prev0": 4,
+        "campaign:fresh": 3
+      },
+      "G. D + modular/derived refs": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "classic:K0": 10,
+        "progress:allDone": 3,
+        "campaign:modular": 10,
+        "classic:r1": 4,
+        "settings.achieve:allUnlocked": 2
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "classic:K0": 4,
+        "progress:allDone": 3,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "campaign:fresh": 3
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "classic:K0": 4,
+        "progress:allDone": 3,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "campaign:fresh": 3
+      },
+      "H. adaptive: everything": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "classic:K0": 4,
+        "progress:allDone": 3,
+        "campaign:modular": 6,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4
+      }
+    },
+    "named/current/portable": {
+      "A. single-K, round-2 delta ops": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:fresh": 15,
+        "classic:K0": 14
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 2,
+        "whole:mid": 3,
+        "whole:full": 3
+      },
+      "C. per-section multi-K": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:half": 4,
+        "classic:K0": 14,
+        "progress:allDone": 3,
+        "campaign:full": 7,
+        "campaign:fresh": 4,
+        "settings.achieve:allUnlocked": 2
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 12,
+        "classic:K0": 10,
+        "progress:allDone": 3,
+        "classic:r1": 4,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:fresh": 3
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 12,
+        "classic:K0": 10,
+        "classic:r1": 4,
+        "campaign:fresh": 3
+      },
+      "F. E + cross-slot": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 8,
+        "classic:K0": 4,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "campaign:prev0": 4,
+        "campaign:fresh": 3
+      },
+      "G. D + modular/derived refs": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "classic:K0": 10,
+        "progress:allDone": 3,
+        "campaign:modular": 10,
+        "classic:r1": 4,
+        "settings.achieve:allUnlocked": 2
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "classic:K0": 4,
+        "progress:allDone": 3,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "campaign:fresh": 3
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "classic:K0": 4,
+        "progress:allDone": 3,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "campaign:fresh": 3
+      },
+      "H. adaptive: everything": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "classic:K0": 4,
+        "progress:allDone": 3,
+        "campaign:modular": 6,
+        "classic:prev0": 5,
+        "classic:prev1": 3,
+        "classic:r1": 2,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4
+      }
+    },
+    "named/bl/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:fresh": 15,
+        "bl:K0": 38
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 2,
+        "whole:mid": 3,
+        "whole:full": 3
+      },
+      "C. per-section multi-K": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:half": 4,
+        "bl:K0": 38,
+        "progress:allDone": 3,
+        "campaign:full": 7,
+        "campaign:fresh": 4,
+        "settings.achieve:allUnlocked": 2
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 12,
+        "bl:r1": 37,
+        "progress:allDone": 3,
+        "settings.achieve:allUnlocked": 2,
+        "bl:K0": 1,
+        "campaign:fresh": 3
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 12,
+        "bl:r1": 37,
+        "bl:K0": 1,
+        "campaign:fresh": 3
+      },
+      "F. E + cross-slot": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 8,
+        "bl:r1": 6,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "campaign:prev0": 4,
+        "bl:prev3": 2,
+        "campaign:fresh": 3
+      },
+      "G. D + modular/derived refs": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "bl:r1": 28,
+        "progress:allDone": 3,
+        "campaign:modular": 10,
+        "settings.achieve:allUnlocked": 2,
+        "bl:modular": 9,
+        "bl:K0": 1
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "bl:r1": 6,
+        "progress:allDone": 3,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "bl:prev3": 2,
+        "campaign:fresh": 3
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "bl:r1": 6,
+        "progress:allDone": 3,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "bl:prev3": 2,
+        "campaign:fresh": 3
+      },
+      "H. adaptive: everything": {
+        "settings.device:default": 8,
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "bl:r1": 5,
+        "progress:allDone": 3,
+        "campaign:modular": 6,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "bl:modular": 1,
+        "bl:prev3": 2
+      }
+    },
+    "named/bl/portable": {
+      "A. single-K, round-2 delta ops": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:fresh": 15,
+        "bl:K0": 38
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 2,
+        "whole:mid": 3,
+        "whole:full": 3
+      },
+      "C. per-section multi-K": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:half": 4,
+        "bl:K0": 38,
+        "progress:allDone": 3,
+        "campaign:full": 7,
+        "campaign:fresh": 4,
+        "settings.achieve:allUnlocked": 2
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 12,
+        "bl:r1": 37,
+        "progress:allDone": 3,
+        "settings.achieve:allUnlocked": 2,
+        "bl:K0": 1,
+        "campaign:fresh": 3
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 12,
+        "bl:r1": 37,
+        "bl:K0": 1,
+        "campaign:fresh": 3
+      },
+      "F. E + cross-slot": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 8,
+        "progress:default": 8,
+        "campaign:codec": 8,
+        "bl:r1": 6,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "campaign:prev0": 4,
+        "bl:prev3": 2,
+        "campaign:fresh": 3
+      },
+      "G. D + modular/derived refs": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "bl:r1": 28,
+        "progress:allDone": 3,
+        "campaign:modular": 10,
+        "settings.achieve:allUnlocked": 2,
+        "bl:modular": 9,
+        "bl:K0": 1
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "bl:r1": 6,
+        "progress:allDone": 3,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "bl:prev3": 2,
+        "campaign:fresh": 3
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 8,
+        "bl:r1": 6,
+        "progress:allDone": 3,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "bl:prev3": 2,
+        "campaign:fresh": 3
+      },
+      "H. adaptive: everything": {
+        "settings.options:default": 8,
+        "settings.achieve:default": 6,
+        "progress:default": 5,
+        "campaign:codec": 5,
+        "bl:r1": 5,
+        "progress:allDone": 3,
+        "campaign:modular": 6,
+        "bl:prev0": 11,
+        "bl:prev1": 7,
+        "bl:prev2": 7,
+        "bl:prev4": 3,
+        "bl:prev5": 1,
+        "bl:prev7": 1,
+        "settings.achieve:allUnlocked": 2,
+        "campaign:prev0": 4,
+        "bl:modular": 1,
+        "bl:prev3": 2
+      }
+    },
+    "random200/current/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 489,
+        "classic:K0": 458
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:mid": 58,
+        "whole:fresh": 37,
+        "whole:full": 105
+      },
+      "C. per-section multi-K": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 230,
+        "campaign:half": 131,
+        "classic:K0": 458,
+        "campaign:full": 128,
+        "progress:allDone": 66
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "classic:r1": 181,
+        "classic:K0": 277,
+        "progress:allDone": 66
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "classic:r1": 181,
+        "classic:K0": 277
+      },
+      "F. E + cross-slot": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "classic:r1": 109,
+        "classic:K0": 167,
+        "classic:prev0": 159,
+        "classic:prev1": 23,
+        "campaign:prev0": 57,
+        "campaign:prev1": 22
+      },
+      "G. D + modular/derived refs": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 248,
+        "campaign:codec": 241,
+        "classic:r1": 181,
+        "classic:K0": 277,
+        "progress:allDone": 66
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "classic:r1": 109,
+        "classic:K0": 167,
+        "classic:prev0": 159,
+        "progress:allDone": 66,
+        "classic:prev1": 23,
+        "campaign:prev0": 57,
+        "campaign:prev1": 22
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "classic:r1": 109,
+        "classic:K0": 167,
+        "classic:prev0": 159,
+        "progress:allDone": 66,
+        "classic:prev1": 23,
+        "campaign:prev0": 57,
+        "campaign:prev1": 22
+      },
+      "H. adaptive: everything": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 224,
+        "campaign:codec": 188,
+        "classic:r1": 99,
+        "classic:K0": 155,
+        "classic:prev0": 84,
+        "classic:modular": 109,
+        "progress:allDone": 66,
+        "classic:prev1": 11,
+        "campaign:prev0": 56,
+        "campaign:prev1": 21
+      }
+    },
+    "random200/current/portable": {
+      "A. single-K, round-2 delta ops": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 489,
+        "classic:K0": 458
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:mid": 58,
+        "whole:fresh": 37,
+        "whole:full": 105
+      },
+      "C. per-section multi-K": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 230,
+        "campaign:half": 131,
+        "classic:K0": 458,
+        "campaign:full": 128,
+        "progress:allDone": 66
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "classic:r1": 181,
+        "classic:K0": 277,
+        "progress:allDone": 66
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "classic:r1": 181,
+        "classic:K0": 277
+      },
+      "F. E + cross-slot": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "classic:r1": 109,
+        "classic:K0": 167,
+        "classic:prev0": 159,
+        "classic:prev1": 23,
+        "campaign:prev0": 57,
+        "campaign:prev1": 22
+      },
+      "G. D + modular/derived refs": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 248,
+        "campaign:codec": 241,
+        "classic:r1": 181,
+        "classic:K0": 277,
+        "progress:allDone": 66
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "classic:r1": 109,
+        "classic:K0": 167,
+        "classic:prev0": 159,
+        "progress:allDone": 66,
+        "classic:prev1": 23,
+        "campaign:prev0": 57,
+        "campaign:prev1": 22
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "classic:r1": 109,
+        "classic:K0": 167,
+        "classic:prev0": 159,
+        "progress:allDone": 66,
+        "classic:prev1": 23,
+        "campaign:prev0": 57,
+        "campaign:prev1": 22
+      },
+      "H. adaptive: everything": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 224,
+        "campaign:codec": 188,
+        "classic:r1": 99,
+        "classic:K0": 155,
+        "classic:prev0": 84,
+        "classic:modular": 109,
+        "progress:allDone": 66,
+        "classic:prev1": 11,
+        "campaign:prev0": 56,
+        "campaign:prev1": 21
+      }
+    },
+    "random200/bl/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 489,
+        "bl:K0": 937
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:mid": 58,
+        "whole:fresh": 37,
+        "whole:full": 105
+      },
+      "C. per-section multi-K": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 230,
+        "campaign:half": 131,
+        "bl:K0": 937,
+        "campaign:full": 128,
+        "progress:allDone": 66
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "bl:r1": 864,
+        "bl:K0": 73,
+        "progress:allDone": 66
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "bl:r1": 864,
+        "bl:K0": 73
+      },
+      "F. E + cross-slot": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "bl:r1": 250,
+        "bl:prev0": 335,
+        "bl:prev1": 168,
+        "bl:K0": 31,
+        "bl:prev3": 42,
+        "bl:prev2": 74,
+        "bl:prev5": 5,
+        "campaign:prev0": 57,
+        "bl:prev4": 28,
+        "campaign:prev1": 22,
+        "bl:prev6": 3,
+        "bl:prev7": 1
+      },
+      "G. D + modular/derived refs": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 248,
+        "campaign:codec": 241,
+        "bl:r1": 809,
+        "bl:K0": 73,
+        "bl:modular": 55,
+        "progress:allDone": 66
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "bl:r1": 250,
+        "bl:prev0": 335,
+        "bl:prev1": 168,
+        "bl:K0": 31,
+        "bl:prev3": 42,
+        "bl:prev2": 74,
+        "progress:allDone": 66,
+        "bl:prev5": 5,
+        "campaign:prev0": 57,
+        "bl:prev4": 28,
+        "campaign:prev1": 22,
+        "bl:prev6": 3,
+        "bl:prev7": 1
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "bl:r1": 250,
+        "bl:prev0": 335,
+        "bl:prev1": 168,
+        "bl:K0": 31,
+        "bl:prev3": 42,
+        "bl:prev2": 74,
+        "progress:allDone": 66,
+        "bl:prev5": 5,
+        "campaign:prev0": 57,
+        "bl:prev4": 28,
+        "campaign:prev1": 22,
+        "bl:prev6": 3,
+        "bl:prev7": 1
+      },
+      "H. adaptive: everything": {
+        "settings.device:default": 200,
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 224,
+        "campaign:codec": 188,
+        "bl:r1": 217,
+        "bl:prev0": 222,
+        "bl:prev1": 117,
+        "bl:K0": 28,
+        "bl:modular": 255,
+        "bl:prev2": 47,
+        "progress:allDone": 66,
+        "bl:prev5": 4,
+        "bl:prev3": 28,
+        "campaign:prev0": 56,
+        "bl:prev4": 16,
+        "campaign:prev1": 21,
+        "bl:prev6": 2,
+        "bl:prev7": 1
+      }
+    },
+    "random200/bl/portable": {
+      "A. single-K, round-2 delta ops": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 489,
+        "bl:K0": 937
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:mid": 58,
+        "whole:fresh": 37,
+        "whole:full": 105
+      },
+      "C. per-section multi-K": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 230,
+        "campaign:half": 131,
+        "bl:K0": 937,
+        "campaign:full": 128,
+        "progress:allDone": 66
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "bl:r1": 864,
+        "bl:K0": 73,
+        "progress:allDone": 66
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 120,
+        "campaign:codec": 369,
+        "bl:r1": 864,
+        "bl:K0": 73
+      },
+      "F. E + cross-slot": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 200,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "bl:r1": 250,
+        "bl:prev0": 335,
+        "bl:prev1": 168,
+        "bl:K0": 31,
+        "bl:prev3": 42,
+        "bl:prev2": 74,
+        "bl:prev5": 5,
+        "campaign:prev0": 57,
+        "bl:prev4": 28,
+        "campaign:prev1": 22,
+        "bl:prev6": 3,
+        "bl:prev7": 1
+      },
+      "G. D + modular/derived refs": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 248,
+        "campaign:codec": 241,
+        "bl:r1": 809,
+        "bl:K0": 73,
+        "bl:modular": 55,
+        "progress:allDone": 66
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "bl:r1": 250,
+        "bl:prev0": 335,
+        "bl:prev1": 168,
+        "bl:K0": 31,
+        "bl:prev3": 42,
+        "bl:prev2": 74,
+        "progress:allDone": 66,
+        "bl:prev5": 5,
+        "campaign:prev0": 57,
+        "bl:prev4": 28,
+        "campaign:prev1": 22,
+        "bl:prev6": 3,
+        "bl:prev7": 1
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:fresh": 118,
+        "campaign:codec": 292,
+        "bl:r1": 250,
+        "bl:prev0": 335,
+        "bl:prev1": 168,
+        "bl:K0": 31,
+        "bl:prev3": 42,
+        "bl:prev2": 74,
+        "progress:allDone": 66,
+        "bl:prev5": 5,
+        "campaign:prev0": 57,
+        "bl:prev4": 28,
+        "campaign:prev1": 22,
+        "bl:prev6": 3,
+        "bl:prev7": 1
+      },
+      "H. adaptive: everything": {
+        "settings.options:default": 200,
+        "settings.achieve:default": 200,
+        "progress:default": 134,
+        "campaign:modular": 224,
+        "campaign:codec": 188,
+        "bl:r1": 217,
+        "bl:prev0": 222,
+        "bl:prev1": 117,
+        "bl:K0": 28,
+        "bl:modular": 255,
+        "bl:prev2": 47,
+        "progress:allDone": 66,
+        "bl:prev5": 4,
+        "bl:prev3": 28,
+        "campaign:prev0": 56,
+        "bl:prev4": 16,
+        "campaign:prev1": 21,
+        "bl:prev6": 2,
+        "bl:prev7": 1
+      }
+    },
+    "progressPct/current/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:fresh": 377,
+        "classic:K0": 411
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 24,
+        "whole:mid": 20,
+        "whole:full": 146
+      },
+      "C. per-section multi-K": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:fresh": 55,
+        "classic:K0": 411,
+        "campaign:half": 32,
+        "campaign:full": 288,
+        "campaign:smb": 2,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 139,
+        "classic:r1": 170,
+        "classic:K0": 241,
+        "campaign:half": 16,
+        "campaign:fresh": 37,
+        "campaign:r1-generic": 3,
+        "campaign:full": 182,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 332,
+        "classic:r1": 170,
+        "classic:K0": 241,
+        "campaign:fresh": 42,
+        "campaign:r1-generic": 3
+      },
+      "F. E + cross-slot": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 298,
+        "classic:r1": 114,
+        "classic:K0": 154,
+        "campaign:fresh": 38,
+        "campaign:prev1": 14,
+        "classic:prev0": 117,
+        "classic:prev1": 26,
+        "campaign:r1-generic": 3,
+        "campaign:prev0": 24
+      },
+      "G. D + modular/derived refs": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 99,
+        "classic:r1": 170,
+        "classic:K0": 241,
+        "campaign:modular": 110,
+        "campaign:fresh": 27,
+        "campaign:half": 9,
+        "settings.achieve:allUnlocked": 86,
+        "campaign:full": 132,
+        "progress:allDone": 58
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 138,
+        "classic:r1": 114,
+        "classic:K0": 154,
+        "campaign:half": 15,
+        "campaign:fresh": 36,
+        "campaign:prev1": 4,
+        "classic:prev0": 117,
+        "classic:prev1": 26,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 7,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 149,
+        "classic:r1": 114,
+        "classic:K0": 154,
+        "campaign:fresh": 37,
+        "campaign:prev1": 6,
+        "classic:prev0": 117,
+        "classic:prev1": 26,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 8,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "H. adaptive: everything": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 98,
+        "classic:r1": 105,
+        "classic:K0": 145,
+        "campaign:modular": 108,
+        "campaign:fresh": 27,
+        "campaign:prev1": 4,
+        "classic:prev0": 57,
+        "classic:modular": 92,
+        "campaign:half": 8,
+        "classic:prev1": 12,
+        "campaign:prev0": 7,
+        "settings.achieve:allUnlocked": 86,
+        "campaign:full": 125,
+        "progress:allDone": 58
+      }
+    },
+    "progressPct/current/portable": {
+      "A. single-K, round-2 delta ops": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:fresh": 377,
+        "classic:K0": 411
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 24,
+        "whole:mid": 20,
+        "whole:full": 146
+      },
+      "C. per-section multi-K": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:fresh": 55,
+        "classic:K0": 411,
+        "campaign:half": 32,
+        "campaign:full": 288,
+        "campaign:smb": 2,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 139,
+        "classic:r1": 170,
+        "classic:K0": 241,
+        "campaign:half": 16,
+        "campaign:fresh": 37,
+        "campaign:r1-generic": 3,
+        "campaign:full": 182,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 332,
+        "classic:r1": 170,
+        "classic:K0": 241,
+        "campaign:fresh": 42,
+        "campaign:r1-generic": 3
+      },
+      "F. E + cross-slot": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 298,
+        "classic:r1": 114,
+        "classic:K0": 154,
+        "campaign:fresh": 38,
+        "campaign:prev1": 14,
+        "classic:prev0": 117,
+        "classic:prev1": 26,
+        "campaign:r1-generic": 3,
+        "campaign:prev0": 24
+      },
+      "G. D + modular/derived refs": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 99,
+        "classic:r1": 170,
+        "classic:K0": 241,
+        "campaign:modular": 110,
+        "campaign:fresh": 27,
+        "campaign:half": 9,
+        "settings.achieve:allUnlocked": 86,
+        "campaign:full": 132,
+        "progress:allDone": 58
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 138,
+        "classic:r1": 114,
+        "classic:K0": 154,
+        "campaign:half": 15,
+        "campaign:fresh": 36,
+        "campaign:prev1": 4,
+        "classic:prev0": 117,
+        "classic:prev1": 26,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 7,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 149,
+        "classic:r1": 114,
+        "classic:K0": 154,
+        "campaign:fresh": 37,
+        "campaign:prev1": 6,
+        "classic:prev0": 117,
+        "classic:prev1": 26,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 8,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "H. adaptive: everything": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 98,
+        "classic:r1": 105,
+        "classic:K0": 145,
+        "campaign:modular": 108,
+        "campaign:fresh": 27,
+        "campaign:prev1": 4,
+        "classic:prev0": 57,
+        "classic:modular": 92,
+        "campaign:half": 8,
+        "classic:prev1": 12,
+        "campaign:prev0": 7,
+        "settings.achieve:allUnlocked": 86,
+        "campaign:full": 125,
+        "progress:allDone": 58
+      }
+    },
+    "progressPct/bl/semantic": {
+      "A. single-K, round-2 delta ops": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:fresh": 377,
+        "bl:K0": 808
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 24,
+        "whole:mid": 20,
+        "whole:full": 146
+      },
+      "C. per-section multi-K": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:fresh": 55,
+        "bl:K0": 808,
+        "campaign:half": 32,
+        "campaign:full": 288,
+        "campaign:smb": 2,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 139,
+        "bl:r1": 735,
+        "campaign:half": 16,
+        "campaign:fresh": 37,
+        "bl:K0": 73,
+        "campaign:r1-generic": 3,
+        "campaign:full": 182,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 332,
+        "bl:r1": 735,
+        "campaign:fresh": 42,
+        "bl:K0": 73,
+        "campaign:r1-generic": 3
+      },
+      "F. E + cross-slot": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 298,
+        "bl:r1": 239,
+        "campaign:fresh": 38,
+        "campaign:prev1": 14,
+        "bl:K0": 31,
+        "bl:prev0": 264,
+        "bl:prev1": 137,
+        "bl:prev2": 75,
+        "bl:prev3": 41,
+        "bl:prev4": 13,
+        "campaign:r1-generic": 3,
+        "campaign:prev0": 24,
+        "bl:prev5": 6,
+        "bl:prev6": 2
+      },
+      "G. D + modular/derived refs": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 99,
+        "bl:r1": 735,
+        "campaign:modular": 110,
+        "campaign:fresh": 27,
+        "campaign:half": 9,
+        "bl:K0": 73,
+        "settings.achieve:allUnlocked": 86,
+        "campaign:full": 132,
+        "progress:allDone": 58
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 138,
+        "bl:r1": 239,
+        "campaign:half": 15,
+        "campaign:fresh": 36,
+        "campaign:prev1": 4,
+        "bl:K0": 31,
+        "bl:prev0": 264,
+        "bl:prev1": 137,
+        "bl:prev2": 75,
+        "bl:prev3": 41,
+        "bl:prev4": 13,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 7,
+        "bl:prev5": 6,
+        "settings.achieve:allUnlocked": 86,
+        "bl:prev6": 2,
+        "progress:allDone": 58
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 149,
+        "bl:r1": 239,
+        "campaign:fresh": 37,
+        "campaign:prev1": 6,
+        "bl:K0": 31,
+        "bl:prev0": 264,
+        "bl:prev1": 137,
+        "bl:prev2": 75,
+        "bl:prev3": 41,
+        "bl:prev4": 13,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 8,
+        "bl:prev5": 6,
+        "settings.achieve:allUnlocked": 86,
+        "bl:prev6": 2,
+        "progress:allDone": 58
+      },
+      "H. adaptive: everything": {
+        "settings.device:default": 190,
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 98,
+        "bl:r1": 222,
+        "campaign:modular": 108,
+        "campaign:fresh": 27,
+        "campaign:prev1": 4,
+        "bl:K0": 29,
+        "bl:prev0": 208,
+        "bl:prev1": 102,
+        "bl:modular": 146,
+        "bl:prev2": 55,
+        "bl:prev3": 31,
+        "bl:prev4": 9,
+        "campaign:half": 8,
+        "campaign:prev0": 7,
+        "settings.achieve:allUnlocked": 86,
+        "bl:prev5": 4,
+        "bl:prev6": 2,
+        "campaign:full": 125,
+        "progress:allDone": 58
+      }
+    },
+    "progressPct/bl/portable": {
+      "A. single-K, round-2 delta ops": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:fresh": 377,
+        "bl:K0": 808
+      },
+      "B. whole-profile multi-K (one selector)": {
+        "whole:fresh": 24,
+        "whole:mid": 20,
+        "whole:full": 146
+      },
+      "C. per-section multi-K": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:fresh": 55,
+        "bl:K0": 808,
+        "campaign:half": 32,
+        "campaign:full": 288,
+        "campaign:smb": 2,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "D. C + campaign codec + round-1 reps": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 139,
+        "bl:r1": 735,
+        "campaign:half": 16,
+        "campaign:fresh": 37,
+        "bl:K0": 73,
+        "campaign:r1-generic": 3,
+        "campaign:full": 182,
+        "settings.achieve:allUnlocked": 86,
+        "progress:allDone": 58
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 332,
+        "bl:r1": 735,
+        "campaign:fresh": 42,
+        "bl:K0": 73,
+        "campaign:r1-generic": 3
+      },
+      "F. E + cross-slot": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 190,
+        "progress:default": 190,
+        "campaign:codec": 298,
+        "bl:r1": 239,
+        "campaign:fresh": 38,
+        "campaign:prev1": 14,
+        "bl:K0": 31,
+        "bl:prev0": 264,
+        "bl:prev1": 137,
+        "bl:prev2": 75,
+        "bl:prev3": 41,
+        "bl:prev4": 13,
+        "campaign:r1-generic": 3,
+        "campaign:prev0": 24,
+        "bl:prev5": 6,
+        "bl:prev6": 2
+      },
+      "G. D + modular/derived refs": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 99,
+        "bl:r1": 735,
+        "campaign:modular": 110,
+        "campaign:fresh": 27,
+        "campaign:half": 9,
+        "bl:K0": 73,
+        "settings.achieve:allUnlocked": 86,
+        "campaign:full": 132,
+        "progress:allDone": 58
+      },
+      "K. D + cross-slot (no modular)": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 138,
+        "bl:r1": 239,
+        "campaign:half": 15,
+        "campaign:fresh": 36,
+        "campaign:prev1": 4,
+        "bl:K0": 31,
+        "bl:prev0": 264,
+        "bl:prev1": 137,
+        "bl:prev2": 75,
+        "bl:prev3": 41,
+        "bl:prev4": 13,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 7,
+        "bl:prev5": 6,
+        "settings.achieve:allUnlocked": 86,
+        "bl:prev6": 2,
+        "progress:allDone": 58
+      },
+      "M. minimal: codec + r1 + 100% templates + cross-slot": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 149,
+        "bl:r1": 239,
+        "campaign:fresh": 37,
+        "campaign:prev1": 6,
+        "bl:K0": 31,
+        "bl:prev0": 264,
+        "bl:prev1": 137,
+        "bl:prev2": 75,
+        "bl:prev3": 41,
+        "bl:prev4": 13,
+        "campaign:r1-generic": 3,
+        "campaign:full": 174,
+        "campaign:prev0": 8,
+        "bl:prev5": 6,
+        "settings.achieve:allUnlocked": 86,
+        "bl:prev6": 2,
+        "progress:allDone": 58
+      },
+      "H. adaptive: everything": {
+        "settings.options:default": 190,
+        "settings.achieve:default": 104,
+        "progress:default": 132,
+        "campaign:codec": 98,
+        "bl:r1": 222,
+        "campaign:modular": 108,
+        "campaign:fresh": 27,
+        "campaign:prev1": 4,
+        "bl:K0": 29,
+        "bl:prev0": 208,
+        "bl:prev1": 102,
+        "bl:modular": 146,
+        "bl:prev2": 55,
+        "bl:prev3": 31,
+        "bl:prev4": 9,
+        "campaign:half": 8,
+        "campaign:prev0": 7,
+        "settings.achieve:allUnlocked": 86,
+        "bl:prev5": 4,
+        "bl:prev6": 2,
+        "campaign:full": 125,
+        "progress:allDone": 58
+      }
+    }
+  },
+  "perFile": {
+    "subsetWins": 191,
+    "subset_fresh_full": {
+      "shipped_min": {
+        "n": 607,
+        "min": 20,
+        "median": 93,
+        "p95": 143,
+        "max": 157
+      },
+      "wins_pct": 31.5
+    },
+    "campaign": {
+      "files": 607,
+      "note": "new kind keeps score (existing code drops it); existing codes stay valid",
+      "existing": {
+        "n": 607,
+        "min": 24,
+        "median": 105,
+        "p95": 146,
+        "max": 157
+      },
+      "new_kind": {
+        "n": 607,
+        "min": 17,
+        "median": 99,
+        "p95": 154,
+        "max": 170
+      },
+      "shipped_min": {
+        "n": 607,
+        "min": 17,
+        "median": 93,
+        "p95": 143,
+        "max": 157
+      },
+      "new_wins_pct": 32.8,
+      "won_by_method": {
+        "modular": 66,
+        "fresh": 4,
+        "full": 129
+      }
+    },
+    "classic": {
+      "slots": 1676,
+      "r1": {
+        "n": 1676,
+        "min": 17,
+        "median": 71,
+        "p95": 146,
+        "max": 220
+      },
+      "shipped_min": {
+        "n": 1676,
+        "min": 17,
+        "median": 71,
+        "p95": 146,
+        "max": 220
+      },
+      "new_wins_pct": 0
+    }
+  },
+  "timing": {
+    "r1_enc": {
+      "n": 1592,
+      "min": 0.31,
+      "median": 0.88,
+      "p95": 1.77,
+      "max": 19.17
+    },
+    "r1_dec": {
+      "n": 1592,
+      "min": 0.17,
+      "median": 0.66,
+      "p95": 1.17,
+      "max": 5.48
+    },
+    "adaptive_enc": {
+      "n": 1592,
+      "min": 0.18,
+      "median": 12.39,
+      "p95": 24.25,
+      "max": 40.42
+    },
+    "adaptive_dec": {
+      "n": 1592,
+      "min": 0.12,
+      "median": 1.36,
+      "p95": 2.6,
+      "max": 21.33
+    }
+  },
+  "tables": {
+    "round1_K_new_dictionaries": {
+      "json_bytes": 6947,
+      "gzip_bytes": 2294
+    },
+    "round1_K_defaults_snapshot": {
+      "json_bytes": 4059,
+      "gzip_bytes": 1472
+    },
+    "round2_file_templates_half_smb_full": {
+      "json_bytes": 7500,
+      "gzip_bytes": 1790
+    },
+    "round2_hero_kit_tables_basic_full": {
+      "json_bytes": 1973,
+      "gzip_bytes": 541
+    },
+    "round2_settings_progress_templates": {
+      "json_bytes": 1151,
+      "gzip_bytes": 439
+    },
+    "note": "templates as frozen JSON; derived refs also need frozen copies of metIds / upgradeStory logic (code, not data)"
+  },
+  "regressions": {
+    "campaign_templates": {
+      "files": 881,
+      "template_longer_than_fresh_pct": {
+        "smb": 32.3,
+        "full": 35.1,
+        "half": 16.8
+      },
+      "worst_full_template_on_near_fresh_file_bits": 78,
+      "closest_by_field_differences_not_optimal_pct": 9.4,
+      "closest_heuristic_mean_excess_bits_when_wrong": 108.6,
+      "closest_heuristic_max_excess_bits": 328
+    }
+  },
+  "heuristic": {},
+  "byPct": {
+    "current 10% seq": {
+      "r1": 255,
+      "shipped": 225,
+      "n": 15
+    },
+    "current 10% scatter": {
+      "r1": 289,
+      "shipped": 281,
+      "n": 15
+    },
+    "current 25% seq": {
+      "r1": 280,
+      "shipped": 271,
+      "n": 15
+    },
+    "current 25% scatter": {
+      "r1": 307,
+      "shipped": 296,
+      "n": 15
+    },
+    "current 50% seq": {
+      "r1": 296,
+      "shipped": 295,
+      "n": 15
+    },
+    "current 50% scatter": {
+      "r1": 320,
+      "shipped": 307,
+      "n": 15
+    },
+    "current 75% seq": {
+      "r1": 405,
+      "shipped": 392,
+      "n": 15
+    },
+    "current 75% scatter": {
+      "r1": 484,
+      "shipped": 477,
+      "n": 15
+    },
+    "current 90% seq": {
+      "r1": 509,
+      "shipped": 443,
+      "n": 15
+    },
+    "current 90% scatter": {
+      "r1": 433,
+      "shipped": 411,
+      "n": 15
+    },
+    "current 99% seq": {
+      "r1": 508,
+      "shipped": 403,
+      "n": 15
+    },
+    "current 99% scatter": {
+      "r1": 423,
+      "shipped": 369,
+      "n": 15
+    },
+    "current 100% seq": {
+      "r1": 515,
+      "shipped": 412,
+      "n": 5
+    },
+    "current 100% scatter": {
+      "r1": 449,
+      "shipped": 359,
+      "n": 5
+    },
+    "bl 10% seq": {
+      "r1": 355,
+      "shipped": 309,
+      "n": 15
+    },
+    "bl 10% scatter": {
+      "r1": 327,
+      "shipped": 303,
+      "n": 15
+    },
+    "bl 25% seq": {
+      "r1": 407,
+      "shipped": 381,
+      "n": 15
+    },
+    "bl 25% scatter": {
+      "r1": 411,
+      "shipped": 373,
+      "n": 15
+    },
+    "bl 50% seq": {
+      "r1": 447,
+      "shipped": 415,
+      "n": 15
+    },
+    "bl 50% scatter": {
+      "r1": 464,
+      "shipped": 404,
+      "n": 15
+    },
+    "bl 75% seq": {
+      "r1": 573,
+      "shipped": 517,
+      "n": 15
+    },
+    "bl 75% scatter": {
+      "r1": 615,
+      "shipped": 579,
+      "n": 15
+    },
+    "bl 90% seq": {
+      "r1": 665,
+      "shipped": 589,
+      "n": 15
+    },
+    "bl 90% scatter": {
+      "r1": 603,
+      "shipped": 533,
+      "n": 15
+    },
+    "bl 99% seq": {
+      "r1": 671,
+      "shipped": 560,
+      "n": 15
+    },
+    "bl 99% scatter": {
+      "r1": 584,
+      "shipped": 501,
+      "n": 15
+    },
+    "bl 100% seq": {
+      "r1": 617,
+      "shipped": 508,
+      "n": 5
+    },
+    "bl 100% scatter": {
+      "r1": 516,
+      "shipped": 377,
+      "n": 5
+    }
+  },
+  "negative_control_bitflips_without_crc": {
+    "flips": 400,
+    "threw": 216,
+    "decoded_different": 183,
+    "decoded_same": 1
+  },
+  "crossSlotBL": {
+    "independent": {
+      "r1": {
+        "n": 60,
+        "min": 480,
+        "median": 959,
+        "p95": 1299,
+        "max": 1335
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 60,
+        "min": 479,
+        "median": 959,
+        "p95": 1299,
+        "max": 1335
+      },
+      "F. E + cross-slot": {
+        "n": 60,
+        "min": 476,
+        "median": 949,
+        "p95": 1273,
+        "max": 1324
+      },
+      "H. adaptive: everything": {
+        "n": 60,
+        "min": 476,
+        "median": 949,
+        "p95": 1273,
+        "max": 1324
+      }
+    },
+    "shared-rules": {
+      "r1": {
+        "n": 60,
+        "min": 425,
+        "median": 955,
+        "p95": 1220,
+        "max": 1427
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 60,
+        "min": 425,
+        "median": 955,
+        "p95": 1220,
+        "max": 1427
+      },
+      "F. E + cross-slot": {
+        "n": 60,
+        "min": 424,
+        "median": 920,
+        "p95": 1185,
+        "max": 1368
+      },
+      "H. adaptive: everything": {
+        "n": 60,
+        "min": 424,
+        "median": 921,
+        "p95": 1183,
+        "max": 1367
+      }
+    },
+    "shared-all": {
+      "r1": {
+        "n": 60,
+        "min": 451,
+        "median": 921,
+        "p95": 1299,
+        "max": 1348
+      },
+      "E. base + codec + r1 (round-2 delta ops only)": {
+        "n": 60,
+        "min": 449,
+        "median": 920,
+        "p95": 1295,
+        "max": 1348
+      },
+      "F. E + cross-slot": {
+        "n": 60,
+        "min": 445,
+        "median": 636,
+        "p95": 815,
+        "max": 871
+      },
+      "H. adaptive: everything": {
+        "n": 60,
+        "min": 445,
+        "median": 636,
+        "p95": 815,
+        "max": 871
+      }
+    }
+  },
+  "checks": {
+    "total": 18954,
+    "failed": 0,
+    "failures": []
+  }
+}
