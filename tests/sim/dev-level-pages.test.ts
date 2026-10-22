@@ -122,7 +122,8 @@ describe('O-05: the dev Level select as pages', () => {
     const h = dev();
     const start = new DevStartScene(h.game, { branch: 'classic', level: '1-1', name: 'SMB 1-1' });
     const heroes = start.heroes.map((c) => c.id);
-    expect(heroes).toEqual(h.game.slotsFor('classic').map((c) => c.id));
+    // 0.4.72 (owner): the dev select's heroes (every hero not set Off), Game.devSlotsFor.
+    expect(heroes).toEqual(h.game.devSlotsFor('classic').map((c) => c.id));
     expect(heroes).not.toContain('peach');
     const hero = items(start).find((i) => i.label === 'Hero') as MenuItem;
     for (let i = 0; i < heroes.length && start.hero.id !== 'luigi'; i++) hero.adjust?.(1);
@@ -248,13 +249,16 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
     expect(loadDevPick(h.game)?.power).toBe('full');
   });
 
-  it('a kept hero the START page no longer offers is ignored (an Expansion hero back on Release)', () => {
+  it('a kept hero the START page no longer offers is ignored (an Expansion hero set Off)', () => {
     const h = dev();
     const s = h.game.deps.settings as Settings;
     s.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: ['yoshi'] };
     kept({ hero: 'yoshi', look: 'yoshi' });
     expect(loadDevPick(h.game)?.hero).toBe('yoshi');
-    delete s.classicDev.heroesOn; // Release: not offered in 0.5.0
+    // 0.4.72 (owner): Release is still offered in dev mode; Off is not.
+    delete s.classicDev.heroesOn;
+    expect(loadDevPick(h.game)?.hero).toBe('yoshi');
+    s.classicDev.heroesOff = ['yoshi'];
     expect(loadDevPick(h.game)).toBeNull();
     // A look that is not that hero's is ignored too.
     kept({ hero: 'mario', look: 'link' });
@@ -356,7 +360,8 @@ describe('O-05 review: every area reachable, Again checked on the press, readabl
     expect(h.said.at(-1)).toMatch(/^Story: Lost Levels worlds\./);
   });
 
-  it.each(['release', 'off'] as const)(
+  // 0.4.72 (owner): a hero back on Release is still offered in dev mode, so only Off stops Again.
+  it.each(['off'] as const)(
     'Again is checked on the press: a hero set to %s since says why and starts nothing',
     (now) => {
       const h = dev();

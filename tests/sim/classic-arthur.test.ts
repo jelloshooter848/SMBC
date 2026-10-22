@@ -116,10 +116,16 @@ describe('definition and roster (AR-1..AR-3, TG-41)', () => {
 
   it('an expansion hero: on the Classic select only with Options > Expansion heroes on', () => {
     // O-12: the Expansion heroes row is developer mode's until a hero is released.
+    // 0.4.72 (owner): the release build's select leaves Arthur out; dev mode's select shows every
+    // hero Toggle heroes does not set Off, released or not.
+    const off = { ...defaultSettings(), classicRules: 'classic' as const, dev: false };
+    const h0 = makeGame({ deps: { settings: off, applySettings: () => {} } });
+    h0.game.classicSelect('1-1', () => h0.game.showClassicMenu());
+    expect((h0.top() as CharacterSelectScene).chars).not.toContain(A);
     const settings = { ...defaultSettings(), classicRules: 'classic' as const, dev: true };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
-    expect((h.top() as CharacterSelectScene).chars).not.toContain(A);
+    expect((h.top() as CharacterSelectScene).chars).toContain(A);
     settings.classic.expansion = 'on';
     // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
     settings.classicDev.heroesOn = ['arthur'];

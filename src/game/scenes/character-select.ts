@@ -215,9 +215,10 @@ export class CharacterSelectScene implements Scene {
   /**
    * The heroes to pick from: the run's roster (Game.roster; the Classic extras follow the usual
    * ones), one slot per hero: a hero's other skins are chosen on its slot (Game.heroSlots, FU-8).
+   * 0.4.72: Game.selectSlots, which in dev mode is every hero not set Off.
    */
   get chars(): readonly CharacterDef[] {
-    return this.game.heroSlots;
+    return this.game.selectSlots;
   }
 
   /**
@@ -423,7 +424,8 @@ export class CharacterSelectScene implements Scene {
   private locked(i: number): boolean {
     if (this.isRandom(i)) return false;
     const c = this.chars[i];
-    return !c || this.game.heroLocked(c);
+    // 0.4.72: never in dev mode (Game.selectLocked).
+    return !c || this.game.selectLocked(c);
   }
 
   /**

@@ -52,8 +52,8 @@ export function loadDevPick(game: Game): DevPick | null {
 
 /**
  * Kept pick `p` as it can start now, or why it cannot: it must name a level this build has and a
- * hero the START page offers now (Game.slotsFor, so expansionHeroOffered: a hero set back to
- * Release or to Off is not), with one of that hero's looks. A power the played def does not have
+ * hero the START page offers now (Game.devSlotsFor: a hero set Off in Toggle heroes is not), with
+ * one of that hero's looks. A power the played def does not have
  * falls back to its first state.
  */
 export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
@@ -71,7 +71,7 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
       return `${name} is not in this build`;
     }
   }
-  const offered = branch === 'campaign' ? game.deps.characters : game.slotsFor(rules);
+  const offered = branch === 'campaign' ? game.deps.characters : game.devSlotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
   if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
@@ -609,10 +609,13 @@ export class DevStartScene extends DevPage {
     this.setItems(items);
   }
 
-  /** The heroes the select would offer this start (Game.slotsFor; the campaign's roster). */
+  /**
+   * The heroes the select would offer this start (Game.devSlotsFor, 0.4.72: every hero not set
+   * Off; the campaign's roster).
+   */
   get heroes(): CharacterDef[] {
     if (this.target.branch === 'campaign') return this.game.deps.characters;
-    return this.game.slotsFor(this.rules);
+    return this.game.devSlotsFor(this.rules);
   }
 
   get hero(): CharacterDef {

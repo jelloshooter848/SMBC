@@ -666,7 +666,45 @@ export class Game {
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
-    const slots = this.slotsFor(this.liveRules);
+    return this.withoutDisabled(this.slotsFor(this.liveRules));
+  }
+
+  /**
+   * 0.4.72 (owner item 5): the heroes the select screen shows. Outside dev mode, heroSlots. In
+   * dev mode every hero Dev > Toggle heroes does not set Off, released or not (classicHeroOn in
+   * place of expansionHeroOffered's release rule), still without the ones the run's Disable
+   * heroes turned off. Random, Single random and Survival keep heroSlots.
+   */
+  get selectSlots(): CharacterDef[] {
+    if (!this.devMode) return this.heroSlots;
+    return this.withoutDisabled(this.devSlotsFor(this.liveRules));
+  }
+
+  /**
+   * 0.4.72 (owner item 5): slotsFor `rules` as dev mode's hero pickers offer them (the select,
+   * the dev START page's Hero row): every hero Dev > Toggle heroes does not set Off. Outside dev
+   * mode, slotsFor itself (the release rule).
+   */
+  devSlotsFor(rules: Rules): CharacterDef[] {
+    if (!this.devMode) return this.slotsFor(rules);
+    return this.slotsFor(rules, (id) => {
+      const d = CLASSIC_EXTRAS.find((c) => c.id === id);
+      return d ? this.classicHeroOn(d) : !this.classicToggles.heroesOff.includes(id);
+    });
+  }
+
+  /**
+   * 0.4.72 (owner item 5): hero `def` is drawn locked (a silhouette, skipped) on the select. In
+   * dev mode never (a campaign captive too; heroLocked, heroesToFind and the story are
+   * untouched), else heroLocked.
+   */
+  selectLocked(def: CharacterDef): boolean {
+    if (!this.devMode) return this.heroLocked(def);
+    return CLASSIC_EXTRAS.includes(def) && !this.roster.includes(def);
+  }
+
+  /** `slots` without the heroes the Classic run's Disable heroes turned off (G-032). */
+  private withoutDisabled(slots: CharacterDef[]): CharacterDef[] {
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
     // always keeping at least one (GeneralOptions.as: the last hero cannot be disabled).
     if (!(this.classicRun || this.classicFlow) || this.campaign !== null) return slots;
@@ -680,10 +718,13 @@ export class Game {
    * heroSlots for a run under `rules` (G-093: the Classic menu's How to play lists the heroes a
    * Classic run would offer, though no run is playing yet).
    */
-  slotsFor(rules: Rules): CharacterDef[] {
+  slotsFor(
+    rules: Rules,
+    offered: (id: string) => boolean = (id) => this.expansionHeroOffered(id),
+  ): CharacterDef[] {
     const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
-    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter((id) => this.expansionHeroOffered(id))];
+    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter(offered)];
     const slots: CharacterDef[] = [];
     for (const id of ids) {
       const def = roster.find((c) => c.id === id && !isSkin(c));
@@ -743,7 +784,8 @@ export class Game {
     const host = this.slotOf(c);
     // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
     // hero standing and the select shows who plays.
-    const slots = this.heroSlots;
+    // A hero the dev select offers (selectSlots: dev mode shows every hero not set Off) plays.
+    const slots = this.selectSlots;
     if (!slots.includes(host)) {
       const first = slots.find((d) => !this.heroLocked(d)) ?? slots[0];
       return first ? this.skinFor(first) : c;
