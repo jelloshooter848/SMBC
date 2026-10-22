@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { loadProgress } from '@engine/save/progress';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
-import { LevelScene } from '@game/scenes/level';
+import type { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import {
   ClassicNoteScene,

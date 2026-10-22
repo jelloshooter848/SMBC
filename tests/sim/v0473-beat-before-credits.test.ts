@@ -6,7 +6,7 @@ import { CreditsScene } from '@game/scenes/credits';
 import { CardScene, MessageScene } from '@game/scenes/message';
 import { PauseScene } from '@game/scenes/pause';
 import { QuitRunScene } from '@game/scenes/quit-run';
-import { LevelScene } from '@game/scenes/level';
+import type { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import { REPLAY_HELP_KEY } from '@game/scenes/original-replay';
 import { loadClearedFile, type ClassicFileRef } from '@game/original-files';
