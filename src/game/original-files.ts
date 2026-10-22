@@ -139,6 +139,11 @@ export function saveClassicFile(f: Omit<ClassicFile, 'savedAt' | 'v'> & { savedA
   return saveJson(classicFileKey(f), out);
 }
 
+/** Whether anything is stored for file `ref` (a broken file too). */
+export function hasClassicFile(ref: ClassicFileRef): boolean {
+  return hasKey(classicFileKey(ref));
+}
+
 /** ERASE FILE: file `ref` is empty again. */
 export function eraseClassicFile(ref: ClassicFileRef): void {
   removeKey(classicFileKey(ref));
@@ -192,15 +197,16 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
 function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): boolean {
   const files = listClassicFiles(set);
   const savedAt = r.savedAt ?? 0;
-  let slot: ClassicFileSlot | undefined = CLASSIC_FILE_SLOTS.find((_, i) => files[i] === null);
+  // A file with anything in it (an unreadable one too) is not empty.
+  let slot: ClassicFileSlot | undefined = CLASSIC_FILE_SLOTS.find((s) => !hasClassicFile({ set, slot: s }));
   if (slot === undefined) {
-    // Full: the oldest file goes only for a newer run.
-    let oldest = 0;
+    // Full: the oldest readable file goes only for a newer run (an unreadable one is left alone).
+    let oldest = -1;
     files.forEach((f, i) => {
-      if ((f?.savedAt ?? 0) < (files[oldest]?.savedAt ?? 0)) oldest = i;
+      if (f && (oldest < 0 || f.savedAt < (files[oldest] as ClassicFile).savedAt)) oldest = i;
     });
-    const old = files[oldest] as ClassicFile;
-    if (savedAt <= old.savedAt) {
+    const old = oldest < 0 ? null : (files[oldest] as ClassicFile);
+    if (!old || savedAt <= old.savedAt) {
       console.warn(`Classic files: ${set} is full; an older saved run was not migrated`);
       return true;
     }

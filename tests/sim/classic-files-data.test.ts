@@ -170,6 +170,14 @@ describe('B-L migration', () => {
     expect(listClassicFiles('smb').map((f) => f?.run.score ?? null)).toEqual([1, 2, null]);
   });
 
+  it('an unreadable file is never taken for an empty one', () => {
+    store.set('smbc-classic-file-smb-1', '{"v":1,"run":null}');
+    put(classicResumeKey('smb'), run({ score: 5 }));
+    migrateClassicFiles(shared());
+    expect(store.get('smbc-classic-file-smb-1')).toBe('{"v":1,"run":null}');
+    expect(loadClassicFile({ set: 'smb', slot: 2 })?.run.score).toBe(5);
+  });
+
   it('a full set keeps the newest and logs it', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const slot of [1, 2, 3] as const)

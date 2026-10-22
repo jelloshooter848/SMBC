@@ -32,6 +32,7 @@ import { resumeOf, type ClassicResume } from '../run-resume';
 import {
   copyFileRules,
   eraseClassicFile,
+  hasClassicFile,
   listClassicFiles,
   loadClassicFile,
   migrateClassicFiles,
@@ -2360,12 +2361,22 @@ export class Game {
   }
 
   /**
-   * B-L: map set `set`'s three files, in slot order: null for an empty one (and for one whose
-   * run no longer plays: its hero or level is gone, so it reads as empty).
+   * B-L: map set `set`'s three files, in slot order: null for one not in use (empty, or kept but
+   * unreadable: classicFileState tells them apart).
    */
   classicFiles(set: MapSetId): (ClassicFile | null)[] {
     this.migrateClassicFiles();
     return listClassicFiles(set).map((f) => (f && this.playable(f) ? f : null));
+  }
+
+  /**
+   * B-L: whether file `ref` is empty, used (and plays), or kept but unreadable (broken, or its
+   * hero or level gone): an unreadable file is never treated as empty, so a new game never
+   * overwrites it; ERASE FILE empties it.
+   */
+  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unreadable' {
+    if (this.classicFileAt(ref)) return 'used';
+    return hasClassicFile(ref) ? 'unreadable' : 'empty';
   }
 
   /** B-L: file `ref` when it is used and still plays, else null. */
@@ -2392,6 +2403,8 @@ export class Game {
    * empty, and BACK from the select (`back`) goes back to the rules box.
    */
   startClassicFile(ref: ClassicFileRef, rules: ClassicFileRules, back: () => void): void {
+    // An empty file only: a used or unreadable one is emptied only through ERASE FILE.
+    if (this.classicFileState(ref) !== 'empty') return;
     const set = MAP_SETS.find((m) => m.id === ref.set) ?? (MAP_SETS[0] as (typeof MAP_SETS)[number]);
     this.classicSelect(set.start, back, { file: ref, rules: copyFileRules(rules) });
   }

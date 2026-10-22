@@ -332,6 +332,42 @@ describe('B-L ERASE FILE', () => {
   });
 });
 
+describe('B-L an unreadable file', () => {
+  it('shows UNREADABLE, never starts a new game over it, and ERASE FILE empties it', () => {
+    const h = classic();
+    store.set('smbc-classic-file-smb-2', '{"v":1,"run":{"broken":true}}');
+    const box = openSet(h);
+    expect(values(box).slice(0, 3)).toEqual(['NEW GAME', 'UNREADABLE', 'NEW GAME']);
+    choose(h, 'File 2');
+    expect(h.top()).toBe(box);
+    expect(h.said.at(-1)).toBe('File 2 cannot be read. Erase it to use it again.');
+    // START on it is refused too (a run is never started into it).
+    h.game.startClassicFile(F2, originalFileRules(), () => {});
+    expect(h.top()).toBe(box);
+    choose(h, 'Erase file');
+    expect(values(h.top()).slice(0, 3)).toEqual(['EMPTY', 'UNREADABLE', 'EMPTY']);
+    choose(h, 'File 2');
+    expect(h.said.at(-1)).toMatch(/^Erase file 2\? It cannot be read\./);
+    choose(h, 'Yes');
+    expect(store.has('smbc-classic-file-smb-2')).toBe(false);
+    expect(values(h.top()).slice(0, 3)).toEqual(['NEW GAME', 'NEW GAME', 'NEW GAME']);
+  });
+
+  it('a Survival run with no lives left is kept and goes on (lives only revive heroes)', () => {
+    const h = classic();
+    const rules = originalFileRules();
+    rules.options.gameMode = 'survival';
+    h.game.classicGame(MARIO, '2-1', { ref: F1, rules });
+    h.game.state.lives = 0;
+    h.game.goToLevel('2-2', { mode: 'stand' });
+    expect(loadClassicFile(F1)?.run.lives).toBe(0);
+    h.game.showTitle();
+    const box = openSet(h);
+    expect(values(box)[0]).toBe('NORMAL 2-2 X0');
+    expect(h.game.resumeClassic(F1)).toBe(true);
+  });
+});
+
 describe('B-L phone touch', () => {
   it('every box shows OK and BACK', () => {
     const h = classic();

@@ -92,6 +92,9 @@ export function fileSpoken(game: Game, f: ClassicFile): string {
   return `${DIFFICULTY_NAMES[f.rules.difficulty]}, ${where}, ${lives}, score ${r.score}, ${fileHeroName(game, f)}, ${GAME_MODE_NAMES[f.rules.options.gameMode] ?? ''}${own}`;
 }
 
+/** A kept file that cannot be read (as the campaign's file select shows one). */
+const UNREADABLE = 'UNREADABLE';
+
 /** "File 2" */
 const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
 
@@ -211,6 +214,16 @@ export class ClassicFilesScene extends ClassicBox {
     this.files = game.classicFiles(this.set.id);
     const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot, i) => {
       const f = this.files[i] ?? null;
+      if (!f && game.classicFileState({ set: this.set.id, slot }) === 'unreadable')
+        return {
+          label: fileName(slot),
+          value: () => UNREADABLE,
+          select: () => {
+            game.ctx.audio.sfx('bump');
+            game.deps.announcer?.say(`${fileName(slot)} cannot be read. Erase it to use it again.`);
+          },
+          hint: 'Cannot be read. Erase it to use it again',
+        };
       return f
         ? {
             label: fileName(slot),
@@ -225,7 +238,7 @@ export class ClassicFilesScene extends ClassicBox {
             hint: 'Empty. Start a new game here: choose its difficulty and rules',
           };
     });
-    const used = this.files.some((f) => f !== null);
+    const used = this.inUse.some(Boolean);
     items.push(
       {
         label: 'Erase file',
@@ -263,8 +276,13 @@ export class ClassicFilesScene extends ClassicBox {
     if (atRules) diff.openRules();
   }
 
+  /** Per file: anything stored there (used, or unreadable), so ERASE FILE can empty it. */
+  get inUse(): boolean[] {
+    return CLASSIC_FILE_SLOTS.map((slot) => this.game.classicFileState({ set: this.set.id, slot }) !== 'empty');
+  }
+
   private erase(): void {
-    if (!this.files.some((f) => f !== null)) {
+    if (!this.inUse.some(Boolean)) {
       this.game.ctx.audio.sfx('bump');
       this.game.deps.announcer?.say('Every file is empty.');
       return;
@@ -424,14 +442,22 @@ export class ClassicEraseScene extends ClassicBox {
       files.comeBack();
     });
     this.refresh();
-    const first = files.shown.findIndex((f) => f !== null);
+    const first = files.inUse.findIndex(Boolean);
     this.index = Math.max(0, first);
   }
 
   protected override refresh(): void {
     const game = this.game;
+    const inUse = this.files.inUse;
     const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot, i) => {
       const f = this.files.shown[i] ?? null;
+      if (!f && inUse[i])
+        return {
+          label: fileName(slot),
+          value: () => UNREADABLE,
+          select: () => game.scenes.push(new ClassicEraseConfirmScene(game, slot, null, this.files, this)),
+          hint: 'Cannot be read',
+        };
       return f
         ? {
             label: fileName(slot),
@@ -461,7 +487,7 @@ export class ClassicEraseConfirmScene extends ClassicBox {
   constructor(
     game: Game,
     readonly slot: ClassicFileSlot,
-    readonly file: ClassicFile,
+    readonly file: ClassicFile | null,
     readonly files: ClassicFilesScene,
     readonly picker: ClassicEraseScene,
   ) {
@@ -469,7 +495,8 @@ export class ClassicEraseConfirmScene extends ClassicBox {
       closeTo(game, picker);
       picker.comeBack();
     });
-    this.spokenTitle = `Erase file ${slot}? ${fileSpoken(game, file)}. It cannot be undone`;
+    const what = file ? fileSpoken(game, file) : 'It cannot be read';
+    this.spokenTitle = `Erase file ${slot}? ${what}. It cannot be undone`;
     this.setItems([
       { label: 'No', select: () => this.onBack?.(), hint: 'Keep the file' },
       {
