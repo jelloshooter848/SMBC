@@ -2276,6 +2276,11 @@ export class Game {
   /** Per-set saves: the map set whose slot the Classic run writes (its last WORLD card's). */
   private resumeSet: MapSetId | null = null;
 
+  /** The map set the Classic run plays (its save slot's), for the CLASSIC menu's focus on leaving it. */
+  get runSet(): MapSetId | undefined {
+    return this.resumeSet ?? undefined;
+  }
+
   /** G-008: clears the run's set's slot (the set of `levelId` when no WORLD card set it yet). */
   private dropResume(levelId: string | null): void {
     const set = this.resumeSet ?? (levelId ? resumeSetOf(levelId) : null);
@@ -2457,9 +2462,10 @@ export class Game {
    * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
    */
   quitClassicRun(): void {
+    const set = this.runSet;
     this.leaveRun();
     this.scenes.clear();
-    this.showClassicMenu();
+    this.showClassicMenu(set);
   }
 
   /**

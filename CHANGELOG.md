@@ -12,6 +12,8 @@ under `## [Unreleased]`.
 
 - Classic mode: a saved run for a hero no select offers now plays as Mario from Mario's default
   power and items, as the earlier entry said, instead of keeping that hero's saved power.
+- Classic mode: quitting a run, or MAIN MENU after its game over, comes back to the CLASSIC menu
+  on that run's own map set (Special, Lost Levels), not on Super Mario Bros.
 
 ## [0.4.69] - 2026-10-22
 
