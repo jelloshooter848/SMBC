@@ -87,6 +87,7 @@ function apply(game: Game): void {
 class VideoOptions extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'VIDEO', [], onBack);
+    this.entryTitle = 'Video';
     const s = settings(game);
     this.setItems([
       {
@@ -139,6 +140,7 @@ const PALETTE_LABELS: Record<PaletteMode, string> = {
 class AudioOptions extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'AUDIO', [], onBack);
+    this.entryTitle = 'Audio';
     const s = settings(game);
     const vol = (label: string, key: 'master' | 'music' | 'sfx'): MenuItem => ({
       label,
@@ -163,6 +165,7 @@ class ControlsOptions extends MenuScene {
   private capturing: { action: Action; kind: 'keyboard' | 'gamepad' } | null = null;
   constructor(game: Game, onBack: () => void) {
     super(game, 'CONTROLS', [], onBack);
+    this.entryTitle = 'Controls';
     this.rebuild();
   }
 
@@ -288,6 +291,7 @@ import { defaultBindings } from '@engine/input/bindings';
 export class AssistOptionsScene extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSISTS', [], onBack);
+    this.entryTitle = 'Assists';
     const s = settings(game);
     const a = s.assist;
     const toggle = (label: string, key: keyof typeof a, hint?: string): MenuItem => ({

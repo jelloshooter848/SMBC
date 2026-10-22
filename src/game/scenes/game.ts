@@ -2287,6 +2287,11 @@ export class Game {
   /** Per-set saves: the map set whose slot the Classic run writes (its last WORLD card's). */
   private resumeSet: MapSetId | null = null;
 
+  /** The map set the Classic run plays (its save slot's), for the CLASSIC menu's focus on leaving it. */
+  get runSet(): MapSetId | undefined {
+    return this.resumeSet ?? undefined;
+  }
+
   /** G-008: clears the run's set's slot (the set of `levelId` when no WORLD card set it yet). */
   private dropResume(levelId: string | null): void {
     const set = this.resumeSet ?? (levelId ? resumeSetOf(levelId) : null);
@@ -2366,10 +2371,15 @@ export class Game {
     // with its level, lives, score and coins; its power and kit (Current's) start afresh.
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
+    // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
+    // at his own default, not with the saved hero's power and kit.
+    const swapped = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
-      s.powerState = r.powerState;
-      s.hp = r.hp;
-      s.kit = { ...r.kit };
+      if (!swapped) {
+        s.powerState = r.powerState;
+        s.hp = r.hp;
+        s.kit = { ...r.kit };
+      }
       if (r.heroKits) this.classicKits = structuredClone(r.heroKits);
     }
     s.warped = r.warped;
@@ -2463,9 +2473,10 @@ export class Game {
    * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
    */
   quitClassicRun(): void {
+    const set = this.runSet;
     this.leaveRun();
     this.scenes.clear();
-    this.showClassicMenu();
+    this.showClassicMenu(set);
   }
 
   /**
