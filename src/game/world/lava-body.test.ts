@@ -53,7 +53,10 @@ function expected(level: LevelData): string[] {
   for (let x = 0; x < level.width; x++)
     for (let y = 0; y < level.height; y++) {
       if (at(x, y) !== T.LAVA) continue;
-      for (let yy = y + 1; yy < level.height && at(x, yy) === T.AIR; yy++) out.push(`${x},${yy}`);
+      let end = y + 1;
+      while (end < level.height && at(x, end) === T.AIR) end++;
+      // Only a run of air that reaches the bottom row.
+      if (end === level.height) for (let yy = y + 1; yy < end; yy++) out.push(`${x},${yy}`);
     }
   return out.sort();
 }
@@ -83,6 +86,12 @@ describe('the lava body (item 56)', () => {
     const lv = field({ 10: '..~~~...............', 11: '..~.=...............', 12: '..~.................' });
     // col 2: lava, lava, lava (no body between); col 3: body down to the bottom; col 4: stopped by the brick.
     expect(bodyCells(lv)).toEqual(['2,13', '2,14', '3,11', '3,12', '3,13', '3,14']);
+  });
+
+  it('a corridor under a floor under the lava is never painted: only air open to the bottom row fills', () => {
+    // Column 3: lava, air, floor, then a corridor (air) to the bottom. Column 6: lava, air to the bottom.
+    const lv = field({ 5: '...~..~.............', 9: '...#................' });
+    expect(bodyCells(lv)).toEqual(['6,10', '6,11', '6,12', '6,13', '6,14', '6,6', '6,7', '6,8', '6,9']);
   });
 
   it('a view scrolled down still knows the lava above the screen', () => {

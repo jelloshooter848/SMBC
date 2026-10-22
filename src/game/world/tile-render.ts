@@ -23,16 +23,28 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
   // bottom row are drawn in the lava's body colour (the original lays its back-layer colorRed
   // there). It is only drawn: those cells stay air for every rule. `under[i]` says the column's
   // nearest tile above is lava; a scrolled-down view seeds it from the rows above the screen.
+  // Only air that runs unbroken to the bottom row is filled (`openFrom[i]`: the column's first row
+  // of that run), so a lava tile over a floor with a corridor under it never paints the corridor.
+  // The body is palette slot b, the lava art's own body colour: an asset pack that redraws the
+  // lava frames in other slots may not match it.
   const cols = last - first + 1;
-  if (under.length < cols) under = new Uint8Array(cols);
-  for (let i = 0; i < cols; i++) under[i] = top > 0 && lavaAbove(map, first + i, top) ? 1 : 0;
+  if (under.length < cols) {
+    under = new Uint8Array(cols);
+    openFrom = new Int32Array(cols);
+  }
+  for (let i = 0; i < cols; i++) {
+    under[i] = top > 0 && lavaAbove(map, first + i, top) ? 1 : 0;
+    let y = map.height;
+    while (y > 0 && map.get(first + i, y - 1) === T.AIR) y--;
+    openFrom[i] = y;
+  }
   const body = sheet.frames.has(`lava-body@${view.theme}`) ? `lava-body@${view.theme}` : 'lava-body';
   for (let ty = top; ty <= bottom; ty++) {
     for (let tx = first; tx <= last; tx++) {
       const id = map.get(tx, ty);
       const i = tx - first;
       if (id === T.AIR) {
-        if (under[i]) r.sprite(sheet, body, tx * TILE - camPx, ty * TILE);
+        if (under[i] && ty >= (openFrom[i] as number)) r.sprite(sheet, body, tx * TILE - camPx, ty * TILE);
         continue;
       }
       under[i] = id === T.LAVA ? 1 : 0;
@@ -62,6 +74,8 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
 
 /** The lava-body flags of the columns drawn (renderTiles), reused frame to frame. */
 let under = new Uint8Array(32);
+/** Per drawn column: the first row of the air that runs unbroken to the map's bottom row. */
+let openFrom = new Int32Array(32);
 
 /** The nearest non-air tile above row `ty` of column `tx` is lava (its body reaches `ty`). */
 function lavaAbove(map: TileMap, tx: number, ty: number): boolean {

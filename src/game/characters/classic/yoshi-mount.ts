@@ -207,7 +207,7 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       yoshi.parked = true;
       yoshi.body.vy = 0;
       yoshi.body.vx = 0;
-      say(world, WAITS_SAID);
+      // The caller says WAITS_SAID, once for every Yoshi left at the same way in.
       break;
     case 'death':
       yoshi.state = 'gone';
@@ -259,7 +259,7 @@ export function yoshiClearHop(world: World, p: Player): void {
   if (benchedLevel(world, world.clearNext())) {
     p.scratch[RIDE_KEY] = 2;
     yoshi.parked = true;
-    say(world, WAITS_SAID);
+    if (!world.events.some((e) => e.type === 'say' && e.text === WAITS_SAID)) say(world, WAITS_SAID);
     return;
   }
   const facing = p.facing;
@@ -292,18 +292,26 @@ export const PARK_HOP = 20;
  * in on foot. Coming back out into an allowed area he rejoins as before (yoshiWorldLoaded).
  */
 export function yoshiPipeEntry(world: World, p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): number {
-  if (!world.ctx.classicYoshi) return 0;
-  const ride = RIDES.get(p);
-  if (!ride || !benchedLevel(world, z.target.level)) return 0;
-  const yoshi = ride.mount;
-  dismount(p, world, 'park');
-  parkBeside(yoshi, p, world, z, dir);
-  return PARK_HOP;
+  if (!world.ctx.classicYoshi || !benchedLevel(world, z.target.level)) return 0;
+  // Every rider goes along (World.enterPipe takes the other players in too; a dev free-play
+  // Classic run can have two): each Yoshi waits, side by side, and the line is said once.
+  const hops = RIDES.has(p);
+  let slot = 0;
+  for (const o of [p, ...world.players.filter((q) => q !== p)]) {
+    const ride = RIDES.get(o);
+    if (!ride) continue;
+    dismount(o, world, 'park');
+    parkBeside(ride.mount, p, world, z, dir, slot++);
+  }
+  if (slot > 0) say(world, WAITS_SAID);
+  return hops ? PARK_HOP : 0;
 }
 
 /**
- * Where Yoshi waits at a pipe: beside a down pipe on the floor, on the side the hero came from
- * (his back), else on the pipe top at that edge; behind the hero at a side pipe. Facing it.
+ * Where Yoshi waits at a pipe: beside a down pipe on the floor, on the side the hero who went in
+ * came from (his back), else on the pipe top at that edge; behind the hero at a side pipe, or the
+ * nearest free spot further back. Facing it. `slot`: a second Yoshi (co-op) sits one place
+ * further out.
  */
 function parkBeside(
   yoshi: YoshiMount,
@@ -311,6 +319,7 @@ function parkBeside(
   world: World,
   z: Zone & { kind: 'pipe' },
   dir: PipeDir,
+  slot = 0,
 ): void {
   const b = yoshi.body;
   const map = world.map;
@@ -321,8 +330,9 @@ function parkBeside(
       for (let ty = tileAt(feet - b.h); ty <= tileAt(feet - 1); ty++) if (map.isSolid(tx, ty)) return false;
     return true;
   };
+  const step = back * (b.w + px(4)) * slot;
   if (dir === 'down') {
-    const x = back < 0 ? tileToSub(z.x) - b.w - px(2) : tileToSub(z.x + 2) + px(2);
+    const x = (back < 0 ? tileToSub(z.x) - b.w - px(2) : tileToSub(z.x + 2) + px(2)) + step;
     // Down from the pipe top's row to the first floor under him.
     for (let ty = z.y; ty < world.level.height; ty++) {
       const solid = map.isSolid(tileAt(x), ty) || map.isSolid(tileAt(x + b.w - 1), ty);
@@ -335,16 +345,24 @@ function parkBeside(
       }
       break;
     }
-    // A wall or a pit beside the pipe: he sits on the pipe top at that edge.
-    b.x = back < 0 ? tileToSub(z.x) : tileToSub(z.x + 2) - b.w;
+    // A wall or a pit beside the pipe: he sits on the pipe top at that edge (a second one at the
+    // other edge).
+    const edge = slot % 2 === 0 ? back : -back;
+    b.x = edge < 0 ? tileToSub(z.x) : tileToSub(z.x + 2) - b.w;
     b.y = tileToSub(z.y) - b.h;
     b.onGround = true;
     return;
   }
   // A side pipe: behind the hero, feet on his floor (where the pair stood, if a wall is there).
   const feet = p.body.y + p.body.h;
-  const x = back < 0 ? p.body.x - b.w - px(2) : p.body.x + p.body.w + px(2);
-  if (fits(x, feet)) b.x = x;
+  const x0 = (back < 0 ? p.body.x - b.w - px(2) : p.body.x + p.body.w + px(2)) + step;
+  // A wall right behind: the nearest free spot further back (up to 3 tiles), else beside the hero.
+  b.x = p.body.x;
+  for (let d = 0; d <= px(48); d += px(4))
+    if (fits(x0 + back * d, feet)) {
+      b.x = x0 + back * d;
+      break;
+    }
   b.y = feet - b.h;
   b.onGround = true;
 }

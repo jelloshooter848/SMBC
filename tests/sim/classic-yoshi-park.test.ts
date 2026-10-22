@@ -41,6 +41,7 @@ class MRig {
     level: LevelData,
     mount: GameContext['classicYoshi'],
     kit: Record<string, number> = {},
+    second: CharacterDef | null = null,
   ) {
     const ctx: GameContext = {
       assets: new AssetRegistry({ default: {} }),
@@ -50,7 +51,7 @@ class MRig {
       rules: 'classic',
       ...(mount ? { classicYoshi: mount } : {}),
     };
-    const state = { ...newGameState(def, null, 'classic'), powerState: 'small', kit };
+    const state = { ...newGameState(def, second, 'classic'), powerState: 'small', kit };
     this.world = new World(level, ctx, state, { seed: 1 });
     this.events.push(...this.world.events.splice(0));
   }
@@ -167,6 +168,57 @@ describe('item 74: Yoshi waits at the pipe into a bonus room', () => {
     r.step();
     expect(r.p.body.y).toBeGreaterThan(y0);
     expect(yoshis(r.world)).toHaveLength(0);
+  });
+});
+
+describe('item 74 review: two riders, and a wall behind a side pipe', () => {
+  it('co-op (a dev free-play Classic run): both Yoshis wait at the pipe, side by side, one line', () => {
+    const r = new MRig(MARIO, getLevel('1-1'), 'ride', {}, MARIO);
+    const [p1, p2] = r.world.players as [Player, Player];
+    expect(r.world.players).toHaveLength(2);
+    expect(ridingOf(p1)).not.toBeNull();
+    expect(ridingOf(p2)).not.toBeNull();
+    // P2 waits on the floor to the left of the pipe (out of the Goombas' way).
+    p1.invuln = p2.invuln = 100000;
+    p2.body.x = tileToSub(54);
+    onPipe(r, 57, 9);
+    r.step(['down']);
+    expect(ridingOf(p1)).toBeNull();
+    expect(ridingOf(p2)).toBeNull();
+    expect(p1.scratch[RIDE_KEY]).toBe(2);
+    expect(p2.scratch[RIDE_KEY]).toBe(2);
+    const ys = yoshis(r.world);
+    expect(ys).toHaveLength(2);
+    for (const y of ys) {
+      expect(y.parked).toBe(true);
+      expect(y.body.y + y.body.h).toBe(px(13 * 16));
+      expect(y.body.x + y.body.w).toBeLessThanOrEqual(tileToSub(57));
+    }
+    const [a, b] = ys as [YoshiMount, YoshiMount];
+    // Not on top of each other.
+    expect(Math.abs(a.body.x - b.body.x)).toBeGreaterThanOrEqual(a.body.w);
+    expect(r.said(WAITS_SAID)).toBe(1);
+  });
+
+  it('a side pipe with a wall right behind the hero: Yoshi sits at the nearest free spot, not on him', () => {
+    // A side pipe's mouth at column 12, rows 11-12; a block at column 10, row 12, right behind.
+    const lv = flatLevel({ 12: '..........#' }, 60, []);
+    lv.zones.push({ kind: 'pipe', x: 12, y: 11, dir: 'right', target: { level: '1-1-bonus', x: 1, y: 0 } });
+    const r = new MRig(MARIO, lv, 'ride');
+    const b = r.p.body;
+    b.x = tileToSub(12) - b.w - px(1);
+    b.y = tileToSub(13) - b.h;
+    r.p.facing = 1;
+    r.world.camera.x = 0;
+    r.step();
+    const y = yoshis(r.world)[0] as YoshiMount;
+    r.step(['right']);
+    expect(y.parked).toBe(true);
+    const hero = r.p.body;
+    // Clear of the hero and of the block.
+    expect(y.body.x + y.body.w <= hero.x || y.body.x >= hero.x + hero.w).toBe(true);
+    expect(y.body.x + y.body.w).toBeLessThanOrEqual(tileToSub(10));
+    expect(y.body.y + y.body.h).toBe(tileToSub(13));
   });
 });
 
