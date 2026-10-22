@@ -781,12 +781,13 @@ export class Game {
   }
 
   /**
-   * 0.4.72: hero `c` is offered only by dev mode's select: dev mode is on and its slot is an
-   * Expansion hero players do not have yet (whether in Release or On state).
+   * 0.4.72: hero `c`'s slot is an Expansion hero players do not have yet (only dev mode's select
+   * offers it), whether dev mode is on now or not: a run playing it marks its file (devHero) even
+   * after dev mode was turned off mid-run.
    */
   devOnlyHero(c: CharacterDef): boolean {
     const id = this.slotOf(c).id;
-    return this.devMode && EXPANSION_HEROES.includes(id) && !this.heroReleased(id);
+    return EXPANSION_HEROES.includes(id) && !this.heroReleased(id);
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -2412,7 +2413,9 @@ export class Game {
       /* a level that does not load: kept as the state has it */
     }
     // 0.4.72: a hero only dev mode's select offers marks the run (fileProblem 'not-released').
-    if (this.devOnlyHero(this.state.character)) r.devHero = true;
+    // A mark the file has is never dropped (a later write by another hero keeps it).
+    if (this.devOnlyHero(this.state.character) || loadClassicFile(ref)?.run.devHero === true)
+      r.devHero = true;
     saveClassicFile({
       ...ref,
       rules: this.classicRunRules,
