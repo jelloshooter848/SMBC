@@ -18,7 +18,6 @@ import { Blooper } from '@game/entities/enemies/blooper';
 import { runSim } from '@game/sim/headless';
 import { fontText } from '@game/hud/text';
 import { flatLevel, measureJump, Rig } from './classic-plumber-harness';
-import { SMB1_STOMP_HELD } from '@game/characters/classic/stomp';
 
 // Classic SMBC Mario and Luigi (bug-reports/2026-10-07-mario-luigi-classic-smbc-rules.md, ML-C1..
 // ML-C28): the report's acceptance checks, measured on the real defs through the World.
@@ -107,7 +106,7 @@ describe('constants against the original (ML-C3, ML-C7)', () => {
       headBump: 0xd55,
     });
     expect(p.softCut).toBe(52057);
-    // BUG-07 (owner decision): SMB1's held stomp bounce in place of the original's bouncePwr 300.
+    // BUG-07 (owner decision): the campaign's held stomp bounce in place of the original's bouncePwr 300.
     expect([p.turnInAir, p.jumpBuffer, p.stompBounce, p.crouchJump, p.coyoteFrames]).toEqual([
       false,
       false,
@@ -115,7 +114,7 @@ describe('constants against the original (ML-C3, ML-C7)', () => {
       true,
       0,
     ]);
-    expect(p.stompHeld).toBe(SMB1_STOMP_HELD);
+    expect(p.stompHeld).toBe(MARIO_PROFILE);
   });
 
   it('Luigi', () => {
@@ -359,10 +358,10 @@ describe('stomp bounce (ML-C21)', () => {
     return (stompFeet - min) / 256;
   }
   // BUG-07 (owner decision, a deliberate departure from the original's fixed bouncePwr 300,
-  // 13.8 px for Mario and 14.9 px for Luigi either way): SMB1's bounce, vy -4 px/f, rising on
-  // the tier's held gravity while jump is held, so a held jump bounces higher.
+  // 13.8 px for Mario and 14.9 px for Luigi either way): the campaign's own bounce, vy -4 px/f,
+  // rising on the tier's hold gravity while jump is held, so a held jump bounces higher.
   for (const [id, def] of PLUMBERS) {
-    it(`${id}: SMB1's bounce, higher with jump held`, () => {
+    it(`${id}: the campaign's bounce, higher with jump held`, () => {
       const held = bounce(def, true);
       const free = bounce(def, false);
       // Standing tier: 4 px/f against 0x700 (about 18 px) or 0x200 (about 64 px) a frame.
