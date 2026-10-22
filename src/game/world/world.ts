@@ -4443,7 +4443,8 @@ export class World {
     renderTiles(r, view, this.map);
     if (this.assist.safetyFloor) this.renderSafetyFloor(r, view);
     // 0.4.72 (owner item 8): the Show hidden items assist.
-    if (this.assist.showHidden)
+    // Only in the playing world: never the CLASSIC title's demo (World.demo).
+    if (this.assist.showHidden && !this.demo)
       renderBlockMarkers(
         r,
         view,

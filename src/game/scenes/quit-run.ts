@@ -14,9 +14,11 @@ import { drawMenuBox, type BoxRow } from './menu-box';
  * 0.4.72 (owner): the card is a CLASSIC box (menu-box.ts), not the see-through panel: the
  * question on the box's gold header row, the mushroom cursor on NO / YES, the promise on a line
  * of its own at the box's foot, the original's box sounds (as the CLASSIC
- * boxes set them) and the BACK line under it. It is drawn over whatever it opened on (the
- * select, the pause menu), which stays in view around it. It is drawn open at once (no growing
- * open), so the question is on screen the frame it is said.
+ * boxes set them) and the BACK line under it. It is see-through: over the mid-run select the
+ * select stays in view around it; over Pause > Quit the pause menu is not drawn under it (the
+ * scene stack draws only the top scene and the first opaque one below: here the level), so the
+ * level shows around the box. It is drawn open at
+ * once (no growing open), so the question is on screen the frame it is said.
  */
 
 /**
