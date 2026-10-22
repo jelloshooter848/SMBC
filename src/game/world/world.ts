@@ -472,6 +472,14 @@ export type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done
 /** Frames from UP at an open locked door to the next area (the hero has gone in). */
 export const DOOR_TRANSFER_FRAMES = 24;
 
+/**
+ * Classic scroll-back (v0.4.74 item 77, owner-approved deviation): a power-up keeps moving while
+ * it is within one screen past the camera's left edge, and only beyond that is parked. The
+ * original takes every object off the stage 2 tiles off screen (AnimatedObject.checkStgPos), but
+ * then a player who outran a power-up and waited ahead for it would wait forever.
+ */
+const POWERUP_REACH_PX = 256;
+
 type PipeAnim = {
   player: Player;
   dir: PipeDir;
@@ -1155,8 +1163,7 @@ export class World {
         )
           continue;
         if (!(e instanceof Pickup || e instanceof PowerUp)) this.fromMap.add(e);
-        if (this.camera.scrollBack && this.fromMap.has(e) && e.despawnMargin !== null && this.outOfReach(e))
-          this.parked.push(e);
+        if (this.camera.scrollBack && this.parks(e) && this.outOfReach(e)) this.parked.push(e);
         else this.entities.push(e);
       }
       this.areaMemory?.delete(level.id);
@@ -2742,10 +2749,13 @@ export class World {
         this.entities.splice(i, 1);
         continue;
       }
-      if (this.camera.scrollBack && e.despawnMargin !== null && this.fromMap.has(e) && this.outOfReach(e)) {
-        // Scroll-back: still, off the stage, until the camera comes back (see `parked`).
-        this.parked.push(e);
-        this.entities.splice(i, 1);
+      if (this.camera.scrollBack && this.parks(e)) {
+        // Scroll-back: still, off the stage, until the camera comes back (see `parked`); never
+        // despawned (a power-up moves on within POWERUP_REACH_PX of the screen).
+        if (this.outOfReach(e)) {
+          this.parked.push(e);
+          this.entities.splice(i, 1);
+        }
         continue;
       }
       if (e.despawnMargin !== null && e.body.x + e.body.w < left - px(e.despawnMargin)) {
@@ -2763,8 +2773,18 @@ export class World {
    */
   private outOfReach(e: Entity): boolean {
     const b = e.body;
-    if (b.x + b.w < this.camera.x - px(e.despawnMargin ?? 0)) return true;
+    const behind = e instanceof PowerUp ? POWERUP_REACH_PX : (e.despawnMargin ?? 0);
+    if (b.x + b.w < this.camera.x - px(behind)) return true;
     return b.x > this.camera.right + px(SPAWN_MARGIN_PX + 32);
+  }
+
+  /**
+   * Scroll-back: what is parked off the stage instead of despawned: the map's entities, and
+   * (v0.4.74 item 77) every power-up out of a block (enemy drops are Pickups with their own
+   * timed vanish).
+   */
+  private parks(e: Entity): boolean {
+    return e.despawnMargin !== null && (this.fromMap.has(e) || e instanceof PowerUp);
   }
 
   /** Scroll-back: parked entities the screen has come back to resume where they were. */
