@@ -389,7 +389,7 @@ describe('O-10: no OK prompt line on the select; the spoken line says what OK do
     expect(h.said.at(-1)).toMatch(/OK: play\./);
   });
 
-  it('the campaign select keeps its line (Current rules unchanged)', () => {
+  it('the campaign select keeps its line (Campaign rules unchanged)', () => {
     const h = makeGame(true);
     h.game.showCharacterSelect();
     expect(h.said.at(-1)).toMatch(/^Select your hero\. Left and right to choose, OK to begin\./);
@@ -496,7 +496,7 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toMatch(/your file picks the run up/);
   });
 
-  it('the campaign select keeps no BACK of its own (Current rules unchanged)', () => {
+  it('the campaign select keeps no BACK of its own (Campaign rules unchanged)', () => {
     const h = makeGame(true);
     h.game.newGame(h.game.roster[0]!, '1-1', null);
     h.game.respawn('1-1', { mode: 'stand' });

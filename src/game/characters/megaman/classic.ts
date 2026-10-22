@@ -74,7 +74,7 @@ import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
  * Classic SMBC Mega Man (bug-reports/2026-10-07-megaman-classic-smbc-rules.md, MM-C1..MM-C36):
  * power states instead of a health bar, the Mega Buster through solid ground, a two-level Charge
  * Shot on the Mushroom, Metal Blade on the Flower, a distance slide with slide-jump, and a free
- * Rush Coil on a Select tap. Current Mega Man (index.ts) is untouched.
+ * Rush Coil on a Select tap. Campaign Mega Man (index.ts) is untouched.
  *
  * `classicMegaMan(options)` builds the def, so the Classic Mega Man variants (Bass, Proto Man:
  * FU-1, FU-5) can reuse the buster, charge, weapons, power tiers and Rush with their own numbers.
@@ -277,7 +277,7 @@ export interface ClassicMegaManOptions {
   headBreaksBricks?: boolean;
 }
 
-/* ---------- scratch keys (apart from Current's: w<id>, helmet, weapons, chargeT, etanks) ---------- */
+/* ---------- scratch keys (apart from Campaign's: w<id>, helmet, weapons, chargeT, etanks) ---------- */
 
 /** A weapon's energy key. */
 export const energyKey = (id: MMWeaponId): string => `cE-${id}`;

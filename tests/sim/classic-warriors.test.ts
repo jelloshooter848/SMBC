@@ -60,7 +60,7 @@ function act(r: Rig, hold: Action[] = [], frames = 31): void {
 }
 
 describe('definition and roster (WL-2, WL-4, TG-41..43)', () => {
-  it('one Classic-only def, after Vic Viper in CLASSIC_EXTRAS, never a Current hero', () => {
+  it('one Classic-only def, after Vic Viper in CLASSIC_EXTRAS, never a Campaign hero', () => {
     expect(W.id).toBe('warriors');
     expect(W.name).toBe('Warriors of Light');
     expect(W.hudName).toBe('WARRIOR');
@@ -85,15 +85,15 @@ describe('definition and roster (WL-2, WL-4, TG-41..43)', () => {
     expect(SPRING_RISE_GRAVITY.warriors).toBeCloseTo(0x0031c, -1);
   });
 
-  it('in Classic runs only, never under Current', () => {
+  it('in Classic runs only, never under Campaign', () => {
     const h = makeGame({ dev: true });
-    expect(h.game.rosterFor('current')).not.toContain(W);
+    expect(h.game.rosterFor('campaign')).not.toContain(W);
     const roster = h.game.rosterFor('classic');
     expect(roster[roster.findIndex((c) => c.id === 'vicviper') + 1]).toBe(W);
     expect(h.game.roster).not.toContain(W);
   });
 
-  it('Current heroes set none of the new optional fields (TG-23, TG-38)', () => {
+  it('Campaign heroes set none of the new optional fields (TG-23, TG-38)', () => {
     for (const c of CHARACTERS) {
       expect(c.thanksName, c.id).toBeUndefined();
       expect(c.passesHiddenBlocks, c.id).toBeUndefined();

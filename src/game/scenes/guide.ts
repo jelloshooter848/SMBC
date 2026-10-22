@@ -58,7 +58,7 @@ export function wrapHanging(text: string, cols: number): string[] {
 /**
  * Index of heroes; picking one opens its guide. The heroes are the live roster, each as the def
  * the run's rules play (TG-22): a Classic run's guides are the Classic defs' own (and list the
- * Classic-only extras); under Current it is deps.characters, unchanged.
+ * Classic-only extras); under Campaign it is deps.characters, unchanged.
  */
 export class GuideIndexScene extends MenuScene {
   /**

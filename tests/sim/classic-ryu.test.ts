@@ -71,10 +71,10 @@ function enemyAt<E extends Enemy>(r: Rig, e: E, ahead: number): E {
   return e;
 }
 
-describe('registry and Current (TG-17, TG-18, TG-38)', () => {
-  it('Classic rules play RYU_CLASSIC; Current keeps RYU untouched', () => {
+describe('registry and Campaign (TG-17, TG-18, TG-38)', () => {
+  it('Classic rules play RYU_CLASSIC; Campaign keeps RYU untouched', () => {
     expect(heroFor(RYU, 'classic')).toBe(RYU_CLASSIC);
-    expect(heroFor(RYU, 'current')).toBe(RYU);
+    expect(heroFor(RYU, 'campaign')).toBe(RYU);
     expect(RYU_CLASSIC.rules).toBe('classic');
     expect([RYU_CLASSIC.id, RYU_CLASSIC.name, RYU_CLASSIC.hudName, RYU_CLASSIC.portrait]).toEqual([
       RYU.id,
@@ -94,7 +94,7 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
     expect(RYU.canBreakBricks({} as never)).toBe(true);
   });
 
-  it('a Classic world plays RYU_CLASSIC, a Current one RYU', () => {
+  it('a Classic world plays RYU_CLASSIC, a Campaign one RYU', () => {
     const level = flatLevel();
     const cl = runSim({ level, character: RYU, rules: 'classic', script: { steps: [] }, maxFrames: 1 });
     expect(cl.world.player.def).toBe(RYU_CLASSIC);
@@ -103,8 +103,8 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
     expect(cur.world.player.def).toBe(RYU);
   });
 
-  it('Current still clings and chains wall kicks up a nine-tile wall; Classic does not (RY-C37)', () => {
-    const run = (rules: 'classic' | 'current') => {
+  it('Campaign still clings and chains wall kicks up a nine-tile wall; Classic does not (RY-C37)', () => {
+    const run = (rules: 'classic' | 'campaign') => {
       const r = new Rig(RYU, flatLevel(TALL_WALL), rules);
       r.settle();
       let minY = Infinity;
@@ -122,7 +122,7 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
       }
       return (FLOOR - px(24) - minY) / 256;
     };
-    expect(run('current')).toBeGreaterThan(9 * 16);
+    expect(run('campaign')).toBeGreaterThan(9 * 16);
     expect(run('classic')).toBeLessThan(9 * 16);
   });
 });
@@ -557,7 +557,7 @@ describe('throws (RY-C26..RY-C34)', () => {
 });
 
 describe('Fire Wheel stops on what it does not kill; art (RY-C25, RY-C29, RY-C30)', () => {
-  it('a Koopa the Wheel only shells stops it; Current pierceDefeat specs are untouched', () => {
+  it('a Koopa the Wheel only shells stops it; Campaign pierceDefeat specs are untouched', () => {
     const r = rig({}, 'fire');
     Object.assign(r.p.scratch, { classicAll: 1, tool: 2, ninpo: 50 });
     r.step(['special']);

@@ -13,12 +13,12 @@ isolateClassicRegistry();
 
 const idx = (s: CharacterSelectScene) => (s as unknown as { index: number }).index;
 
-function classicSelect(classicRules: 'classic' | 'current' = 'classic') {
-  // O-12: Classic rules set to Current is developer mode's.
+function classicSelect(classicRules: 'classic' | 'campaign' = 'classic') {
+  // O-12: Classic rules set to Campaign is developer mode's.
   const settings = {
     ...defaultSettings(),
     classicRules,
-    ...(classicRules === 'current' ? { dev: true } : {}),
+    ...(classicRules === 'campaign' ? { dev: true } : {}),
   };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   h.game.classicSelect('1-1', () => h.game.showClassicMenu());
@@ -119,7 +119,7 @@ describe('two-row character select', () => {
   it('one row (free play): Up and Down do nothing, text as today; a saved Campaign rules setting changes nothing', () => {
     // Classic mode's select is the original's grid (nine to a row, then the "?" cell), so only
     // the free-play select keeps the one row. BUG-11: Classic rules saved as Campaign are ignored.
-    const { h, sel } = classicSelect('current');
+    const { h, sel } = classicSelect('campaign');
     // 0.4.72 (owner): dev mode's select (this one) shows every hero not set Off (Game.devSlotsFor),
     // the dev-off one the release rule; the saved rules change neither.
     expect(sel.chars.map((c) => c.id)).toEqual(h.game.devSlotsFor('classic').map((c) => c.id));

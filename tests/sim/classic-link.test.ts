@@ -50,10 +50,10 @@ function stab(r: Rig, extra: Action[] = []): void {
   for (let i = 1; i < ATTACK_FRAMES + 1; i++) r.step(extra.filter((a) => a !== 'attack'));
 }
 
-describe('registry and Current (TG-17, TG-18, TG-38)', () => {
-  it('Classic rules play LINK_CLASSIC; Current keeps LINK untouched', () => {
+describe('registry and Campaign (TG-17, TG-18, TG-38)', () => {
+  it('Classic rules play LINK_CLASSIC; Campaign keeps LINK untouched', () => {
     expect(heroFor(LINK, 'classic')).toBe(LINK_CLASSIC);
-    expect(heroFor(LINK, 'current')).toBe(LINK);
+    expect(heroFor(LINK, 'campaign')).toBe(LINK);
     expect(LINK_CLASSIC.rules).toBe('classic');
     expect([LINK_CLASSIC.id, LINK_CLASSIC.name, LINK_CLASSIC.hudName, LINK_CLASSIC.portrait]).toEqual([
       LINK.id,
@@ -72,12 +72,12 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
     expect(SWORD_BEAM.classicBlocks).toBeUndefined();
   });
 
-  it('Current Link still jumps his fixed 75 px arc and drifts when let go in the air', () => {
-    const j = measureJump(LINK, 0, INF, 'current');
-    const tap = measureJump(LINK, 0, 1, 'current');
+  it('Campaign Link still jumps his fixed 75 px arc and drifts when let go in the air', () => {
+    const j = measureJump(LINK, 0, INF, 'campaign');
+    const tap = measureJump(LINK, 0, 1, 'campaign');
     expect(Math.abs(j.apex - tap.apex)).toBeLessThan(1);
     expect(j.apex).toBeGreaterThan(70);
-    const r = new Rig(LINK, flatLevel(), 'current', 'full');
+    const r = new Rig(LINK, flatLevel(), 'campaign', 'full');
     r.settle();
     expect(r.p.def).toBe(LINK);
     for (let i = 0; i < 20; i++) r.step(['right']);
@@ -86,7 +86,7 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
     expect(r.p.body.vx).toBeGreaterThan(0);
   });
 
-  it('a Classic world gives Link his Classic def; the game state keeps the Current one', () => {
+  it('a Classic world gives Link his Classic def; the game state keeps the Campaign one', () => {
     const r = runSim({
       level: flatLevel(),
       character: LINK,

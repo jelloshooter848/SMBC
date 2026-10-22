@@ -34,9 +34,9 @@ const labels = (m: unknown) =>
   ((m as { items: MenuItem[] }).items ?? []).map((i) => i.label.replace(/\*$/, ''));
 const items = (m: unknown) => (m as { items: MenuItem[] }).items;
 
-/** A player whose earlier version saved Current rules and Expansion heroes on. */
+/** A player whose earlier version saved Campaign rules and Expansion heroes on. */
 function saved(dev = false): H & { settings: Settings } {
-  const settings: Settings = { ...defaultSettings(), dev, classicRules: 'current' };
+  const settings: Settings = { ...defaultSettings(), dev, classicRules: 'campaign' };
   settings.classic = { ...settings.classic, expansion: 'on' };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   return { ...h, settings };
@@ -58,7 +58,7 @@ describe('O-12 outside developer mode', () => {
     const h = saved();
     expect(h.game.classicRules).toBe('classic');
     for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id)).toBe(false);
-    expect(h.settings.classicRules).toBe('current');
+    expect(h.settings.classicRules).toBe('campaign');
     expect(h.settings.classic.expansion).toBe('on');
   });
 
@@ -108,7 +108,7 @@ describe('O-12 outside developer mode', () => {
       JSON.stringify({
         v: 1,
         levelId: '2-1',
-        rules: 'current',
+        rules: 'campaign',
         hero: 'yoshi',
         score: 4200,
         coins: 17,
@@ -138,7 +138,7 @@ describe('O-12 outside developer mode', () => {
       JSON.stringify({
         v: 1,
         levelId: '2-1',
-        rules: 'current',
+        rules: 'campaign',
         hero: 'mario',
         score: 4200,
         coins: 17,
@@ -173,7 +173,7 @@ describe('O-12 in developer mode', () => {
     expect(labels(o)).not.toContain('Classic rules');
     expect(labels(o)).not.toContain('Expansion heroes');
     expect(h.game.classicRules).toBe('classic');
-    expect(h.settings.classicRules).toBe('current');
+    expect(h.settings.classicRules).toBe('campaign');
     // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
     for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id), id).toBe(false);
     h.settings.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: [...EXPANSION_HEROES] };
@@ -187,7 +187,7 @@ describe('O-12 in developer mode', () => {
       JSON.stringify({
         v: 1,
         levelId: '2-1',
-        rules: 'current',
+        rules: 'campaign',
         hero: 'mario',
         score: 1,
         coins: 1,
@@ -203,7 +203,7 @@ describe('O-12 in developer mode', () => {
     );
     const h = saved(true);
     expect(h.game.resumeClassic(F1)).toBe(true);
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
     expect(h.game.state.powerState).toBe('fire');
   });
 });

@@ -43,7 +43,7 @@ export const BASS_CLASSIC_PROFILE: MovementProfile = {
   swim: CLASSIC_SWIM.bass,
 };
 
-/** The roster identity of a hero with no Current def (BA-2, BA-4). */
+/** The roster identity of a hero with no Campaign def (BA-2, BA-4). */
 const BASS_BASE: Pick<CharacterDef, 'id' | 'name' | 'hudName' | 'portrait' | 'music'> = {
   id: 'bass',
   name: 'Bass',

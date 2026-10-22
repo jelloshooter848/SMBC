@@ -7,7 +7,7 @@ import type { SwimProfile } from '../characters/profile';
  *
  * - Every hero: the surface line at the hitbox top (SW-C9) and the shared sink cap 2.0833 px/f
  *   (`Character.as vyMaxPsvWater = 250`).
- * - Mario and Luigi stroke anywhere below the line (Current's own values, `mario/profile.ts`), walk
+ * - Mario and Luigi stroke anywhere below the line (Campaign's own values, `mario/profile.ts`), walk
  *   slowly on the sea floor, never stomp under water (SW-C7), and above the line fall with
  *   0.09722 px/f² capped at 3.3333 px/f (SW-C10).
  * - The other six jump from the floor only (`floorJumpOnly`). `stroke` is their water jump take-off

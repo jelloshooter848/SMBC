@@ -87,7 +87,7 @@ function arrows(sheet: string): (spec: ProjectileSpec, up: boolean) => Projectil
   };
 }
 
-/** The roster identity (id, names, portrait): no Current def exists, so Samus's with these. */
+/** The roster identity (id, names, portrait): no Campaign def exists, so Samus's with these. */
 function identity(id: string, name: string, hudName: string, palette: string): CharacterDef {
   return {
     ...SAMUS,

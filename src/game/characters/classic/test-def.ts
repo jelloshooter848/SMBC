@@ -30,8 +30,8 @@ export interface ClassicStandInOptions {
 }
 
 /**
- * A minimal Classic def built on a Current def (shared tests and dev checks before the hero slices
- * land): the Current def's body, sprites and land movement, with Classic power states (PS-C1),
+ * A minimal Classic def built on a Campaign def (shared tests and dev checks before the hero slices
+ * land): the Campaign def's body, sprites and land movement, with Classic power states (PS-C1),
  * hit response and look (PS-C10, PS-C13), drops (PS-C15), Star (PS-C19) and water numbers
  * (CLASSIC_SWIM). Mario and Luigi keep their fireballs and stomp; the others have no attacks and
  * never stomp. Never registered in CLASSIC_CHARACTERS: the hero slices write the real defs.
@@ -71,7 +71,7 @@ export function classicStandIn(base: CharacterDef, opts: ClassicStandInOptions =
       onRespawn: (p) => classicRespawn(p, start),
     },
   };
-  // A Classic def leaves out the Current HUD extras (TG-22, PS-C25).
+  // A Classic def leaves out the Campaign HUD extras (TG-22, PS-C25).
   delete def.tools;
   delete def.meter;
   delete def.hudExtra;

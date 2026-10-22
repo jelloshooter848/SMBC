@@ -16,22 +16,22 @@ import { heroSound } from '../characters/classic/sounds';
  * Classic SMBC enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24):
  * hit points in the original's units, numeric damage, armour, hit-stun and freeze, Bowser's forms.
  * `Enemy.hit` hands every hit here while `world.rules === 'classic'` (TG-24, through
- * rules/hooks.ts). The Classic HP counter is `Enemy.classicHp`; Current's `Enemy.hp` is never read.
+ * rules/hooks.ts). The Classic HP counter is `Enemy.classicHp`; Campaign's `Enemy.hp` is never read.
  */
 
 /** Attack Strength (HP-C10): Normal, ×1. The follow-up can expose ×0.66 / ×0.75 / ×1.75 / ×3. */
 export const CLASSIC_ATTACK_MULT = 1;
 
 /**
- * A Current def's weapon under Classic rules (a hero without a Classic def yet, TG-20) sends
- * Current points (1-5); each counts this much, so Mario's fireball (1) is the original's 1000.
+ * A Campaign def's weapon under Classic rules (a hero without a Classic def yet, TG-20) sends
+ * Campaign points (1-5); each counts this much, so Mario's fireball (1) is the original's 1000.
  */
-export const CURRENT_POINT_DAMAGE = 1000;
+export const CAMPAIGN_POINT_DAMAGE = 1000;
 
 /** Armour strength (LevObj.PIERCE_STR_ARMORED) and the pierce that gets through it (HP-C12/13). */
 export const ARMOUR_STRENGTH = 5;
 
-/** Classic HP by enemy kind (HealthValue.as; HP-C3). Kinds not listed keep their Current rules. */
+/** Classic HP by enemy kind (HealthValue.as; HP-C3). Kinds not listed keep their Campaign rules. */
 export const CLASSIC_HP = {
   goomba: 250,
   koopa: 600,
@@ -88,7 +88,7 @@ export function resistsStop(e: Enemy): boolean {
   return e.kind === 'lakitu' || e.kind === 'bowser';
 }
 
-/** The enemy's full Classic HP (HP-C3, HP-C4), or null for one Classic leaves to Current. */
+/** The enemy's full Classic HP (HP-C3, HP-C4), or null for one Classic leaves to Campaign. */
 export function classicMaxHp(e: Enemy, world: World): number | null {
   if (e instanceof Bowser) {
     const def = world.players[0]?.def;
@@ -150,17 +150,17 @@ export function attackerDef(src: DamageSource): CharacterDef | null {
 }
 
 /**
- * A hit's damage in the original's units (HP-C5): `amount` from a Classic def's weapon, Current
- * points × CURRENT_POINT_DAMAGE from anything else, then × CLASSIC_ATTACK_MULT and `mult` (More
+ * A hit's damage in the original's units (HP-C5): `amount` from a Classic def's weapon, Campaign
+ * points × CAMPAIGN_POINT_DAMAGE from anything else, then × CLASSIC_ATTACK_MULT and `mult` (More
  * Settings > Attack Strength, DamageValue.dmgMult: 1 at Normal), floored.
  */
 export function classicDamage(src: DamageSource, mult = 1): number {
-  const units = attackerDef(src)?.rules === 'classic' ? src.amount : src.amount * CURRENT_POINT_DAMAGE;
+  const units = attackerDef(src)?.rules === 'classic' ? src.amount : src.amount * CAMPAIGN_POINT_DAMAGE;
   return Math.floor(units * CLASSIC_ATTACK_MULT * mult);
 }
 
 /**
- * Kinds that keep their Current reaction (HP-C7): stomps (Mario and Luigi only), block bumps,
+ * Kinds that keep their Campaign reaction (HP-C7): stomps (Mario and Luigi only), block bumps,
  * the axe and lava. The Star and a kicked shell also go this way, except that under Classic they
  * kill Bowser too.
  */

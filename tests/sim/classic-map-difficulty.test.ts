@@ -38,9 +38,9 @@ describe('G-006: the difficulty tables', () => {
     expect(FLYING_CHEEP_CAP).toEqual({ easy: 2, normal: 3, hard: 4 });
   });
 
-  it('the flying Cheep Cheeps out at once follow the difficulty (Current: always 3)', () => {
+  it('the flying Cheep Cheeps out at once follow the difficulty (Campaign: always 3)', () => {
     const level = room(['[zones]', 'cheeps 0 64']);
-    const most = (rules: 'classic' | 'current', mapDifficulty: MapDifficulty) => {
+    const most = (rules: 'classic' | 'campaign', mapDifficulty: MapDifficulty) => {
       let max = 0;
       runSim({
         level,
@@ -60,7 +60,7 @@ describe('G-006: the difficulty tables', () => {
     expect(most('classic', 'easy')).toBe(2);
     expect(most('classic', 'normal')).toBe(3);
     expect(most('classic', 'hard')).toBe(4);
-    expect(most('current', 'hard')).toBe(3);
+    expect(most('campaign', 'hard')).toBe(3);
   });
 
   it('Map difficulty is a setting, Normal by default and for an unknown value', () => {
@@ -99,7 +99,7 @@ describe('G-023: the Hudson Bee', () => {
     const level = room(['[entities]', 'block-item 6 9 item=bee'], (y) =>
       y >= 13 ? '#'.repeat(64) : y === 9 ? '......2' + '.'.repeat(57) : '.'.repeat(64),
     );
-    for (const rules of ['classic', 'current'] as const) {
+    for (const rules of ['classic', 'campaign'] as const) {
       let bee: PowerUp | null = null;
       let score0 = 0;
       const r = runSim({

@@ -68,7 +68,7 @@ export class MirrorRaceScene implements Scene {
     const pole = poleOf(level);
     // Mario as he starts a level, small, in a state that belongs to the race alone.
     const state = newGameState(MARIO);
-    this.world = new World(level, game.ctx, state, { seed: levelSeed(level), rules: 'current' }); // TG-14
+    this.world = new World(level, game.ctx, state, { seed: levelSeed(level), rules: 'campaign' }); // TG-14
     this.world.time = null; // no clock: the race is against Luigi
     // Luigi starts a tile behind Mario, so both show at the line.
     this.rival = new RivalLuigi(level, LUIGI, LUIGI_ROUTE, px(level.start.x * 16 - 16), pole);

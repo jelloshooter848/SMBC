@@ -21,7 +21,7 @@ import { useStorage } from './heroes-harness';
 
 // R1 (owner decision 2026-10-20), part B: Mega Man, Ryu, Bill and Sophia III / Jason redrawn on
 // their Classic sheets at the original 3.1.21's per-frame sizes (ANIMATION_CATALOGUE numbers, NES
-// px), standing on the ground, their weapons where their shots and swords hit. Current sheets
+// px), standing on the ground, their weapons where their shots and swords hit. Campaign sheets
 // untouched; Proto Man, Break Man and Bass keep their own sheets.
 
 useStorage();
@@ -381,7 +381,7 @@ describe('the Classic heroes play on the new sheets', () => {
   });
 });
 
-describe('Current sheets unchanged', () => {
+describe('Campaign sheets unchanged', () => {
   // Hashes of the campaign sheets before R1 (and of Proto Man's and Bass's own sheets).
   const HASHES: Record<string, string> = {
     megaman: 'da10ae9b4ba18d70',

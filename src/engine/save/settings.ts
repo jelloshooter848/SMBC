@@ -78,7 +78,7 @@ export interface Settings {
   homeScreen?: HomeScreenFlags;
   /**
    * The rules a Classic mode run plays (title > CLASSIC > Options > Rules): 'classic' (the
-   * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
+   * original SMBC's, the default) or 'campaign'. Campaign files always play 'campaign'.
    */
   classicRules: ClassicRules;
   /**
@@ -235,8 +235,8 @@ export interface ClassicDevToggles {
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
-export type ClassicRules = 'classic' | 'current';
-export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'current'];
+export type ClassicRules = 'classic' | 'campaign';
+export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'campaign'];
 
 export interface HomeScreenFlags {
   tipDone: boolean;

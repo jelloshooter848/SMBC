@@ -48,7 +48,7 @@ import { isolateClassicRegistry } from './classic-registry';
 
 // Sir Arthur, a Classic-only hero (bug-reports/2026-10-19-arthur-build-classic-character.md,
 // AR-1..AR-31, owner-approved with every recommended D-AR answer): the report's acceptance checks
-// with rules 'classic', his roster rules (TG-41), the guide (TG-40) and Current unchanged (TG-38).
+// with rules 'classic', his roster rules (TG-41), the guide (TG-40) and Campaign unchanged (TG-38).
 
 useStorage();
 isolateClassicRegistry();
@@ -82,7 +82,7 @@ function tap(r: Rig, action: Action, after = 0, hold: Action[] = []): void {
 }
 
 describe('definition and roster (AR-1..AR-3, TG-41)', () => {
-  it('a Classic-only def, never a Current hero; not in SMBC 3.1.21', () => {
+  it('a Classic-only def, never a Campaign hero; not in SMBC 3.1.21', () => {
     expect(A.id).toBe('arthur');
     expect(A.name).toBe('Arthur');
     expect(A.hudName).toBe('ARTHUR');
@@ -107,9 +107,9 @@ describe('definition and roster (AR-1..AR-3, TG-41)', () => {
     }
   });
 
-  it('in Classic runs only: never under Current or in a campaign', () => {
+  it('in Classic runs only: never under Campaign or in a campaign', () => {
     const h = makeGame({ dev: true });
-    expect(h.game.rosterFor('current')).not.toContain(A);
+    expect(h.game.rosterFor('campaign')).not.toContain(A);
     expect(h.game.rosterFor('classic')).toContain(A);
     expect(h.game.roster).not.toContain(A);
   });
@@ -144,10 +144,10 @@ describe('definition and roster (AR-1..AR-3, TG-41)', () => {
     }
   });
 
-  it('Current heroes are unchanged: none sets notInOriginal (TG-23, TG-38)', () => {
+  it('Campaign heroes are unchanged: none sets notInOriginal (TG-23, TG-38)', () => {
     for (const c of CHARACTERS) {
       expect(c.notInOriginal, c.id).toBeUndefined();
-      expect(heroFor(c, 'current')).toBe(c);
+      expect(heroFor(c, 'campaign')).toBe(c);
     }
     expect(CLASSIC_HIT_RESPONSES.arthur).toBeDefined();
     expect(CLASSIC_SWIM.arthur).toBeDefined();
@@ -604,10 +604,10 @@ describe('art, HUD, guide and touch (AR-27..AR-29, TG-22, TG-40)', () => {
     expect(A.hudExtra?.(r.p)).toBe('LANCE');
   });
 
-  it('a dev Classic start plays him; a Current one never offers him (MARIO stays Mario)', () => {
+  it('a dev Classic start plays him; a Campaign one never offers him (MARIO stays Mario)', () => {
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', A, 'small', false, 1, { rules: 'classic' });
     expect(h.game.liveRules).toBe('classic');
-    expect(heroFor(MARIO, 'current')).toBe(MARIO);
+    expect(heroFor(MARIO, 'campaign')).toBe(MARIO);
   });
 });

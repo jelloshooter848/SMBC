@@ -42,7 +42,7 @@ function trace(def: CharacterDef, power: string, keys: (f: number) => Action[], 
 }
 
 describe("Classic Peach is Luigi's look (owner decision, #179)", () => {
-  it('a Classic-only skin on Luigi’s slot, counted as Luigi, never a Current hero', () => {
+  it('a Classic-only skin on Luigi’s slot, counted as Luigi, never a Campaign hero', () => {
     expect(PEACH_CLASSIC.id).toBe('peach');
     expect(PEACH_CLASSIC.name).toBe('Peach');
     expect(PEACH_CLASSIC.lookOf).toBe('luigi');

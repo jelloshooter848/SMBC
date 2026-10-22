@@ -174,7 +174,7 @@ describe('the campaign never shows a Tutorials box (O-15: Classic only)', () => 
     expect(h.game.scenes.find((s) => s instanceof TutorialBoxScene)).toBeUndefined();
   });
 
-  it('with Tutorials on, a Current free-play start (not Classic mode) shows no box either', () => {
+  it('with Tutorials on, a Campaign free-play start (not Classic mode) shows no box either', () => {
     const h = game(true);
     h.game.newGame(MARIO);
     h.until(() => h.top() instanceof LevelScene, 600);

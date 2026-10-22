@@ -498,7 +498,7 @@ export class LevelScene implements Scene {
         // Level.changePlayerLoc (pipe and pit arrivals) ends with destroyNearbyEnemies(true).
         if (exitDir !== 'climb') start.clearEnemies = 'keep-piranhas';
         // Classic SMBC: this area is kept as it is for a return within the stage (Level.loadArea →
-        // StatManager.saveAreaStats); a Current World keeps none (areaMemory null).
+        // StatManager.saveAreaStats); a Campaign World keeps none (areaMemory null).
         this.world.rememberArea();
         if (this.world.areaMemory) start.areaMemory = this.world.areaMemory;
         game.startLevel(target, start);

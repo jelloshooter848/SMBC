@@ -30,7 +30,7 @@ export class DevLevelSelectScene extends MenuScene {
   private charIndex = 0;
   private powerIndex = 0;
   private fullKit = false;
-  /** The run's rules (Current or Classic SMBC), passed to devStart. */
+  /** The run's rules (Campaign or Classic SMBC), passed to devStart. */
   private rules: Rules;
   /** Mode: free play (99 lives, straight back in after a death) or a Classic mode run. */
   private classicRun = false;
@@ -73,7 +73,7 @@ export class DevLevelSelectScene extends MenuScene {
         label: 'Rules',
         value: () => RULES_LABELS[this.rules],
         adjust: () => {
-          this.rules = this.rules === 'classic' ? 'current' : 'classic';
+          this.rules = this.rules === 'classic' ? 'campaign' : 'classic';
           // The roster and the power list can differ under the other rules.
           if (this.charIndex >= this.roster.length) this.charIndex = 0;
           this.powerIndex = 0;

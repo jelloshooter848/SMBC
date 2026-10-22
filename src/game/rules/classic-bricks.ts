@@ -2,7 +2,7 @@ import { T, tileDef } from '../level/tiles';
 import type { Player } from '../entities/player';
 import type { World } from '../world/world';
 import type { BlockHit, BlockStrike } from './hooks';
-import { CURRENT_POINT_DAMAGE } from './classic-enemies';
+import { CAMPAIGN_POINT_DAMAGE } from './classic-enemies';
 import { attackMult } from '../characters/classic/options';
 
 /**
@@ -49,13 +49,13 @@ export function classicStrikeBlock(
       breaks = true; // BR-C6: one hit, whatever its damage
     else {
       // BR-C7: shots and blasts take their damage off the brick's HP; a hit it survives is silent.
-      // A strike with no damage (a Current behaviour's own shot or blast: Sophia's cannon, a
+      // A strike with no damage (a Campaign behaviour's own shot or blast: Sophia's cannon, a
       // block-bumping shot) breaks by its caller's `breakBricks`, as today.
       if (hit.damage === undefined) breaks = breakBricks;
       else {
-        // A Current def's blast or shot (no Classic def yet, TG-20) counts its points as the HP
+        // A Campaign def's blast or shot (no Classic def yet, TG-20) counts its points as the HP
         // door does.
-        const units = p.def.rules === 'classic' ? 1 : CURRENT_POINT_DAMAGE;
+        const units = p.def.rules === 'classic' ? 1 : CAMPAIGN_POINT_DAMAGE;
         // More Settings > Attack Strength (Brick.takeDamage: int(dmg × dmgMult)); Normal is ×1.
         const mult = attackMult(world.classic);
         const dmg = mult === 1 ? hit.damage * units : Math.floor(hit.damage * units * mult);

@@ -208,7 +208,7 @@ export class HeroStageScene implements Scene, TutorialHost {
   private build(x: number, y: number): World {
     const level = this.level;
     const world = new World(level, this.game.ctx, this.state, {
-      rules: 'current', // training rooms are scripted around Current kits (TG-14)
+      rules: 'campaign', // training rooms are scripted around Campaign kits (TG-14)
       x,
       y,
       mode: 'stand',

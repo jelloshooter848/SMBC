@@ -120,8 +120,8 @@ describe('Lose Everything (PS-C7, PS-C8)', () => {
     expect(r.world.player.dead).toBe(true);
   });
 
-  it('the "Fire keeps big" assist is ignored (TG-29, PS-C9); Current Mario still keeps big', () => {
-    const hit = (def: CharacterDef, rules: 'classic' | 'current') =>
+  it('the "Fire keeps big" assist is ignored (TG-29, PS-C9); Campaign Mario still keeps big', () => {
+    const hit = (def: CharacterDef, rules: 'classic' | 'campaign') =>
       runSim({
         level: flat(),
         character: def,
@@ -133,7 +133,7 @@ describe('Lose Everything (PS-C7, PS-C8)', () => {
         until: (w, f) => (f === 5 ? (w.hurtPlayer(w.player, 1), true) : false),
       }).world.player.powerState;
     expect(hit(classicStandIn(MARIO), 'classic')).toBe('small');
-    expect(hit(MARIO, 'current')).toBe('big');
+    expect(hit(MARIO, 'campaign')).toBe('big');
   });
 
   it('the No damage assist still applies', () => {
@@ -541,7 +541,7 @@ describe('power-ups (PS-C2..PS-C4, PS-C6)', () => {
 });
 
 describe('Star (PS-C18, PS-C19)', () => {
-  it('lasts 720 frames; the level music returns at frame 642; Current keeps 600', () => {
+  it('lasts 720 frames; the level music returns at frame 642; Campaign keeps 600', () => {
     expect(STAR_FRAMES).toBe(600);
     const music: [number, string][] = [];
     let frame = 0;
@@ -668,7 +668,7 @@ describe('drops and ammo (PS-C14..PS-C17)', () => {
     expect(drops).toBeLessThan(80);
   });
 
-  it('a broken brick and a coin block roll the hero blockDrop; Current heroes roll nothing', () => {
+  it('a broken brick and a coin block roll the hero blockDrop; Campaign heroes roll nothing', () => {
     const def: CharacterDef = { ...classicStandIn(MARIO), blockDrop: () => 'heart-small' };
     const r = play(
       def,
@@ -771,7 +771,7 @@ describe('HUD (PS-C25..PS-C27)', () => {
     const w = runSim({
       level: flat(),
       character: c1,
-      rules: c1.rules ?? 'current',
+      rules: c1.rules ?? 'campaign',
       state: { character2: c2, powerState: power, powerState2: power2 },
       script: none,
       maxFrames: 1,
@@ -804,7 +804,7 @@ describe('HUD (PS-C25..PS-C27)', () => {
     expect(icon(b)).toEqual([{ what: 'icon-flower', ...POWER_ICON_P2 }]);
   });
 
-  it("Current Mario keeps today's HUD: no icon", () => {
+  it("Campaign Mario keeps today's HUD: no icon", () => {
     expect(icon(boxes(MARIO, null, 'fire'))).toEqual([]);
   });
 

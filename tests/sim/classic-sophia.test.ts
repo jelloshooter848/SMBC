@@ -25,7 +25,7 @@ import type { Action } from '@engine/input/actions';
 
 /*
  * Sophia III under Classic SMBC rules (bug-reports/2026-10-07-sophia-build-classic-character.md,
- * Acceptance checks; SOPHIA_CLASSIC in characters/sophia/classic.ts). Each run passes the Current
+ * Acceptance checks; SOPHIA_CLASSIC in characters/sophia/classic.ts). Each run passes the Campaign
  * def with rules 'classic', so the World resolves heroFor (TG-17) as the game does.
  */
 
@@ -61,7 +61,7 @@ function run(
   level: ReturnType<typeof field>,
   controller: Ctl,
   frames: number,
-  opts: { power?: string; kit?: Record<string, number>; rules?: 'classic' | 'current' } = {},
+  opts: { power?: string; kit?: Record<string, number>; rules?: 'classic' | 'campaign' } = {},
 ) {
   return runSim({
     level,
@@ -113,10 +113,10 @@ const buzzy = (x: number, y: number) => new Koopa(x, y - px(16), 'buzzy');
 const bill = (x: number, y: number) => new BulletBill(x, y - px(14), -1);
 
 describe('Classic Sophia III: the definition (SO-2 to SO-5, TG-17, TG-38)', () => {
-  it('is registered under the Current id; heroFor picks it only under Classic', () => {
+  it('is registered under the Campaign id; heroFor picks it only under Classic', () => {
     expect(CLASSIC_CHARACTERS.sophia).toBe(SOPHIA_CLASSIC);
     expect(heroFor(SOPHIA, 'classic')).toBe(SOPHIA_CLASSIC);
-    expect(heroFor(SOPHIA, 'current')).toBe(SOPHIA);
+    expect(heroFor(SOPHIA, 'campaign')).toBe(SOPHIA);
     expect(CHARACTERS).toContain(SOPHIA);
     expect(CHARACTERS).not.toContain(SOPHIA_CLASSIC);
     expect(SOPHIA_CLASSIC.rules).toBe('classic');
@@ -127,11 +127,11 @@ describe('Classic Sophia III: the definition (SO-2 to SO-5, TG-17, TG-38)', () =
     expect(SOPHIA_CLASSIC.tools).toBeUndefined();
   });
 
-  it('under Current the def is unchanged: no rules, its belt, Jason on Select', () => {
+  it('under Campaign the def is unchanged: no rules, its belt, Jason on Select', () => {
     expect(SOPHIA.rules).toBeUndefined();
     expect(SOPHIA.levelFlags).toBeUndefined();
     expect(SOPHIA.tools).toBeDefined();
-    const r = run(field(), (_w, f) => (f === 20 ? ['select'] : []), 30, { rules: 'current' });
+    const r = run(field(), (_w, f) => (f === 20 ? ['select'] : []), 30, { rules: 'campaign' });
     expect(r.world.player.def).toBe(SOPHIA);
     expect(sophiaState(r.world.player).jason).not.toBeNull();
   });
@@ -592,14 +592,14 @@ describe('Classic Sophia III: level data (SO-45 to SO-48)', () => {
 });
 
 describe('Classic Sophia III: wide-hero variants in the World (TG-45, SO-48)', () => {
-  const load = (id: string, character: CharacterDef, rules: 'classic' | 'current') =>
+  const load = (id: string, character: CharacterDef, rules: 'classic' | 'campaign') =>
     runSim({ level: getLevel(id), character, rules, script: { steps: [] }, maxFrames: 1 }).world;
 
   it('ll-7-4 and ll-12-4: the shaft at 29 is two tiles wide for Sophia, only under Classic', () => {
     for (const id of ['ll-7-4', 'll-12-4']) {
       const open = (w: World) => [3, 6, 10].every((y) => w.map.get(30, y) === T.AIR);
       expect(open(load(id, SOPHIA, 'classic')), id).toBe(true);
-      expect(open(load(id, SOPHIA, 'current')), id).toBe(false);
+      expect(open(load(id, SOPHIA, 'campaign')), id).toBe(false);
       expect(open(load(id, MARIO, 'classic')), id).toBe(false);
     }
   });
@@ -611,7 +611,7 @@ describe('Classic Sophia III: wide-hero variants in the World (TG-45, SO-48)', (
     const spawns = (w as unknown as { spawns: EntitySpawn[] }).spawns;
     expect(spawns.some((e) => e.type === 'podoboo' && e.x === 87 && e.y === 12)).toBe(true);
     expect(getLevel('ll-13-4-end').entities.some((e) => e.type === 'podoboo' && e.x === 88)).toBe(true);
-    expect(load('ll-13-4-end', SOPHIA, 'current').map.get(87, 8)).not.toBe(T.AIR);
+    expect(load('ll-13-4-end', SOPHIA, 'campaign').map.get(87, 8)).not.toBe(T.AIR);
   });
 
   it('every table entry changes its map for Sophia and leaves Mario’s alone', () => {

@@ -12,13 +12,13 @@ import type { GameState } from '@game/context';
 import type { World } from '@game/world/world';
 
 /**
- * Golden parity fixture (TG-36): Current play must never drift. Recorded on the untouched
+ * Golden parity fixture (TG-36): Campaign play must never drift. Recorded on the untouched
  * main checkout before any Classic code landed:
  *   RECORD_PARITY=1 pnpm vitest run tests/sim/current-parity.test.ts && pnpm prettier --write tests/sim/fixtures
  * Each run hashes every frame's (x, y, vx, vy, powerState, hp) for each player, keeps a coarse
  * sample every 30 frames to help find a drift, and records the end state (score, coins, lives,
  * outcome, the event list's hash, the tile map's hash and the alive enemies). Every run is
- * checked as recorded and again with `rules: 'current'` passed explicitly (TG-37).
+ * checked as recorded and again with `rules: 'campaign'` passed explicitly (TG-37).
  */
 
 const FIXTURE = fileURLToPath(new URL('./fixtures/current-parity.json', import.meta.url));
@@ -161,7 +161,7 @@ const fixture: Record<string, RunRecord> =
     ? (JSON.parse(readFileSync(FIXTURE, 'utf8')) as Record<string, RunRecord>)
     : {};
 
-describe('Current parity fixture (TG-36)', () => {
+describe('Campaign parity fixture (TG-36)', () => {
   const all = specs();
 
   if (RECORD) {
@@ -174,7 +174,7 @@ describe('Current parity fixture (TG-36)', () => {
     return;
   }
 
-  it('covers every Current hero', () => {
+  it('covers every Campaign hero', () => {
     for (const c of CHARACTERS) expect(fixture[`${c.id} 1-1`], c.id).toBeDefined();
     expect(Object.keys(fixture).sort()).toEqual(all.map((s) => s.name).sort());
   });
@@ -183,8 +183,8 @@ describe('Current parity fixture (TG-36)', () => {
     it(`${s.name} plays exactly as recorded`, () => {
       expect(record(s)).toEqual(fixture[s.name]);
     });
-    it(`${s.name} plays exactly as recorded with rules: 'current'`, () => {
-      expect(record(s, { rules: 'current' })).toEqual(fixture[s.name]);
+    it(`${s.name} plays exactly as recorded with rules: 'campaign'`, () => {
+      expect(record(s, { rules: 'campaign' })).toEqual(fixture[s.name]);
     });
   }
 });

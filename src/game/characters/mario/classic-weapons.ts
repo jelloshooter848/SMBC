@@ -26,7 +26,7 @@ export const FIREBALL_CLASSIC: ProjectileSpec = {
   burstFrame: 'fireball-burst',
 };
 
-/** Throw pose length (MarioBase: 75 ms; Current 8 frames). Cosmetic. */
+/** Throw pose length (MarioBase: 75 ms; Campaign 8 frames). Cosmetic. */
 export const CLASSIC_THROW_FRAMES = 5;
 /** The fireball's centre: px ahead of the hero's centre (X_OFFSET 10 Flash px). */
 export const CLASSIC_FIREBALL_AHEAD = 5;

@@ -87,7 +87,7 @@ describe('G-021 / G-022: the art', () => {
   });
 });
 
-describe('G-021: none of them can be stomped (Classic and Current)', () => {
+describe('G-021: none of them can be stomped (Classic and Campaign)', () => {
   for (const [name, make] of [
     ['Crab', () => new Crab(0, 0)],
     ['Barrel', () => new Barrel(0, 0)],
@@ -95,7 +95,7 @@ describe('G-021: none of them can be stomped (Classic and Current)', () => {
     ['Fly', () => new Fly(0, 0)],
   ] as const)
     it(`${name}: landing on it hurts`, () => {
-      for (const rules of ['classic', 'current'] as const) {
+      for (const rules of ['classic', 'campaign'] as const) {
         const w = classicWorld(MARIO, testLevel(), rules);
         const e = at(w, make() as Crab, 2);
         e.walkSpeed = 0;
@@ -169,8 +169,8 @@ describe('G-021: Crab', () => {
     expect(crab.hit(fire, w)).toBe('kill');
   });
 
-  it('a block bumped under it pops it up angry (Classic and Current)', () => {
-    for (const rules of ['classic', 'current'] as const) {
+  it('a block bumped under it pops it up angry (Classic and Campaign)', () => {
+    for (const rules of ['classic', 'campaign'] as const) {
       const w = classicWorld(MARIO, testLevel(), rules);
       const crab = at(w, new Crab(0, 0), 20);
       expect(crab.hit({ kind: 'bump', amount: 1, owner: null, dirX: 1, fromX: px(30 * 16) }, w), rules).toBe(
@@ -183,7 +183,7 @@ describe('G-021: Crab', () => {
   });
 
   it('the pop turns a calm crab towards the player, whichever way the block turned it (Crab.as 121-128)', () => {
-    for (const rules of ['classic', 'current'] as const)
+    for (const rules of ['classic', 'campaign'] as const)
       for (const [heroCol, blockCol] of [
         [2, 30],
         [40, 10],
@@ -210,8 +210,8 @@ describe('G-021: Crab', () => {
     expect(crab.body.vx).toBe(-vx);
   });
 
-  it('Current: the first hit angers it, the second defeats it', () => {
-    const w = classicWorld(MARIO, testLevel(), 'current');
+  it('Campaign: the first hit angers it, the second defeats it', () => {
+    const w = classicWorld(MARIO, testLevel(), 'campaign');
     const crab = at(w, new Crab(0, 0), 20);
     const fire = { kind: 'fireball' as const, amount: 1, owner: w.player, dirX: 1 as const };
     crab.hit(fire, w);
@@ -274,13 +274,13 @@ describe('G-021: Barrel', () => {
 });
 
 describe('G-021: FireEnemy', () => {
-  it('only pierce 11 gets through (Classic); only a Star (or the Hammer) under Current', () => {
+  it('only pierce 11 gets through (Classic); only a Star (or the Hammer) under Campaign', () => {
     const w = classicWorld(classicStub(LINK));
     const f = at(w, new FireEnemy(0, 0), 20);
     expect(armourOf(f)).toBe(FireEnemy.ARMOUR);
     expect(f.hit(weapon(w, 'sword', 1000, { pierce: 6 }), w)).toBe('blocked');
     expect(f.hit(weapon(w, 'sword', 1000, { pierce: 11 }), w)).toBe('kill');
-    const cur = classicWorld(MARIO, testLevel(), 'current');
+    const cur = classicWorld(MARIO, testLevel(), 'campaign');
     const g = at(cur, new FireEnemy(0, 0), 20);
     expect(g.hit({ kind: 'fireball', amount: 1, owner: cur.player, dirX: 1 }, cur)).toBe('immune');
     expect(g.hit({ kind: 'star', amount: 1, owner: null, dirX: 1 }, cur)).toBe('kill');
@@ -478,7 +478,7 @@ describe('G-022: the items', () => {
       `${p.powerState} ${p.hp} ${JSON.stringify(p.scratch, Object.keys(p.scratch).sort())}`;
     const most: Record<string, number> = {};
     for (const def of Object.values(CHARACTERS)) {
-      const w = classicWorld(def, testLevel(), 'current');
+      const w = classicWorld(def, testLevel(), 'campaign');
       const p = w.player;
       let steps = 0;
       const own = w.powerUp.bind(w);
@@ -540,7 +540,7 @@ describe('G-022: the items', () => {
   });
 
   it('the full power-up shows the original logo in Classic play, our own icon under Campaign rules', () => {
-    const drawn = (rules: 'classic' | 'current', reduceFlashing: boolean, frame: number) => {
+    const drawn = (rules: 'classic' | 'campaign', reduceFlashing: boolean, frame: number) => {
       const level = testLevel({ 9: '..........?' });
       level.entities.push({ type: 'block-item', x: 10, y: 9, props: { item: 'rabbit' } });
       const w = classicWorld(MARIO, level, rules);
@@ -571,8 +571,8 @@ describe('G-022: the items', () => {
     expect(new Set([0, 5, 10, 14].map((f) => drawn('classic', true, f)))).toEqual(
       new Set(['rabbit-logo:rabbit-0']),
     );
-    expect(drawn('current', false, 0)).toMatch(/^items:flower-/);
-    expect(new Set([0, 8, 16].map((f) => drawn('current', true, f))).size).toBe(1);
+    expect(drawn('campaign', false, 0)).toMatch(/^items:flower-/);
+    expect(new Set([0, 8, 16].map((f) => drawn('campaign', true, f))).size).toBe(1);
   });
 
   it('the logo is the named art exception: text pixel arrays, four 16x16 frames, its own palette, credited', () => {

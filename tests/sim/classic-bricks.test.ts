@@ -92,8 +92,8 @@ describe('heads (BR-C3..BR-C5)', () => {
     expect(w.map.get(8, 12)).toBe(T.AIR);
   });
 
-  it('Current: strikeBlock reports nothing and keeps no brick HP', () => {
-    const w = classicWorld(SAMUS, testLevel({ 9: '....=' }), 'current');
+  it('Campaign: strikeBlock reports nothing and keeps no brick HP', () => {
+    const w = classicWorld(SAMUS, testLevel({ 9: '....=' }), 'campaign');
     expect(w.strikeBlock(4, 9, w.player, true)).toBeUndefined();
     expect(w.map.get(4, 9)).toBe(T.AIR);
     expect(w.brickHp.size).toBe(0);
@@ -316,7 +316,7 @@ describe('heads that touch blocks as ground (BR-C3 BRICK_NONE)', () => {
 });
 
 describe('heroes without a Classic def yet (TG-20)', () => {
-  it("a Current def's bomb under Classic rules still breaks a brick (its points count 1000 each)", () => {
+  it("a Campaign def's bomb under Classic rules still breaks a brick (its points count 1000 each)", () => {
     const w = classicWorld(LINK, testLevel({ 9: '..........=' }));
     w.explode(tile(10) + px(8), tile(9) + px(8), 8, w.player, { hurtsPlayers: false });
     expect(w.map.get(10, 9)).toBe(T.AIR);
@@ -355,7 +355,7 @@ describe('strike sources (TG-25)', () => {
     expect(w.state.coins - coins).toBe(1);
   });
 
-  it("a strike with no damage keeps its caller's breakBricks (Current behaviours under Classic)", () => {
+  it("a strike with no damage keeps its caller's breakBricks (Campaign behaviours under Classic)", () => {
     const w = classicWorld(smallHead(SAMUS), testLevel({ 9: '....==' }));
     w.strikeBlock(4, 9, w.player, false, { source: 'shot' });
     w.strikeBlock(5, 9, w.player, true, { source: 'shot' });
@@ -363,9 +363,9 @@ describe('strike sources (TG-25)', () => {
     expect([w.map.get(4, 9), w.map.get(5, 9)]).toEqual([T.BRICK, T.AIR]);
   });
 
-  it('Current ignores the source: a melee or shot strike is the same as before', () => {
+  it('Campaign ignores the source: a melee or shot strike is the same as before', () => {
     for (const hit of [undefined, { source: 'melee' as const }, { source: 'shot' as const, damage: 1 }]) {
-      const w = classicWorld(SAMUS, testLevel({ 9: '....=' }), 'current');
+      const w = classicWorld(SAMUS, testLevel({ 9: '....=' }), 'campaign');
       expect(w.strikeBlock(4, 9, w.player, false, hit)).toBeUndefined();
       step(w, 20);
       expect(w.map.get(4, 9)).toBe(T.BRICK);
@@ -374,13 +374,13 @@ describe('strike sources (TG-25)', () => {
 });
 
 describe('blasts and hidden blocks (BR-C11, BR-C13)', () => {
-  it('a Classic bomb blast opens a hidden 1-up block; under Current it stays hidden', () => {
+  it('a Classic bomb blast opens a hidden 1-up block; under Campaign it stays hidden', () => {
     const w = classicWorld(smallHead(LINK), testLevel({ 9: '..........1' }));
     w.explode(tile(10) + px(8), tile(9) + px(8), 8, w.player, { amount: 800, hurtsPlayers: false });
     step(w, 20);
     expect(w.map.get(10, 9)).toBe(T.USED);
     expect(w.entities.some((e) => e instanceof PowerUp && e.item === '1up')).toBe(true);
-    const cur = classicWorld(LINK, testLevel({ 9: '..........1' }), 'current');
+    const cur = classicWorld(LINK, testLevel({ 9: '..........1' }), 'campaign');
     cur.explode(tile(10) + px(8), tile(9) + px(8), 8, cur.player, { hurtsPlayers: false });
     step(cur, 20);
     expect(cur.map.get(10, 9)).toBe(T.HIDDEN_1UP);

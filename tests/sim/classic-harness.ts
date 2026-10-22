@@ -9,7 +9,7 @@ import { BUSTER, type ProjectileSpec } from '@game/entities/projectiles/projecti
 import type { World } from '@game/world/world';
 
 // Shared helpers for the Classic shared-system tests (classic-enemy-hp, classic-bricks): a flat
-// test level, a stand-in Classic def (a copy of a Current def marked `rules: 'classic'`, so its
+// test level, a stand-in Classic def (a copy of a Campaign def marked `rules: 'classic'`, so its
 // weapons count in the original's units), Classic weapon specs and stepping the World by hand.
 
 /** A stand-in Classic def for `def` (not registered: heroFor plays a classic def as given). */
@@ -32,7 +32,7 @@ export function testLevel(rows: Record<number, string> = {}): ReturnType<typeof 
 export function classicWorld(
   def: CharacterDef,
   level = testLevel(),
-  rules: 'classic' | 'current' = 'classic',
+  rules: 'classic' | 'campaign' = 'classic',
 ): World {
   return runSim({ level, character: def, script: { steps: [] }, maxFrames: 0, rules }).world;
 }

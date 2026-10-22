@@ -497,7 +497,7 @@ export const RYU_CLASSIC: CharacterDef = {
   canBreakBricks: () => false,
   headBumps: (p) => p.wall === null && !p.scratch._jslash,
   meleeStrikesBlocks: true,
-  // Ryu does not grow (RY-C18): Current's 12 x 24 body, 12 x 16 crouched.
+  // Ryu does not grow (RY-C18): Campaign's 12 x 24 body, 12 x 16 crouched.
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
   // F2: the original's HRect (27 standing, 25 in the air, 15.75 crouched) and run (4 poses x 75 ms, R1).
   hurtbox: (p) => ({
@@ -551,7 +551,7 @@ export const RYU_CLASSIC: CharacterDef = {
     },
   },
 };
-// A Classic def leaves out the Current HUD extras (TG-22).
+// A Classic def leaves out the Campaign HUD extras (TG-22).
 delete RYU_CLASSIC.meter;
 delete RYU_CLASSIC.hudExtra;
 delete RYU_CLASSIC.reserve;

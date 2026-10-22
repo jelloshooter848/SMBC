@@ -13,7 +13,7 @@ import type { World } from '@game/world/world';
  * Per-hero castle names (PM-19/PM-M8, PI-23/PI-M5, BA-M13): under Classic SMBC rules the castle's
  * "BUT OUR PRINCESS IS IN ANOTHER CASTLE!" names whoever the original's default skin names
  * (BmdInfo.as namesArr[2], ScreenManager.addTxtTmrHandler, GameTextMessages.ANOTHER_CASTLE).
- * Under Current rules every hero keeps the shared line.
+ * Under Campaign rules every hero keeps the shared line.
  */
 
 /** The original's default-skin third names (BmdInfo.as, skins 0 and 1 of each hero). */
@@ -64,7 +64,7 @@ function place(w: World): void {
   w.camera.snapTo(b.x);
 }
 
-function news(character: CharacterDef, rules: 'classic' | 'current') {
+function news(character: CharacterDef, rules: 'classic' | 'campaign') {
   const r = runSim({
     level: castle(),
     character,
@@ -89,7 +89,7 @@ describe('Classic castle text names the original rescue', () => {
   });
 
   it.each(CHARACTERS.map((d) => [d.id, d] as const))(
-    '%s: Classic names them, Current keeps the line',
+    '%s: Classic names them, Campaign keeps the line',
     (id, def) => {
       const classic = news(def, 'classic');
       const name = (ORIGINAL[id] as string).toUpperCase();
@@ -100,13 +100,13 @@ describe('Classic castle text names the original rescue', () => {
       // Fits the screen.
       for (const line of classic.text) expect(line.length * 8, line).toBeLessThanOrEqual(SCREEN_W - 32);
 
-      const current = news(def, 'current');
+      const current = news(def, 'campaign');
       expect(current.text.slice(1)).toEqual(['', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!']);
       expect(current.say[0]).toContain('BUT OUR PRINCESS IS IN ANOTHER CASTLE!');
     },
   );
 
-  it('no Current def has a rescue name', () => {
+  it('no Campaign def has a rescue name', () => {
     for (const def of CHARACTERS) expect(def.rescueName, def.id).toBeUndefined();
   });
 

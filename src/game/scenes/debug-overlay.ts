@@ -38,7 +38,7 @@ export class DebugOverlay {
       `vx ${velToPxf(b.vx).toFixed(3)} vy ${velToPxf(b.vy).toFixed(3)} ${b.onGround ? 'ground' : 'air'}`,
       `cam ${camPx} frame ${world.frame} fps ${fps.toFixed(0)}${this.freeCamera ? ' FREECAM' : ''}`,
     ];
-    // Which rules each hero plays (TG-33); Current worlds keep the overlay as it was.
+    // Which rules each hero plays (TG-33); Campaign worlds keep the overlay as it was.
     if (world.rules === 'classic')
       lines.push(
         rulesLine(

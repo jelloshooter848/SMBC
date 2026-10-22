@@ -14,14 +14,14 @@ import { flatLevel } from './classic-plumber-harness';
 import { useStorage } from './heroes-harness';
 
 // classic-patch-2 item 6: a Classic hero's HUD counter (hudAmmo: Simon's hearts, Yoshi's eggs,
-// ...) always gets the HUD's dark outline, so it reads over a white cloud; Current is unchanged.
+// ...) always gets the HUD's dark outline, so it reads over a white cloud; Campaign is unchanged.
 
 useStorage();
 
 const none = { steps: [{ frame: 0, hold: [] as Action[] }] };
 
 /** The HUD texts drawn for `def` (with `kit`), as "text@x,y", one entry per draw. */
-function texts(def: CharacterDef, rules: 'classic' | 'current', kit: Record<string, number>): string[] {
+function texts(def: CharacterDef, rules: 'classic' | 'campaign', kit: Record<string, number>): string[] {
   const w = runSim({ level: flatLevel(), character: def, rules, script: none, maxFrames: 1 }).world;
   Object.assign((w.player as Player).scratch, kit);
   const out: string[] = [];
@@ -53,8 +53,8 @@ describe('Classic HUD counters are outlined', () => {
     expect(out.filter((t) => t.endsWith('@24,8'))).toHaveLength(1);
   });
 
-  it("Current Simon's belt count stays plain", () => {
-    const out = texts(SIMON, 'current', {});
+  it("Campaign Simon's belt count stays plain", () => {
+    const out = texts(SIMON, 'campaign', {});
     for (const t of out.filter((s) => s.startsWith('×'))) expect(out.filter((s) => s === t)).toHaveLength(1);
   });
 });

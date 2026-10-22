@@ -76,7 +76,7 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
   });
 
   it('a saved Campaign rules setting is ignored (BUG-11): a Hard file plays Hard', () => {
-    const h = classic({ classicRules: 'current', dev: true });
+    const h = classic({ classicRules: 'campaign', dev: true });
     h.game.showClassicMenu();
     pick(h, 'Super Mario Bros.');
     pick(h, 'File 1');
@@ -88,7 +88,7 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
 
   it('under Campaign rules (a dev START page run) every level plays Normal; a beat counts as Normal', () => {
     const h = classic({ classicMapDifficulty: 'hard', dev: true });
-    h.game.devClassicGame(MARIO, '1-1', 'current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
     const l = enterLevel(h);
     expect(l.world.mapDifficulty).toBe('normal');
     h.game.classicDev = false;

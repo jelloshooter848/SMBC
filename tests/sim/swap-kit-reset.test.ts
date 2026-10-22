@@ -107,7 +107,7 @@ describe('item 25: a Plays as kit is reset once dev mode is off', () => {
     const off = game(false);
     off.game.state = stateFromSave(back!, off.game.deps.characters);
     expect(off.game.state).toMatchObject({ powerState: 'fire', kit: { stars: 2 }, swapped: true });
-    reconcileRules(off.game, 'current');
+    reconcileRules(off.game, 'campaign');
     expect(off.game.state.kit).toEqual({});
     expect(off.game.state.powerState).toBe(defaultPower(MARIO));
     expect(off.game.state.swapped).toBeUndefined();

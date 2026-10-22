@@ -6,28 +6,28 @@ import { CLASSIC_CHEAT_IDS, type ClassicCheatId, type MapDifficulty } from '@eng
 import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
- * Which rules the heroes play by (TG-9): 'current' is this game as it has always played;
+ * Which rules the heroes play by (TG-9): 'campaign' is this game as it has always played;
  * 'classic' is SMBC 3.1.21's rules (Classic mode and dev Classic starts only, never a campaign
- * file: Game.liveRules decides). Absent anywhere means 'current'.
+ * file: Game.liveRules decides). Absent anywhere means 'campaign'.
  */
-export type Rules = 'current' | 'classic';
+export type Rules = 'campaign' | 'classic';
 
-/** The rules a context (or a state) names: 'current' unless it says 'classic'. */
+/** The rules a context (or a state) names: 'campaign' unless it says 'classic'. */
 export function rulesOf(ctx: { rules?: Rules | undefined }): Rules {
-  return ctx.rules ?? 'current';
+  return ctx.rules ?? 'campaign';
 }
 
 /**
  * BUG-10: dev mode's Toggle heroes "Plays as", by the rules a World plays: the heroes (by id) that
  * play their other design there ('classic': Classic mode heroes playing their Campaign design;
- * 'current': campaign heroes playing their Classic kit). Absent outside dev mode.
+ * 'campaign': campaign heroes playing their Classic kit). Absent outside dev mode.
  */
 export type HeroSwaps = Partial<Record<Rules, readonly string[]>>;
 
 /** The rules hero `id`'s design is resolved under in a World playing `rules` (BUG-10). */
 export function heroRulesOf(ctx: { heroSwaps?: HeroSwaps | undefined }, id: string, rules: Rules): Rules {
   if (!ctx.heroSwaps?.[rules]?.includes(id)) return rules;
-  return rules === 'classic' ? 'current' : 'classic';
+  return rules === 'classic' ? 'campaign' : 'classic';
 }
 
 /** Per-game assist/accessibility options that affect simulation. */
@@ -115,21 +115,21 @@ export interface GameContext {
   /** Reduced-flashing accessibility option (star palette cycling, etc.). */
   reduceFlashing: boolean;
   /**
-   * The live rules (TG-9). Optional: absent is 'current', so every hand-built context (the sims,
-   * the test harnesses) plays Current. Game makes it a live view of Game.liveRules; a World reads
+   * The live rules (TG-9). Optional: absent is 'campaign', so every hand-built context (the sims,
+   * the test harnesses) plays Campaign. Game makes it a live view of Game.liveRules; a World reads
    * it once, in its constructor (World.rules).
    */
   rules?: Rules;
   /**
    * Classic mode's cheats (scenes/cheats-menu.ts). Optional: absent everywhere but a Classic run
    * under Classic rules, where Game makes it a live view of settings.classicCheats.on; a World
-   * playing Current never reads it (World.cheats).
+   * playing Campaign never reads it (World.cheats).
    */
   classicCheats?: CheatFlags;
   /**
    * Classic mode's options (Settings.classic: More Settings, Customize Weapons), present only in a
    * Classic mode run with Classic rules (Game.classicOptions); absent everywhere else (the
-   * campaign, Current rules, every hand-built context), where nothing reads them. A World reads it
+   * campaign, Campaign rules, every hand-built context), where nothing reads them. A World reads it
    * once, in its constructor (World.classic); absent there means the original's values.
    */
   classic?: ClassicSettings;
@@ -146,7 +146,7 @@ export interface GameContext {
   /**
    * Classic SMBC's Yoshi mount (2026-10-19-yoshi-build-classic-character.md YM-1, a dev-only
    * toggle): 'on' lets the first power-up block of each allowed area hatch him, 'ride' also starts
-   * every life on his back. Absent (always under Current, in a campaign file and with the toggle
+   * every life on his back. Absent (always under Campaign, in a campaign file and with the toggle
    * off): no mount code runs (YM-2). Game makes it a live view, like `rules`.
    */
   classicYoshi?: 'on' | 'ride';
@@ -197,8 +197,8 @@ export interface GameState {
   campaignOrder?: boolean;
   /**
    * The rules `powerState`, `hp`, `kit` and their player-2 copies were earned under (TG-15).
-   * Written only as 'classic' (absent: 'current'), so every Current state is exactly as before.
-   * Never written into a campaign save (campaign files always play Current). A level start under
+   * Written only as 'classic' (absent: 'campaign'), so every Campaign state is exactly as before.
+   * Never written into a campaign save (campaign files always play Campaign). A level start under
    * other rules resets the carried power (rules/reconcile.ts).
    */
   rules?: Rules;
@@ -231,14 +231,14 @@ export function defaultPower(def: CharacterDef): string {
 }
 
 /**
- * A fresh run. `character`/`character2` are the roster (Current) defs; the default power and HP
+ * A fresh run. `character`/`character2` are the roster (Campaign) defs; the default power and HP
  * come from the defs the World will play (heroFor under `rules`). `rules` is written only when
  * 'classic' (TG-15).
  */
 export function newGameState(
   character: CharacterDef,
   character2: CharacterDef | null = null,
-  rules: Rules = 'current',
+  rules: Rules = 'campaign',
 ): GameState {
   const h1 = heroFor(character, rules);
   const h2 = character2 ? heroFor(character2, rules) : null;

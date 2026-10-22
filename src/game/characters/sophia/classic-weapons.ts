@@ -3,7 +3,7 @@ import { CANNON, HOMING, TRIPLE } from './weapons';
 
 /*
  * Sophia III's Classic SMBC weapons (bug-reports/2026-10-07-sophia-build-classic-character.md,
- * SO-28 to SO-31): the Current shot classes with specs in the original's damage units
+ * SO-28 to SO-31): the Campaign shot classes with specs in the original's damage units
  * (DamageValue.as 81-84) for the Classic enemy-HP rules (HP-C5, HP-C12) and the Classic brick
  * rules (BR-C2, BR-C7 to BR-C9: a brick has 125 HP). Every hit flashes the enemy for 400 ms
  * (Sophia.as:362, HP-C16).

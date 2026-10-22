@@ -23,7 +23,7 @@ import { runSim } from '@game/sim/headless';
 import {
   CLASSIC_ATTACK_MULT,
   CLASSIC_HP,
-  CURRENT_POINT_DAMAGE,
+  CAMPAIGN_POINT_DAMAGE,
   attackerDef,
   classicDamage,
   classicMaxHp,
@@ -48,7 +48,7 @@ isolateClassicRegistry({ hide: true });
 
 // Classic enemy rules (bug-reports/2026-10-07-classic-enemy-hp-and-armour.md, HP-C1..HP-C24): HP
 // in the original's units, armour, hit-stun, freeze, Bowser's forms and the instant kills. The
-// heroes are stand-in Classic defs (Current defs marked `rules: 'classic'`), so the weapons here
+// heroes are stand-in Classic defs (Campaign defs marked `rules: 'classic'`), so the weapons here
 // are stub damage sources carrying the HP-C9 values.
 
 afterEach(() => {
@@ -99,10 +99,10 @@ describe('HP table and damage (HP-C3, HP-C5, HP-C10)', () => {
     expect(resistsStop(new HammerBro(0, 0))).toBe(false);
   });
 
-  it('a Current def under Classic rules counts each point as 1000; a Classic def its own units', () => {
+  it('a Campaign def under Classic rules counts each point as 1000; a Classic def its own units', () => {
     const cur = classicWorld(LINK);
     expect(classicDamage({ kind: 'sword', amount: 1, owner: cur.player, dirX: 1 })).toBe(
-      CURRENT_POINT_DAMAGE,
+      CAMPAIGN_POINT_DAMAGE,
     );
     const cl = classicWorld(classicStub(LINK));
     expect(classicDamage(weapon(cl, 'sword', 275))).toBe(275);
@@ -221,8 +221,8 @@ describe('hits to kill (HP-C8 acceptance checks)', () => {
 });
 
 describe('instant kills (HP-C7)', () => {
-  it('the Star kills Bowser for 5000 points; Current Bowser stays star-proof', () => {
-    // No drop (Current Link's would be collected for points on the spot).
+  it('the Star kills Bowser for 5000 points; Campaign Bowser stays star-proof', () => {
+    // No drop (Campaign Link's would be collected for points on the spot).
     const def = classicStub(LINK);
     delete def.drop;
     const w = classicWorld(def);
@@ -236,7 +236,7 @@ describe('instant kills (HP-C7)', () => {
     expect(b.alive).toBe(false);
     expect(w.state.score - before).toBe(5000);
 
-    const cur = classicWorld(LINK, undefined, 'current');
+    const cur = classicWorld(LINK, undefined, 'campaign');
     const b2 = place(cur, new Bowser(30, 10, 'fire'));
     expect(b2.hit({ kind: 'star', amount: 1, owner: null, dirX: 1 }, cur)).toBe('immune');
   });
@@ -251,7 +251,7 @@ describe('instant kills (HP-C7)', () => {
     expect(h.alive || b.alive).toBe(false);
   });
 
-  it('stomps keep their Current reactions and leave HP alone', () => {
+  it('stomps keep their Campaign reactions and leave HP alone', () => {
     const w = classicWorld(classicStub(MARIO));
     const k = place(w, new Koopa(tile(20), tile(12), 'green'));
     expect(k.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, w)).toBe('shell');
@@ -347,7 +347,7 @@ describe('hit-stun, invulnerability and freeze (HP-C11, HP-C15..HP-C19)', () => 
     expect(l.classicHp).toBe(675);
   });
 
-  it('no Current shatter: a stopped enemy takes normal damage (HP-C19)', () => {
+  it('no Campaign shatter: a stopped enemy takes normal damage (HP-C19)', () => {
     const w = classicWorld(classicStub(LINK));
     const g = place(w, new Goomba(tile(20), tile(12)));
     g.hit(weapon(w, 'boomerang', 0, { pierce: 10, stopFrames: 180 }), w);
@@ -400,7 +400,7 @@ describe('blocked shots (HP-C14)', () => {
 });
 
 describe('melee damage hook (TG-24)', () => {
-  it('a Classic def supplies its melee damage; a Current def still sends sword 1', () => {
+  it('a Classic def supplies its melee damage; a Campaign def still sends sword 1', () => {
     const def = classicStub(LINK);
     def.behaviour = {
       ...LINK.behaviour,
@@ -437,7 +437,7 @@ describe('melee damage hook (TG-24)', () => {
       dirX: cur.player.facing,
       by: cur.player,
     });
-    // 1 point from a Current def: 1000, a dead Koopa.
+    // 1 point from a Campaign def: 1000, a dead Koopa.
     expect(g2.alive).toBe(false);
   });
 });
@@ -470,13 +470,13 @@ describe('re-hits and zero-damage hits (HP-C20, HP-C16)', () => {
 });
 
 describe('the single door (TG-24)', () => {
-  it("a Koopa shell goes through the Classic door for a boomerang too (Current's shell check is Current only)", () => {
+  it("a Koopa shell goes through the Classic door for a boomerang too (Campaign's shell check is Campaign only)", () => {
     const w = classicWorld(classicStub(LINK));
     const k = place(w, new Koopa(tile(20), tile(12), 'green'));
     k.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, w);
     expect(k.isStillShell).toBe(true);
     expect(k.hit(weapon(w, 'boomerang', 0, { pierce: 10, stopFrames: 180 }), w)).toBe('stun');
-    const cur = classicWorld(LINK, undefined, 'current');
+    const cur = classicWorld(LINK, undefined, 'campaign');
     const k2 = place(cur, new Koopa(tile(20), tile(12), 'green'));
     k2.hit({ kind: 'stomp', amount: 1, owner: null, dirX: 1 }, cur);
     expect(k2.hit({ kind: 'boomerang', amount: 1, owner: null, dirX: 1 }, cur)).toBe('immune');
@@ -484,7 +484,7 @@ describe('the single door (TG-24)', () => {
 });
 
 describe('damage units follow the attacker (TG-20, TG-24)', () => {
-  it('the default melee hit of a Classic def without meleeDamage is 1 unit, not a Current point', () => {
+  it('the default melee hit of a Classic def without meleeDamage is 1 unit, not a Campaign point', () => {
     const def = classicStub(LINK);
     const w = classicWorld(def);
     const g = place(w, new Goomba(tile(20), tile(12)));
@@ -567,7 +567,7 @@ describe("Bowser's HP is picked at spawn (HP-C4)", () => {
     });
   }
 
-  it('Current: no Classic HP at spawn', () => {
+  it('Campaign: no Classic HP at spawn', () => {
     const w = runSim({
       level: level(),
       character: LINK,

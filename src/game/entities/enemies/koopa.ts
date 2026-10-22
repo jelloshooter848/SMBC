@@ -151,7 +151,7 @@ export class Koopa extends Enemy {
   }
 
   /**
-   * A boomerang only stuns a walking koopa; shells just deflect it (Current rules: Enemy.hit's
+   * A boomerang only stuns a walking koopa; shells just deflect it (Campaign rules: Enemy.hit's
    * Classic door never comes here for a boomerang or ice).
    */
   override currentHit(src: DamageSource, world: World): Reaction {

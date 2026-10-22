@@ -13,7 +13,7 @@ import { SOPHIA } from '@game/characters/sophia';
  * by tools/levelgen/regen.mjs --layers) never touch a map. Every .map file under
  * src/content/levels hashes as recorded on main before the layers landed:
  *   RECORD_MAP_HASHES=1 pnpm vitest run tests/sim/campaign-map-hashes.test.ts
- * (only to record a map change made on purpose). And a Current World plays the map's own level:
+ * (only to record a map change made on purpose). And a Campaign World plays the map's own level:
  * the layers are laid only under Classic rules.
  */
 
@@ -58,13 +58,13 @@ describe('campaign maps stay byte-identical (G-010, G-006)', () => {
     expect(stray(ROOT)).toEqual([]);
   });
 
-  it('a Current World plays the map as it is, whoever the hero (no layer is laid)', () => {
+  it('a Campaign World plays the map as it is, whoever the hero (no layer is laid)', () => {
     const withLayers = levelIds().filter((id) => getLevel(id).layers?.length);
     expect(withLayers.length).toBeGreaterThan(150);
     for (const id of ['1-1', '2-2', '8-4', 'll-1-2', 'll-9-1']) {
       const level = getLevel(id);
       for (const character of [LINK, SOPHIA]) {
-        const r = runSim({ level, character, rules: 'current', script: { steps: [] }, maxFrames: 1 });
+        const r = runSim({ level, character, rules: 'campaign', script: { steps: [] }, maxFrames: 1 });
         expect(r.world.level).toBe(level);
         expect(r.world.mapDifficulty).toBe('normal');
       }

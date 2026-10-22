@@ -31,7 +31,7 @@ export type Reaction =
   /**
    * Classic rules only (rules/classic-enemies.ts, HP-C14): armour stopped the hit. No damage, no
    * score; callers treat it like 'immune' except that the weapon does its blocked behaviour
-   * (ProjectileSpec.onBlocked). Current never returns it.
+   * (ProjectileSpec.onBlocked). Campaign never returns it.
    */
   | 'blocked';
 
@@ -39,7 +39,7 @@ export type Vulnerability = Partial<Record<DamageKind, Reaction>>;
 
 /**
  * What a hit does under Classic rules beyond its damage (classic-enemy-hp-and-armour HP-C2,
- * HP-C16). Only Classic code sets or reads these; every field is optional and Current ignores them.
+ * HP-C16). Only Classic code sets or reads these; every field is optional and Campaign ignores them.
  * Frames are at 60 fps.
  */
 export interface ClassicHitProps {
@@ -61,7 +61,7 @@ export interface ClassicHitProps {
   blockedSfx?: string;
   /**
    * The player behind the hit when `owner` does not lead to one (the World's default melee
-   * source): Classic damage units follow this player's def. Current never reads it.
+   * source): Classic damage units follow this player's def. Campaign never reads it.
    */
   by?: Player;
 }
@@ -69,8 +69,8 @@ export interface ClassicHitProps {
 export interface DamageSource extends ClassicHitProps {
   kind: DamageKind;
   /**
-   * Current: points (1-5). Classic rules: the original's damage units (a Goomba has 250) when the
-   * attacker plays a Classic def; a Current def's points count CURRENT_POINT_DAMAGE each there.
+   * Campaign: points (1-5). Classic rules: the original's damage units (a Goomba has 250) when the
+   * attacker plays a Classic def; a Campaign def's points count CAMPAIGN_POINT_DAMAGE each there.
    */
   amount: number;
   owner: Entity | Player | null;

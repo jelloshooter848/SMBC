@@ -38,7 +38,7 @@ import { testLevel, tile } from './classic-harness';
 // Classic mode's skins (FU-8) and Mega Man's gameplay variants (FU-3; SkinDescriptions.as and the
 // original's per-skin switches): the skin picker on the select, the saved choice, every cosmetic
 // skin playing exactly as its slot's hero, the variants' measured differences, and the campaign
-// and Current rules unchanged.
+// and Campaign rules unchanged.
 
 useStorage();
 
@@ -326,7 +326,7 @@ describe('FU-3: the variants are Classic Mega Man with their own rules, as skins
       expect(d.guide.tagline.length).toBeGreaterThan(0);
       expect(d.rescueName).toBeDefined();
     }
-    expect(h.game.rosterFor('current')).toBe(CHARACTERS);
+    expect(h.game.rosterFor('campaign')).toBe(CHARACTERS);
     // Every pose Mega Man has, each variant has (built from his sheet).
     const mm = Object.keys(SPRITES['megaman-classic']?.frames ?? {});
     for (const sheet of ['mm-rock', 'mm-cutman', 'mm-fireman', 'mm-iceman', 'mm-witch', 'mm-rokko'])
@@ -531,8 +531,8 @@ describe('FU-3: the variants are Classic Mega Man with their own rules, as skins
   });
 });
 
-describe('the campaign and Current rules are unchanged', () => {
-  it('campaign and Current rosters: the plain heroes, one row, no skin picker', () => {
+describe('the campaign and Campaign rules are unchanged', () => {
+  it('campaign and Campaign rosters: the plain heroes, one row, no skin picker', () => {
     const h = makeGame();
     h.game.showCharacterSelect();
     const sel = h.top() as CharacterSelectScene;
@@ -540,12 +540,12 @@ describe('the campaign and Current rules are unchanged', () => {
     expect(sel.rows).toBe(1);
     expect(sel.skinPicker).toBe(false);
     expect(h.game.heroSlots).toBe(h.game.roster);
-    expect(h.game.rosterFor('current')).toBe(CHARACTERS);
+    expect(h.game.rosterFor('campaign')).toBe(CHARACTERS);
     // A saved skin never reaches a campaign hero.
     for (const c of CHARACTERS) expect(h.game.skinFor(c)).toBe(c);
   });
 
-  it('no Current def sets the new optional fields', () => {
+  it('no Campaign def sets the new optional fields', () => {
     for (const c of CHARACTERS) {
       expect(c.fireBarProof, c.id).toBeUndefined();
       expect(c.behaviour.slides, c.id).toBeUndefined();

@@ -247,7 +247,7 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
       hero: 'link',
       look: 'link',
       power: 'fire',
-      rules: 'current',
+      rules: 'campaign',
       classicRun: false,
     });
     expect(loadDevPick(h.game)?.power).toBe('full');
@@ -276,14 +276,14 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
     h.idle(8);
     const row = (l: string) => items(start).find((i) => i.label === l) as MenuItem;
     for (let i = 0; i < 20 && start.hero.id !== 'samus'; i++) row('Hero').adjust?.(1);
-    stepTo(h, 'Rules', () => start.pick.rules === 'current');
+    stepTo(h, 'Rules', () => start.pick.rules === 'campaign');
     expect(start.hero.id).toBe('samus');
     expect(h.said.at(-1)).toMatch(/^Rules: Campaign\..*Hero: Samus$/);
     row('Rules').adjust?.(1); // back to Classic SMBC
     for (let i = 0; i < 20 && start.hero.id !== 'bass'; i++) row('Hero').adjust?.(1);
     expect(start.hero.id).toBe('bass');
     row('Rules').adjust?.(1); // Campaign rules have no Bass
-    expect(start.hero.id).toBe(h.game.slotsFor('current')[0]?.id);
+    expect(start.hero.id).toBe(h.game.slotsFor('campaign')[0]?.id);
     expect(row('Rules').hint).toMatch(/Hero: Mario$/);
   });
 
@@ -398,7 +398,7 @@ function saveDevPick(start: DevStartScene): void {
 }
 
 describe('O-05: the Campaign branch', () => {
-  it('a story level starts as free play under Current rules, with no file', () => {
+  it('a story level starts as free play under Campaign rules, with no file', () => {
     const h = dev();
     h.game.scenes.push(new DevCampaignScene(h.game));
     pick(h, 'Lost story level');
@@ -411,7 +411,7 @@ describe('O-05: the Campaign branch', () => {
     const l = enterLevel(h);
     expect(l.level.id.startsWith('ll-2-1')).toBe(true);
     expect(h.game.campaign).toBeNull();
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
     expect(h.game.state.lives).toBe(99);
   });
 

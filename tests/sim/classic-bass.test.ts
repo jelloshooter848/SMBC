@@ -29,7 +29,7 @@ import { isolateClassicRegistry } from './classic-registry';
 
 // Classic SMBC Bass (bug-reports/2026-10-07-bass-build-classic-character.md, BA-1..BA-37): the
 // report's acceptance checks the engine can measure, through runSim with rules: 'classic', his
-// roster rules (TG-41..TG-43) and TG-38's "Current is unchanged".
+// roster rules (TG-41..TG-43) and TG-38's "Campaign is unchanged".
 
 isolateClassicRegistry();
 
@@ -117,15 +117,15 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
     expect(heroFor(BASS_CLASSIC, 'classic')).toBe(BASS_CLASSIC);
   });
 
-  it('Classic rosters list him after the usual heroes; Current and campaign ones never', () => {
+  it('Classic rosters list him after the usual heroes; Campaign and campaign ones never', () => {
     const h = makeGame({ dev: true });
     expect(h.game.rosterFor('classic')).toEqual([...CHARACTERS, ...CLASSIC_EXTRAS]);
     expect(h.game.rosterFor('classic').indexOf(BASS_CLASSIC)).toBe(CHARACTERS.length);
-    expect(h.game.rosterFor('current')).not.toContain(BASS_CLASSIC);
-    // `?dev=1&rules=current&char=bass` finds no Bass: the first hero, Mario, plays.
-    const c = h.game.rosterFor('current');
+    expect(h.game.rosterFor('campaign')).not.toContain(BASS_CLASSIC);
+    // `?dev=1&rules=campaign&char=bass` finds no Bass: the first hero, Mario, plays.
+    const c = h.game.rosterFor('campaign');
     expect(c.find((d) => d.id === 'bass') ?? c[0]).toBe(MARIO);
-    h.game.runRules = 'current';
+    h.game.runRules = 'campaign';
     expect(h.game.heroLocked(BASS_CLASSIC)).toBe(true);
     expect(h.game.heroesToFind).toBe(0);
   });
@@ -157,7 +157,7 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
   it('a Campaign-rules Classic run (the dev START page, BUG-11), and free play: no Bass', () => {
     const settings = { ...defaultSettings(), dev: true };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
-    h.game.devClassicGame(MARIO, '1-1', 'current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
     expect(h.game.heroSlots).not.toContain(BASS_CLASSIC);
     expect(h.game.roster).not.toContain(BASS_CLASSIC);
     const f = makeGame();
@@ -166,8 +166,8 @@ describe('a Classic-only hero (BA-1, BA-2, BA-4, TG-41..TG-43)', () => {
   });
 });
 
-describe('Current is unchanged (TG-23, TG-38)', () => {
-  it('no Current profile, nor Classic Mega Man, sets the new optional fields', () => {
+describe('Campaign is unchanged (TG-23, TG-38)', () => {
+  it('no Campaign profile, nor Classic Mega Man, sets the new optional fields', () => {
     for (const c of CHARACTERS) {
       const m = c.movement;
       expect(m.springKeepsAirJumps, c.id).toBeUndefined();

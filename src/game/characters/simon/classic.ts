@@ -489,7 +489,7 @@ export const SIMON_CLASSIC: CharacterDef = {
     onRespawn: (p) => classicRespawn(p, START_KIT),
   },
 };
-// A Classic def leaves out the Current HUD extras (TG-22); `tools` lists only the dev full kit.
+// A Classic def leaves out the Campaign HUD extras (TG-22); `tools` lists only the dev full kit.
 delete SIMON_CLASSIC.meter;
 delete SIMON_CLASSIC.hudExtra;
 delete SIMON_CLASSIC.reserve;

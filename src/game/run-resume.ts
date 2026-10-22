@@ -218,7 +218,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
   const r = raw as Partial<ClassicResume> | null;
   if (!r || typeof r !== 'object' || r.v !== 1) return null;
   if (typeof r.levelId !== 'string' || typeof r.hero !== 'string') return null;
-  if (r.rules !== 'classic' && r.rules !== 'current') return null;
+  if (r.rules !== 'classic' && r.rules !== 'campaign') return null;
   // A Survival run may go on with no lives left (they only revive heroes): 0 reads there.
   const minLives = r.survival ? 0 : 1;
   if (![r.score, r.coins, r.lives, r.world, r.stage, r.hp].every(num) || (r.lives ?? 0) < minLives)
