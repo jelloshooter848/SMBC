@@ -23,6 +23,8 @@ export class OptionsScene extends MenuScene {
   /** `classic`: opened from Classic mode's menus (How to play then lists its heroes, G-093). */
   constructor(game: Game, onBack: () => void, translucent = false, classic = false) {
     super(game, 'OPTIONS', [], onBack, translucent);
+    // 38f: on entry, the page's name before its focused row ("Options. Video").
+    this.entryTitle = 'Options';
     this.setItems([
       { label: 'Video', select: () => this.push(new VideoOptions(game, () => this.pop())) },
       { label: 'Audio', select: () => this.push(new AudioOptions(game, () => this.pop())) },
