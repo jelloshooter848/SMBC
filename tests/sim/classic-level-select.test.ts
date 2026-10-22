@@ -49,7 +49,10 @@ function pick(h: H, label: string): void {
   const at = labels(h.top()).indexOf(label);
   expect(at, label).toBeGreaterThanOrEqual(0);
   h.idle(8);
-  for (let i = 0; i < at; i++) h.tap('down');
+  // From where the cursor is (v0.4.74 item 53: a new file's rules box opens on START).
+  const n = labels(h.top()).length;
+  const from = (h.top() as unknown as { index: number }).index;
+  for (let i = 0; i < (at - from + n) % n; i++) h.tap('down');
   h.tap('jump');
 }
 

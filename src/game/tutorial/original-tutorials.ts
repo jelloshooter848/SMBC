@@ -314,6 +314,27 @@ export function startTutorials(game: Game, hero: string): string[] {
   return [`${hero}Start`, ...(hero === 'ryu' && w.ryuStart === 'jump-slash' ? ['ryuJumpSlash'] : [])];
 }
 
+/**
+ * v0.4.74 item 55: the boxes the Classic pause's Guide shows for `hero`: its start box(es), then
+ * what its Mushroom and Fire Flower bring (as the Customize Weapons choice has them). A hero the
+ * original has no box for gets the first start's box (how every hero controls).
+ */
+export function guideTutorials(game: Game, hero: string): string[] {
+  const ids = [
+    ...startTutorials(game, hero),
+    ...upgradeTutorials(game, hero, 'big'),
+    ...upgradeTutorials(game, hero, 'fire'),
+  ].filter((id, i, all) => TUTORIAL_TEXT[id] && all.indexOf(id) === i);
+  return ids.length ? ids : ['firstCharacterStart'];
+}
+
+/** guideTutorials' pages, their abilities filled in for `hero` (never recorded as seen). */
+export function guidePages(game: Game, hero: string): string[] {
+  return guideTutorials(game, hero).flatMap((id) =>
+    (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(game, t, hero)),
+  );
+}
+
 /** Frames a level start or an upgrade waits for the hero to land before its box shows anyway. */
 const LAND_WAIT = 120;
 

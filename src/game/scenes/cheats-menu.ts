@@ -215,6 +215,14 @@ export class CheatsScene extends MenuScene {
       });
       return;
     }
+    if (this.boxed) {
+      // Item 54 (a box over the Classic pause): the code prompt on the status line.
+      const keep = this.status;
+      if (this.code) this.status = 'Enter the code';
+      super.render(r);
+      this.status = keep;
+      return;
+    }
     super.render(r);
     if (!this.code) return;
     const font = this.game.ctx.assets.sheet('font');

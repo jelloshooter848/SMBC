@@ -3,11 +3,12 @@ import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { CheatsScene, HIDDEN_CHEAT } from '@game/scenes/cheats-menu';
-import { GuideIndexScene, GuideScene } from '@game/scenes/guide';
+import { GuideIndexScene } from '@game/scenes/guide';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { PauseScene } from '@game/scenes/pause';
+import { TutorialBoxScene } from '@game/tutorial/original-tutorials';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // G-031: the original's Pause > Options > Cheats mid-run: the unlocked cheats, applied at once.
@@ -104,14 +105,15 @@ describe('G-031 cheats from the Classic pause', () => {
 });
 
 describe('G-093 the Classic guide', () => {
-  it('the Classic pause opens the Classic hero’s own page', () => {
+  // v0.4.74 item 55 (owner): the Classic pause's Guide is the original's tutorial boxes for the
+  // hero played (tests/sim/v0474-menus.test.ts), no longer the hero's GuideScene page.
+  it('the Classic pause opens the Classic hero’s own tutorial boxes (item 55)', () => {
     const h = classic();
     pausedRun(h, LINK);
     pick(h, 'Guide');
-    expect(h.top()).toBeInstanceOf(GuideScene);
-    const g = h.top() as unknown as { def: { rules?: string; id: string } };
-    expect(g.def.id).toBe('link');
-    expect(g.def.rules).toBe('classic');
+    expect(h.top()).toBeInstanceOf(TutorialBoxScene);
+    const g = h.top() as TutorialBoxScene;
+    expect(g.pages[0]).toMatch(/^Link:/);
   });
 
   it('How to play from the Classic menus lists the Classic select’s heroes, as Classic defs', () => {
