@@ -2009,6 +2009,9 @@ export class Game {
     levelId = '1-1',
     file?: { ref: ClassicFileRef; rules?: ClassicFileRules },
   ): void {
+    // 31e: an empty file only, as startClassicFile: a used or unreadable one is emptied only
+    // through ERASE FILE, never started over.
+    if (file && this.classicFileState(file.ref) !== 'empty') return;
     this.pendingLevel = null;
     if (file) {
       this.classicFile = { set: file.ref.set, slot: file.ref.slot };

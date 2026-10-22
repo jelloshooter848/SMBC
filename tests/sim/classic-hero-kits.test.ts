@@ -8,6 +8,7 @@ import { LevelScene } from '@game/scenes/level';
 import { resumeOf } from '@game/run-resume';
 import {
   classicFileKey,
+  eraseClassicFile,
   loadClassicFile,
   originalFileRules,
   type ClassicFileRef,
@@ -148,6 +149,8 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     expect(g.state.powerState).toBe('small');
     g.state.powerState = 'fire';
     g.setHero(0, LINK);
+    // 31e: a new game starts only in an empty file (ERASE FILE first, as a player does).
+    eraseClassicFile(F1);
     g.classicGame(LINK, '1-1', { ref: F1 });
     expect(g.classicKits).toEqual({});
     g.setHero(0, MARIO);

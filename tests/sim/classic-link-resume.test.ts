@@ -4,7 +4,7 @@ import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LevelScene } from '@game/scenes/level';
 
-import { classicFileKey, loadClassicFile, type ClassicFileRef } from '@game/original-files';
+import { classicFileKey, eraseClassicFile, loadClassicFile, type ClassicFileRef } from '@game/original-files';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // RC-004 (0.5.0 RC audit): opening a shared `?level=` link (main.ts -> devClassicGame with dev
@@ -81,6 +81,8 @@ describe('RC-004 a link run leaves the Continue slot alone', () => {
     h.game.devClassicGame(MARIO, '1-1', 'classic', false);
     h.until(() => inLevel(h), 600);
     h.game.showTitle();
+    // 31e: a new game starts only in an empty file (ERASE FILE first, as a player does).
+    eraseClassicFile(F1);
     h.game.classicGame(MARIO, '2-1', { ref: F1 });
     expect(loadClassicResume()).toMatchObject({ levelId: expect.stringMatching(/^2-1/), hero: 'mario' });
   });

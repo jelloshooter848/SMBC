@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { eraseClassicFile } from '@game/original-files';
 import { px } from '@engine/math/units';
 import {
   CLASSIC_CHEAT_IDS,
@@ -411,6 +412,8 @@ describe('unlock goals', () => {
     expect(h.settings.classicCheats.unlocked.allGroundIsBricks).toBe(true);
     expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(false);
     const g = classic();
+    // 31e: a new game starts only in an empty file (ERASE FILE first, as a player does).
+    eraseClassicFile({ set: 'smb', slot: 1 });
     g.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 } });
     g.game.cheatEvent({ beat: 'smb' });
     expect(g.settings.classicCheats.unlocked.infiniteLives).toBe(true);
