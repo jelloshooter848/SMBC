@@ -156,6 +156,9 @@ export function parseArgs(argv) {
   return out;
 }
 
+/** @param {number} n */
+const count = (n) => `${n} fragment${n === 1 ? '' : 's'}`;
+
 function main() {
   let args;
   try {
@@ -169,10 +172,7 @@ function main() {
     if (args.command === 'preview') {
       const body = renderSection(fragments);
       if (!body) console.log(`## [Unreleased]\n\n(no fragments in ${args.changes}/ yet)`);
-      else
-        console.log(
-          `## [Unreleased]\n\n${body}\n\n(${fragments.length} fragment${fragments.length === 1 ? '' : 's'} in ${args.changes}/)`,
-        );
+      else console.log(`## [Unreleased]\n\n${body}\n\n(${count(fragments.length)} in ${args.changes}/)`);
       return;
     }
     const result = stamp({
@@ -187,7 +187,7 @@ function main() {
     if (args.dryRun) {
       console.log(
         `\n(dry run: nothing written; would update ${args.changelog} and ${args.pkg} and delete ` +
-          `${files.length} fragments: ${files.join(', ')})`,
+          `${count(files.length)}: ${files.join(', ')})`,
       );
       return;
     }
@@ -195,7 +195,7 @@ function main() {
     writeFileSync(args.pkg, result.pkg);
     for (const f of files) unlinkSync(f);
     console.log(
-      `\nStamped ${args.version}: updated ${args.changelog} and ${args.pkg}, deleted ${files.length} fragments.`,
+      `\nStamped ${args.version}: updated ${args.changelog} and ${args.pkg}, deleted ${count(files.length)}.`,
     );
   } catch (e) {
     console.error(`changelog: ${/** @type {Error} */ (e).message}`);
