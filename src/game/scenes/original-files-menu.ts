@@ -130,7 +130,8 @@ function problemRow(
   why: string;
 } {
   if (problem === 'not-released') {
-    // 0.4.72: played in dev mode by a hero players do not have yet; never played as another.
+    // 0.4.72: played in dev mode, or saved by v0.4.71 or earlier, by a hero players do not have
+    // yet; never played as another.
     const name = fileHeroName(game, f);
     return {
       value: 'NOT RELEASED',
