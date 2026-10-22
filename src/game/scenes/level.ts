@@ -22,6 +22,7 @@ import type { CharacterDef } from '../characters/character';
 import type { Game } from './game';
 import { PauseScene } from './pause';
 import type { TouchLabels } from '@engine/input/touch';
+import type { DpadZoneId } from '@engine/input/touch-logic';
 import { levelTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
 import { drawRulesTag } from '../hud/rules-tag';
@@ -344,6 +345,14 @@ export class LevelScene implements Scene {
     const held = this.tutorial?.heldTouchLabels() ?? this.explainers.heldTouchLabels();
     if (held) return held;
     return levelTouchLabels(this.world.players[0], this.world);
+  }
+
+  /** Player 1's hero picks the d-pad's zones (CharacterDef.touchDpad); a held card reads the usual pad. */
+  touchDpad(): DpadZoneId {
+    if (this.world.castleWaiting || this.world.anchorScene) return 'default';
+    if (this.tutorial?.heldTouchLabels() ?? this.explainers.heldTouchLabels()) return 'default';
+    const p = this.world.players[0];
+    return (p && p.def.touchDpad?.(p)) ?? 'default';
   }
 
   /** Mirror the player's power state into the carried game state. */

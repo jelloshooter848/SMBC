@@ -14,6 +14,14 @@ under `## [Unreleased]`.
   starts that hero at the power of the design he plays, so a brand-new run no longer says
   "Hero design changed. Power reset."
 
+### Changed
+
+- Touch d-pad for Sophia III (an experiment): she never crouches, so her pad is an even
+  eight-way pad. Down and a direction, which she needs to drive down a cliff face or into a gap
+  with Wall Climb, is now as easy to hold as Up and a direction, with no firmer push. Jason on
+  foot and every other hero keep the usual pad, whose down-diagonals still need a firmer push so
+  running never crouches by accident.
+
 ## [0.4.69] - 2026-10-22
 
 ### Changed
