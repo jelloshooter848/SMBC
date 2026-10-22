@@ -187,10 +187,10 @@ export interface SharedClassicRules {
  * set; each per-set slot (0.4.68 on) goes into FILE 1 of its set, or the next empty file. A
  * migrated file keeps the slot's Map difficulty and Game mode; its other rules are the shared
  * Classic options as they are now, and its continues the slot's own count (#196), else the shared
- * count. A readable file is never overwritten (31a, v0.4.71): a set with all three files
- * readable keeps the old key as it is, logged once, and it moves into the next file ERASE FILE
- * frees (oldRunsWaiting tells the file box); a full set with an unreadable file gives it the run.
- * An old key goes only once its run is written; a broken one is just removed. Returns whether
+ * count. No file is ever overwritten (31a-b, v0.4.71): a set with no empty file (an unreadable
+ * one counts as used) keeps the old key as it is, logged once, and it moves into the next file
+ * ERASE FILE frees (oldRunsWaiting tells the file box). An old key goes only once its run is
+ * written; a broken one is just removed. Returns whether
  * anything was migrated.
  */
 export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => SharedClassicRules)): boolean {
@@ -247,14 +247,9 @@ export function oldRunsWaiting(set: MapSetId): number {
  * in it (an unreadable one too: it is never overwritten); 'failed' when storage refused it.
  */
 function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 'placed' | 'full' | 'failed' {
-  let slot: ClassicFileSlot | undefined = CLASSIC_FILE_SLOTS.find((s) => !hasClassicFile({ set, slot: s }));
-  // Full, with an unreadable file: the old run takes the first unreadable one.
-  const files = listClassicFiles(set);
-  const broken = CLASSIC_FILE_SLOTS.findIndex((_, i) => files[i] === null);
-  if (slot === undefined && broken >= 0) {
-    slot = CLASSIC_FILE_SLOTS[broken] as ClassicFileSlot;
-    console.warn(`Classic files: ${set} is full; unreadable FILE ${slot} was replaced by a saved run`);
-  }
+  // A file with anything in it is not empty: an unreadable one too (a newer build's after a
+  // downgrade may read again there), so it is never overwritten (31b).
+  const slot = CLASSIC_FILE_SLOTS.find((s) => !hasClassicFile({ set, slot: s }));
   if (slot === undefined) return 'full';
   const savedAt = r.savedAt ?? 0;
   const options = { ...shared.classic, weapons: { ...shared.classic.weapons } };
