@@ -809,13 +809,30 @@ export class TitleScene extends MenuScene {
       }
       classic.demo.render(r);
       this.staticLogo(r);
+      // CLASSIC gives a squash, then breaks like a brick: its pieces fly up and fall away.
       if (k < 3) {
         const full = sheet.frames.get('classic')?.h ?? 29;
         const flat = sheet.frames.get('classic-squash')?.h ?? 22;
         r.sprite(sheet, 'classic-squash', CLASSIC_REST.x, CLASSIC_REST.y + full - flat);
       } else {
-        const a = (k - 3) / 11;
-        r.sprite(sheet, 'classic', CLASSIC_REST.x, Math.round(CLASSIC_REST.y - a * a * 110));
+        // Seven slices of the word (one a letter, about), each its own piece: a hop, then a fall.
+        const a = k - 3;
+        const ctx = (r as unknown as { ctx?: CanvasRenderingContext2D }).ctx;
+        const w = sheet.frames.get('classic')?.w ?? 173;
+        const n = 7;
+        const sw = Math.ceil(w / n);
+        for (let i = 0; i < n; i++) {
+          const dx = Math.round((i - 3) * 0.9 * a);
+          const dy = Math.round((-2.4 - (i % 2) * 0.8) * a + 0.4 * a * a);
+          if (!ctx) break;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(CLASSIC_REST.x + i * sw + dx, CLASSIC_REST.y + dy, sw, 40);
+          ctx.clip();
+          r.sprite(sheet, 'classic', CLASSIC_REST.x + dx, CLASSIC_REST.y + dy);
+          ctx.restore();
+          r.sprite(sheet, 'brick-bit', CLASSIC_REST.x + i * sw + 10 + dx * 2, CLASSIC_REST.y + 20 + dy - a);
+        }
       }
       if (!calm && k >= this.stampAt - T.stampPop) {
         const f = sheet.frames.get('remix');
@@ -832,9 +849,10 @@ export class TitleScene extends MenuScene {
       }
       this.field(r, 0);
       this.heroesDraw(r, 0);
-      this.staticLogo(r);
       const e = k / this.stampAt;
+      // CLASSIC slides up behind CROSSOVER (drawn first), REMIX drops in front of it.
       r.sprite(sheet, 'classic', CLASSIC_REST.x, Math.round(CLASSIC_REST.y - e * e * 100));
+      this.staticLogo(r);
       const ry = Math.round(-50 + (STAMP_Y + 50) * e * e);
       r.sprite(sheet, 'remix-shadow', STAMP_X + 2, ry + 2);
       r.sprite(sheet, 'remix', STAMP_X, ry);
