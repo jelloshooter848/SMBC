@@ -144,7 +144,8 @@ export class CheatsScene extends MenuScene {
     this.code = new CheatCode(DEV_CODE);
     this.codeAt = 0;
     this.backAction = 'select';
-    this.game.deps.announcer?.say('Enter the code. BACK to stop.');
+    // The key that goes BACK while the code is taken (SELECT's), named as the page's hint names it.
+    this.game.deps.announcer?.say(`Enter the code. ${abilityHint(this.game, 'BACK', 'select')} to stop.`);
   }
 
   private endCode(): void {

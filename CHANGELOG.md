@@ -16,6 +16,8 @@ under `## [Unreleased]`.
   on that run's own map set (Special, Lost Levels), not on Super Mario Bros.
 - Classic: leaving the Cheats page's code entry with BACK plays the original's bump, not the menu
   blip.
+- Classic: the Cheats page's code entry is announced with BACK's key, as the page shows it
+  ("BACK (RIGHT SHIFT) to stop" on a keyboard, just BACK on touch).
 
 ## [0.4.69] - 2026-10-22
 
