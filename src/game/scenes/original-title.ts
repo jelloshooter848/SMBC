@@ -10,8 +10,9 @@ import type { MenuItem } from './menu';
 import { abilityHint, controlScheme } from './hints';
 import { menuTouchLabels } from '../touch-labels';
 import { ClassicDemo, MARIO_WAIT } from './title-demo';
-import { boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
+import { boxCentreUnderLogo, boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
+import { joinMusic, TITLE_MUSIC } from './title-music';
 
 /**
  * The CLASSIC title in the original's style (O-04; level/TitleLevel.as, messageBoxes/StartMenu.as):
@@ -30,11 +31,15 @@ const PROMPT_Y = 138;
 /** The prompt's dark strip: its margin around the words, and its colour. */
 const PROMPT_PAD = 3;
 export const PROMPT_STRIP = 'rgba(0,0,0,0.6)';
-/** The logo's drop from the REMIX title's place (TitleLevel.as TITLE_Y_POS 60: our 30). */
-const LOGO_DY = 22;
-/** The boxes' centre (screen px). */
+/**
+ * BUG-02 (owner): SMB and CROSSOVER stay exactly where the REMIX title has them (title.ts TAG_*,
+ * CROSS_*; no drop on the way in), and CLASSIC takes the REMIX stamp's place.
+ */
+export const LOGO = { tagX: 18, tagY: 8, crossX: 17, crossY: 30 } as const;
+/** The REMIX stamp's place on the title (title.ts STAMP_X, STAMP_Y), until CLASSIC lands on it. */
+const STAMP = { x: 160, y: 54 } as const;
+/** The boxes' centre x (screen px); each box's top is menu-box.ts BOX_TOP, under the logo. */
 export const BOX_CX = 128;
-export const BOX_CY = 160;
 
 /**
  * The CLASSIC smash (owner request on O-04): on the way in from the title, a big CLASSIC drops
@@ -42,20 +47,24 @@ export const BOX_CY = 160;
  * the stamp's own thud) and stays there in its place. Frames from the scene's start.
  */
 export const SMASH = { drop: 16, squash: 4, shake: 10, end: 44 } as const;
-/** Where CLASSIC rests: over the REMIX stamp's spot (its top left, screen px). */
-export const CLASSIC_AT = { x: 41, y: 94 } as const;
+/**
+ * Where CLASSIC rests (its top left, screen px): in the REMIX stamp's place (BUG-02), its right
+ * end at the stamp's (252) and its middle level with the stamp's (CLASSIC is 173 x 29, the stamp
+ * 92 x 44 at 160, 54).
+ */
+export const CLASSIC_AT = { x: 79, y: 62 } as const;
 /** Where it starts its fall (above the screen). */
 const CLASSIC_FROM_Y = -32;
-/** The stamp's chips: start (screen px) and speed (px a frame); they fall with gravity. */
+/** The stamp's chips: start (screen px, on the stamp) and speed (px a frame); they fall with gravity. */
 const CHIPS = [
-  [170, 84, -1.6, -2.6],
-  [184, 80, -0.8, -3.2],
-  [198, 82, 0.4, -3],
-  [212, 78, 1.1, -3.4],
-  [226, 80, 1.8, -2.8],
-  [240, 84, 2.4, -2.2],
-  [178, 96, -2.2, -1.6],
-  [232, 92, 2.8, -1.4],
+  [170, 62, -1.6, -2.6],
+  [184, 58, -0.8, -3.2],
+  [198, 60, 0.4, -3],
+  [212, 56, 1.1, -3.4],
+  [226, 58, 1.8, -2.8],
+  [240, 62, 2.4, -2.2],
+  [178, 74, -2.2, -1.6],
+  [232, 70, 2.8, -1.4],
 ] as const;
 
 /** The Start box's cursor, kept between visits (StartMenu.lastIndex). */
@@ -65,6 +74,8 @@ export type ClassicTitlePhase = 'demo' | 'start';
 
 export class ClassicTitleScene implements Scene {
   readonly translucent = false;
+  /** The backdrop every CLASSIC box is drawn over (original-box-menu.ts demoUnder). */
+  readonly classicBackdrop = true as const;
   readonly demo: ClassicDemo;
   phase: ClassicTitlePhase;
   /** Frames since the scene opened. */
@@ -89,6 +100,7 @@ export class ClassicTitleScene implements Scene {
   ) {
     this.demo = new ClassicDemo(game.ctx);
     this.phase = phase;
+    this.fromRemix = smash;
     // With Reduce flashing it is simply in place: no fall, no shake, no flying chips.
     this.smashing = smash && !game.ctx.reduceFlashing;
     // START in place of NEW GAME and LOAD GAME: it opens the map set menu, where a run is
@@ -135,7 +147,15 @@ export class ClassicTitleScene implements Scene {
     this.bindPointer();
     // The demo's own level tune, every time it opens (TitleLevel is a real 1-1: a new one, from
     // the title, a game over or the select, starts its music).
-    this.game.ctx.audio.playMusic('overworld');
+    // BUG-12: from the REMIX title the join is smoothed. With the smash, the REMIX theme fades
+    // out over CLASSIC's fall and the overworld rises from the impact frame (startOverworld);
+    // with Reduce flashing (no smash), a plain crossfade.
+    const audio = this.game.ctx.audio;
+    if (this.fromRemix && this.smashing) {
+      audio.fadeOutMusic?.(TITLE_MUSIC.fallOut);
+      this.overworldDue = true;
+    } else if (this.fromRemix) joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
+    else audio.playMusic('overworld');
     if (this.quiet) return;
     if (this.phase === 'start') this.announce(true);
     else this.sayDemo();
@@ -144,6 +164,19 @@ export class ClassicTitleScene implements Scene {
   exit(): void {
     this.unbind?.();
     this.unbind = null;
+    this.overworldDue = false;
+  }
+
+  /** Came in from the REMIX title (its music joins smoothly, BUG-12). */
+  private readonly fromRemix: boolean;
+  /** The overworld waits for CLASSIC's impact (BUG-12). */
+  private overworldDue = false;
+
+  /** The impact (or the smash cut short by a press): the overworld rises, the smash its downbeat. */
+  private startOverworld(): void {
+    if (!this.overworldDue) return;
+    this.overworldDue = false;
+    this.game.ctx.audio.playMusic('overworld', TITLE_MUSIC.impactIn);
   }
 
   private sayDemo(): void {
@@ -167,6 +200,8 @@ export class ClassicTitleScene implements Scene {
   /** One frame of the demo (also run by the menus drawn over it, so it keeps playing). */
   tickDemo(): void {
     this.demo.update();
+    // However the smash ended, its overworld never waits past it (BUG-12).
+    if (this.overworldDue && this.smashPhase() === 'done') this.startOverworld();
   }
 
   /** OK on the demo: the Start box grows open (StartMenu.initiate). */
@@ -220,14 +255,21 @@ export class ClassicTitleScene implements Scene {
   /** The smash ends at once: CLASSIC in its place (a press, or its time up). */
   finishSmash(): void {
     this.smashing = false;
+    this.startOverworld();
   }
 
   update(input: InputFrame): void {
     this.t++;
     this.tickDemo();
     if (this.smashing) {
-      if (this.t === SMASH.drop && !this.game.ctx.reduceFlashing) this.game.ctx.audio.sfx('stamp');
-      // Any press finishes it, and still does what it does (OK still opens the Start box).
+      if (this.t === SMASH.drop && !this.game.ctx.reduceFlashing) {
+        // On the impact frame: the overworld starts under the thud (BUG-12).
+        this.startOverworld();
+        this.game.ctx.audio.sfx('stamp');
+      }
+      // Any press finishes it, and still does what it does (OK still opens the Start box). BACK
+      // before the impact: no overworld at all, the REMIX theme just comes back up (BUG-12).
+      if (input.pressed('attack') || input.pressed('select')) this.overworldDue = false;
       if (this.t >= SMASH.end || this.tapped || Actions.some((a) => input.pressed(a))) this.finishSmash();
     }
     if (this.phase === 'demo') {
@@ -271,17 +313,17 @@ export class ClassicTitleScene implements Scene {
 
   // ------------------------------------------------------------ drawing
 
-  /** Our logo (the REMIX title's pieces), centred near the top as TitleLevel's is. */
+  /** Our logo: the REMIX title's pieces where that title has them, CLASSIC in the stamp's place. */
   private logo(r: Renderer): void {
     const sheet = this.game.ctx.assets.sheet('title-logo');
-    r.sprite(sheet, 'smb-tag', 18, 8 + LOGO_DY);
+    r.sprite(sheet, 'smb-tag', LOGO.tagX, LOGO.tagY);
     for (let i = 0; i < CROSSOVER_LETTERS.length; i++)
-      r.sprite(sheet, `cross-${i}`, 17 + i * CROSSOVER_ADVANCE, 30 + LOGO_DY);
+      r.sprite(sheet, `cross-${i}`, LOGO.crossX + i * CROSSOVER_ADVANCE, LOGO.crossY);
     const phase = this.smashPhase();
     // REMIX until CLASSIC lands on it; then CLASSIC in its place.
     if (phase === 'drop') {
-      r.sprite(sheet, 'remix-shadow', 162, 56 + LOGO_DY);
-      r.sprite(sheet, 'remix', 160, 54 + LOGO_DY);
+      r.sprite(sheet, 'remix-shadow', STAMP.x + 2, STAMP.y + 2);
+      r.sprite(sheet, 'remix', STAMP.x, STAMP.y);
       const k = this.t / SMASH.drop;
       const y = Math.round(CLASSIC_FROM_Y + (CLASSIC_AT.y - CLASSIC_FROM_Y) * k * k);
       r.sprite(sheet, 'classic', CLASSIC_AT.x, y);
@@ -350,7 +392,7 @@ export class ClassicTitleScene implements Scene {
       const rows: BoxRow[] = this.items.map((it) => ({ label: it.label }));
       drawMenuBox(r, this.game.ctx.assets, rows, this.index, {
         cx: BOX_CX,
-        cy: BOX_CY,
+        cy: boxCentreUnderLogo(rows),
         grow: boxGrowth(this.t - this.boxAt, this.game.ctx.reduceFlashing),
         t: this.t,
         calm: this.game.ctx.reduceFlashing,

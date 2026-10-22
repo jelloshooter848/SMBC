@@ -12,7 +12,7 @@ import { CHARACTERS, CLASSIC_EXTRAS, heroFor, isSkin } from './characters/regist
  * Ours stands in with one slot per map set (SMB1, Special, The Lost Levels), written each time a
  * Classic mode run of that set shows a level's WORLD card (so it always holds the start of the
  * level being played, with its checkpoint), and offered as CONTINUE when the set is picked on the
- * CLASSIC menu (original-saves.ts). A game over, or the run's end at the credits, clears it. It keeps what the
+ * CLASSIC menu (original-saves.ts). A game over writes its continue point (BUG-05); the run's end at the credits clears it. It keeps what the
  * original's file keeps for the hero playing: the level, lives, score, coins, power and kit
  * (and every other hero's power and kit, BUG-06);
  * Survival's fallen heroes; the rules the run plays; and, as the original's file keeps them with
@@ -69,6 +69,8 @@ export interface ClassicResume {
   heroKits?: Record<string, HeroKit>;
   /** When it was written (Date.now()): which set's run is the latest. Older slots have none. */
   savedAt?: number;
+  /** BUG-05: written by a game over at its continue point; going on from it is a continue used. */
+  continued?: true;
 }
 
 /** A hero's kept power (Game.classicKits). */

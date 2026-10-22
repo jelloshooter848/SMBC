@@ -133,7 +133,7 @@ import { LoadCodeScene } from './save-codes';
 import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
-import { savedRunRestores } from './original-saves';
+import { openClassicSet, savedRunRestores } from './original-saves';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -962,6 +962,8 @@ export class Game {
       // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
       // count and no-continue goals.
       this.cheatEvent({ beat: set });
+      // The game restarts (EventManager.restartGame): the continues count from 0 again (item 8).
+      this.resetContinues();
       this.showClassicUnlocks();
       return;
     }
@@ -1064,17 +1066,20 @@ export class Game {
   }
 
   showTitle(): void {
-    this.leaveRun();
+    // BUG-12: back from the CLASSIC title (or a box over it), its overworld fades into the theme.
+    // Its music is not stopped here: the title's crossfade takes it from where it is.
+    const fromClassic = this.scenes.find((s) => s instanceof ClassicTitleScene) !== undefined;
+    this.leaveRun(fromClassic);
     this.scenes.clear();
-    this.scenes.push(new TitleScene(this));
+    this.scenes.push(new TitleScene(this, fromClassic));
   }
 
   /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */
-  private leaveRun(): void {
+  private leaveRun(keepMusic = false): void {
     this.flushCheatStats();
     this.airship = null;
     this.runRules = 'current';
-    this.deps.ctx.audio.stopMusic();
+    if (!keepMusic) this.deps.ctx.audio.stopMusic();
     this.pendingLevel = null;
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -2208,8 +2213,11 @@ export class Game {
     }
   }
 
-  /** G-008: writes the resume slot for the WORLD card of `levelId`. */
-  private keepResume(levelId: string): void {
+  /**
+   * G-008: writes the resume slot for the WORLD card of `levelId`. `continued`: written by a game
+   * over at its continue point (BUG-05): Continue from it counts as a continue used.
+   */
+  private keepResume(levelId: string, continued = false): void {
     const sv = this.survival;
     const survival = sv
       ? {
@@ -2242,7 +2250,7 @@ export class Game {
     // A run the Level Select cheat took to another set writes that set's slot from here on; the
     // set it left keeps its save as its last WORLD card wrote it (release review of #191).
     this.resumeSet = resumeSetOf(levelId);
-    saveClassicResume(r);
+    saveClassicResume(continued ? { ...r, continued: true } : r);
   }
 
   /**
@@ -2359,8 +2367,57 @@ export class Game {
     // that follows, so a screen reader hears it rather than having it replaced in the same frame.
     const restores = savedRunRestores(r);
     this.sayFirst = restores ? `Continue. ${restores}.` : 'Continue.';
-    this.goToLevel(r.levelId, { mode: 'stand' });
+    this.continueSelect(r.levelId, this.resumeSet, r.continued === true);
     return true;
+  }
+
+  /**
+   * BUG-03: CONTINUE goes through the select first, as the original's Load Game does
+   * (EventManager.loadGame sets StatManager.newLev, so ScreenManager.createLevel shows
+   * CharacterSelect before the level; Single Character keeps the saved hero, Single random draws
+   * one, as at any new level). The saved hero stays focused and keeps its power if picked again.
+   * BACK returns to the set's CONTINUE / NEW GAME box.
+   */
+  private continueSelect(levelId: string, set: MapSetId, continued: boolean): void {
+    const s = this.state;
+    const go = () => {
+      // BUG-05: a slot a game over wrote is a continue, counted as the run goes on (as CONTINUE).
+      if (continued) this.countContinue();
+      this.goToLevel(levelId, { mode: 'stand' });
+    };
+    this.selectLevel = levelId;
+    const choice = this.classicHeroChoice(false);
+    if (choice === 'keep') return go();
+    if (choice === 'random') {
+      const c = this.singleRandomHero();
+      if (c !== s.character) this.setHero(0, c);
+      return go();
+    }
+    const current = s.character;
+    this.leaveClassicTitle();
+    this.scenes.clear();
+    this.scenes.push(
+      new CharacterSelectScene(this, {
+        player: 0,
+        current,
+        onPick: (c) => {
+          this.heroChosen = true;
+          if (c !== current) this.setHero(0, c);
+          go();
+        },
+        random: true,
+        onCancel: () => this.backToSet(set),
+        leaveFallen: true,
+      }),
+    );
+  }
+
+  /** BACK from Continue's select: the CLASSIC menu on map set `set`, its CONTINUE / NEW GAME box up. */
+  private backToSet(set: MapSetId): void {
+    this.sayFirst = null;
+    this.showClassicMenu(set);
+    const ms = MAP_SETS.find((m) => m.id === set);
+    if (ms) openClassicSet(this, ms, { back: () => this.showClassicMenu(set) });
   }
 
   /**
@@ -2431,6 +2488,8 @@ export class Game {
     this.campaign = null;
     // A new Classic game: every Tutorials box shows again (TutorialManager.startNewGameHandler).
     this.classicTutorials.newGame();
+    // ...and its continues count from 0 again (item 8, owner: EventManager.restartGame).
+    this.resetContinues();
     this.classicDifficulty = difficulty ?? this.deps.settings?.classicMapDifficulty ?? 'normal';
     this.runRules = this.classicRules;
     // The Classic mode flow from here (its first select, Single random's draw): Disable heroes
@@ -2913,8 +2972,19 @@ export class Game {
    */
   gameOver(levelId: string | null = null, player = 0): void {
     this.flushCheatStats();
-    // G-008: a game over ends the run's resume slot (a continue writes it again at its WORLD card).
-    if (this.keepsResume) this.dropResume(levelId);
+    this.continueReady = false;
+    if (this.keepsResume) {
+      // BUG-05 (owner): a game over keeps the run. Its set's slot holds the continue point (what
+      // CONTINUE plays on from: continueAfterDyingHandler's reset, the world's first level), so
+      // MAIN MENU and the set's Continue later go on from the same place.
+      const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
+      if (id === null) this.dropResume(levelId);
+      else {
+        this.resetForContinue();
+        this.continueReady = true;
+        this.keepResume(id, true);
+      }
+    }
     this.scenes.clear();
     if (this.campaign) {
       // The file is saved as a continue leaves it (so NO keeps a playable file): fresh lives
@@ -2927,7 +2997,7 @@ export class Game {
       this.scenes.push(new GameOverScene(this, () => this.returnToMap()));
       return;
     }
-    this.scenes.push(new GameOverScene(this, () => this.continueGame(levelId, player)));
+    this.scenes.push(new GameOverScene(this, () => this.continueGame(levelId, player), this.keepsResume));
   }
 
   /**
@@ -2937,20 +3007,10 @@ export class Game {
    * character select as for a new level.
    */
   continueGame(levelId: string | null, player = 0): void {
-    // Infinite Lives' goal (StatManager.numContinuesUsed): counted over the save's life.
-    const cheats = this.deps.settings?.classicCheats;
-    if (cheats && this.cheatGoalsCount) {
-      cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
-      saveSettings(this.deps.settings as Settings);
-    }
-    const old = this.state;
-    this.state = newGameState(old.character, old.character2, this.liveRules);
-    // BUG-06: every hero's power-ups go (resetAllStats(false)).
-    this.classicKits = {};
-    if (this.classicRun) this.classicStartLives();
-    // Survival (resetAllStats, continueAfterDyingHandler): every hero fallen again, revival allowed.
-    this.survival?.reset();
-    this.state.warped = old.warped;
+    this.countContinue();
+    // The game over already reset the run for its slot's continue point (BUG-05).
+    if (!this.continueReady) this.resetForContinue();
+    this.continueReady = false;
     const id = levelId === null ? null : this.firstLevelOfWorld(levelId);
     if (id === null) {
       this.showTitle();
@@ -2958,6 +3018,45 @@ export class Game {
     }
     this.respawn(id, { mode: 'stand' }, player);
   }
+
+  /** Infinite Lives' goal (StatManager.numContinuesUsed): a continue, counted over the save's life. */
+  private countContinue(): void {
+    const cheats = this.deps.settings?.classicCheats;
+    if (cheats && this.cheatGoalsCount) {
+      cheats.continuesUsed = Math.min(999999, cheats.continuesUsed + 1);
+      saveSettings(this.deps.settings as Settings);
+    }
+  }
+
+  /**
+   * Item 8 (owner, option A): a fresh run's continues count from 0, as the original's
+   * EventManager.restartGame sets StatManager.numContinuesUsed = 0: NEW GAME (also over a game
+   * over's kept run) and the restart after an ending's credits. A kept run (MAIN MENU after a
+   * game over, then its set's Continue) keeps its count.
+   */
+  private resetContinues(): void {
+    const s = this.deps.settings;
+    if (!s || s.classicCheats.continuesUsed === 0) return;
+    s.classicCheats.continuesUsed = 0;
+    saveSettings(s);
+  }
+
+  /**
+   * StatManager.resetAllStats(false) as a continue does it: lives back to the starting count,
+   * score and coins 0, every power-up gone; in Survival every hero fallen again, revival allowed.
+   */
+  private resetForContinue(): void {
+    const old = this.state;
+    this.state = newGameState(old.character, old.character2, this.liveRules);
+    // BUG-06: every hero's power-ups go too, so a game over's slot carries no heroKits.
+    this.classicKits = {};
+    if (this.classicRun) this.classicStartLives();
+    this.survival?.reset();
+    this.state.warped = old.warped;
+  }
+
+  /** The game over has reset the run already (its slot written at the continue point, BUG-05). */
+  private continueReady = false;
 
   /** "1-3" → "1-1", "ll-5-2" → "ll-5-1"; custom levels and others outside a numbered world restart themselves. */
   private firstLevelOfWorld(levelId: string): string {

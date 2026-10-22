@@ -32,6 +32,7 @@ import {
   TITLE_TIMING as T,
   type HeroSlot,
 } from './title-anim';
+import { joinMusic, TITLE_MUSIC } from './title-music';
 
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
 const MADE = 'MADE BY JELLOSHOOTER848';
@@ -67,7 +68,21 @@ const SPEAKER = { x: 236, y: 4, w: 16, h: 12 } as const;
 /** The speaker's pixel rows: `#` white, `x` the red cross when muted, waves `)` while sound is on. */
 const SPEAKER_BODY = ['....##', '...###', '######', '######', '######', '######', '...###', '....##'];
 
-export type TitlePhase = 'rift' | 'drop' | 'ready';
+/**
+ * 'gate' (BUG-13): the start gate before the rift intro, while the browser holds the sound back
+ * (the page load's first title, before any press). Then the rift (the intro), the quick drop
+ * (every later title), and the finished screen.
+ */
+export type TitlePhase = 'gate' | 'rift' | 'drop' | 'ready';
+
+/**
+ * BUG-13: the page load's first title waits behind a start gate when its sound is not running
+ * yet (the browser starts audio only on a press), so the rift intro is heard from its first
+ * frame. A sink that says nothing of its state (the headless sim, tests) never needs one.
+ */
+export function needsStartGate(audio: { readonly state?: string }): boolean {
+  return audio.state !== undefined && audio.state !== 'running';
+}
 
 /** One hero on the ground: a throwaway Player posed for the sprite pickers (as the guide does). */
 interface Actor {
@@ -110,7 +125,11 @@ export class TitleScene extends MenuScene {
   private stampAt: number;
   private readonly version = `V${__APP_VERSION__}`.toUpperCase();
 
-  constructor(game: Game) {
+  constructor(
+    game: Game,
+    /** Back from the CLASSIC title: its overworld fades out, then the theme rises (BUG-12). */
+    private readonly fromClassic = false,
+  ) {
     super(game, '', [], null);
     // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
     // stands in colour; with dev mode on (the campaign playable) the row shows the best file's.
@@ -118,7 +137,7 @@ export class TitleScene extends MenuScene {
     this.heroes = heroRow(game.deps.characters, game.campaignOpen ? titleFreed(listSaves()) : all);
     const intro = game.deps.titleIntro === true && !game.titleIntroPlayed;
     game.titleIntroPlayed = true;
-    this.phase = intro ? 'rift' : 'drop';
+    this.phase = intro ? (needsStartGate(game.ctx.audio) ? 'gate' : 'rift') : 'drop';
     this.stampAt = intro ? T.riftStamp : T.dropStamp;
     let walker = 0;
     this.actors = this.heroes.map((slot, i) => {
@@ -163,10 +182,75 @@ export class TitleScene extends MenuScene {
 
   override enter(): void {
     this.bindPointer();
+    this.rebuild();
+    if (this.phase === 'gate') {
+      this.bindGate();
+      this.game.deps.announcer?.say(`${TITLE_NAME}. ${this.gateSaid}`);
+      return;
+    }
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
-    else audio.playMusic('title');
-    this.rebuild();
+    else if (this.fromClassic) {
+      // The drop waits for the overworld's fade-out, so the stamp still lands on the fanfare.
+      const wait = joinMusic(audio, 'title', TITLE_MUSIC.backOut, TITLE_MUSIC.backIn);
+      this.hold = Math.round(wait * 60);
+    } else audio.playMusic('title');
+    this.sayTitle();
+  }
+
+  /** Frames the drop waits before it starts (the overworld fading out, BUG-12). */
+  private hold = 0;
+
+  // ------------------------------------------------------------ the start gate (BUG-13)
+
+  /** The gate's words: touch taps, everything else presses any key (or pad button). */
+  get gateText(): string {
+    return controlScheme(this.game) === 'touch' ? 'TAP TO START' : 'PRESS ANY KEY';
+  }
+  private get gateSaid(): string {
+    return controlScheme(this.game) === 'touch' ? 'Tap to start.' : 'Press any key to start.';
+  }
+
+  /** A key, click or tap seen by the page while the gate is up (any key, bound or not). */
+  private gatePressed = false;
+  /** The press that passed the gate is still held: it is not a skip. */
+  private gateHeld = false;
+  private unbindGate: (() => void) | null = null;
+
+  private bindGate(): void {
+    if (typeof window === 'undefined' || this.unbindGate) return;
+    const press = () => {
+      if (this.game.scenes.top === this) this.gatePressed = true;
+    };
+    window.addEventListener('keydown', press, true);
+    window.addEventListener('pointerdown', press, true);
+    this.unbindGate = () => {
+      window.removeEventListener('keydown', press, true);
+      window.removeEventListener('pointerdown', press, true);
+    };
+  }
+
+  /**
+   * The gate's press: sound starts (main.ts has already unlocked it in that key's or tap's own
+   * event; a pad button has no such event, so it is asked here too) and the rift intro plays
+   * from its first frame. That press is not a skip.
+   */
+  passGate(): void {
+    if (this.phase !== 'gate') return;
+    this.unbindGate?.();
+    this.unbindGate = null;
+    this.gatePressed = false;
+    this.gateHeld = true;
+    this.game.ctx.audio.unlock?.();
+    // The intro at full level from its first note: no sound-start fade for it.
+    this.game.ctx.audio.skipStartFade?.();
+    this.phase = 'rift';
+    this.clock = 0;
+    this.game.ctx.audio.playJingle('title-rift');
+    this.sayTitle();
+  }
+
+  private sayTitle(): void {
     const it = this.items[this.index];
     this.game.deps.announcer?.say(
       [
@@ -189,6 +273,8 @@ export class TitleScene extends MenuScene {
    * is the SOUND button (the speaker).
    */
   override touchLabels(): TouchLabels {
+    if (this.phase === 'gate')
+      return { jump: 'START', attack: null, special: null, start: null, select: null };
     if (this.phase === 'rift') return { jump: 'SKIP', attack: '', special: null, start: null, select: null };
     return { ...super.touchLabels(), attack: '', select: 'SOUND' };
   }
@@ -232,7 +318,7 @@ export class TitleScene extends MenuScene {
     const viewport = this.game.deps.viewport;
     if (!canvas || !viewport || this.unbindPointer) return;
     const down = (e: PointerEvent) => {
-      if (this.game.scenes.top !== this || this.phase === 'rift') return;
+      if (this.game.scenes.top !== this || this.phase === 'rift' || this.phase === 'gate') return;
       const s = viewport.toScreen(e.clientX, e.clientY);
       if (this.tapAt(s.x, s.y)) e.preventDefault();
     };
@@ -243,6 +329,8 @@ export class TitleScene extends MenuScene {
   exit(): void {
     this.unbindPointer?.();
     this.unbindPointer = null;
+    this.unbindGate?.();
+    this.unbindGate = null;
   }
 
   /** The speaker icon and, with keys or a pad, its key under it ("(RIGHT SHIFT)"). */
@@ -317,6 +405,7 @@ export class TitleScene extends MenuScene {
   private finish(): void {
     if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
     this.phase = 'ready';
+    this.hold = 0;
     this.clock = Math.max(this.clock, this.stampAt + T.dustFrames, T.dropEnd);
     for (const a of this.actors) {
       a.x = a.slot.x;
@@ -327,6 +416,10 @@ export class TitleScene extends MenuScene {
   }
 
   private tick(): void {
+    if (this.hold > 0) {
+      this.hold--;
+      return;
+    }
     this.clock++;
     const t = this.clock;
     if (t === this.stampAt) {
@@ -357,9 +450,16 @@ export class TitleScene extends MenuScene {
   }
 
   override update(input: InputFrame): void {
+    if (this.phase === 'gate') {
+      this.t++;
+      if (this.gatePressed || Actions.some((a) => input.pressed(a))) this.passGate();
+      return; // the press that starts the sound never reaches the intro or the menu
+    }
     if (this.phase === 'rift') {
       this.t++;
-      if (Actions.some((a) => input.pressed(a))) this.finish();
+      // The gate's press, still held (or seen a frame late), is not a skip: a later one is.
+      if (this.gateHeld) this.gateHeld = Actions.some((a) => input.held(a));
+      if (!this.gateHeld && Actions.some((a) => input.pressed(a))) this.finish();
       else this.tick();
       return; // the press that skips never reaches the menu
     }
@@ -607,6 +707,12 @@ export class TitleScene extends MenuScene {
   }
 
   override render(r: Renderer): void {
+    if (this.phase === 'gate') {
+      // Deep space, as the rift opens on, and the gate's words, steady (no blink, no flash).
+      this.space(r, 1);
+      this.ctext(r, this.gateText, 116, undefined, true);
+      return;
+    }
     const dy = this.shake();
     const t = this.clock;
     this.field(r, dy);
