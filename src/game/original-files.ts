@@ -174,7 +174,28 @@ function keptForGood(raw: unknown): boolean {
 
 /** v0.4.73: file `ref` is CLEARED (or a later version's): no run writes or empties it. */
 export function classicFileKept(ref: ClassicFileRef): boolean {
-  return keptForGood(loadJson<unknown>(classicFileKey(ref)));
+  const now = storedNow(classicFileKey(ref));
+  return !now.read || keptForGood(now.value);
+}
+
+/**
+ * What is stored at `key` before a write: `read` false when storage could not be read (its
+ * getItem threw), so a CLEARED file there cannot be ruled out and nothing is written; `value`
+ * the parsed value (null when empty, the raw text when it is not JSON).
+ */
+function storedNow(key: string): { read: boolean; value: unknown } {
+  let text: string | null;
+  try {
+    text = localStorage.getItem(key);
+  } catch {
+    return { read: false, value: null };
+  }
+  if (text === null) return { read: true, value: null };
+  try {
+    return { read: true, value: JSON.parse(text) as unknown };
+  } catch {
+    return { read: true, value: text };
+  }
 }
 
 /** Writes file `f` (stamped now); false when storage refused it, or the file is CLEARED. */
@@ -184,10 +205,12 @@ export function saveClassicFile(
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
-  const now = loadJson<unknown>(classicFileKey(f));
+  const stored = storedNow(classicFileKey(f));
+  const now = stored.value;
   // v0.4.73 (47A): a CLEARED file (or a later version's) is never written again, by any run,
-  // any tab: a stale tab's WORLD card, Tutorials list or continue point leaves it as it is.
-  if (keptForGood(now)) return false;
+  // any tab: a stale tab's WORLD card, Tutorials list or continue point leaves it as it is. A
+  // read that fails cannot rule one out: nothing is written then either.
+  if (!stored.read || keptForGood(now)) return false;
   // #205: the file's old-save mark stays through every save that does not set its own.
   const fromOld = f.fromOld ?? storedMark(now);
   const out: ClassicFile = {
@@ -216,6 +239,10 @@ export function saveClassicFile(
  * version (which reads only v 1) keeps it as unreadable and never writes over it. It is never
  * written again (saveClassicFile and saveClearedFile refuse it); ERASE FILE empties it, and only
  * then can a new game start there (50A). Migration counts it as used (hasClassicFile).
+ *
+ * `v: 2` is reserved for CLEARED files: a later run format must use v 3 or more (which this
+ * version keeps as unreadable and never writes over), and a later CLEARED format must keep
+ * `cleared: true` beside its own `v`.
  */
 export interface ClearedFile {
   v: 2;
@@ -266,8 +293,9 @@ export function saveClearedFile(
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
-  const now = loadJson<unknown>(classicFileKey(f));
-  if (keptForGood(now)) return false;
+  const stored = storedNow(classicFileKey(f));
+  const now = stored.value;
+  if (!stored.read || keptForGood(now)) return false;
   const fromOld = f.fromOld ?? storedMark(now);
   const out: ClearedFile = {
     v: 2,

@@ -2511,7 +2511,10 @@ export class Game {
     const news = this.clearedNews;
     this.clearedNews = null;
     if (!news) return this.showTitle();
-    this.deps.ctx.audio.stopMusic();
+    // The run is over: its level (still under the credits when no cheat card followed) and
+    // everything else it left go, as on any way back to the menus (quitClassicRun).
+    this.leaveRun();
+    this.scenes.clear();
     const files = this.showClassicFiles(news.ref.set, news.ref.slot);
     this.scenes.push(clearedNote(this, files, news.ref, news.saved));
   }
@@ -2846,7 +2849,12 @@ export class Game {
    */
   replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string): void {
     const f = this.classicClearedAt(ref);
-    if (!f) return;
+    if (!f) {
+      // Erased (or changed) by another tab since this box was drawn: said, and the file box again.
+      this.deps.ctx.audio.sfx('bump');
+      this.showClassicFiles(ref.set, ref.slot).sayWith(`File ${ref.slot} is no longer cleared.`);
+      return;
+    }
     const rules = copyFileRules(f.rules);
     rules.options.gameMode = originalFileRules().options.gameMode;
     this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage), {

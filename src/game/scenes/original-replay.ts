@@ -189,6 +189,8 @@ export class ClassicNoteScene implements Scene {
     const lx = Math.round(128 - (label.length * 8) / 2) + 6;
     drawMushroom(r, lx - 12, oy, this.t, calm);
     r.text(assets.sheet('font', DEFAULT_SELECT_THEME.tintFont), label, lx, oy);
+    // The BACK line under the box: the box under this one (the file box) draws it at the foot of
+    // the screen, where every Classic box has it; with none under, this box draws it there.
     if (!this.opts.under) {
       const back = abilityHint(game, 'BACK', 'attack');
       const bx = Math.round(128 - (back.length * 8) / 2);

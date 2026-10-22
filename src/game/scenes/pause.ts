@@ -49,7 +49,8 @@ export class PauseScene extends MenuScene {
         select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
       // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
-      if (game.deps.settings?.classicCheats.levelSelect)
+      // v0.4.73: not in a CLEARED file's level replay (its level box picks the levels there).
+      if (game.deps.settings?.classicCheats.levelSelect && !game.replayRun)
         items.push({
           label: 'Level select',
           select: () => game.scenes.push(new LevelSelectScene(game, () => game.scenes.pop(), true)),

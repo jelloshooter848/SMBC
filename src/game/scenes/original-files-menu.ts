@@ -239,6 +239,11 @@ export abstract class ClassicBox extends MenuScene {
     this.game.deps.announcer?.say(this.spoken());
   }
 
+  /** Says `lead`, then the page as it opens (its name and highlighted row). */
+  sayWith(lead: string): void {
+    this.game.deps.announcer?.say(`${lead} ${this.spokenTitle}. ${this.spoken()}`);
+  }
+
   /** Back to this page from one over it: its rows again, then the highlighted one read. */
   comeBack(): void {
     this.refresh();
