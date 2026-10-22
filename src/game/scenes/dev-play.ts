@@ -21,7 +21,8 @@ import { loadSave, SAVE_SLOTS } from '../save/save-files';
  * saves, a story level (world, level, START), the village, the tutorial stage, the training rooms,
  * the mini and bonus games. The START page picks the hero (the select's slot heroes), its look,
  * power, Map difficulty, rules and kit. 0.4.72 (owner item 7): no Mode row; every dev start is
- * free play (99 lives, straight back after a death), with Map difficulty under Classic rules. "Again" on the Dev menu replays the last start.
+ * free play (99 lives, straight back after a death), with Map difficulty under Classic rules.
+ * "Again" on the Dev menu replays the last start.
  * Dev mode only: every page is reached from the Dev menu, which needs dev mode on.
  */
 
@@ -514,9 +515,9 @@ export class DevTrainingScene extends DevPage {
 
 /**
  * The START page: Start, Hero (the select's slot heroes), Look (that hero's skins), Power, then
- * for a Classic start Mount (None / Yoshi, 0.4.72), Map difficulty and Rules, and Kit. Every start plays as free play (99 lives,
- * straight back after a death; 0.4.72 owner item 7: the Mode row is gone); a campaign start plays
- * Current rules.
+ * for a Classic start Mount (None / Yoshi, 0.4.72), Map difficulty and Rules, and Kit. Every
+ * start plays as free play (99 lives, straight back after a death; 0.4.72 owner item 7: the Mode
+ * row is gone); a campaign start plays Current rules.
  */
 export class DevStartScene extends DevPage {
   private heroIndex = 0;
@@ -535,6 +536,9 @@ export class DevStartScene extends DevPage {
     super(game, 'Start', [], false);
     const classic = target.branch === 'classic';
     this.rules = classic ? 'classic' : 'current';
+    // The Mount row starts as the Dev menu's Yoshi mount: Ride gives Yoshi (0.4.72 review).
+    const t = game.classicToggles;
+    this.yoshi = t.yoshiMount && t.yoshiRide === true;
     const cycle = (i: number, d: number, n: number) => (n ? (i + d + n) % n : 0);
     const items: MenuItem[] = [
       {

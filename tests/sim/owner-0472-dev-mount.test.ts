@@ -68,7 +68,12 @@ describe('owner 0.4.72 item 6: the START page Mount row', () => {
   it('None: no Yoshi at the start, even with the Dev menu mount on Ride (it plays as On)', () => {
     const h = dev();
     h.settings.classicDev = { yoshiMount: true, yoshiRide: true, heroesOff: [] };
-    row(start(h), 'Start').select?.();
+    const s = start(h);
+    // The row starts as the Dev menu's mount (Ride: Yoshi); stepped to None here.
+    expect(row(s, 'Mount').value?.()).toBe('Yoshi');
+    row(s, 'Mount').adjust?.(1);
+    expect(row(s, 'Mount').value?.()).toBe('None');
+    row(s, 'Start').select?.();
     const l = enterLevel(h);
     expect(ridingOf(l.world.player)).toBeNull();
     expect(h.game.ctx.classicYoshi).toBe('on');

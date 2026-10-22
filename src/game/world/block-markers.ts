@@ -67,14 +67,15 @@ export const BLOCK_MARKERS: Readonly<Record<string, readonly string[]>> = {
 
 /**
  * The marker for a block's `content`, or null for none (a plain brick). A power-up block shows
- * what it gives now: the Mushroom to a small hero, else the Fire Flower.
+ * `powerUp`, what it gives the hero now (CharacterDef.blockPowerUp: the Mushroom or the Fire
+ * Flower for a power-up hero, an HP hero's own pick).
  */
-export function markerFor(content: BlockContent, small: boolean): string | null {
+export function markerFor(content: BlockContent, powerUp: string): string | null {
   switch (content) {
     case 'none':
       return null;
     case 'powerup':
-      return small ? 'mushroom' : 'flower';
+      return BLOCK_MARKERS[powerUp] ? powerUp : 'mushroom';
     case 'coins10':
       return 'coins';
     default:
@@ -96,14 +97,15 @@ export function drawMarker(r: Renderer, id: string, x: number, y: number): void 
 
 /**
  * Draws the markers over the visible blocks of `map` (World.render, after the tiles).
- * `contentAt` gives a block's content (a `block-item` spawn's item in place of its own).
+ * `contentAt` gives a block's content (a `block-item` spawn's item in place of its own, the Yoshi
+ * mount's egg block's egg); `powerUp` is what a power-up block gives the hero now.
  */
 export function renderBlockMarkers(
   r: Renderer,
   view: View,
   map: TileMap,
   contentAt: (tx: number, ty: number) => BlockContent | null,
-  small: boolean,
+  powerUp: string,
 ): void {
   const camPx = view.camX;
   const first = Math.max(0, camPx >> 4);
@@ -121,7 +123,7 @@ export function renderBlockMarkers(
       const block = tileDef(id).block;
       if (!block) continue;
       const content = contentAt(tx, ty);
-      const marker = content ? markerFor(content, small) : null;
+      const marker = content ? markerFor(content, powerUp) : null;
       const x = tx * TILE - camPx;
       const y = ty * TILE;
       // A hidden block shows where it is: a ghost ? block (half see-through).

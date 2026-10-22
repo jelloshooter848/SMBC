@@ -827,7 +827,9 @@ export class World {
   blockContentAt(tx: number, ty: number): BlockContent | null {
     const block = tileDef(this.map.get(tx, ty)).block;
     if (!block) return null;
-    return this.blockItems.get(`${tx},${ty}`) ?? block.content;
+    // Classic rules: a block whose strike gives something else now (the Yoshi mount's egg block).
+    const shown = this.rules === 'classic' ? classicRules().blockShown?.(this, tx, ty, this.player) : null;
+    return shown ?? this.blockItems.get(`${tx},${ty}`) ?? block.content;
   }
   /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
   readonly mapDifficulty: MapDifficulty;
@@ -4447,7 +4449,7 @@ export class World {
         view,
         this.map,
         (tx, ty) => this.blockContentAt(tx, ty),
-        this.player.powerState === 'small',
+        this.player.def.blockPowerUp(this.player),
       );
     for (const e of this.entities)
       if (e.alive && e.layer === 'main' && this.drawn(e, view)) e.render(r, view);

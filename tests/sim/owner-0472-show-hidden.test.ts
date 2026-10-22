@@ -104,7 +104,7 @@ describe('owner 0.4.72 item 8: Show hidden items', () => {
     for (let tx = first; tx <= first + 16; tx++)
       for (let ty = 0; ty < w.map.height; ty++) {
         const c = w.blockContentAt(tx, ty);
-        if (c && markerFor(c, true)) held++;
+        if (c && markerFor(c, 'mushroom')) held++;
         if (tileDef(w.map.get(tx, ty)).block?.kind === 'hidden') hidden = [tx, ty];
       }
     expect(held).toBeGreaterThan(0);
@@ -132,11 +132,11 @@ describe('owner 0.4.72 item 8: Show hidden items', () => {
   });
 
   it('a power-up block shows what it gives now; every marker is 8 x 8 and a plain brick has none', () => {
-    expect(markerFor('powerup', true)).toBe('mushroom');
-    expect(markerFor('powerup', false)).toBe('flower');
-    expect(markerFor('none', true)).toBeNull();
+    expect(markerFor('powerup', 'mushroom')).toBe('mushroom');
+    expect(markerFor('powerup', 'flower')).toBe('flower');
+    expect(markerFor('none', 'mushroom')).toBeNull();
     for (const c of ['coin', 'coins10', '1up', 'star', 'vine', 'poison', 'clock', 'key', 'egg'] as const)
-      expect(markerFor(c, true), c).not.toBeNull();
+      expect(markerFor(c, 'mushroom'), c).not.toBeNull();
     for (const [id, rows] of Object.entries(BLOCK_MARKERS)) {
       expect(rows.length, id).toBe(8);
       for (const row of rows) expect(row.length, id).toBe(8);

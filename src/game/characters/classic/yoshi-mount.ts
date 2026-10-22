@@ -642,6 +642,16 @@ export function yoshiWorldLoaded(world: World): void {
 }
 
 /**
+ * 0.4.72 (Show hidden items, ClassicRulesHooks.blockShown): the area's egg block shows the egg
+ * while a strike by `p` would give it (yoshiEggStrike's own test), else null.
+ */
+export function yoshiEggShown(world: World, tx: number, ty: number, p: Player): 'egg' | null {
+  if (!world.ctx.classicYoshi || EGG_BLOCKS.get(world) !== `${tx},${ty}`) return null;
+  if (world.map.get(tx, ty) !== T.Q_POWERUP) return null;
+  return mayRide(p.def) && !RIDES.has(p) && !yoshiInPlay(world) ? 'egg' : null;
+}
+
+/**
  * Before World.strikeBlock's Classic strike (YM-5): the area's egg block, struck by a hero who may
  * ride while no Yoshi is in play, gives the egg instead of its Mushroom or Flower. Null: the usual
  * strike (always with the mount off).
