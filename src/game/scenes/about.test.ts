@@ -122,7 +122,7 @@ describe('the REMIX title, option A (minimal)', () => {
     h.game.showTitle();
     const said = h.said.at(-1) ?? '';
     expect(said).toContain(
-      'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit.',
+      'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Jay Pavlina and Exploding Rabbit.',
     );
     expect(said).toMatch(/Sound on\. SOUND \(RIGHT SHIFT\) mutes it\./);
     h.idle(TITLE_TIMING.dropEnd + 10);
@@ -161,6 +161,9 @@ describe('Options > About', () => {
     for (const [s] of ABOUT_LINES) if (s) expect(strs).toContain(s);
     expect(strs).toContain('MADE BY JELLOSHOOTER848');
     expect(strs).toContain('AND EXPLODING RABBIT');
+    expect(strs).toContain('OUR OWN ART AND MUSIC,');
+    expect(strs).toContain('EXCEPT THE ORIGINAL LOGO.');
+    expect(strs).not.toContain('ORIGINAL ART AND MUSIC.');
     expect(strs).toContain(`VERSION ${__APP_VERSION__}`.toUpperCase());
     expect(labels(about)).toEqual(['Credits', 'Back']);
     // Every line fits the screen.
@@ -176,6 +179,9 @@ describe('Options > About', () => {
     const said = h.said.at(-1) ?? '';
     expect(said).toMatch(/^About\. Super Mario Bros\. Crossover: REMIX\. Made by jelloshooter848\./);
     expect(said).toContain('Jay Pavlina and Exploding Rabbit');
+    // The one art exception is named (the credits name the Exploding Rabbit logo).
+    expect(said).toContain('An unofficial fan project. Our own art and music, except the original logo.');
+    expect(said).not.toMatch(/Original art and music/);
     expect(said).toContain(`Version ${__APP_VERSION__}.`);
     expect(said).toMatch(/Credits\. The full credits roll$/);
     h.tap('down');

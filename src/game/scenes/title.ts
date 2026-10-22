@@ -310,7 +310,7 @@ export class TitleScene extends MenuScene {
       [
         `${TITLE_NAME}.`,
         // The credit stays in what is said (the version is on Options > About, 0.4.72).
-        'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Exploding Rabbit.',
+        'Made by jelloshooter848. Based on Super Mario Bros. Crossover by Jay Pavlina and Exploding Rabbit.',
         this.phase === 'rift' ? 'Press any button to skip the intro.' : '',
         this.game.deps.settings?.audio
           ? `Sound ${this.muted ? 'off' : 'on'}. ${controlScheme(this.game) === 'touch' ? 'SOUND' : abilityHint(this.game, 'SOUND', 'select')} ${this.muted ? 'turns it on' : 'mutes it'}.`
