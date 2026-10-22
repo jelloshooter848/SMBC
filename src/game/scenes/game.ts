@@ -693,7 +693,9 @@ export class Game {
    * heroes turned off. Random, Single random and Survival keep heroSlots.
    */
   get selectSlots(): CharacterDef[] {
-    if (!this.devMode) return this.heroSlots;
+    // Survival tracks heroSlots (newSurvival): its select offers only those, so every hero shown
+    // stands or has fallen in the run, and revive Random draws only from them.
+    if (!this.devMode || this.survival !== null) return this.heroSlots;
     return this.withoutDisabled(this.devSlotsFor(this.liveRules));
   }
 
