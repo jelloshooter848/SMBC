@@ -140,17 +140,17 @@ describe('B-L QA 2: migration never drops a readable run for an unreadable file'
     checkpoint: null,
   };
 
-  it('three unreadable files: the old run takes the first unreadable one', () => {
+  it('three unreadable files: none is overwritten; the old run waits (31b)', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const slot of [1, 2, 3] as const) store.set(classicFileKey({ set: 'smb', slot }), '{"v":1,"run":7}');
     store.set(classicResumeKey('smb'), JSON.stringify(run));
     migrateClassicFiles(shared);
-    expect(store.has(classicResumeKey('smb'))).toBe(false);
-    expect(loadClassicFile(A)?.run.score).toBe(600);
-    expect(store.get(classicFileKey(B))).toBe('{"v":1,"run":7}');
+    expect(store.has(classicResumeKey('smb'))).toBe(true);
+    for (const slot of [1, 2, 3] as const)
+      expect(store.get(classicFileKey({ set: 'smb', slot }))).toBe('{"v":1,"run":7}');
   });
 
-  it('two readable and one unreadable: the unreadable one is replaced, both readable runs stay', () => {
+  it('two readable and one unreadable: every file stays; the old run waits (31b)', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const slot of [1, 3] as const)
       saveClassicFile({
@@ -164,7 +164,9 @@ describe('B-L QA 2: migration never drops a readable run for an unreadable file'
     store.set(classicFileKey(B), 'not json');
     store.set(classicResumeKey('smb'), JSON.stringify({ ...run, savedAt: 1 }));
     migrateClassicFiles(shared);
-    expect(listClassicFiles('smb').map((f) => f?.run.score)).toEqual([1, 600, 3]);
+    expect(listClassicFiles('smb').map((f) => f?.run.score)).toEqual([1, undefined, 3]);
+    expect(store.get(classicFileKey(B))).toBe('not json');
+    expect(store.has(classicResumeKey('smb'))).toBe(true);
   });
 });
 
