@@ -97,8 +97,6 @@ export function parseFileRules(raw: unknown): ClassicFileRules {
   };
 }
 
-const isSlot = (n: unknown): n is ClassicFileSlot => n === 1 || n === 2 || n === 3;
-
 /** File `ref`, or null when it is empty or does not read as a file (a broken one). */
 export function loadClassicFile(ref: ClassicFileRef): ClassicFile | null {
   return parseFile(loadJson<unknown>(classicFileKey(ref)), ref);
@@ -169,14 +167,17 @@ export interface SharedClassicRules {
  * when it is newer (logged either way). An old key goes only once its run is written (or dropped
  * as older); a broken one is just removed. Returns whether anything was migrated.
  */
-export function migrateClassicFiles(shared: SharedClassicRules): boolean {
+export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => SharedClassicRules)): boolean {
   let moved = false;
+  // The shared settings are read only when there is an old slot to migrate.
+  let got: SharedClassicRules | null = null;
+  const shared = () => (got ??= typeof sharedRules === 'function' ? sharedRules() : sharedRules);
   const take = (key: string, set: MapSetId | null) => {
     if (!hasKey(key)) return;
     const r = parseResume(loadJson<unknown>(key));
     if (!r) return removeKey(key);
     const into = set ?? resumeSetOf(r.levelId);
-    if (!placeRun(into, r, shared)) return;
+    if (!placeRun(into, r, shared())) return;
     moved = true;
     removeKey(key);
   };
@@ -213,7 +214,6 @@ function placeRun(set: MapSetId, r: ClassicResume, shared: SharedClassicRules): 
     options,
     heroesOff: [...(shared.heroesOff ?? [])],
   });
-  if (!isSlot(slot)) return false;
   return saveClassicFile({
     set,
     slot,

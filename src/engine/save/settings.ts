@@ -174,8 +174,9 @@ export interface ClassicCheatsSettings {
    */
   beaten: { smb: boolean; special: boolean; lost: boolean };
   /**
-   * Continues used in Classic mode over the save's whole life (StatManager.numContinuesUsed is a
-   * saved stat): Infinite Lives unlocks only while it is 0 when a game is beaten.
+   * Retired (B-L): the old shared count of continues used in Classic mode. Each Classic save file
+   * now keeps its own (original-files.ts ClassicFile.continues). Kept in storage untouched: the
+   * files' migration reads it once for a run that had no count of its own; nothing writes it.
    */
   continuesUsed: number;
   /**
@@ -344,8 +345,8 @@ export function loadSettings(): Settings {
     const n = s.classicCheats.stats[k];
     s.classicCheats.stats[k] = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
   }
-  const used = s.classicCheats.continuesUsed;
-  s.classicCheats.continuesUsed = Number.isFinite(used) ? Math.max(0, Math.floor(used)) : 0;
+  // B-L: classicCheats.continuesUsed is retired (each Classic save file keeps its own count);
+  // it is kept as stored, read once by the files' migration, and never written.
   s.classic = normaliseClassic(s.classic);
   s.classicDev.heroesOff = s.classicDev.heroesOff.filter((id) => typeof id === 'string');
   // The merge keeps only keys the defaults have: O-06's optional fields are copied over here.

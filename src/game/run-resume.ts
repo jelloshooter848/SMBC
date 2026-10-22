@@ -84,7 +84,6 @@ export function resumeOf(
   state: GameState,
   rules: Rules,
   survival?: ClassicResume['survival'],
-  run?: { difficulty: MapDifficulty; gameMode: ClassicGameMode },
   heroKits?: Readonly<Record<string, HeroKit>>,
 ): ClassicResume {
   return {
@@ -105,7 +104,6 @@ export function resumeOf(
     ...(survival
       ? { survival: { fallen: [...survival.fallen], reviveAllowed: survival.reviveAllowed } }
       : {}),
-    ...(run ? { difficulty: run.difficulty, gameMode: run.gameMode } : {}),
     ...(heroKits ? { heroKits: copyKits(heroKits) } : {}),
   };
 }

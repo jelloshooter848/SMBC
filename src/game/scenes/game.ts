@@ -2310,7 +2310,6 @@ export class Game {
       this.state,
       this.liveRules,
       survival,
-      undefined,
       // BUG-06: the other heroes' power and kit, as the original's file keeps every hero's
       // (StatManager.prepareLoadSaveStats 610-643).
       // None kept: no field (as a slot from before BUG-06 reads).
@@ -2351,13 +2350,13 @@ export class Game {
    */
   private migrateClassicFiles(): void {
     const s = this.deps.settings;
-    migrateClassicFiles({
+    // Read only when an old slot is there to migrate (the retired shared count with it, B-L).
+    migrateClassicFiles(() => ({
       classic: s?.classic ?? originalFileRules().options,
       ...(s?.classicHeroesOff ? { heroesOff: s.classicHeroesOff } : {}),
       difficulty: s?.classicMapDifficulty ?? 'normal',
-      // The retired shared count: read here only, never written (B-L).
       continuesUsed: s?.classicCheats.continuesUsed ?? 0,
-    });
+    }));
   }
 
   /**

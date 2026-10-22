@@ -25,9 +25,26 @@ under `## [Unreleased]`.
   two-bar fanfare under the stamp, galloping bass and horn stabs. Going to the CLASSIC title no
   longer sounds like the same song restarting; CLASSIC keeps its own theme.
 - Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
-  the run, as the original: NEW GAME and the restart after an ending's credits set the count
-  back to 0. MAIN MENU after a game over keeps the run and its count. Each map set's saved run
-  keeps its own count, so a NEW GAME on another set no longer clears it.
+  the run, as the original. Each save file keeps its own count: a new file (or one started again
+  after ERASE FILE) starts at 0, MAIN MENU after a game over keeps the run and its count, and a
+  practice run from the menus' Level Select never counts. Infinite Lives itself stays unlocked
+  for every file.
+- Classic mode has save files: three for each map set (B-L). Picking a set opens its file box:
+  FILE 1, FILE 2 and FILE 3, ERASE FILE and BACK, as boxes over the CLASSIC title's demo. A used
+  file shows its difficulty, where it is, its lives, score and hero, and goes straight on (CONTINUE,
+  then the hero select). An empty file asks its map difficulty (Easy, Normal or Hard; SMB Special
+  too), then its rules (Game mode, More settings, Weapons, Disable heroes, every one starting at
+  the original's), then START. A file's rules are fixed for that file and are never written into
+  the shared settings. ERASE FILE picks a file and asks "ERASE FILE N?" with NO first. The old
+  saved runs move into FILE 1 of their set (or the next empty file) on the first visit.
+- Classic mode: the map set box is only the three sets and BACK, and the Start box's **Options**
+  now holds only what every file shares: Music set, Tutorials, Cheats, and video, audio and
+  controls. The CONTINUE / NEW GAME box and the overwrite warning are gone.
+- Classic mode: the Level Select cheat has no Difficulty row. In a run it keeps the file's
+  difficulty and stays in the run's own file, even in another map set (the file box shows
+  where it is). From the menus it starts a practice run with the original's rules on Normal,
+  which saves nothing and counts toward nothing.
+- Classic mode: quitting a run says the run waits in its file.
 - Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
   joins the Classic select once it is released; an Expansion heroes value saved by an earlier
   version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
