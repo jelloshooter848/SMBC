@@ -342,6 +342,8 @@ export function loadSettings(): Settings {
   // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
+  // Item 76 (v0.4.74): the Campaign rules' old name reads as 'campaign' (the next save writes that).
+  if ((s.classicRules as string) === 'current') s.classicRules = 'campaign'; // rename-campaign: keep
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
   if (!MAP_DIFFICULTIES.includes(s.classicMapDifficulty)) s.classicMapDifficulty = 'normal';
   for (const k of CLASSIC_CHEAT_STATS) {

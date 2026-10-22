@@ -1,7 +1,7 @@
 import type { MapSetId } from '@engine/save/progress';
 import { CLASSIC_GAME_MODES, type ClassicGameMode } from '@engine/save/original-options';
 import type { MapDifficulty } from '@engine/save/settings';
-import { defaultPower, type GameState, type Rules } from './context';
+import { defaultPower, readRules, type GameState, type Rules } from './context';
 import { startHp, type CharacterDef } from './characters/character';
 import { CHARACTERS, CLASSIC_EXTRAS, heroFor, isSkin } from './characters/registry';
 
@@ -218,7 +218,9 @@ export function parseResume(raw: unknown): ClassicResume | null {
   const r = raw as Partial<ClassicResume> | null;
   if (!r || typeof r !== 'object' || r.v !== 1) return null;
   if (typeof r.levelId !== 'string' || typeof r.hero !== 'string') return null;
-  if (r.rules !== 'classic' && r.rules !== 'campaign') return null;
+  // Item 76: a run kept before the rename names Campaign rules by their old name (readRules).
+  const rules = readRules(r.rules);
+  if (!rules) return null;
   // A Survival run may go on with no lives left (they only revive heroes): 0 reads there.
   const minLives = r.survival ? 0 : 1;
   if (![r.score, r.coins, r.lives, r.world, r.stage, r.hp].every(num) || (r.lives ?? 0) < minLives)
@@ -228,7 +230,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
   const heroKits = readHeroKits(r.heroKits);
   // The playing hero's own power and hp, checked as the others' are: one that does not read for
   // its hero is that hero's default (an unknown hero is left to Game.classicResume, which drops it).
-  const def = heroDef(r.hero, r.rules);
+  const def = heroDef(r.hero, rules);
   const power = def
     ? (checkedPower(def, r.powerState, r.hp, kit) ?? { powerState: defaultPower(def), hp: startHp(def) })
     : {};
@@ -256,6 +258,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
     : null;
   return {
     ...rest,
+    rules,
     // An old per-set slot's count (#196; migration reads it): a whole number of 0 or more, else none.
     ...(Number.isInteger(cn) && (cn as number) >= 0 ? { continues: cn } : {}),
     ...(cd === true ? { continued: true as const } : {}),

@@ -12,6 +12,19 @@ import type { ClassicSettings } from '@engine/save/original-options';
  */
 export type Rules = 'campaign' | 'classic';
 
+/**
+ * Item 76 (v0.4.74): the Campaign rules were called 'current' before. Kept only so data stored or
+ * linked before the rename (a kept run, a Classic file, a kept dev start, a `?rules=` link) still
+ * reads; nothing writes it.
+ */
+const OLD_CAMPAIGN_RULES = 'current'; // rename-campaign: keep
+
+/** Rules as stored or linked: 'campaign' or 'classic' (the old name reads as 'campaign'); else null. */
+export function readRules(v: unknown): Rules | null {
+  if (v === 'campaign' || v === 'classic') return v;
+  return v === OLD_CAMPAIGN_RULES ? 'campaign' : null;
+}
+
 /** The rules a context (or a state) names: 'campaign' unless it says 'classic'. */
 export function rulesOf(ctx: { rules?: Rules | undefined }): Rules {
   return ctx.rules ?? 'campaign';

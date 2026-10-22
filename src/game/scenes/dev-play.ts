@@ -3,7 +3,7 @@ import { loadJson, saveJson } from '@engine/save/storage';
 import { MenuScene, backToMenu, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
-import type { Rules } from '../context';
+import { readRules, type Rules } from '../context';
 import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX, customLevelId, loadLibrary } from '../level/library';
@@ -63,11 +63,13 @@ export function loadDevPick(game: Game): DevPick | null {
  */
 export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
   if (!p || typeof p !== 'object') return 'No start was kept';
-  const { branch, level, name, hero, look, power, rules, difficulty } = p;
+  const { branch, level, name, hero, look, power, difficulty } = p;
+  // Item 76: a start kept before the rename names Campaign rules by their old name (readRules).
+  const rules = readRules(p.rules);
   if (branch !== 'classic' && branch !== 'campaign') return 'The kept start is unreadable';
   if (typeof level !== 'string' || typeof name !== 'string' || typeof power !== 'string')
     return 'The kept start is unreadable';
-  if (rules !== 'classic' && rules !== 'campaign') return 'The kept start is unreadable';
+  if (!rules) return 'The kept start is unreadable';
   if (!MAP_DIFFICULTIES.includes(difficulty as MapDifficulty)) return 'The kept start is unreadable';
   if (level !== DEV_VILLAGE) {
     try {
