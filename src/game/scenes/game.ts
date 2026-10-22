@@ -2374,9 +2374,14 @@ export class Game {
     // 36a: a run with no file (a practice run from the menus' Level Select): the set of the level
     // it is playing (its main level's, for a sub-area), else of the level its select was for.
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
-    const id = scene ? (scene.level.parent ?? scene.level.id) : this.selectLevel;
+    // 38d: with no level on the stack (MAIN MENU after a game over), the level the run last
+    // played: a `?level=` link run has no select level, and it played its link's set.
+    const id = scene ? (scene.level.parent ?? scene.level.id) : (this.runLevel ?? this.selectLevel);
     return id ? mapSetOf(id).id : undefined;
   }
+
+  /** 38d: the main level of the last level any run went to (goToLevel), for runSet. */
+  private runLevel: string | null = null;
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
@@ -2899,6 +2904,7 @@ export class Game {
       this.scenes.push(new MessageScene(this, lines, () => this.showTitle()));
       return;
     }
+    this.runLevel = level.parent ?? level.id;
     // An intro area (TYPE="intro" with gameStateWatch) and a vine area (vineStart) always open
     // with their scripted watch-mode start, whatever start the caller asked for; so does an area
     // beamed down into (a teleport pad's arrival, the 3-1 space station).
