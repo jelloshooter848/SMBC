@@ -310,6 +310,8 @@ export class AssistOptionsScene extends MenuScene {
       toggle('No damage', 'invulnerable'),
       toggle('Fire keeps big', 'fireRevertsToBig', 'Losing fire power keeps you big'),
       toggle('Safety floor', 'safetyFloor', 'Pits and lava catch you'),
+      // 0.4.72 (owner item 8).
+      toggle('Show hidden items', 'showHidden', 'Every block shows what it holds; hidden blocks appear'),
       {
         label: 'Coyote time',
         value: () => `${a.coyoteFrames}f`,

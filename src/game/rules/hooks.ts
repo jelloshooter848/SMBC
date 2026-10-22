@@ -5,6 +5,7 @@ import type { World } from '../world/world';
 import type { TileMap } from '../world/tilemap';
 import type { CharacterDef } from '../characters/character';
 import type { EntitySpawn } from '../level/schema';
+import type { BlockContent } from '../level/tiles';
 import type { ClassicSettings } from '@engine/save/original-options';
 
 /**
@@ -53,6 +54,12 @@ export interface BlockStrike {
 
 export interface ClassicRulesHooks {
   enemyHit(e: Enemy, src: DamageSource, world: World): Reaction;
+  /**
+   * 0.4.72 (Show hidden items): what striking the block at (tx, ty) as `p` gives now, when the
+   * Classic rules give something other than its tile's content (the Yoshi mount's egg block's
+   * egg); null: its own content.
+   */
+  blockShown?(world: World, tx: number, ty: number, p: Player): BlockContent | null;
   /** A map enemy just spawned: its Classic hit points are picked now (HP-C4). */
   enemySpawned(e: Enemy, world: World): void;
   strikeBlock(

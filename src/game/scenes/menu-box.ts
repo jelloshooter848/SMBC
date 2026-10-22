@@ -95,8 +95,11 @@ function rowsShown(rows: readonly BoxRow[], header?: string): number {
   return Math.min(header ? BOX_ROWS - 1 : BOX_ROWS, rows.length);
 }
 
-/** A box's size for these rows (screen px); a `header` takes a row of its own at the top. */
-export function boxSize(rows: readonly BoxRow[], header?: string): { w: number; h: number } {
+/**
+ * A box's size for these rows (screen px); a `header` takes a row of its own at the top, and a
+ * `footer` (a line of text under the rows, never selectable) one at the bottom.
+ */
+export function boxSize(rows: readonly BoxRow[], header?: string, footer?: string): { w: number; h: number } {
   const cols = Math.max(
     1,
     ...rows.map((row) => {
@@ -104,8 +107,10 @@ export function boxSize(rows: readonly BoxRow[], header?: string): { w: number; 
       return row.label.length + (right ? right.length + 2 : 0);
     }),
   );
-  const w = Math.max(cols * 8 + CURSOR_W, header ? header.length * 8 : 0) + MARGIN * 2;
-  const shown = rowsShown(rows, header) + (header ? 1 : 0);
+  const w =
+    Math.max(cols * 8 + CURSOR_W, header ? header.length * 8 : 0, footer ? footer.length * 8 : 0) +
+    MARGIN * 2;
+  const shown = rowsShown(rows, header) + (header ? 1 : 0) + (footer ? 1 : 0);
   return { w: Math.min(BOX_MAX_W, w), h: shown * BOX_ROW_H + BOX_PAD * 2 };
 }
 
@@ -120,6 +125,8 @@ export interface BoxOptions {
   calm: boolean;
   /** The page's name on the box's first row, in gold, centred (BUG-01's sub-pages). */
   header?: string;
+  /** A line under the rows, in white, centred and never selectable (the Quit card's promise). */
+  footer?: string;
 }
 
 /** Draw a menu box; returns where it is (screen px, full size). */
@@ -130,7 +137,7 @@ export function drawMenuBox(
   index: number,
   o: BoxOptions,
 ): { x: number; y: number; w: number; h: number } {
-  const { w, h } = boxSize(rows, o.header);
+  const { w, h } = boxSize(rows, o.header, o.footer);
   const x = Math.round(o.cx - w / 2);
   const y = Math.max(0, Math.min(240 - h, Math.round(o.cy - h / 2)));
   const gw = Math.max(2, Math.round(w * o.grow));
@@ -173,6 +180,15 @@ export function drawMenuBox(
       text(v, right - v.length * 8, ry, sheet);
     }
   });
+  if (o.footer) {
+    const ft = o.footer.toUpperCase();
+    text(
+      ft,
+      Math.round(x + w / 2 - (ft.length * 8) / 2),
+      y + BOX_PAD + (shown + head) * BOX_ROW_H + ROW_TEXT_DY,
+      plain,
+    );
+  }
   // More rows above or below the ones shown: a small arrow by the frame's right, top or bottom,
   // inside the corner rivets (B-I QA).
   if (first > 0) scrollArrow(r, x + w - 18, y + 2, -1);

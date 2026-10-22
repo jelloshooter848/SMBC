@@ -225,6 +225,9 @@ function fitsHero(def: CharacterDef, k: HeroPower): boolean {
 const RANDOM_PICK_SEED = 0x5eed1;
 
 /** Orchestrates scenes and carries GameState between levels. */
+/** Why a Classic file that reads cannot play now (Game.classicFileProblem, 31d; 0.4.72). */
+export type FileProblem = 'hero-off' | 'hero' | 'level' | 'not-released';
+
 export class Game {
   readonly scenes = new SceneStack();
   /** The top scene's in-event confirm action (share, clipboard), run by main.ts's input handlers. */
@@ -257,6 +260,19 @@ export class Game {
    * rules.
    */
   classicDifficulty: MapDifficulty = 'normal';
+  /**
+   * 0.4.72 (owner item 7): a dev START page start is playing (always free play since the Mode row
+   * went): its Map difficulty plays under Classic rules (ctx.mapDifficulty). Cleared by every
+   * other start (endClassicRun, startRun, resumes, play-tests, shared levels).
+   */
+  private devFreePlay = false;
+  /**
+   * 0.4.72 (owner item 6): the dev START page's Mount for this start: 'ride' starts every area
+   * riding Yoshi (the mount on, as the Dev menu's Ride); 'none' starts without him (a Ride toggle
+   * plays as On); null: no START page start (the toggle and `&yoshi=` decide). Cleared with
+   * devFreePlay.
+   */
+  private devYoshi: 'ride' | 'none' | null = null;
   /**
    * B-L: the save file this Classic run belongs to (its set and slot): every WORLD card and a
    * game over's continue point write it, the credits empty it. Null for a practice run (the
@@ -468,7 +484,11 @@ export class Game {
     });
     // ctx.mapDifficulty: the Classic run's Map Difficulty (G-006), only while it plays Classic rules.
     Object.defineProperty(deps.ctx, 'mapDifficulty', {
-      get: () => (this.classicRun && this.liveRules === 'classic' ? this.classicDifficulty : undefined),
+      // 0.4.72 (owner item 7): a dev free play start under Classic rules plays it too.
+      get: () =>
+        (this.classicRun || this.devFreePlay) && this.campaign === null && this.liveRules === 'classic'
+          ? this.classicDifficulty
+          : undefined,
       enumerable: true,
       configurable: true,
     });
@@ -666,7 +686,37 @@ export class Game {
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
-    const slots = this.slotsFor(this.liveRules);
+    return this.withoutDisabled(this.slotsFor(this.liveRules));
+  }
+
+  /**
+   * 0.4.72 (owner item 5): the heroes the select screen shows. Outside dev mode, heroSlots. In
+   * dev mode every hero Dev > Toggle heroes does not set Off, released or not (classicHeroOn in
+   * place of expansionHeroOffered's release rule), still without the ones the run's Disable
+   * heroes turned off. Random, Single random and Survival keep heroSlots.
+   */
+  get selectSlots(): CharacterDef[] {
+    // Survival tracks heroSlots (newSurvival): its select offers only those, so every hero shown
+    // stands or has fallen in the run, and revive Random draws only from them.
+    if (!this.devMode || this.survival !== null) return this.heroSlots;
+    return this.withoutDisabled(this.devSlotsFor(this.liveRules));
+  }
+
+  /**
+   * 0.4.72 (owner item 5): slotsFor `rules` as dev mode's hero pickers offer them (the select,
+   * the dev START page's Hero row): every hero Dev > Toggle heroes does not set Off. Outside dev
+   * mode, slotsFor itself (the release rule).
+   */
+  devSlotsFor(rules: Rules): CharacterDef[] {
+    if (!this.devMode) return this.slotsFor(rules);
+    return this.slotsFor(rules, (id) => {
+      const d = CLASSIC_EXTRAS.find((c) => c.id === id);
+      return d ? this.classicHeroOn(d) : !this.classicToggles.heroesOff.includes(id);
+    });
+  }
+
+  /** `slots` without the heroes the Classic run's Disable heroes turned off (G-032). */
+  private withoutDisabled(slots: CharacterDef[]): CharacterDef[] {
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
     // always keeping at least one (GeneralOptions.as: the last hero cannot be disabled).
     if (!(this.classicRun || this.classicFlow) || this.campaign !== null) return slots;
@@ -680,10 +730,13 @@ export class Game {
    * heroSlots for a run under `rules` (G-093: the Classic menu's How to play lists the heroes a
    * Classic run would offer, though no run is playing yet).
    */
-  slotsFor(rules: Rules): CharacterDef[] {
+  slotsFor(
+    rules: Rules,
+    offered: (id: string) => boolean = (id) => this.expansionHeroOffered(id),
+  ): CharacterDef[] {
     const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
-    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter((id) => this.expansionHeroOffered(id))];
+    const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter(offered)];
     const slots: CharacterDef[] = [];
     for (const id of ids) {
       const def = roster.find((c) => c.id === id && !isSkin(c));
@@ -727,6 +780,16 @@ export class Game {
     return expansionReleased(id);
   }
 
+  /**
+   * 0.4.72: hero `c`'s slot is an Expansion hero players do not have yet (only dev mode's select
+   * offers it), whether dev mode is on now or not: a run playing it marks its file (devHero) even
+   * after dev mode was turned off mid-run.
+   */
+  devOnlyHero(c: CharacterDef): boolean {
+    const id = this.slotOf(c).id;
+    return EXPANSION_HEROES.includes(id) && !this.heroReleased(id);
+  }
+
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
   slotOf(c: CharacterDef): CharacterDef {
     const host = skinHost(c);
@@ -743,7 +806,8 @@ export class Game {
     const host = this.slotOf(c);
     // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
     // hero standing and the select shows who plays.
-    const slots = this.heroSlots;
+    // A hero the dev select offers (selectSlots: dev mode shows every hero not set Off) plays.
+    const slots = this.selectSlots;
     if (!slots.includes(host)) {
       const first = slots.find((d) => !this.heroLocked(d)) ?? slots[0];
       return first ? this.skinFor(first) : c;
@@ -880,9 +944,10 @@ export class Game {
   /** The Classic Yoshi mount in force now (GameContext.classicYoshi): undefined when off. */
   get yoshiMount(): 'on' | 'ride' | undefined {
     if (this.liveRules !== 'classic' || !this.devMode) return undefined;
-    if (this.yoshiUrl) return this.yoshiUrl;
+    if (this.devYoshi === 'ride') return 'ride';
     const t = this.classicToggles;
-    return t.yoshiMount ? (t.yoshiRide ? 'ride' : 'on') : undefined;
+    const base = this.yoshiUrl ?? (t.yoshiMount ? (t.yoshiRide ? 'ride' : 'on') : undefined);
+    return this.devYoshi === 'none' && base === 'ride' ? 'on' : base;
   }
 
   /**
@@ -1875,7 +1940,7 @@ export class Game {
     power: string,
     fullKit = false,
     seed?: number,
-    opts: { rules?: Rules; classic?: boolean; difficulty?: MapDifficulty } = {},
+    opts: { rules?: Rules; classic?: boolean; difficulty?: MapDifficulty; mount?: 'none' | 'yoshi' } = {},
   ): void {
     const classic = opts.classic === true;
     // A Classic run has none of the campaign's rooms: the village and the stage tutorials (1-0)
@@ -1887,6 +1952,9 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic;
     this.linkRun = false;
+    this.devFreePlay = !classic;
+    // 0.4.72 (owner item 6): the START page's Mount row; null leaves the Dev menu's toggle alone.
+    this.devYoshi = opts.mount === 'yoshi' ? 'ride' : opts.mount === 'none' ? 'none' : null;
     // B-L: a dev start has no file and reads the old shared options.
     this.classicFile = null;
     this.runFileRules = null;
@@ -1894,7 +1962,8 @@ export class Game {
     this.fileContinues = 0;
     // BUG-06: a dev start is a new run; no hero keeps a kit from the run it left.
     this.classicKits = {};
-    // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
+    // O-05: the dev START page's Map difficulty (it plays under Classic rules: a Classic run, or
+    // since 0.4.72 a free play start too).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
     const hero = playedHero(this.ctx, character, rules);
@@ -2224,6 +2293,8 @@ export class Game {
     this.classicRun = classic;
     this.classicDev = classic && dev;
     this.linkRun = classic && link;
+    this.devFreePlay = false;
+    this.devYoshi = null;
     // BUG-06: a new game resets every hero (StatManager.startNewGameHandler → resetAllStats).
     this.classicKits = {};
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
@@ -2282,6 +2353,8 @@ export class Game {
     this.classicFlow = false;
     this.classicDev = false;
     this.linkRun = false;
+    this.devFreePlay = false;
+    this.devYoshi = null;
     this.survival = null;
     this.sayFirst = null;
     this.classicKits = {};
@@ -2339,6 +2412,10 @@ export class Game {
     } catch {
       /* a level that does not load: kept as the state has it */
     }
+    // 0.4.72: a hero only dev mode's select offers marks the run (fileProblem 'not-released').
+    // A mark the file has is never dropped (a later write by another hero keeps it).
+    if (this.devOnlyHero(this.state.character) || loadClassicFile(ref)?.run.devHero === true)
+      r.devHero = true;
     saveClassicFile({
       ...ref,
       rules: this.classicRunRules,
@@ -2430,22 +2507,31 @@ export class Game {
   /**
    * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
    * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
-   * ('level'). Null when it plays, or when there is no readable file there.
+   * ('level'). 0.4.72: its run was played in dev mode by a hero only dev mode offers (devHero)
+   * and dev mode is off now ('not-released'). Null when it plays, or when there is no readable
+   * file there.
    */
-  classicFileProblem(ref: ClassicFileRef): 'hero-off' | 'hero' | 'level' | null {
+  classicFileProblem(ref: ClassicFileRef): FileProblem | null {
     this.migrateClassicFiles();
     const f = loadClassicFile(ref);
     return f ? this.fileProblem(f) : null;
   }
 
-  private fileProblem(f: ClassicFile): 'hero-off' | 'hero' | 'level' | null {
+  private fileProblem(f: ClassicFile): FileProblem | null {
     const r = f.run;
     try {
       this.deps.getLevel(r.levelId);
     } catch {
       return 'level';
     }
-    if (this.rosterFor(this.resumeRules(r)).some((c) => c.id === r.hero)) return null;
+    const rules = this.resumeRules(r);
+    const hero = this.rosterFor(rules).find((c) => c.id === r.hero);
+    if (hero) {
+      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's);
+      // an unmarked one whose hero no select offers plays as the first slot's hero (P1).
+      if (r.devHero && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
+      return null;
+    }
     const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
     return off ? 'hero-off' : 'hero';
   }
@@ -2492,6 +2578,8 @@ export class Game {
     this.classicRun = true;
     this.classicDev = false;
     this.linkRun = false;
+    this.devFreePlay = false;
+    this.devYoshi = null;
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).

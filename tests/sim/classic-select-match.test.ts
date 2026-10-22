@@ -206,10 +206,15 @@ describe('the original roster, Expansion heroes and old saves', () => {
 
   it('Expansion heroes on adds the heroes the original never had, after it', () => {
     // O-12: the Expansion heroes row is developer mode's until a hero is released.
+    // 0.4.72 (owner): the release build's select leaves them out; dev mode's select shows every
+    // hero Toggle heroes does not set Off, released or not.
+    const { sel: rel } = classicSelect({ ...defaultSettings(), dev: false });
+    for (const id of ['vicviper', 'warriors', 'arthur', 'yoshi'])
+      expect(rel.chars.some((c) => c.id === id)).toBe(false);
     const settings = { ...defaultSettings(), dev: true };
     const { h, sel } = classicSelect(settings);
     for (const id of ['vicviper', 'warriors', 'arthur', 'yoshi'])
-      expect(sel.chars.some((c) => c.id === id)).toBe(false);
+      expect(sel.chars.some((c) => c.id === id)).toBe(true);
     settings.classic.expansion = 'on';
     // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
     settings.classicDev.heroesOn = ['vicviper', 'warriors', 'arthur', 'yoshi'];

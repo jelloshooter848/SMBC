@@ -120,7 +120,11 @@ describe('two-row character select', () => {
     // Classic mode's select is the original's grid (nine to a row, then the "?" cell), so only
     // the free-play select keeps the one row. BUG-11: Classic rules saved as Campaign are ignored.
     const { h, sel } = classicSelect('current');
-    expect(sel.chars.map((c) => c.id)).toEqual(classicSelect().sel.chars.map((c) => c.id));
+    // 0.4.72 (owner): dev mode's select (this one) shows every hero not set Off (Game.devSlotsFor),
+    // the dev-off one the release rule; the saved rules change neither.
+    expect(sel.chars.map((c) => c.id)).toEqual(h.game.devSlotsFor('classic').map((c) => c.id));
+    const off = classicSelect();
+    expect(off.sel.chars.map((c) => c.id)).toEqual(off.h.game.slotsFor('classic').map((c) => c.id));
     // O-10: Classic's select names the hero and what OK does on it.
     expect(h.said.at(-1)).toMatch(
       /^Select your hero\. Mario, Super Mario Bros\. Left and right to choose, up and down for the other row, OK: /,
