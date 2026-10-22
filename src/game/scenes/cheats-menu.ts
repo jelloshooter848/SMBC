@@ -144,7 +144,8 @@ export class CheatsScene extends MenuScene {
     this.code = new CheatCode(DEV_CODE);
     this.codeAt = 0;
     this.backAction = 'select';
-    this.game.deps.announcer?.say('Enter the code. BACK to stop.');
+    // The key that goes BACK while the code is taken (SELECT's), named as the page's hint names it.
+    this.game.deps.announcer?.say(`Enter the code. ${abilityHint(this.game, 'BACK', 'select')} to stop.`);
   }
 
   private endCode(): void {
@@ -171,8 +172,9 @@ export class CheatsScene extends MenuScene {
     if (!pressed.length) return;
     // Select (BACK) leaves the code entry, back to the menu (the code's B and A are Attack, Jump).
     if (pressed.includes('select')) {
+      // The original's way out of the code (cancelCodeInput) plays the bump (SFX_GAME_HIT_CEILING).
       this.endCode();
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx('bump');
       this.game.deps.announcer?.say('Back. Enter code.');
       return;
     }

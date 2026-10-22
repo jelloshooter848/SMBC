@@ -6,7 +6,7 @@ import { SCREEN_W } from '@engine/viewport';
 import { MINIGAMES, type MiniGameDef, type MiniGameResult } from '../minigames';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { fontText } from '../hud/text';
-import { MenuScene } from './menu';
+import { MenuScene, backToMenu } from './menu';
 import { abilityHint } from './hints';
 import { cardContinues } from './message';
 import { snapshot } from './free-hero';
@@ -171,7 +171,8 @@ export class DevMiniGamesScene extends MenuScene {
     /** Opened over a pause menu: the audio it suspended is suspended again on the way back. */
     private readonly fromPause = false,
   ) {
-    super(game, 'MINI GAMES', [], () => game.scenes.pop(), fromPause);
+    super(game, 'MINI GAMES', [], () => backToMenu(game), fromPause);
+    this.entryTitle = 'Mini games';
     const heroName = (id: string) => game.deps.characters.find((c) => c.id === id)?.name ?? id;
     this.setItems([
       ...Object.values(MINIGAMES).map((def) => ({
@@ -185,7 +186,7 @@ export class DevMiniGamesScene extends MenuScene {
         select: () => this.play(AIRSHIP_CHALLENGE),
         hint: "Deck and Larry's room with a hero you pick. Plays one round; nothing is saved",
       },
-      { label: 'Back', select: () => game.scenes.pop() },
+      { label: 'Back', select: () => backToMenu(game) },
     ]);
   }
 

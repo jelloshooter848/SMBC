@@ -514,10 +514,6 @@ describe("the words are the original's, changed only where our rules or our game
     ],
     samusScrewAttack: ['Screw Attack:\nScrew attack causes spin jumps to damage enemies.'],
     samusMissileExpansion: ["Missile Expansion:\nThe missile expansion increases Samus' ammo capacity."],
-    sophiaWallClimb: [
-      'Wall Climb:\nHold up while approaching a wall to climb up it. Hold down while approaching a cliff to climb down it. Sophia can climb into gaps by holding the direction toward the gap while driving over it.',
-      'While climbing a wall, press <K> to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press <K>.',
-    ],
     sophiaCeilingClimb: [
       'Ceiling Climb:\nJump into a ceiling to grapple to it. To temporarily disable grapple, hold down while in the air.',
     ],
@@ -582,6 +578,12 @@ describe("the words are the original's, changed only where our rules or our game
     // "Press SPC or DWN and ATK to fire a homing missile when enemies are on screen. If you have
     // multiple weapons, press SEL to switch between them."
     sophiaHomingMissile: ['Homing Missile:\nPress <K> to fire a homing missile.'],
+    // p1, by owner decision: "Hold down while approaching a cliff to climb down it." Down alone
+    // never takes the tank over the edge; down and the direction toward the cliff does.
+    sophiaWallClimb: [
+      'Wall Climb:\nHold up while approaching a wall to climb up it. Hold down and the direction toward the cliff to climb down it. Sophia can climb into gaps by holding the direction toward the gap while driving over it.',
+      'While climbing a wall, press <K> to jump off and grapple to a nearby wall. To drop from a wall without jumping, hold the direction toward the wall and press <K>.',
+    ],
   };
 
   it('every box is the original word for word (keys as abilities), or a listed deviation', () => {
@@ -700,6 +702,24 @@ describe("the words are the original's, changed only where our rules or our game
     readBox(h);
     p.def.behaviour.onPowerUp(p, 'flower', l.world);
     expect(idsOf(untilBox(h)?.pages ?? [], h)).toEqual(['sophiaWallClimb', 'sophiaCeilingClimb']);
+  });
+
+  it("Sophia's Wall Climb box says to hold down and the direction toward the cliff, and reads it out", () => {
+    const h = game(true);
+    const l = play(h, SOPHIA, ['characterSelect', 'firstCharacterStart', 'sophiaStart']);
+    expect(untilBox(h, 60)).toBeNull();
+    const p = l.world.player;
+    p.def.behaviour.onPowerUp(p, 'mushroom', l.world);
+    untilBox(h);
+    readBox(h);
+    p.def.behaviour.onPowerUp(p, 'flower', l.world);
+    const b = untilBox(h);
+    expect(b?.pages[0]).toContain('Hold down and the direction toward the cliff to climb down it.');
+    expect(b?.pages[0]).not.toContain('while approaching a cliff');
+    for (let i = 0; i < 200 && !(b as TutorialBoxScene).interactive; i++) h.step();
+    expect(
+      h.said.some((t) => t.includes('Hold down and the direction toward the cliff to climb down it.')),
+    ).toBe(true);
   });
 });
 

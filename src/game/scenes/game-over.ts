@@ -75,8 +75,8 @@ export class GameOverScene implements Scene {
         this.onContinue();
       } else {
         this.game.ctx.audio.sfx('select');
-        // NO: a Classic mode run goes back to the CLASSIC menu; everything else to the title.
-        if (this.game.classicRun) this.game.showClassicMenu();
+        // NO: a Classic mode run goes back to the CLASSIC menu, on its own set; everything else to the title.
+        if (this.game.classicRun) this.game.showClassicMenu(this.game.runSet);
         else this.game.showTitle();
       }
     }

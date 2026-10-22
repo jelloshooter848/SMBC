@@ -257,7 +257,10 @@ Enter up, up, down, down, left, right, left, right, attack, jump on the title sc
 with `?dev=1`) to unlock **Dev mode** on the title and in the pause menu. It also opens
 the **Campaign** (Chapter 1) and resume links until 1.0. That is on local and development builds
 (`pnpm dev`); the released game keeps dev mode for its developer: the code asks for a passphrase
-there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). In dev mode:
+there, and `?dev=1` does nothing (docs/RELEASING.md, "the dev-mode passphrase"). A checkout exactly
+at a release tag (`v<version>`, or with `RELEASE_TAG` set to it) builds as that release, so even
+its `pnpm dev` is locked, and with no `DEV_MODE_HASH` has no way in at all; work from any other
+commit for an open dev mode. In dev mode:
 
 - **Level select**: pages for **Classic** (map set, world, level or one of its rooms, then a
   start page with the hero, look, power, Map difficulty, rules, mode and kit), **Campaign** (the
