@@ -110,8 +110,25 @@ export class MenuScene implements Scene {
   protected status = '';
   /** The button the BACK line names (a subclass that reads Attack itself names another). */
   protected backAction: 'attack' | 'select' = 'attack';
-  /** Keeps a page of items scrolled into view. */
-  private readonly visibleRows = 9;
+  /**
+   * Keeps a page of items scrolled into view. Nine rows; a page with no status line may show ten
+   * (both layouts keep a tenth row clear of the BACK line).
+   */
+  protected visibleRows = 9;
+  /**
+   * The sounds of moving the cursor and of going back (RC-040: the CLASSIC boxes set the
+   * original's, MessageBoxSounds SN_CHANGE_SELECTION and SN_CANCEL_ITEM; every other menu keeps
+   * the menu blip).
+   */
+  protected moveSfx = 'select';
+  protected backSfx = 'select';
+  /**
+   * The sound of changing a value: left / right, and (null: silent) OK on a row that only has a
+   * value. The CLASSIC boxes set the original's (item 9): SettingsMenuBox.afterChooseItem plays
+   * SN_CHOOSE_ITEM, the coin, for both (MenuBox's left and right go through chooseItem too).
+   */
+  protected adjustSfx = 'select';
+  protected okAdjustSfx: string | null = null;
 
   constructor(
     protected readonly game: Game,
@@ -165,21 +182,21 @@ export class MenuScene implements Scene {
     if (!n) return;
     if (input.pressed('up')) {
       this.index = (this.index + n - 1) % n;
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.moveSfx);
       this.announce();
     } else if (input.pressed('down')) {
       this.index = (this.index + 1) % n;
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.moveSfx);
       this.announce();
     }
     const it = this.items[this.index] as MenuItem;
     if (input.pressed('left') && it.adjust) {
       it.adjust(-1);
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.adjustSfx);
       this.announce();
     } else if (input.pressed('right') && it.adjust) {
       it.adjust(1);
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.adjustSfx);
       this.announce();
     } else if (input.pressed('jump') || input.pressed('start')) {
       // An in-event item was already picked by its key's or button's own event.
@@ -189,10 +206,11 @@ export class MenuScene implements Scene {
         it.select();
       } else if (it.adjust) {
         it.adjust(1);
+        if (this.okAdjustSfx) this.game.ctx.audio.sfx(this.okAdjustSfx);
         this.announce();
       }
     } else if ((input.pressed('attack') || input.pressed('select')) && this.onBack) {
-      this.game.ctx.audio.sfx('select');
+      this.game.ctx.audio.sfx(this.backSfx);
       this.onBack();
     }
   }

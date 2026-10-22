@@ -14,6 +14,7 @@ import { ClassicHeroesScene } from '@game/scenes/disable-heroes';
 import { GuideIndexScene } from '@game/scenes/guide';
 import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { pickAtContinue } from './continue-select';
 
 // O-12 (0.5.0 RC audit addendum, blocker): the Expansion heroes are locked on the release build,
 // and the Classic rules and Expansion heroes rows are developer mode's only. Outside dev mode the
@@ -52,8 +53,6 @@ describe('O-12 outside developer mode', () => {
   it('the getters give Classic rules and no Expansion heroes; the saved values stay as they were', () => {
     const h = saved();
     expect(h.game.classicRules).toBe('classic');
-    expect(h.game.expansionHeroes).toBe(false);
-    expect(h.game.expansionRowShown).toBe(false);
     for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id)).toBe(false);
     expect(h.settings.classicRules).toBe('current');
     expect(h.settings.classic.expansion).toBe('on');
@@ -127,19 +126,21 @@ describe('O-12 outside developer mode', () => {
     expect(h.game.state).toMatchObject({ score: 4200, coins: 17, lives: 4, world: 2, stage: 1 });
     expect(h.game.state.powerState).not.toBe('fire');
     expect(h.game.state.kit).not.toHaveProperty('bombs');
-    // Its next WORLD card keeps it as the Classic-rules run it now is.
+    // Its next WORLD card (after Continue's select, BUG-03) keeps it as the Classic-rules run it now is.
+    pickAtContinue(h);
+    h.until(() => loadClassicResume()?.rules === 'classic', 600);
     expect(loadClassicResume()).toMatchObject({ rules: 'classic', hero: 'mario' });
   });
 });
 
 describe('O-12 in developer mode', () => {
-  it('both rows show and the saved values are in force', () => {
+  it('no Classic rules row (BUG-11) and no Expansion heroes row (BUG-08); the saved values are ignored', () => {
     const h = saved(true);
     const o = new ClassicOptionsScene(h.game, () => {});
-    expect(labels(o)).toContain('Classic rules');
-    expect(labels(o)).toContain('Expansion heroes');
-    expect(h.game.classicRules).toBe('current');
-    expect(h.game.expansionHeroes).toBe(true);
+    expect(labels(o)).not.toContain('Classic rules');
+    expect(labels(o)).not.toContain('Expansion heroes');
+    expect(h.game.classicRules).toBe('classic');
+    expect(h.settings.classicRules).toBe('current');
     // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
     for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id), id).toBe(false);
     h.settings.classicDev = { yoshiMount: false, heroesOff: [], heroesOn: [...EXPANSION_HEROES] };

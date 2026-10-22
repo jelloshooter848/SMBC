@@ -7,7 +7,9 @@ import {
   type ClassicWeapons,
 } from '@engine/save/original-options';
 import { MenuScene, type MenuItem } from './menu';
-import { RELEASED_EXPANSION_HEROES } from '../characters/registry';
+import type { InputFrame } from '@engine/input/input-manager';
+import type { Renderer } from '@engine/gfx/renderer';
+import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Game } from './game';
 
 /**
@@ -63,7 +65,6 @@ const NAMES: Record<string, string> = {
   buzzy: 'Buzzy Beetle',
   spiny: 'Spiny',
   'spike-top': 'Spike Top',
-  // Expansion heroes
   on: 'On',
   // Game Mode
   single: 'Single hero',
@@ -166,19 +167,6 @@ export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
   row('enemySpeed', 'Enemy speed', 'Walking enemies move faster when fast'),
 ] as AnyRow[];
 
-/**
- * The Expansion heroes row: our own (the original has no such heroes). Off, the Classic select is
- * the original's; on, it also offers the released heroes SMBC 3.1.21 never had
- * (RELEASED_EXPANSION_HEROES, O-12). Dev > Classic heroes' On or Off overrides it in dev mode (O-06).
- */
-export const EXPANSION_ROW = row(
-  'expansion',
-  'Expansion heroes',
-  RELEASED_EXPANSION_HEROES.length
-    ? 'Off: the original SMBC heroes only. On: also the released heroes the original never had'
-    : 'Off: the original SMBC heroes only. On: the released heroes the original never had, and none is released yet, so it shows none. To show one in dev mode, set it to On on the Classic heroes page of Dev mode',
-) as AnyRow;
-
 /** The Game Mode row (NewGameOptionsMenu's GAME_MODE under Classic mode). */
 export const GAME_MODE_ROW = row(
   'gameMode',
@@ -274,6 +262,9 @@ export function optionItem(game: Game, r: AnyRow, after: () => void): MenuItem {
  * row; the menu rebuilds after each change so the `*` marks follow.
  */
 export class ClassicOptionRowsScene extends MenuScene {
+  /** BUG-01: the CLASSIC title it is a box over (null: a full-screen page). */
+  private readonly over = demoUnder(this.game);
+
   constructor(
     game: Game,
     title: string,
@@ -282,7 +273,33 @@ export class ClassicOptionRowsScene extends MenuScene {
     onBack: () => void,
   ) {
     super(game, title, [], onBack);
+    if (this.over) {
+      this.translucent = true;
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
+    }
     this.build();
+  }
+
+  /** The demo under the box plays on while it is up. */
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
+  }
+
+  override render(r: Renderer): void {
+    if (!this.over) return super.render(r);
+    renderBoxedMenu(r, this.game, {
+      backAction: this.backAction,
+      header: this.title,
+      items: this.items,
+      index: this.index,
+      t: this.t,
+      status: this.status,
+      age: this.t,
+    });
   }
 
   private build(): void {

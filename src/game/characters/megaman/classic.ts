@@ -68,6 +68,7 @@ import {
 import { MMShot } from './classic-weapons';
 import { MEGAMAN_SMBC_CANVAS } from '@content/sprites/smbc-megaman';
 import { canvasOffsets } from '@content/sprites/smbc-anchor';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Classic SMBC Mega Man (bug-reports/2026-10-07-megaman-classic-smbc-rules.md, MM-C1..MM-C36):
@@ -87,6 +88,8 @@ import { canvasOffsets } from '@content/sprites/smbc-anchor';
  */
 export const MEGAMAN_CLASSIC_PROFILE: MovementProfile = {
   ...MEGAMAN_PROFILE,
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   jump: [{ maxVx: Infinity, initial: 0x05355, holdGravity: 0x00355, fallGravity: 0x00355 }],
   maxFall: 0x05d55,
   fallReset: 0x05d55,

@@ -8,7 +8,7 @@ import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
 import { drawRulesTag } from '../hud/rules-tag';
 import { rulesOf } from '../context';
-import { heroFor } from '../characters/registry';
+import { playedHero } from '../characters/registry';
 import { shownPortrait } from '../characters/character';
 import type { InputFrame } from '@engine/input/input-manager';
 import { CARD_GUARD_FRAMES } from './message';
@@ -74,7 +74,7 @@ export class IntroScene implements Scene {
     else
       r.text(font, `WORLD ${worldLabel(s.world)}-${shownStage(s.world, s.stage, s.campaignOrder)}`, 88, 80);
     // A Classic run's card shows the Classic hero's art (R1: drawn at the original's sizes).
-    const c = shownPortrait(heroFor(s.character, rulesOf(this.game.ctx)));
+    const c = shownPortrait(playedHero(this.game.ctx, s.character, rulesOf(this.game.ctx)));
     const sheet = assets.sheet(c.sheet, c.palette);
     const f = sheet.frames.get(c.frame);
     r.sprite(sheet, c.frame, 96, 112 - (f?.h ?? 16) + 16);
@@ -82,7 +82,9 @@ export class IntroScene implements Scene {
     r.text(font, `×  ${this.game.cardLives}`, 120, 120);
     // The Classic rules tag, as the level will show it (TG-32).
     const rules = rulesOf(this.game.ctx);
-    const heroes = [s.character, ...(s.character2 ? [s.character2] : [])].map((d) => heroFor(d, rules));
+    const heroes = [s.character, ...(s.character2 ? [s.character2] : [])].map((d) =>
+      playedHero(this.game.ctx, d, rules),
+    );
     drawRulesTag(r, assets, rules, heroes);
   }
 }

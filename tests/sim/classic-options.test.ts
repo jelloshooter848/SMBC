@@ -153,10 +153,9 @@ describe('ctx.classic: only a Classic run with Classic rules', () => {
     h.game.newGame(MARIO, '1-1', null, { rules: 'classic' });
     expect(h.game.ctx.classic).toBeUndefined();
     expect(h.game.state.lives).toBe(3);
-    // Classic mode with Current rules (developer mode's, O-12): no options either.
+    // A Classic run with Current rules (the dev START page's Rules row, BUG-11): no options either.
     h.settings.dev = true;
-    h.settings.classicRules = 'current';
-    h.game.classicGame(MARIO);
+    h.game.devClassicGame(MARIO, '1-1', 'current');
     expect(h.game.classicRun).toBe(true);
     expect(h.game.ctx.classic).toBeUndefined();
     expect(h.game.state.lives).toBe(3);

@@ -7,7 +7,7 @@ import { MEGAMAN_SMBC_CANVAS } from '@content/sprites/smbc-megaman';
 import { RYU_SMBC_CANVAS } from '@content/sprites/smbc-ryu';
 import { SIMON_CLASSIC_ORIGIN } from '@content/sprites/simon-classic';
 import { shownPortrait, type CharacterDef } from '../characters/character';
-import { heroFor, heroGame, skinGame } from '../characters/registry';
+import { heroGame, playedHero, skinGame } from '../characters/registry';
 import type { Game } from './game';
 import {
   GROUND_Y,
@@ -65,6 +65,11 @@ export interface HeroPick {
   onPick: (c: CharacterDef) => void;
   /** Back (B/Select), e.g. to the world map; without it there is no way back. */
   onCancel?: () => void;
+  /**
+   * Survival's revive mode with every hero fallen still offers BACK (onCancel), as a new game's
+   * select does: Continue's pick (BUG-03), where the run has not gone on yet (B-I QA).
+   */
+  leaveFallen?: boolean;
   /**
    * Campaign deaths: RETURN TO MAP, an entry below the hero row (Down, then OK) and the
    * B/Select shortcut (shown on touch as MAP). Leaves the level as Pause → Quit to map does.
@@ -720,7 +725,8 @@ export class CharacterSelectScene implements Scene {
   private portraitOf(c: CharacterDef): CharacterDef['portrait'] {
     // A Classic run shows each hero's Classic art (R1: drawn at the original's sizes), in the
     // look chosen for it (FU-8).
-    if (!c.portraitFor) return shownPortrait(heroFor(this.game.skinFor(c), this.game.liveRules));
+    if (!c.portraitFor)
+      return shownPortrait(playedHero(this.game.ctx, this.game.skinFor(c), this.game.liveRules));
     const s = this.game.state;
     const second = this.pick?.player === 1 && s.character2 !== null;
     const mine = second ? s.character2 : s.character;
@@ -876,7 +882,7 @@ export class CharacterSelectScene implements Scene {
   /** DONE (attack) in revive mode: the question; BACK at a new game's select with every hero fallen. */
   private reviveLeave(): string | null {
     if (!this.survival?.allFallen) return 'DONE';
-    return this.start ? 'BACK' : null;
+    return this.start || (this.pick?.leaveFallen && this.pick.onCancel) ? 'BACK' : null;
   }
 
   /** Revive mode's spoken instructions. */
@@ -979,10 +985,12 @@ export class CharacterSelectScene implements Scene {
       this.game.deps.announcer?.say(
         `Are you finished reviving and strengthening heroes? No. Up and down to choose, OK to answer.`,
       );
-    } else if (leave === 'BACK' && this.start) {
-      // Every hero still fallen: the run has not begun, so BACK leaves as on any new game's select.
+    } else if (leave === 'BACK' && (this.start || this.pick?.onCancel)) {
+      // Every hero still fallen: the run has not begun (or gone on), so BACK leaves as on any
+      // new game's select.
       this.game.ctx.audio.sfx('select');
-      this.start.back();
+      if (this.start) this.start.back();
+      else this.pick?.onCancel?.();
     } else this.game.ctx.audio.sfx('bump');
   }
 
@@ -1375,7 +1383,7 @@ export class CharacterSelectScene implements Scene {
 
   /** The portrait frame Classic mode draws for `c` (its Classic art). */
   private artOf(c: CharacterDef): CharacterDef['portrait'] {
-    return shownPortrait(heroFor(c, this.game.liveRules));
+    return shownPortrait(playedHero(this.game.ctx, c, this.game.liveRules));
   }
 
   /**
@@ -1417,7 +1425,7 @@ export class CharacterSelectScene implements Scene {
    */
   get grid(): GridLayout {
     // The original's two rows of six hold its eleven heroes and Random. A longer list uses the
-    // wider grid: Options > Expansion heroes makes 15 slots, two rows of eight (a test's longer
+    // wider grid: the Expansion heroes make 15 slots, two rows of eight (a test's longer
     // stand-in roster takes a third row).
     return this.total <= ORIGINAL_GRID.cols * 2 ? ORIGINAL_GRID : SELECT_GRID;
   }
@@ -1445,6 +1453,7 @@ export class CharacterSelectScene implements Scene {
       shown,
       face ?? (shown ? this.artOf(shown) : null),
       this.theme.hudFrame,
+      this.comingPlace(),
     );
     // G-055: a pick closes the select and name boxes while the hero acts it out
     // (CharacterSelectBox: cancel(), nameBox.cancel()).
@@ -1587,6 +1596,21 @@ export class CharacterSelectScene implements Scene {
       r.text(dark, str, x + dx, y + dy);
     r.text(assets.sheet('font', th.shadowFont), str, x + 1, y + 1);
     r.text(assets.sheet('font', kind === 'tint' ? th.tintFont : th.nameFont), str, x, y);
+  }
+
+  /**
+   * BUG-04: the world and stage of the level the select is for (Game.selectLevel), for its HUD:
+   * the state's own move on only at that level's WORLD card, after the select.
+   */
+  private comingPlace(): { world: number; stage: number } {
+    const id = this.game.selectLevel;
+    if (!id) return this.game.state;
+    try {
+      const lv = this.game.deps.getLevel(id);
+      return { world: lv.world, stage: lv.stage };
+    } catch {
+      return this.game.state;
+    }
   }
 
   /**

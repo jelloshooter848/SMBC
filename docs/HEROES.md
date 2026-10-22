@@ -272,7 +272,7 @@ round. Co-op works (both players board; a partner's respawn aboard is free).
   folded into the run's snapshots (`AirshipRun.itemsGiven`), so a retry or NO keeps them once.
 - **Beating Larry**: the crystal ball exactly as before. The run ends in the card's OK
   (`airshipWon`), then `Game.takeCrystalBall(levelId)` is the campaign's hand-off to the map.
-- **Dev → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): character select first (every
+- **Dev → Level select → Mini games → "Larry's airship"** (`AIRSHIP_CHALLENGE`): character select first (every
   hero outside a campaign, the current one preselected; Back is the list), then deck + room as one
   round over the dev list as the picked hero; the ball is PASS, a death FAIL (no retry prompt), Give
   up QUIT, then the dev result card; nothing is saved.
@@ -360,7 +360,7 @@ puts its mini game in the Mini Game Arena:
   freed; Larry's airship once boarded (or beaten); the three bonus games once the bonus spot exists
   (secret `larry`). Unfound games are dark "???" pads (the hero's black silhouette and a `?`) whose
   hint line says what to find; JUMP bumps.
-- **A round** is Dev → Mini games' round (`scenes/dev-minigames.ts playRound`) over the map: no file
+- **A round** is Dev → Level select → Mini games' round (`scenes/dev-minigames.ts playRound`) over the map: no file
   is open while it runs, and the run, freed and met heroes, training answers, map progress and
   bonus state and items are put back after, so playing never changes progress, lives, items or
   the save (`tests/sim/arena.test.ts` checks the file byte for byte for every game). Then the
@@ -737,7 +737,7 @@ name, place or score. All the art is original (`tourian-look.ts`, `tourian-zebes
 - Touch labels: Samus's level labels while she plays (`levelTouchLabels`: JUMP, SHOOT, MISSILE,
   WEAPON; BOMB in the ball, no JUMP), only MENU while she materialises, none once a life or the
   round is decided.
-  Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Mini games.
+  Dev: `?minigame=samus` (the scene is `window.__miniGame`), or Dev → Level select → Mini games.
 
 **The auto-scroll camera** (generic, `world/camera.ts`, SMB3's airships): a map's header
 `camera: auto` with `scroll: <px per frame>` (decimals fine, above 0 and at most 16; 0.5 when left

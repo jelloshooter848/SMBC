@@ -229,12 +229,14 @@ describe('the Game mode row (CLASSIC > Options)', () => {
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
     pick(h, 'Options');
     const o = h.top() as ClassicOptionsScene;
-    const row = () => items(o)[1] as MenuItem;
+    // BUG-11: no Classic rules row, so Game mode is the first row in dev mode too.
+    const row = () => items(o)[0] as MenuItem;
     expect(row().label).toBe('Game mode');
     expect(row().value?.()).toBe('All heroes');
     h.idle(8);
-    h.tap('down');
-    expect(h.said.at(-1)).toMatch(/^Game mode: All heroes\. All heroes: choose before every level and life/);
+    expect(h.said.at(-1)).toMatch(
+      /^(Classic options\. )?Game mode: All heroes\. All heroes: choose before every level and life/,
+    );
     // Survival (v0.4.63, tests/sim/classic-survival.test.ts) comes second, as in the original's menu.
     h.tap('right');
     expect(h.settings.classic.gameMode).toBe('survival');
@@ -273,7 +275,7 @@ describe('review fixes', () => {
     expect(a.said.at(-1)).toBe('World 1-1. 3 lives.');
   });
 
-  it('the CLASSIC menu hint counts only options that apply: with Campaign rules, Game mode only', () => {
+  it('the CLASSIC menu hint counts the options; a saved Campaign rules setting is ignored (BUG-11)', () => {
     const hint = (over: Partial<ClassicSettings>, rules: 'classic' | 'current') => {
       const h = classic(over);
       // O-12: Classic rules set to Current is developer mode's.
@@ -283,7 +285,7 @@ describe('review fixes', () => {
       return items(h.top())[0]?.hint ?? '';
     };
     expect(hint({ lives: 7 }, 'classic')).toMatch(/Your own Classic options are on$/);
-    expect(hint({ lives: 7 }, 'current')).not.toMatch(/Your own/);
+    expect(hint({ lives: 7 }, 'current')).toMatch(/Your own Classic options are on$/);
     expect(hint({ gameMode: 'single' }, 'current')).toMatch(/Your own Classic options are on$/);
     expect(hint({}, 'classic')).not.toMatch(/Your own/);
   });

@@ -33,7 +33,8 @@ describe('O-06: Dev > Classic heroes', () => {
   it('the Dev menu opens it; the rows: All, each Expansion hero, Yoshi mount, Back', () => {
     const { h, page } = devGame();
     h.game.showDevMenu();
-    expect(items(h.game.scenes.top).map((i) => i.label)).toContain('Classic heroes');
+    // BUG-10: renamed Toggle heroes; this page is its Classic page.
+    expect(items(h.game.scenes.top).map((i) => i.label)).toContain('Toggle heroes');
     expect(items(h.game.scenes.top).some((i) => i.label.startsWith('Classic: '))).toBe(false);
     expect(items(page).map((i) => i.label)).toEqual([
       'All',
@@ -42,6 +43,8 @@ describe('O-06: Dev > Classic heroes', () => {
       'Arthur',
       'Yoshi',
       'Yoshi mount',
+      // BUG-10: each hero's Plays as, on its own page.
+      'Plays as',
       'Back',
     ]);
     expect(EXPANSION_HEROES).toEqual(['vicviper', 'warriors', 'arthur', 'yoshi']);
@@ -204,7 +207,8 @@ describe('O-05 / O-06: nothing reaches release players', () => {
     h.game.showDevMenu();
     const dev = h.game.scenes.top as DevMenuScene;
     expect(items(dev).map((i) => i.label)).toEqual(
-      expect.arrayContaining(['Classic', 'Campaign', 'Classic heroes', 'Dev mode off']),
+      // BUG-09: Classic and Campaign are under the one Level select.
+      expect.arrayContaining(['Level select', 'Toggle heroes', 'Dev mode off']),
     );
   });
 });

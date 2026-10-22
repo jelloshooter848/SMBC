@@ -331,6 +331,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.idle(8);
     expect(h.top()).toBeInstanceOf(TitleScene);
     pick(h, 'Dev mode');
+    pick(h, 'Level select'); // BUG-09
     pick(h, 'Mini games');
     const list = h.top() as DevMiniGamesScene;
     expect(list).toBeInstanceOf(DevMiniGamesScene);
@@ -401,6 +402,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.game.showTitle();
     h.idle(8);
     pick(h, 'Dev mode');
+    pick(h, 'Level select'); // BUG-09
     pick(h, 'Mini games');
     const state = h.game.state;
     const before = snapshot(state);
@@ -430,6 +432,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.game.showTitle();
     h.idle(8);
     pick(h, 'Dev mode');
+    pick(h, 'Level select'); // BUG-09
     pick(h, 'Mini games');
     h.game.state.world = 3;
     h.game.state.stage = 1;
@@ -467,6 +470,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.game.showTitle();
     h.idle(8);
     pick(h, 'Dev mode');
+    pick(h, 'Level select'); // BUG-09
     pick(h, 'Mini games');
     const list = h.top() as DevMiniGamesScene;
     const state = h.game.state;
@@ -491,6 +495,7 @@ describe("Dev → Mini games → Larry's airship", () => {
     h.game.showTitle();
     h.idle(8);
     pick(h, 'Dev mode');
+    pick(h, 'Level select'); // BUG-09
     pick(h, 'Mini games');
     const list = h.top() as DevMiniGamesScene;
     const state = h.game.state;

@@ -24,6 +24,7 @@ import {
 import { WARRIOR_JOB_LOOKS } from '@content/sprites/warriors';
 import { WARRIORS_GUIDE } from './classic-guide';
 import { castSpell, type WarriorSpellId } from './classic-weapons';
+import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * The Warriors of Light, a Classic-only hero (bug-reports/2026-10-07-warriors-of-light-build-classic-character.md,
@@ -99,6 +100,8 @@ export const WL_SWIM: SwimProfile = {
 };
 
 export const WARRIORS_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: CLASSIC_STOMP_BOUNCE,
   minWalk: WL_WALK,
   walkAccel: WL_WALK,
   runAccel: WL_WALK,

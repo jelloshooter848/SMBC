@@ -35,7 +35,7 @@ Every story box is announced the same way, by `pageSaid` (story/cards.ts): the p
 ## Campaign only: `storyOn`
 
 `storyOn(game)` (beats.ts) is true only while a save file is played (`game.campaign`) and not in an
-arena / Dev → Mini games round (`inRound`, `stageRound`) or an editor play-test (`playtestDone`).
+arena / Dev → Level select → Mini games round (`inRound`, `stageRound`) or an editor play-test (`playtestDone`).
 Classic play, dev select, `?level=` and shared levels keep the old text and behaviour exactly
 (tests check both sides). Inside a level the same answer is `World.storyMode`, set by `LevelScene`
 from `storyOn`. Every story hook checks one of the two first.

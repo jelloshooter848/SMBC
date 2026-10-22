@@ -116,15 +116,14 @@ describe('two-row character select', () => {
     expect(idx(sel)).toBe(start);
   });
 
-  it('one row (Classic rules set to Campaign, free play): Up and Down do nothing, text as today', () => {
+  it('one row (free play): Up and Down do nothing, text as today; a saved Campaign rules setting changes nothing', () => {
     // Classic mode's select is the original's grid (nine to a row, then the "?" cell), so only
-    // the free-play select keeps the one row.
+    // the free-play select keeps the one row. BUG-11: Classic rules saved as Campaign are ignored.
     const { h, sel } = classicSelect('current');
-    expect(sel.firstRow).toBe(sel.chars.length);
-    expect(sel.rows).toBe(2);
-    expect(h.said.at(-1)).toBe(
-      // O-10: Classic's select names the hero and what OK does on it.
-      'Select your hero. Mario, Super Mario Bros. Left and right to choose, up and down for the other row, OK: play.',
+    expect(sel.chars.map((c) => c.id)).toEqual(classicSelect().sel.chars.map((c) => c.id));
+    // O-10: Classic's select names the hero and what OK does on it.
+    expect(h.said.at(-1)).toMatch(
+      /^Select your hero\. Mario, Super Mario Bros\. Left and right to choose, up and down for the other row, OK: /,
     );
     const f = makeGame();
     f.game.showCharacterSelect();

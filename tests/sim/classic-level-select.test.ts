@@ -79,19 +79,23 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
     for (const it of items(h.top())) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
   });
 
-  it('under Campaign rules it shows Normal, says why and does not change; a beat counts as Normal', () => {
-    // O-12: Classic rules set to Current is developer mode's.
+  it('a saved Campaign rules setting is ignored (BUG-11): the row is live and Hard plays', () => {
     const h = classic({ classicMapDifficulty: 'hard', classicRules: 'current', dev: true });
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
     const row = items(menu)[MAP_SETS.length] as MenuItem;
-    expect(row.value?.()).toBe('Normal');
-    expect(row.hint).toMatch(/Classic rules only/);
-    row.adjust?.(1);
-    expect(S(h).classicMapDifficulty).toBe('hard');
+    expect(row.value?.()).toBe('Hard');
+    expect(row.hint).not.toMatch(/Classic rules only/);
+    expect((menu as unknown as { status: string }).status).toBe('');
     h.idle(8);
     h.tap('jump'); // Super Mario Bros.
     choose(h, MARIO);
+    expect(enterLevel(h).world.mapDifficulty).toBe('hard');
+  });
+
+  it('under Campaign rules (a dev START page run) every level plays Normal; a beat counts as Normal', () => {
+    const h = classic({ classicMapDifficulty: 'hard', dev: true });
+    h.game.devClassicGame(MARIO, '1-1', 'current');
     const l = enterLevel(h);
     expect(l.world.mapDifficulty).toBe('normal');
     h.game.classicDev = false;

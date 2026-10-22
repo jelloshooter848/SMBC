@@ -196,19 +196,24 @@ function classicGame(over: Partial<Settings> = {}): H & { settings: Settings } {
   return { ...h, settings };
 }
 
-describe('3. Infinite Lives: continues count over the save, not per run', () => {
-  it('a continue in an earlier run keeps Infinite Lives locked when a later run beats a game', () => {
+// Item 8 (owner decision, option A): the count is the run's, as the original's
+// EventManager.restartGame resets it on NEW GAME and after the credits (bug-continue-reset.test.ts);
+// within a run it is saved, so a reload (or MAIN MENU and the set's Continue) keeps it.
+describe('3. Infinite Lives: a run’s continues are saved with it', () => {
+  it('a continue keeps Infinite Lives locked for the rest of that run, across a reload; NEW GAME resets it', () => {
     const h = classicGame();
     h.game.classicGame(MARIO);
     h.game.continueGame('1-1');
     expect(h.settings.classicCheats.continuesUsed).toBe(1);
-    // A new run (and a reload of the file) still remembers it.
-    h.game.classicGame(MARIO);
+    // A reload of the file mid-run still remembers it.
     expect(JSON.parse(store.get(SETTINGS_KEY) as string).classicCheats.continuesUsed).toBe(1);
     expect(loadSettings().classicCheats.continuesUsed).toBe(1);
     h.game.cheatEvent({ beat: 'smb' });
     expect(h.settings.classicCheats.unlocked.allGroundIsBricks).toBe(true);
     expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(false);
+    // NEW GAME (the select of a fresh run) starts the count again.
+    h.game.classicSelect('1-1', () => {});
+    expect(h.settings.classicCheats.continuesUsed).toBe(0);
   });
 
   it('a save that never continued unlocks it; a file from before gets 0, bad values are cleaned', () => {
@@ -234,10 +239,8 @@ describe('3. Infinite Lives: continues count over the save, not per run', () => 
 describe('4. Classic mode with Campaign rules: nothing counts toward the cheats', () => {
   it('no clear, no game beaten, no continue and no tally counts under Campaign rules', () => {
     const h = classicGame();
-    // O-12: Classic rules set to Current is developer mode's.
-    h.settings.dev = true;
-    h.settings.classicRules = 'current';
-    h.game.classicGame(MARIO);
+    // BUG-11: a Current-rules Classic run is a START page (or `rules=`) run's; as a counted run.
+    h.game.devClassicGame(MARIO, '1-1', 'current', false);
     expect(h.game.cheatGoalsCount).toBe(false);
     h.game.cheatEvent({ level: true, castle: true });
     h.game.cheatEvent({ beat: 'smb' });

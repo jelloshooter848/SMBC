@@ -90,8 +90,9 @@ describe('G-031 cheats from the Classic pause', () => {
   it('is not offered under Campaign rules, where no cheat plays', () => {
     // O-12: Classic rules set to Current is developer mode's: the run starts there, and its
     // pause is a player's (dev mode off; developer mode's pause offers every cheat).
-    const h = classic({ classicRules: 'current', dev: true });
-    h.game.classicGame(MARIO);
+    // BUG-11: such a run is the dev START page's (Rules: Campaign, Mode: Classic run).
+    const h = classic({ dev: true });
+    h.game.devClassicGame(MARIO, '1-1', 'current');
     expect(h.game.liveRules).toBe('current');
     h.settings.dev = false;
     h.until(() => h.top() instanceof LevelScene, 600);
@@ -166,13 +167,12 @@ describe('G-093 the Classic guide', () => {
     expect(peach).not.toContain('Peach');
   });
 
-  it('with Classic rules set to Campaign it lists the campaign’s heroes', () => {
-    // O-12: Classic rules set to Current is developer mode's.
+  it('a saved Campaign rules setting is ignored (BUG-11): it lists the Classic heroes', () => {
     const h = classic({ classicRules: 'current', dev: true });
     h.game.showClassicMenu();
     h.game.scenes.push(new GuideIndexScene(h.game, () => h.game.scenes.pop(), true));
     const names = labels(h.top()).filter((l) => l !== 'Back');
-    expect(names).toEqual(h.game.slotsFor('current').map((c) => c.name));
+    expect(names).toEqual(h.game.slotsFor('classic').map((c) => c.name));
   });
 
   it('the title’s How to play is unchanged (the campaign’s heroes)', () => {

@@ -8,6 +8,78 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Changed
+
+- Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
+  level's end keeps them. Switching to another hero puts the first one's away until he is picked
+  again, and another look of the same hero shares them. A death resets only the hero who died. A
+  new game or a continue resets everyone. The saved run keeps every hero's.
+- Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy
+  exactly as Mario does in the campaign, reusing its held stomp bounce: higher while JUMP is held,
+  with no release latch, so pressing JUMP again while still rising holds again (BUG-07). Yoshi's
+  ground pound keeps its fixed bounce. This deliberately departs from the original, which bounces the same
+  either way, by owner decision.
+- Classic mode: a saved run's power-ups are checked when it loads. A hero no select offers, or a
+  power that hero cannot have, starts at that hero's default.
+- The REMIX title has its own theme (BUG-14): a new brassy, bouncy hub tune in C with a new
+  two-bar fanfare under the stamp, galloping bass and horn stabs. Going to the CLASSIC title no
+  longer sounds like the same song restarting; CLASSIC keeps its own theme.
+- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
+  the run, as the original: NEW GAME and the restart after an ending's credits set the count
+  back to 0. MAIN MENU after a game over keeps the run and its count. Each map set's saved run
+  keeps its own count, so a NEW GAME on another set no longer clears it.
+- Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
+  joins the Classic select once it is released; an Expansion heroes value saved by an earlier
+  version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
+- Dev mode: one **Level select** in the Dev menu (BUG-09). It opens Classic, Campaign, Mini games
+  and Bonus games; the old one-page list is gone, and the editor's levels it listed are now under
+  Campaign > Custom levels.
+- Dev mode: **Classic heroes** is now **Toggle heroes** (BUG-10), with two pages. **Classic** is
+  the old page plus **Plays as**, where each hero can play its Classic or its Campaign design in
+  Classic mode; **Campaign** lets each campaign hero play its Campaign design or its Classic kit.
+  Saved with the other dev toggles; no effect outside dev mode.
+- Dev mode: Classic options no longer has the **Classic rules** row (BUG-11). Classic mode always
+  plays Classic rules; Toggle heroes' Plays as gives one hero its Campaign design instead. A saved
+  rules value is ignored and kept as it was; the dev start page's Rules row is unchanged.
+- Docs: the release zips' rename is dated 0.4.66, the title's row is Campaign, and the dev menu
+  pages (Level select, Toggle heroes) are described as they now are (RC-021).
+- Classic: the Options hints on the CLASSIC title's Start box and the CLASSIC menu no longer name
+  Classic rules (RC-041).
+
+### Fixed
+
+- Classic: changing a value in a CLASSIC box (LEFT, RIGHT, or OK on a value row) plays the
+  original's coin sound, not the menu blip.
+- Classic: a box's BACK hint names the key that goes back on that page. While the boxed Cheats
+  page takes the code, it names SELECT's key, not ATTACK's (a code input there).
+- The REMIX title's rift intro is heard again (BUG-13). When the browser has not started the
+  sound yet, the first title waits behind PRESS ANY KEY (TAP TO START on touch); that press
+  starts the sound and the intro from its first frame, at full level (no sound-start fade),
+  without skipping it. A later press skips the intro as before.
+- The music between the REMIX title and the CLASSIC title no longer cuts (BUG-12). Going to
+  CLASSIC, the title theme fades out as CLASSIC falls and the demo's tune rises on its smash;
+  with Reduce flashing on, the two simply crossfade. Back to the title, the demo's tune fades
+  out before the theme fades in. The CLASSIC boxes over the demo never restart it.
+- Classic mode's Everyone Can Stomp cheat: the other heroes now bounce off a stomped enemy as
+  high as in the original, the same with JUMP held or not. They bounced about two and a half
+  times too high (BUG-07).
+- Classic: CLASSIC > Options and the pages it opens (More settings, Weapons, Disable heroes,
+  Cheats) are boxes over the CLASSIC title's demo, like the Start and map set boxes, each page's
+  name on its top row; Video, audio, controls stays the full Options page (BUG-01).
+- Classic: the map set box, CONTINUE / NEW GAME, the overwrite warning and the Options boxes
+  move and go back with the original's sounds, as the Start box does (RC-040).
+- Classic: a game over offers CONTINUE and MAIN MENU, and both keep the run. Its map set's save
+  holds the continue point (the world's first level, starting lives, score 0, power-ups gone, as
+  the original's continue gives), so the set's Continue later goes on from there, not 1-1 (BUG-05).
+- Classic: CONTINUE on a map set opens the hero select first, as the original's Load Game does;
+  the run goes on at the saved level with its lives and score and the hero picked, and BACK
+  returns to the set's CONTINUE / NEW GAME box (BUG-03).
+- Classic: the CLASSIC title keeps SMB CROSSOVER exactly where the title has it, with CLASSIC in
+  the REMIX stamp's place, and its boxes sit under the logo with closer rows (scrolling past six),
+  so the demo's ground and heroes stay in view (BUG-02).
+- Classic: the hero select's HUD shows the level coming next (between levels, after a death,
+  a new game or a Level Select jump), no longer WORLD 1-1 or the level just cleared (BUG-04).
+
 ## [0.4.68] - 2026-10-21
 
 ### Added

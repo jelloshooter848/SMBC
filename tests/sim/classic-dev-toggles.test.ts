@@ -108,7 +108,9 @@ describe('the Dev menu rows', () => {
     expect(dev).toBeDefined();
     dev?.select?.();
     expect(h.game.scenes.top).toBeInstanceOf(DevMenuScene);
-    row(h.game.scenes.top, 'Classic heroes').select?.();
+    // BUG-10: Dev > Toggle heroes > Classic.
+    row(h.game.scenes.top, 'Toggle heroes').select?.();
+    row(h.game.scenes.top, 'Classic').select?.();
     expect(items(h.game.scenes.top).some((i) => i.label === 'Yoshi mount')).toBe(true);
   });
 });

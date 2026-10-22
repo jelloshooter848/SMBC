@@ -49,6 +49,7 @@ import {
 } from './classic-weapons';
 import { CLASSIC_HURT, CLASSIC_WALK_ANIM, LINK_FLIP_TICKS, WALK_ABAB, walkPose } from '../classic/anim';
 import { LINK_CLASSIC_TOP } from '@content/sprites/link-classic';
+import { LINK_CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /**
  * Classic SMBC Link (2026-10-07-link-classic-smbc-rules.md, LK-C1..LK-C45): the original's
@@ -59,6 +60,8 @@ import { LINK_CLASSIC_TOP } from '@content/sprites/link-classic';
 
 /** LK-C5, LK-C7, LK-C9, LK-C10, LK-C12: digital walk, a gravity-first arc with a soft cut. */
 export const LINK_CLASSIC_PROFILE: MovementProfile = {
+  // BUG-07: a stomp (Everyone Can Stomp) bounces a fixed bouncePwr, jump held or not (classic/stomp.ts).
+  stompBounce: LINK_CLASSIC_STOMP_BOUNCE,
   // Instant walk: these are not read with instantAccel.
   minWalk: 0,
   walkAccel: 0,
