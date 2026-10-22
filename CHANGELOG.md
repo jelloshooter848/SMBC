@@ -8,6 +8,12 @@ under `## [Unreleased]`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Dev mode: with a hero's Toggle heroes Plays as flipped, a new Classic or free-play run now
+  starts that hero at the power of the design he plays, so a brand-new run no longer says
+  "Hero design changed. Power reset."
+
 ## [0.4.69] - 2026-10-22
 
 ### Changed

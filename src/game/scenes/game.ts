@@ -2157,7 +2157,18 @@ export class Game {
     if (classic) character = this.restoreSlotHero(character);
     // Survival: the run goes on with the lives its first select's revivals left (classicSelect).
     const paid = classic && this.survival ? this.state.lives : null;
-    this.state = newGameState(character, character2, this.liveRules);
+    const rulesNow = this.liveRules;
+    this.state = newGameState(character, character2, rulesNow);
+    // BUG-10: each hero starts at the power of the design it plays (Toggle heroes' Plays as), as a
+    // dev start does, so reconcileRules finds nothing to reset on a brand-new run.
+    const hero = playedHero(this.ctx, character, rulesNow);
+    this.state.powerState = defaultPower(hero);
+    this.state.hp = startHp(hero);
+    if (character2) {
+      const hero2 = playedHero(this.ctx, character2, rulesNow);
+      this.state.powerState2 = defaultPower(hero2);
+      this.state.hp2 = startHp(hero2);
+    }
     if (classic) this.classicStartLives();
     if (paid !== null) this.state.lives = paid;
     else this.survivalWithoutSelect(classic, character);
