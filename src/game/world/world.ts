@@ -23,6 +23,7 @@ import { isSwimLevel, isWaterTheme } from '../level/schema';
 import { tileDef, T, type BlockContent } from '../level/tiles';
 import { BOSS_PAN, Camera, DEFAULT_AUTO_SCROLL, SCROLL_BACK_CENTER } from './camera';
 import { drawStars, FLOODED, FLOODED_WATER, renderTiles, SKY, STARRY_SKIES } from './tile-render';
+import { renderBlockMarkers } from './block-markers';
 import { TileMap } from './tilemap';
 import { SafetyFloor } from './safety-floor';
 import { Player } from '../entities/player';
@@ -818,6 +819,16 @@ export class World {
   readonly level: LevelData;
   /** Blocks holding another item than their tile's (`block-item` spawns), by "x,y". */
   private readonly blockItems = new Map<string, BlockContent>();
+
+  /**
+   * What the block at (tx, ty) holds now: a `block-item` spawn's item, else its tile's content;
+   * null for a tile that is no block (the Show hidden items assist, block-markers.ts).
+   */
+  blockContentAt(tx: number, ty: number): BlockContent | null {
+    const block = tileDef(this.map.get(tx, ty)).block;
+    if (!block) return null;
+    return this.blockItems.get(`${tx},${ty}`) ?? block.content;
+  }
   /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
   readonly mapDifficulty: MapDifficulty;
   /** The CLASSIC title's demo World (WorldStart.demo). */
@@ -4429,6 +4440,15 @@ export class World {
     if (this.inPipe) for (const p of this.players) this.renderPlayer(r, view, p);
     renderTiles(r, view, this.map);
     if (this.assist.safetyFloor) this.renderSafetyFloor(r, view);
+    // 0.4.72 (owner item 8): the Show hidden items assist.
+    if (this.assist.showHidden)
+      renderBlockMarkers(
+        r,
+        view,
+        this.map,
+        (tx, ty) => this.blockContentAt(tx, ty),
+        this.player.powerState === 'small',
+      );
     for (const e of this.entities)
       if (e.alive && e.layer === 'main' && this.drawn(e, view)) e.render(r, view);
     if (!this.inPipe) for (const p of [...this.players].reverse()) this.renderPlayer(r, view, p);

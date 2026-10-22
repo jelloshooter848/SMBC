@@ -44,6 +44,12 @@ export interface AssistOptions {
    * above (world/safety-floor.ts). Falls that lead somewhere still fall.
    */
   safetyFloor: boolean;
+  /**
+   * 0.4.72 (owner item 8): "Show hidden items": a marker of what each ? block, item brick and
+   * hidden block holds, drawn over it, and hidden blocks shown (world/block-markers.ts). Drawing
+   * only; optional, so hand-built contexts need no change.
+   */
+  showHidden?: boolean;
 }
 
 export const DEFAULT_ASSIST: AssistOptions = {
@@ -54,6 +60,7 @@ export const DEFAULT_ASSIST: AssistOptions = {
   coyoteFrames: 0,
   fireRevertsToBig: false,
   safetyFloor: false,
+  showHidden: false,
 };
 
 /**
@@ -93,6 +100,9 @@ export function cheatAssist(base: AssistOptions, cheats: () => CheatFlags): Assi
     },
     get safetyFloor() {
       return base.safetyFloor;
+    },
+    get showHidden() {
+      return base.showHidden === true;
     },
   };
 }
