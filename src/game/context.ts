@@ -201,6 +201,14 @@ export interface GameState {
    */
   swapped?: true;
   swapped2?: true;
+  /**
+   * 36b: the kit player 1 (`swapKit2`: player 2) carried into a Plays as swap that began mid-run,
+   * with the hero it was his: when the swap ends in the same run, that kit comes back and only
+   * what was gained while swapped goes. Set only while `swapped` is; never in a save file (a
+   * swapped kit loaded from a file still starts afresh).
+   */
+  swapKit?: { hero: string; kit: Record<string, number> };
+  swapKit2?: { hero: string; kit: Record<string, number> };
 }
 
 export function playerCount(s: GameState): number {
