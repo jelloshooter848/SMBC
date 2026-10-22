@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import { EXPANSION_HEROES, RELEASED_EXPANSION_HEROES } from '@game/characters/registry';
 import type { MenuItem } from '@game/scenes/menu';
-import { ClassicOptionsScene, classicOptionsOn } from '@game/scenes/original-game';
+import { ClassicOptionsScene } from '@game/scenes/original-game';
+import { fileOwnRules } from '@game/scenes/original-files-menu';
+import { parseFileRules } from '@game/original-files';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // BUG-08: Options > Expansion heroes is gone. What a release player gets is the released list
@@ -47,7 +49,8 @@ describe('BUG-08 no Expansion heroes row', () => {
       const h = game(dev, 'on');
       for (const id of EXPANSION_HEROES) expect(h.game.heroReleased(id), id).toBe(false);
       for (const id of EXPANSION_HEROES) expect(h.game.expansionHeroOffered(id), id).toBe(false);
-      expect(classicOptionsOn(h.game)).toBe(false);
+      // B-L: a file made from these options (a migrated one) does not count it as its own rules.
+      expect(fileOwnRules(parseFileRules({ options: h.settings.classic }))).toBe(false);
       expect(h.settings.classic.expansion).toBe('on');
     }
   });

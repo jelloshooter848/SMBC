@@ -32,6 +32,7 @@ import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { WorldMapScene } from '@game/scenes/world-map';
 import type { Renderer } from '@engine/gfx/renderer';
 import { draw, file, makeGame, store, useStorage, type H } from './heroes-harness';
+import { newFile } from './classic-files-nav';
 import { isolateClassicRegistry } from './classic-registry';
 
 // Every test gets the Classic registry back as it found it (tests/sim/classic-registry.ts). The
@@ -187,28 +188,14 @@ describe('the title and the CLASSIC menu', () => {
     expect(ys[0]).toBeGreaterThanOrEqual(70 + 8 + 4);
   });
 
-  it('the menu: Super Mario Bros., The Lost Levels, Options, Back; each line is announced', () => {
+  it('the menu (B-L): Super Mario Bros., SMB Special, The Lost Levels, Back; each line is announced', () => {
     const h = classic();
     const menu = toClassicMenu(h);
     // G-020: SMB Special between the two (the original's order).
-    expect(labels(menu)).toEqual([
-      'Super Mario Bros.',
-      'SMB Special',
-      'The Lost Levels',
-      'Map difficulty',
-      'Options',
-      'Back',
-    ]);
+    expect(labels(menu)).toEqual(['Super Mario Bros.', 'SMB Special', 'The Lost Levels', 'Back']);
     expect(h.said.at(-1)).toMatch(/^Classic\. The original game\. Super Mario Bros\./);
     h.idle(8);
-    for (const l of [
-      'SMB Special',
-      'The Lost Levels',
-      'Map difficulty',
-      'Options',
-      'Back',
-      'Super Mario Bros.',
-    ]) {
+    for (const l of ['SMB Special', 'The Lost Levels', 'Back', 'Super Mario Bros.']) {
       h.tap('down');
       expect(h.said.at(-1)?.startsWith(l)).toBe(true);
     }
@@ -223,15 +210,9 @@ describe('the title and the CLASSIC menu', () => {
 
   it('The Lost Levels are offered from the start (G-003, D3)', () => {
     const h = classic();
-    expect(labels(toClassicMenu(h))).toEqual([
-      'Super Mario Bros.',
-      'SMB Special',
-      'The Lost Levels',
-      'Map difficulty',
-      'Options',
-      'Back',
-    ]);
+    expect(labels(toClassicMenu(h))).toEqual(['Super Mario Bros.', 'SMB Special', 'The Lost Levels', 'Back']);
     pick(h, 'The Lost Levels');
+    newFile(h);
     choose(h, MARIO);
     const l = enterLevel(h);
     expect(l.level.id).toBe('ll-1-1');
@@ -239,28 +220,27 @@ describe('the title and the CLASSIC menu', () => {
     expect(h.game.campaign).toBeNull();
   });
 
-  it('Options: Game mode, then every other option (BUG-11: no Classic rules row, even in dev mode)', () => {
+  it('Options (B-L: the shared rows only; BUG-11: no Classic rules row, even in dev mode)', () => {
     const h = classic({ dev: true });
     toClassicMenu(h);
-    pick(h, 'Options');
+    // The Start box's OPTIONS.
+    pick(h, 'Back');
+    h.tap('down');
+    h.tap('jump');
     const opts = h.top() as ClassicOptionsScene;
     expect(opts).toBeInstanceOf(ClassicOptionsScene);
+    // B-L: a file's rules (Game mode, More settings, Weapons, Disable heroes) are chosen only
+    // as the file starts.
     expect(labels(opts)).toEqual([
-      'Game mode',
-      // BUG-08: no Expansion heroes row.
-      'More settings',
-      'Weapons',
       // 0.5.0 (G-066).
       'Music set',
-      // G-032 (0.5.0): the original's Disable characters.
-      'Disable heroes',
       // O-15 / G-042 (0.5.0): the original's General > Tutorials.
       'Tutorials',
       'Cheats',
       'Video, audio, controls',
       'Back',
     ]);
-    expect(h.said.at(-1)).toMatch(/^Classic options\. Game mode: /);
+    expect(h.said.at(-1)).toMatch(/^Classic options\. Music set: /);
     const t = draw(opts).texts.map((x) => x.str);
     expect(t).not.toContain('CLASSIC RULES');
     expect(t).not.toContain('CLASSIC SMBC');
@@ -271,7 +251,9 @@ describe('the title and the CLASSIC menu', () => {
     h.tap('attack');
     expect(h.top()).toBe(opts);
     pick(h, 'Back');
-    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+    expect(h.top()).toBeInstanceOf(ClassicTitleScene);
+    // The Start box remembers its cursor (StartMenu.lastIndex): back on START for the next test.
+    h.tap('up');
   });
 
   it('settings: classicRules defaults to classic, survives a reload, and bad values fall back', () => {
@@ -294,6 +276,7 @@ describe('a Classic run', () => {
     const h = classic();
     toClassicMenu(h);
     pick(h, 'Super Mario Bros.');
+    newFile(h);
     const sel = h.top() as CharacterSelectScene;
     expect(sel).toBeInstanceOf(CharacterSelectScene);
     const t = draw(sel).texts.map((x) => x.str);
@@ -753,6 +736,7 @@ describe('the select screen: Classic extras on a second row', () => {
     const h = classic();
     toClassicMenu(h);
     pick(h, 'Super Mario Bros.');
+    newFile(h);
     const sel = h.top() as CharacterSelectScene;
     expect(sel).toBeInstanceOf(CharacterSelectScene);
     expect(sel.chars).toContain(EXTRA);
@@ -767,12 +751,14 @@ describe('the select screen: Classic extras on a second row', () => {
     const h = classic();
     toClassicMenu(h);
     pick(h, 'The Lost Levels');
+    newFile(h);
     expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
     // BUG-11: a saved Campaign rules setting is ignored (the extra is offered); a dev START page
     // Campaign-rules run still leaves it out.
     const c = classic({ classicRules: 'current', dev: true });
     toClassicMenu(c);
     pick(c, 'Super Mario Bros.');
+    newFile(c);
     expect((c.top() as CharacterSelectScene).chars).toContain(EXTRA);
     c.game.devClassicGame(MARIO, '1-1', 'current');
     expect(c.game.heroSlots).not.toContain(EXTRA);
@@ -844,6 +830,7 @@ describe('one player only', () => {
     const h = classic();
     toClassicMenu(h);
     pick(h, 'Super Mario Bros.');
+    newFile(h);
     const sel = h.top() as CharacterSelectScene;
     expect(h.said.at(-1)).not.toMatch(/Player two/);
     h.idle(12);

@@ -19,6 +19,12 @@ import {
   PROMPT_STRIP,
   SMASH,
 } from '@game/scenes/original-title';
+import { newFile, choose } from './classic-files-nav';
+import {
+  ClassicDifficultyScene,
+  ClassicFileRulesScene,
+  ClassicFilesScene,
+} from '@game/scenes/original-files-menu';
 import {
   BOX_GROW,
   boxGrowth,
@@ -229,7 +235,7 @@ describe('O-04 the CLASSIC title', () => {
     h.tap('jump');
     const ct = h.top() as ClassicTitleScene;
     expect(ct.phase).toBe('start');
-    expect(h.said.at(-1)).toBe('Start menu. Start. Choose a map set and its difficulty, then a hero');
+    expect(h.said.at(-1)).toBe('Start menu. Start. Choose a map set and a file, then a hero');
     expect(labels(ct)).toEqual(['Start', 'Options', 'Back']);
     // A box with the rows, the highlighted one in the select's pink.
     const d = draw(ct);
@@ -244,7 +250,7 @@ describe('O-04 the CLASSIC title', () => {
     const ct = h.top() as ClassicTitleScene;
     h.tap('down');
     // RC-041: the hint no longer names the removed Classic rules row.
-    expect(h.said.at(-1)).toMatch(/^Options\. Game mode/);
+    expect(h.said.at(-1)).toMatch(/^Options\. Music set, tutorials, cheats/);
     expect(h.audio.sfx).toHaveBeenCalledWith('fireball');
     h.tap('down');
     expect(h.said.at(-1)).toMatch(/^Back\. To the title/);
@@ -309,19 +315,27 @@ describe('O-04 the CLASSIC title', () => {
     expect(h.said.at(-1)).toMatch(/^Start menu\./);
   });
 
-  it('a map set goes on to the select, and its BACK comes back to the map set box', () => {
+  it('a map set goes on to its files, a new file to the select, and BACK steps back one box at a time', () => {
     const h = classic();
     h.game.showClassicTitle('start');
     h.tap('jump');
     h.idle(8);
     h.tap('jump'); // Super Mario Bros.
+    newFile(h);
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     h.idle(12);
-    h.tap('attack');
-    const menu = h.top() as ClassicMenuScene;
-    expect(menu).toBeInstanceOf(ClassicMenuScene);
-    expect(menu.over).toBeInstanceOf(ClassicTitleScene);
-    h.idle(8);
+    // B-L: BACK from the select is the file's rules box, then its difficulty, files, sets.
+    for (const scene of [
+      ClassicFileRulesScene,
+      ClassicDifficultyScene,
+      ClassicFilesScene,
+      ClassicMenuScene,
+    ]) {
+      h.tap('attack');
+      expect(h.top()).toBeInstanceOf(scene);
+      h.idle(8);
+    }
+    expect((h.top() as ClassicMenuScene).over).toBeInstanceOf(ClassicTitleScene);
     h.tap('attack');
     expect(h.top()).toBeInstanceOf(ClassicTitleScene);
   });
@@ -435,10 +449,15 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
     h.game.showClassicTitle();
     h.tap('jump');
     h.tap('jump');
+    h.idle(8);
+    h.tap('jump'); // Super Mario Bros.
+    newFile(h);
     for (let trip = 0; trip < 5; trip++) {
-      expect(h.top()).toBeInstanceOf(ClassicMenuScene);
-      h.idle(8);
-      h.tap('jump'); // Super Mario Bros.
+      // B-L: BACK from the select is the file's rules box, its START the select again.
+      if (trip > 0) {
+        expect(h.top()).toBeInstanceOf(ClassicFileRulesScene);
+        choose(h, 'Start');
+      }
       expect(h.top()).toBeInstanceOf(CharacterSelectScene);
       // The select replaced the title and its menu (their exits ran).
       expect(stack(h).some((s) => s instanceof ClassicTitleScene)).toBe(false);
@@ -448,6 +467,7 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
     }
     expect(stack(h).filter((s) => s instanceof ClassicTitleScene)).toHaveLength(1);
     expect(stack(h).filter((s) => s instanceof ClassicMenuScene)).toHaveLength(1);
+    expect(stack(h).filter((s) => s instanceof ClassicFilesScene)).toHaveLength(1);
     expect(live.size).toBe(1);
     // And showClassicTitle / showClassicMenu called again keep it at one.
     h.game.showClassicTitle('start');
@@ -477,53 +497,29 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
     }
   });
 
-  it('the map set box as drawn: its status line and BACK hint under its frame, with and without Continue', () => {
-    const lineYs = (h: H) => {
-      const d = draw(h.top() as ClassicMenuScene);
-      const back = d.texts.filter((t) => t.str.startsWith('BACK') && t.x > 60).at(-1);
-      const status = d.texts.filter((t) => /RULES/.test(t.str)).at(-1);
-      const back0 = d.texts.find((t) => t.str === 'BACK' && t.x < 60);
-      return { back, status, lastRow: back0 };
-    };
-    const seen = { status: 0, continue: 0 };
-    for (const rules of ['classic', 'current'] as const) {
-      for (const kept of [false, true]) {
-        store.clear();
-        const settings = { ...defaultSettings(), dev: true, classicRules: rules } as Settings;
-        const h = makeGame({ deps: { settings, applySettings: () => {} } });
-        if (kept) {
-          h.game.classicGame(demoDef('mario'), '1-2');
-          h.idle(5);
-        }
-        h.game.showClassicMenu();
-        const menu = h.top() as ClassicMenuScene;
-        // BUG-11: no menu run plays Campaign rules any more, so the status line is set by hand to
-        // check where the box draws one.
-        if (rules === 'current')
-          (menu as unknown as { status: string }).status = 'Campaign rules: always Normal';
-        const status = (menu as unknown as { status: string }).status;
-        if (status) seen.status++;
-        // Per-set saves (B-G): no Continue row; the saved run's set says so in its hint.
-        if ((menu as unknown as { items: { hint?: string }[] }).items[0]?.hint?.includes('Saved run'))
-          seen.continue++;
-        const y = lineYs(h);
-        // The box's last row (BACK) is above the lines under the box.
-        expect(y.lastRow).toBeDefined();
-        expect(y.back?.y ?? 0).toBeGreaterThan((y.lastRow?.y ?? 0) + 8);
-        if (status) {
-          expect(y.status).toBeDefined();
-          // Whole, and on the screen.
-          expect(y.status?.str).toBe(status.toUpperCase());
-          expect(y.status?.x ?? -1).toBeGreaterThanOrEqual(0);
-          expect((y.status?.x ?? 0) + status.length * 8).toBeLessThanOrEqual(256);
-          expect(y.status?.y ?? 0).toBeGreaterThan((y.lastRow?.y ?? 0) + 8 + 6);
-          expect((y.status?.y ?? 0) + 8).toBeLessThan(y.back?.y ?? 0);
-        }
+  it('the map set box as drawn: its BACK hint under its frame, with and without a used file', () => {
+    let used = 0;
+    for (const kept of [false, true]) {
+      store.clear();
+      const settings = { ...defaultSettings(), dev: true } as Settings;
+      const h = makeGame({ deps: { settings, applySettings: () => {} } });
+      if (kept) {
+        h.game.classicGame(demoDef('mario'), '1-2', { ref: { set: 'smb', slot: 1 } });
+        h.idle(5);
       }
+      h.game.showClassicMenu();
+      // B-L: no status line (no Map difficulty row); a set with a used file says so in its hint.
+      if ((h.top() as unknown as { items: { hint?: string }[] }).items[0]?.hint?.includes('1 file used'))
+        used++;
+      const d = draw(h.top() as ClassicMenuScene);
+      // The box's BACK row, and the BACK hint under the box (the ability named after it).
+      const lastRow = d.texts.find((t) => t.str === 'BACK');
+      const back = d.texts.filter((t) => t.str.startsWith('BACK') && t !== lastRow).at(-1);
+      expect(lastRow).toBeDefined();
+      expect(back).toBeDefined();
+      expect(back?.y ?? 0).toBeGreaterThan((lastRow?.y ?? 0) + 8);
     }
-    // Both cases were drawn: the Campaign-rules status line (dev mode) and a saved run.
-    expect(seen.status).toBeGreaterThan(0);
-    expect(seen.continue).toBeGreaterThan(0);
+    expect(used).toBe(1);
   });
 
   it('two loops of the demo change nothing: storage, the game state, rules, the run, cheats, sounds', () => {
@@ -567,7 +563,7 @@ describe('O-04 release review: no title left behind, the logo and prompt over th
       const title = stack(h).find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene;
       h.game.scenes.push(new ClassicOptionsScene(h.game, () => h.game.scenes.pop()));
       h.game.scenes.push(new CheatsScene(h.game, () => h.game.scenes.pop(), { all: true }));
-      h.game.classicLevelSelect('1-1', 'normal');
+      h.game.classicLevelSelect('1-1');
       expect(h.top()).toBeInstanceOf(CharacterSelectScene);
       // The select replaced the title and everything opened over it: nothing of them is left.
       expect(stack(h)).toHaveLength(1);

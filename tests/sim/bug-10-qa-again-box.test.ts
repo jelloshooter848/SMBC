@@ -119,11 +119,12 @@ describe('B-I boxed CLASSIC Options: no Expansion heroes and no Rules row', () =
       expect(o).toBeInstanceOf(ClassicOptionsScene);
       const rows = (o as unknown as { items: MenuItem[] }).items;
       const labels = rows.map((i) => i.label);
-      expect(labels).toContain('Weapons');
+      // B-L: the shared rows (Weapons is a new file's rule now).
+      expect(labels).toContain('Music set');
       for (const bad of ['Expansion heroes', 'Rules', 'Classic rules']) expect(labels).not.toContain(bad);
       for (const i of rows) expect(i.hint ?? '').not.toMatch(/Expansion heroes/);
       const drawn = texts(h).join('\n').toUpperCase();
-      expect(drawn).toContain('WEAPONS');
+      expect(drawn).toContain('MUSIC SET');
       expect(drawn).not.toMatch(/EXPANSION HEROES|CLASSIC RULES|^RULES/m);
     });
 });

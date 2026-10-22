@@ -1998,10 +1998,23 @@ export class Game {
    * with no campaign file, playing Classic rules (classicRules). The original's flow from there:
    * character select before every new level (each clear: levelExitTo), after every death and
    * continue, warps through character select, and after SMB 8-4 the ending, the credits and the
-   * Lost Levels.
+   * Lost Levels. B-L: `file`, a new game straight into that file with those rules (the menus
+   * set the file before the select instead: classicSelect); without it the run keeps the file and
+   * rules its select set, if any.
    */
-  classicGame(character: CharacterDef, levelId = '1-1'): void {
+  classicGame(
+    character: CharacterDef,
+    levelId = '1-1',
+    file?: { ref: ClassicFileRef; rules?: ClassicFileRules },
+  ): void {
     this.pendingLevel = null;
+    if (file) {
+      this.classicFile = { set: file.ref.set, slot: file.ref.slot };
+      this.runFileRules = copyFileRules(file.rules ?? originalFileRules());
+      this.practiceRun = false;
+      this.fileContinues = 0;
+      this.classicDifficulty = this.runFileRules.difficulty;
+    }
     // One player: Classic mode has no co-op.
     this.startRun(character, levelId, null, this.classicRules, true, false);
   }
@@ -2043,7 +2056,11 @@ export class Game {
    */
   get keepsResume(): boolean {
     return (
-      this.classicRun && !this.classicDev && !this.linkRun && this.campaign === null && this.classicFile !== null
+      this.classicRun &&
+      !this.classicDev &&
+      !this.linkRun &&
+      this.campaign === null &&
+      this.classicFile !== null
     );
   }
 

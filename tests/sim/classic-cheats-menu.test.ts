@@ -14,7 +14,8 @@ import { CheatsScene, HIDDEN_CHEAT } from '@game/scenes/cheats-menu';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { CARD_GUARD_FRAMES, CardScene } from '@game/scenes/message';
-import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
+import { ClassicOptionsScene } from '@game/scenes/original-game';
+import type { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -60,11 +61,12 @@ function toCheats(h: H): CheatsScene {
   h.idle(TITLE_TIMING.dropEnd + 10);
   expect(h.top()).toBeInstanceOf(TitleScene);
   pick(h, 'Classic');
-  // O-04: the CLASSIC title's demo, then its Start box's START.
+  // O-04: the CLASSIC title's demo, then its Start box's OPTIONS (B-L: the shared rows; the
+  // box remembers its cursor, StartMenu.lastIndex).
   h.tap('jump');
+  const title = h.top() as ClassicTitleScene;
+  for (let i = 0; i < 3 && title.index !== 1; i++) h.tap('down');
   h.tap('jump');
-  expect(h.top()).toBeInstanceOf(ClassicMenuScene);
-  pick(h, 'Options');
   expect(h.top()).toBeInstanceOf(ClassicOptionsScene);
   pick(h, 'Cheats');
   expect(h.top()).toBeInstanceOf(CheatsScene);
@@ -403,13 +405,13 @@ describe('unlock goals', () => {
 
   it("a continue in the run keeps Infinite Lives locked at the game's end", () => {
     const h = classic();
-    h.game.classicGame(MARIO);
+    h.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 } });
     h.game.continueGame('1-1');
     h.game.cheatEvent({ beat: 'smb' });
     expect(h.settings.classicCheats.unlocked.allGroundIsBricks).toBe(true);
     expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(false);
     const g = classic();
-    g.game.classicGame(MARIO);
+    g.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 } });
     g.game.cheatEvent({ beat: 'smb' });
     expect(g.settings.classicCheats.unlocked.infiniteLives).toBe(true);
     expect(g.game.cheatUnlocks).toEqual(['allGroundIsBricks', 'infiniteLives']);

@@ -2,6 +2,7 @@ import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { MapSetId } from '@engine/save/progress';
 import { MAP_DIFFICULTIES, type MapDifficulty } from '@engine/save/settings';
+import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
   CLASSIC_FILE_SLOTS,
   eraseClassicFile,
@@ -72,13 +73,23 @@ export function fileRulesSpoken(r: ClassicFileRules): string {
   return `${GAME_MODE_NAMES[r.options.gameMode] ?? r.options.gameMode}, ${DIFFICULTY_NAMES[r.difficulty]}`;
 }
 
+/**
+ * Whether a file plays changed rules beyond its difficulty and Game mode (More settings,
+ * Weapons or Disable heroes): its hint says so (FU-7: never silently non-original).
+ */
+export function fileOwnRules(r: ClassicFileRules): boolean {
+  const o = { ...r.options, gameMode: defaultClassicSettings().gameMode };
+  return !isOriginalClassic(o) || r.heroesOff.length > 0;
+}
+
 /** A used file in full, as read out. */
 export function fileSpoken(game: Game, f: ClassicFile): string {
+  const own = fileOwnRules(f.rules) ? '. Your own rules are on' : '';
   const r = f.run;
   const here = resumeSetOf(r.levelId);
   const where = `World ${worldLabel(r.world)}-${r.stage}${here === f.set ? '' : ` of ${setOf(here).label.replace(/\.$/, '')}`}`;
   const lives = `${r.lives} ${r.lives === 1 ? 'life' : 'lives'}`;
-  return `${DIFFICULTY_NAMES[f.rules.difficulty]}, ${where}, ${lives}, score ${r.score}, ${fileHeroName(game, f)}, ${GAME_MODE_NAMES[f.rules.options.gameMode] ?? ''}`;
+  return `${DIFFICULTY_NAMES[f.rules.difficulty]}, ${where}, ${lives}, score ${r.score}, ${fileHeroName(game, f)}, ${GAME_MODE_NAMES[f.rules.options.gameMode] ?? ''}${own}`;
 }
 
 /** "File 2" */

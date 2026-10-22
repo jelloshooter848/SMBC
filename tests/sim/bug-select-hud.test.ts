@@ -54,7 +54,7 @@ describe('BUG-04 the select HUD shows the coming level', () => {
     h.game.classicSelect('1-1', () => h.game.showClassicMenu());
     expect(hudLevel(h)).toBe('1-1');
     h.game.showClassicMenu();
-    h.game.classicLevelSelect('7-2', 'normal');
+    h.game.classicLevelSelect('7-2');
     expect(hudLevel(h)).toBe('7-2');
   });
 

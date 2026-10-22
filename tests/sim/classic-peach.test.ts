@@ -13,7 +13,8 @@ import { Bowser } from '@game/entities/enemies/bowser';
 import { classicMaxHp } from '@game/rules/classic-enemies';
 import { fontText } from '@game/hud/text';
 import { PALETTES, SPRITES } from '@content/sprites';
-import { CLASSIC_RESUME_KEY, loadClassicResume } from '@game/run-resume';
+import { CLASSIC_RESUME_KEY } from '@game/run-resume';
+import type { ClassicFileRef } from '@game/original-files';
 import { Rig, flatLevel } from './classic-plumber-harness';
 import { makeGame, store, useStorage } from './heroes-harness';
 
@@ -23,6 +24,9 @@ import { makeGame, store, useStorage } from './heroes-harness';
 // name) is hers. Her SMB2 abilities (vegetables, float, riding, Power Squat) are gone from Classic.
 
 useStorage();
+
+/** B-L: SMB's FILE 1 (an old single or per-set slot migrates into it). */
+const F1: ClassicFileRef = { set: 'smb', slot: 1 };
 
 /** A run of `def` holding `keys(f)` for `n` frames; the body each frame, and the projectiles. */
 function trace(def: CharacterDef, power: string, keys: (f: number) => Action[], n = 240): string[] {
@@ -165,8 +169,9 @@ describe('older Classic Peach runs carry over (owner decision, #179)', () => {
         survival: { fallen: ['peach', 'mario'], reviveAllowed: false },
       }),
     );
-    expect(loadClassicResume()?.hero).toBe('peach');
-    expect(h.game.resumeClassic()).toBe(true);
+    // B-L: the old slot migrates into FILE 1 on the first read.
+    expect(h.game.classicFiles('smb')[0]?.run.hero).toBe('peach');
+    expect(h.game.resumeClassic(F1)).toBe(true);
     expect(h.game.state.character).toBe(PEACH_CLASSIC);
     expect(h.game.state.character.movement).toBe(LUIGI_CLASSIC.movement);
     expect(h.game.slotOf(PEACH_CLASSIC)).toBe(LUIGI);
@@ -179,7 +184,7 @@ describe('older Classic Peach runs carry over (owner decision, #179)', () => {
   it('a saved skin choice and a link as Peach start Luigi in her look', () => {
     const settings = { ...defaultSettings(), classicSkins: { luigi: 'peach' } };
     const h = makeGame({ deps: { settings, applySettings: () => {} } });
-    h.game.classicGame(PEACH_CLASSIC);
+    h.game.classicGame(PEACH_CLASSIC, '1-1', { ref: F1 });
     expect(h.game.skinFor(LUIGI)).toBe(PEACH_CLASSIC);
     expect(h.game.state.character).toBe(PEACH_CLASSIC);
     expect(h.game.state.character.behaviour).toBe(LUIGI_CLASSIC.behaviour);

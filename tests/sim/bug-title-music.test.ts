@@ -201,8 +201,12 @@ describe('BUG-12 the CLASSIC boxes over the demo keep the overworld going', () =
     title.items[0]?.select?.(); // Start: the map set box
     expect(s.h.top()).toBeInstanceOf(ClassicMenuScene);
     s.h.idle(30);
+    // B-L: a set's file box over it, and back; then the Start box's Options.
     const sets = s.h.top() as unknown as { items: MenuItem[] };
-    sets.items.find((i) => i.label === 'Options')?.select?.();
+    sets.items[0]?.select?.();
+    s.h.idle(5);
+    g.scenes.pop();
+    title.items[1]?.select?.();
     expect(s.h.top()).toBeInstanceOf(ClassicOptionsScene);
     const opts = s.h.top() as ClassicOptionsScene;
     // Each sub-page that opens a page of rows, and back.
@@ -215,6 +219,7 @@ describe('BUG-12 the CLASSIC boxes over the demo keep the overworld going', () =
     }
     g.scenes.pop(); // Options closed
     s.h.tap('attack'); // the map set box's BACK: the Start box
+    s.h.idle(8);
     expect(s.h.top()).toBeInstanceOf(ClassicTitleScene);
     // The CLASSIC menu as a run or a select comes back to it, and the CLASSIC title's Start box.
     g.showClassicMenu();

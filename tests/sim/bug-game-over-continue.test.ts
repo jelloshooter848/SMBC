@@ -5,8 +5,14 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { GAME_OVER_CARD_FRAMES, GameOverScene } from '@game/scenes/game-over';
 import { LevelScene } from '@game/scenes/level';
 import { ClassicMenuScene } from '@game/scenes/original-game';
-import { ClassicSetScene } from '@game/scenes/original-saves';
-import { classicResumeKey, loadClassicResume } from '@game/run-resume';
+import { ClassicFilesScene as ClassicSetScene } from '@game/scenes/original-files-menu';
+import {
+  classicFileKey,
+  loadClassicFile,
+  originalFileRules,
+  type ClassicFileRef,
+  type ClassicFileRules,
+} from '@game/original-files';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
 
@@ -23,6 +29,15 @@ import { pickAtContinue } from './continue-select';
 useStorage();
 afterEach(() => store.clear());
 
+// B-L: the run is SMB's FILE 1; its rules are the file's (the set's box is its file box).
+const F1: ClassicFileRef = { set: 'smb', slot: 1 };
+const loadClassicResume = (_set: 'smb') => loadClassicFile(F1)?.run ?? null;
+const classicResumeKey = (_set: 'smb') => classicFileKey(F1);
+let fileRules: ClassicFileRules = originalFileRules();
+afterEach(() => {
+  fileRules = originalFileRules();
+});
+
 function classic(over: Partial<Settings> = {}): H & { settings: Settings } {
   const settings = { ...defaultSettings(), ...over };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
@@ -31,7 +46,7 @@ function classic(over: Partial<Settings> = {}): H & { settings: Settings } {
 
 /** A SMB run in 4-3 with points, coins, Fire Mario and its last life, then its game over. */
 function gameOverIn43(h: H): GameOverScene {
-  h.game.classicGame(MARIO, '4-1');
+  h.game.classicGame(MARIO, '4-1', { ref: F1, rules: fileRules });
   h.game.goToLevel('4-3', { mode: 'stand' });
   const s = h.game.state;
   s.score = 98700;
@@ -44,7 +59,8 @@ function gameOverIn43(h: H): GameOverScene {
   return h.top() as GameOverScene;
 }
 
-const used = (h: H & { settings: Settings }) => h.settings.classicCheats.continuesUsed;
+/** The file's continues as written at its last WORLD card (B-L: the file's own count). */
+const used = (_h: H & { settings: Settings }) => loadClassicFile(F1)?.continues ?? 0;
 
 describe('BUG-05 a Classic game over keeps the run', () => {
   it('offers CONTINUE and MAIN MENU (no YES / NO), read out', () => {
@@ -82,7 +98,7 @@ describe('BUG-05 a Classic game over keeps the run', () => {
 
   it('More Settings > Lives sets the continue point’s lives', () => {
     const h = classic();
-    h.settings.classic = { ...h.settings.classic, lives: 7 };
+    fileRules.options.lives = 7;
     gameOverIn43(h);
     expect(loadClassicResume('smb')?.lives).toBe(7);
   });
@@ -137,8 +153,8 @@ describe('BUG-05 a Classic game over keeps the run', () => {
 
   it('Survival: the continue point has every hero fallen and revival allowed', () => {
     const h = classic();
-    h.settings.classic = { ...h.settings.classic, gameMode: 'survival' };
-    h.game.classicGame(MARIO, '2-1');
+    fileRules.options.gameMode = 'survival';
+    h.game.classicGame(MARIO, '2-1', { ref: F1, rules: fileRules });
     h.game.goToLevel('2-2', { mode: 'stand' });
     h.game.gameOver('2-2');
     const r = loadClassicResume('smb');
@@ -151,8 +167,8 @@ describe('BUG-05 a Classic game over keeps the run', () => {
 describe('BUG-05 QA (B-I): Survival’s Continue select and runs that keep no save', () => {
   /** A Survival run's game over in 2-2 (every hero fallen at its continue point). */
   function survivalGameOver(h: H & { settings: Settings }): GameOverScene {
-    h.settings.classic = { ...h.settings.classic, gameMode: 'survival' };
-    h.game.classicGame(MARIO, '2-1');
+    fileRules.options.gameMode = 'survival';
+    h.game.classicGame(MARIO, '2-1', { ref: F1, rules: fileRules });
     h.game.goToLevel('2-2', { mode: 'stand' });
     h.game.state.lives = 0;
     h.game.gameOver('2-2');
@@ -199,7 +215,7 @@ describe('BUG-05 QA (B-I): Survival’s Continue select and runs that keep no sa
       // dev: a dev Classic run; else a `?level=` link run (RC-004): neither writes a save.
       h.game.devClassicGame(MARIO, '1-1', 'classic', dev);
       h.until(() => h.top() instanceof LevelScene, 600);
-      const before = [...store.keys()].filter((k) => k.startsWith('smbc-classic-resume'));
+      const before = [...store.keys()].filter((k) => k.startsWith('smbc-classic-file'));
       h.game.state.lives = 0;
       h.game.gameOver('1-1');
       h.idle(GAME_OVER_CARD_FRAMES + 2);
@@ -208,7 +224,7 @@ describe('BUG-05 QA (B-I): Survival’s Continue select and runs that keep no sa
       expect(t, `dev ${dev}`).toEqual(expect.arrayContaining(['CONTINUE?', 'YES', 'NO']));
       expect(t).not.toContain('MAIN MENU');
       expect(h.said.at(-1)).not.toMatch(/keep your run/);
-      expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-resume'))).toEqual(before);
+      expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-file'))).toEqual(before);
       h.tap('down');
       h.tap('jump');
       expect(h.top(), `dev ${dev}`).toBeInstanceOf(ClassicMenuScene);
@@ -219,7 +235,7 @@ describe('BUG-05 QA (B-I): Survival’s Continue select and runs that keep no sa
 describe('BUG-05 with BUG-06’s kept hero kits', () => {
   it('a game over’s slot carries no heroKits; MAIN MENU → Continue gives every hero his default kit', () => {
     const h = classic();
-    h.game.classicGame(MARIO, '4-1');
+    h.game.classicGame(MARIO, '4-1', { ref: F1, rules: fileRules });
     h.game.goToLevel('4-3', { mode: 'stand' });
     // Link's power and kit, put away earlier in the run.
     h.game.classicKits = { link: { powerState: 'big', hp: 3, kit: { bombs: 4 } } };
@@ -244,7 +260,7 @@ describe('BUG-05 with BUG-06’s kept hero kits', () => {
 
   it('Continue → the saved hero picked again keeps his power and kit (BUG-03 with BUG-06)', () => {
     const h = classic();
-    h.game.classicGame(MARIO, '3-1');
+    h.game.classicGame(MARIO, '3-1', { ref: F1, rules: fileRules });
     h.game.state.powerState = 'fire';
     h.game.goToLevel('3-2', { mode: 'stand' });
     expect(loadClassicResume('smb')?.powerState).toBe('fire');

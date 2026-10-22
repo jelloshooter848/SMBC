@@ -5,13 +5,15 @@ import { LINK } from '@game/characters/link';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import type { ClassicMenuScene } from '@game/scenes/original-game';
-import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume } from '@game/run-resume';
+import { CLASSIC_RESUME_KEY } from '@game/run-resume';
+import { classicFileKey, loadClassicFile, type ClassicFileRef } from '@game/original-files';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
 
-// G-008: the original saves and loads a run (Pause > Load / Save, title > Load Game). Classic
-// mode's resume slot stands in: written at each WORLD card of a Classic run, offered as
-// CLASSIC > Continue, cleared by a game over and by the credits; never by a developer run.
+// G-008: the original saves and loads a run (Pause > Load / Save, title > Load Game). B-L:
+// Classic mode's save files stand in: written at each WORLD card of a Classic run, a used file
+// goes on from its file box, a game over keeps its continue point and the credits empty it;
+// never written by a developer run.
 
 useStorage();
 afterEach(() => store.clear());
@@ -26,18 +28,19 @@ function classic(over: Partial<Settings> = {}, dev = false): H & { settings: Set
 
 const inLevel = (h: H) => h.top() instanceof LevelScene;
 
-/** Every resume slot in storage (per-set saves: one key per map set), by key. */
+/** Every Classic save file in storage, by key. */
 const slots = () =>
-  Object.fromEntries([...store.entries()].filter(([k]) => k.startsWith(CLASSIC_RESUME_KEY)));
+  Object.fromEntries([...store.entries()].filter(([k]) => k.startsWith('smbc-classic-file')));
+const F1: ClassicFileRef = { set: 'smb', slot: 1 };
+const loadClassicResume = () => loadClassicFile(F1)?.run ?? null;
 
-describe('G-008 the Classic resume slot', () => {
-  // Per-set saves (owner, before 0.5.0): the set's own row offers it now, not a global Continue
-  // row (tests/sim/classic-saves.test.ts has the prompt).
+describe('G-008 the Classic save file', () => {
+  // B-L: the set's file box offers it (tests/sim/classic-files-screens.test.ts has the boxes).
   it('a Classic run writes it at the WORLD card; its set on the CLASSIC menu says so', () => {
     const h = classic();
     h.game.showClassicMenu();
     expect(labels(h.top())).not.toContain('Continue');
-    h.game.classicGame(LINK, '1-2');
+    h.game.classicGame(LINK, '1-2', { ref: F1 });
     const r = loadClassicResume();
     expect(r).toMatchObject({
       levelId: expect.stringMatching(/^1-2/),
@@ -48,14 +51,13 @@ describe('G-008 the Classic resume slot', () => {
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
     expect(labels(menu)[0]).toBe('Super Mario Bros.');
-    expect((menu as unknown as { items: MenuItem[] }).items[0]?.hint).toMatch(
-      /Saved run: World 1-2, 3 lives/,
-    );
+    expect((menu as unknown as { items: MenuItem[] }).items[0]?.hint).toMatch(/1 file used/);
+    expect(store.has(classicFileKey(F1))).toBe(true);
   });
 
   it('Continue goes back to that level with the lives, score, coins and hero kept', () => {
     const h = classic();
-    h.game.classicGame(LINK, '1-2');
+    h.game.classicGame(LINK, '1-2', { ref: F1 });
     h.until(() => inLevel(h), 600);
     h.game.state.score = 12300;
     h.game.state.coins = 42;
@@ -64,7 +66,7 @@ describe('G-008 the Classic resume slot', () => {
     h.game.goToLevel('1-3', { mode: 'stand' });
     h.game.showTitle();
     h.game.showClassicMenu();
-    expect(h.game.resumeClassic()).toBe(true);
+    expect(h.game.resumeClassic(F1)).toBe(true);
     expect(h.game.classicRun).toBe(true);
     expect(h.game.state).toMatchObject({ score: 12300, coins: 42, lives: 5, world: 1, stage: 3 });
     expect(h.game.state.character.id).toBe('link');
@@ -75,7 +77,7 @@ describe('G-008 the Classic resume slot', () => {
 
   it('quitting from the select between levels resumes at the next level (QA nit)', () => {
     const h = classic();
-    h.game.classicGame(MARIO, '1-1');
+    h.game.classicGame(MARIO, '1-1', { ref: F1 });
     h.until(() => inLevel(h), 600);
     h.game.state.score = 777;
     h.game.levelExitTo('1-2');
@@ -87,7 +89,7 @@ describe('G-008 the Classic resume slot', () => {
       score: 777,
     });
     h.game.showTitle();
-    expect(h.game.resumeClassic()).toBe(true);
+    expect(h.game.resumeClassic(F1)).toBe(true);
     pickAtContinue(h);
     h.until(() => inLevel(h), 600);
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-2/);
@@ -116,7 +118,7 @@ describe('G-008 the Classic resume slot', () => {
       );
     slot();
     const off = classic();
-    expect(off.game.resumeClassic()).toBe(true);
+    expect(off.game.resumeClassic(F1)).toBe(true);
     expect(off.game.state.character.id).toBe('mario');
     expect(off.game.state.score).toBe(50);
     // The WORLD card rewrote the slot as Mario's: the saved Yoshi run again.
@@ -126,13 +128,13 @@ describe('G-008 the Classic resume slot', () => {
     on.settings.classic = { ...on.settings.classic, expansion: 'on' };
     // O-06: in dev mode an unreleased Expansion hero shows only with Dev > Classic heroes' On.
     on.settings.classicDev.heroesOn = ['yoshi'];
-    expect(on.game.resumeClassic()).toBe(true);
+    expect(on.game.resumeClassic(F1)).toBe(true);
     expect(on.game.state.character.id).toBe('yoshi');
   });
 
   it('a game over keeps it, at its continue point (BUG-05: no longer cleared)', () => {
     const h = classic();
-    h.game.classicGame(MARIO);
+    h.game.classicGame(MARIO, '1-1', { ref: F1 });
     expect(loadClassicResume()).not.toBeNull();
     h.game.gameOver('1-1');
     expect(loadClassicResume()).toMatchObject({ levelId: expect.stringMatching(/^1-1/), score: 0 });
@@ -141,19 +143,20 @@ describe('G-008 the Classic resume slot', () => {
   it('a developer Classic run never writes it', () => {
     const h = classic({}, true);
     // Per-set saves: a real slot first (a Classic mode run), then every slot compared.
-    h.game.classicGame(LINK, '1-2');
+    h.game.classicGame(LINK, '1-2', { ref: F1 });
     const before = slots();
-    expect(before[classicResumeKey('smb')]).toMatch(/"levelId":"1-2/);
+    expect(before[classicFileKey(F1)]).toMatch(/"levelId":"1-2/);
     h.game.devClassicGame(MARIO, '1-1', 'classic');
     h.game.devClassicGame(MARIO, 'll-1-1', 'classic');
     expect(slots()).toEqual(before);
   });
 
-  it('a broken slot is ignored', () => {
+  it('a broken old slot is ignored (and migrates to nothing)', () => {
     store.set(CLASSIC_RESUME_KEY, '{"v":1,"levelId":"1-1"}');
-    expect(loadClassicResume()).toBeNull();
     const h = classic();
     h.game.showClassicMenu();
+    expect(h.game.classicFiles('smb')).toEqual([null, null, null]);
+    expect(store.has(CLASSIC_RESUME_KEY)).toBe(false);
     expect(labels(h.top())).not.toContain('Continue');
   });
 });

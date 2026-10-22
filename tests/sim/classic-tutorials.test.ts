@@ -841,7 +841,7 @@ describe('a box queued as a run ends never shows in the next run (O-15 release r
     expect(h.game.classicTutorials.pending).toEqual([]);
     h.game.classicTutorials.offer('mushroom', 'mario');
     expect(h.game.classicTutorials.pending).toEqual(['mushroom']);
-    h.game.resumeClassic();
+    h.game.resumeClassic({ set: 'smb', slot: 1 });
     expect(h.game.classicTutorials.pending).toEqual([]);
   });
 });

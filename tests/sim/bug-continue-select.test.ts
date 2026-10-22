@@ -6,7 +6,8 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { HUD_TEXT } from '@game/hud/select-hud';
 import { MAP_SETS, type ClassicMenuScene } from '@game/scenes/original-game';
-import { ClassicSetScene } from '@game/scenes/original-saves';
+import { ClassicFilesScene } from '@game/scenes/original-files-menu';
+import { originalFileRules, type ClassicFileRules } from '@game/original-files';
 import { ClassicTitleScene } from '@game/scenes/original-title';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
@@ -14,7 +15,7 @@ import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 // original's Load Game does (EventManager.loadGame sets StatManager.newLev, so
 // ScreenManager.createLevel shows CharacterSelect before the level). The run then goes on at the
 // saved level with its lives and score and the hero picked there; BACK from that select returns
-// to the set's CONTINUE / NEW GAME box.
+// to the set's file box (B-L), on that file.
 
 useStorage();
 afterEach(() => store.clear());
@@ -26,20 +27,20 @@ function classic(over: Partial<Settings> = {}): H & { settings: Settings } {
 }
 
 /** A SMB run kept at 4-2's WORLD card with 2 lives and 51200 points. */
-function keep(h: H): void {
-  h.game.classicGame(MARIO, '4-1');
+function keep(h: H, rules: ClassicFileRules = originalFileRules()): void {
+  h.game.classicGame(MARIO, '4-1', { ref: { set: 'smb', slot: 1 }, rules });
   h.game.state.lives = 2;
   h.game.state.score = 51200;
   h.game.goToLevel('4-2', { mode: 'stand' });
   h.game.showTitle();
 }
 
-/** The CLASSIC menu, SMB's row picked, then CONTINUE in its box. */
+/** The CLASSIC menu, SMB's row picked, then its used FILE 1 in its file box. */
 function continueSmb(h: H): void {
   h.game.showClassicMenu();
   h.idle(8);
   h.tap('jump');
-  expect(h.top()).toBeInstanceOf(ClassicSetScene);
+  expect(h.top()).toBeInstanceOf(ClassicFilesScene);
   h.idle(8);
   h.tap('jump');
 }
@@ -76,16 +77,18 @@ describe('BUG-03 CONTINUE goes through the hero select', () => {
     expect(h.said.find((s) => s.startsWith('Continue.'))).toMatch(/World 4-2/);
   });
 
-  it('BACK returns to the set’s CONTINUE / NEW GAME box over the CLASSIC title, the run kept', () => {
+  it('BACK returns to the set’s file box over the CLASSIC title, on that file, the run kept', () => {
     const h = classic();
     keep(h);
     continueSmb(h);
     h.idle(12);
     h.tap('attack');
-    expect(h.top()).toBeInstanceOf(ClassicSetScene);
-    expect((h.top() as ClassicSetScene).set.id).toBe('smb');
-    expect((h.top() as ClassicSetScene).demo).toBeInstanceOf(ClassicTitleScene);
-    expect(h.said.at(-1)).toMatch(/Continue or new game/);
+    expect(h.top()).toBeInstanceOf(ClassicFilesScene);
+    const files = h.top() as ClassicFilesScene;
+    expect(files.set.id).toBe('smb');
+    expect((files as unknown as { over: unknown }).over).toBeInstanceOf(ClassicTitleScene);
+    expect((files as unknown as { index: number }).index).toBe(0);
+    expect(h.said.at(-1)).toMatch(/Choose a file\. File 1: NORMAL 4-2 X2/);
     // No run is on; the slot is untouched.
     expect(h.game.classicRun).toBe(false);
     // BACK from the box: the CLASSIC menu on SMB's row.
@@ -104,9 +107,10 @@ describe('BUG-03 CONTINUE goes through the hero select', () => {
 
   it('Single hero keeps the saved hero (no select), as the original skips it at a new level', () => {
     const h = classic();
-    // The run's Game mode is kept with it (RC-002).
-    h.settings.classic.gameMode = 'single';
-    keep(h);
+    // The run's Game mode is its file's (RC-002, B-L).
+    const rules = originalFileRules();
+    rules.options.gameMode = 'single';
+    keep(h, rules);
     continueSmb(h);
     expect(h.top()).not.toBeInstanceOf(CharacterSelectScene);
     h.until(() => h.top() instanceof LevelScene, 900);
