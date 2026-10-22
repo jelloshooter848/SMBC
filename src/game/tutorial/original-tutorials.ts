@@ -119,7 +119,8 @@ function condition(game: Game, name: string): boolean {
       return w.ryuStart === 'jump-slash';
     case 'yoshi':
       // The Expansion's Yoshi stomps too (yoshi/classic.ts `stomps: true`), when the select has him.
-      return game.heroSlots.some((d) => d.id === 'yoshi');
+      // 0.4.72: in dev mode the dev select's heroes (Game.selectSlots).
+      return game.selectSlots.some((d) => d.id === 'yoshi');
     default:
       return false;
   }
