@@ -175,11 +175,7 @@ export function templateReadme(
   const example: PackManifest = {
     schema: 1,
     name: 'my-pack',
-    author: 'you',
     sprites: { mario: { image: 'mario.png' } },
-    palettes: {
-      mario: registry.paletteTable().mario ? [...(registry.paletteTable().mario as string[])] : [],
-    },
     music: { [lists.songs[0] ?? 'overworld']: 'overworld.ogg' },
     sfx: { [lists.sfx[0] ?? 'jump-small']: 'jump.wav' },
   };

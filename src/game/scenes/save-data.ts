@@ -123,7 +123,8 @@ export class SaveDataOptions extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'SAVE DATA', [], onBack);
     this.env = game.deps.saveDataEnv ?? browserSaveDataEnv();
-    this.entryTitle = `Save data. ${NOTE_SAID}`;
+    // MenuScene adds the period before the focused row.
+    this.entryTitle = `Save data. ${NOTE_SAID.slice(0, -1)}`;
     this.setItems([
       {
         label: 'Export backup',
@@ -436,7 +437,10 @@ class QuestionBox extends MenuScene {
   override render(r: Renderer): void {
     super.render(r);
     const font = this.game.ctx.assets.sheet('font');
-    const lines = this.lines.flatMap((l) => (l.length > 28 ? wrapText(l, 28) : [l]));
+    // The font has capitals only (a dev build's version has lower case letters).
+    const lines = this.lines
+      .flatMap((l) => (l.length > 28 ? wrapText(l, 28) : [l]))
+      .map((l) => l.toUpperCase());
     lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 130 + i * 12));
   }
 }
