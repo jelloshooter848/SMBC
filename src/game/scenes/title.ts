@@ -781,13 +781,14 @@ export class TitleScene extends MenuScene {
   }
 
   /**
-   * The way back before the slam: the CLASSIC title's frame held still (its demo, SMB and
-   * CROSSOVER), CLASSIC squashed and then in pieces, one a letter, each hopping and falling with
-   * a chip of brick; the stamp's big frame just before it lands.
+   * The way back before the slam: the REMIX field (1-1's first screen, still) from the BACK press
+   * on, so nothing behind moves or cuts however far the demo had scrolled; SMB and CROSSOVER in
+   * place, CLASSIC squashed and then in pieces, one a letter, each hopping and falling with a chip
+   * of brick; the stamp's big frame just before it lands.
    */
-  private renderBreak(r: Renderer, classic: ClassicTitleScene): void {
+  private renderBreak(r: Renderer): void {
     const sheet = this.game.ctx.assets.sheet('title-logo');
-    classic.demo.render(r);
+    this.field(r, 0);
     r.sprite(sheet, 'smb-tag', TAG_X, TAG_Y);
     for (let i = 0; i < CROSSOVER_LETTERS.length; i++)
       r.sprite(sheet, `cross-${i}`, CROSS_X + i * CROSSOVER_ADVANCE, CROSS_Y);
@@ -843,8 +844,8 @@ export class TitleScene extends MenuScene {
       this.ctext(r, this.gateText, 116, undefined, true);
       return;
     }
-    if (this.phase === 'back' && this.clock < this.stampAt && this.classic) {
-      this.renderBreak(r, this.classic);
+    if (this.phase === 'back' && this.clock < this.stampAt) {
+      this.renderBreak(r);
       return;
     }
     const dy = this.shake();

@@ -237,15 +237,24 @@ describe('the REMIX field: 1-1 first screen, still (0.4.72)', () => {
     expect(decor(title)).toEqual(now);
   });
 
-  it('a scrolled demo: the break shows its frame; the slam frame cuts to the field, under the shake', () => {
+  it('a scrolled demo (12 s on CLASSIC): the break plays over the still 1-1 field, never the demo, so the slam does not cut', () => {
     const s = setup();
-    const { title, classic } = back(s, 500);
-    expect(classic.demo.world.camera.pxX).toBeGreaterThan(0);
-    const broken = draw(title).sprites.filter((x) => x.frame === 'hill-big');
-    expect(broken.some((x) => x.x === 0 && x.y === 160)).toBe(false);
-    while (clock(title) < BACK.slam) s.h.step();
-    const slam = draw(title).sprites.filter((x) => x.frame === 'hill-big');
-    expect(title.shake()).not.toBe(0);
-    expect(slam.some((x) => x.x === 0 && x.y === 160 + title.shake())).toBe(true);
+    const { title, classic } = back(s, 12 * 60);
+    expect(classic.demo.world.camera.pxX).toBeGreaterThan(256); // pipes and goombas on screen there
+    // The same way back from an unscrolled demo draws exactly the same frames.
+    const u = setup();
+    const plain = back(u, 0).title;
+    const field = (t: TitleScene) =>
+      draw(t)
+        .sprites.filter((x) => x.key.startsWith('decor') || x.frame === 'ground')
+        .map((x) => `${x.frame}@${x.x},${x.y - t.shake()}`);
+    const still = field(title);
+    expect(still).toContain('hill-big@0,160');
+    while (clock(title) <= BACK.slam + 4) {
+      expect(draw(title).sprites, `frame ${clock(title)}`).toEqual(draw(plain).sprites);
+      expect(field(title), `frame ${clock(title)}`).toEqual(still);
+      s.h.step();
+      u.h.step();
+    }
   });
 });
