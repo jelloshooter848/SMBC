@@ -1054,6 +1054,10 @@ export class Game {
     // G-008, B-L: a Classic run that reaches the credits is over. v0.4.73 (owner 46B): its file
     // is kept as CLEARED, never emptied.
     if (this.keepsResume) this.clearFile(from);
+    // v0.4.73 (owner 98): the beat and its unlocks are kept now, before the credits (a Classic
+    // mode run that counts: not a developer or practice run).
+    if (this.classicRun && this.campaign === null && !this.classicDev && !this.practiceRun)
+      this.recordSetBeaten(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -1068,6 +1072,41 @@ export class Game {
   }
 
   /**
+   * A Classic mode run beat the map set of `from` (G-004, G-005, D3): its beat status is kept,
+   * the Level Select cheat opens once every set is beaten on Hard, and the cheats whose goals it
+   * completes are unlocked (their cards follow the credits). v0.4.73 (owner 98): called as the
+   * ending begins, with the CLEARED write, so a tab closed during the credits keeps it all; the
+   * end of the credits does it only for a run that has not (beatRecorded).
+   */
+  private recordSetBeaten(from: string): void {
+    this.beatRecorded = true;
+    const set = mapSetOf(from).id;
+    recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
+    // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
+    const cheats = this.deps.settings?.classicCheats;
+    if (
+      cheats &&
+      !cheats.levelSelect &&
+      allSetsBeaten(
+        loadProgress(),
+        'hard',
+        MAP_SETS.map((m) => m.id),
+      )
+    ) {
+      cheats.levelSelect = true;
+      this.levelSelectUnlocked = true;
+      saveSettings(this.deps.settings as Settings);
+    }
+    // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
+    // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
+    // count and no-continue goals.
+    this.cheatEvent({ beat: set });
+  }
+
+  /** v0.4.73 (98): this run's beat is recorded already (recordSetBeaten). */
+  private beatRecorded = false;
+
+  /**
    * The credits are over: campaign files record the clear and save, then the map page of the
    * castle (SMB 8-4: World 8, its road on to Lost World 1 drawn in; Lost Levels D-4). Otherwise
    * (and for a campaign level on no map page) the title.
@@ -1080,28 +1119,8 @@ export class Game {
       // A developer-started run counts for nothing: the title, as free play. So does a practice
       // run (the menus' Level Select, B-L owner).
       if (this.classicDev || this.practiceRun) return this.showTitle();
-      const set = mapSetOf(from).id;
-      // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
-      recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
-      // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
-      const cheats = this.deps.settings?.classicCheats;
-      if (
-        cheats &&
-        !cheats.levelSelect &&
-        allSetsBeaten(
-          loadProgress(),
-          'hard',
-          MAP_SETS.map((m) => m.id),
-        )
-      ) {
-        cheats.levelSelect = true;
-        this.levelSelectUnlocked = true;
-        saveSettings(this.deps.settings as Settings);
-      }
-      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
-      // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
-      // count and no-continue goals.
-      this.cheatEvent({ beat: set });
+      // v0.4.73 (owner 98): kept as the ending began (recordSetBeaten), never twice.
+      if (!this.beatRecorded) this.recordSetBeaten(from);
       this.showClassicUnlocks();
       return;
     }
@@ -2406,6 +2425,7 @@ export class Game {
     this.practiceRun = false;
     this.replay = null;
     this.clearedNews = null;
+    this.beatRecorded = false;
   }
 
   /**
