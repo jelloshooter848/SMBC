@@ -19,10 +19,24 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
   const top = view.camY === undefined ? 0 : Math.max(0, view.camY >> 4);
   const bottom =
     view.camY === undefined ? map.height - 1 : Math.min(map.height - 1, (view.camY + SCREEN_H) >> 4);
+  // v0.4.74 item 56: the lava's body. Under each lava tile the open cells down to the map's
+  // bottom row are drawn in the lava's body colour (the original lays its back-layer colorRed
+  // there). It is only drawn: those cells stay air for every rule. `under[i]` says the column's
+  // nearest tile above is lava; a scrolled-down view seeds it from the rows above the screen.
+  const cols = last - first + 1;
+  if (under.length < cols) under = new Uint8Array(cols);
+  for (let i = 0; i < cols; i++) under[i] = top > 0 && lavaAbove(map, first + i, top) ? 1 : 0;
+  const body = sheet.frames.has(`lava-body@${view.theme}`) ? `lava-body@${view.theme}` : 'lava-body';
   for (let ty = top; ty <= bottom; ty++) {
     for (let tx = first; tx <= last; tx++) {
       const id = map.get(tx, ty);
-      if (id === T.AIR || id === T.BUMPING) continue;
+      const i = tx - first;
+      if (id === T.AIR) {
+        if (under[i]) r.sprite(sheet, body, tx * TILE - camPx, ty * TILE);
+        continue;
+      }
+      under[i] = id === T.LAVA ? 1 : 0;
+      if (id === T.BUMPING) continue;
       const def = tileDef(id);
       if (def.block?.kind === 'hidden') {
         if (showHidden) r.rect(tx * TILE - camPx + 2, ty * TILE + 2, 12, 12, 'rgba(255,255,255,0.3)');
@@ -44,6 +58,18 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
       r.sprite(sheet, sheet.frames.has(themed) ? themed : name, tx * TILE - camPx, ty * TILE);
     }
   }
+}
+
+/** The lava-body flags of the columns drawn (renderTiles), reused frame to frame. */
+let under = new Uint8Array(32);
+
+/** The nearest non-air tile above row `ty` of column `tx` is lava (its body reaches `ty`). */
+function lavaAbove(map: TileMap, tx: number, ty: number): boolean {
+  for (let y = ty - 1; y >= 0; y--) {
+    const id = map.get(tx, y);
+    if (id !== T.AIR) return id === T.LAVA;
+  }
+  return false;
 }
 
 /**
