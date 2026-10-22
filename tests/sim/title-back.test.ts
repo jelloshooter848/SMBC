@@ -300,6 +300,30 @@ describe('the way back from CLASSIC (0.4.74: through the rift portal)', () => {
     expect(s.music).toEqual(['title']);
   });
 
+  it('with Reduce flashing, BACK while the theme is still crossing over: the finished title at once', () => {
+    const s = setup(true);
+    // A sink that crossfades: the overworld comes in 0.4 s after CLASSIC opens.
+    s.h.game.ctx.audio.crossfadeMusic = (id) => (s.music.push(`cross ${id}`), 0.4);
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    expect(s.music.at(-1)).toBe('cross overworld');
+    s.h.idle(4);
+    s.music.length = 0;
+    s.sfx.length = 0;
+    s.h.step(['attack']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('ready');
+    expect(s.music).toEqual(['title']); // brought back up, never cut
+    for (let i = 0; i < 20; i++) {
+      expect(rift(title)).toBeUndefined();
+      expect(frames(title)).not.toContain('classic');
+      expect(frames(title).filter((f) => f.startsWith('dust-'))).toEqual([]);
+      s.h.step();
+    }
+  });
+
   it('the first launch (the rift intro, the full fanfare) and the plain title are as they were', () => {
     const s = setup();
     s.h.game.showTitle();
