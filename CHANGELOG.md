@@ -9,6 +9,68 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.4.72] - 2026-10-22
+
+### Added
+
+- Developer mode: the Level select's start page has a Mount row (None or Yoshi). Yoshi starts
+  the level riding him, under Classic SMBC rules and with a hero who can ride.
+- Dev mode: Assists has a "Show hidden items" switch, off by default. When it is on, every ?
+  block, item brick and hidden block shows a small picture of what it holds (a coin, a mushroom,
+  a flower, a star, a 1-up, a vine and so on), and hidden blocks can be seen.
+
+### Changed
+
+- Classic mode: the "Quit to the Classic menu?" card (BACK on the select between levels, and
+  Pause > Quit) is now one of the original-style boxes, with the mushroom cursor and the boxes'
+  own sounds, instead of a dark full-screen panel.
+- The CLASSIC title's Start box now sits half way between CLASSIC and the ground, so the demo
+  stays in view around it. The map set box after START is where it was.
+- Developer mode: Classic mode's hero select and the dev Level select's Hero row offer every
+  hero, released or not. Only a hero set Off in Dev > Toggle heroes is left out, and Classic
+  Options > Disable heroes still applies. The Random slot draws from the heroes the Dev menu
+  offers (released heroes and those set On), and a Survival run keeps its own list. A Classic
+  file played as a hero that is not released yet shows NOT RELEASED with developer mode off, and
+  plays again once it is back on.
+- Developer mode: the Level select's start page has no Mode row any more. Every start plays as
+  free play (99 lives, straight back after a death), and its Map difficulty now plays in free
+  play under Classic SMBC rules.
+- The REMIX title is cleaner: just the logo, the menu (a little lower) and the heroes. The
+  version, MADE BY and the Exploding Rabbit credit are on a new Options > About page, with a
+  Credits row that plays the credits roll. The screen reader still reads the credit on the title.
+- The title's speaker no longer shows its key beside it. The SOUND key still turns the sound on
+  and off, and the title still says which key it is.
+- Back from CLASSIC to the REMIX title: CLASSIC squashes and breaks into its letters, which hop
+  and fall, then the REMIX stamp slams on, in about a quarter of a second, with the heroes already
+  standing. The overworld music cuts out under the break and the REMIX theme comes in on the
+  slam, past its opening fanfare. With Reduce flashing on it is an instant swap.
+- The REMIX title's backdrop is now World 1-1's first screen, standing still, so the REMIX and
+  CLASSIC titles match.
+
+### Fixed
+
+- Classic mode: when the browser refuses to erase a file (or cannot read its saves at all), ERASE
+  FILE now says (and shows under the box) that the file could not be erased, instead of saying a
+  game saved by an older version moved into it. A game saved by an older version that moved into
+  a file is never copied into a second one when the browser could not remove its old copy.
+- Classic mode: the map set box's "files used" count now counts every file in use, one that
+  cannot be read, whose hero is off or that cannot play in this version too, not only the files
+  that play.
+- Classic mode: after leaving a run, picking its map set opens the file box on the file just
+  played, not File 1.
+- Classic mode: MAIN MENU after the game over of a run opened from a level link on SMB Special
+  or The Lost Levels now lands on the CLASSIC menu with that set focused, not Super Mario Bros.
+- Classic mode: BACK from a new file's hero select returns to its rules box with START picked
+  again, not Game mode.
+- Screen reader: Options now opens saying its name before the focused row (Classic's "Video,
+  audio, controls" says that name); going back to the title (from Options, or the Dev menu's
+  Back) or to the Classic pause from its Options says the focused row; closing the downloaded
+  copy's note, the Home Screen app's note or the update notice says the title and its focused
+  row; the Classic pause opens with "Paused." and its row; and NO on its quit question says
+  "Paused." and the focused row.
+- Sophia III with Wall Climb no longer wraps round the bottom of a pit's wall onto the underside
+  of the stage and drives along below the screen: she drives off the bottom and falls in the pit.
+
 ## [0.4.71] - 2026-10-22
 
 ### Changed
@@ -2009,7 +2071,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.71...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.72...HEAD
+[0.4.72]: https://github.com/jelloshooter848/SMBC/compare/v0.4.71...v0.4.72
 [0.4.71]: https://github.com/jelloshooter848/SMBC/compare/v0.4.70...v0.4.71
 [0.4.70]: https://github.com/jelloshooter848/SMBC/compare/v0.4.69...v0.4.70
 [0.4.69]: https://github.com/jelloshooter848/SMBC/compare/v0.4.68...v0.4.69
