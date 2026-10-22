@@ -22,15 +22,16 @@ export const ABOUT_LINES: readonly (readonly [string, FontColour | null])[] = [
   ['', null],
   ['AN UNOFFICIAL FAN PROJECT.', 'grey'],
   // The one art exception is the Exploding Rabbit logo (docs/ART_EXCEPTIONS.md, the credits).
-  ['OUR OWN ART AND MUSIC,', 'grey'],
-  ['EXCEPT THE ORIGINAL LOGO.', 'grey'],
+  // "EXCEPT THE EXPLODING RABBIT LOGO." alone is 33 columns, wider than the screen's 32.
+  ['OUR OWN ART AND MUSIC, EXCEPT', 'grey'],
+  ['THE EXPLODING RABBIT LOGO.', 'grey'],
 ];
 
 /** What the screen reader says for the page's text (before the focused row). */
 export const ABOUT_SAID =
   'About. Super Mario Bros. Crossover: REMIX. Made by jelloshooter848. ' +
   'Based on Super Mario Bros. Crossover by Jay Pavlina and Exploding Rabbit. ' +
-  'An unofficial fan project. Our own art and music, except the original logo.';
+  'An unofficial fan project. Our own art and music, except the Exploding Rabbit logo.';
 
 const LINES_Y = 44;
 const LINE_H = 10;
