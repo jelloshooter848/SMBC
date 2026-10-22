@@ -5,17 +5,43 @@ import type { Renderer } from '@engine/gfx/renderer';
 import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Game } from './game';
 
+/** Where Disable heroes keeps its Off list. */
+export interface HeroesOffStore {
+  get(): readonly string[];
+  set(off: string[]): void;
+}
+
+/** The old shared list (Settings.classicHeroesOff; developer starts read it), saved at once. */
+export function sharedHeroesOff(game: Game): HeroesOffStore {
+  return {
+    get: () => game.deps.settings?.classicHeroesOff ?? [],
+    set: (off) => {
+      const s = game.deps.settings;
+      if (!s) return;
+      if (off.length) s.classicHeroesOff = off;
+      else delete s.classicHeroesOff;
+      saveSettings(s);
+    },
+  };
+}
+
 /**
  * Classic mode's Disable heroes (G-032; the original's General > Disable characters,
  * GeneralOptions.as 23, 47-53, CharacterSelectBox.as 684-697): every select-slot hero with On or
  * Off. An Off hero leaves the select, the Random slot and Single random (Game.heroSlots). The
- * last hero on cannot be turned off, as the original keeps one. Saved at once.
+ * last hero on cannot be turned off, as the original keeps one. B-L: it is one of a new file's
+ * rules (its rules box), kept in the file's draft until START.
  */
 export class ClassicHeroesScene extends MenuScene {
   /** BUG-01: the CLASSIC title it is a box over (null: a full-screen page). */
   private readonly over = demoUnder(this.game);
 
-  constructor(game: Game, onBack: () => void) {
+  constructor(
+    game: Game,
+    onBack: () => void,
+    /** B-L: where the Off list is kept (a new file's draft rules; default the old shared one). */
+    private readonly store: HeroesOffStore = sharedHeroesOff(game),
+  ) {
     super(game, 'DISABLE HEROES', [], onBack);
     if (this.over) {
       this.translucent = true;
@@ -46,8 +72,8 @@ export class ClassicHeroesScene extends MenuScene {
     });
   }
 
-  private get off(): string[] {
-    return this.game.deps.settings?.classicHeroesOff ?? [];
+  private get off(): readonly string[] {
+    return this.store.get();
   }
 
   private build(): void {
@@ -69,9 +95,7 @@ export class ClassicHeroesScene extends MenuScene {
   }
 
   private toggle(id: string, all: readonly string[]): void {
-    const s = this.game.deps.settings;
-    if (!s) return;
-    const off = new Set(s.classicHeroesOff ?? []);
+    const off = new Set(this.store.get());
     if (off.has(id)) off.delete(id);
     else {
       // GeneralOptions: at least one hero stays.
@@ -85,9 +109,7 @@ export class ClassicHeroesScene extends MenuScene {
       off.add(id);
     }
     this.status = '';
-    if (off.size) s.classicHeroesOff = [...off];
-    else delete s.classicHeroesOff;
-    saveSettings(s);
+    this.store.set([...off]);
   }
 
   override enter(): void {

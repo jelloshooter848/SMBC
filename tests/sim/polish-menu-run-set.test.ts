@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { GameOverScene } from '@game/scenes/game-over';
-import { MAP_SETS, ClassicMenuScene } from '@game/scenes/original-game';
+import { MAP_SETS, ClassicMenuScene, mapSetOf } from '@game/scenes/original-game';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // P2: leaving a Classic run (Quit, or MAIN MENU after its game over) lands on the CLASSIC menu
@@ -13,7 +13,8 @@ afterEach(() => store.clear());
 
 function run(levelId: string): H {
   const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
-  h.game.classicGame(MARIO, levelId);
+  // B-L: a Classic run plays in a file of its set.
+  h.game.classicGame(MARIO, levelId, { ref: { set: mapSetOf(levelId).id, slot: 1 } });
   h.game.goToLevel(levelId, { mode: 'stand' });
   return h;
 }

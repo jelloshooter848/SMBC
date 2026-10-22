@@ -379,7 +379,7 @@ describe('O-10: no OK prompt line on the select; the spoken line says what OK do
 
   it('a hero with no other looks says OK: play', () => {
     const h = makeGame();
-    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     const plain = h.game.heroSlots.find((c) => h.game.skinsFor(c).length <= 1);
     expect(plain).toBeDefined();
     if (!plain) return;
@@ -399,7 +399,7 @@ describe('O-10: no OK prompt line on the select; the spoken line says what OK do
 describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
   /** A Classic run in 1-1, its first pick done, then a death with lives left: the select again. */
   function midRunSelect(h: H): CharacterSelectScene {
-    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
     expect(h.top()).toBeInstanceOf(LevelScene);
     h.game.respawn('1-1', { mode: 'stand' });
@@ -417,7 +417,7 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     expect(card).toBeInstanceOf(QuitRunScene);
     expect(labels(card)).toEqual(['No', 'Yes']);
     expect(cursor(card)).toBe(0);
-    expect(h.said.at(-1)).toBe('Quit to the Classic menu? Your run waits in Continue. No');
+    expect(h.said.at(-1)).toBe('Quit to the Classic menu? Your run waits in its file. No');
     const text = drawn(h);
     expect(text).toContain(QUIT_RUN_TITLE);
     expect(text).toContain(QUIT_RUN_KEPT);
@@ -442,7 +442,7 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     // Straight there: the title is never shown (or read out) on the way.
     expect(h.said.slice(before).some((t) => t.includes('REMIX'))).toBe(false);
     expect(h.game.classicRun).toBe(false);
-    expect(h.game.classicResume()).not.toBeNull();
+    expect(h.game.classicFileAt({ set: 'smb', slot: 1 })).not.toBeNull();
   });
 
   it('BACK on the card is NO', () => {
@@ -456,7 +456,7 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
 
   it('Pause > Quit asks the same, and NO returns to the pause', () => {
     const h = makeGame();
-    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
     h.idle(4);
     h.tap('start');
@@ -488,12 +488,12 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
 
   it('a Classic mode run keeps the promise', () => {
     const h = makeGame();
-    h.game.classicGame(h.game.heroSlots[0]!, '1-1');
+    h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
     expect(h.game.keepsResume).toBe(true);
     h.idle(4);
     h.tap('start');
-    expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toMatch(/Continue picks the run up/);
+    expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toMatch(/your file picks the run up/);
   });
 
   it('the campaign select keeps no BACK of its own (Current rules unchanged)', () => {

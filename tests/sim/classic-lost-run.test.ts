@@ -190,12 +190,7 @@ describe('G-003/G-004: every map set from the start; the title after the credits
     const h = classic();
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(items(menu).map((i) => i.label)).toEqual([
-      ...MAP_SETS.map((m) => m.label),
-      'Map difficulty',
-      'Options',
-      'Back',
-    ]);
+    expect(items(menu).map((i) => i.label)).toEqual([...MAP_SETS.map((m) => m.label), 'Back']);
     // G-020 put Super Mario Bros. Special between them (MapPack: Smb, Special, LostLevels).
     expect(MAP_SETS.map((m) => m.id)).toEqual(['smb', 'special', 'lost']);
     for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);

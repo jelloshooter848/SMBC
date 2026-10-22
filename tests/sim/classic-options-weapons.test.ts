@@ -21,6 +21,7 @@ import { attackGun, specialGun } from '@game/characters/bill/classic';
 import type { Entity } from '@game/entities/entity';
 import { runSim, ScriptedInput } from '@game/sim/headless';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
+import { ClassicFileRulesScene } from '@game/scenes/original-files-menu';
 import { ClassicMenuScene } from '@game/scenes/original-game';
 import { ClassicOptionRowsScene, stepRow, WEAPON_ROWS } from '@game/scenes/original-options';
 import { TitleScene } from '@game/scenes/title';
@@ -273,7 +274,7 @@ function classic(): H & { settings: Settings } {
   return { ...h, settings };
 }
 
-describe('Customize Weapons menu (CLASSIC > Options > Weapons)', () => {
+describe("Customize Weapons menu (a new file's rules > Weapons, B-L)", () => {
   it('lists the original’s 11 rows by hero, each naming its weapon', () => {
     const h = classic();
     h.game.showTitle();
@@ -284,7 +285,12 @@ describe('Customize Weapons menu (CLASSIC > Options > Weapons)', () => {
     h.tap('jump');
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
-    pick(h, 'Options');
+    // B-L: Weapons is one of a new file's rules (its rules box).
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'File 1');
+    pick(h, 'Normal');
+    const rulesBox = h.top() as ClassicFileRulesScene;
+    expect(rulesBox).toBeInstanceOf(ClassicFileRulesScene);
     expect(
       items(h.top())
         .find((i) => i.label === 'Weapons')
@@ -329,7 +335,8 @@ describe('Customize Weapons menu (CLASSIC > Options > Weapons)', () => {
     h.tap('down');
     h.tap('down');
     h.tap('right');
-    expect(h.settings.classic.weapons.link).toBe('bow');
+    expect(rulesBox.draft.options.weapons.link).toBe('bow');
+    expect(h.settings.classic.weapons.link).toBe('bomb');
     expect(h.said.at(-1)).toMatch(/^Link: Bow and Arrow\..*Changed from the original: Bomb/);
     h.tap('attack');
     expect(

@@ -28,7 +28,8 @@ import { classicDamage, FAST_ENEMY_MULT } from '@game/rules/classic-enemies';
 import { runSim, type SimResult } from '@game/sim/headless';
 import type { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
-import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
+import { ClassicMenuScene } from '@game/scenes/original-game';
+import { ClassicFileRulesScene } from '@game/scenes/original-files-menu';
 import { ClassicOptionRowsScene, MORE_SETTINGS_ROWS, stepRow } from '@game/scenes/original-options';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -456,7 +457,11 @@ function pick(h: H, label: string): void {
   h.tap('jump');
 }
 
-function toClassicOptions(h: H): ClassicOptionsScene {
+/**
+ * B-L: More settings is one of a new file's rules: title > CLASSIC > START > Super Mario Bros. >
+ * FILE 1 > Normal, its rules box (the values a draft, nothing in Settings.classic).
+ */
+function toClassicOptions(h: H): ClassicFileRulesScene {
   h.game.showTitle();
   h.idle(TITLE_TIMING.dropEnd + 10);
   expect(h.top()).toBeInstanceOf(TitleScene);
@@ -465,11 +470,14 @@ function toClassicOptions(h: H): ClassicOptionsScene {
   h.tap('jump');
   h.tap('jump');
   expect(h.top()).toBeInstanceOf(ClassicMenuScene);
-  pick(h, 'Options');
-  return h.top() as ClassicOptionsScene;
+  pick(h, 'Super Mario Bros.');
+  pick(h, 'File 1');
+  pick(h, 'Normal');
+  expect(h.top()).toBeInstanceOf(ClassicFileRulesScene);
+  return h.top() as ClassicFileRulesScene;
 }
 
-describe('More Settings menu (CLASSIC > Options > More settings)', () => {
+describe("More Settings menu (a new file's rules > More settings, B-L)", () => {
   it('lists the original’s rows, each spoken with what it changes, then Restore originals and Back', () => {
     const h = classicGame();
     const o = toClassicOptions(h);
@@ -497,27 +505,30 @@ describe('More Settings menu (CLASSIC > Options > More settings)', () => {
     );
   });
 
-  it('Left / Right step a row, saved in Settings.classic; a changed row is marked and spoken as changed', () => {
+  it("Left / Right step a row, kept in the file's draft; a changed row is marked and spoken as changed", () => {
     const h = classicGame();
-    toClassicOptions(h);
+    const o = toClassicOptions(h);
+    const d = () => o.draft.options;
     pick(h, 'More settings');
     h.idle(8);
     h.tap('right');
-    expect(h.settings.classic.lives).toBe(5);
+    expect(d().lives).toBe(5);
     expect(labels(h.top())[0]).toBe('Lives*');
     expect(h.said.at(-1)).toMatch(/^Lives: 5\. .*Changed from the original: 3/);
     h.tap('left');
     h.tap('left');
-    expect(h.settings.classic.lives).toBe(1);
+    expect(d().lives).toBe(1);
     h.tap('left');
-    expect(h.settings.classic.lives).toBe(10);
+    expect(d().lives).toBe(10);
     h.tap('down');
     h.tap('down');
     h.tap('right');
-    expect(h.settings.classic.whenHit).toBe('previous-state');
-    // Back: the Options row says the run is not the original's.
+    expect(d().whenHit).toBe('previous-state');
+    // Nothing goes into the shared settings.
+    expect(h.settings.classic).toEqual(defaultClassicSettings());
+    // Back: the rules box row says the file is not the original's.
     h.tap('attack');
-    expect(h.top()).toBeInstanceOf(ClassicOptionsScene);
+    expect(h.top()).toBe(o);
     expect(
       items(h.top())
         .find((i) => i.label === 'More settings')
@@ -526,12 +537,13 @@ describe('More Settings menu (CLASSIC > Options > More settings)', () => {
   });
 
   it('Restore originals puts every row back', () => {
-    const h = classicGame({ lives: 10, goombas: 'spiny', attack: 'weak' });
-    toClassicOptions(h);
+    const h = classicGame();
+    const o = toClassicOptions(h);
+    Object.assign(o.draft.options, { lives: 10, goombas: 'spiny', attack: 'weak' });
     pick(h, 'More settings');
     expect(labels(h.top())).toContain('Goombas*');
     pick(h, 'Restore originals');
-    expect(h.settings.classic).toEqual(defaultClassicSettings());
+    expect(o.draft.options).toEqual(defaultClassicSettings());
     expect(labels(h.top()).some((l) => l.endsWith('*'))).toBe(false);
     expect(h.said.at(-1)).toMatch(/back to the original/);
   });

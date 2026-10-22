@@ -6,23 +6,13 @@ import {
   type BeatStatus,
   type MapSetId,
 } from '@engine/save/progress';
-import { MAP_DIFFICULTIES, type MapDifficulty } from '@engine/save/settings';
+import type { MapDifficulty } from '@engine/save/settings';
 import { MenuScene, type MenuItem } from './menu';
 import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
-import { ClassicHeroesScene } from './disable-heroes';
-import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
-import {
-  ClassicOptionRowsScene,
-  GAME_MODE_ROW,
-  MORE_SETTINGS_ROWS,
-  MUSIC_SET_ROW,
-  WEAPON_ROWS,
-  optionItem,
-  rowsOriginal,
-} from './original-options';
+import { MUSIC_SET_ROW, optionItem } from './original-options';
 import type { Game } from './game';
-import { openClassicSet, savedRunSpoken } from './original-saves';
+import { filesBoxFor } from './original-files-menu';
 import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
@@ -144,64 +134,6 @@ export const DIFFICULTY_NAMES: Record<MapDifficulty, string> = {
   hard: 'Hard',
 };
 
-/** The status line while Current rules leave every map on Normal (it fits the 28 columns). */
-export const CURRENT_RULES_NORMAL = 'Campaign rules: always Normal';
-
-/**
- * A Map difficulty row (G-006): its value, changed with left and right (and OK / CHANGE on a
- * phone), saved and read out. While `classic()` is false (Current rules) it shows Normal, says
- * why and does not change.
- */
-export function mapDifficultyItem(
-  game: Game,
-  classic: () => boolean,
-  store: { get(): MapDifficulty; set(d: MapDifficulty): void } = settingsDifficulty(game),
-): MenuItem {
-  const value = () => (classic() ? store.get() : 'normal');
-  return {
-    label: 'Map difficulty',
-    value: () => DIFFICULTY_NAMES[value()],
-    adjust: (d) => {
-      if (!classic()) return;
-      const all = MAP_DIFFICULTIES;
-      store.set(all[(all.indexOf(value()) + d + all.length) % all.length] as MapDifficulty);
-    },
-    get hint() {
-      return classic()
-        ? 'Easy, Normal or Hard: each plays the original version of every level'
-        : 'Classic rules only: with Campaign rules every level plays as Normal';
-    },
-  };
-}
-
-/** The CLASSIC menu's Map difficulty: settings.classicMapDifficulty, saved at once. */
-function settingsDifficulty(game: Game): { get(): MapDifficulty; set(d: MapDifficulty): void } {
-  return {
-    get: () => game.deps.settings?.classicMapDifficulty ?? 'normal',
-    set: (d) => {
-      const s = game.deps.settings;
-      if (!s) return;
-      s.classicMapDifficulty = d;
-      game.deps.applySettings?.();
-    },
-  };
-}
-
-/** The first full-screen menu row's y (the CLASSIC menu's BEATEN marks line up with its rows). */
-const CLASSIC_RULES_Y = 64;
-
-/**
- * Whether a Classic mode run will play changed options: any row with Classic SMBC rules; with
- * Current rules only Game mode applies (More settings and Weapons are Classic rules only).
- */
-export function classicOptionsOn(game: Game): boolean {
-  const saved = game.deps.settings?.classic ?? defaultClassicSettings();
-  // BUG-08: a saved Expansion heroes value (the row is gone) is ignored, so it is never "on".
-  const c = { ...saved, expansion: defaultClassicSettings().expansion };
-  if (game.classicRules === 'classic') return !isOriginalClassic(c);
-  return c.gameMode !== defaultClassicSettings().gameMode;
-}
-
 /** The Tutorials row's spoken help (O-15 / G-042). */
 export const TUTORIALS_HINT =
   'On: boxes explain the select, the controls, each hero and each upgrade, once per game';
@@ -265,49 +197,32 @@ export class ClassicMenuScene extends MenuScene {
     else this.game.showClassicTitle('start');
   }
 
-  /** The entries (rebuilt on the way back from Options, so the hints follow the options). */
+  /** The entries (rebuilt on the way back from a file box, so the hints follow the files). */
   private build(): void {
     const game = this.game;
-    // A run that will not play as the original says so (FU-7: never silently non-original).
-    const own = classicOptionsOn(game) ? '. Your own Classic options are on' : '';
     // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
     // the hint, drawn as BEATEN at the row's end (render).
     this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
-    const items: MenuItem[] = [];
-    // Per-set saves (O-07, G-008): each set keeps its own run; picking a set that has one asks
-    // CONTINUE / NEW GAME (original-saves.ts), one with none starts a new game as before.
-    items.push(
-      ...MAP_SETS.map((set) => {
-        const kept = game.classicResume(set.id);
-        const saved = kept ? `. Saved run: ${savedRunSpoken(kept)}` : '';
-        return {
-          label: set.label,
-          select: () => openClassicSet(game, set, { back: () => game.showClassicMenu(set.id) }),
-          hint: `${set.about}${beatHint(classicBeatStatus(set.id))}${saved}${own}`,
-        };
-      }),
-    );
-    // Map Difficulty (G-006): its own row after the map sets, as the original's New Game options
-    // have it (NewGameOptionsMenu.as:43). Classic rules only: with Current rules every map plays
-    // as Normal, which the row shows and says (and it does not change).
-    items.push(mapDifficultyItem(game, () => game.classicRules !== 'current'));
-    this.status = game.classicRules === 'current' ? CURRENT_RULES_NORMAL : '';
-    items.push(
-      {
-        label: 'Options',
-        select: () =>
-          game.scenes.push(
-            new ClassicOptionsScene(game, () => {
-              game.scenes.pop();
-              this.build();
-              this.announce();
-            }),
-          ),
-        hint: 'Game mode, more settings, weapons, music set, and video, audio and controls',
-      },
-      { label: 'Back', select: () => this.leave() },
-    );
+    // B-L: each set has three save files; picking a set opens its file box (original-files-menu.ts).
+    // Map difficulty and Options are no longer here: a file's rules are chosen when it starts,
+    // and the shared options are in the Start box's OPTIONS.
+    const items: MenuItem[] = MAP_SETS.map((set) => {
+      const used = game.classicFiles(set.id).filter((f) => f !== null).length;
+      const files = used === 0 ? 'No files used' : `${used} ${used === 1 ? 'file' : 'files'} used`;
+      return {
+        label: set.label,
+        select: () => game.scenes.push(filesBoxFor(game, set.id)),
+        hint: `${set.about}${beatHint(classicBeatStatus(set.id))}. ${files}`,
+      };
+    });
+    items.push({ label: 'Back', select: () => this.leave(), hint: 'To the Start box' });
     this.setItems(items);
+  }
+
+  /** Back from a set's file box: the sets again (their hints follow the files). */
+  comeBack(): void {
+    this.build();
+    this.announce();
   }
 
   override enter(): void {
@@ -316,11 +231,6 @@ export class ClassicMenuScene extends MenuScene {
 
   protected override announce(): void {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
-  }
-
-  /** Back from a set's CONTINUE / NEW GAME prompt: the highlighted row again. */
-  reannounce(): void {
-    this.announce();
   }
 
   /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
@@ -388,8 +298,10 @@ export class ClassicMenuScene extends MenuScene {
 const BEATEN_MARK = 'BEATEN';
 const MENU_VALUE_RIGHT = 232;
 const MENU_ROW_H = 14;
+/** The first full-screen menu row's y (the CLASSIC menu's BEATEN marks line up with its rows). */
+const CLASSIC_RULES_Y = 64;
 
-/** Classic mode's options: Game mode, then every other setting (the usual Options). */
+/** Classic mode's shared options (the Start box's OPTIONS): Music set, Tutorials, Cheats, the usual Options. */
 export class ClassicOptionsScene extends MenuScene {
   /** BUG-01: the CLASSIC title it is a box over (null: a full-screen page). */
   private readonly over = demoUnder(this.game);
@@ -412,42 +324,17 @@ export class ClassicOptionsScene extends MenuScene {
     super.update(input);
   }
 
-  /** The rows (rebuilt after a change, so the Game mode row's `*` mark follows). */
+  /**
+   * The rows (rebuilt after a change, so the Music set row's `*` mark follows). B-L: only what
+   * is shared across Classic, changeable any time: Music set, Tutorials, Cheats and the video,
+   * audio and controls. A file's rules (Map difficulty, Game mode, More settings, Weapons, Disable
+   * heroes) are chosen only as the file starts (original-files-menu.ts).
+   */
   private build(): void {
     const game = this.game;
-    const menu = (title: string, spoken: string, rows: Parameters<typeof rowsOriginal>[0]) => () =>
-      game.scenes.push(
-        new ClassicOptionRowsScene(game, title, rows, spoken, () => {
-          game.scenes.pop();
-          this.build();
-          this.announce();
-        }),
-      );
-    const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
-      rowsOriginal(rows, game.deps.settings?.classic ?? defaultClassicSettings()) ? 'Original' : 'Changed';
     const onBack = this.onBack ?? (() => {});
-    // BUG-11: no Classic rules row (Dev > Toggle heroes' Plays as sets a hero's design instead).
     this.setItems([
-      optionItem(game, GAME_MODE_ROW, () => this.build()),
-      {
-        label: 'More settings',
-        value: state(MORE_SETTINGS_ROWS),
-        select: menu('MORE SETTINGS', 'More settings', MORE_SETTINGS_ROWS),
-        hint: 'Lives, attack, when hit, item drops, piranhas, goombas and enemy speed, with Classic SMBC rules',
-      },
-      {
-        label: 'Weapons',
-        value: state(WEAPON_ROWS),
-        select: menu('CUSTOMIZE WEAPONS', 'Customize weapons', WEAPON_ROWS),
-        hint: "Each hero's weapons, with Classic SMBC rules",
-      },
       optionItem(game, MUSIC_SET_ROW, () => this.build()),
-      {
-        label: 'Disable heroes',
-        value: () => String(game.deps.settings?.classicHeroesOff?.length ? 'Some off' : 'All on'),
-        select: () => game.scenes.push(new ClassicHeroesScene(game, () => this.back())),
-        hint: 'Leave heroes out of the select and Random',
-      },
       tutorialsItem(game),
       {
         label: 'Cheats',

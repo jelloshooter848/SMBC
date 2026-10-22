@@ -401,6 +401,9 @@ describe('save codes: every SaveFile field is handled', () => {
         'itemsNext',
         'score',
         'slot',
+        // Item 25: dev mode's Plays as marks (dev flags, as devUnlockAll).
+        'swapped',
+        'swapped2',
         'updated',
         'v',
       ].sort(),

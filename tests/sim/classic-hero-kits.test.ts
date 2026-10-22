@@ -5,7 +5,13 @@ import { LINK } from '@game/characters/link';
 import { startHp } from '@game/characters/character';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
-import { classicResumeKey, loadClassicResume, resumeOf } from '@game/run-resume';
+import { resumeOf } from '@game/run-resume';
+import {
+  classicFileKey,
+  loadClassicFile,
+  originalFileRules,
+  type ClassicFileRef,
+} from '@game/original-files';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // BUG-06: in the original every hero keeps his own upgrades and ammo (StatManager.as 135-147, by
@@ -16,6 +22,13 @@ import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 useStorage();
 afterEach(() => store.clear());
+
+const F1: ClassicFileRef = { set: 'smb', slot: 1 };
+/** B-L: FILE 1's run (the old per-set slot's place). */
+const loadClassicResume = (_set: 'smb') => loadClassicFile(F1)?.run ?? null;
+/** FILE 1 holding run `r` as stored (its JSON, so the reader checks every field). */
+const fileWith = (r: string) =>
+  `{"v":1,"rules":${JSON.stringify(originalFileRules())},"continues":0,"run":${r}}`;
 
 function classic(over: Partial<Settings> = {}): H {
   const settings = { ...defaultSettings(), ...over };
@@ -33,7 +46,7 @@ function enterLevel(h: H): LevelScene {
 
 /** A Classic run of Mario, in 1-1. */
 function marioRun(h: H): void {
-  h.game.classicGame(MARIO);
+  h.game.classicGame(MARIO, '1-1', { ref: F1 });
   enterLevel(h);
 }
 
@@ -135,7 +148,7 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     expect(g.state.powerState).toBe('small');
     g.state.powerState = 'fire';
     g.setHero(0, LINK);
-    g.classicGame(LINK);
+    g.classicGame(LINK, '1-1', { ref: F1 });
     expect(g.classicKits).toEqual({});
     g.setHero(0, MARIO);
     expect(g.state.powerState).toBe('small');
@@ -153,7 +166,7 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
       mario: { powerState: 'fire', hp: expect.any(Number), kit: {} },
     });
     g.showTitle();
-    expect(g.resumeClassic('smb')).toBe(true);
+    expect(g.resumeClassic(F1)).toBe(true);
     expect(g.state.character).toBe(LINK);
     expect(g.state.powerState).toBe('big');
     g.setHero(0, MARIO);
@@ -166,9 +179,9 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     const g = h.game;
     const r = resumeOf('1-2', g.state, 'classic');
     expect(r.heroKits).toBeUndefined();
-    store.set(classicResumeKey('smb'), JSON.stringify(r));
+    store.set(classicFileKey(F1), fileWith(JSON.stringify(r)));
     g.showTitle();
-    expect(g.resumeClassic('smb')).toBe(true);
+    expect(g.resumeClassic(F1)).toBe(true);
     expect(g.classicKits).toEqual({});
     g.setHero(0, LINK);
     expect(g.state.powerState).toBe('small');
@@ -190,7 +203,7 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
         simon: { powerState: 'fire', hp: 0, kit: { a: 1, b: 'no' } },
       },
     };
-    store.set(classicResumeKey('smb'), JSON.stringify(r));
+    store.set(classicFileKey(F1), fileWith(JSON.stringify(r)));
     expect(loadClassicResume('smb')?.heroKits).toEqual({
       luigi: { powerState: 'fire', hp: 0, kit: {} },
       bill: { powerState: 'big', hp: 0, kit: {} },
@@ -209,7 +222,7 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
         bass: { powerState: 'big', hp: 0, kit: {} },
       },
     };
-    store.set(classicResumeKey('smb'), JSON.stringify(r));
+    store.set(classicFileKey(F1), fileWith(JSON.stringify(r)));
     expect(loadClassicResume('smb')?.heroKits).toEqual({ bass: { powerState: 'big', hp: 0, kit: {} } });
   });
 
@@ -218,8 +231,8 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
     marioRun(h);
     const put = (over: Record<string, unknown>) =>
       store.set(
-        classicResumeKey('smb'),
-        JSON.stringify({ ...resumeOf('1-2', h.game.state, 'classic'), ...over }),
+        classicFileKey(F1),
+        fileWith(JSON.stringify({ ...resumeOf('1-2', h.game.state, 'classic'), ...over })),
       );
     put({ powerState: 'huge' });
     expect(loadClassicResume('smb')).toMatchObject({ powerState: 'small', hp: 0 });

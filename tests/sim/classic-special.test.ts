@@ -17,6 +17,7 @@ import { LOCKED_CHECKPOINTS } from '@game/rules/classic-cheats';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
+import { newFile } from './classic-files-nav';
 import { LevelSelectScene, levelSelectTarget } from '@game/scenes/level-select-cheat';
 import type { MenuItem } from '@game/scenes/menu';
 import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
@@ -209,8 +210,6 @@ describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
       'Super Mario Bros.',
       'SMB Special',
       'The Lost Levels',
-      'Map difficulty',
-      'Options',
       'Back',
     ]);
     for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
@@ -220,24 +219,21 @@ describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
     expect(h.said.at(-1)).not.toMatch(/Beaten/);
   });
 
-  it("its row starts a Classic run at Special 1-1, on the Map difficulty row's difficulty", () => {
+  it('its row starts a Classic run at Special 1-1 (B-L: a new file, on the difficulty it asks)', () => {
     const h = classic();
     h.game.showClassicMenu();
     h.idle(8);
-    // The Map difficulty row (after the map sets): Normal, left to Easy.
-    for (let i = 0; i < MAP_SETS.length; i++) h.tap('down');
-    expect(h.said.at(-1)).toMatch(/^Map difficulty: Normal/);
-    h.tap('left');
-    expect(S(h).classicMapDifficulty).toBe('easy');
-    // Up to SMB Special, and OK.
-    for (let i = 1; i < MAP_SETS.length; i++) h.tap('up');
+    h.tap('down');
     expect(h.said.at(-1)).toMatch(/^SMB Special\./);
     h.tap('jump');
+    // An empty file: Special has the original's Easy and Hard layers, so it asks.
+    newFile(h, 1, 'Easy');
     choose(h, MARIO);
     const l = enterLevel(h);
     expect(l.level.id).toBe('sp-1-1');
     expect(h.game.classicRun).toBe(true);
     expect(h.game.ctx.mapDifficulty).toBe('easy');
+    expect(S(h).classicMapDifficulty).toBe('normal');
     expect(h.said.some((t) => /World 1-1/.test(t))).toBe(true);
   });
 

@@ -3,7 +3,8 @@ import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { LUIGI } from '@game/characters/luigi';
 import { LevelScene } from '@game/scenes/level';
-import { CLASSIC_RESUME_KEY, classicResumeKey, loadClassicResume } from '@game/run-resume';
+
+import { classicFileKey, loadClassicFile, type ClassicFileRef } from '@game/original-files';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // RC-004 (0.5.0 RC audit): opening a shared `?level=` link (main.ts -> devClassicGame with dev
@@ -11,6 +12,10 @@ import { makeGame, store, useStorage, type H } from './heroes-harness';
 // run now never writes the resume slot, and its game over or credits never clear it.
 
 useStorage();
+
+/** B-L: SMB's FILE 1 (an old single or per-set slot migrates into it). */
+const F1: ClassicFileRef = { set: 'smb', slot: 1 };
+const loadClassicResume = () => loadClassicFile(F1)?.run ?? null;
 afterEach(() => store.clear());
 
 function classic(): H & { settings: Settings } {
@@ -25,17 +30,17 @@ const inLevel = (h: H) => h.top() instanceof LevelScene;
  * (SMB's) is checked to be there, so a comparison is never between two empty stores.
  */
 const slots = () =>
-  Object.fromEntries([...store.entries()].filter(([k]) => k.startsWith(CLASSIC_RESUME_KEY)));
+  Object.fromEntries([...store.entries()].filter(([k]) => k.startsWith('smbc-classic-file')));
 function seededSlots(): Record<string, string> {
   const s = slots();
-  expect(s[classicResumeKey('smb')]).toMatch(/"levelId":"4-2"/);
+  expect(s[classicFileKey(F1)]).toMatch(/"levelId":"4-2"/);
   return s;
 }
 
 /** A Classic mode run as Luigi at 4-2 with 50,000 points: the slot a link must not replace. */
 function seeded(): H & { settings: Settings } {
   const h = classic();
-  h.game.classicGame(LUIGI, '4-1');
+  h.game.classicGame(LUIGI, '4-1', { ref: F1 });
   h.until(() => inLevel(h), 600);
   h.game.state.score = 50000;
   h.game.goToLevel('4-2', { mode: 'stand' });
@@ -76,7 +81,7 @@ describe('RC-004 a link run leaves the Continue slot alone', () => {
     h.game.devClassicGame(MARIO, '1-1', 'classic', false);
     h.until(() => inLevel(h), 600);
     h.game.showTitle();
-    h.game.classicGame(MARIO, '2-1');
+    h.game.classicGame(MARIO, '2-1', { ref: F1 });
     expect(loadClassicResume()).toMatchObject({ levelId: expect.stringMatching(/^2-1/), hero: 'mario' });
   });
 });

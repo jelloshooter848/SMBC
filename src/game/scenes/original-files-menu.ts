@@ -1,0 +1,537 @@
+import type { InputFrame } from '@engine/input/input-manager';
+import type { Renderer } from '@engine/gfx/renderer';
+import type { MapSetId } from '@engine/save/progress';
+import { MAP_DIFFICULTIES, type MapDifficulty } from '@engine/save/settings';
+import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
+import {
+  CLASSIC_FILE_SLOTS,
+  eraseClassicFile,
+  originalFileRules,
+  type ClassicFile,
+  type ClassicFileRef,
+  type ClassicFileRules,
+  type ClassicFileSlot,
+} from '../original-files';
+import { resumeSetOf } from '../run-resume';
+import { worldLabel } from '../hud/world-label';
+import { MenuScene, type MenuItem } from './menu';
+import type { Game } from './game';
+import { demoUnder, renderBoxedMenu, type DemoBackdrop } from './original-box-menu';
+import { DIFFICULTY_NAMES, MAP_SETS, type MapSet } from './original-game';
+import {
+  ClassicOptionRowsScene,
+  GAME_MODE_NAMES,
+  GAME_MODE_ROW,
+  MORE_SETTINGS_ROWS,
+  WEAPON_ROWS,
+  optionItem,
+  rowsOriginal,
+  type OptionStore,
+} from './original-options';
+import { ClassicHeroesScene, type HeroesOffStore } from './disable-heroes';
+
+/*
+ * B-L: Classic mode's save files, in the Classic style (orange boxes over the CLASSIC title's
+ * live demo, the mushroom cursor, the original's move, choose, back and coin sounds). Picking a map
+ * set on the set box opens its file box: FILE 1-3 (a used file shows its difficulty, where it is
+ * and its lives on its row, its hero and score under the box; an empty one NEW GAME), ERASE FILE
+ * and BACK. A used file goes on (Game.resumeClassic: CONTINUE, then the select); an empty one
+ * asks the Map difficulty, then its rules box (Game mode, More settings, Weapons, Disable heroes,
+ * each starting at the original's), and START plays it. ERASE FILE picks a file, then asks
+ * "ERASE FILE N?" with NO first. BACK steps back one box everywhere.
+ */
+
+/** The short name of a map set, for a run the Level Select cheat took into another set. */
+export const SET_SHORT: Record<MapSetId, string> = { smb: 'SMB', special: 'SP', lost: 'LL' };
+
+const setOf = (id: MapSetId): MapSet => MAP_SETS.find((m) => m.id === id) ?? (MAP_SETS[0] as MapSet);
+
+/** Where a file's run is: "4-2", or "SP 2-1" when it is in another map set than its file's. */
+export function fileWhere(f: ClassicFile): string {
+  const at = `${worldLabel(f.run.world)}-${f.run.stage}`;
+  const here = resumeSetOf(f.run.levelId);
+  return here === f.set ? at : `${SET_SHORT[here]} ${at}`;
+}
+
+/** A used file's row value: "HARD 4-2 X3". */
+export function fileRowValue(f: ClassicFile): string {
+  const lives = livesShown(f) ? ` x${f.run.lives}` : '';
+  return `${DIFFICULTY_NAMES[f.rules.difficulty]} ${fileWhere(f)}${lives}`.toUpperCase();
+}
+
+/**
+ * Whether a file's lives are shown: always, but for a Survival run with none left (its lives only
+ * revive heroes, so "X0" would read as a run that is over).
+ */
+function livesShown(f: ClassicFile): boolean {
+  return !(f.run.lives === 0 && f.run.survival);
+}
+
+/** The hero a file plays, by name. */
+export function fileHeroName(game: Game, f: ClassicFile): string {
+  return game.rosterFor('classic').find((c) => c.id === f.run.hero)?.name ?? f.run.hero;
+}
+
+/** The line under the file box for a used file: its hero and score. */
+export function fileDetailLine(game: Game, f: ClassicFile): string {
+  return `${fileHeroName(game, f)} SCORE ${f.run.score}`;
+}
+
+/** A file's rules as read out: "Survival, Hard" (its Game mode, then its Map difficulty). */
+export function fileRulesSpoken(r: ClassicFileRules): string {
+  return `${GAME_MODE_NAMES[r.options.gameMode] ?? r.options.gameMode}, ${DIFFICULTY_NAMES[r.difficulty]}`;
+}
+
+/**
+ * Whether a file plays changed rules beyond its difficulty and Game mode (More settings,
+ * Weapons or Disable heroes): its hint says so (FU-7: never silently non-original).
+ */
+export function fileOwnRules(r: ClassicFileRules): boolean {
+  const o = { ...r.options, gameMode: defaultClassicSettings().gameMode };
+  return !isOriginalClassic(o) || r.heroesOff.length > 0;
+}
+
+/** A used file in full, as read out. */
+export function fileSpoken(game: Game, f: ClassicFile): string {
+  const own = fileOwnRules(f.rules) ? '. Your own rules are on' : '';
+  const r = f.run;
+  const here = resumeSetOf(r.levelId);
+  const where = `World ${worldLabel(r.world)}-${r.stage}${here === f.set ? '' : ` of ${setOf(here).label.replace(/\.$/, '')}`}`;
+  const lives = livesShown(f) ? `${r.lives} ${r.lives === 1 ? 'life' : 'lives'}` : '';
+  const parts = [
+    DIFFICULTY_NAMES[f.rules.difficulty],
+    where,
+    lives,
+    `score ${r.score}`,
+    fileHeroName(game, f),
+    GAME_MODE_NAMES[f.rules.options.gameMode],
+  ];
+  return `${parts.filter(Boolean).join(', ')}${own}`;
+}
+
+/** A kept file that cannot be read (as the campaign's file select shows one). */
+const UNREADABLE = 'UNREADABLE';
+
+/** "File 2" */
+const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
+
+/**
+ * A Classic box page over the CLASSIC title's demo (BUG-01's boxes): the original's sounds, the
+ * demo playing on under it, the rows drawn by renderBoxedMenu with the page's name on top and a
+ * status line under the box. Away from the demo (never in play) the usual full-screen page.
+ */
+abstract class ClassicBox extends MenuScene {
+  protected readonly over: DemoBackdrop | null;
+  /** Says the page's name first when it opens. */
+  protected abstract readonly spokenTitle: string;
+
+  constructor(game: Game, title: string, onBack: () => void) {
+    super(game, title, [], onBack);
+    this.over = demoUnder(game);
+    if (this.over) {
+      this.translucent = true;
+      this.moveSfx = 'fireball';
+      this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
+    }
+  }
+
+  /** The line under the box for the highlighted row ('' for none). */
+  protected statusLine(): string {
+    return this.status;
+  }
+
+  /** The highlighted row as read out. */
+  protected spoken(): string {
+    const it = this.items[this.index];
+    if (!it) return '';
+    const v = it.value ? `: ${it.value()}` : '';
+    const line = `${it.label.replace(/\*$/, '')}${v}`;
+    return it.hint ? `${line.replace(/\.$/, '')}. ${it.hint}` : line;
+  }
+
+  override enter(): void {
+    this.game.deps.announcer?.say(`${this.spokenTitle}. ${this.spoken()}`);
+  }
+
+  protected override announce(): void {
+    this.game.deps.announcer?.say(this.spoken());
+  }
+
+  /** Back to this page from one over it: its rows again, then the highlighted one read. */
+  comeBack(): void {
+    this.refresh();
+    this.announce();
+  }
+
+  /** Rebuild the rows (after a change on a page over this one). */
+  protected refresh(): void {}
+
+  override update(input: InputFrame): void {
+    this.over?.tickDemo();
+    super.update(input);
+  }
+
+  override render(r: Renderer): void {
+    if (!this.over) {
+      const keep = this.status;
+      this.status = this.statusLine();
+      super.render(r);
+      this.status = keep;
+      return;
+    }
+    renderBoxedMenu(r, this.game, {
+      backAction: this.backAction,
+      header: this.title,
+      items: this.items,
+      index: this.index,
+      t: this.t,
+      status: this.statusLine(),
+      age: this.t,
+    });
+  }
+}
+
+/** Pops scenes until `scene` is on top. */
+function closeTo(game: Game, scene: MenuScene): void {
+  while (game.scenes.top && game.scenes.top !== scene) game.scenes.pop();
+}
+
+/**
+ * Map set `set`'s file box: FILE 1-3, ERASE FILE (a row of its own, so a file is never erased by
+ * accident), BACK (to the set box).
+ */
+export class ClassicFilesScene extends ClassicBox {
+  protected readonly spokenTitle: string;
+  private files: (ClassicFile | null)[] = [];
+
+  constructor(
+    game: Game,
+    readonly set: MapSet,
+    focus?: ClassicFileSlot,
+    onBack: () => void = () => {
+      game.scenes.pop();
+      (game.scenes.top as Partial<ClassicBox> | undefined)?.comeBack?.();
+    },
+  ) {
+    super(game, set.label.toUpperCase(), onBack);
+    this.spokenTitle = `${set.label.replace(/\.$/, '')}. Choose a file`;
+    this.refresh();
+    if (focus) this.index = focus - 1;
+  }
+
+  /** The file on a row (FILE 1-3), or undefined for the ERASE FILE and BACK rows. */
+  private slotAt(i: number): ClassicFileSlot | undefined {
+    return CLASSIC_FILE_SLOTS[i];
+  }
+
+  protected override refresh(): void {
+    const game = this.game;
+    this.files = game.classicFiles(this.set.id);
+    const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot, i) => {
+      const f = this.files[i] ?? null;
+      if (!f && game.classicFileState({ set: this.set.id, slot }) === 'unreadable')
+        return {
+          label: fileName(slot),
+          value: () => UNREADABLE,
+          select: () => {
+            game.ctx.audio.sfx('bump');
+            game.deps.announcer?.say(`${fileName(slot)} cannot be read. Erase it to use it again.`);
+          },
+          hint: 'Cannot be read. Erase it to use it again',
+        };
+      return f
+        ? {
+            label: fileName(slot),
+            value: () => fileRowValue(f),
+            select: () => this.play(slot),
+            hint: `${fileSpoken(game, f)}. Continue this file`,
+          }
+        : {
+            label: fileName(slot),
+            value: () => 'NEW GAME',
+            select: () => this.openNew(slot, originalFileRules(), false),
+            hint: 'Empty. Start a new game here: choose its difficulty and rules',
+          };
+    });
+    const used = this.inUse.some(Boolean);
+    items.push(
+      {
+        label: 'Erase file',
+        select: () => this.erase(),
+        hint: used ? 'Choose a file to erase' : 'Every file is empty',
+      },
+      { label: 'Back', select: () => this.onBack?.(), hint: 'To the map sets' },
+    );
+    this.setItems(items);
+  }
+
+  protected override statusLine(): string {
+    const slot = this.slotAt(this.index);
+    const f = slot ? this.files[slot - 1] : null;
+    return f ? fileDetailLine(this.game, f) : '';
+  }
+
+  /** A used file goes on (CONTINUE, then the select). */
+  private play(slot: ClassicFileSlot): void {
+    if (!this.game.resumeClassic({ set: this.set.id, slot })) {
+      this.game.ctx.audio.sfx('bump');
+      this.comeBack();
+    }
+  }
+
+  /**
+   * A new game on empty file `slot`: its difficulty box, then its rules box with `draft`.
+   * `atRules`: straight back to the rules box (BACK from the new game's select), the
+   * difficulty box under it.
+   */
+  openNew(slot: ClassicFileSlot, draft: ClassicFileRules, atRules: boolean): void {
+    const ref: ClassicFileRef = { set: this.set.id, slot };
+    const diff = new ClassicDifficultyScene(this.game, ref, draft, this);
+    this.game.scenes.push(diff);
+    if (atRules) diff.openRules();
+  }
+
+  /** Per file: anything stored there (used, or unreadable), so ERASE FILE can empty it. */
+  get inUse(): boolean[] {
+    return CLASSIC_FILE_SLOTS.map(
+      (slot) => this.game.classicFileState({ set: this.set.id, slot }) !== 'empty',
+    );
+  }
+
+  private erase(): void {
+    if (!this.inUse.some(Boolean)) {
+      this.game.ctx.audio.sfx('bump');
+      this.game.deps.announcer?.say('Every file is empty.');
+      return;
+    }
+    this.game.scenes.push(new ClassicEraseScene(this.game, this));
+  }
+
+  /** The files as the box shows them (ERASE FILE's picker reads them). */
+  get shown(): readonly (ClassicFile | null)[] {
+    return this.files;
+  }
+
+  /** After ERASE: the box again, on the erased file, saying so. */
+  erased(slot: ClassicFileSlot): void {
+    closeTo(this.game, this);
+    this.refresh();
+    this.index = slot - 1;
+    this.game.deps.announcer?.say(`${fileName(slot)} erased. ${this.spoken()}`);
+  }
+}
+
+/** A new file's Map difficulty: Easy, Normal or Hard (the original's MAP_DIFFICULTY). */
+const DIFFICULTY_HINTS: Record<MapDifficulty, string> = {
+  easy: "The original's easier version of every level",
+  normal: 'Every level as the original game has it',
+  hard: "The original's harder version of every level",
+};
+
+export class ClassicDifficultyScene extends ClassicBox {
+  protected readonly spokenTitle: string;
+
+  constructor(
+    game: Game,
+    readonly ref: ClassicFileRef,
+    readonly draft: ClassicFileRules,
+    readonly files: ClassicFilesScene,
+  ) {
+    super(game, 'Difficulty', () => {
+      closeTo(game, files);
+      files.comeBack();
+    });
+    this.spokenTitle = `${fileName(ref.slot)}, new game. Choose the map difficulty; it is fixed for this file`;
+    this.setItems([
+      ...MAP_DIFFICULTIES.map((d) => ({
+        label: DIFFICULTY_NAMES[d],
+        select: () => {
+          this.draft.difficulty = d;
+          this.openRules();
+        },
+        hint: DIFFICULTY_HINTS[d],
+      })),
+      { label: 'Back', select: () => this.onBack?.(), hint: 'To the files' },
+    ]);
+    this.index = Math.max(0, MAP_DIFFICULTIES.indexOf(draft.difficulty));
+  }
+
+  /** The file's rules box, over this one. */
+  openRules(): void {
+    this.game.scenes.push(new ClassicFileRulesScene(this.game, this.ref, this.draft, this));
+  }
+}
+
+/**
+ * A new file's rules box: Game mode, More settings, Weapons, Disable heroes (each sub-page a box,
+ * every value starting at the original's), then START. Nothing here is saved until the file's
+ * first WORLD card writes it with these rules, and nothing goes into the shared settings.
+ */
+export class ClassicFileRulesScene extends ClassicBox {
+  protected readonly spokenTitle: string;
+
+  constructor(
+    game: Game,
+    readonly ref: ClassicFileRef,
+    readonly draft: ClassicFileRules,
+    readonly below: ClassicDifficultyScene,
+  ) {
+    super(game, `File ${ref.slot} rules`, () => {
+      closeTo(game, below);
+      below.comeBack();
+    });
+    this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts. Left and right to change`;
+    this.refresh();
+  }
+
+  private get options(): OptionStore {
+    return { get: () => this.draft.options, changed: () => {} };
+  }
+
+  private get heroesOff(): HeroesOffStore {
+    return {
+      get: () => this.draft.heroesOff,
+      set: (off) => {
+        this.draft.heroesOff = off;
+      },
+    };
+  }
+
+  protected override refresh(): void {
+    const game = this.game;
+    const sub = (title: string, spoken: string, rows: Parameters<typeof rowsOriginal>[0]) => () =>
+      game.scenes.push(
+        new ClassicOptionRowsScene(game, title, rows, spoken, () => this.backHere(), this.options),
+      );
+    const state = (rows: Parameters<typeof rowsOriginal>[0]) => () =>
+      rowsOriginal(rows, this.draft.options) ? 'Original' : 'Changed';
+    this.setItems([
+      optionItem(game, GAME_MODE_ROW, () => this.refresh(), this.options),
+      {
+        label: 'More settings',
+        value: state(MORE_SETTINGS_ROWS),
+        select: sub('MORE SETTINGS', 'More settings', MORE_SETTINGS_ROWS),
+        hint: 'Lives, attack, when hit, item drops, piranhas, goombas and enemy speed',
+      },
+      {
+        label: 'Weapons',
+        value: state(WEAPON_ROWS),
+        select: sub('CUSTOMIZE WEAPONS', 'Customize weapons', WEAPON_ROWS),
+        hint: "Each hero's weapons",
+      },
+      {
+        label: 'Disable heroes',
+        value: () => (this.draft.heroesOff.length ? 'Some off' : 'All on'),
+        select: () => game.scenes.push(new ClassicHeroesScene(game, () => this.backHere(), this.heroesOff)),
+        hint: 'Leave heroes out of the select and Random',
+      },
+      {
+        label: 'Start',
+        select: () => this.start(),
+        hint: `Start ${fileName(this.ref.slot)} with these rules, then choose your hero`,
+      },
+      { label: 'Back', select: () => this.onBack?.(), hint: 'To the difficulty' },
+    ]);
+  }
+
+  /** Back from a sub-page: this box, its values rebuilt. */
+  private backHere(): void {
+    closeTo(this.game, this);
+    this.comeBack();
+  }
+
+  private start(): void {
+    const { game, ref, draft } = this;
+    game.startClassicFile(ref, draft, () => game.showNewFile(ref, draft));
+  }
+}
+
+/** ERASE FILE: which file (an empty one cannot be picked), then the confirm. */
+export class ClassicEraseScene extends ClassicBox {
+  protected readonly spokenTitle = 'Erase file. Choose a file to erase';
+
+  constructor(
+    game: Game,
+    readonly files: ClassicFilesScene,
+  ) {
+    super(game, 'Erase file', () => {
+      closeTo(game, files);
+      files.comeBack();
+    });
+    this.refresh();
+    const first = files.inUse.findIndex(Boolean);
+    this.index = Math.max(0, first);
+  }
+
+  protected override refresh(): void {
+    const game = this.game;
+    const inUse = this.files.inUse;
+    const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot, i) => {
+      const f = this.files.shown[i] ?? null;
+      if (!f && inUse[i])
+        return {
+          label: fileName(slot),
+          value: () => UNREADABLE,
+          select: () => game.scenes.push(new ClassicEraseConfirmScene(game, slot, null, this.files, this)),
+          hint: 'Cannot be read',
+        };
+      return f
+        ? {
+            label: fileName(slot),
+            value: () => fileRowValue(f),
+            select: () => game.scenes.push(new ClassicEraseConfirmScene(game, slot, f, this.files, this)),
+            hint: fileSpoken(game, f),
+          }
+        : {
+            label: fileName(slot),
+            value: () => 'EMPTY',
+            select: () => {
+              game.ctx.audio.sfx('bump');
+              game.deps.announcer?.say(`${fileName(slot)} is empty.`);
+            },
+            hint: 'Empty: nothing to erase',
+          };
+    });
+    items.push({ label: 'Back', select: () => this.onBack?.(), hint: 'To the files' });
+    this.setItems(items);
+  }
+}
+
+/** "ERASE FILE N?": NO (focused, and BACK) or YES, which empties the file. */
+export class ClassicEraseConfirmScene extends ClassicBox {
+  protected readonly spokenTitle: string;
+
+  constructor(
+    game: Game,
+    readonly slot: ClassicFileSlot,
+    readonly file: ClassicFile | null,
+    readonly files: ClassicFilesScene,
+    readonly picker: ClassicEraseScene,
+  ) {
+    super(game, `Erase file ${slot}?`, () => {
+      closeTo(game, picker);
+      picker.comeBack();
+    });
+    const what = file ? fileSpoken(game, file) : 'It cannot be read';
+    this.spokenTitle = `Erase file ${slot}? ${what}. It cannot be undone`;
+    this.setItems([
+      { label: 'No', select: () => this.onBack?.(), hint: 'Keep the file' },
+      {
+        label: 'Yes',
+        select: () => {
+          eraseClassicFile({ set: files.set.id, slot });
+          files.erased(slot);
+        },
+        hint: `Erase ${fileName(slot)} for good`,
+      },
+    ]);
+    this.index = 0;
+  }
+}
+
+/** For Game: a new file box over the set box, the CLASSIC title under them. */
+export function filesBoxFor(game: Game, set: MapSetId, focus?: ClassicFileSlot): ClassicFilesScene {
+  return new ClassicFilesScene(game, setOf(set), focus);
+}

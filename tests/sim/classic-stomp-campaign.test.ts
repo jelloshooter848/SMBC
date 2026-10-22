@@ -83,6 +83,49 @@ const PATTERNS: [string, Pattern][] = [
 
 const peak = (p: { up: number }[]): number => Math.max(...p.map((s) => s.up));
 
+/**
+ * B-L backlog: a moving stomp, followed through to the landing. The hero falls onto a still
+ * Goomba (kept under him) moving at `vx`, holding RIGHT (and RUN when `run`) and JUMP; from the
+ * stomp, each frame's vx, vy and travel until he is on the ground again.
+ */
+function movingStomp(
+  def: CharacterDef,
+  rules: Rules,
+  vx: number,
+  run: boolean,
+): { frames: { vx: number; vy: number; dx: number }[]; landed: number } {
+  const w = world(def, rules);
+  const input = new ScriptedInput({ steps: [] });
+  const keys: Action[] = ['right', 'jump', ...(run ? (['run'] as Action[]) : [])];
+  const step = () => {
+    input.setHeld(keys);
+    input.next();
+    w.update([input]);
+  };
+  input.setHeld([]);
+  input.next();
+  w.update([input]);
+  const g = w.entities.find((e) => e instanceof Goomba) as Goomba;
+  g.walkSpeed = 0;
+  g.body.vx = 0;
+  const b = w.player.body;
+  b.vx = vx;
+  for (let f = 0; f < 200 && w.feats.stomps === 0; f++) {
+    g.body.x = b.x;
+    step();
+  }
+  expect(w.feats.stomps, `${def.id} stomped`).toBe(1);
+  const x0 = b.x;
+  const frames: { vx: number; vy: number; dx: number }[] = [];
+  let n = 0;
+  for (; n < 200 && !(b.onGround && n > 2); n++) {
+    step();
+    frames.push({ vx: b.vx, vy: b.vy, dx: b.x - x0 });
+  }
+  expect(b.onGround, `${def.id} landed`).toBe(true);
+  return { frames, landed: n };
+}
+
 describe("BUG-07: the Classic SMB heroes' stomp bounce is the campaign's", () => {
   it("campaign Mario's bounce is unchanged: -4 px/f, then MARIO_PROFILE's standing tier", () => {
     expect(MARIO.movement).toBe(MARIO_PROFILE);
@@ -130,6 +173,44 @@ describe("BUG-07: the Classic SMB heroes' stomp bounce is the campaign's", () =>
     expect(released).toBeLessThan(held);
     // The campaign has no release latch, so neither does Classic.
     expect(again).toBeGreaterThan(released);
+  });
+
+  // B-L backlog: a running stomp. With RUN held both heroes move at the same 2.5 px/f, so the held
+  // bounce picks the same MARIO_PROFILE tier (the running one, |vx| >= 2.3125) for both: the whole
+  // arc, rise and fall, to the landing, is the same frame for frame, across as well as up.
+  it('a running stomp (RUN held, equal speed): the same tier and the same arc to the landing', () => {
+    const cm = heroFor(CHARACTERS.find((c) => c.id === 'mario') as CharacterDef, 'classic');
+    const camp = movingStomp(MARIO, 'current', 0x02800, true);
+    const classic = movingStomp(cm, 'classic', 0x02800, true);
+    expect(classic.frames[0]?.vy).toBe(camp.frames[0]?.vy);
+    expect(classic.frames).toEqual(camp.frames);
+    expect(classic.landed).toBe(camp.landed);
+  });
+
+  // B-L backlog: the no-RUN difference to the campaign. Walking, campaign Mario keeps his 1.5625
+  // px/f walk while Classic Mario eases to his own walk cap, 1.4583 px/f (MarioBase WALK 175 px/s,
+  // reached through its own release factor: InertiaProfile), so a walking stomp lands a few
+  // pixels shorter. That is the whole of it: every frame's vy, and the landing frame, are the
+  // campaign's, and the travel differs only by Classic's own speed, frame by frame.
+  it("a walking stomp (no RUN): the same vertical arc; the travel differs only by Classic's own deceleration", () => {
+    const cm = heroFor(CHARACTERS.find((c) => c.id === 'mario') as CharacterDef, 'classic');
+    const start = 0x01700;
+    const camp = movingStomp(MARIO, 'current', start, false);
+    const classic = movingStomp(cm, 'classic', start, false);
+    expect(classic.frames.map((f) => f.vy)).toEqual(camp.frames.map((f) => f.vy));
+    expect(classic.landed).toBe(camp.landed);
+    // Campaign: its walk speed; Classic: its own walk cap, eased down to from the start speed.
+    expect(camp.frames.every((f) => f.vx === MARIO_PROFILE.maxWalk)).toBe(true);
+    expect(cm.movement.maxWalk).toBe(0x01755);
+    expect(classic.frames.at(-1)?.vx).toBe(cm.movement.maxWalk);
+    for (let i = 1; i < classic.frames.length; i++)
+      expect(classic.frames[i]!.vx).toBeLessThanOrEqual(classic.frames[i - 1]!.vx);
+    // The gap in travel is the sum of the speed gaps (the same frames, the same vertical motion).
+    const gap = (camp.frames.at(-1)?.dx ?? 0) - (classic.frames.at(-1)?.dx ?? 0);
+    expect(gap).toBeGreaterThan(0);
+    expect(gap / 256).toBeLessThan(8);
+    // Luigi and Peach land one frame earlier on some stomps: their hitbox sits differently over
+    // the Goomba, so the stomp itself comes a frame sooner (a body difference, not the bounce).
   });
 
   it("Yoshi's ground pound keeps its fixed 2.5 px/f bounce (YO-9)", () => {

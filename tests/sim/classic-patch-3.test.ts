@@ -5,13 +5,7 @@ import { NULL_AUDIO } from '@engine/audio/audio-manager';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { Action } from '@engine/input/actions';
-import {
-  defaultSettings,
-  loadSettings,
-  SETTINGS_KEY,
-  type ClassicCheatId,
-  type Settings,
-} from '@engine/save/settings';
+import { defaultSettings, SETTINGS_KEY, type ClassicCheatId, type Settings } from '@engine/save/settings';
 import { DEFAULT_ASSIST, NO_CHEATS, newGameState, type CheatFlags, type Rules } from '@game/context';
 import { MARIO } from '@game/characters/mario';
 import { MEGAMAN } from '@game/characters/megaman';
@@ -22,6 +16,9 @@ import { megamanSmbcDef } from '@content/sprites/smbc-megaman';
 import { marioClassicDef } from '@content/sprites/mario-classic';
 import { SPRITES } from '@content/sprites';
 import { LINK } from '@game/characters/link';
+import { loadClassicFile } from '@game/original-files';
+import { CharacterSelectScene } from '@game/scenes/character-select';
+import { pickAtContinue } from './continue-select';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CharacterDef } from '@game/characters/character';
@@ -43,7 +40,6 @@ import { SpikeTop } from '@game/entities/enemies/spike-top';
 import { Spiny } from '@game/entities/enemies/spiny';
 import { Rig, flatLevel } from './classic-plumber-harness';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
-import type { CharacterSelectScene } from '@game/scenes/character-select';
 import { REVIVE_DONE_QUESTION, REVIVE_NEWS } from '@game/scenes/character-select';
 
 // Classic patch 3 (owner-approved review findings of #164-#167): one describe per item.
@@ -199,39 +195,40 @@ function classicGame(over: Partial<Settings> = {}): H & { settings: Settings } {
 // Item 8 (owner decision, option A): the count is the run's, as the original's
 // EventManager.restartGame resets it on NEW GAME and after the credits (bug-continue-reset.test.ts);
 // within a run it is saved, so a reload (or MAIN MENU and the set's Continue) keeps it.
-describe('3. Infinite Lives: a run’s continues are saved with it', () => {
-  it('a continue keeps Infinite Lives locked for the rest of that run, across a reload; NEW GAME resets it', () => {
+describe('3. Infinite Lives: a run’s continues are saved with it (B-L: in its file)', () => {
+  const F1 = { set: 'smb', slot: 1 } as const;
+  it('a continue keeps Infinite Lives locked for the rest of that run, across a reload; a new file starts at 0', () => {
     const h = classicGame();
-    h.game.classicGame(MARIO);
+    h.game.classicGame(MARIO, '1-1', { ref: F1 });
     h.game.continueGame('1-1');
-    expect(h.settings.classicCheats.continuesUsed).toBe(1);
+    expect(h.game.fileContinues).toBe(1);
+    h.until(() => h.top() instanceof LevelScene || h.top() instanceof CharacterSelectScene, 600);
+    if (h.top() instanceof CharacterSelectScene) pickAtContinue(h);
+    h.until(() => h.top() instanceof LevelScene, 900);
     // A reload of the file mid-run still remembers it.
-    expect(JSON.parse(store.get(SETTINGS_KEY) as string).classicCheats.continuesUsed).toBe(1);
-    expect(loadSettings().classicCheats.continuesUsed).toBe(1);
+    expect(loadClassicFile(F1)?.continues).toBe(1);
     h.game.cheatEvent({ beat: 'smb' });
     expect(h.settings.classicCheats.unlocked.allGroundIsBricks).toBe(true);
     expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(false);
-    // NEW GAME (the select of a fresh run) starts the count again.
-    h.game.classicSelect('1-1', () => {});
-    expect(h.settings.classicCheats.continuesUsed).toBe(0);
+    // A new game (the select of a fresh file) starts the count again.
+    h.game.classicSelect('1-1', () => {}, { file: { set: 'smb', slot: 2 } });
+    expect(h.game.fileContinues).toBe(0);
   });
 
-  it('a save that never continued unlocks it; a file from before gets 0, bad values are cleaned', () => {
+  it('a file that never continued unlocks it; the retired shared count is left as stored', () => {
     const g = classicGame();
-    g.game.classicGame(MARIO);
+    g.settings.classicCheats.continuesUsed = 4;
+    g.game.classicGame(MARIO, '1-1', { ref: F1 });
     g.game.cheatEvent({ beat: 'smb' });
     expect(g.settings.classicCheats.unlocked.infiniteLives).toBe(true);
-    const old = { ...defaultSettings(), classicCheats: { on: {}, unlocked: {} } };
-    store.set(SETTINGS_KEY, JSON.stringify(old));
-    expect(loadSettings().classicCheats.continuesUsed).toBe(0);
-    store.set(SETTINGS_KEY, JSON.stringify({ ...defaultSettings(), classicCheats: { continuesUsed: -2.5 } }));
-    expect(loadSettings().classicCheats.continuesUsed).toBe(0);
+    expect(g.settings.classicCheats.continuesUsed).toBe(4);
   });
 
   it('a continue in the campaign (or a developer Classic run) is not counted', () => {
     const h = classicGame({ dev: true });
     h.game.devClassicGame(MARIO, '1-1', 'classic');
     h.game.continueGame('1-1');
+    expect(h.game.fileContinues).toBe(0);
     expect(h.settings.classicCheats.continuesUsed).toBe(0);
   });
 });

@@ -37,6 +37,11 @@ menus), **C** special (use the selected tool), **Right Shift** tools (cycle the 
 **Enter** pause / menu. Gamepads use the standard mapping. Press **F1** for the debug overlay and **F2** for a free camera
 (arrows scroll) when checking level layouts.
 
+On a fresh page load the title waits behind a start gate until sound can play: any key, click or
+tap starts the sound and the intro. A gamepad button also passes the gate, but browsers do not
+count a pad press as a user gesture, so the sound may stay off until the first key, click or tap
+(a known limit, accepted by the owner).
+
 Touch controls appear on phones and tablets (a touch-first screen that cannot hover; touchscreen
 laptops count as desktops). In _Auto_ they also come up on the first touch and go away when a key
 or gamepad button is used; the pause menu's **Touch controls** row switches Auto / On / Off (on
@@ -53,9 +58,15 @@ tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 
 **CLASSIC** on the title opens the original game's menu: **Super Mario Bros.**, **Super Mario
 Bros. Special** (SMB Special: 32 more levels, with its own enemies and items) and **The Lost
-Levels**, the original's heroes on its select screen (with their alternative looks), its
-**Options** (game mode, lives, attack, damage, the weapons, the **Cheats** the
-original unlocks, and **Survival**, where every hero has one life). The heroes play by the
+Levels**, the original's heroes on its select screen (with their alternative looks), and
+three save files for each set. A used file shows its difficulty, where it is, its lives, score
+and hero, and picking it goes on from there. An empty file starts a new game: first its map
+difficulty (Easy, Normal or Hard), then its rules (game mode, including **Survival**, where every
+hero has one life; lives, attack, damage and the other settings; the weapons; heroes left out).
+A file's rules stay fixed for that file, and each file keeps its own continues, so **ERASE FILE**
+(with NO picked first) is the way to start one again. The Start box's **Options** holds what every
+file shares: the music set, tutorials, the **Cheats** the original unlocks, and video, audio and
+controls. The heroes play by the
 original's rules: their physics, power states, weapons and swimming, enemy hit points and
 armour. How to play (Options, or the pause menu) explains each hero as Classic plays it.
 

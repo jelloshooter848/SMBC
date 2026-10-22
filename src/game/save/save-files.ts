@@ -43,6 +43,12 @@ export interface SaveFile extends MapProgress {
   powerState2: string;
   hp2: number;
   kit2: Record<string, number>;
+  /**
+   * Item 25: player 1's (`swapped2`: player 2's) power and kit were earned in a design dev mode's
+   * Toggle heroes "Plays as" swapped in (GameState.swapped). Absent in every other file.
+   */
+  swapped?: true;
+  swapped2?: true;
   /** 8-4 was beaten on this file. */
   gameCleared: boolean;
   /** The node the hero last stood on in each page visited (where map travel returns to). */
@@ -434,6 +440,7 @@ function heroKits(x: unknown, played: readonly string[]): Record<string, HeroPow
       powerState: v.powerState,
       hp: c.damage.kind === 'hp' ? capHp(c, hp > 0 ? hp : start.hp, k) : 0,
       kit: k,
+      ...(v.swapped === true ? { swapped: true as const } : {}),
     };
   }
   return out;
@@ -525,6 +532,9 @@ export function migrateSave(
     lastNode: lastNodes(stored.lastNode, pages),
     pendingReveal: revealIds(stored.pendingReveal, pages),
     devUnlockAll: stored.devUnlockAll === true,
+    // Item 25: only as `true` (absent otherwise, so no other file changes).
+    ...(stored.swapped === true ? { swapped: true as const } : {}),
+    ...(stored.swapped2 === true ? { swapped2: true as const } : {}),
     devAllHeroes: stored.devAllHeroes === true,
     devGateOpen: stored.devGateOpen === true,
     freed,
@@ -626,20 +636,26 @@ export function stateFromSave(save: SaveFile, characters: readonly CharacterDef[
     s.powerState = save.powerState;
     if (c1.damage.kind === 'hp' && save.hp > 0) s.hp = capHp(c1, save.hp, save.kit);
     s.kit = { ...save.kit };
+    // Item 25: earned in a Plays as design (the level start resets it if that no longer plays).
+    if (save.swapped) s.swapped = true;
   }
   const c2Known = c2 !== null && characters.some((c) => c.id === save.character2);
   if (c2 && c2Known && validPower(c2, save.powerState2)) {
     s.powerState2 = save.powerState2;
     if (c2.damage.kind === 'hp' && save.hp2 > 0) s.hp2 = capHp(c2, save.hp2, save.kit2);
     s.kit2 = { ...save.kit2 };
+    if (save.swapped2) s.swapped2 = true;
   }
   return s;
 }
 
 /** A copy of `save` with the run's lives, score, coins, heroes and power taken from `state`. */
 export function saveFromState(save: SaveFile, state: GameState): SaveFile {
+  const { swapped: _s1, swapped2: _s2, ...rest } = save;
   return {
-    ...save,
+    ...rest,
+    ...(state.swapped ? { swapped: true as const } : {}),
+    ...(state.swapped2 ? { swapped2: true as const } : {}),
     character: state.character.id,
     character2: state.character2?.id ?? null,
     lives: state.lives,

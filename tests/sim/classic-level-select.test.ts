@@ -13,10 +13,12 @@ import { MAP_SETS, recordClassicBeat, type ClassicMenuScene } from '@game/scenes
 import { PauseScene } from '@game/scenes/pause';
 import { allUnlocked, unlockAll } from '@game/cheats';
 import { makeGame, useStorage, type H } from './heroes-harness';
+import { originalFileRules } from '@game/original-files';
+import { choose as go } from './classic-files-nav';
 import { isolateClassicRegistry } from './classic-registry';
 
-// G-006: the Map Difficulty (CLASSIC menu: left and right on a map set; the run is built for it
-// and its beat status records it). G-007: the Level Select cheat (Cheats.as:47; LevelSelectMenu.as;
+// G-006: the Map Difficulty (B-L: chosen as a file starts, fixed for the file; the run is built
+// for it and its beat status records it). G-007: the Level Select cheat (Cheats.as:47; LevelSelectMenu.as;
 // PauseMenu.as:37-38), unlocked by beating every map set on Hard or by the code.
 
 isolateClassicRegistry({ hideExtras: true });
@@ -52,43 +54,34 @@ function pick(h: H, label: string): void {
 }
 
 describe('G-006: Map Difficulty on the CLASSIC menu', () => {
-  it('its own row after the map sets (NewGameOptionsMenu.as:43), changed by left, right and OK, read out and saved', () => {
+  it('B-L: chosen as a file starts (its difficulty box), not on the set box; kept with the file', () => {
     const h = classic();
     h.game.showClassicMenu();
     const menu = h.top() as ClassicMenuScene;
-    expect(labels(menu)).toEqual([...MAP_SETS.map((m) => m.label), 'Map difficulty', 'Options', 'Back']);
-    // The map set rows no longer change it.
-    expect(items(menu)[0]?.adjust).toBeUndefined();
-    const row = items(menu)[MAP_SETS.length] as MenuItem;
-    expect(row.value?.()).toBe('Normal');
+    expect(labels(menu)).toEqual([...MAP_SETS.map((m) => m.label), 'Back']);
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'File 1');
+    expect(labels(h.top())).toEqual(['Easy', 'Normal', 'Hard', 'Back']);
+    expect(h.said.at(-1)).toMatch(/Choose the map difficulty; it is fixed for this file\. Normal/);
     h.idle(8);
-    for (let i = 0; i < MAP_SETS.length; i++) h.tap('down');
-    expect(h.said.at(-1)).toMatch(/^Map difficulty: Normal\. Easy, Normal or Hard/);
-    h.tap('right');
-    expect(S(h).classicMapDifficulty).toBe('hard');
-    expect(h.said.at(-1)).toMatch(/^Map difficulty: Hard/);
-    // OK (CHANGE on a phone) steps it too.
+    h.tap('down');
+    expect(h.said.at(-1)).toMatch(/^Hard\. The original's harder version of every level/);
     h.tap('jump');
-    expect(S(h).classicMapDifficulty).toBe('easy');
-    h.tap('left');
-    expect(S(h).classicMapDifficulty).toBe('hard');
-    h.tap('right');
-    h.tap('right');
+    pick(h, 'Start');
+    choose(h, MARIO);
+    expect(enterLevel(h).world.mapDifficulty).toBe('hard');
+    // The shared setting is not the file's, and is left alone.
     expect(S(h).classicMapDifficulty).toBe('normal');
-    expect(menu.touchLabels().jump).toBe('CHANGE');
-    for (const it of items(h.top())) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
+    for (const it of items(menu)) expect(`${it.label} ${it.hint ?? ''}`).not.toMatch(/\d-\d/);
   });
 
-  it('a saved Campaign rules setting is ignored (BUG-11): the row is live and Hard plays', () => {
-    const h = classic({ classicMapDifficulty: 'hard', classicRules: 'current', dev: true });
+  it('a saved Campaign rules setting is ignored (BUG-11): a Hard file plays Hard', () => {
+    const h = classic({ classicRules: 'current', dev: true });
     h.game.showClassicMenu();
-    const menu = h.top() as ClassicMenuScene;
-    const row = items(menu)[MAP_SETS.length] as MenuItem;
-    expect(row.value?.()).toBe('Hard');
-    expect(row.hint).not.toMatch(/Classic rules only/);
-    expect((menu as unknown as { status: string }).status).toBe('');
-    h.idle(8);
-    h.tap('jump'); // Super Mario Bros.
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'File 1');
+    go(h, 'Hard');
+    pick(h, 'Start');
     choose(h, MARIO);
     expect(enterLevel(h).world.mapDifficulty).toBe('hard');
   });
@@ -104,10 +97,12 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
   });
 
   it('a run on Hard is built for it (1-1 has its Lakitu), and its beat is recorded as Hard', () => {
-    const h = classic({ classicMapDifficulty: 'hard' });
+    const h = classic();
     h.game.showClassicMenu();
-    h.idle(8);
-    h.tap('jump');
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'File 1');
+    go(h, 'Hard');
+    pick(h, 'Start');
     choose(h, MARIO);
     const l = enterLevel(h);
     expect(h.game.ctx.mapDifficulty).toBe('hard');
@@ -182,67 +177,44 @@ describe('G-007: the Level Select cheat', () => {
     expect(allUnlocked(c)).toBe(true);
   });
 
-  it("its Map difficulty is saved by Go only; Back leaves the CLASSIC menu's as it was", () => {
-    const open = () => {
-      const h = classic({ classicMapDifficulty: 'normal' });
-      S(h).classicCheats.levelSelect = true;
-      h.game.showClassicMenu();
-      h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
-      h.idle(8);
-      h.tap('down');
-      h.tap('right'); // Hard, on this page only
-      h.tap('up'); // back to the top, for pick
-      return h;
-    };
-    const back = open();
-    expect(items(back.top())[1]?.value?.()).toBe('Hard');
-    expect(S(back).classicMapDifficulty).toBe('normal');
-    pick(back, 'Back');
-    expect(S(back).classicMapDifficulty).toBe('normal');
-    const go = open();
-    expect(S(go).classicMapDifficulty).toBe('normal');
-    pick(go, 'Go');
-    expect(S(go).classicMapDifficulty).toBe('hard');
-    expect(go.game.classicDifficulty).toBe('hard');
-  });
-
-  it('its page: Map set, Difficulty, World (A-D too), Level, Go, Back; Go starts a run there on that difficulty', () => {
-    const h = classic();
+  it('its page: Map set, World (A-D too), Level, Go, Back (B-L: no Difficulty); Go from the menus is a practice run at Normal', () => {
+    const h = classic({ classicMapDifficulty: 'hard' });
     S(h).classicCheats.levelSelect = true;
     h.game.showClassicMenu();
     h.game.scenes.push(new CheatsScene(h.game, () => h.game.scenes.pop(), { all: false }));
     pick(h, 'Level select');
     const page = h.top() as LevelSelectScene;
     expect(page).toBeInstanceOf(LevelSelectScene);
-    expect(labels(page)).toEqual(['Map set', 'Map difficulty', 'World', 'Level', 'Go', 'Back']);
+    expect(labels(page)).toEqual(['Map set', 'World', 'Level', 'Go', 'Back']);
     expect(h.said.at(-1)).toMatch(/^Level select\. Map set: SMB/);
     h.idle(8);
     h.tap('right'); // Super Mario Bros. Special (G-020)
     h.tap('right'); // The Lost Levels
     expect(items(page)[0]?.value?.()).toBe('Lost Levels');
     h.tap('down');
-    h.tap('right'); // Hard
-    h.tap('down');
     h.tap('left'); // World 13 (D)
-    expect(items(page)[2]?.value?.()).toBe('D');
+    expect(items(page)[1]?.value?.()).toBe('D');
     h.tap('down');
     h.tap('right'); // Level 2
     h.tap('down');
-    expect(h.said.at(-1)).toMatch(/^Go: D-2/);
+    expect(h.said.at(-1)).toMatch(/^Go: D-2\. Practise there with the original's rules; nothing is saved/);
     h.tap('jump');
     choose(h, MARIO);
     const l = enterLevel(h);
     expect(l.level.id).toBe('ll-13-2');
     expect(h.game.classicRun).toBe(true);
-    expect(h.game.classicDifficulty).toBe('hard');
-    expect(l.world.mapDifficulty).toBe('hard');
+    expect(h.game.practiceRun).toBe(true);
+    expect(h.game.classicDifficulty).toBe('normal');
+    expect(l.world.mapDifficulty).toBe('normal');
+    expect(S(h).classicMapDifficulty).toBe('hard');
   });
 
-  it('from the Classic pause menu it goes on with the run (lives and score kept)', () => {
+  it("from the Classic pause menu it goes on with the run (lives and score kept, the file's difficulty)", () => {
     const h = classic();
     S(h).classicCheats.levelSelect = true;
-    h.game.classicGame(MARIO, '1-1');
-    h.game.classicDev = false;
+    const rules = originalFileRules();
+    rules.difficulty = 'easy';
+    h.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 }, rules });
     let l = enterLevel(h);
     h.game.state.score = 12345;
     h.game.state.lives = 7;
@@ -250,8 +222,6 @@ describe('G-007: the Level Select cheat', () => {
     pick(h, 'Level select');
     expect(h.top()).toBeInstanceOf(LevelSelectScene);
     h.idle(8);
-    h.tap('down');
-    h.tap('left'); // Easy
     h.tap('down');
     h.tap('right'); // World 2
     h.tap('down');

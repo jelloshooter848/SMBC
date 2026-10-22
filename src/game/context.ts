@@ -192,6 +192,15 @@ export interface GameState {
    * other rules resets the carried power (rules/reconcile.ts).
    */
   rules?: Rules;
+  /**
+   * Item 25: player 1's (`swapped2`: player 2's) power, hit points and kit were earned in the
+   * design developer mode's Toggle heroes "Plays as" swapped in (ctx.heroSwaps). Set at each level
+   * start while the swap is on, kept in the save files; once that hero plays his real design again
+   * (dev mode off, or the swap undone) they go back to that design's start, kit too
+   * (rules/reconcile.ts). Absent outside such a swap, so no other state changes.
+   */
+  swapped?: true;
+  swapped2?: true;
 }
 
 export function playerCount(s: GameState): number {

@@ -8,7 +8,8 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
-import type { ClassicOptionsScene } from '@game/scenes/original-game';
+import { ClassicFileRulesScene, filesBoxFor } from '@game/scenes/original-files-menu';
+import { originalFileRules } from '@game/original-files';
 import { ClassicMenuScene } from '@game/scenes/original-game';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -214,10 +215,9 @@ function pick(h: H, label: string): void {
   h.tap('jump');
 }
 
-describe('the Game mode row (CLASSIC > Options)', () => {
-  it('steps All heroes → Single hero → Single random, saved, marked and spoken as changed', () => {
+describe("the Game mode row (a new file's rules box, B-L)", () => {
+  it('steps All heroes → Survival → Single hero → Single random, kept in the draft, marked and spoken as changed', () => {
     const h = classic();
-    // O-12: the Classic rules row (the first) is developer mode's.
     h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
@@ -227,34 +227,31 @@ describe('the Game mode row (CLASSIC > Options)', () => {
     h.tap('jump');
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
-    pick(h, 'Options');
-    const o = h.top() as ClassicOptionsScene;
+    pick(h, 'Super Mario Bros.');
+    pick(h, 'File 1');
+    pick(h, 'Normal');
+    const o = h.top() as ClassicFileRulesScene;
+    expect(o).toBeInstanceOf(ClassicFileRulesScene);
     // BUG-11: no Classic rules row, so Game mode is the first row in dev mode too.
     const row = () => items(o)[0] as MenuItem;
     expect(row().label).toBe('Game mode');
     expect(row().value?.()).toBe('All heroes');
     h.idle(8);
-    expect(h.said.at(-1)).toMatch(
-      /^(Classic options\. )?Game mode: All heroes\. All heroes: choose before every level and life/,
-    );
+    expect(h.said.at(-1)).toMatch(/Game mode: All heroes\. All heroes: choose before every level and life/);
+    const mode = () => o.draft.options.gameMode;
     // Survival (v0.4.63, tests/sim/classic-survival.test.ts) comes second, as in the original's menu.
     h.tap('right');
-    expect(h.settings.classic.gameMode).toBe('survival');
+    expect(mode()).toBe('survival');
     h.tap('right');
-    expect(h.settings.classic.gameMode).toBe('single');
+    expect(mode()).toBe('single');
     expect(row().label).toBe('Game mode*');
     expect(h.said.at(-1)).toMatch(/^Game mode: Single hero\..*Changed from the original: All heroes/);
     h.tap('right');
-    expect(h.settings.classic.gameMode).toBe('single-random');
+    expect(mode()).toBe('single-random');
     h.tap('right');
-    expect(h.settings.classic.gameMode).toBe('all');
+    expect(mode()).toBe('all');
     expect(row().label).toBe('Game mode');
-    // The CLASSIC menu says when the run will not be the original's.
-    h.tap('right');
-    h.tap('attack');
-    const menu = h.top() as ClassicMenuScene;
-    expect(menu).toBeInstanceOf(ClassicMenuScene);
-    expect(items(menu)[0]?.hint).toMatch(/Your own Classic options are on$/);
+    expect(h.settings.classic.gameMode).toBe('all');
   });
 });
 
@@ -275,18 +272,18 @@ describe('review fixes', () => {
     expect(a.said.at(-1)).toBe('World 1-1. 3 lives.');
   });
 
-  it('the CLASSIC menu hint counts the options; a saved Campaign rules setting is ignored (BUG-11)', () => {
-    const hint = (over: Partial<ClassicSettings>, rules: 'classic' | 'current') => {
-      const h = classic(over);
-      // O-12: Classic rules set to Current is developer mode's.
-      h.settings.dev = true;
-      h.settings.classicRules = rules;
+  it("a used file's hint says when its rules are its own (FU-7); its Game mode is named", () => {
+    const hint = (over: Partial<ClassicSettings>) => {
+      const h = classic();
+      const rules = originalFileRules();
+      Object.assign(rules.options, over);
+      h.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 }, rules });
       h.game.showClassicMenu();
+      h.game.scenes.push(filesBoxFor(h.game, 'smb'));
       return items(h.top())[0]?.hint ?? '';
     };
-    expect(hint({ lives: 7 }, 'classic')).toMatch(/Your own Classic options are on$/);
-    expect(hint({ lives: 7 }, 'current')).toMatch(/Your own Classic options are on$/);
-    expect(hint({ gameMode: 'single' }, 'current')).toMatch(/Your own Classic options are on$/);
-    expect(hint({}, 'classic')).not.toMatch(/Your own/);
+    expect(hint({ lives: 7 })).toMatch(/Your own rules are on\. Continue this file$/);
+    expect(hint({ gameMode: 'single' })).toMatch(/Single hero\. Continue this file$/);
+    expect(hint({})).not.toMatch(/Your own/);
   });
 });

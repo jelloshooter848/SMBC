@@ -86,9 +86,7 @@ describe('BUG-02 the CLASSIC title keeps the REMIX title’s logo place', () => 
       check(boxRows(h.top() as never, ['Start', 'Options', 'Back']));
       h.game.showClassicMenu();
       const menu = h.top() as ClassicMenuScene;
-      check(
-        boxRows(menu as never, ['Super Mario Bros.', 'SMB Special', 'The Lost Levels', 'Options', 'Back']),
-      );
+      check(boxRows(menu as never, ['Super Mario Bros.', 'SMB Special', 'The Lost Levels', 'Back']));
     }
     // A full box is no taller than that room.
     expect(BOX_ROWS * BOX_ROW_H + 10).toBeLessThanOrEqual(bottom - top);

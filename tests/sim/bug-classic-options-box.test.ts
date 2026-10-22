@@ -9,7 +9,12 @@ import { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import { ClassicMenuScene, ClassicOptionsScene } from '@game/scenes/original-game';
 import { ClassicOptionRowsScene } from '@game/scenes/original-options';
-import { ClassicOverwriteScene, ClassicSetScene } from '@game/scenes/original-saves';
+import {
+  ClassicEraseConfirmScene,
+  ClassicFileRulesScene,
+  ClassicFilesScene,
+} from '@game/scenes/original-files-menu';
+import { choose } from './classic-files-nav';
 import { ClassicTitleScene, CLASSIC_AT } from '@game/scenes/original-title';
 import { OptionsScene } from '@game/scenes/options';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
@@ -64,6 +69,16 @@ function openOptions(h: H): ClassicOptionsScene {
   return h.top() as ClassicOptionsScene;
 }
 
+/** B-L: a new file's rules box (SMB, FILE 1, Normal), where More settings, Weapons and Disable heroes are. */
+function openRules(h: H): ClassicFileRulesScene {
+  h.game.showClassicMenu();
+  choose(h, 'Super Mario Bros.');
+  choose(h, 'File 1');
+  choose(h, 'Normal');
+  expect(h.top()).toBeInstanceOf(ClassicFileRulesScene);
+  return h.top() as ClassicFileRulesScene;
+}
+
 /** The box's rows sit under CLASSIC and above a hero standing on the demo's ground. */
 function inBoxRoom(texts: { str: string; y: number }[], labels: string[]): void {
   const ys = labels.map((l) => texts.find((t) => t.str.startsWith(l.toUpperCase()))?.y ?? NaN);
@@ -83,42 +98,47 @@ describe('BUG-01 CLASSIC > Options is a box over the demo', () => {
     expect(f.texts.some((t) => t.str === 'CLASSIC OPTIONS')).toBe(false);
     const header = f.texts.find((t) => t.str === 'OPTIONS');
     expect(header?.sheet).toMatch(/gold/);
-    inBoxRoom(f.texts, ['Options', 'Game mode']);
+    inBoxRoom(f.texts, ['Options', 'Music set']);
     const title = h.game.scenes.find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene;
     const t0 = title.demo.t;
     h.idle(10);
     expect(title.demo.t).toBe(t0 + 10);
     // Its rows and announcements are the page's own.
-    expect(items(opts).map((i) => i.label)).toContain('More settings');
-    expect(h.said.at(-1)).toMatch(/^Classic options\. Game mode/);
+    // B-L: the shared rows only (a file's rules are chosen as it starts).
+    expect(items(opts).map((i) => i.label)).not.toContain('More settings');
+    expect(h.said.at(-1)).toMatch(/^Classic options\. Music set/);
     expect(opts.touchLabels().jump).toBe('CHANGE');
     // BACK: the Start box again.
     h.tap('attack');
     expect(h.top()).toBeInstanceOf(ClassicTitleScene);
   });
 
-  it('from the map set box: a box over the title too, and BACK returns to the map set box', () => {
+  it("B-L: a file's rules box is a box over the title too, and BACK steps back one box", () => {
     const h = classic();
-    h.game.showClassicMenu();
-    pickRow(h, 'Options');
-    expect(h.top()).toBeInstanceOf(ClassicOptionsScene);
-    expect((h.top() as ClassicOptionsScene).translucent).toBe(true);
+    const r = openRules(h);
+    expect(r.translucent).toBe(true);
     expect(frame(h).sprites).toContain('classic');
+    h.idle(8);
+    h.tap('attack');
+    h.idle(8);
+    h.tap('attack');
+    expect(h.top()).toBeInstanceOf(ClassicFilesScene);
     h.idle(8);
     h.tap('attack');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   });
 
   it('More settings, Weapons, Disable heroes and Cheats open as boxes with their names on top', () => {
-    const pages: [string, new (...a: never[]) => unknown, string][] = [
-      ['More settings', ClassicOptionRowsScene, 'MORE SETTINGS'],
-      ['Weapons', ClassicOptionRowsScene, 'CUSTOMIZE WEAPONS'],
-      ['Disable heroes', ClassicHeroesScene, 'DISABLE HEROES'],
-      ['Cheats', CheatsScene, 'CHEATS'],
+    // B-L: the first three are a new file's rules (its rules box), Cheats the shared Options'.
+    const pages: [string, new (...a: never[]) => unknown, string, boolean][] = [
+      ['More settings', ClassicOptionRowsScene, 'MORE SETTINGS', true],
+      ['Weapons', ClassicOptionRowsScene, 'CUSTOMIZE WEAPONS', true],
+      ['Disable heroes', ClassicHeroesScene, 'DISABLE HEROES', true],
+      ['Cheats', CheatsScene, 'CHEATS', false],
     ];
-    for (const [row, type, name] of pages) {
+    for (const [row, type, name, file] of pages) {
       const h = classic();
-      openOptions(h);
+      const under = file ? openRules(h) : openOptions(h);
       pickRow(h, row);
       expect(h.top(), row).toBeInstanceOf(type);
       expect((h.top() as { translucent: boolean }).translucent, row).toBe(true);
@@ -133,7 +153,7 @@ describe('BUG-01 CLASSIC > Options is a box over the demo', () => {
       const last = frame(h).texts.find((t) => t.str === 'BACK' && t.y < 200);
       expect(last, row).toBeDefined();
       h.tap('attack');
-      expect(h.top(), row).toBeInstanceOf(ClassicOptionsScene);
+      expect(h.top(), row).toBe(under);
     }
   });
 
@@ -165,33 +185,44 @@ describe('RC-040 the CLASSIC boxes sound as the Start box does', () => {
     const h = classic();
     h.game.showClassicMenu();
     expect(moveAndBack(h)).toEqual(['fireball', 'bump']);
-    for (const row of ['', 'More settings', 'Disable heroes', 'Cheats']) {
+    for (const row of ['', 'Cheats']) {
       const o = classic();
       openOptions(o);
       if (row) pickRow(o, row);
       expect(moveAndBack(o), row || 'Options').toEqual(['fireball', 'bump']);
     }
+    for (const row of ['', 'More settings', 'Disable heroes']) {
+      const o = classic();
+      openRules(o);
+      if (row) pickRow(o, row);
+      expect(moveAndBack(o), row || 'Rules').toEqual(['fireball', 'bump']);
+    }
   });
 
-  it('CONTINUE / NEW GAME and the overwrite warning too', () => {
+  it('B-L: the file box, its difficulty box and the erase confirm too', () => {
     const h = classic();
-    h.game.classicGame(MARIO, '1-1');
+    h.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 } });
     h.game.goToLevel('1-2', { mode: 'stand' });
     h.game.showClassicMenu();
     h.idle(8);
     h.tap('jump');
-    expect(h.top()).toBeInstanceOf(ClassicSetScene);
+    expect(h.top()).toBeInstanceOf(ClassicFilesScene);
     h.idle(8);
     h.audio.sfx.mockClear();
     h.tap('down');
     expect(sounds(h)).toEqual(['fireball']);
-    h.tap('jump');
-    expect(h.top()).toBeInstanceOf(ClassicOverwriteScene);
+    h.tap('jump'); // FILE 2: NEW GAME, the coin (choose), then its difficulty box
+    expect(sounds(h)).toEqual(['fireball', 'coin']);
     expect(moveAndBack(h)).toEqual(['fireball', 'bump']);
-    expect(h.top()).toBeInstanceOf(ClassicSetScene);
+    expect(h.top()).toBeInstanceOf(ClassicFilesScene);
+    choose(h, 'Erase file');
+    choose(h, 'File 1');
+    expect(h.top()).toBeInstanceOf(ClassicEraseConfirmScene);
+    expect(moveAndBack(h)).toEqual(['fireball', 'bump']);
     h.audio.sfx.mockClear();
     h.tap('attack');
     expect(sounds(h)).toEqual(['bump']);
+    expect(h.top()).toBeInstanceOf(ClassicFilesScene);
   });
 
   it('every other menu keeps the menu blip (the title’s Options)', () => {

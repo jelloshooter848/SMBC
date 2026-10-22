@@ -4,8 +4,6 @@ import type { Action } from '@engine/input/actions';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
-import { saveSettings } from '@engine/save/settings';
-import { defaultClassicWeapons } from '@engine/save/original-options';
 import type { Game } from '../scenes/game';
 import type { World } from '../world/world';
 import type { Player } from '../entities/player';
@@ -23,8 +21,11 @@ import { wrapPrompt } from './stage-prompts';
  * start, and at each Mushroom, Fire Flower upgrade and Star the first time: each page waits for a
  * press (never a timer), is read out, and works with touch (OK), keys and pad. Each box shows once
  * per game, as the original keeps its "enabled" flags in the save and turns them all back on for a
- * new game (saveData, loadData, startNewGameHandler): Settings.classicTutorialsSeen, cleared by a
- * new Classic game. Never in the campaign, never in an editor play-test.
+ * new game (saveData, loadData, startNewGameHandler). B-L: the list is the run's own, kept in its
+ * Classic save file (ClassicFile.tutorialsSeen) and restored with it; a new file starts empty, and
+ * a run with no file (a practice or developer run) keeps it in memory only. The old shared
+ * Settings.classicTutorialsSeen is only read, by the files' migration. Never in the campaign,
+ * never in an editor play-test.
  *
  * The words are the original's, changed only where our rules ask: they name abilities ({JUMP},
  * {ATTACK}, ...: filled in with the ability and the real key or pad button, input-aware, as every
@@ -85,7 +86,7 @@ function dynamicAbility(
   name: string,
   hero: string | undefined,
 ): readonly [string, Action] | null {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   switch (name) {
     case 'link-tool':
       return [w.link === 'bow' ? 'BOW' : 'BOMB', 'select'];
@@ -112,7 +113,7 @@ function dynamicAbility(
  * holds (or does not), so a sentence stays true whatever the Customize Weapons choice or roster.
  */
 function condition(game: Game, name: string): boolean {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   switch (name) {
     case 'ryu-slash-art':
       return w.ryuStart === 'jump-slash';
@@ -273,7 +274,7 @@ const mmBox = (weapon: string): string =>
  * original shows these as each upgrade is collected (Character.hitPickup → checkTutorial).
  */
 export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'): string[] {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   const big = state === 'big';
   switch (hero) {
     case 'link': {
@@ -308,7 +309,7 @@ export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'
 
 /** The boxes a hero's first level start shows: its own start, and a start weapon with a box. */
 export function startTutorials(game: Game, hero: string): string[] {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   return [`${hero}Start`, ...(hero === 'ryu' && w.ryuStart === 'jump-slash' ? ['ryuJumpSlash'] : [])];
 }
 
@@ -330,6 +331,8 @@ export class ClassicTutorials {
   private readonly heroOf = new Map<string, string>();
   private watch: Watch | null = null;
   private wait = 0;
+  /** The boxes shown in this game (B-L: the run's, saved with its file by Game). */
+  private shown: string[] = [];
 
   constructor(private readonly game: Game) {}
 
@@ -346,7 +349,7 @@ export class ClassicTutorials {
 
   /** The boxes shown this game. */
   get seen(): readonly string[] {
-    return this.game.deps.settings?.classicTutorialsSeen ?? [];
+    return this.shown;
   }
 
   /** A new Classic game: every box shows again (TutorialManager.startNewGameHandler). */
@@ -354,11 +357,12 @@ export class ClassicTutorials {
     this.queue.length = 0;
     this.heroOf.clear();
     this.watch = null;
-    const s = this.game.deps.settings;
-    if (s?.classicTutorialsSeen) {
-      delete s.classicTutorialsSeen;
-      saveSettings(s);
-    }
+    this.shown = [];
+  }
+
+  /** A file's run goes on (Game.resumeClassic): the boxes it has seen (TutorialManager.loadData). */
+  restore(seen: readonly string[]): void {
+    this.shown = [...new Set(seen)];
   }
 
   /**
@@ -384,13 +388,15 @@ export class ClassicTutorials {
     return this.queue;
   }
 
-  /** The queued boxes' pages, recorded as seen (saved at once, as the original's save keeps them). */
+  /**
+   * The queued boxes' pages, recorded as seen: in the run's file at once, as the original's save
+   * keeps them (Game.keepTutorialsSeen; a run with no file keeps them in memory).
+   */
   private take(): string[] {
     const ids = this.queue.splice(0);
-    const s = this.game.deps.settings;
-    if (s && ids.length) {
-      s.classicTutorialsSeen = [...new Set([...(s.classicTutorialsSeen ?? []), ...ids])];
-      saveSettings(s);
+    if (ids.length) {
+      this.shown = [...new Set([...this.shown, ...ids])];
+      this.game.keepTutorialsSeen(this.shown);
     }
     const pages = ids.flatMap((id) =>
       (TUTORIAL_TEXT[id] ?? []).map((t) => fillAbilities(this.game, t, this.heroOf.get(id))),

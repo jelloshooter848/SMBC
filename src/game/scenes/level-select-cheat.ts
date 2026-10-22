@@ -1,16 +1,16 @@
-import type { MapDifficulty } from '@engine/save/settings';
 import { MenuScene } from './menu';
 import { LevelScene } from './level';
 import type { Game } from './game';
-import { MAP_SETS, mapDifficultyItem, mapSetOf, type MapSet } from './original-game';
-import { ClassicOverwriteScene } from './original-saves';
+import { MAP_SETS, mapSetOf, type MapSet } from './original-game';
 
 /*
  * The Level Select cheat (G-007): the original's 17th cheat (Cheats.as:47), unlocked by beating
  * every map set on Hard (StatManager.allMapPacksBeatOnHard) or by the code. Its page
- * (messageBoxes/LevelSelectMenu.as:58-133): Map set, Difficulty, World (The Lost Levels' A-D
- * too), Level, then Go, which starts there. Reached from the Cheats page (a new Classic run) and
- * the Classic pause menu (the run goes on from there: PauseMenu.as:37-38).
+ * (messageBoxes/LevelSelectMenu.as:58-133): Map set, World (The Lost Levels' A-D too), Level,
+ * then Go, which starts there. Reached from the Cheats page and the Classic pause menu (the run
+ * goes on from there: PauseMenu.as:37-38). B-L (owner): no Difficulty row. In a run the file's
+ * Map difficulty is fixed and the run stays in its own file, whichever set it goes to; from the
+ * menus Go starts a practice run (the original's rules at Normal, no file, counting for nothing).
  */
 
 /** The short names the value column has room for. */
@@ -37,13 +37,10 @@ export class LevelSelectScene extends MenuScene {
   private set: MapSet;
   private world = 1;
   private level = 1;
-  /** The page's Map difficulty, from the settings; saved by Go only. */
-  private difficulty: MapDifficulty;
 
   constructor(game: Game, onBack: () => void, translucent = false) {
     super(game, 'LEVEL SELECT', [], onBack, translucent);
     this.set = MAP_SETS[0] as MapSet;
-    this.difficulty = game.deps.settings?.classicMapDifficulty ?? 'normal';
     // From a level (the pause menu): its map set, world and level (LevelSelectMenu.as:35-46).
     const here = game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
     const id = here?.world.level.id;
@@ -56,12 +53,6 @@ export class LevelSelectScene extends MenuScene {
       }
     }
     this.build();
-  }
-
-  /** Whether the run plays (or will play) Classic rules: Map difficulty applies only then. */
-  private get classic(): boolean {
-    const g = this.game;
-    return (g.classicRun ? g.liveRules : g.classicRules) === 'classic';
   }
 
   private build(): void {
@@ -77,14 +68,6 @@ export class LevelSelectScene extends MenuScene {
         },
         hint: 'Which game',
       },
-      // Kept on this page until Go, which saves it (LevelSelectMenu: changeMapDifficulty on
-      // GO_TO_WORLD only); Back leaves the CLASSIC menu's as it was.
-      mapDifficultyItem(this.game, () => this.classic, {
-        get: () => this.difficulty,
-        set: (d) => {
-          this.difficulty = d;
-        },
-      }),
       {
         label: 'World',
         value: () => worldName(this.world),
@@ -103,7 +86,9 @@ export class LevelSelectScene extends MenuScene {
         label: 'Go',
         value: () => `${worldName(this.world)}-${this.level}`,
         select: () => this.go(),
-        hint: 'Start there',
+        hint: this.game.classicRun
+          ? 'Go there, keeping your lives and score'
+          : "Practise there with the original's rules; nothing is saved",
       },
       { label: 'Back', select: () => this.onBack?.() },
     ]);
@@ -111,36 +96,7 @@ export class LevelSelectScene extends MenuScene {
 
   private go(): void {
     const game = this.game;
-    const target = levelSelectTarget(game, this.set, this.world, this.level);
-    const difficulty = this.classic ? this.difficulty : 'normal';
-    const go = () => game.classicLevelSelect(target, difficulty);
-    // Per-set saves: Go asks first (Cancel focused) whenever it would overwrite a saved run: from
-    // the menus (a new run), and in a run (the pause menu) going to another set that has its own
-    // (the run writes that set's slot from then on; the set it leaves keeps its save). In a run
-    // within its own set, the run just goes on.
-    const here = game.classicRun
-      ? (game.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined)
-      : undefined;
-    const sameSet = here !== undefined && mapSetOf(here.world.level.id).id === this.set.id;
-    const kept = sameSet ? null : game.classicResume(this.set.id);
-    if (!kept) return go();
-    game.scenes.push(
-      new ClassicOverwriteScene(
-        game,
-        this.set,
-        kept,
-        () => {
-          game.scenes.pop();
-          go();
-        },
-        () => {
-          game.scenes.pop();
-          this.announce();
-        },
-        null,
-        here !== undefined,
-      ),
-    );
+    game.classicLevelSelect(levelSelectTarget(game, this.set, this.world, this.level));
   }
 
   override enter(): void {

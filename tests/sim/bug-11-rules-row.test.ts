@@ -28,7 +28,8 @@ describe('BUG-11 no Classic rules row', () => {
     it(`Classic options has no Rules row and draws no rules value (dev ${dev})`, () => {
       const h = game(dev);
       const o = new ClassicOptionsScene(h.game, () => {});
-      expect(labels(o)[0]).toBe('Game mode');
+      // B-L: the shared rows; Music set first.
+      expect(labels(o)[0]).toBe('Music set');
       for (const l of labels(o)) expect(l).not.toMatch(/rules/i);
       for (const i of (o as unknown as { items: MenuItem[] }).items)
         expect(i.hint ?? '').not.toMatch(/Classic rules|Campaign rules/);

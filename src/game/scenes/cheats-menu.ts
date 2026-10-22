@@ -80,7 +80,7 @@ export class CheatsScene extends MenuScene {
           this.game.scenes.push(
             new LevelSelectScene(this.game, () => this.game.scenes.pop(), this.opts.translucent === true),
           ),
-        hint: 'Start any level of any map set, on any difficulty',
+        hint: "Practise any level of any map set, with the original's rules",
       });
     items.push({ label: 'Back', select: () => this.onBack?.() });
     this.setItems(items);
