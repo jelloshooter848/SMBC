@@ -10,7 +10,7 @@ import type { MenuItem } from './menu';
 import { abilityHint, controlScheme } from './hints';
 import { menuTouchLabels } from '../touch-labels';
 import { ClassicDemo, MARIO_WAIT } from './title-demo';
-import { boxCentreUnderLogo, boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
+import { boxGrowth, drawMenuBox, type BoxRow } from './menu-box';
 import { ClassicMenuScene, ClassicOptionsScene } from './original-game';
 import { joinMusic, TITLE_MUSIC } from './title-music';
 
@@ -54,6 +54,16 @@ export const SMASH = { drop: 16, squash: 4, shake: 10, end: 44 } as const;
  * 92 x 44 at 160, 54).
  */
 export const CLASSIC_AT = { x: 79, y: 62 } as const;
+/** CLASSIC's height (the 'classic' frame, 173 x 29). */
+const CLASSIC_H = 29;
+/** The demo's ground (1-1's row 13, as the REMIX title's TITLE_GROUND_Y). */
+const GROUND_Y = 208;
+/**
+ * 0.4.72 (owner, Start box option A): the Start box's centre y, half way between CLASSIC's foot
+ * and the ground, so the demo's heroes and ground stay in view. The map set box and the boxes
+ * after it keep their place under the logo (menu-box.ts BOX_TOP).
+ */
+export const START_BOX_CY = Math.round((CLASSIC_AT.y + CLASSIC_H + GROUND_Y) / 2);
 /** Where it starts its fall (above the screen). */
 const CLASSIC_FROM_Y = -32;
 /** The stamp's chips: start (screen px, on the stamp) and speed (px a frame); they fall with gravity. */
@@ -404,7 +414,7 @@ export class ClassicTitleScene implements Scene {
       const rows: BoxRow[] = this.items.map((it) => ({ label: it.label }));
       drawMenuBox(r, this.game.ctx.assets, rows, this.index, {
         cx: BOX_CX,
-        cy: boxCentreUnderLogo(rows),
+        cy: START_BOX_CY,
         grow: boxGrowth(this.t - this.boxAt, this.game.ctx.reduceFlashing),
         t: this.t,
         calm: this.game.ctx.reduceFlashing,
