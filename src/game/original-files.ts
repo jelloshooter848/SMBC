@@ -65,6 +65,13 @@ export interface ClassicFile {
   tutorialsSeen: string[];
   /** Where the run is. */
   run: ClassicResume;
+  /**
+   * v0.4.73 (owner 95): which game this is: a token each new game or resume of the file sets
+   * (Game.runToken), kept at its every save. Only the game holding the file now may write it
+   * CLEARED (saveClearedFile's `only`), so a tab whose file was erased and started again in
+   * another tab never writes over that new game. Files from before have none.
+   */
+  runId?: string;
   /** When it was last written (Date.now()). */
   savedAt: number;
   /**
@@ -158,6 +165,7 @@ function parseFile(raw: unknown, ref: ClassicFileRef): ClassicFile | null {
     tutorialsSeen: strings(f.tutorialsSeen),
     run,
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
+    ...(typeof f.runId === 'string' ? { runId: f.runId } : {}),
     ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
   };
 }
@@ -222,6 +230,7 @@ export function saveClassicFile(
     tutorialsSeen: strings(f.tutorialsSeen),
     run: { ...f.run },
     savedAt: f.savedAt ?? Date.now(),
+    ...(f.runId ? { runId: f.runId } : {}),
     ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
   };
   // The run carries none of the old slot-only fields (the file holds them).
@@ -285,17 +294,21 @@ export function loadClearedFile(ref: ClassicFileRef): ClearedFile | null {
 /**
  * The set beaten in file `f` (Game.showEnding): the file becomes CLEARED, once. False when
  * storage refused it (the file keeps its last run, so nothing is lost) or when it is CLEARED
- * already (or a later version's): the first clear stays as it was.
+ * already (or a later version's): the first clear stays as it was. v0.4.73 (owner 95): with
+ * `only`, it is written only over the game `only` names (ClassicFile.runId): a file emptied or
+ * started again by another tab is left as it is (false).
  */
 export function saveClearedFile(
   f: Omit<ClearedFile, 'savedAt' | 'v' | 'cleared' | 'tutorialsSeen'> & {
     savedAt?: number;
     tutorialsSeen?: readonly string[];
   },
+  only?: string,
 ): boolean {
   const stored = storedNow(classicFileKey(f));
   const now = stored.value;
   if (!stored.read || keptForGood(now)) return false;
+  if (only !== undefined && !holdsGame(now, only)) return false;
   const fromOld = f.fromOld ?? storedMark(now);
   const out: ClearedFile = {
     v: 2,
@@ -315,6 +328,13 @@ export function saveClearedFile(
   delete out.run.savedAt;
   delete out.run.continued;
   return saveJson(classicFileKey(f), out);
+}
+
+/** Whether stored value `raw` is a v 1 file of game `runId`. */
+function holdsGame(raw: unknown, runId: string): boolean {
+  if (!raw || typeof raw !== 'object') return false;
+  const f = raw as { v?: unknown; runId?: unknown };
+  return f.v === 1 && f.runId === runId;
 }
 
 /**

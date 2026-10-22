@@ -150,6 +150,7 @@ import {
   openClearedFile,
   ReplayDeathScene,
   showReplayLevels,
+  type ClearResult,
   type ReplayRun,
 } from './original-replay';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
@@ -236,6 +237,11 @@ function fitsHero(def: CharacterDef, k: HeroPower): boolean {
 const RANDOM_PICK_SEED = 0x5eed1;
 
 /** Orchestrates scenes and carries GameState between levels. */
+/** A new file game's token (ClassicFile.runId). */
+function newRunToken(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /** Why a Classic file that reads cannot play now (Game.classicFileProblem, 31d; 0.4.72). */
 export type FileProblem = 'hero-off' | 'hero' | 'level' | 'not-released';
 
@@ -315,10 +321,15 @@ export class Game {
    */
   private runWorlds: number[] = [];
   /**
+   * v0.4.73 (owner 95): this file run's game (ClassicFile.runId), set by each new game and
+   * resume, written with every save: only the game still in the file may write it CLEARED.
+   */
+  private runToken = newRunToken();
+  /**
    * v0.4.73 (owner B): the file this run's ending made CLEARED (and whether storage took it),
    * for the message after the credits and the cheat cards.
    */
-  private clearedNews: { ref: ClassicFileRef; saved: boolean } | null = null;
+  private clearedNews: { ref: ClassicFileRef; result: ClearResult } | null = null;
   /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
   private levelSelectUnlocked = false;
   /**
@@ -2145,6 +2156,7 @@ export class Game {
       this.practiceRun = false;
       this.replay = null;
       this.runWorlds = [];
+      this.runToken = newRunToken();
       this.fileContinues = 0;
       this.classicDifficulty = this.runFileRules.difficulty;
     }
@@ -2457,6 +2469,7 @@ export class Game {
       continues: this.fileContinues,
       tutorialsSeen: this.classicTutorials.seen,
       run: continued ? { ...r, continued: true } : r,
+      runId: this.runToken,
     });
   }
 
@@ -2512,14 +2525,24 @@ export class Game {
     } catch {
       /* kept as given */
     }
-    const ok = saveClearedFile({
-      ...ref,
-      rules: this.classicRunRules,
-      continues: this.fileContinues,
-      tutorialsSeen: this.classicTutorials.seen,
-      run: this.runNow(main, ref),
-    });
-    this.clearedNews = { ref: { ...ref }, saved: ok || loadClearedFile(ref) !== null };
+    const ok = saveClearedFile(
+      {
+        ...ref,
+        rules: this.classicRunRules,
+        continues: this.fileContinues,
+        tutorialsSeen: this.classicTutorials.seen,
+        run: this.runNow(main, ref),
+      },
+      // 95: only over this game: a file another tab emptied or started again is left alone.
+      this.runToken,
+    );
+    const result: ClearResult =
+      ok || loadClearedFile(ref) !== null
+        ? 'cleared'
+        : loadClassicFile(ref)?.runId === this.runToken
+          ? 'failed'
+          : 'other';
+    this.clearedNews = { ref: { ...ref }, result };
   }
 
   /**
@@ -2536,7 +2559,7 @@ export class Game {
     this.leaveRun();
     this.scenes.clear();
     const files = this.showClassicFiles(news.ref.set, news.ref.slot);
-    this.scenes.push(clearedNote(this, files, news.ref, news.saved));
+    this.scenes.push(clearedNote(this, files, news.ref, news.result));
   }
 
   /**
@@ -2722,6 +2745,7 @@ export class Game {
     this.practiceRun = false;
     this.replay = null;
     this.runWorlds = [...(r.worlds ?? [])];
+    this.runToken = f.runId ?? newRunToken();
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = rules;
@@ -3022,6 +3046,7 @@ export class Game {
     this.replay = run.practice === true && run.replay ? { ...run.replay } : null;
     if (run.tutorialsSeen) this.classicTutorials.restore(run.tutorialsSeen);
     this.runWorlds = [];
+    this.runToken = newRunToken();
     this.fileContinues = 0;
     this.classicDifficulty = this.classicRunRules.difficulty;
     this.runRules = this.classicRules;

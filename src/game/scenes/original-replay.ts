@@ -204,6 +204,13 @@ const setOf = (id: ClassicFileRef['set']): MapSet =>
   MAP_SETS.find((m) => m.id === id) ?? (MAP_SETS[0] as MapSet);
 
 /**
+ * How the beaten set's file came out (Game.clearFile): CLEARED; not saved (storage refused it:
+ * its last run is kept); or left alone because another tab emptied it or started another game
+ * there (95).
+ */
+export type ClearResult = 'cleared' | 'failed' | 'other';
+
+/**
  * B: the message after a beaten set's credits and cheat cards, over its file box (focused on the
  * file): "YOU BEAT <SET>! FILE N IS CLEARED.", then how to replay. `saved` false: storage did not
  * take the CLEARED file; its last run is kept in it.
@@ -212,15 +219,21 @@ export function clearedNote(
   game: Game,
   files: ClassicFilesScene,
   ref: ClassicFileRef,
-  saved: boolean,
+  result: ClearResult,
 ): ClassicNoteScene {
   const beat = `You beat ${setOf(ref.set).label}!`;
-  const pages = saved
-    ? [`${beat} File ${ref.slot} is cleared.`, 'Pick a cleared file to replay any level of this map set.']
-    : [
-        `${beat} File ${ref.slot} could not be saved as cleared.`,
-        'Its last run is kept in it, so nothing is lost.',
-      ];
+  const pages =
+    result === 'cleared'
+      ? [`${beat} File ${ref.slot} is cleared.`, 'Pick a cleared file to replay any level of this map set.']
+      : result === 'failed'
+        ? [
+            `${beat} File ${ref.slot} could not be saved as cleared.`,
+            'Its last run is kept in it, so nothing is lost.',
+          ]
+        : [
+            `${beat} The beat is kept.`,
+            `File ${ref.slot} holds another game now, so it was not marked cleared.`,
+          ];
   return new ClassicNoteScene(game, pages, {
     under: files,
     onDone: () => files.comeBack(),
