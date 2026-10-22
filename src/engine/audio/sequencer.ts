@@ -39,13 +39,20 @@ export class Sequencer {
     return 60 / bpm / PPQ;
   }
 
-  play(song: CompiledSong, at = this.ctx.currentTime + 0.05): void {
+  /**
+   * Play `song` from audio time `at`; `fromLoop` (0.4.72): from its loop point, as its second
+   * pass would (a track with nothing from there on starts at its beginning).
+   */
+  play(song: CompiledSong, at = this.ctx.currentTime + 0.05, fromLoop = false): void {
     this.stop();
     this.song = song;
     const t = song.tracks;
     const add = (track: Track | undefined, voice: Voice) => {
       if (track && track.events.length) {
-        this.cursors.push({ track, voice, index: 0, passStart: at, offsetTick: 0, done: false });
+        const from = fromLoop && song.loop ? track.events.findIndex((e) => e.tick >= track.loopTick) : -1;
+        const index = Math.max(0, from);
+        const offsetTick = from >= 0 ? track.loopTick : 0;
+        this.cursors.push({ track, voice, index, passStart: at, offsetTick, done: false });
       }
     };
     add(t.pulse1, this.voices.pulse1);

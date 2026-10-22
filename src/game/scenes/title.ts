@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import { clipped, type Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import { Actions } from '@engine/input/actions';
 import type { TouchLabels } from '@engine/input/touch';
@@ -32,7 +32,10 @@ import {
   TITLE_TIMING as T,
   type HeroSlot,
 } from './title-anim';
-import { joinMusic, TITLE_MUSIC } from './title-music';
+import { TITLE_MUSIC } from './title-music';
+import { CLASSIC_AT, type ClassicTitleScene } from './original-title';
+import type { Decor } from '../level/schema';
+import { decorPalette } from '../entities/objects/decoration';
 
 export const TITLE_NAME = 'Super Mario Bros. Crossover: REMIX';
 
@@ -62,6 +65,22 @@ const RIFT_CY = 50;
 const SKY = '#5c94fc';
 
 /**
+ * 0.4.72 (owner, back transition option A): the way back from CLASSIC. CLASSIC squashes, breaks
+ * into its letters, which hop and fall over the CLASSIC title's still frame, then the REMIX stamp
+ * pops and slams on. Frames from the REMIX title's start.
+ */
+export const BACK = {
+  /** CLASSIC's squash. */
+  squash: 3,
+  /** The slam: the stamp lands, the REMIX title is there (about 0.27 s in). */
+  slam: 16,
+} as const;
+/** CLASSIC's pieces: one a letter (the block word's letters are 24 px apart, after a 4 px pad). */
+const CLASSIC_LETTERS = 7;
+const CLASSIC_LETTER_W = 24;
+const CLASSIC_PAD = 4;
+
+/**
  * The speaker in the top-right corner (0.4.35, owner): sound on / off without a menu, the same
  * mute as Options > Audio > Mute. Its box (screen px) is also what a tap or click hits.
  */
@@ -74,7 +93,7 @@ const SPEAKER_BODY = ['....##', '...###', '######', '######', '######', '######'
  * (the page load's first title, before any press). Then the rift (the intro), the quick drop
  * (every later title), and the finished screen.
  */
-export type TitlePhase = 'gate' | 'rift' | 'drop' | 'ready';
+export type TitlePhase = 'gate' | 'rift' | 'drop' | 'back' | 'ready';
 
 /**
  * BUG-13: the page load's first title waits behind a start gate when its sound is not running
@@ -125,10 +144,17 @@ export class TitleScene extends MenuScene {
   /** Frame of the stamp's landing on the current timeline. */
   private stampAt: number;
 
+  /** 1-1's scenery on its first screen (tile coords), the field's (0.4.72: the two titles match). */
+  private readonly scenery: readonly Decor[];
+  private readonly sceneryPalette: string;
+
   constructor(
     game: Game,
-    /** Back from the CLASSIC title: its overworld fades out, then the theme rises (BUG-12). */
-    private readonly fromClassic = false,
+    /**
+     * The CLASSIC title this one comes back from (0.4.72): its still frame is the backdrop CLASSIC
+     * breaks over, and its overworld is cut for the REMIX theme (the back transition).
+     */
+    private readonly classic: ClassicTitleScene | null = null,
   ) {
     super(game, '', [], null);
     // 0.5.0 (G-111): the campaign is closed until Chapter 1 (G-100), so outside dev mode every hero
@@ -137,11 +163,17 @@ export class TitleScene extends MenuScene {
     this.heroes = heroRow(game.deps.characters, game.campaignOpen ? titleFreed(listSaves()) : all);
     const intro = game.deps.titleIntro === true && !game.titleIntroPlayed;
     game.titleIntroPlayed = true;
-    this.phase = intro ? (needsStartGate(game.ctx.audio) ? 'gate' : 'rift') : 'drop';
-    this.stampAt = intro ? T.riftStamp : T.dropStamp;
+    const back = !intro && classic !== null;
+    this.phase = intro ? (needsStartGate(game.ctx.audio) ? 'gate' : 'rift') : back ? 'back' : 'drop';
+    // With Reduce flashing the way back is an instant swap: the stamp is on from the first frame.
+    this.stampAt = intro ? T.riftStamp : back ? (game.ctx.reduceFlashing ? 0 : BACK.slam) : T.dropStamp;
+    const level = game.deps.getLevel('1-1');
+    this.scenery = level.decor.filter((d) => d.x * 16 < 256 && d.y * 16 < 240);
+    this.sceneryPalette = decorPalette(level.theme);
     let walker = 0;
     this.actors = this.heroes.map((slot, i) => {
-      const walks = !intro && slot.freed;
+      // Back from CLASSIC the heroes are already standing in their places (no walk-in).
+      const walks = !intro && !back && slot.freed;
       return {
         slot,
         p: poser(slot.def),
@@ -190,16 +222,38 @@ export class TitleScene extends MenuScene {
     }
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
-    else if (this.fromClassic) {
-      // The drop waits for the overworld's fade-out, so the stamp still lands on the fanfare.
-      const wait = joinMusic(audio, 'title', TITLE_MUSIC.backOut, TITLE_MUSIC.backIn);
-      this.hold = Math.round(wait * 60);
-    } else audio.playMusic('title');
+    else if (this.phase === 'back') this.startBack();
+    else audio.playMusic('title');
     this.sayTitle();
   }
 
-  /** Frames the drop waits before it starts (the overworld fading out, BUG-12). */
-  private hold = 0;
+  // ------------------------------------------------------------ the way back from CLASSIC
+
+  /** The slam has happened (its thud, and the theme from its loop point). */
+  private slammed = false;
+
+  /**
+   * The music of the way back (0.4.72): the overworld is cut under the shatter, and the stamp's
+   * thud on the slam is the sting the REMIX theme comes in on. BACK before CLASSIC's impact left
+   * the theme playing (no overworld yet): it just comes back up (BUG-12).
+   */
+  private startBack(): void {
+    const audio = this.game.ctx.audio;
+    if (!this.classic?.overworldAsked) audio.playMusic('title');
+    else if (audio.fadeOutMusic) audio.fadeOutMusic(TITLE_MUSIC.shatterOut);
+    else audio.stopMusic();
+    if (this.stampAt <= this.clock) this.slam();
+  }
+
+  /** The stamp lands: its thud, and the theme from bar 3 (past its fanfare). Once. */
+  private slam(): void {
+    if (this.slammed) return;
+    this.slammed = true;
+    const audio = this.game.ctx.audio;
+    // The same song still playing (BACK before the impact) only comes back up, never restarted.
+    audio.playMusic('title', 0, true);
+    audio.sfx('stamp');
+  }
 
   // ------------------------------------------------------------ the start gate (BUG-13)
 
@@ -401,8 +455,8 @@ export class TitleScene extends MenuScene {
   /** Jump to the finished screen: logo in place, stamp on, every hero in their place. */
   private finish(): void {
     if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
+    if (this.phase === 'back') this.slam();
     this.phase = 'ready';
-    this.hold = 0;
     this.clock = Math.max(this.clock, this.stampAt + T.dustFrames, T.dropEnd);
     for (const a of this.actors) {
       a.x = a.slot.x;
@@ -413,16 +467,14 @@ export class TitleScene extends MenuScene {
   }
 
   private tick(): void {
-    if (this.hold > 0) {
-      this.hold--;
-      return;
-    }
     this.clock++;
     const t = this.clock;
-    if (t === this.stampAt) {
+    if (t === this.stampAt && this.phase === 'back') this.slam();
+    else if (t === this.stampAt) {
       if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
       this.game.ctx.audio.sfx('stamp');
     }
+    if (this.phase === 'back' && t >= this.stampAt + (this.calm ? 0 : T.dustFrames)) this.phase = 'ready';
     if (this.phase === 'rift' && t >= T.riftEnd) {
       this.phase = 'ready';
       // 32b: the intro played out with no skip: "press any button to skip" is stale, so the
@@ -486,7 +538,8 @@ export class TitleScene extends MenuScene {
       this.unlockDev('');
       return; // the final press of the code must not also activate a menu item
     }
-    if (this.phase === 'drop' && Actions.some((a) => input.pressed(a))) this.finish();
+    if ((this.phase === 'drop' || this.phase === 'back') && Actions.some((a) => input.pressed(a)))
+      this.finish();
     if (input.pressed('select')) {
       this.toggleSound();
       return;
@@ -521,21 +574,19 @@ export class TitleScene extends MenuScene {
     this.text(r, s, Math.round(128 - (s.length * 8 - 1) / 2), y, colour, shadow);
   }
 
-  /** The SMB field: sky, drifting clouds and hills (slow parallax), two rows of ground. */
+  /**
+   * The SMB field: sky, two rows of ground and 1-1's own first screen of scenery, standing still
+   * (0.4.72), so the REMIX and CLASSIC titles share one backdrop.
+   */
   private field(r: Renderer, dy: number): void {
     const assets = this.game.ctx.assets;
     r.clear(SKY);
-    const decor = assets.sheet('decor');
-    const drift = (speed: number, x: number) => {
-      const period = 256 + 64;
-      return ((((x - this.clock * speed) % period) + period) % period) - 48;
-    };
-    r.sprite(decor, 'hill-big', drift(1 / 16, -16 + 48), 178 + dy);
-    r.sprite(decor, 'hill-small', drift(1 / 16, 204 + 48), 186 + dy);
-    r.sprite(decor, 'bush-1', drift(1 / 16, 96 + 48), 192 + dy);
-    r.sprite(decor, 'cloud-1', drift(1 / 8, 212 + 48), 6 + dy);
-    r.sprite(decor, 'cloud-2', drift(1 / 8, 4 + 48), 92 + dy);
-    r.sprite(decor, 'cloud-1', drift(1 / 8, 214 + 48 + 160), 104 + dy);
+    const decor = assets.sheet('decor', this.sceneryPalette);
+    for (const d of this.scenery) {
+      // Anchored at its bottom-left tile, as the level draws it (Decoration).
+      const h = decor.frames.get(d.kind)?.h ?? 16;
+      r.sprite(decor, d.kind, d.x * 16, (d.y + 1) * 16 - h + dy);
+    }
     const tiles = assets.sheet('tiles');
     for (let x = 0; x < 256; x += 16) {
       r.sprite(tiles, 'ground', x, TITLE_GROUND_Y + dy);
@@ -591,7 +642,7 @@ export class TitleScene extends MenuScene {
   private letterPos(i: number): { x: number; y: number } | null {
     const t = this.clock;
     const restX = CROSS_X + i * CROSSOVER_ADVANCE;
-    if (this.phase === 'ready') return { x: restX, y: CROSS_Y };
+    if (this.phase === 'ready' || this.phase === 'back') return { x: restX, y: CROSS_Y };
     if (this.phase === 'rift') {
       const lt = t - (T.lettersFrom + i * T.letterGap);
       if (lt < 0) return null;
@@ -615,7 +666,7 @@ export class TitleScene extends MenuScene {
 
   private tagY(): number | null {
     const t = this.clock;
-    if (this.phase === 'ready') return TAG_Y;
+    if (this.phase === 'ready' || this.phase === 'back') return TAG_Y;
     const from = this.phase === 'rift' ? T.lettersFrom + CROSSOVER_LETTERS.length * T.letterGap + 10 : 0;
     const lt = t - from;
     if (lt < 0) return null;
@@ -705,11 +756,68 @@ export class TitleScene extends MenuScene {
     if (on) this.ctext(r, 'DEV MODE UNLOCKED', UNLOCKED_Y + dy, 'gold', true);
   }
 
+  /**
+   * The way back before the slam: the CLASSIC title's frame held still (its demo, SMB and
+   * CROSSOVER), CLASSIC squashed and then in pieces, one a letter, each hopping and falling with
+   * a chip of brick; the stamp's big frame just before it lands.
+   */
+  private renderBreak(r: Renderer, classic: ClassicTitleScene): void {
+    const sheet = this.game.ctx.assets.sheet('title-logo');
+    classic.demo.render(r);
+    r.sprite(sheet, 'smb-tag', TAG_X, TAG_Y);
+    for (let i = 0; i < CROSSOVER_LETTERS.length; i++)
+      r.sprite(sheet, `cross-${i}`, CROSS_X + i * CROSSOVER_ADVANCE, CROSS_Y);
+    const k = this.clock;
+    const word = sheet.frames.get('classic');
+    const w = word?.w ?? 173;
+    const h = word?.h ?? 29;
+    if (k < BACK.squash) {
+      const flat = sheet.frames.get('classic-squash')?.h ?? 22;
+      r.sprite(sheet, 'classic-squash', CLASSIC_AT.x, CLASSIC_AT.y + h - flat);
+    } else
+      for (const p of this.classicPieces(k - BACK.squash, w)) {
+        clipped(r, p.clipX, p.y, p.clipW, h, () => r.sprite(sheet, 'classic', p.wordX, p.y));
+        r.sprite(sheet, 'brick-bit', p.chipX, p.chipY);
+      }
+    if (k >= this.stampAt - T.stampPop) {
+      const f = sheet.frames.get('remix');
+      r.sprite(sheet, 'remix-2x', STAMP_X - ((f?.w ?? 92) >> 1), STAMP_Y - ((f?.h ?? 44) >> 1));
+    }
+  }
+
+  /** CLASSIC's pieces `a` frames after it breaks: where each is cut from the word and drawn. */
+  classicPieces(
+    a: number,
+    w: number,
+  ): { clipX: number; clipW: number; wordX: number; y: number; chipX: number; chipY: number }[] {
+    const out = [];
+    for (let i = 0; i < CLASSIC_LETTERS; i++) {
+      // Out from the middle letter, odd ones hopping a little higher, then falling.
+      const dx = Math.round((i - 3) * 0.9 * a);
+      const dy = Math.round((-2.4 - (i % 2) * 0.8) * a + 0.4 * a * a);
+      const from = i === 0 ? 0 : CLASSIC_PAD + i * CLASSIC_LETTER_W;
+      const to = i === CLASSIC_LETTERS - 1 ? w : CLASSIC_PAD + (i + 1) * CLASSIC_LETTER_W;
+      out.push({
+        clipX: CLASSIC_AT.x + from + dx,
+        clipW: to - from,
+        wordX: CLASSIC_AT.x + dx,
+        y: CLASSIC_AT.y + dy,
+        chipX: CLASSIC_AT.x + from + 10 + dx * 2,
+        chipY: CLASSIC_AT.y + 20 + dy - a,
+      });
+    }
+    return out;
+  }
+
   override render(r: Renderer): void {
     if (this.phase === 'gate') {
       // Deep space, as the rift opens on, and the gate's words, steady (no blink, no flash).
       this.space(r, 1);
       this.ctext(r, this.gateText, 116, undefined, true);
+      return;
+    }
+    if (this.phase === 'back' && this.clock < this.stampAt && this.classic) {
+      this.renderBreak(r, this.classic);
       return;
     }
     const dy = this.shake();

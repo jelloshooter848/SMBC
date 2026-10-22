@@ -155,8 +155,13 @@ export class ClassicTitleScene implements Scene {
     if (this.fromRemix && this.smashing) {
       audio.fadeOutMusic?.(TITLE_MUSIC.fallOut);
       this.overworldDue = true;
-    } else if (this.fromRemix) joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
-    else audio.playMusic('overworld');
+    } else if (this.fromRemix) {
+      joinMusic(audio, 'overworld', TITLE_MUSIC.crossOut, TITLE_MUSIC.crossIn);
+      this.overworldAsked = true;
+    } else {
+      audio.playMusic('overworld');
+      this.overworldAsked = true;
+    }
     if (this.quiet) return;
     if (this.phase === 'start') this.announce(true);
     else this.sayDemo();
@@ -172,11 +177,17 @@ export class ClassicTitleScene implements Scene {
   private readonly fromRemix: boolean;
   /** The overworld waits for CLASSIC's impact (BUG-12). */
   private overworldDue = false;
+  /**
+   * The overworld has been asked for (0.4.72): BACK before the smash's impact leaves the REMIX
+   * theme playing, and the way back (title.ts) only brings it up again.
+   */
+  overworldAsked = false;
 
   /** The impact (or the smash cut short by a press): the overworld rises, the smash its downbeat. */
   private startOverworld(): void {
     if (!this.overworldDue) return;
     this.overworldDue = false;
+    this.overworldAsked = true;
     this.game.ctx.audio.playMusic('overworld', TITLE_MUSIC.impactIn);
   }
 

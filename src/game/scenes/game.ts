@@ -1107,12 +1107,14 @@ export class Game {
   }
 
   showTitle(): void {
-    // BUG-12: back from the CLASSIC title (or a box over it), its overworld fades into the theme.
-    // Its music is not stopped here: the title's crossfade takes it from where it is.
-    const fromClassic = this.scenes.find((s) => s instanceof ClassicTitleScene) !== undefined;
-    this.leaveRun(fromClassic);
+    // Back from the CLASSIC title (or a box over it), 0.4.72: the REMIX title breaks CLASSIC over
+    // that title's still frame (TitleScene's back transition). Its music is not stopped here:
+    // the REMIX title takes it from where it is.
+    const classic =
+      (this.scenes.find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene | undefined) ?? null;
+    this.leaveRun(classic !== null);
     this.scenes.clear();
-    this.scenes.push(new TitleScene(this, fromClassic));
+    this.scenes.push(new TitleScene(this, classic));
   }
 
   /** Everything a run (of any kind) leaves behind on the way back to the menus (showTitle). */

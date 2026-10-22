@@ -1,4 +1,4 @@
-import { MUSIC_FADE_IN_S, type AudioSink } from '@engine/audio/audio-manager';
+import type { AudioSink } from '@engine/audio/audio-manager';
 
 /**
  * BUG-12 (owner): the joins between the REMIX title's theme and the CLASSIC title's overworld
@@ -17,10 +17,11 @@ export const TITLE_MUSIC = {
   /** Reduce flashing (no smash): the REMIX theme fades out over this, then the overworld rises. */
   crossOut: 0.4,
   crossIn: 0.4,
-  /** BACK to the REMIX title: the overworld fades out over this... */
-  backOut: 0.4,
-  /** ...then the theme rises as it does when sound starts (MUSIC_FADE_IN_S). */
-  backIn: MUSIC_FADE_IN_S,
+  /**
+   * BACK to the REMIX title (0.4.72): the overworld is cut under CLASSIC's shatter, over just
+   * this (no click); the REMIX theme comes in on the stamp's slam, from bar 3.
+   */
+  shatterOut: 0.05,
 } as const;
 
 /**
