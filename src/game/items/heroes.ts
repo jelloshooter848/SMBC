@@ -32,6 +32,8 @@ export interface HeroPower {
   powerState: string;
   hp: number;
   kit: Record<string, number>;
+  /** Item 25: earned in a design Toggle heroes' Plays as swapped in (GameState.swapped). */
+  swapped?: true;
 }
 
 /**

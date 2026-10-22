@@ -1,6 +1,6 @@
 import { defaultPower, type Rules } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
-import { CLASSIC_EXTRAS, playedHero } from '../characters/registry';
+import { CLASSIC_EXTRAS, heroFor, playedHero } from '../characters/registry';
 import type { Game } from '../scenes/game';
 
 /**
@@ -12,6 +12,27 @@ import type { Game } from '../scenes/game';
  */
 export function reconcileRules(game: Game, rules: Rules): void {
   const s = game.state;
+  // Item 25: power and kit earned in a design Toggle heroes' Plays as swapped in (dev mode) go
+  // back to the real design's start, kit too, once that design plays again (dev mode turned off,
+  // or the swap undone). The flag then follows what plays now.
+  const swapped = (c: CharacterDef) => isSwapped(game, c, rules);
+  const real = (c: CharacterDef) => {
+    const d = playedHero(game.ctx, c, rules);
+    return { powerState: defaultPower(d), hp: startHp(d) };
+  };
+  if (s.swapped && !swapped(s.character)) {
+    ({ powerState: s.powerState, hp: s.hp } = real(s.character));
+    s.kit = {};
+    game.deps.announcer?.say('Hero design changed. Power reset.');
+  }
+  if (s.character2 && s.swapped2 && !swapped(s.character2)) {
+    ({ powerState: s.powerState2, hp: s.hp2 } = real(s.character2));
+    s.kit2 = {};
+  }
+  if (swapped(s.character)) s.swapped = true;
+  else delete s.swapped;
+  if (s.character2 && swapped(s.character2)) s.swapped2 = true;
+  else delete s.swapped2;
   if ((s.rules ?? 'current') !== rules) {
     const reset = (c: CharacterDef) => {
       const d = playedHero(game.ctx, c, rules);
@@ -55,4 +76,26 @@ export function reconcileRules(game: Game, rules: Rules): void {
   const roster = game.roster;
   if (extra(s.character) && !roster.includes(s.character)) game.setHero(0, game.firstHero);
   if (extra(s.character2) && !roster.includes(s.character2)) game.setHero(1, game.firstHero);
+}
+
+/**
+ * Item 25: whether hero `c` plays, under `rules`, a design other than his own (Toggle heroes'
+ * Plays as, dev mode only: ctx.heroSwaps).
+ */
+export function isSwapped(game: Game, c: CharacterDef, rules: Rules): boolean {
+  return playedHero(game.ctx, c, rules) !== heroFor(c, rules);
+}
+
+/**
+ * Item 25: a put-away hero's power and kit as they may come back: a kit earned in a design that
+ * no longer plays is dropped (null: the hero starts afresh), and one that still plays is kept
+ * with its flag.
+ */
+export function keptPower<T extends { swapped?: true }>(
+  game: Game,
+  c: CharacterDef,
+  rules: Rules,
+  k: T,
+): T | null {
+  return k.swapped && !isSwapped(game, c, rules) ? null : k;
 }

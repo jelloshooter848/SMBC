@@ -126,6 +126,7 @@ import {
   type BonusState,
 } from '../bonus/items';
 import { heroStart, type HeroPower } from '../items/heroes';
+import { keptPower } from '../rules/reconcile';
 import type { StageRound } from '../arena/stage-round';
 import { TownScene } from '../town/scene';
 import { DEV_VILLAGE, KAKARIKO, layUsedBlocks, openedBlocks, SECRET_HOUSE_LEVEL } from '../town/secret-house';
@@ -2451,6 +2452,8 @@ export class Game {
       s.powerState = r.powerState;
       s.hp = r.hp;
       s.kit = { ...r.kit };
+      // Item 25: earned in a swapped design (the level start resets it if that no longer plays).
+      if (r.swapped) s.swapped = true;
       if (r.heroKits) this.classicKits = structuredClone(r.heroKits);
     }
     s.warped = r.warped;
@@ -3015,7 +3018,12 @@ export class Game {
     const out = structuredClone(this.heroKits);
     const s = this.state;
     if (s.character !== saved.character)
-      out[s.character.id] = { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      out[s.character.id] = {
+        powerState: s.powerState,
+        hp: s.hp,
+        kit: { ...s.kit },
+        ...(s.swapped ? { swapped: true } : {}),
+      };
     delete out[saved.character.id];
     if (saved.character2) delete out[saved.character2.id];
     return out;
@@ -3032,23 +3040,31 @@ export class Game {
     if (this.campaign) {
       const old = player === 1 ? s.character2 : s.character;
       if (old === c) return;
+      // Item 25: a kit earned in a swapped design goes away with that flag, and comes back only
+      // while that design still plays.
+      const flag = player === 1 ? s.swapped2 : s.swapped;
       if (old)
         this.heroKits[old.id] =
           player === 1
-            ? { powerState: s.powerState2, hp: s.hp2, kit: { ...s.kit2 } }
-            : { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
-      const next = this.heroKits[c.id] ?? heroStart(c);
+            ? { powerState: s.powerState2, hp: s.hp2, kit: { ...s.kit2 }, ...(flag ? { swapped: true } : {}) }
+            : { powerState: s.powerState, hp: s.hp, kit: { ...s.kit }, ...(flag ? { swapped: true } : {}) };
+      const stored = this.heroKits[c.id];
+      const next = (stored && keptPower(this, c, this.liveRules, stored)) ?? heroStart(c);
       delete this.heroKits[c.id];
       if (player === 1) {
         s.character2 = c;
         s.powerState2 = next.powerState;
         s.hp2 = next.hp;
         s.kit2 = { ...next.kit };
+        if (next.swapped) s.swapped2 = true;
+        else delete s.swapped2;
       } else {
         s.character = c;
         s.powerState = next.powerState;
         s.hp = next.hp;
         s.kit = { ...next.kit };
+        if (next.swapped) s.swapped = true;
+        else delete s.swapped;
         swapInventory(this.bonus, c.id);
       }
       return;
@@ -3058,31 +3074,44 @@ export class Game {
     if (this.keepsHeroKits && player === 0) {
       // BUG-06: the hero left is put away as he is; `c` comes back as he was left.
       const old = s.character;
-      const left: HeroPower = { powerState: s.powerState, hp: s.hp, kit: { ...s.kit } };
+      const left: HeroPower = {
+        powerState: s.powerState,
+        hp: s.hp,
+        kit: { ...s.kit },
+        ...(s.swapped ? { swapped: true } : {}),
+      };
       this.classicKits[this.slotOf(old).id] = left;
       const key = this.slotOf(c).id;
-      const kept = this.classicKits[key];
+      const stored = this.classicKits[key];
+      // Item 25: a kit earned in a swapped design that no longer plays starts afresh.
+      const kept = stored && keptPower(this, c, this.liveRules, stored);
       delete this.classicKits[key];
       s.character = c;
+      delete s.swapped;
       if (kept && fitsHero(d, kept)) {
         s.powerState = kept.powerState;
         s.hp = kept.hp;
         s.kit = { ...kept.kit };
+        if (kept.swapped) s.swapped = true;
       } else {
         s.powerState = defaultPower(d);
         s.hp = startHp(d);
         s.kit = old === c ? keptKit(d, s.kit) : {};
+        if (old === c && left.swapped) s.swapped = true;
       }
       return;
     }
     const power = defaultPower(d);
     // The same hero picked again keeps what a death keeps (CharacterDef.keepOnDeath).
     if (player === 1) {
+      // Item 25: another hero's fresh kit is not the swapped design's.
+      if (s.character2 !== c) delete s.swapped2;
       s.kit2 = s.character2 === c ? keptKit(d, s.kit2) : {};
       s.character2 = c;
       s.powerState2 = power;
       s.hp2 = startHp(d);
     } else {
+      if (s.character !== c) delete s.swapped;
       s.kit = s.character === c ? keptKit(d, s.kit) : {};
       s.character = c;
       s.powerState = power;

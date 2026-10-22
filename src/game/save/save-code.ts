@@ -75,6 +75,9 @@ export const SAVE_CODE_FIELDS: { readonly [K in keyof Required<SaveFile>]: 'code
     lastNode: 'code',
     pendingReveal: 'code',
     devUnlockAll: 'left-out',
+    // Item 25: dev mode's Plays as marks; a shared code carries no dev state.
+    swapped: 'left-out',
+    swapped2: 'left-out',
     devAllHeroes: 'left-out',
     devGateOpen: 'left-out',
     devInventory: 'left-out',

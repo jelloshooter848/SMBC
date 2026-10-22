@@ -64,6 +64,8 @@ export interface ClassicResume {
   savedAt?: number;
   /** BUG-05: written by a game over at its continue point; going on from it is a continue used. */
   continued?: true;
+  /** Item 25: the playing hero's power and kit were earned in a Plays as design (GameState.swapped). */
+  swapped?: true;
   /**
    * An old per-set slot's continues (#196's item 8). Migration reads it; a file keeps its count
    * beside the run (ClassicFile.continues), never here.
@@ -76,6 +78,8 @@ export interface HeroKit {
   powerState: string;
   hp: number;
   kit: Record<string, number>;
+  /** Item 25: earned in a Plays as design (HeroPower.swapped). */
+  swapped?: true;
 }
 
 /** The slot for `state` at the WORLD card of `levelId`. */
@@ -101,6 +105,7 @@ export function resumeOf(
     kit: { ...state.kit },
     warped: state.warped,
     checkpoint: state.checkpoint ? { ...state.checkpoint } : null,
+    ...(state.swapped ? { swapped: true as const } : {}),
     ...(survival
       ? { survival: { fallen: [...survival.fallen], reviveAllowed: survival.reviveAllowed } }
       : {}),
@@ -111,7 +116,12 @@ export function resumeOf(
 function copyKits(kits: Readonly<Record<string, HeroKit>>): Record<string, HeroKit> {
   const out: Record<string, HeroKit> = {};
   for (const [id, k] of Object.entries(kits))
-    out[id] = { powerState: k.powerState, hp: k.hp, kit: { ...k.kit } };
+    out[id] = {
+      powerState: k.powerState,
+      hp: k.hp,
+      kit: { ...k.kit },
+      ...(k.swapped ? { swapped: true } : {}),
+    };
   return out;
 }
 
@@ -176,8 +186,14 @@ function readHeroKits(v: unknown): Record<string, HeroKit> | null {
     if (!def || !k || typeof k !== 'object') continue;
     const e = k as Partial<HeroKit>;
     const kit = readKit(e.kit);
+    // Item 25: one earned in a Plays as design is kept as it was (its power need not read for the
+    // Classic design); Game.setHero drops it once that design no longer plays.
+    if (e.swapped === true && typeof e.powerState === 'string' && num(e.hp)) {
+      out[id] = { powerState: e.powerState, hp: e.hp, kit, swapped: true };
+      continue;
+    }
     const power = checkedPower(def, e.powerState, e.hp, kit);
-    if (power) out[id] = { ...power, kit };
+    if (power) out[id] = { ...power, kit, ...(e.swapped === true ? { swapped: true as const } : {}) };
   }
   return out;
 }
@@ -217,6 +233,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
     heroKits: _hk,
     continues: cn,
     continued: cd,
+    swapped: sw,
     ...rest
   } = r as ClassicResume;
   return {
@@ -224,6 +241,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
     // An old per-set slot's count (#196; migration reads it): a whole number of 0 or more, else none.
     ...(Number.isInteger(cn) && (cn as number) >= 0 ? { continues: cn } : {}),
     ...(cd === true ? { continued: true as const } : {}),
+    ...(sw === true ? { swapped: true as const } : {}),
     // An older slot, or a value this version does not know: none (the caller falls back).
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),

@@ -31,6 +31,10 @@ under `## [Unreleased]`.
   where it is). From the menus it starts a practice run with the original's rules on Normal,
   which saves nothing and counts toward nothing.
 - Classic mode: quitting a run says the run waits in its file.
+- Dev mode: turning dev mode off clears what Toggle heroes' **Plays as** left behind. A Classic
+  save file or a campaign file whose hero earned his power and kit in a swapped design gets that
+  hero's kit and power back to his real design's start the next time it loads outside dev mode
+  (before, only a power that did not fit was reset, and the kit stayed).
 
 ## [0.4.69] - 2026-10-22
 
