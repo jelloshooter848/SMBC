@@ -333,7 +333,8 @@ describe('item 94: the Level Select cheat is gone', () => {
   it('an old settings blob with the cheat unlocked loads cleanly', () => {
     const s = oldBlob();
     expect(s.classicCheats.unlocked.everyoneCanStomp).toBe(true);
-    for (const id of SIXTEEN) expect(typeof s.classicCheats.unlocked[id as keyof typeof s.classicCheats.unlocked]).toBe('boolean');
+    for (const id of SIXTEEN)
+      expect(typeof s.classicCheats.unlocked[id as keyof typeof s.classicCheats.unlocked]).toBe('boolean');
   });
 
   it('no Level select row in CHEATS, with or without the old flag, or with dev mode’s every cheat', () => {

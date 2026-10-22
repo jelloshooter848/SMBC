@@ -113,7 +113,6 @@ describe('B: after the credits', () => {
 });
 
 describe('B: developer and practice runs keep the title', () => {
-
   it('a developer Classic run', () => {
     const h = classic();
     h.game.devClassicGame(MARIO, '8-4', 'classic', true);

@@ -123,7 +123,6 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
 // v0.4.74 item 94: the Level Select cheat is gone; its level ids stay (the dev Level select, a
 // CLEARED file's replay: level-targets.ts).
 describe('level ids', () => {
-
   it('names worlds as the original (10-13 are A-D) and starts a level at its intro or first area', () => {
     const h = classic();
     expect([1, 9, 10, 13].map(worldName)).toEqual(['1', '9', 'A', 'D']);
