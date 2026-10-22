@@ -27,7 +27,6 @@ useStorage();
 
 /** B-L: SMB's FILE 1 (an old single or per-set slot migrates into it). */
 const F1: ClassicFileRef = { set: 'smb', slot: 1 };
-const loadClassicResume = () => loadClassicFile(F1)?.run ?? null;
 afterEach(() => store.clear());
 
 /** The rows' labels, without a changed row's `*` mark. */
@@ -103,7 +102,7 @@ describe('O-12 outside developer mode', () => {
     expect(h.game.state.character.id).toBe('mario');
   });
 
-  it('a Continue slot kept as Yoshi under Campaign rules goes on as Mario, Classic rules, power reset', () => {
+  it('a Continue slot kept as Yoshi under Campaign rules waits for dev mode (item 40: NOT RELEASED, never played as Mario)', () => {
     store.set(
       CLASSIC_RESUME_KEY,
       JSON.stringify({
@@ -111,6 +110,36 @@ describe('O-12 outside developer mode', () => {
         levelId: '2-1',
         rules: 'current',
         hero: 'yoshi',
+        score: 4200,
+        coins: 17,
+        lives: 4,
+        world: 2,
+        stage: 1,
+        powerState: 'fire',
+        hp: 3,
+        kit: { bombs: 5 },
+        warped: false,
+        checkpoint: null,
+      }),
+    );
+    const h = saved();
+    // 0.4.73 item 40 (was: it went on as Mario, his power reset, and the next save dropped Yoshi).
+    expect(h.game.classicFileProblem(F1)).toBe('not-released');
+    const kept = JSON.stringify(loadClassicFile(F1));
+    expect(h.game.resumeClassic(F1)).toBe(false);
+    h.idle(30);
+    expect(JSON.stringify(loadClassicFile(F1))).toBe(kept);
+    expect(loadClassicFile(F1)?.run).toMatchObject({ hero: 'yoshi', powerState: 'fire', kit: { bombs: 5 } });
+  });
+
+  it('a Continue slot kept as Mario under Campaign rules goes on under Classic rules, power reset', () => {
+    store.set(
+      CLASSIC_RESUME_KEY,
+      JSON.stringify({
+        v: 1,
+        levelId: '2-1',
+        rules: 'current',
+        hero: 'mario',
         score: 4200,
         coins: 17,
         lives: 4,
@@ -132,8 +161,8 @@ describe('O-12 outside developer mode', () => {
     expect(h.game.state.kit).not.toHaveProperty('bombs');
     // Its next WORLD card (after Continue's select, BUG-03) keeps it as the Classic-rules run it now is.
     pickAtContinue(h);
-    h.until(() => loadClassicResume()?.rules === 'classic', 600);
-    expect(loadClassicResume()).toMatchObject({ rules: 'classic', hero: 'mario' });
+    h.until(() => loadClassicFile(F1)?.run.rules === 'classic', 600);
+    expect(loadClassicFile(F1)?.run).toMatchObject({ rules: 'classic', hero: 'mario' });
   });
 });
 

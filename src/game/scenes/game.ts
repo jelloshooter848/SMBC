@@ -831,8 +831,10 @@ export class Game {
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
-    // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
-    // hero standing and the select shows who plays.
+    // A hero the select does not offer now: the first slot's hero, Mario, in his chosen look, so
+    // Survival has a hero standing and the select shows who plays. Item 40: a file of an unreleased
+    // Expansion hero never gets here (NOT RELEASED); what still does is a `?char=` link or dev
+    // start naming one, and a file whose hero its own Disable heroes left out (P1).
     // A hero the dev select offers (selectSlots: dev mode shows every hero not set Off) plays.
     const slots = this.selectSlots;
     if (!slots.includes(host)) {
@@ -2627,7 +2629,8 @@ export class Game {
    * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
    * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
    * ('level'). 0.4.72: its run was played in dev mode by a hero only dev mode offers (devHero)
-   * and dev mode is off now ('not-released'). Null when it plays, or when there is no readable
+   * and dev mode is off now ('not-released'); 0.4.73 item 40: so is any run of an unreleased
+   * Expansion hero, marked or not. Null when it plays, or when there is no readable
    * file there.
    */
   classicFileProblem(ref: ClassicFileRef): FileProblem | null {
@@ -2646,9 +2649,12 @@ export class Game {
     const rules = this.resumeRules(r);
     const hero = this.rosterFor(rules).find((c) => c.id === r.hero);
     if (hero) {
-      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's);
-      // an unmarked one whose hero no select offers plays as the first slot's hero (P1).
-      if (r.devHero && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
+      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's).
+      // 0.4.73 item 40: so does an unmarked one whose hero is an unreleased Expansion hero (a
+      // file saved by v0.4.71 or earlier), never played as another hero or rewritten. Only a
+      // hero that is neither offered nor an Expansion hero plays as the first slot's (P1).
+      const waits = r.devHero === true || this.devOnlyHero(hero);
+      if (waits && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
       return null;
     }
     const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
@@ -2717,7 +2723,9 @@ export class Game {
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
     // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
-    // at his own default, not with the saved hero's power and kit.
+    // at his own default, not with the saved hero's power and kit. Item 40: only a hero that is no
+    // Expansion hero gets here from a file (one its own Disable heroes left out, P1); an
+    // unreleased Expansion hero's file is NOT RELEASED (fileProblem).
     const unoffered = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
       if (!unoffered) {

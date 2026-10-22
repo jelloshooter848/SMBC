@@ -95,7 +95,7 @@ describe('G-008 the Classic save file', () => {
     expect((h.top() as LevelScene).world.level.id).toMatch(/^1-2/);
   });
 
-  it('#179: a run as an Expansion hero with Expansion heroes off goes on as Mario in his look', () => {
+  it('#179: a run as an Expansion hero with Expansion heroes off waits for dev mode (item 40)', () => {
     const slot = () =>
       store.set(
         CLASSIC_RESUME_KEY,
@@ -118,11 +118,11 @@ describe('G-008 the Classic save file', () => {
       );
     slot();
     const off = classic();
-    expect(off.game.resumeClassic(F1)).toBe(true);
-    expect(off.game.state.character.id).toBe('mario');
-    expect(off.game.state.score).toBe(50);
-    // The WORLD card rewrote the slot as Mario's: the saved Yoshi run again.
-    slot();
+    // 0.4.73 item 40 (was: it went on as Mario, and its WORLD card rewrote it as Mario's): an
+    // unreleased Expansion hero's file is NOT RELEASED with dev mode off and stays Yoshi's.
+    expect(off.game.classicFileProblem(F1)).toBe('not-released');
+    expect(off.game.resumeClassic(F1)).toBe(false);
+    expect(loadClassicFile(F1)?.run).toMatchObject({ hero: 'yoshi', score: 50 });
     // O-12: the Expansion heroes row is developer mode's until a hero is released.
     const on = classic({}, true);
     on.settings.classic = { ...on.settings.classic, expansion: 'on' };
