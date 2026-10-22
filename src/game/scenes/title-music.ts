@@ -18,8 +18,8 @@ export const TITLE_MUSIC = {
   crossOut: 0.4,
   crossIn: 0.4,
   /**
-   * BACK to the REMIX title (0.4.72): the overworld is cut under CLASSIC's shatter, over just
-   * this (no click); the REMIX theme comes in on the stamp's slam, from bar 3.
+   * BACK to the REMIX title (0.4.72): the overworld is cut as the way back starts, over just
+   * this (no click); the REMIX theme comes in as REMIX lands in place (0.4.74), from bar 3.
    */
   shatterOut: 0.05,
 } as const;

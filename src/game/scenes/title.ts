@@ -242,8 +242,8 @@ export class TitleScene extends MenuScene {
   constructor(
     game: Game,
     /**
-     * The CLASSIC title this one comes back from (0.4.72): its still frame is the backdrop CLASSIC
-     * breaks over, and its overworld is cut for the REMIX theme (the back transition).
+     * The CLASSIC title this one comes back from (0.4.72): whether it got as far as its overworld
+     * (cut for the REMIX theme on the way back) and whether BACK came before CLASSIC arrived.
      */
     private classic: ClassicTitleScene | null = null,
   ) {
