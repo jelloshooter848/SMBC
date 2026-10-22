@@ -37,10 +37,11 @@ import {
   settingsSchema,
   type Policy,
 } from './schema';
-import { canonLoaded, hybridBits, hybridFromBits, KIND, loadAll, normaliseLoaded, packB32, packB64, SAVE_KEYS, slotCode, slotDecode, unpackB32, unpackB64 } from './bench';
+import { canonLoaded, hybridBits, hybridFromBits, INNER_FRAME, KIND, loadAll, normaliseLoaded, packB32, packB64, SAVE_KEYS, slotCode, slotDecode, unpackB32, unpackB64 } from './bench';
 import { fullHero, randomScenarios, sampleScenario, scenarios, type Scenario } from './scenarios';
 import { campaignAt, pctProfile } from './scenarios2';
 import { Rng } from '@engine/rng';
+import { R, TR } from './trace';
 
 const DIR = new URL('.', import.meta.url).pathname.replace(/\/$/, ''); // research/savecode/harness
 const SAMPLE = `${DIR}/../sample/sample-save.json`;
@@ -56,9 +57,9 @@ function check(ok: boolean, what: string): void {
 // ------------------------------------------------------------------ policy-dependent schemas
 
 const F_DROP = ['created', 'updated', 'devUnlockAll', 'devAllHeroes', 'devGateOpen', 'devInventory'];
-const sDropOf = (p: Policy) => (p === 'semantic' ? DEV_FIELDS : [...DEV_FIELDS, ...DEVICE_FIELDS]);
+export const sDropOf = (p: Policy) => (p === 'semantic' ? DEV_FIELDS : [...DEV_FIELDS, ...DEVICE_FIELDS]);
 const SCH: Record<string, any> = {};
-function sch(policy: Policy) {
+export function sch(policy: Policy) {
   if (!SCH[policy]) {
     const settings = settingsSchema(sDropOf(policy));
     const save = saveSchema(F_DROP) as any;
@@ -68,7 +69,7 @@ function sch(policy: Policy) {
   }
   return SCH[policy];
 }
-const names = (s: any): string[] => s.f.map(([n]: any) => n);
+export const names = (s: any): string[] => s.f.map(([n]: any) => n);
 
 // ------------------------------------------------------------------ K: frozen references (built from the game's registries, not from test data)
 
@@ -89,7 +90,7 @@ function freshFile(h: any): any {
   return d;
 }
 /** Whole-file campaign templates (head-dependent: the played heroes' own kits). */
-const FILE_T: Record<string, (h: any) => any> = {
+export const FILE_T: Record<string, (h: any) => any> = {
   fresh: freshFile,
   half: (h) => ({ ...freshFile(h), cleared: levelsOf((p) => HALF_PAGES.includes(p.id)), pages: HALF_PAGES }),
   smb: (h) => ({ ...freshFile(h), cleared: levelsOf(SMB_PAGE), pages: MAP_PAGES.filter(SMB_PAGE).map((p) => p.id), gameCleared: true }),
@@ -128,21 +129,21 @@ const allDoneProgress = () => ({ ...progressDefault(), lost: { world9: true, let
 // ------------------------------------------------------------------ sections and candidates
 
 type Tag = 'base' | 'r1' | 'fullK' | 'multiK' | 'codec' | 'modular' | 'derived' | 'cross';
-interface Cand {
+export interface Cand {
   tag: Tag;
   name: string;
   enc: (w: BitWriter) => void;
   dec: (r: BitReader) => any;
 }
-interface Cfg {
+export interface Cfg {
   name: string;
   tags: ReadonlySet<Tag>;
   wholeK?: boolean;
   deflate?: boolean;
 }
-const CFG = (name: string, tags: Tag[], extra: Partial<Cfg> = {}): Cfg => ({ name, tags: new Set<Tag>(['base', ...tags, ...(tags.includes('multiK') ? (['fullK'] as Tag[]) : [])]), ...extra });
+export const CFG = (name: string, tags: Tag[], extra: Partial<Cfg> = {}): Cfg => ({ name, tags: new Set<Tag>(['base', ...tags, ...(tags.includes('multiK') ? (['fullK'] as Tag[]) : [])]), ...extra });
 
-const SETTINGS_GROUPS = (body: any) => {
+export const SETTINGS_GROUPS = (body: any) => {
   const all = names(body);
   const device = all.filter((n) => DEVICE_FIELDS.includes(n));
   const achieve = all.filter((n) => ['classicCheats', 'classicTutorialsSeen'].includes(n));
@@ -165,6 +166,7 @@ function encSection(w: BitWriter, cands: Cand[], stat: Record<string, number>, k
       bi = i;
     }
   });
+  R('sel');
   w.uint(widthFor(cands.length), bi);
   push(w, best as unknown as number[]);
   if (ACC && r1b >= 0) {
@@ -177,15 +179,16 @@ function encSection(w: BitWriter, cands: Cand[], stat: Record<string, number>, k
   stat[tagKey] = (stat[tagKey] ?? 0) + 1;
   return cands[bi]!.dec(new BitReader(best as unknown as number[]));
 }
-function decSection(r: BitReader, cands: Cand[]): any {
+export function decSection(r: BitReader, cands: Cand[]): any {
+  R('sel');
   const i = r.uint(widthFor(cands.length));
   if (i >= cands.length) throw new CodeFormatError('bad selector');
   return cands[i]!.dec(r);
 }
-const allow = (cfg: Cfg, cs: Cand[]) => cs.filter((c) => cfg.tags.has(c.tag));
+export const allow = (cfg: Cfg, cs: Cand[]) => cs.filter((c) => cfg.tags.has(c.tag));
 
 // --- settings groups
-function settingsCands(cfg: Cfg, policy: Policy, group: 'device' | 'options' | 'achieve', v: any, wholeRef?: any): Cand[] {
+export function settingsCands(cfg: Cfg, policy: Policy, group: 'device' | 'options' | 'achieve', v: any, wholeRef?: any): Cand[] {
   const body = sch(policy).settings;
   const fields = SETTINGS_GROUPS(body)[group];
   const s = subObj(body, fields);
@@ -196,7 +199,7 @@ function settingsCands(cfg: Cfg, policy: Policy, group: 'device' | 'options' | '
   if (group === 'achieve') out.push(mk('fullK', 'allUnlocked', pickFields(allUnlockedSettings(), fields)));
   return allow(cfg, out);
 }
-function progressCands(cfg: Cfg, v: any, wholeRef?: any): Cand[] {
+export function progressCands(cfg: Cfg, v: any, wholeRef?: any): Cand[] {
   const s = progressSchema;
   const mk = (tag: Tag, name: string, ref: any): Cand => ({ tag, name, enc: (w) => enc2(w, s, v, ref), dec: (r) => dec2(r, s, ref) });
   if (wholeRef) return [mk('base', 'whole', wholeRef)];
@@ -247,10 +250,10 @@ const CAMPAIGN_PREV = (slot: number, prev: any): Stage[] => [
 ];
 
 /** The decoded campaign file as the schema has it (what a later section can reference). */
-function asSchemaFile(policy: Policy, s: any): any {
+export function asSchemaFile(policy: Policy, s: any): any {
   return pickFields(s, names(sch(policy).saveBody));
 }
-function campaignCands(cfg: Cfg, policy: Policy, slot: number, v: any, prev: any[], wholeT?: string): Cand[] {
+export function campaignCands(cfg: Cfg, policy: Policy, slot: number, v: any, prev: any[], wholeT?: string): Cand[] {
   const body = sch(policy).saveBody;
   const staged = (tag: Tag, name: string, stages: Stage[]): Cand => ({
     tag,
@@ -264,16 +267,27 @@ function campaignCands(cfg: Cfg, policy: Policy, slot: number, v: any, prev: any
     name: 'codec',
     enc: (w) => {
       const code = cleanCode(encodeSaveCode(v)) as string;
+      R('cframe');
       w.eg(4, code.length);
-      push(w, fromBase32(code) as number[]);
+      (fromBase32(code) as number[]).forEach((b, i) => {
+        R(i < INNER_FRAME ? 'cframe' : 'codec');
+        w.bit(b);
+      });
+      R('num');
       w.eg(10, v.score);
     },
     dec: (r) => {
+      R('cframe');
       const n = r.eg(4);
+      if (n > 4096) throw new CodeFormatError('inner code too long');
       const cb: number[] = [];
-      for (let j = 0; j < n * 5; j++) cb.push(r.bit() ? 1 : 0);
+      for (let j = 0; j < n * 5; j++) {
+        R(j < INNER_FRAME ? 'cframe' : 'codec');
+        cb.push(r.bit() ? 1 : 0);
+      }
       const res = decodeSaveCode(toBase32(cb), slot as 1);
       if (!res.ok) throw new CodeFormatError('inner campaign code');
+      R('num');
       return asSchemaFile(policy, { ...res.save, score: r.eg(10) });
     },
   };
@@ -292,7 +306,7 @@ function campaignCands(cfg: Cfg, policy: Policy, slot: number, v: any, prev: any
 }
 
 // --- Classic slots (current ClassicResume) and planned B-L files (DESIGN)
-function classicCands(cfg: Cfg, policy: Policy, key: string, v: any, prev: any[], ctx: any): Cand[] {
+export function classicCands(cfg: Cfg, policy: Policy, key: string, v: any, prev: any[], ctx: any): Cand[] {
   const isBL = key.startsWith('smbc-classic-file-');
   const keyed = isBL ? sch(policy).bl : sch(policy).res;
   const body = keyed.body;
@@ -350,14 +364,14 @@ function classicCands(cfg: Cfg, policy: Policy, key: string, v: any, prev: any[]
 
 // ------------------------------------------------------------------ profile encode / decode
 
-const CLASSIC_KEYS = [...RESUME_KEYS, ...BL_KEYS];
+export const CLASSIC_KEYS = [...RESUME_KEYS, ...BL_KEYS];
 const WHOLE_T = [
   { name: 'fresh', settings: () => defaultSettings(), progress: progressDefault, file: 'fresh' },
   { name: 'mid', settings: () => defaultSettings(), progress: progressDefault, file: 'half' },
   { name: 'full', settings: allUnlockedSettings, progress: allDoneProgress, file: 'full' },
 ];
 
-function encodeProfile(data: any, policy: Policy, cfg: Cfg, stat: Record<string, number>, acc?: any): number[] {
+export function encodeProfile(data: any, policy: Policy, cfg: Cfg, stat: Record<string, number>, acc?: any): number[] {
   ACC = acc;
   try {
     return encodeProfileInner(data, policy, cfg, stat);
@@ -379,6 +393,7 @@ function encodeProfileInner(data: any, policy: Policy, cfg: Cfg, stat: Record<st
       }
     });
     stat[`whole:${WHOLE_T[tIdx]!.name}`] = (stat[`whole:${WHOLE_T[tIdx]!.name}`] ?? 0) + 1;
+    R('sel');
     w.uint(widthFor(WHOLE_T.length), tIdx);
     push(w, best as unknown as number[]);
     return w.bits;
@@ -390,6 +405,8 @@ function encodeProfileWith(data: any, policy: Policy, cfg: Cfg, stat: Record<str
   const T = t >= 0 ? WHOLE_T[t] : undefined;
   const ctx: any = {};
   const s = data['smbc.settings'];
+  TR.path.push('smbc.settings');
+  R('presence');
   w.bit(!!s);
   if (s) {
     const groups = SETTINGS_GROUPS(sch(policy).settings);
@@ -400,40 +417,55 @@ function encodeProfileWith(data: any, policy: Policy, cfg: Cfg, stat: Record<str
     }
     ctx.settings = dec;
   }
+  TR.path.pop();
   const p = data['smbc.progress'];
+  TR.path.push('smbc.progress');
+  R('presence');
   w.bit(!!p);
   if (p) encSection(w, progressCands(cfg, p, T?.progress()), stat, 'progress');
+  TR.path.pop();
   const prevFiles: any[] = [];
   SAVE_KEYS.forEach((k, i) => {
     const f = data[k];
+    TR.path.push(k);
+    R('presence');
     w.bit(!!f);
-    if (!f) return;
-    const v = pickFields(f, names(sch(policy).saveBody));
-    prevFiles.push(encSection(w, campaignCands(cfg, policy, i + 1, v, prevFiles.slice(), T?.file), stat, 'campaign'));
+    if (f) {
+      const v = pickFields(f, names(sch(policy).saveBody));
+      prevFiles.push(encSection(w, campaignCands(cfg, policy, i + 1, v, prevFiles.slice(), T?.file), stat, 'campaign'));
+    }
+    TR.path.pop();
   });
   const prevC: any[] = [];
   const prevB: any[] = [];
   for (const k of CLASSIC_KEYS) {
     const c = data[k];
+    TR.path.push(k);
+    R('presence');
     w.bit(!!c);
-    if (!c) continue;
-    const isBL = k.startsWith('smbc-classic-file-');
-    const prev = isBL ? prevB : prevC;
-    const out = encSection(w, classicCands(cfg, policy, k, c, prev.slice(), ctx), stat, isBL ? 'bl' : 'classic');
-    prev.push(out);
+    if (c) {
+      const isBL = k.startsWith('smbc-classic-file-');
+      const prev = isBL ? prevB : prevC;
+      const out = encSection(w, classicCands(cfg, policy, k, c, prev.slice(), ctx), stat, isBL ? 'bl' : 'classic');
+      prev.push(out);
+    }
+    TR.path.pop();
   }
   return w.bits;
 }
-function decodeProfile(bits: number[], policy: Policy, cfg: Cfg, padTo: number): any {
-  const r = new BitReader(bits);
+export function decodeProfile(bits: number[], policy: Policy, cfg: Cfg, padTo: number, reader?: BitReader): any {
+  const r = reader ?? new BitReader(bits);
   let T: (typeof WHOLE_T)[number] | undefined;
   if (cfg.wholeK) {
+    R('sel');
     const i = r.uint(widthFor(WHOLE_T.length));
     T = WHOLE_T[i];
     if (!T) throw new CodeFormatError('bad template');
   }
   const out: any = {};
   const ctx: any = {};
+  TR.path.push('smbc.settings');
+  R('presence');
   if (r.bit()) {
     const groups = SETTINGS_GROUPS(sch(policy).settings);
     const s: any = {};
@@ -444,30 +476,42 @@ function decodeProfile(bits: number[], policy: Policy, cfg: Cfg, padTo: number):
     out['smbc.settings'] = s;
     ctx.settings = s;
   }
+  TR.path.pop();
+  TR.path.push('smbc.progress');
+  R('presence');
   if (r.bit()) out['smbc.progress'] = decSection(r, progressCands(cfg, undefined, T?.progress()));
+  TR.path.pop();
   const prevFiles: any[] = [];
   SAVE_KEYS.forEach((k, i) => {
-    if (!r.bit()) return;
-    const f = decSection(r, campaignCands(cfg, policy, i + 1, undefined, prevFiles.slice(), T?.file));
-    prevFiles.push(f);
-    out[k] = f;
+    TR.path.push(k);
+    R('presence');
+    if (r.bit()) {
+      const f = decSection(r, campaignCands(cfg, policy, i + 1, undefined, prevFiles.slice(), T?.file));
+      prevFiles.push(f);
+      out[k] = f;
+    }
+    TR.path.pop();
   });
   const prevC: any[] = [];
   const prevB: any[] = [];
   for (const k of CLASSIC_KEYS) {
-    if (!r.bit()) continue;
-    const isBL = k.startsWith('smbc-classic-file-');
-    const prev = isBL ? prevB : prevC;
-    const c = decSection(r, classicCands(cfg, policy, k, undefined, prev.slice(), ctx));
-    prev.push(c);
-    out[k] = c;
+    TR.path.push(k);
+    R('presence');
+    if (r.bit()) {
+      const isBL = k.startsWith('smbc-classic-file-');
+      const prev = isBL ? prevB : prevC;
+      const c = decSection(r, classicCands(cfg, policy, k, undefined, prev.slice(), ctx));
+      prev.push(c);
+      out[k] = c;
+    }
+    TR.path.pop();
   }
   if (r.left >= padTo || bits.slice(r.pos).some((b) => b)) throw new CodeFormatError('trailing bits');
   return out;
 }
 
 /** The comparison form: every record as its schema keeps it, sets in dictionary order. */
-function finalCanon(data: any, policy: Policy): any {
+export function finalCanon(data: any, policy: Policy): any {
   const S = sch(policy);
   const out: any = {};
   for (const [k, x] of Object.entries(data)) {
@@ -484,7 +528,7 @@ function finalCanon(data: any, policy: Policy): any {
 // ------------------------------------------------------------------ framing (Base64url profile envelope: 'P' + version, flags, CRC-32, payload)
 
 /** The b64 envelope: flags byte bit0 = deflate, bits 1-3 = method (0 = round-1 hybrid, 1 = adaptive): no extra bytes. */
-function b64Len(bits: number[], deflate: boolean): { len: number; deflated: boolean } {
+export function b64Len(bits: number[], deflate: boolean): { len: number; deflated: boolean } {
   const bytes = bitsToBytes(bits);
   const plain = packB64(bytes, false).length;
   if (!deflate) return { len: plain, deflated: false };
@@ -493,7 +537,7 @@ function b64Len(bits: number[], deflate: boolean): { len: number; deflated: bool
 }
 
 const D = { deflate: true };
-const CONFIGS: Cfg[] = [
+export const CONFIGS: Cfg[] = [
   CFG('A. single-K, round-2 delta ops', [], D),
   CFG('B. whole-profile multi-K (one selector)', [], { wholeK: true, deflate: true }),
   CFG('C. per-section multi-K', ['multiK'], D),

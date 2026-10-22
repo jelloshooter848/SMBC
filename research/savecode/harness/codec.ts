@@ -6,6 +6,10 @@
  *   delta - one "same as K's default" bit per node, values only where they differ.
  */
 import { BitReader, BitWriter, CodeFormatError, crc16, fromBase32, toBase32, widthFor } from '@game/save/code-bits';
+import { R, TR } from './trace';
+
+/** Round 3 research toggle: sets as an enumerative (combination-rank) code instead of a gap list. */
+export const OPT = { enumSets: false };
 
 export type S =
   | { t: 'bool' }
@@ -57,6 +61,7 @@ function readF64(r: BitReader): number {
 const isWhole = (v: number) => Number.isInteger(v) && v >= 0 && v < 2 ** 40 && !Object.is(v, -0);
 
 function wNum(w: BitWriter, v: number, k: number): void {
+  R('num');
   if (isWhole(v)) {
     w.bit(0);
     w.eg(k, v);
@@ -66,11 +71,13 @@ function wNum(w: BitWriter, v: number, k: number): void {
   }
 }
 function rNum(r: BitReader, k: number): number {
+  R('num');
   return r.bit() ? readF64(r) : r.eg(k);
 }
 
 /** 7-bit ASCII per character (127: a 16-bit UTF-16 unit follows). */
 function wStr(w: BitWriter, s: string): void {
+  R('esc');
   w.eg(2, s.length);
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);
@@ -82,6 +89,7 @@ function wStr(w: BitWriter, s: string): void {
   }
 }
 function rStr(r: BitReader): string {
+  R('esc');
   const n = r.eg(2);
   if (n > 100000) throw new CodeFormatError('string too long');
   let s = '';
@@ -96,6 +104,7 @@ function wSym(w: BitWriter, dict: readonly string[] | undefined, v: string): voi
   if (!dict || !dict.length) return wStr(w, v);
   const i = dict.indexOf(v);
   const width = widthFor(dict.length + 1);
+  R('sym', dict.length + 1);
   if (i >= 0) w.uint(width, i);
   else {
     w.uint(width, dict.length);
@@ -104,10 +113,62 @@ function wSym(w: BitWriter, dict: readonly string[] | undefined, v: string): voi
 }
 function rSym(r: BitReader, dict: readonly string[] | undefined): string {
   if (!dict || !dict.length) return rStr(r);
+  R('sym', dict.length + 1);
   const i = r.uint(widthFor(dict.length + 1));
   if (i < dict.length) return dict[i] as string;
   if (i === dict.length) return rStr(r);
   throw new CodeFormatError('bad symbol');
+}
+
+// ------------------------------------------------------------------ enumerative set code (round 3, OPT.enumSets)
+
+const binomCache = new Map<string, bigint>();
+export function binom(n: number, k: number): bigint {
+  if (k < 0 || k > n) return 0n;
+  k = Math.min(k, n - k);
+  const key = `${n},${k}`;
+  let b = binomCache.get(key);
+  if (b === undefined) {
+    b = 1n;
+    for (let i = 1; i <= k; i++) b = (b * BigInt(n - k + i)) / BigInt(i);
+    binomCache.set(key, b);
+  }
+  return b;
+}
+/** Bits of a rank among the C(n, k) k-subsets of n. */
+export function rankWidth(n: number, k: number): number {
+  const c = binom(n, k);
+  return c <= 1n ? 0 : (c - 1n).toString(2).length;
+}
+/** Combinatorial number system: rank = sum C(idx_j, j + 1) over the sorted indices. */
+function writeRank(w: BitWriter, n: number, idx: readonly number[]): void {
+  let rank = 0n;
+  idx.forEach((x, j) => (rank += binom(x, j + 1)));
+  const width = rankWidth(n, idx.length);
+  for (let i = width; i > 0; ) {
+    const take = Math.min(16, i);
+    i -= take;
+    w.uint(take, Number((rank >> BigInt(i)) & ((1n << BigInt(take)) - 1n)));
+  }
+}
+function readRank(r: BitReader, n: number, k: number): number[] {
+  const width = rankWidth(n, k);
+  let rank = 0n;
+  for (let i = width; i > 0; ) {
+    const take = Math.min(16, i);
+    i -= take;
+    rank = (rank << BigInt(take)) | BigInt(r.uint(take));
+  }
+  if (rank >= binom(n, k)) throw new CodeFormatError('set rank');
+  const out: number[] = [];
+  let x = n - 1;
+  for (let j = k; j >= 1; j--) {
+    while (binom(x, j) > rank) x--;
+    out.push(x);
+    rank -= binom(x, j);
+    x--;
+  }
+  return out.reverse();
 }
 
 // ------------------------------------------------------------------ schema walk
@@ -115,10 +176,12 @@ function rSym(r: BitReader, dict: readonly string[] | undefined): string {
 function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
   switch (s.t) {
     case 'bool':
+      R('bool');
       return w.bit(v === true);
     case 'enum': {
       const i = s.vals.findIndex((x) => x === v);
       const width = widthFor(s.vals.length + 1);
+      R('enum', s.vals.length + 1);
       if (i >= 0) return w.uint(width, i);
       w.uint(width, s.vals.length);
       return wStr(w, JSON.stringify(v));
@@ -126,6 +189,7 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
     case 'int':
       return wNum(w, v, s.k);
     case 'dec': {
+      R('num');
       const x = Math.round(v * s.scale);
       if (Math.abs(x / s.scale - v) < 1e-12 && isWhole(x)) {
         w.bit(0);
@@ -137,6 +201,7 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
     case 'str':
       return wSym(w, s.dict, v);
     case 'list':
+      R('count');
       w.eg(0, v.length);
       for (const x of v) enc(w, s.of, x, undefined, false);
       return;
@@ -146,8 +211,22 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
       const idx = known.map((x) => s.dict.indexOf(x)).sort((a, b) => a - b);
       const width = widthFor(s.dict.length);
       const listCost = 1 + 2 * Math.floor(Math.log2(idx.length + 1)) + idx.length * width;
-      if (listCost < s.dict.length) {
+      R('setmode');
+      if (OPT.enumSets) {
+        const rankBits = 1 + 2 * Math.floor(Math.log2(idx.length + 1)) + rankWidth(s.dict.length, idx.length);
+        if (rankBits < s.dict.length) {
+          w.bit(0);
+          R('set');
+          w.eg(0, idx.length);
+          writeRank(w, s.dict.length, idx);
+        } else {
+          w.bit(1);
+          R('set');
+          for (let i = 0; i < s.dict.length; i++) w.bit(idx.includes(i));
+        }
+      } else if (listCost < s.dict.length) {
         w.bit(0);
+        R('set');
         w.eg(0, idx.length);
         let prev = -1;
         for (const i of idx) {
@@ -156,14 +235,17 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
         }
       } else {
         w.bit(1);
+        R('set');
         for (let i = 0; i < s.dict.length; i++) w.bit(idx.includes(i));
       }
+      R('count');
       w.eg(0, unknown.length);
       for (const x of unknown) wStr(w, x);
       return;
     }
     case 'map': {
       const e = Object.entries(v);
+      R('count');
       w.eg(0, e.length);
       for (const [k, x] of e) {
         enc(w, s.key, k, undefined, false);
@@ -172,6 +254,7 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
       return;
     }
     case 'null':
+      R('presence');
       w.bit(v !== null);
       if (v !== null) enc(w, s.of, v, undefined, false);
       return;
@@ -180,20 +263,28 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
       if (extra.length) throw new Error(`schema has no field(s) ${extra.join(', ')}`);
       for (const [n, fs, opt] of s.f) {
         const dv = d?.[n];
-        if (opt) {
-          if (delta && d && dv !== undefined) {
-            const same = deepEq(v[n], dv);
-            w.bit(same);
-            if (same) continue;
-            w.bit(v[n] !== undefined);
-            if (v[n] !== undefined) encBody(w, fs, v[n], dv, delta);
+        TR.path.push(n);
+        try {
+          if (opt) {
+            if (delta && d && dv !== undefined) {
+              const same = deepEq(v[n], dv);
+              R('same');
+              w.bit(same);
+              if (same) continue;
+              R('presence');
+              w.bit(v[n] !== undefined);
+              if (v[n] !== undefined) encBody(w, fs, v[n], dv, delta);
+            } else {
+              R('presence');
+              w.bit(v[n] !== undefined);
+              if (v[n] !== undefined) enc(w, fs, v[n], undefined, delta);
+            }
           } else {
-            w.bit(v[n] !== undefined);
-            if (v[n] !== undefined) enc(w, fs, v[n], undefined, delta);
+            if (v[n] === undefined) throw new Error(`missing field ${n}`);
+            enc(w, fs, v[n], d ? dv : undefined, delta);
           }
-        } else {
-          if (v[n] === undefined) throw new Error(`missing field ${n}`);
-          enc(w, fs, v[n], d ? dv : undefined, delta);
+        } finally {
+          TR.path.pop();
         }
       }
       return;
@@ -202,10 +293,13 @@ function encBody(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
       const head: any = {};
       for (const n of s.head) {
         const fs = s.body.f.find(([m]) => m === n) as F;
+        TR.path.push(n);
         if (fs[2]) {
+          R('presence');
           w.bit(v[n] !== undefined);
           if (v[n] !== undefined) enc(w, fs[1], v[n], undefined, false);
         } else enc(w, fs[1], v[n], undefined, false);
+        TR.path.pop();
         head[n] = v[n];
       }
       const def = delta ? s.mk(head) : undefined;
@@ -232,6 +326,7 @@ function restOf(s: S & { t: 'keyed' }): S {
 export function enc(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
   if (delta && d !== undefined) {
     const same = deepEq(v, d);
+    R('same');
     w.bit(same);
     if (same) return;
   }
@@ -241,8 +336,10 @@ export function enc(w: BitWriter, s: S, v: any, d: any, delta: boolean): void {
 function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
   switch (s.t) {
     case 'bool':
+      R('bool');
       return r.bit();
     case 'enum': {
+      R('enum', s.vals.length + 1);
       const i = r.uint(widthFor(s.vals.length + 1));
       if (i < s.vals.length) return s.vals[i];
       if (i === s.vals.length) return JSON.parse(rStr(r));
@@ -251,10 +348,12 @@ function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
     case 'int':
       return rNum(r, s.k);
     case 'dec':
+      R('num');
       return r.bit() ? readF64(r) : r.eg(s.k) / s.scale;
     case 'str':
       return rSym(r, s.dict);
     case 'list': {
+      R('count');
       const n = r.eg(0);
       if (n > 10000) throw new CodeFormatError('list too long');
       const out = [];
@@ -263,7 +362,19 @@ function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
     }
     case 'set': {
       const out: string[] = [];
-      if (!r.bit()) {
+      R('setmode');
+      if (OPT.enumSets) {
+        if (!r.bit()) {
+          R('set');
+          const n = r.eg(0);
+          if (n > s.dict.length) throw new CodeFormatError('set count');
+          for (const i of readRank(r, s.dict.length, n)) out.push(s.dict[i] as string);
+        } else {
+          R('set');
+          for (let i = 0; i < s.dict.length; i++) if (r.bit()) out.push(s.dict[i] as string);
+        }
+      } else if (!r.bit()) {
+        R('set');
         const n = r.eg(0);
         let prev = -1;
         for (let i = 0; i < n; i++) {
@@ -271,13 +382,18 @@ function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
           if (prev >= s.dict.length) throw new CodeFormatError('set index');
           out.push(s.dict[prev] as string);
         }
-      } else for (let i = 0; i < s.dict.length; i++) if (r.bit()) out.push(s.dict[i] as string);
+      } else {
+        R('set');
+        for (let i = 0; i < s.dict.length; i++) if (r.bit()) out.push(s.dict[i] as string);
+      }
+      R('count');
       const u = r.eg(0);
       if (u > 10000) throw new CodeFormatError('set too long');
       for (let i = 0; i < u; i++) out.push(rStr(r));
       return out;
     }
     case 'map': {
+      R('count');
       const n = r.eg(0);
       if (n > 10000) throw new CodeFormatError('map too long');
       const out: any = {};
@@ -288,20 +404,31 @@ function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
       return out;
     }
     case 'null':
+      R('presence');
       return r.bit() ? dec(r, s.of, undefined, false) : null;
     case 'obj': {
       const out: any = {};
       for (const [n, fs, opt] of s.f) {
         const dv = d?.[n];
-        if (opt) {
-          if (delta && d && dv !== undefined) {
-            if (r.bit()) {
-              out[n] = structuredClone(dv);
-              continue;
+        TR.path.push(n);
+        try {
+          if (opt) {
+            if (delta && d && dv !== undefined) {
+              R('same');
+              if (r.bit()) {
+                out[n] = structuredClone(dv);
+                continue;
+              }
+              R('presence');
+              if (r.bit()) out[n] = decBody(r, fs, dv, delta);
+            } else {
+              R('presence');
+              if (r.bit()) out[n] = dec(r, fs, undefined, delta);
             }
-            if (r.bit()) out[n] = decBody(r, fs, dv, delta);
-          } else if (r.bit()) out[n] = dec(r, fs, undefined, delta);
-        } else out[n] = dec(r, fs, d ? dv : undefined, delta);
+          } else out[n] = dec(r, fs, d ? dv : undefined, delta);
+        } finally {
+          TR.path.pop();
+        }
       }
       return out;
     }
@@ -309,9 +436,12 @@ function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
       const head: any = {};
       for (const n of s.head) {
         const fs = s.body.f.find(([m]) => m === n) as F;
+        TR.path.push(n);
         if (fs[2]) {
+          R('presence');
           if (r.bit()) head[n] = dec(r, fs[1], undefined, false);
         } else head[n] = dec(r, fs[1], undefined, false);
+        TR.path.pop();
       }
       const def = delta ? s.mk(head) : undefined;
       const restDef = def ? { ...def } : undefined;
@@ -329,6 +459,7 @@ function decBody(r: BitReader, s: S, d: any, delta: boolean): any {
 }
 
 export function dec(r: BitReader, s: S, d: any, delta: boolean): any {
+  if (delta && d !== undefined) R('same');
   if (delta && d !== undefined && r.bit()) return structuredClone(d);
   return decBody(r, s, d, delta);
 }

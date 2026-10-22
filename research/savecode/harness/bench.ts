@@ -33,6 +33,7 @@ import {
   unb64u,
   type S,
 } from './codec';
+import { R, TR } from './trace';
 import { applyPolicy, BL_KEYS, blSchema, profileDefault, profileSchema, RESUME_KEYS, resumeSchema, saveSchema, SETS, type Policy } from './schema';
 import { firstCastle, freshSave, fullSave, midSave, randomScenarios, sampleScenario, scenarios, resume, blFile, type Scenario } from './scenarios';
 
@@ -276,6 +277,8 @@ export function canonLoaded(l: any): any {
 // ------------------------------------------------------------------ hybrid: generic delta + the game's own campaign codec for each file
 
 export const SAVE_KEYS = ['smbc.save.1', 'smbc.save.2', 'smbc.save.3'];
+/** The inner campaign code's own version (EG0 of 2: 3 bits) and CRC-16 at its start: framing inside the profile. */
+export const INNER_FRAME = 19;
 export function hybridBits(data: any, policy: Policy): number[] {
   const rest: any = { ...data };
   for (const k of SAVE_KEYS) delete rest[k];
@@ -283,26 +286,47 @@ export function hybridBits(data: any, policy: Policy): number[] {
   enc(w, profileSchema(policy), rest, profileDefault(policy), true);
   for (const k of SAVE_KEYS) {
     const s = data[k];
+    TR.path.push(k);
+    R('presence');
     w.bit(!!s);
-    if (!s) continue;
-    const code = cleanCode(encodeSaveCode(s)) as string;
-    w.eg(4, code.length);
-    for (const b of fromBase32(code) as number[]) w.bit(b);
-    w.eg(10, s.score);
+    if (s) {
+      const code = cleanCode(encodeSaveCode(s)) as string;
+      R('cframe');
+      w.eg(4, code.length);
+      (fromBase32(code) as number[]).forEach((b, i) => {
+        R(i < INNER_FRAME ? 'cframe' : 'codec');
+        w.bit(b);
+      });
+      R('num');
+      w.eg(10, s.score);
+    }
+    TR.path.pop();
   }
   return w.bits;
 }
-export function hybridFromBits(bits: number[], policy: Policy, padTo: number): any {
-  const r = new BitReader(bits);
+export function hybridFromBits(bits: number[], policy: Policy, padTo: number, reader?: BitReader): any {
+  const r = reader ?? new BitReader(bits);
   const out = dec(r, profileSchema(policy), profileDefault(policy), true);
   SAVE_KEYS.forEach((k, i) => {
-    if (!r.bit()) return;
-    const n = r.eg(4);
-    const cb: number[] = [];
-    for (let j = 0; j < n * 5; j++) cb.push(r.bit() ? 1 : 0);
-    const res = decodeSaveCode(toBase32(cb), (i + 1) as 1);
-    if (!res.ok) throw new CodeFormatError('inner campaign code');
-    out[k] = { ...res.save, score: r.eg(10) };
+    TR.path.push(k);
+    try {
+      R('presence');
+      if (!r.bit()) return;
+      R('cframe');
+      const n = r.eg(4);
+      if (n > 4096) throw new CodeFormatError('inner code too long');
+      const cb: number[] = [];
+      for (let j = 0; j < n * 5; j++) {
+        R(j < INNER_FRAME ? 'cframe' : 'codec');
+        cb.push(r.bit() ? 1 : 0);
+      }
+      const res = decodeSaveCode(toBase32(cb), (i + 1) as 1);
+      if (!res.ok) throw new CodeFormatError('inner campaign code');
+      R('num');
+      out[k] = { ...res.save, score: r.eg(10) };
+    } finally {
+      TR.path.pop();
+    }
   });
   if (r.left >= padTo || bits.slice(r.pos).some((b) => b)) throw new CodeFormatError('trailing bits');
   return out;
