@@ -163,16 +163,17 @@ describe('the title and the CLASSIC menu', () => {
     const it = items(title)[0] as MenuItem;
     expect(it.hint).toBeTruthy();
     expect(it.hint).not.toMatch(/\d/);
-    // Without dev mode: three rows (x 80, from y 96, 12 px apart).
+    // Without dev mode: three rows (x 80, from y 118 since 0.4.72's title option A, 12 px apart).
     h.idle(TITLE_TIMING.dropEnd + 10);
     const four = draw(h.top() as TitleScene).texts.filter((t) =>
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     const last = (str: string) => four.filter((t) => t.str === str).at(-1);
     ['CLASSIC', 'CAMPAIGN', 'OPTIONS'].forEach((str, i) =>
-      expect(last(str)).toMatchObject({ x: 80, y: 96 + i * 12 }),
+      expect(last(str)).toMatchObject({ x: 80, y: 118 + i * 12 }),
     );
-    // Four rows with Dev mode: the usual place and 12 px step, every row above the credits.
+    // Four rows with Dev mode: the usual place and 12 px step, every row clear of the heroes'
+    // heads (0.4.72: no credits under the menu any more; the ground is y 208, heroes 32 tall).
     h.settings.dev = true;
     h.game.showTitle();
     h.idle(TITLE_TIMING.dropEnd + 10);
@@ -180,7 +181,7 @@ describe('the title and the CLASSIC menu', () => {
       labels(h.top()).some((l) => l.toUpperCase() === t.str),
     );
     expect(rows.length).toBeGreaterThanOrEqual(4);
-    for (const r of rows) expect(r.y + 8).toBeLessThanOrEqual(148 - 4);
+    for (const r of rows) expect(r.y + 8).toBeLessThanOrEqual(208 - 32 - 4);
     // (shadows draw 1 px right and down)
     const ys = [...new Set(rows.filter((r) => r.x === 80).map((r) => r.y))].sort((a, b) => a - b);
     for (let i = 1; i < ys.length; i++) expect((ys[i] as number) - (ys[i - 1] as number)).toBe(12);
