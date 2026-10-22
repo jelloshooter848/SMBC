@@ -25,14 +25,13 @@ const ANDROID_UA =
 const DESKTOP_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
 
-/** A document whose file inputs do (or do not) know webkitdirectory. */
-const doc = (dir: boolean) =>
-  ({ createElement: () => (dir ? { webkitdirectory: false } : {}) }) as unknown as Document;
+/** A file input's prototype that does (or does not) know webkitdirectory. */
+const doc = (dir: boolean) => (dir ? { webkitdirectory: false } : {});
 const nav = (userAgent: string, maxTouchPoints = 0) => ({ userAgent, maxTouchPoints }) as Navigator;
 
 /** Pretends the browser: its folder picker and its pointer. */
 function browser(opts: { dir: boolean; ua: string; touchPoints?: number; coarse?: boolean }): void {
-  vi.stubGlobal('document', doc(opts.dir));
+  vi.stubGlobal('HTMLInputElement', { prototype: doc(opts.dir) });
   vi.stubGlobal('navigator', nav(opts.ua, opts.touchPoints ?? 0));
   vi.stubGlobal('matchMedia', (q: string) => ({
     matches: q === '(pointer: coarse)' ? !!opts.coarse : q === '(hover: none)' ? !!opts.coarse : false,

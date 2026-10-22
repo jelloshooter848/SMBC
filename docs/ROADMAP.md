@@ -90,6 +90,7 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
 
 - **New heroes** from PR #51's candidate list: in Classic mode, each added to the select as it is released (0.6.0 to 0.9.x,
   above). In the campaign, Yoshi first: the Top Secret Area's egg will hatch him, as a rideable partner or a hero.
+- Asset packs on phones: import a single .zip pack picked from the Files app (zip reader + a tap-safe file button inside the touch handler); owner item 84B, roadmap only.
 
 ## Details of the planned work
 

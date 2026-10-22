@@ -6,8 +6,10 @@ import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
 import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type Settings } from '@engine/save/settings';
-import { nextTouchMode } from '@engine/input/touch-logic';
-import { MenuScene, type MenuItem } from './menu';
+import { nextTouchMode, readTouchFacts } from '@engine/input/touch-logic';
+import { folderPickerSupported, packsNeedComputer } from '@engine/assets/folder-picker';
+import { MenuScene, backToMenu, type MenuItem } from './menu';
+import { controlScheme } from './hints';
 import type { Game } from './game';
 import { GuideIndexScene } from './guide';
 import { homeScreenItems } from '../pwa/home-screen';
@@ -344,8 +346,22 @@ export class AssistOptionsScene extends MenuScene {
 
 class PacksOptions extends MenuScene {
   private names: string[] = [];
+  /** A touch device that cannot pick a folder (item 84): the page only says so. */
+  private readonly needComputer: boolean;
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSET PACKS', [], onBack);
+    this.needComputer = packsNeedComputer({
+      touchShown: controlScheme(game) === 'touch',
+      coarsePointer: readTouchFacts().coarsePointer,
+      folderPicker: folderPickerSupported(),
+    });
+    if (this.needComputer) {
+      // Packs already stored keep loading (main.ts); only importing needs a computer.
+      this.status = PACKS_NEED_COMPUTER;
+      this.entryTitle = PACKS_NEED_COMPUTER;
+      this.setItems([{ label: 'Back', select: () => this.onBack?.() }]);
+      return;
+    }
     this.rebuild();
     void this.refresh();
   }
@@ -362,6 +378,8 @@ class PacksOptions extends MenuScene {
     items.push({
       label: 'Import pack',
       select: () => this.pickFolder(),
+      // The file dialog only opens from inside the press's own event.
+      gesture: true,
       hint: 'Choose a folder with manifest.json',
     });
     items.push({
@@ -377,27 +395,43 @@ class PacksOptions extends MenuScene {
           s.packs = s.packs.includes(name) ? s.packs.filter((n) => n !== name) : [...s.packs, name];
           apply(game);
         },
+        // 0.4.73 (item 84): OK deletes this pack (the old Delete pack row always took the first).
+        select: () => this.confirmDelete(name),
         hint: 'Left/right toggles. OK deletes it',
-      });
-    }
-    if (this.names.length) {
-      items.push({
-        label: 'Delete pack',
-        select: () => {
-          const name = this.names[0];
-          if (!name) return;
-          void packStore.remove(name).then(() => {
-            s.packs = s.packs.filter((n) => n !== name);
-            apply(game);
-            this.status = `Deleted ${name}`;
-            void this.refresh();
-          });
-        },
-        hint: 'Deletes the first listed pack',
       });
     }
     items.push({ label: 'Back', select: () => this.onBack?.() });
     this.setItems(items);
+  }
+
+  /** DELETE <NAME>? with NO first; YES deletes that pack and turns it off. */
+  private confirmDelete(name: string): void {
+    const game = this.game;
+    const keep = () => backToMenu(game);
+    const box = new ConfirmMenu(
+      game,
+      `DELETE ${name.toUpperCase().slice(0, 22)}?`,
+      `Delete ${name}?`,
+      [
+        { label: 'No', select: keep },
+        {
+          label: 'Yes',
+          select: () => {
+            game.scenes.pop();
+            void packStore.remove(name).then(() => {
+              const s = settings(game);
+              s.packs = s.packs.filter((n) => n !== name);
+              apply(game);
+              this.status = `Deleted ${name}`;
+              game.deps.announcer?.say(this.status);
+              return this.refresh();
+            });
+          },
+        },
+      ],
+      keep,
+    );
+    game.scenes.push(box);
   }
 
   private pickFolder(): void {
@@ -421,5 +455,27 @@ class PacksOptions extends MenuScene {
         });
     };
     input.click();
+  }
+}
+
+/** What the ASSET PACKS page says on a touch device that cannot pick a folder (item 84). */
+export const PACKS_NEED_COMPUTER = 'ASSET PACKS NEED A COMPUTER';
+
+/** A YES / NO question: its title said before the focused row. */
+class ConfirmMenu extends MenuScene {
+  constructor(
+    game: Game,
+    title: string,
+    private readonly question: string,
+    items: MenuItem[],
+    onBack: () => void,
+  ) {
+    super(game, title, items, onBack);
+  }
+
+  /** "Delete beta? No": the question, then the focused answer. */
+  override enter(): void {
+    const it = this.items[this.index];
+    this.game.deps.announcer?.say(it ? `${this.question} ${it.label}` : this.question);
   }
 }

@@ -211,7 +211,9 @@ has the same guide for the hero you are playing.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
-- **Asset packs**: import a folder, export repaintable templates, toggle packs.
+- **Asset packs**: import a folder, export repaintable templates, toggle packs (left / right) or
+  delete one (OK, then YES). Importing needs a computer: on a phone or tablet that cannot pick
+  a folder the page says so, and packs already stored keep working.
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own
   install prompt where there is one (Android, Chrome, Edge), else a short guide; hidden when the
   game already runs from the Home Screen and on desktop browsers that can't install it.
