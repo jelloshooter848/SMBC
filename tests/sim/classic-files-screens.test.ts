@@ -363,7 +363,9 @@ describe('B-L an unreadable file', () => {
     expect(loadClassicFile(F1)?.run.lives).toBe(0);
     h.game.showTitle();
     const box = openSet(h);
-    expect(values(box)[0]).toBe('NORMAL 2-2 X0');
+    // No "X0": a Survival run's lives only revive heroes.
+    expect(values(box)[0]).toBe('NORMAL 2-2');
+    expect(items(box)[0]?.hint).not.toMatch(/lives|, ,/);
     expect(h.game.resumeClassic(F1)).toBe(true);
   });
 });
@@ -411,7 +413,7 @@ describe('B-L the Level Select cheat', () => {
     expect(loadClassicFile(F1)?.run.levelId).toMatch(/^3-1/);
   });
 
-  it('B-E: Continue keeps the Tutorials seen this game; a new file resets them', () => {
+  it('B-E: Continue keeps the Tutorials seen this game; a new file starts with none of its own', () => {
     const h = classic();
     keep(h, F1, '3-1');
     const reset = vi.spyOn(h.game.classicTutorials, 'newGame');

@@ -55,7 +55,16 @@ export function fileWhere(f: ClassicFile): string {
 
 /** A used file's row value: "HARD 4-2 X3". */
 export function fileRowValue(f: ClassicFile): string {
-  return `${DIFFICULTY_NAMES[f.rules.difficulty]} ${fileWhere(f)} x${f.run.lives}`.toUpperCase();
+  const lives = livesShown(f) ? ` x${f.run.lives}` : '';
+  return `${DIFFICULTY_NAMES[f.rules.difficulty]} ${fileWhere(f)}${lives}`.toUpperCase();
+}
+
+/**
+ * Whether a file's lives are shown: always, but for a Survival run with none left (its lives only
+ * revive heroes, so "X0" would read as a run that is over).
+ */
+function livesShown(f: ClassicFile): boolean {
+  return !(f.run.lives === 0 && f.run.survival);
 }
 
 /** The hero a file plays, by name. */
@@ -88,8 +97,16 @@ export function fileSpoken(game: Game, f: ClassicFile): string {
   const r = f.run;
   const here = resumeSetOf(r.levelId);
   const where = `World ${worldLabel(r.world)}-${r.stage}${here === f.set ? '' : ` of ${setOf(here).label.replace(/\.$/, '')}`}`;
-  const lives = `${r.lives} ${r.lives === 1 ? 'life' : 'lives'}`;
-  return `${DIFFICULTY_NAMES[f.rules.difficulty]}, ${where}, ${lives}, score ${r.score}, ${fileHeroName(game, f)}, ${GAME_MODE_NAMES[f.rules.options.gameMode] ?? ''}${own}`;
+  const lives = livesShown(f) ? `${r.lives} ${r.lives === 1 ? 'life' : 'lives'}` : '';
+  const parts = [
+    DIFFICULTY_NAMES[f.rules.difficulty],
+    where,
+    lives,
+    `score ${r.score}`,
+    fileHeroName(game, f),
+    GAME_MODE_NAMES[f.rules.options.gameMode],
+  ];
+  return `${parts.filter(Boolean).join(', ')}${own}`;
 }
 
 /** A kept file that cannot be read (as the campaign's file select shows one). */
