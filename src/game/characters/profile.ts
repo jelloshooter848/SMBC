@@ -213,12 +213,14 @@ export interface MovementProfile {
    */
   stompBounce?: number | undefined;
   /**
-   * SMB1's held stomp bounce (BUG-07, owner decision; set only by the Classic SMB heroes, and taking
-   * the place of `stompBounce`): vy = -`vy`, then until the apex the tier of `tiers` the speed
-   * picks (pickJumpTier) gives its holdGravity while jump is held, else its fallGravity, so a held
-   * jump bounces higher. The last jump's rise lines and soft cut are dropped. Absent: as above.
+   * The campaign's own held stomp bounce, run with this campaign profile's numbers (BUG-07, owner
+   * decision; set only by the Classic SMB heroes, to MARIO_PROFILE, in place of `stompBounce`):
+   * Player.stompBounce's -4 px/f, the tier `pickJumpTier` picks from it, and its hold gravity
+   * while JUMP is held rising (else its fall gravity and fall cap) to the landing, in the tier
+   * path's frame order on either path. The last jump's rise lines and soft cut are dropped.
+   * Absent: as above.
    */
-  stompHeld?: { vy: number; tiers: readonly JumpTier[] } | undefined;
+  stompHeld?: MovementProfile | undefined;
   /**
    * Down held at take-off keeps the crouch pose and hitbox for the whole jump, with no run cap
    * and no attacks, until landing (ML-C22; rise path only; Player.crouchJump). Absent: crouching

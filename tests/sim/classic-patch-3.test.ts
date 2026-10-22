@@ -196,19 +196,24 @@ function classicGame(over: Partial<Settings> = {}): H & { settings: Settings } {
   return { ...h, settings };
 }
 
-describe('3. Infinite Lives: continues count over the save, not per run', () => {
-  it('a continue in an earlier run keeps Infinite Lives locked when a later run beats a game', () => {
+// Item 8 (owner decision, option A): the count is the run's, as the original's
+// EventManager.restartGame resets it on NEW GAME and after the credits (bug-continue-reset.test.ts);
+// within a run it is saved, so a reload (or MAIN MENU and the set's Continue) keeps it.
+describe('3. Infinite Lives: a run’s continues are saved with it', () => {
+  it('a continue keeps Infinite Lives locked for the rest of that run, across a reload; NEW GAME resets it', () => {
     const h = classicGame();
     h.game.classicGame(MARIO);
     h.game.continueGame('1-1');
     expect(h.settings.classicCheats.continuesUsed).toBe(1);
-    // A new run (and a reload of the file) still remembers it.
-    h.game.classicGame(MARIO);
+    // A reload of the file mid-run still remembers it.
     expect(JSON.parse(store.get(SETTINGS_KEY) as string).classicCheats.continuesUsed).toBe(1);
     expect(loadSettings().classicCheats.continuesUsed).toBe(1);
     h.game.cheatEvent({ beat: 'smb' });
     expect(h.settings.classicCheats.unlocked.allGroundIsBricks).toBe(true);
     expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(false);
+    // NEW GAME (the select of a fresh run) starts the count again.
+    h.game.classicSelect('1-1', () => {});
+    expect(h.settings.classicCheats.continuesUsed).toBe(0);
   });
 
   it('a save that never continued unlocks it; a file from before gets 0, bad values are cleaned', () => {

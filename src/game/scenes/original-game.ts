@@ -247,6 +247,8 @@ export class ClassicMenuScene extends MenuScene {
     if (over) {
       this.moveSfx = 'fireball';
       this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
     }
     this.build();
     // Back from a set's select: on that set's row again.
@@ -398,6 +400,8 @@ export class ClassicOptionsScene extends MenuScene {
       this.translucent = true;
       this.moveSfx = 'fireball';
       this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
     }
     this.build();
   }
@@ -479,6 +483,7 @@ export class ClassicOptionsScene extends MenuScene {
   override render(r: Renderer): void {
     if (this.over) {
       renderBoxedMenu(r, this.game, {
+        backAction: this.backAction,
         header: 'Options',
         items: this.items,
         index: this.index,

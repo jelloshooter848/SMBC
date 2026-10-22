@@ -48,6 +48,8 @@ export interface BoxedMenu {
   status: string;
   /** Frames since the box opened (it grows open), or null to draw it open. */
   age?: number | null;
+  /** The action that goes BACK on this page, named in the hint (MenuScene.backAction; 'attack'). */
+  backAction?: 'attack' | 'select';
 }
 
 /** A menu's rows in a box under the CLASSIC logo, its status line and the BACK hint under it. */
@@ -76,5 +78,5 @@ export function renderBoxedMenu(r: Renderer, game: Game, m: BoxedMenu): void {
     r.text(assets.sheet('font'), s, x, y);
   };
   if (status && at.statusY !== null) line(m.status.toUpperCase().slice(0, 31), at.statusY);
-  line(abilityHint(game, 'BACK', 'attack'), at.backY);
+  line(abilityHint(game, 'BACK', m.backAction ?? 'attack'), at.backY);
 }

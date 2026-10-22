@@ -150,6 +150,8 @@ export class ClassicSetScene extends MenuScene {
     if (demo) {
       this.moveSfx = 'fireball';
       this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
     }
     const items: MenuItem[] = [
       {
@@ -230,6 +232,8 @@ export class ClassicOverwriteScene extends MenuScene {
     if (demo) {
       this.moveSfx = 'fireball';
       this.backSfx = 'bump';
+      this.adjustSfx = 'coin';
+      this.okAdjustSfx = 'coin';
     }
     this.setItems([
       { label: 'Cancel', select: onCancel, hint: 'Keep the saved run' },

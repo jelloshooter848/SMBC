@@ -10,13 +10,20 @@ under `## [Unreleased]`.
 
 ### Changed
 
+- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
+  the run, as the original: NEW GAME and the restart after an ending's credits set the count
+  back to 0. MAIN MENU after a game over keeps the run and its count.
 - Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
   level's end keeps them. Switching to another hero puts the first one's away until he is picked
   again, and another look of the same hero shares them. A death resets only the hero who died. A
   new game or a continue resets everyone. The saved run keeps every hero's.
-- Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy as in
-  SMB1, higher while JUMP is held (BUG-07). This deliberately departs from the original, which
-  bounces the same either way, by owner decision.
+- Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy
+  exactly as Mario does in the campaign, reusing its held stomp bounce: higher while JUMP is held,
+  with no release latch, so pressing JUMP again while still rising holds again (BUG-07). Yoshi's
+  ground pound keeps its fixed bounce. This deliberately departs from the original, which bounces the same
+  either way, by owner decision.
+- Classic mode: a saved run's power-ups are checked when it loads. A hero no select offers, or a
+  power that hero cannot have, starts at that hero's default.
 - Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
   joins the Classic select once it is released; an Expansion heroes value saved by an earlier
   version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
@@ -37,6 +44,18 @@ under `## [Unreleased]`.
 
 ### Fixed
 
+- Classic: changing a value in a CLASSIC box (LEFT, RIGHT, or OK on a value row) plays the
+  original's coin sound, not the menu blip.
+- Classic: a box's BACK hint names the key that goes back on that page. While the boxed Cheats
+  page takes the code, it names SELECT's key, not ATTACK's (a code input there).
+- The REMIX title's rift intro is heard again (BUG-13). When the browser has not started the
+  sound yet, the first title waits behind PRESS ANY KEY (TAP TO START on touch); that press
+  starts the sound and the intro from its first frame, at full level (no sound-start fade),
+  without skipping it. A later press skips the intro as before.
+- The music between the REMIX title and the CLASSIC title no longer cuts (BUG-12). Going to
+  CLASSIC, the title theme fades out as CLASSIC falls and the demo's tune rises on its smash;
+  with Reduce flashing on, the two simply crossfade. Back to the title, the demo's tune fades
+  out before the theme fades in. The CLASSIC boxes over the demo never restart it.
 - Classic mode's Everyone Can Stomp cheat: the other heroes now bounce off a stomped enemy as
   high as in the original, the same with JUMP held or not. They bounced about two and a half
   times too high (BUG-07).

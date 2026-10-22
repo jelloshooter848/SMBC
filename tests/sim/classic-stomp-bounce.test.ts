@@ -5,12 +5,9 @@ import type { Action } from '@engine/input/actions';
 import { DEFAULT_ASSIST, NO_CHEATS, newGameState, type CheatFlags } from '@game/context';
 import { CHARACTERS, CLASSIC_CHARACTERS, CLASSIC_EXTRAS, heroFor } from '@game/characters/registry';
 import type { CharacterDef } from '@game/characters/character';
-import {
-  CLASSIC_STOMP_BOUNCE,
-  LINK_CLASSIC_STOMP_BOUNCE,
-  SMB1_STOMP_HELD,
-} from '@game/characters/classic/stomp';
-import { YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
+import { CLASSIC_STOMP_BOUNCE, LINK_CLASSIC_STOMP_BOUNCE } from '@game/characters/classic/stomp';
+import { MARIO_PROFILE } from '@game/characters/mario/profile';
+import { POUND_BOUNCE, YOSHI_CLASSIC } from '@game/characters/yoshi/classic';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { parseTextMap } from '@game/level/textmap';
 import type { LevelData } from '@game/level/schema';
@@ -23,7 +20,8 @@ import { levelSeed, World } from '@game/world/world';
 // 368); the others with Everyone Can Stomp (Character.canStomp, 3212-3220). Under the cheat every
 // other Classic hero bounced Current's -4 px/f, about 2.5 times too high: now the original's.
 // By owner decision the SMB heroes (the ones that stomp of their own: Mario, Luigi, their looks,
-// Peach, Yoshi) instead bounce as in SMB1, higher with jump held (classic/stomp.ts SMB1_STOMP_HELD).
+// Peach, Yoshi) instead use the campaign's own held stomp bounce (stompHeld: MARIO_PROFILE);
+// classic-stomp-campaign.test.ts proves it the campaign's frame for frame.
 
 const LINK_LOOKS = new Set(['link', 'zelda-nes', 'zelda-snes', 'zelda-gb']);
 
@@ -80,6 +78,35 @@ function bounce(def: CharacterDef, held: boolean): { vy: number; rise: number } 
   return { vy, rise: top - peak };
 }
 
+/** Yoshi pounds a Goomba from above, `keys` held: the bounce's first vy and its peak. */
+function poundBounce(keys: Action[]): { vy: number; rise: number } {
+  const w = world(YOSHI_CLASSIC);
+  const input = new ScriptedInput({ steps: [] });
+  const step = (k: Action[]) => {
+    input.setHeld(k);
+    input.next();
+    w.update([input]);
+  };
+  step([]);
+  const g = w.entities.find((e) => e instanceof Goomba) as Goomba;
+  g.walkSpeed = 0;
+  g.body.vx = 0;
+  g.body.x = w.player.body.x;
+  step(['down']);
+  const b = w.player.body;
+  for (let f = 0; f < 200 && !(!g.alive && b.vy < 0); f++) step(keys);
+  expect(g.alive).toBe(false);
+  expect(w.feats.stomps).toBe(0);
+  const vy = b.vy;
+  const top = b.y;
+  let peak = b.y;
+  for (let f = 0; f < 120 && b.vy < 0; f++) {
+    step(keys);
+    peak = Math.min(peak, b.y);
+  }
+  return { vy, rise: top - peak };
+}
+
 describe('BUG-07: the Classic stomp bounce', () => {
   it('every Classic hero that cannot stomp has a fixed bounce: 300 (0x2800), Link and his looks 325', () => {
     for (const d of classicDefs()) {
@@ -92,14 +119,13 @@ describe('BUG-07: the Classic stomp bounce', () => {
     expect(Math.round((CLASSIC_STOMP_BOUNCE * 325) / 300)).toBe(LINK_CLASSIC_STOMP_BOUNCE);
   });
 
-  it('the Classic heroes that stomp (the SMB ones) bounce as in SMB1 (owner decision)', () => {
+  it("the Classic heroes that stomp (the SMB ones) use the campaign's bounce (owner decision)", () => {
     const smb = classicDefs().filter((d) => d.stomps);
     expect(smb.map((d) => d.id).sort()).toEqual(['luigi', 'luigi3', 'mario', 'mario3', 'peach', 'yoshi']);
     for (const d of smb) {
-      expect(d.movement.stompHeld, d.id).toBe(SMB1_STOMP_HELD);
+      expect(d.movement.stompHeld, d.id).toBe(MARIO_PROFILE);
       expect(d.movement.stompBounce, d.id).toBeUndefined();
     }
-    expect(SMB1_STOMP_HELD.vy).toBe(0x04000);
   });
 
   it('the Current heroes keep the campaign bounce (no Classic field)', () => {
@@ -115,7 +141,7 @@ describe('BUG-07: the Classic stomp bounce', () => {
     ),
     YOSHI_CLASSIC,
   ]) {
-    it(`${d.id}: SMB1's bounce, -4 px/f, higher with jump held`, () => {
+    it(`${d.id}: the campaign's bounce, -4 px/f, higher with jump held`, () => {
       const free = bounce(d, false);
       const held = bounce(d, true);
       expect(free, 'stomped').not.toBeNull();
@@ -126,6 +152,15 @@ describe('BUG-07: the Classic stomp bounce', () => {
       expect(held.rise).toBeGreaterThan(free.rise * 2);
     });
   }
+
+  it("Yoshi's ground pound keeps its fixed 2.5 px/f bounce, jump held or not (YO-9)", () => {
+    const free = poundBounce([]);
+    const held = poundBounce(['jump']);
+    expect(POUND_BOUNCE).toBe(CLASSIC_STOMP_BOUNCE);
+    expect(free.vy).toBe(-POUND_BOUNCE);
+    expect(held.vy).toBe(-POUND_BOUNCE);
+    expect(held.rise).toBe(free.rise);
+  });
 
   for (const cur of CHARACTERS.filter((c) => !heroFor(c, 'classic').stomps)) {
     const d = heroFor(cur, 'classic');

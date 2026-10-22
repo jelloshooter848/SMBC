@@ -1,6 +1,3 @@
-import type { MovementProfile } from '../profile';
-import { MARIO_PROFILE } from '../mario/profile';
-
 /**
  * BUG-07: the original's stomp bounce (Character.bounce, Character.as 2610-2618): vy = -bouncePwr
  * with normal gravity, whether jump is held or not (it never reads jmpBtn). bouncePwr is 300
@@ -14,15 +11,10 @@ export const CLASSIC_STOMP_BOUNCE = 0x02800;
 /** Link's bouncePwr 325: 325 / 120 px/f (2.708) = 0x2B55. */
 export const LINK_CLASSIC_STOMP_BOUNCE = 0x02b55;
 
-/**
+/*
  * BUG-07, by owner decision a deliberate departure from the original (which bounces every hero a
  * fixed bouncePwr, above): the Classic SMB heroes (Mario, Luigi and their looks, Peach, Yoshi and
- * the Yoshi mount) bounce as in SMB1, the campaign's own rule. SMB1 sets Player_Y_Speed to $FC
- * (-4 px/f) on a stomp and keeps the jump's VerticalForce while A is held and Mario rises
- * (JumpMForceData $20/$1E/$28 held, FallMForceData $70/$60/$90 otherwise, by the speed tier), so
- * holding JUMP bounces higher: MARIO_PROFILE.jump holds those numbers (1/4096 px/f²).
+ * the Yoshi mount) use the campaign's own held stomp bounce, the same code and numbers as Current
+ * Mario's: MovementProfile.stompHeld = MARIO_PROFILE (Player.stompBounce). There are no
+ * separately sourced SMB1 numbers.
  */
-export const SMB1_STOMP_HELD: NonNullable<MovementProfile['stompHeld']> = {
-  vy: 0x04000,
-  tiers: MARIO_PROFILE.jump,
-};
