@@ -19,7 +19,7 @@ export const TITLE_MUSIC = {
   crossIn: 0.4,
   /**
    * BACK to the REMIX title (0.4.72): the overworld is cut as the way back starts, over just
-   * this (no click); the REMIX theme comes in as REMIX lands in place (0.4.74), from bar 3.
+   * this (no click); the REMIX theme comes in as REMIX lands in place (0.4.73), from bar 3.
    */
   shatterOut: 0.05,
 } as const;

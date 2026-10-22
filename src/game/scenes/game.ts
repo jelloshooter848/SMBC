@@ -1204,8 +1204,8 @@ export class Game {
   }
 
   showTitle(): void {
-    // Back from the CLASSIC title (or a box over it), 0.4.72: the REMIX title breaks CLASSIC over
-    // that title's still frame (TitleScene's back transition). Its music is not stopped here:
+    // Back from the CLASSIC title (or a box over it): the REMIX title's way back (0.4.73: CLASSIC
+    // is sucked up into the rift portal and REMIX comes out of it, TitleScene's back transition). Its music is not stopped here:
     // the REMIX title takes it from where it is.
     const classic =
       (this.scenes.find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene | undefined) ?? null;

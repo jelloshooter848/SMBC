@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CanvasRenderer, NullRenderer, OffsetRenderer, transformed, type Renderer } from './renderer';
 import type { SpriteSheet } from './spritesheet';
 
-// 0.4.74: Renderer.transform (the title's way back turns and scales the logo words about their
+// 0.4.73: Renderer.transform (the title's way back turns and scales the logo words about their
 // centres). The canvas turns and scales; renderers without it only move the origin.
 
 function fakeCtx() {

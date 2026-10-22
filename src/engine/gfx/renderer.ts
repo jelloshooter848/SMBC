@@ -40,7 +40,7 @@ export interface Renderer {
    */
   alpha?(alpha: number, draw: () => void): void;
   /**
-   * Optional (0.4.74): runs `draw` with the origin moved to (x, y), turned by `angle` radians
+   * Optional (0.4.73): runs `draw` with the origin moved to (x, y), turned by `angle` radians
    * (clockwise) and scaled by (sx, sy) in the turned axes, so `draw` works about (0, 0). A
    * renderer without it only moves the origin: callers use `transformed` below.
    */

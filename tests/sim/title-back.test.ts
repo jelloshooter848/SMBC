@@ -7,7 +7,7 @@ import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { draw, makeGame, useStorage } from './heroes-harness';
 import { DEFAULT_ASSIST } from '@game/context';
 
-// 0.4.74 (owner, 52A; replaces 0.4.72's shatter-and-slam): CLASSIC to REMIX through the rift.
+// 0.4.73 (owner, 52A; replaces 0.4.72's shatter-and-slam): CLASSIC to REMIX through the rift.
 // A small rift portal opens over the logo, CLASSIC is sucked up into it (stretching, shrinking
 // and spinning), and REMIX comes out of it into its place; the heroes are already standing.
 // Reduce flashing: the same timeline, calm (steady colours, no spin, no shake, no dust). The
@@ -59,7 +59,7 @@ const frames = (t: TitleScene) => draw(t).sprites.map((x) => x.frame);
 const sprite = (t: TitleScene, frame: string) => draw(t).sprites.find((x) => x.frame === frame);
 const rift = (t: TitleScene) => draw(t).sprites.find((x) => x.key.startsWith('title-rift'));
 
-describe('the way back from CLASSIC (0.4.74: through the rift portal)', () => {
+describe('the way back from CLASSIC (0.4.73: through the rift portal)', () => {
   it('a portal opens, CLASSIC is sucked up into it, REMIX comes out into its place, in about 1.3 s', () => {
     const s = setup();
     const { title, classic } = back(s);
@@ -315,13 +315,72 @@ describe('the way back from CLASSIC (0.4.74: through the rift portal)', () => {
     const title = s.h.top() as TitleScene;
     expect(title).toBeInstanceOf(TitleScene);
     expect(title.phase).toBe('ready');
-    expect(s.music).toEqual(['title']); // brought back up, never cut
+    // From its loop point: brought back up if still current, never its fanfare (the crossfade
+    // runs on the clock and may already have handed over to the overworld).
+    expect(s.music).toEqual(['title@loop']);
     for (let i = 0; i < 20; i++) {
       expect(rift(title)).toBeUndefined();
       expect(frames(title)).not.toContain('classic');
       expect(frames(title).filter((f) => f.startsWith('dust-'))).toEqual([]);
       s.h.step();
     }
+  });
+
+  it("with Reduce flashing, the Start box's Back inside the crossfade takes the same shortcut", () => {
+    const s = setup(true);
+    s.h.game.ctx.audio.crossfadeMusic = (id) => (s.music.push(`cross ${id}`), 0.4);
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    const classic = s.h.top() as ClassicTitleScene;
+    s.h.idle(2);
+    s.h.step(['jump']); // the Start box
+    s.h.step();
+    expect(classic.phase).toBe('start');
+    // Up to its Back row (it wraps from the first), and OK, all inside the 0.4 s crossfade.
+    s.h.step(['up']);
+    s.h.step();
+    s.music.length = 0;
+    s.h.step(['jump']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('ready');
+    expect(s.music).toEqual(['title@loop']);
+    expect(rift(title)).toBeUndefined();
+  });
+
+  it("the Start box's Back after the crossfade: the calm way back through the portal", () => {
+    const s = setup(true);
+    s.h.game.ctx.audio.crossfadeMusic = (id) => (s.music.push(`cross ${id}`), 0.4);
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    s.h.idle(40);
+    s.h.step(['jump']);
+    s.h.idle(10); // the box open
+    for (let i = 0; i < 6 && !(s.h.said.at(-1) ?? '').startsWith('Back'); i++) {
+      s.h.step(['up']);
+      s.h.step();
+    }
+    expect(s.h.said.at(-1)).toMatch(/^Back/);
+    s.h.step(['jump']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('back');
+    expect(rift(title)).toBeDefined();
+  });
+
+  it('a press after REMIX has landed, while the portal closes, is swallowed too', () => {
+    const s = setup();
+    const { title } = back(s);
+    while (clock(title) < BACK.slam + 5) s.h.step();
+    expect(clock(title)).toBeLessThan(BACK.end);
+    expect(title.phase).toBe('back');
+    s.h.step(['jump']);
+    expect(title.phase).toBe('ready');
+    s.h.idle(10);
+    expect(s.h.top()).toBe(title);
+    expect(s.sfx).not.toContain('coin');
   });
 
   it('the first launch (the rift intro, the full fanfare) and the plain title are as they were', () => {

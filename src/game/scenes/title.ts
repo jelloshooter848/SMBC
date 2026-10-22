@@ -65,7 +65,7 @@ const RIFT_CY = 50;
 const SKY = '#5c94fc';
 
 /**
- * 0.4.74 (owner, 52A): the way back from CLASSIC, through the rift. A small rift portal (the
+ * 0.4.73 (owner, 52A): the way back from CLASSIC, through the rift. A small rift portal (the
  * intro's own rift) tears open over the logo, CLASSIC stretches toward it and is sucked up into
  * it, shrinking and spinning, and then REMIX comes out of it, unwinding and growing into its
  * place; the portal closes behind it. It replaces 0.4.72's shatter-and-slam, which the owner
@@ -117,7 +117,8 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
  */
 export function suckPose(t: number, calm: boolean): Pose | null {
   if (t >= BACK.suckTo) return null;
-  // Whole pixels (posed() draws a frame's top left at its centre less half its size, rounded down).
+  // CLASSIC's centre at rest, with half its size rounded down as posed() does, so the first
+  // frames draw it exactly where it rests (the pull then moves it in fractions of a pixel).
   const x0 = CLASSIC_AT.x + (CLASSIC_W >> 1);
   const y0 = CLASSIC_AT.y + (CLASSIC_H >> 1);
   const k = clamp01((t - BACK.suckFrom) / (BACK.suckTo - BACK.suckFrom));
@@ -264,13 +265,17 @@ export class TitleScene extends MenuScene {
       classic !== null &&
       ((classic.backBeforeImpact && !classic.overworldAsked) || classic.backMidCrossfade);
     if (unhit) this.classic = null;
+    // The calm shortcut decides by CLASSIC's frame count, but its crossfade runs on the clock: on
+    // a slow device the overworld may already have taken over, so the theme comes in from its
+    // loop point (or, still current, only comes back up), never from its fanfare.
+    this.themeFromLoop = unhit && classic?.backMidCrossfade === true;
     const back = !intro && this.classic !== null;
     if (intro) {
       this.phase = needsStartGate(game.ctx.audio) ? 'gate' : 'rift';
       this.stampAt = T.riftStamp;
     } else if (back) {
       this.phase = 'back';
-      // 0.4.74: Reduce flashing plays the same timeline, calmly (no more instant swap).
+      // 0.4.73: Reduce flashing plays the same timeline, calmly (no more instant swap).
       this.stampAt = BACK.slam;
     } else if (unhit) {
       this.phase = 'ready';
@@ -298,6 +303,9 @@ export class TitleScene extends MenuScene {
     });
     this.rebuild();
   }
+
+  /** Enter brings the theme in from its loop point (the calm shortcut back from CLASSIC). Once. */
+  private themeFromLoop = false;
 
   private rebuild(): void {
     const game = this.game;
@@ -336,7 +344,10 @@ export class TitleScene extends MenuScene {
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
     else if (this.phase === 'back') this.startBack();
-    else audio.playMusic('title');
+    else if (this.themeFromLoop) {
+      this.themeFromLoop = false;
+      audio.playMusic('title', 0, true);
+    } else audio.playMusic('title');
     this.sayTitle();
   }
 
@@ -665,7 +676,7 @@ export class TitleScene extends MenuScene {
     }
     if (this.phase === 'back' && Actions.some((a) => input.pressed(a))) {
       this.finish();
-      // 0.4.74: the press that skips the way back never reaches the menu (it would pick CLASSIC
+      // 0.4.73: the press that skips the way back never reaches the menu (it would pick CLASSIC
       // again once the menu's first frames are past, now the way back is longer).
       return;
     }
@@ -898,17 +909,20 @@ export class TitleScene extends MenuScene {
   }
 
   /** `frame` of the logo sheet drawn centred at `p`'s place, turned, scaled and faded. */
-  private posed(r: Renderer, frame: string, w: number, h: number, p: Pose, dx = 0, dy = 0): void {
+  private posed(r: Renderer, frame: string, w: number, h: number, p: Pose, shadow = false): void {
     const sheet = this.game.ctx.assets.sheet('title-logo');
-    translucent(r, p.alpha, () =>
-      transformed(r, p.x + dx, p.y + dy, p.angle, p.sx, p.sy, (l) =>
-        l.sprite(sheet, frame, -(w >> 1), -(h >> 1)),
-      ),
-    );
+    // One fade for the frame and its shadow, so the shadow never shows through it.
+    translucent(r, p.alpha, () => {
+      if (shadow)
+        transformed(r, p.x + 2 * p.sx, p.y + 2 * p.sy, p.angle, p.sx, p.sy, (l) =>
+          l.sprite(sheet, `${frame}-shadow`, -(w >> 1), -(h >> 1)),
+        );
+      transformed(r, p.x, p.y, p.angle, p.sx, p.sy, (l) => l.sprite(sheet, frame, -(w >> 1), -(h >> 1)));
+    });
   }
 
   /**
-   * The way back before REMIX is in place (0.4.74): the REMIX field (1-1's first screen, still)
+   * The way back before REMIX is in place (0.4.73): the REMIX field (1-1's first screen, still)
    * from the BACK press on, so nothing behind moves or cuts however far the demo had scrolled;
    * SMB and CROSSOVER in place, the portal over them, and CLASSIC going into it or REMIX coming
    * out. No heroes or menu yet: they are there when REMIX lands.
@@ -924,8 +938,7 @@ export class TitleScene extends MenuScene {
     if (gone) this.posed(r, 'classic', CLASSIC_W, CLASSIC_H, gone);
     const out = emergePose(this.clock, this.calm);
     if (out) {
-      this.posed(r, 'remix-shadow', STAMP_W, STAMP_H, out, 2 * out.sx, 2 * out.sy);
-      this.posed(r, 'remix', STAMP_W, STAMP_H, out);
+      this.posed(r, 'remix', STAMP_W, STAMP_H, out, true);
     }
   }
 
