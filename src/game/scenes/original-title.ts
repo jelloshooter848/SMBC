@@ -19,7 +19,8 @@ import { joinMusic, TITLE_MUSIC } from './title-music';
  * the live 1-1 demo (title-demo.ts) with no HUD, our logo centred near the top, the version at
  * the bottom left and, once Mario sets off, the begin prompt blinking every 500 ms (steady with
  * Reduce flashing). OK (or a tap on the screen) opens the Start box: START, OPTIONS, BACK. START
- * goes on to the map set menu (ClassicMenuScene, drawn as a box over the demo); BACK in the box
+ * goes on to the map set menu (ClassicMenuScene, drawn as a box over the demo), then a set's
+ * save files (original-files-menu.ts); BACK in the box
  * closes it back to the demo, BACK on the demo returns to the title. The demo never reads a press:
  * every press is the menu's from the first frame, and nothing waits for the demo.
  */
@@ -109,7 +110,7 @@ export class ClassicTitleScene implements Scene {
       {
         label: 'Start',
         select: () => this.openSets(),
-        hint: 'Choose a map set and its difficulty, then a hero',
+        hint: 'Choose a map set and a file, then a hero',
       },
       {
         label: 'Options',
@@ -120,7 +121,7 @@ export class ClassicTitleScene implements Scene {
               this.announce();
             }),
           ),
-        hint: 'Game mode, more settings, weapons, music set and all settings',
+        hint: 'Music set, tutorials, cheats, and video, audio and controls',
       },
       { label: 'Back', select: () => game.showTitle(), hint: 'To the title' },
     ];

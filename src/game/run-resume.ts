@@ -1,5 +1,4 @@
-import { hasKey, loadJson, removeKey, saveJson } from '@engine/save/storage';
-import { MAP_SET_IDS, type MapSetId } from '@engine/save/progress';
+import type { MapSetId } from '@engine/save/progress';
 import { CLASSIC_GAME_MODES, type ClassicGameMode } from '@engine/save/original-options';
 import type { MapDifficulty } from '@engine/save/settings';
 import { defaultPower, type GameState, type Rules } from './context';
@@ -7,23 +6,17 @@ import { startHp, type CharacterDef } from './characters/character';
 import { CHARACTERS, CLASSIC_EXTRAS, heroFor, isSkin } from './characters/registry';
 
 /**
- * Classic mode's resume slots (G-008; per-set saves, O-07): the original saves a run from Pause > Load / Save and
- * loads it from the title (PauseMenu.as 28, MenuBox.as 279-318, StatManager.as 610-640, 884-959).
- * Ours stands in with one slot per map set (SMB1, Special, The Lost Levels), written each time a
- * Classic mode run of that set shows a level's WORLD card (so it always holds the start of the
- * level being played, with its checkpoint), and offered as CONTINUE when the set is picked on the
- * CLASSIC menu (original-saves.ts). A game over writes its continue point (BUG-05); the run's end at the credits clears it. It keeps what the
- * original's file keeps for the hero playing: the level, lives, score, coins, power and kit
- * (and every other hero's power and kit, BUG-06);
- * Survival's fallen heroes; the rules the run plays; and, as the original's file keeps them with
- * the run (GameSettings.as 407-414), its Map Difficulty and Game mode (RC-002). Developer runs and
- * link runs (`?level=`, RC-004) never write it. Its own keys, never a campaign
- * save.
+ * A Classic mode run as kept (G-008; B-L): what the original's file keeps for the hero playing
+ * (StatManager.as 610-640, 884-959): the level (its first area, or the area its checkpoint is in),
+ * lives, score, coins, power and kit, every other hero's power and kit (BUG-06), Survival's fallen
+ * heroes and the rules the run plays. Since B-L it is the `run` of a Classic save file
+ * (original-files.ts), which holds the run's rules and continues beside it. The old per-set slots
+ * (0.4.68 on) and the single slot (0.4.67) held one of these too; original-files.ts migrates them.
  */
-/** The single slot of 0.4.x, moved into its set's slot on the first read (migrateClassicResume). */
+/** The single slot of 0.4.67 (migrated by original-files.ts, via its level's set). */
 export const CLASSIC_RESUME_KEY = 'smbc-classic-resume';
 
-/** Map set `set`'s slot. */
+/** The old per-set slot of map set `set` (0.4.68 on; migrated by original-files.ts). */
 export function classicResumeKey(set: MapSetId): string {
   return `${CLASSIC_RESUME_KEY}-${set}`;
 }
@@ -57,9 +50,9 @@ export interface ClassicResume {
   checkpoint: GameState['checkpoint'];
   /** Survival: the fallen heroes and whether revival is allowed. */
   survival?: { fallen: string[]; reviveAllowed: boolean };
-  /** The run's Map Difficulty (RC-002; a slot from before 0.4.68 has none). */
+  /** An old slot's Map Difficulty (RC-002; migration reads it; a file keeps it in its rules). */
   difficulty?: MapDifficulty;
-  /** The run's Game mode (RC-002; a slot from before 0.4.68 has none). */
+  /** An old slot's Game mode (RC-002; migration reads it; a file keeps it in its rules). */
   gameMode?: ClassicGameMode;
   /**
    * BUG-06: the power, hit points and kit of each hero not playing, by slot hero id, as the
@@ -72,8 +65,8 @@ export interface ClassicResume {
   /** BUG-05: written by a game over at its continue point; going on from it is a continue used. */
   continued?: true;
   /**
-   * Item 8: the continues this run has used (Infinite Lives' goal), kept per set as the slot is.
-   * A slot from before it has none (Game.resumeClassic keeps the current count).
+   * An old per-set slot's continues (#196's item 8). Migration reads it; a file keeps its count
+   * beside the run (ClassicFile.continues), never here.
    */
   continues?: number;
 }
@@ -122,31 +115,6 @@ function copyKits(kits: Readonly<Record<string, HeroKit>>): Record<string, HeroK
   for (const [id, k] of Object.entries(kits))
     out[id] = { powerState: k.powerState, hp: k.hp, kit: { ...k.kit } };
   return out;
-}
-
-/** Writes `r` into the slot of its level's map set. */
-export function saveClassicResume(r: ClassicResume): void {
-  saveJson(classicResumeKey(resumeSetOf(r.levelId)), { ...r, savedAt: Date.now() });
-}
-
-/** Clears map set `set`'s slot. */
-export function clearClassicResume(set: MapSetId): void {
-  migrateClassicResume();
-  removeKey(classicResumeKey(set));
-}
-
-/**
- * Per-set saves: the single slot of 0.4.x (CLASSIC_RESUME_KEY) moves into the slot of its
- * level's map set, then the old key goes (only once the copy is written). The old key is gone once read, so one that is there is
- * the newer run (an older build wrote it since) and takes the set's slot. A broken old slot is
- * just dropped. Safe to call at every read.
- */
-export function migrateClassicResume(): void {
-  if (!hasKey(CLASSIC_RESUME_KEY)) return;
-  const old = readSlot(CLASSIC_RESUME_KEY);
-  // The old key goes only once its run is safely in its set's slot (a full or blocked storage keeps it).
-  if (old && !saveJson(classicResumeKey(resumeSetOf(old.levelId)), loadJson(CLASSIC_RESUME_KEY))) return;
-  removeKey(CLASSIC_RESUME_KEY);
 }
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -217,23 +185,11 @@ function readHeroKits(v: unknown): Record<string, HeroKit> | null {
 }
 
 /**
- * Map set `set`'s slot, or null when there is none or it does not read as one (a broken one).
- * Without `set`: the latest written of the sets' slots (the old single slot read the same way).
+ * A kept run as stored (a file's `run`, or an old per-set slot), checked field by field; null
+ * when it does not read as one (a broken one).
  */
-export function loadClassicResume(set?: MapSetId): ClassicResume | null {
-  migrateClassicResume();
-  if (set) return readSlot(classicResumeKey(set));
-  let best: ClassicResume | null = null;
-  for (const id of MAP_SET_IDS) {
-    const r = readSlot(classicResumeKey(id));
-    if (r && (!best || (r.savedAt ?? 0) > (best.savedAt ?? 0))) best = r;
-  }
-  return best;
-}
-
-/** The slot stored under `key`, checked field by field. */
-function readSlot(key: string): ClassicResume | null {
-  const r = loadJson<Partial<ClassicResume>>(key);
+export function parseResume(raw: unknown): ClassicResume | null {
+  const r = raw as Partial<ClassicResume> | null;
   if (!r || typeof r !== 'object' || r.v !== 1) return null;
   if (typeof r.levelId !== 'string' || typeof r.hero !== 'string') return null;
   if (r.rules !== 'classic' && r.rules !== 'current') return null;
@@ -259,12 +215,14 @@ function readSlot(key: string): ClassicResume | null {
     savedAt,
     heroKits: _hk,
     continues: cn,
+    continued: cd,
     ...rest
   } = r as ClassicResume;
   return {
     ...rest,
-    // Item 8: a count that is not a whole number of 0 or more reads as none.
+    // An old per-set slot's count (#196; migration reads it): a whole number of 0 or more, else none.
     ...(Number.isInteger(cn) && (cn as number) >= 0 ? { continues: cn } : {}),
+    ...(cd === true ? { continued: true as const } : {}),
     // An older slot, or a value this version does not know: none (the caller falls back).
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),

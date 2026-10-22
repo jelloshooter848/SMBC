@@ -237,20 +237,44 @@ export function stepRow(r: AnyRow, s: ClassicSettings, dir: -1 | 1): void {
   }
 }
 
+/**
+ * Where option rows read and write their values (B-L): a new file's draft rules (its rules box),
+ * or the shared settings (sharedOptions: the Start box's Options, its Music set row only).
+ */
+export interface OptionStore {
+  /** The values, or null when there are none to change (no settings). */
+  get(): ClassicSettings | null;
+  /** A value was changed (saved settings are applied; a draft has nothing to do). */
+  changed(): void;
+}
+
+/** The shared Classic options (Settings.classic), saved and applied at each change. */
+export function sharedOptions(game: Game): OptionStore {
+  return {
+    get: () => game.deps.settings?.classic ?? null,
+    changed: () => game.deps.applySettings?.(),
+  };
+}
+
 /** A row's MenuItem: `*` on its label and "changed" in its hint while not the original's value. */
-export function optionItem(game: Game, r: AnyRow, after: () => void): MenuItem {
+export function optionItem(
+  game: Game,
+  r: AnyRow,
+  after: () => void,
+  store: OptionStore = sharedOptions(game),
+): MenuItem {
   const rr = r as OptionRow<string>;
-  const s = game.deps.settings?.classic ?? defaultClassicSettings();
+  const s = store.get() ?? defaultClassicSettings();
   const changed = rr.get(s) !== rr.get(defaultClassicSettings());
   const hint = rr.valueHint?.(rr.get(s)) || rr.hint;
   return {
     label: changed ? `${rr.label}*` : rr.label,
-    value: () => rr.name(rr.get(game.deps.settings?.classic ?? defaultClassicSettings())),
+    value: () => rr.name(rr.get(store.get() ?? defaultClassicSettings())),
     adjust: (dir) => {
-      const cs = game.deps.settings?.classic;
+      const cs = store.get();
       if (!cs) return;
       stepRow(r, cs, dir);
-      game.deps.applySettings?.();
+      store.changed();
       after();
     },
     hint: changed ? `${hint}. Changed from the original: ${rr.name(rr.get(defaultClassicSettings()))}` : hint,
@@ -271,6 +295,7 @@ export class ClassicOptionRowsScene extends MenuScene {
     private readonly rows: readonly AnyRow[],
     private readonly spokenTitle: string,
     onBack: () => void,
+    private readonly store: OptionStore = sharedOptions(game),
   ) {
     super(game, title, [], onBack);
     if (this.over) {
@@ -303,16 +328,16 @@ export class ClassicOptionRowsScene extends MenuScene {
   }
 
   private build(): void {
-    const items = this.rows.map((r) => optionItem(this.game, r, () => this.build()));
+    const items = this.rows.map((r) => optionItem(this.game, r, () => this.build(), this.store));
     items.push(
       {
         label: 'Restore originals',
         select: () => {
-          const cs = this.game.deps.settings?.classic;
+          const cs = this.store.get();
           if (cs) {
             const d = defaultClassicSettings();
             for (const r of this.rows) (r as OptionRow<string>).set(cs, (r as OptionRow<string>).get(d));
-            this.game.deps.applySettings?.();
+            this.store.changed();
           }
           this.build();
           this.game.deps.announcer?.say('Every setting here is back to the original.');

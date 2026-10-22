@@ -5,7 +5,6 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { TouchLabels } from '@engine/input/touch';
 import { SCREEN_H, SCREEN_W } from '@engine/viewport';
 import { saveSettings } from '@engine/save/settings';
-import { defaultClassicWeapons } from '@engine/save/original-options';
 import type { Game } from '../scenes/game';
 import type { World } from '../world/world';
 import type { Player } from '../entities/player';
@@ -85,7 +84,7 @@ function dynamicAbility(
   name: string,
   hero: string | undefined,
 ): readonly [string, Action] | null {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   switch (name) {
     case 'link-tool':
       return [w.link === 'bow' ? 'BOW' : 'BOMB', 'select'];
@@ -112,7 +111,7 @@ function dynamicAbility(
  * holds (or does not), so a sentence stays true whatever the Customize Weapons choice or roster.
  */
 function condition(game: Game, name: string): boolean {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   switch (name) {
     case 'ryu-slash-art':
       return w.ryuStart === 'jump-slash';
@@ -273,7 +272,7 @@ const mmBox = (weapon: string): string =>
  * original shows these as each upgrade is collected (Character.hitPickup → checkTutorial).
  */
 export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'): string[] {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   const big = state === 'big';
   switch (hero) {
     case 'link': {
@@ -308,7 +307,7 @@ export function upgradeTutorials(game: Game, hero: string, state: 'big' | 'fire'
 
 /** The boxes a hero's first level start shows: its own start, and a start weapon with a box. */
 export function startTutorials(game: Game, hero: string): string[] {
-  const w = game.deps.settings?.classic.weapons ?? defaultClassicWeapons();
+  const w = game.classicRunRules.options.weapons;
   return [`${hero}Start`, ...(hero === 'ryu' && w.ryuStart === 'jump-slash' ? ['ryuJumpSlash'] : [])];
 }
 
