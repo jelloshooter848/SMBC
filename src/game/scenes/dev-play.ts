@@ -6,7 +6,7 @@ import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
 import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
-import { CUSTOM_PREFIX } from '../level/library';
+import { CUSTOM_PREFIX, customLevelId, loadLibrary } from '../level/library';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
 import { levelSelectTarget, worldName } from './level-select-cheat';
 import { DevMiniGamesScene } from './dev-minigames';
@@ -360,6 +360,15 @@ export class DevLevelPage extends DevPage {
   }
 }
 
+/**
+ * Custom level `id`'s name as the editor saved it (its library key, as Options > Custom levels
+ * shows it), else the id without its prefix.
+ */
+function customName(id: string): string {
+  const name = Object.keys(loadLibrary().levels).find((n) => customLevelId(n) === id);
+  return name ?? id.slice(CUSTOM_PREFIX.length);
+}
+
 /** Dev > Campaign: its places and games, none of which writes a save file. */
 export class DevCampaignScene extends DevPage {
   constructor(game: Game, translucent = false) {
@@ -406,10 +415,10 @@ export class DevCampaignScene extends DevPage {
                       game,
                       'Custom levels',
                       [
-                        ...custom.map((id) => ({
-                          label: id.slice(CUSTOM_PREFIX.length),
-                          select: start(id, `Custom ${id.slice(CUSTOM_PREFIX.length)}`),
-                        })),
+                        ...custom.map((id) => {
+                          const name = customName(id);
+                          return { label: name, select: start(id, `Custom ${name}`) };
+                        }),
                         back(game),
                       ],
                       translucent,

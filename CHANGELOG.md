@@ -24,6 +24,8 @@ under `## [Unreleased]`.
 - Screen reader: skipping the REMIX title's intro says the focused menu row, so "Press any button
   to skip the intro" is no longer left as the last thing said.
 - Docs: the README says a checkout exactly at a release tag builds locked, even under `pnpm dev`.
+- Dev mode: Level select > Campaign > Custom levels lists and says each level by the name it was
+  saved under ("My Test"), not its id ("my-test"); a level with no saved name keeps its id.
 
 ## [0.4.69] - 2026-10-22
 
