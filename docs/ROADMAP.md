@@ -11,10 +11,10 @@ The game ships **Classic mode first**, then new heroes, then the story campaign:
 | Release            | What                                                                                                                                                                                                                                                                                   |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **0.5.0**          | **The Classic remake:** a true remake of Super Mario Bros. Crossover 3.1.21 (title > CLASSIC) with our own art and music, the scope in `docs/classic/GAP_LIST_0.5.0.md` (every P0 and P1 item). The story campaign shows "CHAPTER 1 COMING SOON!" outside dev mode; every save is kept |
-| **0.6.0 to 0.9.x** | **New heroes** through the **Expansion heroes** option (off by default, so Classic stays the original's roster): Vic Viper, the Warriors of Light, Arthur and Yoshi first, then more from the candidate list                                                                           |
+| **0.6.0 to 0.9.x** | **New heroes** added to the Classic select one release at a time (none before release, so Classic stays the original's roster): Vic Viper, the Warriors of Light, Arthur and Yoshi first, then more from the candidate list                                                            |
 | **1.0.0**          | **Chapter 1, the Mushroom Kingdom:** the story campaign (1-0, then 1-1 to 8-4, the hidden heroes, their mini games, the story) opened for everyone. Its save files, save codes and resume links from 0.4.x load as they are                                                            |
 
-Until 1.0.0 the campaign is built and tested in dev mode only (the title's Chapter 1 row and `#save=` links open
+Until 1.0.0 the campaign is built and tested in dev mode only (the title's Campaign row and `#save=` links open
 it there). Chapters 2 and 3 (the Lost Kingdom and the Far Lands, below) come after 1.0.0; their version numbers are
 proposals.
 
@@ -88,7 +88,7 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
 
 ### Any time (not tied to a chapter)
 
-- **New heroes** from PR #51's candidate list: in Classic mode through the Expansion heroes option (0.6.0 to 0.9.x,
+- **New heroes** from PR #51's candidate list: in Classic mode, each added to the select as it is released (0.6.0 to 0.9.x,
   above). In the campaign, Yoshi first: the Top Secret Area's egg will hatch him, as a rideable partner or a hero.
 
 ## Details of the planned work
@@ -100,7 +100,7 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
   short form, "SMBC REMIX", is for tight spaces.
 - **Repository (owner, 2026-10-20):** the repository keeps its name, `SMBC`, and the site stays at
   `https://jelloshooter848.github.io/SMBC/`. The release zips carry the brand: `smbc-remix-vX.Y.Z.zip` (and
-  `-offline`) from 0.5.0.
+  `-offline`) since 0.4.66.
 - **Credits on the title screen:** "MADE BY JELLOSHOOTER848", and a line such as "BASED ON SUPER MARIO BROS.
   CROSSOVER BY EXPLODING RABBIT". The full credits roll and the README say the same, alongside the existing
   "unaffiliated fan project, original art and music" notice.

@@ -5,16 +5,25 @@ import { DEV_VILLAGE } from '../town/secret-house';
 import { stageTutorial } from '../tutorial/stage-tutorial';
 import type { Rules } from '../context';
 import { heroFor } from '../characters/registry';
+import { RULES_HINT, RULES_LABELS } from './dev-play';
 
-/** The Rules row's values and hint (dev Classic starts, TG rules model). */
-// Owner decision: the 'current' rules are shown and said as "Campaign" (the value stays).
-export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
-export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
+/**
+ * @deprecated BUG-09: the Rules labels live in dev-play.ts (the START page's Rules row); these
+ * re-exports are kept for the older tests only.
+ */
+export { RULES_HINT, RULES_LABELS };
 
 const POWER_UP_STATES = ['small', 'big', 'fire'];
 const HP_STATES = ['full', 'half', '1 hp'];
 
-/** Developer level select: any level, any character, chosen power state, 99 lives. */
+/**
+ * Developer level select: any level, any character, chosen power state, 99 lives.
+ *
+ * @deprecated BUG-09: no menu opens this one-page list any more. The Dev menu's one Level select
+ * is DevLevelPagesScene (dev-play.ts: Classic, Campaign, Mini games, Bonus games), which reaches
+ * every id this list offered. Kept only so the older tests that drive it directly keep running;
+ * new code must not use it, and it can be deleted with those tests.
+ */
 export class DevLevelSelectScene extends MenuScene {
   private levels: string[];
   private levelIndex = 0;

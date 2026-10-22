@@ -219,6 +219,16 @@ export interface ClassicDevToggles {
    */
   heroesOff: string[];
   heroesOn?: string[];
+  /**
+   * BUG-10, Dev > Toggle heroes > Classic > Plays as: the heroes (ids) that play their Campaign
+   * design in Classic mode (Classic rules). Absent or empty: each plays its Classic design.
+   */
+  playsCampaign?: string[];
+  /**
+   * BUG-10, Dev > Toggle heroes > Campaign: the campaign heroes (ids) that play their Classic kit
+   * under Campaign rules. Absent or empty: each plays its Campaign design.
+   */
+  playsClassic?: string[];
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
@@ -345,6 +355,14 @@ export function loadSettings(): Settings {
     : [];
   if (on.length) s.classicDev.heroesOn = on.filter((id) => !s.classicDev.heroesOff.includes(id));
   if (dev.yoshiRide === true && s.classicDev.yoshiMount) s.classicDev.yoshiRide = true;
+  // BUG-10's Plays as lists, likewise.
+  for (const k of ['playsCampaign', 'playsClassic'] as const) {
+    const v = dev[k];
+    const list = Array.isArray(v)
+      ? (v as unknown[]).filter((id): id is string => typeof id === 'string')
+      : [];
+    if (list.length) s.classicDev[k] = [...new Set(list)];
+  }
   // The merge keeps only keys the defaults have, so the skin choices are copied over here.
   const skins = normaliseSkins(stored.classicSkins);
   if (skins) s.classicSkins = skins;

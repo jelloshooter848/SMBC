@@ -4,6 +4,7 @@ import { defaultSettings } from '@engine/save/settings';
 import { MINIGAMES, type MiniGameDef } from '@game/minigames';
 import { RaceMenuScene, MirrorRaceScene } from '@game/minigames/luigi/race';
 import { DevMenuScene } from '@game/scenes/dev';
+import { DevLevelPagesScene } from '@game/scenes/dev-play';
 import { DevMiniGameResultScene, DevMiniGamesScene } from '@game/scenes/dev-minigames';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
@@ -37,6 +38,8 @@ function fromTitle(): H {
   expect(h.top()).toBeInstanceOf(TitleScene);
   pick(h, 'Dev mode');
   expect(h.top()).toBeInstanceOf(DevMenuScene);
+  // BUG-09: Dev mode > Level select > Mini games.
+  pick(h, 'Level select');
   pick(h, 'Mini games');
   expect(h.top()).toBeInstanceOf(DevMiniGamesScene);
   return h;
@@ -86,6 +89,10 @@ describe('Dev → Mini games', () => {
     expect(h.top()).toBe(list);
     expect(h.audio.playMusic).toHaveBeenLastCalledWith('title');
     // Back, and back again to the title.
+    h.tap('attack');
+    // BUG-09: through the Level select page.
+    expect(h.top()).toBeInstanceOf(DevLevelPagesScene);
+    h.idle(8);
     h.tap('attack');
     expect(h.top()).toBeInstanceOf(DevMenuScene);
   });
@@ -194,6 +201,7 @@ describe('Dev → Mini games', () => {
     h.tap('start');
     expect(h.top()).toBeInstanceOf(PauseScene);
     pick(h, 'Dev mode');
+    pick(h, 'Level select'); // BUG-09
     pick(h, 'Mini games');
     const list = h.top() as DevMiniGamesScene;
     expect(list.translucent).toBe(true);

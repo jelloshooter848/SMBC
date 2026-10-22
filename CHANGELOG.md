@@ -10,9 +10,6 @@ under `## [Unreleased]`.
 
 ### Changed
 
-- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
-  the run, as the original: NEW GAME and the restart after an ending's credits set the count
-  back to 0. MAIN MENU after a game over keeps the run and its count.
 - Classic mode: each hero keeps his own power-ups and items, as in the original (BUG-06). A
   level's end keeps them. Switching to another hero puts the first one's away until he is picked
   again, and another look of the same hero shares them. A death resets only the hero who died. A
@@ -27,6 +24,27 @@ under `## [Unreleased]`.
 - The REMIX title has its own theme (BUG-14): a new brassy, bouncy hub tune in C with a new
   two-bar fanfare under the stamp, galloping bass and horn stabs. Going to the CLASSIC title no
   longer sounds like the same song restarting; CLASSIC keeps its own theme.
+- Classic mode: Infinite Lives' goal (beat a game without a continue) counts the continues of
+  the run, as the original: NEW GAME and the restart after an ending's credits set the count
+  back to 0. MAIN MENU after a game over keeps the run and its count. Each map set's saved run
+  keeps its own count, so a NEW GAME on another set no longer clears it.
+- Classic options: the **Expansion heroes** row is gone (BUG-08). A hero the original never had
+  joins the Classic select once it is released; an Expansion heroes value saved by an earlier
+  version is ignored and kept as it was. Dev mode's per-hero overrides still apply.
+- Dev mode: one **Level select** in the Dev menu (BUG-09). It opens Classic, Campaign, Mini games
+  and Bonus games; the old one-page list is gone, and the editor's levels it listed are now under
+  Campaign > Custom levels.
+- Dev mode: **Classic heroes** is now **Toggle heroes** (BUG-10), with two pages. **Classic** is
+  the old page plus **Plays as**, where each hero can play its Classic or its Campaign design in
+  Classic mode; **Campaign** lets each campaign hero play its Campaign design or its Classic kit.
+  Saved with the other dev toggles; no effect outside dev mode.
+- Dev mode: Classic options no longer has the **Classic rules** row (BUG-11). Classic mode always
+  plays Classic rules; Toggle heroes' Plays as gives one hero its Campaign design instead. A saved
+  rules value is ignored and kept as it was; the dev start page's Rules row is unchanged.
+- Docs: the release zips' rename is dated 0.4.66, the title's row is Campaign, and the dev menu
+  pages (Level select, Toggle heroes) are described as they now are (RC-021).
+- Classic: the Options hints on the CLASSIC title's Start box and the CLASSIC menu no longer name
+  Classic rules (RC-041).
 
 ### Fixed
 

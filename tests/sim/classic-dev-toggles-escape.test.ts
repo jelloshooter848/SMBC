@@ -72,6 +72,8 @@ describe('Dev menu toggle rows and START / Escape', () => {
     const plain = items(menu).find((i) => i.label === 'Back') as MenuItem;
     const picked = vi.fn(plain.select);
     plain.select = picked;
+    // BUG-10: Plays as now sits between Yoshi mount and Back.
+    press(['down']);
     press(['down']);
     const sfx = h.game.ctx.audio.sfx as ReturnType<typeof vi.fn>;
     sfx.mockClear();

@@ -10,7 +10,6 @@ import { MenuScene, type MenuItem } from './menu';
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import { demoUnder, renderBoxedMenu } from './original-box-menu';
-import { RELEASED_EXPANSION_HEROES } from '../characters/registry';
 import type { Game } from './game';
 
 /**
@@ -66,7 +65,6 @@ const NAMES: Record<string, string> = {
   buzzy: 'Buzzy Beetle',
   spiny: 'Spiny',
   'spike-top': 'Spike Top',
-  // Expansion heroes
   on: 'On',
   // Game Mode
   single: 'Single hero',
@@ -168,19 +166,6 @@ export const MORE_SETTINGS_ROWS: readonly AnyRow[] = [
   row('goombas', 'Goombas', 'Every Goomba becomes this enemy'),
   row('enemySpeed', 'Enemy speed', 'Walking enemies move faster when fast'),
 ] as AnyRow[];
-
-/**
- * The Expansion heroes row: our own (the original has no such heroes). Off, the Classic select is
- * the original's; on, it also offers the released heroes SMBC 3.1.21 never had
- * (RELEASED_EXPANSION_HEROES, O-12). Dev > Classic heroes' On or Off overrides it in dev mode (O-06).
- */
-export const EXPANSION_ROW = row(
-  'expansion',
-  'Expansion heroes',
-  RELEASED_EXPANSION_HEROES.length
-    ? 'Off: the original SMBC heroes only. On: also the released heroes the original never had'
-    : 'Off: the original SMBC heroes only. On: the released heroes the original never had, and none is released yet, so it shows none. To show one in dev mode, set it to On on the Classic heroes page of Dev mode',
-) as AnyRow;
 
 /** The Game Mode row (NewGameOptionsMenu's GAME_MODE under Classic mode). */
 export const GAME_MODE_ROW = row(

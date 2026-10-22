@@ -4,11 +4,11 @@ import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
 import type { Rules } from '../context';
-import { CLASSIC_EXTRAS, heroFor, skinsOf } from '../characters/registry';
+import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
+import { CUSTOM_PREFIX } from '../level/library';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
 import { levelSelectTarget, worldName } from './level-select-cheat';
-import { RULES_HINT, RULES_LABELS } from './dev-level-select';
 import { DevMiniGamesScene } from './dev-minigames';
 import { DevBonusGamesScene } from '../bonus/dev';
 import { hasTraining, runTraining } from '../tutorial/training';
@@ -74,10 +74,10 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
   const offered = branch === 'campaign' ? game.deps.characters : game.slotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
-  if (!slot) return `${named} is not offered now. Dev mode, Classic heroes sets who is`;
+  if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
   const def = devLooks(game, slot, rules).find((c) => c.id === look);
   if (!def || (branch === 'campaign' && def !== slot)) return `That look of ${slot.name} is not offered now`;
-  const states = powerStatesOf(def, rules);
+  const states = powerStatesOf(game, def, rules);
   return {
     branch,
     level,
@@ -95,9 +95,12 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
 const POWER_UP_STATES = ['small', 'big', 'fire'];
 const HP_STATES = ['full', 'half', '1 hp'];
 
-/** The power states the START page offers for `look` played under `rules`. */
-export function powerStatesOf(look: CharacterDef, rules: Rules): string[] {
-  return heroFor(look, rules).damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
+/**
+ * The power states the START page offers for `look` played under `rules`: the design it plays
+ * (BUG-10: Toggle heroes' Plays as, playedHero).
+ */
+export function powerStatesOf(game: Game, look: CharacterDef, rules: Rules): string[] {
+  return playedHero(game.ctx, look, rules).damage.kind === 'powerup' ? POWER_UP_STATES : HP_STATES;
 }
 
 /** Slot hero `hero`'s looks on the roster under `rules` (its own first). */
@@ -140,7 +143,7 @@ export function devAgainItem(game: Game): MenuItem | null {
   return {
     label: 'Again',
     value: () => s.value,
-    // Resolved again on the press: Dev mode, Classic heroes may have changed who is offered since.
+    // Resolved again on the press: Dev mode, Toggle heroes may have changed who is offered since.
     select: () => {
       const now = resolveDevPick(game, p);
       if (typeof now !== 'string' && playDevPick(game, now)) return;
@@ -151,6 +154,11 @@ export function devAgainItem(game: Game): MenuItem | null {
     hint: `Starts the last pick again: ${s.said}`,
   };
 }
+
+/** The START page's Rules row values and hint (dev Classic starts, TG rules model). */
+// Owner decision: the 'current' rules are shown and said as "Campaign" (the value stays).
+export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
+export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
 
 /** The short map set names (the cheat's Level select has the same). */
 const SET_NAMES: Record<string, string> = { smb: 'SMB', special: 'Special', lost: 'Lost Levels' };
@@ -199,6 +207,44 @@ export function areaName(id: string, prefix: string): string {
 export function areasOf(game: Game, id: string): string[] {
   const all = game.deps.listLevels?.() ?? [];
   return all.filter((a) => a === id || a.startsWith(`${id}-`));
+}
+
+/**
+ * BUG-09: Dev > Level select, the one level select of the Dev menu: Classic (the O-05 map set
+ * pages), Campaign, Mini games and Bonus games. It replaces the old one-page list
+ * (dev-level-select.ts, deprecated); every id that list offered is reached from these pages.
+ */
+export class DevLevelPagesScene extends DevPage {
+  constructor(game: Game, translucent = false) {
+    super(
+      game,
+      'Level select',
+      [
+        {
+          label: 'Classic',
+          select: () => push(game, new DevClassicScene(game, translucent), translucent),
+          hint: 'Map set, world, level, then the start page',
+        },
+        {
+          label: 'Campaign',
+          select: () => push(game, new DevCampaignScene(game, translucent), translucent),
+          hint: 'World map, story levels, village, training, games; nothing is saved',
+        },
+        {
+          label: 'Mini games',
+          select: () => push(game, new DevMiniGamesScene(game, translucent), translucent),
+          hint: "Play any hero's freeing mini game; nothing is saved",
+        },
+        {
+          label: 'Bonus games',
+          select: () => push(game, new DevBonusGamesScene(game, translucent), translucent),
+          hint: 'Toad House, N-spade and the spade game; nothing is saved',
+        },
+        back(game),
+      ],
+      translucent,
+    );
+  }
 }
 
 /** Dev > Classic: the map sets. */
@@ -321,6 +367,7 @@ export class DevCampaignScene extends DevPage {
       push(game, new DevStartScene(game, { branch: 'campaign', level, name }), translucent);
     const smb = MAP_SETS[0] as MapSet;
     const lost = MAP_SETS[2] as MapSet;
+    const custom = (game.deps.listLevels?.() ?? []).filter((id) => id.startsWith(CUSTOM_PREFIX));
     super(
       game,
       'Campaign',
@@ -347,6 +394,32 @@ export class DevCampaignScene extends DevPage {
         },
         { label: 'Village', select: start(DEV_VILLAGE, 'Village'), hint: 'Kakariko Village, every hero' },
         { label: 'Tutorial 1-0', select: start('1-0', 'Tutorial 1-0'), hint: "Mario's tutorial stage" },
+        // BUG-09: the editor's levels, which only the old one-page Level select listed.
+        ...(custom.length
+          ? [
+              {
+                label: 'Custom levels',
+                select: () =>
+                  push(
+                    game,
+                    new DevPage(
+                      game,
+                      'Custom levels',
+                      [
+                        ...custom.map((id) => ({
+                          label: id.slice(CUSTOM_PREFIX.length),
+                          select: start(id, `Custom ${id.slice(CUSTOM_PREFIX.length)}`),
+                        })),
+                        back(game),
+                      ],
+                      translucent,
+                    ),
+                    translucent,
+                  ),
+                hint: 'The levels made in the editor',
+              },
+            ]
+          : []),
         {
           label: 'Training rooms',
           select: () => push(game, new DevTrainingScene(game, translucent), translucent),
@@ -547,13 +620,13 @@ export class DevStartScene extends DevPage {
     return this.looks[this.lookIndex] ?? this.hero;
   }
 
-  /** The def played under the chosen rules: its power list and kit. */
+  /** The def played under the chosen rules (and Toggle heroes' Plays as): its power list and kit. */
   private get played(): CharacterDef {
-    return heroFor(this.look, this.rules);
+    return playedHero(this.game.ctx, this.look, this.rules);
   }
 
   private get powerStates(): string[] {
-    return powerStatesOf(this.look, this.rules);
+    return powerStatesOf(this.game, this.look, this.rules);
   }
 
   private get power(): string {

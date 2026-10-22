@@ -63,7 +63,10 @@ export type ClassicGoombas = (typeof CLASSIC_GOOMBAS)[number];
  * Game.classicHeroChoice is the one place the select flow is decided.
  */
 export const CLASSIC_GAME_MODES = ['all', 'survival', 'single', 'single-random'] as const;
-/** Options > Expansion heroes: the heroes the original SMBC 3.1.21 never had. Off is the original. */
+/**
+ * The old Options > Expansion heroes value (BUG-08: the row is gone; a saved value is kept as it
+ * was, ignored and never rewritten). The released list (RELEASED_EXPANSION_HEROES) decides instead.
+ */
 export const CLASSIC_EXPANSION = ['off', 'on'] as const;
 export type ClassicExpansion = (typeof CLASSIC_EXPANSION)[number];
 export type ClassicGameMode = (typeof CLASSIC_GAME_MODES)[number];
@@ -132,8 +135,8 @@ export interface ClassicSettings {
   gameMode: ClassicGameMode;
   musicSet: ClassicMusicSet;
   /**
-   * Expansion heroes (off by default, as the original has none): on, the Classic select also
-   * offers the heroes SMBC 3.1.21 never had (Vic Viper, the Warriors of Light, Sir Arthur, Yoshi).
+   * The old Expansion heroes row's value (BUG-08: ignored; the heroes SMBC 3.1.21 never had are
+   * offered only when released, RELEASED_EXPANSION_HEROES). Kept so an earlier save stays valid.
    */
   expansion: ClassicExpansion;
   weapons: ClassicWeapons;

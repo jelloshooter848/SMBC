@@ -16,7 +16,7 @@ import { SELECT_FACE_IDS } from '@content/sprites/select-faces';
  * CharNameBox, GridMenuBox, MessageBox, TopScreenText). Its boxes are as big as what they hold
  * (MessageBox.createGraphics sizes the fill to its content and puts a 7 px frame round it, here a
  * bevel and rivets inside the same 7 px) and are centred on a fixed point. A list longer than the
- * original's twelve slots (Options > Expansion heroes: 15) takes the wider SELECT_GRID, eight to a
+ * original's twelve slots (with the Expansion heroes: 15) takes the wider SELECT_GRID, eight to a
  * row.
  */
 

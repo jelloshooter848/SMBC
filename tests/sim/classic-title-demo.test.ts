@@ -243,7 +243,8 @@ describe('O-04 the CLASSIC title', () => {
     h.tap('start');
     const ct = h.top() as ClassicTitleScene;
     h.tap('down');
-    expect(h.said.at(-1)).toMatch(/^Options\. Classic rules/);
+    // RC-041: the hint no longer names the removed Classic rules row.
+    expect(h.said.at(-1)).toMatch(/^Options\. Game mode/);
     expect(h.audio.sfx).toHaveBeenCalledWith('fireball');
     h.tap('down');
     expect(h.said.at(-1)).toMatch(/^Back\. To the title/);
@@ -496,6 +497,10 @@ describe('O-04 QA: one title, a clear layout, a demo that leaves no trace', () =
         }
         h.game.showClassicMenu();
         const menu = h.top() as ClassicMenuScene;
+        // BUG-11: no menu run plays Campaign rules any more, so the status line is set by hand to
+        // check where the box draws one.
+        if (rules === 'current')
+          (menu as unknown as { status: string }).status = 'Campaign rules: always Normal';
         const status = (menu as unknown as { status: string }).status;
         if (status) seen.status++;
         // Per-set saves (B-G): no Continue row; the saved run's set says so in its hint.

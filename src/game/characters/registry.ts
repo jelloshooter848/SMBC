@@ -1,5 +1,5 @@
 import type { CharacterDef } from './character';
-import type { Rules } from '../context';
+import { heroRulesOf, type HeroSwaps, type Rules } from '../context';
 import { MARIO } from './mario';
 import { LUIGI } from './luigi';
 import { LINK } from './link';
@@ -145,15 +145,14 @@ export const CLASSIC_SKINS: Readonly<Record<string, readonly CharacterDef[]>> = 
 /** The select's slots, in the original's order (classic/skins.ts), by hero id. */
 export const CLASSIC_SLOTS: readonly string[] = CLASSIC_SLOT_ORDER;
 
-/** The heroes Options > Expansion heroes adds, by hero id (the original has none of them). */
+/** The Expansion heroes, by hero id: the heroes the original never had. */
 export const EXPANSION_HEROES: readonly string[] = CLASSIC_EXPANSION_HEROES;
 
 /**
  * O-12: the Expansion heroes released to players, by id (a subset of EXPANSION_HEROES). This list
  * is the one source of truth for what a release build offers: outside developer mode an Expansion
- * hero is in the select only when it is here and Options > Expansion heroes is on, and that row
- * only shows once the list is not empty. Each later release adds one id. None for 0.5.0.
- * Developer mode's per-hero overrides (O-06) sit on top (Game.expansionHeroOffered).
+ * hero is in the select only when it is here (BUG-08: there is no Options row for them). Each later release adds one id. None for 0.5.0.
+ * Developer mode's per-hero overrides (O-06, Dev > Toggle heroes) sit on top (Game.expansionHeroOffered).
  */
 export const RELEASED_EXPANSION_HEROES: readonly string[] = [];
 
@@ -196,6 +195,24 @@ export function skinsOf(def: CharacterDef): readonly CharacterDef[] {
 export function heroFor(def: CharacterDef, rules: Rules): CharacterDef {
   if (rules !== 'classic' || def.rules === 'classic') return def;
   return CLASSIC_CHARACTERS[def.id] ?? def;
+}
+
+/**
+ * The def hero `def` plays in a World under `rules` (BUG-10): heroFor, except that a hero dev
+ * mode's Toggle heroes set to play its other design plays that one (ctx.heroSwaps, heroRulesOf).
+ * A Classic look (a skin) follows its slot hero's Plays as: with the host set to Campaign it
+ * plays the host's Campaign design (a look has no Campaign design of its own).
+ */
+export function playedHero(
+  ctx: { heroSwaps?: HeroSwaps | undefined },
+  def: CharacterDef,
+  rules: Rules,
+): CharacterDef {
+  if (!ctx.heroSwaps) return heroFor(def, rules);
+  const host = skinHost(def);
+  const r = heroRulesOf(ctx, host.id, rules);
+  if (host !== def && r === 'current') return CHARACTERS.find((c) => c.id === host.id) ?? def;
+  return heroFor(def, r);
 }
 
 export function characterById(id: string): CharacterDef {

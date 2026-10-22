@@ -13,16 +13,15 @@ import {
   saveProgress,
   type MapSetId,
 } from '@engine/save/progress';
-import type { CheatFlags, GameContext, GameState, Rules } from '../context';
+import type { CheatFlags, GameContext, GameState, HeroSwaps, Rules } from '../context';
 import { defaultPower, newGameState } from '../context';
 import {
   CLASSIC_EXTRAS,
   CLASSIC_SLOTS,
   EXPANSION_HEROES,
   expansionReleased,
-  RELEASED_EXPANSION_HEROES,
-  heroFor,
   isSkin,
+  playedHero,
   skinHost,
   skinsOf,
 } from '../characters/registry';
@@ -240,7 +239,7 @@ export class Game {
   /**
    * A Classic mode run (title > CLASSIC, or the dev Level select's Mode: Classic run): the
    * original game's flow, with no campaign file (`campaign` stays null). Every other start clears
-   * it. Its rules are runRules (Classic mode: settings.classicRules; dev: the Rules row).
+   * it. Its rules are runRules (Classic mode: classicRules, always Classic; dev: the START page Rules row).
    */
   classicRun = false;
   /**
@@ -434,6 +433,12 @@ export class Game {
       enumerable: true,
       configurable: true,
     });
+    // ctx.heroSwaps (BUG-10): dev mode's Toggle heroes "Plays as", only while dev mode is on.
+    Object.defineProperty(deps.ctx, 'heroSwaps', {
+      get: () => this.heroSwaps,
+      enumerable: true,
+      configurable: true,
+    });
     // ctx.mapDifficulty: the Classic run's Map Difficulty (G-006), only while it plays Classic rules.
     Object.defineProperty(deps.ctx, 'mapDifficulty', {
       get: () => (this.classicRun && this.liveRules === 'classic' ? this.classicDifficulty : undefined),
@@ -617,8 +622,8 @@ export class Game {
 
   /**
    * The select screen's slots: in a Classic-rules run, the original's eleven heroes in its order
-   * (registry CLASSIC_SLOTS), then, with Options > Expansion heroes on, the heroes the original
-   * never had; every other look is a skin on one of them. Any other run (the campaign, Current
+   * (registry CLASSIC_SLOTS), then the released heroes the original never had
+   * (expansionHeroOffered); every other look is a skin on one of them. Any other run (the campaign, Current
    * rules): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
@@ -659,23 +664,9 @@ export class Game {
   private classicFlow = false;
 
   /**
-   * Options > Expansion heroes is on and in force (the heroes the original never had are offered).
-   * O-12: outside developer mode only once a hero is released (RELEASED_EXPANSION_HEROES), so a
-   * setting saved by an earlier version is ignored, never rewritten.
-   */
-  get expansionHeroes(): boolean {
-    return this.expansionRowShown && this.deps.settings?.classic.expansion === 'on';
-  }
-
-  /** O-12: the Options > Expansion heroes row shows (developer mode, or a hero released). */
-  get expansionRowShown(): boolean {
-    return this.devMode || RELEASED_EXPANSION_HEROES.length > 0;
-  }
-
-  /**
-   * O-12 / O-06: the one place that decides whether Expansion hero `id` gets a select slot (so the
-   * select, Random, Survival, Disable heroes, the guides and the dev START page):
-   * `devMode ? (override ?? release) : release`. The override is Dev > Classic heroes' On or Off;
+   * O-12 / O-06 / BUG-08: the one place that decides whether Expansion hero `id` gets a select slot
+   * (so the select, Random, Survival, Disable heroes, the guides and the dev START page):
+   * `devMode ? (override ?? release) : release`. The override is Dev > Toggle heroes' On or Off;
    * release is heroReleased.
    */
   expansionHeroOffered(id: string): boolean {
@@ -689,11 +680,12 @@ export class Game {
 
   /**
    * What release players get for Expansion hero `id` (O-12), and so O-06's Release in dev mode
-   * too: released (RELEASED_EXPANSION_HEROES, whose first id brings the player row back) with
-   * Options > Expansion heroes on. Dev > Classic heroes' On shows an unreleased hero in dev mode.
+   * too: released (RELEASED_EXPANSION_HEROES) and nothing else. BUG-08: there is no Options row
+   * for them any more; a `classic.expansion` value saved by an earlier version is ignored and
+   * never rewritten.
    */
   heroReleased(id: string): boolean {
-    return expansionReleased(id) && this.deps.settings?.classic.expansion === 'on';
+    return expansionReleased(id);
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -710,8 +702,7 @@ export class Game {
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
-    // A hero the select does not offer now (an Expansion hero from a link or save while Options >
-    // Expansion heroes is off): the first slot's hero, Mario, in his chosen look, so Survival has a
+    // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
     // hero standing and the select shows who plays.
     const slots = this.heroSlots;
     if (!slots.includes(host)) {
@@ -863,6 +854,18 @@ export class Game {
     const s = this.deps.settings;
     // A hand-made settings object (a test harness's) may predate the field: the defaults.
     return (this.devMode && s?.classicDev) || { yoshiMount: false, heroesOff: [] };
+  }
+
+  /**
+   * BUG-10: dev mode's Toggle heroes "Plays as" swaps (ctx.heroSwaps): under Classic rules the
+   * heroes set to play their Campaign design, under Campaign rules those set to play their Classic
+   * kit. Undefined outside dev mode, so release players never get either.
+   */
+  get heroSwaps(): HeroSwaps | undefined {
+    if (!this.devMode) return undefined;
+    const t = this.classicToggles;
+    if (!t.playsCampaign?.length && !t.playsClassic?.length) return undefined;
+    return { classic: t.playsCampaign ?? [], current: t.playsClassic ?? [] };
   }
 
   /** False for a hero not in SMBC 3.1.21 (CharacterDef.notInOriginal) toggled off in the Dev menu. */
@@ -1851,8 +1854,11 @@ export class Game {
     // O-05: the dev START page's Map difficulty (it plays only in a Classic run under Classic rules).
     this.classicDifficulty = opts.difficulty ?? 'normal';
     const rules = this.liveRules;
-    const hero = heroFor(character, rules);
+    const hero = playedHero(this.ctx, character, rules);
     this.state = newGameState(character, null, rules);
+    // BUG-10: a hero Toggle heroes swaps starts at the swapped design's power.
+    this.state.powerState = defaultPower(hero);
+    this.state.hp = startHp(hero);
     if (!classic) this.state.lives = 99;
     else this.classicStartLives();
     this.survivalWithoutSelect(classic, character);
@@ -1948,7 +1954,7 @@ export class Game {
 
   /**
    * Classic mode (title > CLASSIC): a new game of `levelId` (SMB 1-1, or the Lost Levels' 1-1)
-   * with no campaign file, playing settings.classicRules. The original's flow from there:
+   * with no campaign file, playing Classic rules (classicRules). The original's flow from there:
    * character select before every new level (each clear: levelExitTo), after every death and
    * continue, warps through character select, and after SMB 8-4 the ending, the credits and the
    * Lost Levels.
@@ -2117,12 +2123,14 @@ export class Game {
   }
 
   /**
-   * The rules a Classic mode run plays: Options' Classic rules ('classic' without settings). O-12:
-   * that row is developer mode's only; outside it a Classic run always plays Classic rules (a
-   * saved 'current' is ignored, never rewritten). Every read of the setting goes through here.
+   * The rules a Classic mode run plays (the menu flow, Continue, its guides and options). Every
+   * read of the old setting went through here, so this is the one place it is ignored.
    */
   get classicRules(): Rules {
-    return this.devMode ? (this.deps.settings?.classicRules ?? 'classic') : 'classic';
+    // BUG-11: always Classic rules. The old Rules row is gone; a saved settings.classicRules is
+    // ignored and never rewritten. Dev > Toggle heroes' Plays as gives one hero its Campaign
+    // design instead (heroSwaps); the dev START page's Rules row still starts a Campaign-rules run.
+    return 'classic';
   }
 
   private startRun(
@@ -2250,6 +2258,10 @@ export class Game {
     // A run the Level Select cheat took to another set writes that set's slot from here on; the
     // set it left keeps its save as its last WORLD card wrote it (release review of #191).
     this.resumeSet = resumeSetOf(levelId);
+    // Item 8: the run's continues go with its set's slot, so another set's NEW GAME (which
+    // resets the count) does not lose them for this run.
+    const used = this.deps.settings?.classicCheats.continuesUsed;
+    if (used !== undefined) r.continues = used;
     saveClassicResume(continued ? { ...r, continued: true } : r);
   }
 
@@ -2314,6 +2326,12 @@ export class Game {
         changed = true;
       }
       if (changed) this.deps.applySettings?.();
+      // Item 8: the run's own continues (Infinite Lives' goal) come back with it, before the
+      // select counts a game over's continue. A slot from before it keeps the current count.
+      if (r.continues !== undefined && settings.classicCheats.continuesUsed !== r.continues) {
+        settings.classicCheats.continuesUsed = r.continues;
+        saveSettings(settings);
+      }
     }
     this.tutorialRun = null;
     this.campaign = null;
@@ -2868,7 +2886,7 @@ export class Game {
     const rules = this.liveRules;
     const fresh = (c: CharacterDef, kit: Record<string, number>): HeroPower => {
       if (this.campaign) return heroStart(c);
-      const d = heroFor(c, rules); // the def played under the run's rules (TG-17a)
+      const d = playedHero(this.ctx, c, rules); // the def played under the run's rules (TG-17a)
       return { powerState: defaultPower(d), hp: startHp(d), kit: keptKit(d, kit) };
     };
     const p1 = fresh(s.character, s.kit);
@@ -2929,7 +2947,7 @@ export class Game {
       return;
     }
     // The default of the def played under the run's rules (TG-17a).
-    const d = heroFor(c, this.liveRules);
+    const d = playedHero(this.ctx, c, this.liveRules);
     if (this.keepsHeroKits && player === 0) {
       // BUG-06: the hero left is put away as he is; `c` comes back as he was left.
       const old = s.character;
