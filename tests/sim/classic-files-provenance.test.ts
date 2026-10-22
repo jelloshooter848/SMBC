@@ -179,7 +179,8 @@ describe('provenance: the copy that carries it', () => {
     expect(oldRunsWaiting('smb')).toBe(1);
   });
 
-  it('erasing the copied file drops its provenance: the kept old key moves in again', () => {
+  it('erasing the copied file retires the kept old key: it never moves in again (v0.4.74 item 65)', () => {
+    // Before v0.4.74 the erased game came back here (owner item 65 changed this on purpose).
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const oldKey = classicResumeKey('smb');
     put(oldKey, { ...run({ score: 77 }), savedAt: 9 });
@@ -187,9 +188,9 @@ describe('provenance: the copy that carries it', () => {
     migrateClassicFiles(shared());
     expect(loadClassicFile(ref(1))?.run.score).toBe(77);
     eraseClassicFile(ref(1));
-    expect(oldRunsWaiting('smb')).toBe(1); // nothing holds it now
+    expect(oldRunsWaiting('smb')).toBe(0);
     migrateClassicFiles(shared());
-    expect(loadClassicFile(ref(1))?.run.score).toBe(77);
+    expect(loadClassicFile(ref(1))).toBeNull();
   });
 
   it('a damaged fromOld in a file is ignored', () => {
