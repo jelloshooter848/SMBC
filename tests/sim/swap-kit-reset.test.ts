@@ -7,7 +7,7 @@ import { LINK } from '@game/characters/link';
 import { MARIO } from '@game/characters/mario';
 import { reconcileRules } from '@game/rules/reconcile';
 import { LevelScene } from '@game/scenes/level';
-import { loadClassicFile, type ClassicFileRef } from '@game/original-files';
+import { eraseClassicFile, loadClassicFile, type ClassicFileRef } from '@game/original-files';
 import { loadSave, newSave, saveFromState, stateFromSave, writeSave } from '@game/save/save-files';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
@@ -118,6 +118,8 @@ describe('item 25: a Plays as kit is reset once dev mode is off', () => {
   it('no swap: nothing is marked and nothing is reset (dev on or off)', () => {
     for (const dev of [true, false]) {
       const h = game(dev);
+      // 31e: a new game starts only in an empty file (ERASE FILE first, as a player does).
+      eraseClassicFile(F1);
       h.game.classicGame(MARIO, '1-1', { ref: F1 });
       level(h);
       h.game.state.kit = { x: 1 };

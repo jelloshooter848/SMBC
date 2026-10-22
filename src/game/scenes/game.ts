@@ -2009,6 +2009,9 @@ export class Game {
     levelId = '1-1',
     file?: { ref: ClassicFileRef; rules?: ClassicFileRules },
   ): void {
+    // 31e: an empty file only, as startClassicFile: a used or unreadable one is emptied only
+    // through ERASE FILE, never started over.
+    if (file && this.classicFileState(file.ref) !== 'empty') return;
     this.pendingLevel = null;
     if (file) {
       this.classicFile = { set: file.ref.set, slot: file.ref.slot };
@@ -2367,7 +2370,12 @@ export class Game {
 
   /** The map set the Classic run's file belongs to, for the CLASSIC menu's focus on leaving it. */
   get runSet(): MapSetId | undefined {
-    return this.classicFile?.set;
+    if (this.classicFile) return this.classicFile.set;
+    // 36a: a run with no file (a practice run from the menus' Level Select): the set of the level
+    // it is playing (its main level's, for a sub-area), else of the level its select was for.
+    const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const id = scene ? (scene.level.parent ?? scene.level.id) : this.selectLevel;
+    return id ? mapSetOf(id).id : undefined;
   }
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
@@ -2401,12 +2409,14 @@ export class Game {
   }
 
   /**
-   * B-L: whether file `ref` is empty, used (and plays), or kept but unreadable (broken, or its
-   * hero or level gone): an unreadable file is never treated as empty, so a new game never
-   * overwrites it; ERASE FILE empties it.
+   * B-L: whether file `ref` is empty, used (and plays), unplayable (31d: it reads, but its hero
+   * or level is not there now: classicFileProblem says which) or kept but unreadable (broken).
+   * Only an empty file is ever treated as empty, so a new game never overwrites the others;
+   * ERASE FILE empties them.
    */
-  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unreadable' {
+  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unplayable' | 'unreadable' {
     if (this.classicFileAt(ref)) return 'used';
+    if (loadClassicFile(ref)) return 'unplayable';
     return hasClassicFile(ref) ? 'unreadable' : 'empty';
   }
 
@@ -2417,15 +2427,32 @@ export class Game {
     return f && this.playable(f) ? f : null;
   }
 
-  /** A file's run still plays: its hero is offered and its level loads. */
-  private playable(f: ClassicFile): boolean {
+  /**
+   * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
+   * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
+   * ('level'). Null when it plays, or when there is no readable file there.
+   */
+  classicFileProblem(ref: ClassicFileRef): 'hero-off' | 'hero' | 'level' | null {
+    this.migrateClassicFiles();
+    const f = loadClassicFile(ref);
+    return f ? this.fileProblem(f) : null;
+  }
+
+  private fileProblem(f: ClassicFile): 'hero-off' | 'hero' | 'level' | null {
     const r = f.run;
     try {
       this.deps.getLevel(r.levelId);
     } catch {
-      return false;
+      return 'level';
     }
-    return this.rosterFor(this.resumeRules(r)).some((c) => c.id === r.hero);
+    if (this.rosterFor(this.resumeRules(r)).some((c) => c.id === r.hero)) return null;
+    const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
+    return off ? 'hero-off' : 'hero';
+  }
+
+  /** A file's run still plays: its hero is offered and its level loads. */
+  private playable(f: ClassicFile): boolean {
+    return this.fileProblem(f) === null;
   }
 
   /**
@@ -2482,9 +2509,9 @@ export class Game {
     this.classicKits = {};
     // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
     // at his own default, not with the saved hero's power and kit.
-    const swapped = this.slotOf(played) !== this.slotOf(hero);
+    const unoffered = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
-      if (!swapped) {
+      if (!unoffered) {
         s.powerState = r.powerState;
         s.hp = r.hp;
         s.kit = { ...r.kit };

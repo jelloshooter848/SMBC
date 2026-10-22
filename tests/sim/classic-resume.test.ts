@@ -151,12 +151,12 @@ describe('G-008 the Classic save file', () => {
     expect(slots()).toEqual(before);
   });
 
-  it('a broken old slot is ignored (and migrates to nothing)', () => {
+  it('a broken old slot is ignored (it migrates to nothing, and is kept: 31c)', () => {
     store.set(CLASSIC_RESUME_KEY, '{"v":1,"levelId":"1-1"}');
     const h = classic();
     h.game.showClassicMenu();
     expect(h.game.classicFiles('smb')).toEqual([null, null, null]);
-    expect(store.has(CLASSIC_RESUME_KEY)).toBe(false);
+    expect(store.get(CLASSIC_RESUME_KEY)).toBe('{"v":1,"levelId":"1-1"}');
     expect(labels(h.top())).not.toContain('Continue');
   });
 });

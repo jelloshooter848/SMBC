@@ -1,4 +1,4 @@
-import { MenuScene, type MenuItem } from './menu';
+import { MenuScene, backToMenu, type MenuItem } from './menu';
 import { AssistOptionsScene, OptionsScene } from './options';
 import { confirmQuitRun } from './quit-run';
 import { DevMenuScene } from './dev';
@@ -202,7 +202,7 @@ export class PauseScene extends MenuScene {
     if (this.showAssists)
       items.push({
         label: 'Assists',
-        select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
+        select: () => game.scenes.push(new AssistOptionsScene(game, () => backToMenu(game))),
       });
     return items;
   }

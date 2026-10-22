@@ -1,4 +1,4 @@
-import { defaultPower, type Rules } from '../context';
+import { defaultPower, type GameState, type Rules } from '../context';
 import { startHp, type CharacterDef } from '../characters/character';
 import { CLASSIC_EXTRAS, heroFor, playedHero } from '../characters/registry';
 import type { Game } from '../scenes/game';
@@ -20,19 +20,29 @@ export function reconcileRules(game: Game, rules: Rules): void {
     const d = playedHero(game.ctx, c, rules);
     return { powerState: defaultPower(d), hp: startHp(d) };
   };
+  // 36b: only the kit gained while swapped goes: the real design's kit the hero carried into a
+  // swap begun in this run (swapKit, his own) comes back.
+  const carried = (c: CharacterDef, k: GameState['swapKit']) => (k && k.hero === c.id ? { ...k.kit } : {});
   if (s.swapped && !swapped(s.character)) {
     ({ powerState: s.powerState, hp: s.hp } = real(s.character));
-    s.kit = {};
+    s.kit = carried(s.character, s.swapKit);
     game.deps.announcer?.say('Hero design changed. Power reset.');
   }
   if (s.character2 && s.swapped2 && !swapped(s.character2)) {
     ({ powerState: s.powerState2, hp: s.hp2 } = real(s.character2));
-    s.kit2 = {};
+    s.kit2 = carried(s.character2, s.swapKit2);
   }
-  if (swapped(s.character)) s.swapped = true;
-  else delete s.swapped;
-  if (s.character2 && swapped(s.character2)) s.swapped2 = true;
-  else delete s.swapped2;
+  // A swap beginning now: the kit the hero carries into it is kept aside (36b).
+  if (swapped(s.character)) {
+    if (!s.swapped) s.swapKit = { hero: s.character.id, kit: { ...s.kit } };
+    s.swapped = true;
+  } else delete s.swapped;
+  if (s.character2 && swapped(s.character2)) {
+    if (!s.swapped2) s.swapKit2 = { hero: s.character2.id, kit: { ...s.kit2 } };
+    s.swapped2 = true;
+  } else delete s.swapped2;
+  if (!s.swapped || s.swapKit?.hero !== s.character.id) delete s.swapKit;
+  if (!s.swapped2 || s.swapKit2?.hero !== s.character2?.id) delete s.swapKit2;
   if ((s.rules ?? 'current') !== rules) {
     const reset = (c: CharacterDef) => {
       const d = playedHero(game.ctx, c, rules);

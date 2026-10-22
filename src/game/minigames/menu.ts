@@ -1,5 +1,5 @@
 import type { Game } from '../scenes/game';
-import { MenuScene, type MenuItem } from '../scenes/menu';
+import { MenuScene, backToMenu, type MenuItem } from '../scenes/menu';
 import { AssistOptionsScene } from '../scenes/options';
 
 /*
@@ -17,7 +17,7 @@ export function miniGameDevItems(game: Game): MenuItem[] {
   return [
     {
       label: 'Assists',
-      select: () => game.scenes.push(new AssistOptionsScene(game, () => game.scenes.pop())),
+      select: () => game.scenes.push(new AssistOptionsScene(game, () => backToMenu(game))),
       hint: 'Dev mode: no damage, infinite lives and the rest',
     },
   ];

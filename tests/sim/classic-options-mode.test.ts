@@ -9,7 +9,7 @@ import { IntroScene } from '@game/scenes/intro';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { ClassicFileRulesScene, filesBoxFor } from '@game/scenes/original-files-menu';
-import { originalFileRules } from '@game/original-files';
+import { eraseClassicFile, originalFileRules } from '@game/original-files';
 import { ClassicMenuScene } from '@game/scenes/original-game';
 import { TitleScene } from '@game/scenes/title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
@@ -277,6 +277,8 @@ describe('review fixes', () => {
       const h = classic();
       const rules = originalFileRules();
       Object.assign(rules.options, over);
+      // 31e: a new game starts only in an empty file (ERASE FILE first, as a player does).
+      eraseClassicFile({ set: 'smb', slot: 1 });
       h.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 1 }, rules });
       h.game.showClassicMenu();
       h.game.scenes.push(filesBoxFor(h.game, 'smb'));
