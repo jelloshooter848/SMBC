@@ -278,7 +278,9 @@ export class ClassicFilesScene extends ClassicBox {
 
   /** Per file: anything stored there (used, or unreadable), so ERASE FILE can empty it. */
   get inUse(): boolean[] {
-    return CLASSIC_FILE_SLOTS.map((slot) => this.game.classicFileState({ set: this.set.id, slot }) !== 'empty');
+    return CLASSIC_FILE_SLOTS.map(
+      (slot) => this.game.classicFileState({ set: this.set.id, slot }) !== 'empty',
+    );
   }
 
   private erase(): void {

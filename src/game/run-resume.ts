@@ -193,7 +193,8 @@ export function parseResume(raw: unknown): ClassicResume | null {
   if (r.rules !== 'classic' && r.rules !== 'current') return null;
   // A Survival run may go on with no lives left (they only revive heroes): 0 reads there.
   const minLives = r.survival ? 0 : 1;
-  if (![r.score, r.coins, r.lives, r.world, r.stage, r.hp].every(num) || (r.lives ?? 0) < minLives) return null;
+  if (![r.score, r.coins, r.lives, r.world, r.stage, r.hp].every(num) || (r.lives ?? 0) < minLives)
+    return null;
   if (typeof r.powerState !== 'string') return null;
   const kit = readKit(r.kit);
   const heroKits = readHeroKits(r.heroKits);
