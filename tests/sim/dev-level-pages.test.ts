@@ -96,6 +96,8 @@ describe('O-05: the dev Level select as pages', () => {
       'Hero',
       'Look',
       'Power',
+      // 0.4.72 (owner item 6): None / Yoshi.
+      'Mount',
       'Map difficulty',
       'Rules',
       'Kit',

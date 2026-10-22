@@ -264,6 +264,13 @@ export class Game {
    */
   private devFreePlay = false;
   /**
+   * 0.4.72 (owner item 6): the dev START page's Mount for this start: 'ride' starts every area
+   * riding Yoshi (the mount on, as the Dev menu's Ride); 'none' starts without him (a Ride toggle
+   * plays as On); null: no START page start (the toggle and `&yoshi=` decide). Cleared with
+   * devFreePlay.
+   */
+  private devYoshi: 'ride' | 'none' | null = null;
+  /**
    * B-L: the save file this Classic run belongs to (its set and slot): every WORLD card and a
    * game over's continue point write it, the credits empty it. Null for a practice run (the
    * menus' Level Select), a developer run and a link run, which never write a file.
@@ -932,9 +939,10 @@ export class Game {
   /** The Classic Yoshi mount in force now (GameContext.classicYoshi): undefined when off. */
   get yoshiMount(): 'on' | 'ride' | undefined {
     if (this.liveRules !== 'classic' || !this.devMode) return undefined;
-    if (this.yoshiUrl) return this.yoshiUrl;
+    if (this.devYoshi === 'ride') return 'ride';
     const t = this.classicToggles;
-    return t.yoshiMount ? (t.yoshiRide ? 'ride' : 'on') : undefined;
+    const base = this.yoshiUrl ?? (t.yoshiMount ? (t.yoshiRide ? 'ride' : 'on') : undefined);
+    return this.devYoshi === 'none' && base === 'ride' ? 'on' : base;
   }
 
   /**
@@ -1927,7 +1935,7 @@ export class Game {
     power: string,
     fullKit = false,
     seed?: number,
-    opts: { rules?: Rules; classic?: boolean; difficulty?: MapDifficulty } = {},
+    opts: { rules?: Rules; classic?: boolean; difficulty?: MapDifficulty; mount?: 'none' | 'yoshi' } = {},
   ): void {
     const classic = opts.classic === true;
     // A Classic run has none of the campaign's rooms: the village and the stage tutorials (1-0)
@@ -1940,6 +1948,8 @@ export class Game {
     this.classicDev = classic;
     this.linkRun = false;
     this.devFreePlay = !classic;
+    // 0.4.72 (owner item 6): the START page's Mount row; null leaves the Dev menu's toggle alone.
+    this.devYoshi = opts.mount === 'yoshi' ? 'ride' : opts.mount === 'none' ? 'none' : null;
     // B-L: a dev start has no file and reads the old shared options.
     this.classicFile = null;
     this.runFileRules = null;
@@ -2279,6 +2289,7 @@ export class Game {
     this.classicDev = classic && dev;
     this.linkRun = classic && link;
     this.devFreePlay = false;
+    this.devYoshi = null;
     // BUG-06: a new game resets every hero (StatManager.startNewGameHandler → resetAllStats).
     this.classicKits = {};
     // A hero that was its own slot before (a save or a link naming a skin): its slot keeps that look;
@@ -2338,6 +2349,7 @@ export class Game {
     this.classicDev = false;
     this.linkRun = false;
     this.devFreePlay = false;
+    this.devYoshi = null;
     this.survival = null;
     this.sayFirst = null;
     this.classicKits = {};
@@ -2549,6 +2561,7 @@ export class Game {
     this.classicDev = false;
     this.linkRun = false;
     this.devFreePlay = false;
+    this.devYoshi = null;
     this.pickedRandom = false;
     this.pickRng = new Rng(this.deps.freshSeeds === true ? freshSeed() : RANDOM_PICK_SEED);
     // A look plays on as that look, remembered as its slot's (Peach as Luigi's look, #179).
