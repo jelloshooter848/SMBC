@@ -1,4 +1,4 @@
-import { hasKey, keyAbsent, loadJson, removeKey, saveJson } from '@engine/save/storage';
+import { hasKey, keyAbsent, loadJson, removeKey, saveJson, storageReadable } from '@engine/save/storage';
 import { MAP_SET_IDS, type MapSetId } from '@engine/save/progress';
 import {
   defaultClassicSettings,
@@ -184,6 +184,9 @@ export function saveClassicFile(
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
+  // v0.4.74 (item 69): storage that cannot be read hides what is there (a CLEARED file too):
+  // nothing is written over a file that cannot be seen.
+  if (!storageReadable()) return false;
   const now = loadJson<unknown>(classicFileKey(f));
   // v0.4.73 (47A): a CLEARED file (or a later version's) is never written again, by any run,
   // any tab: a stale tab's WORLD card, Tutorials list or continue point leaves it as it is.
@@ -230,6 +233,12 @@ export interface ClearedFile {
   /** When the set was beaten (Date.now()). */
   savedAt: number;
   fromOld?: OldSaveMark;
+  /**
+   * v0.4.74 (item 60): beaten on Hard, so ADVANCED CHEATS are unlocked on this file (written
+   * with the clear, the file's only write). A Hard CLEARED file from before it reads as
+   * unlocked too (advanced-cheats.ts advancedUnlocked).
+   */
+  advancedCheats?: true;
 }
 
 /** File `ref` when it is CLEARED and reads, else null (empty, a run, or broken). */
@@ -252,6 +261,7 @@ export function loadClearedFile(ref: ClassicFileRef): ClearedFile | null {
     run,
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
     ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
+    ...(f.advancedCheats === true ? { advancedCheats: true as const } : {}),
   };
 }
 
@@ -261,11 +271,12 @@ export function loadClearedFile(ref: ClassicFileRef): ClearedFile | null {
  * already (or a later version's): the first clear stays as it was.
  */
 export function saveClearedFile(
-  f: Omit<ClearedFile, 'savedAt' | 'v' | 'cleared' | 'tutorialsSeen'> & {
+  f: Omit<ClearedFile, 'savedAt' | 'v' | 'cleared' | 'tutorialsSeen' | 'advancedCheats'> & {
     savedAt?: number;
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
+  if (!storageReadable()) return false;
   const now = loadJson<unknown>(classicFileKey(f));
   if (keptForGood(now)) return false;
   const fromOld = f.fromOld ?? storedMark(now);
@@ -280,6 +291,8 @@ export function saveClearedFile(
     run: { ...f.run },
     savedAt: f.savedAt ?? Date.now(),
     ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
+    // v0.4.74 (item 60): beaten on Hard: ADVANCED CHEATS on this file.
+    ...(f.rules.difficulty === 'hard' ? { advancedCheats: true as const } : {}),
   };
   delete out.run.difficulty;
   delete out.run.gameMode;
@@ -311,9 +324,62 @@ export function classicFileGone(ref: ClassicFileRef): boolean {
   return keyAbsent(classicFileKey(ref));
 }
 
-/** ERASE FILE: file `ref` is empty again. */
+/**
+ * v0.4.74 (item 60): where file `ref`'s ADVANCED CHEATS live (their values and whether their box
+ * was read), beside the file: a CLEARED file is never written again (advanced-cheats.ts).
+ */
+export function advancedCheatsKey(ref: ClassicFileRef): string {
+  return `smbc-classic-advanced-${ref.set}-${ref.slot}`;
+}
+
+/** A stored file's fingerprint (its whole stored text): a CLEARED file's, which never changes. */
+export function fileFingerprint(raw: unknown): string {
+  return fingerprint(JSON.stringify(raw) ?? '');
+}
+
+/**
+ * ERASE FILE (and a run ending): file `ref` is empty again, with what is kept beside it (its
+ * ADVANCED CHEATS). v0.4.74 (item 65): the old save it was copied from, when that key is still
+ * there with the very text it was copied from (its removal was refused then), is retired first,
+ * so the erased game never migrates back in.
+ */
 export function eraseClassicFile(ref: ClassicFileRef): void {
+  const mark = storedMark(loadJson<unknown>(classicFileKey(ref)));
+  if (mark) retireOldKey(mark);
   removeKey(classicFileKey(ref));
+  removeKey(advancedCheatsKey(ref));
+}
+
+/** The old Classic slots (the only keys a file's fromOld may name; never anything else). */
+function isOldSlotKey(key: string): boolean {
+  return key === CLASSIC_RESUME_KEY || MAP_SET_IDS.some((set) => classicResumeKey(set) === key);
+}
+
+/** Where a retired old key's text is kept when the key itself cannot be deleted (item 65). */
+function retiredKey(key: string): string {
+  return `${key}-erased`;
+}
+
+/**
+ * v0.4.74 (item 65): old key `mark.key`, holding the text `mark` was copied from, goes: deleted,
+ * or when the delete is refused, renamed (its text copied to `<key>-erased`, which marks it as
+ * retired: migration then only retries the delete). A key with other text (a new save an older
+ * version wrote there since) is a different game, and stays.
+ */
+function retireOldKey(mark: OldSaveMark): void {
+  if (!isOldSlotKey(mark.key)) return;
+  const raw = loadJson<unknown>(mark.key);
+  const now = markOf(mark.key, raw);
+  if (!now || now.fp !== mark.fp) return;
+  removeKey(mark.key);
+  if (keyAbsent(mark.key)) return;
+  saveJson(retiredKey(mark.key), raw);
+}
+
+/** Item 65: old key `key` (stored text `raw`) was retired by an erase (its copy under -erased). */
+function isRetired(key: string, raw: unknown): boolean {
+  const copy = loadJson<unknown>(retiredKey(key));
+  return copy !== null && fileFingerprint(copy) === fileFingerprint(raw);
 }
 
 /** Map set `set`'s three files, in slot order (null: empty). */
@@ -356,6 +422,12 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
   const take = (key: string, set: MapSetId | null) => {
     if (!hasKey(key)) return;
     const raw = loadJson<unknown>(key);
+    // v0.4.74 (item 65): erased already (its delete was refused then): only the delete is retried.
+    if (isRetired(key, raw)) {
+      removeKey(key);
+      if (keyAbsent(key)) removeKey(retiredKey(key));
+      return;
+    }
     const r = parseResume(raw);
     // 31c: an old key that does not read as a run (damaged, or a newer build's) is kept as it is.
     if (!r) return noteOnce(key, raw, `Classic files: ${key} cannot be read; it is kept`);
@@ -410,14 +482,19 @@ export function oldRunsWaiting(set: MapSetId): number {
   if (hasKey(CLASSIC_RESUME_KEY)) {
     const raw = loadJson<unknown>(CLASSIC_RESUME_KEY);
     const r = parseResume(raw);
-    if (r && resumeSetOf(r.levelId) === set && !markedIn(set, markOf(CLASSIC_RESUME_KEY, raw) as OldSaveMark))
+    if (
+      r &&
+      resumeSetOf(r.levelId) === set &&
+      !isRetired(CLASSIC_RESUME_KEY, raw) &&
+      !markedIn(set, markOf(CLASSIC_RESUME_KEY, raw) as OldSaveMark)
+    )
       n++;
   }
   const key = classicResumeKey(set);
   if (hasKey(key)) {
     const raw = loadJson<unknown>(key);
     const r = parseResume(raw);
-    if (r && !markedIn(set, markOf(key, raw) as OldSaveMark)) n++;
+    if (r && !isRetired(key, raw) && !markedIn(set, markOf(key, raw) as OldSaveMark)) n++;
   }
   return n;
 }

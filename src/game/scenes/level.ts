@@ -315,6 +315,8 @@ export class LevelScene implements Scene {
     // So does a pickup's first explainer (0.4.46, tutorial/explainers.ts).
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
+    // v0.4.74 (item 66): dev mode turned off mid-run with an unreleased hero: that life ends.
+    if (this.game.classicRun) this.game.endUnreleasedLife(this.world);
     this.world.update(inputs);
     this.bossMusicCheck();
     if (this.afterFirstUpdate) {

@@ -6,13 +6,9 @@ import { advancedCheatsKey } from '@game/advanced-cheats';
 import type { MenuItem } from '@game/scenes/menu';
 import { AssistOptionsScene } from '@game/scenes/options';
 import { PauseScene } from '@game/scenes/pause';
-import { LevelScene } from '@game/scenes/level';
+import type { LevelScene } from '@game/scenes/level';
 import { ClassicFilesScene } from '@game/scenes/original-files-menu';
-import {
-  ClassicNoteScene,
-  ClassicReplayWorldsScene,
-  REPLAY_HELP_KEY,
-} from '@game/scenes/original-replay';
+import { ClassicNoteScene, ClassicReplayWorldsScene, REPLAY_HELP_KEY } from '@game/scenes/original-replay';
 import { AdvancedCheatsScene } from '@game/scenes/advanced-cheats-menu';
 import { draw, makeGame, store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';
@@ -160,7 +156,9 @@ describe('60 (c): the ADVANCED CHEATS row', () => {
     // The dev Assists are not touched.
     expect(h.settings.assist.invulnerable).toBe(false);
     // Drawn as a Classic box (its rows and the BACK line), over the CLASSIC title.
-    const text = draw(page).texts.map((t) => t.str).join(' ');
+    const text = draw(page)
+      .texts.map((t) => t.str)
+      .join(' ');
     expect(text).toMatch(/ADVANCED CHEATS/);
     expect(text).toMatch(/NO DAMAGE/);
     h.idle(8);

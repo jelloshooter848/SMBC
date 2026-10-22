@@ -12,7 +12,9 @@ import {
 } from '@game/original-files';
 import { advancedCheatsKey, advancedUnlocked, ADVANCED_OFF } from '@game/advanced-cheats';
 import { REPLAY_HELP_KEY } from '@game/scenes/original-replay';
+import { LevelScene } from '@game/scenes/level';
 import { makeGame, store, useStorage } from './heroes-harness';
+import { pickAtContinue } from './continue-select';
 import { keepCleared, run } from './cleared-nav';
 
 // v0.4.74 item 60 (owner-approved; rule 33a: the save cases were written before the code).
@@ -237,9 +239,8 @@ describe('60 (c): it applies only to runs of that file', () => {
   function replayOf(h: ReturnType<typeof game>, ref: ClassicFileRef) {
     h.game.replaySelect(ref, 1, 1, '1-1');
     // The hero select: Mario.
-    h.idle(20);
-    h.tap('jump');
-    h.until(() => (h.top() as { world?: unknown }).world !== undefined, 900);
+    pickAtContinue(h);
+    h.until(() => h.top() instanceof LevelScene, 900);
   }
 
   it('a replay of the file: its values are the live assists; leaving it: all off again', () => {

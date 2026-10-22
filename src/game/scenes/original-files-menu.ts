@@ -1,6 +1,8 @@
 import type { InputFrame } from '@engine/input/input-manager';
 import type { Renderer } from '@engine/gfx/renderer';
 import type { MapSetId } from '@engine/save/progress';
+import { storageReadable } from '@engine/save/storage';
+import type { DevLock } from '../dev-lock';
 import { MAP_DIFFICULTIES, type MapDifficulty } from '@engine/save/settings';
 import { defaultClassicSettings, isOriginalClassic } from '@engine/save/original-options';
 import {
@@ -152,6 +154,8 @@ function problemRow(
   if (problem === 'not-released') {
     // 0.4.72: played in dev mode, or saved by v0.4.71 or earlier, by a hero players do not have
     // yet; never played as another.
+    // v0.4.74 (item 68): a release build cannot turn dev mode on: it says only what is so.
+    if (game.devLock.mode !== 'open') return { value: 'NOT RELEASED', why: RELEASE_NOT_RELEASED };
     const name = fileHeroName(game, f);
     return {
       value: 'NOT RELEASED',
@@ -183,8 +187,28 @@ export const PROBLEM_LINE: Record<FileProblem, string> = {
   'not-released': 'HERO IS NOT RELEASED YET',
 };
 
+/** v0.4.74 (item 68): a NOT RELEASED file's reason on a release build, as read out. */
+const RELEASE_NOT_RELEASED = 'This hero is not in this version yet. The file is kept';
+
+/**
+ * v0.4.74 (item 68): a NOT RELEASED file's line under the box: a release build's (31 columns at
+ * most, no dev mode in it), or the dev build's as before.
+ */
+export function notReleasedLine(lock: DevLock): string {
+  return lock.mode === 'open' ? PROBLEM_LINE['not-released'] : 'NOT IN THIS VERSION. FILE KEPT';
+}
+
+/** The line under the box for a file that cannot play (42), by the build (68). */
+function problemLine(game: Game, problem: FileProblem): string {
+  return problem === 'not-released' ? notReleasedLine(game.devLock) : PROBLEM_LINE[problem];
+}
+
 /** 42: an old save waiting for a free file, shown under the box on the ERASE FILE row. */
 export const WAITING_LINE = 'A GAME IS WAITING FOR A FILE';
+
+/** v0.4.74 (item 69): storage cannot be read now, said and shown (at most 31 columns). */
+export const STORAGE_UNREADABLE = "Saves can't be read right now";
+export const UNREADABLE_STORAGE_LINE = "SAVES CAN'T BE READ RIGHT NOW";
 
 /** "File 2" */
 const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
@@ -298,6 +322,11 @@ export class ClassicFilesScene extends ClassicBox {
    * 39a, the erase was refused (storage).
    */
   private note: { slot: ClassicFileSlot; moved: boolean } | null = null;
+  /**
+   * v0.4.74 (item 69): storage cannot be read now (getItem throws): every file would read as
+   * empty, so none is shown as NEW GAME, and new games and erases are refused until it can.
+   */
+  private blocked = false;
 
   constructor(
     game: Game,
@@ -319,7 +348,14 @@ export class ClassicFilesScene extends ClassicBox {
     return CLASSIC_FILE_SLOTS[i];
   }
 
+  /** v0.4.74 (item 69): storage cannot be read now (the box refuses new games and erases). */
+  get storageBlocked(): boolean {
+    return this.blocked;
+  }
+
   protected override refresh(): void {
+    this.blocked = !storageReadable();
+    if (this.blocked) return this.refreshBlocked();
     const game = this.game;
     this.files = game.classicFiles(this.set.id);
     this.readable = CLASSIC_FILE_SLOTS.map((slot) => loadClassicFile({ set: this.set.id, slot }));
@@ -390,7 +426,46 @@ export class ClassicFilesScene extends ClassicBox {
     this.setItems(items);
   }
 
+  /** Item 69: the rows while storage cannot be read: each refuses, saying why. */
+  private refreshBlocked(): void {
+    const game = this.game;
+    this.files = [null, null, null];
+    this.readable = [null, null, null];
+    this.clearedFiles = [null, null, null];
+    this.problems = [null, null, null];
+    this.waiting = false;
+    const refuse = (what: string) => () => {
+      game.ctx.audio.sfx('bump');
+      game.deps.announcer?.say(`${STORAGE_UNREADABLE}. ${what}`);
+    };
+    const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot) => ({
+      label: fileName(slot),
+      value: () => "CAN'T READ",
+      select: refuse(`${fileName(slot)} is kept as it is. Try again later`),
+      hint: `${STORAGE_UNREADABLE}. ${fileName(slot)} is kept as it is`,
+    }));
+    items.push(
+      {
+        label: 'Erase file',
+        select: refuse('No file can be erased until they can'),
+        hint: `${STORAGE_UNREADABLE}. No file can be erased until they can`,
+      },
+      { label: 'Back', select: () => this.onBack?.(), hint: 'To the map sets' },
+    );
+    this.setItems(items);
+  }
+
+  /** Item 69: opened while storage cannot be read: the Classic box saying so, over this one. */
+  override enter(): void {
+    if (this.blocked) {
+      this.game.showStorageUnreadable(this);
+      return;
+    }
+    super.enter();
+  }
+
   protected override statusLine(): string {
+    if (this.blocked) return UNREADABLE_STORAGE_LINE;
     const slot = this.slotAt(this.index);
     if (slot && slot === this.note?.slot)
       return this.note.moved
@@ -399,7 +474,7 @@ export class ClassicFilesScene extends ClassicBox {
     // 42: what is only said is shown too: an old save waiting (on ERASE FILE), why a file cannot play.
     if (!slot) return this.items[this.index]?.label === 'Erase file' && this.waiting ? WAITING_LINE : '';
     const problem = this.problems[slot - 1];
-    if (problem) return PROBLEM_LINE[problem];
+    if (problem) return problemLine(this.game, problem);
     const f = this.readable[slot - 1] ?? this.clearedFiles[slot - 1];
     return f ? fileDetailLine(this.game, f) : '';
   }
@@ -442,6 +517,7 @@ export class ClassicFilesScene extends ClassicBox {
   }
 
   private erase(): void {
+    if (this.blocked) return;
     if (!this.inUse.some(Boolean)) {
       this.game.ctx.audio.sfx('bump');
       this.game.deps.announcer?.say('Every file is empty.');
@@ -466,6 +542,14 @@ export class ClassicFilesScene extends ClassicBox {
    * told as an old save moving in.
    */
   eraseFile(slot: ClassicFileSlot): void {
+    // Item 69: what cannot be read is never erased (a refusal, said as one).
+    if (!storageReadable()) {
+      closeTo(this.game, this);
+      this.refresh();
+      this.game.ctx.audio.sfx('bump');
+      this.game.deps.announcer?.say(`${STORAGE_UNREADABLE}. ${fileName(slot)} is kept as it is.`);
+      return;
+    }
     const ref: ClassicFileRef = { set: this.set.id, slot };
     eraseClassicFile(ref);
     // #205: storage that cannot be read confirms nothing: that is a failed erase too.
@@ -726,7 +810,7 @@ export class ClassicEraseConfirmScene extends ClassicBox {
     // 44: why the file cannot play, said and shown (under the box).
     const why = file && problem ? problemRow(game, file, problem).why : '';
     const cannot = why ? `. It cannot play now: ${why.charAt(0).toLowerCase()}${why.slice(1)}` : '';
-    this.status = problem ? PROBLEM_LINE[problem] : '';
+    this.status = problem ? problemLine(game, problem) : '';
     const what = cleared
       ? clearedSpoken(game, cleared)
       : file

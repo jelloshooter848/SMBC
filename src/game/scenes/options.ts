@@ -5,7 +5,7 @@ import { bindingClashes, describeCode, describePad } from '@engine/input/binding
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
-import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type Settings } from '@engine/save/settings';
+import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type AssistSettings, type Settings } from '@engine/save/settings';
 import { nextTouchMode } from '@engine/input/touch-logic';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
@@ -302,40 +302,48 @@ export class AssistOptionsScene extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSISTS', [], onBack);
     this.entryTitle = 'Assists';
-    const s = settings(game);
-    const a = s.assist;
-    const toggle = (label: string, key: keyof typeof a, hint?: string): MenuItem => ({
-      label,
-      value: () => onOff(Boolean(a[key])),
-      adjust: () => {
-        (a as unknown as Record<string, boolean>)[key] = !a[key];
-        apply(game);
-      },
-      ...(hint ? { hint } : {}),
-    });
     this.setItems([
-      toggle('Scroll back', 'allowLeftScroll', 'Camera can scroll left'),
-      toggle('Inf. lives', 'infiniteLives'),
-      toggle('Inf. time', 'infiniteTime'),
-      toggle('No damage', 'invulnerable'),
-      toggle('Fire keeps big', 'fireRevertsToBig', 'Losing fire power keeps you big'),
-      toggle('Safety floor', 'safetyFloor', 'Pits and lava catch you'),
-      // 0.4.72 (owner item 8).
-      toggle('Show hidden items', 'showHidden', 'Every block shows what it holds; hidden blocks appear'),
-      {
-        label: 'Coyote time',
-        value: () => `${a.coyoteFrames}f`,
-        adjust: (d) => void ((a.coyoteFrames = Math.max(0, Math.min(10, a.coyoteFrames + d))), apply(game)),
-        hint: 'Frames you can still jump after leaving a ledge',
-      },
-      {
-        label: 'Slow motion',
-        value: () => (a.slowMotion === 2 ? 'Half' : 'Off'),
-        adjust: () => void ((a.slowMotion = a.slowMotion === 2 ? 1 : 2), apply(game)),
-      },
+      ...assistItems(settings(game).assist, () => apply(game)),
       { label: 'Back', select: onBack },
     ]);
   }
+}
+
+/**
+ * The Assists rows over values `a` (`changed` after each change): the dev Assists page's, and
+ * v0.4.74's ADVANCED CHEATS page's (item 60: every dev Assist, as each plays here).
+ */
+export function assistItems(a: AssistSettings, changed: () => void): MenuItem[] {
+  const toggle = (label: string, key: keyof AssistSettings, hint?: string): MenuItem => ({
+    label,
+    value: () => onOff(Boolean(a[key])),
+    adjust: () => {
+      (a as unknown as Record<string, boolean>)[key] = !a[key];
+      changed();
+    },
+    ...(hint ? { hint } : {}),
+  });
+  return [
+    toggle('Scroll back', 'allowLeftScroll', 'Camera can scroll left'),
+    toggle('Inf. lives', 'infiniteLives'),
+    toggle('Inf. time', 'infiniteTime'),
+    toggle('No damage', 'invulnerable'),
+    toggle('Fire keeps big', 'fireRevertsToBig', 'Losing fire power keeps you big'),
+    toggle('Safety floor', 'safetyFloor', 'Pits and lava catch you'),
+    // 0.4.72 (owner item 8).
+    toggle('Show hidden items', 'showHidden', 'Every block shows what it holds; hidden blocks appear'),
+    {
+      label: 'Coyote time',
+      value: () => `${a.coyoteFrames}f`,
+      adjust: (d) => void ((a.coyoteFrames = Math.max(0, Math.min(10, a.coyoteFrames + d))), changed()),
+      hint: 'Frames you can still jump after leaving a ledge',
+    },
+    {
+      label: 'Slow motion',
+      value: () => (a.slowMotion === 2 ? 'Half' : 'Off'),
+      adjust: () => void ((a.slowMotion = a.slowMotion === 2 ? 1 : 2), changed()),
+    },
+  ];
 }
 
 class PacksOptions extends MenuScene {

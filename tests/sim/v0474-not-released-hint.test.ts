@@ -61,7 +61,7 @@ describe('68: release builds', () => {
       const box = openFiles(h);
       const row = items(box)[0]!;
       expect(row.value?.()).toBe('NOT RELEASED');
-      expect(row.hint).toContain(SAID);
+      expect(row.hint).toContain(SAID.replace(/\.$/, ''));
       expect(row.hint).not.toMatch(/dev mode/i);
       choose(h, 'File 1');
       expect(h.said.at(-1)).toContain('this hero is not in this version yet. The file is kept.');

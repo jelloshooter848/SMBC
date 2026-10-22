@@ -53,7 +53,8 @@ const shared = (): SharedClassicRules => ({
 });
 const ref = (slot: 1 | 2 | 3, set: ClassicFileRef['set'] = 'smb'): ClassicFileRef => ({ set, slot });
 const put = (key: string, v: unknown) => store.set(key, JSON.stringify(v));
-const ls = () => (globalThis as { localStorage: Record<string, (k: string, v?: string) => unknown> }).localStorage;
+const ls = () =>
+  (globalThis as { localStorage: Record<string, (k: string, v?: string) => unknown> }).localStorage;
 
 /** original-files.ts's fingerprint (FNV-1a, 32 bits, hex). */
 function fnv(text: string): string {

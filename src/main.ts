@@ -109,6 +109,8 @@ function boot(): void {
   const ctx = { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: false };
   const getLevel = (id: string) =>
     (id.startsWith('custom-') ? getCustomLevel(loadLibrary(), id) : null) ?? getBuiltinLevel(id);
+  // v0.4.74: applyAssists waits for the loop (made after the game).
+  let loopReady = false;
   const game = new Game({
     ctx,
     getLevel,
@@ -142,6 +144,7 @@ function boot(): void {
       applyUpdate: () => updates.apply(),
     },
     applySettings: () => applySettings(),
+    applyAssists: () => applyAssists(),
     // A resume link (#save=<code>) answered: off the address, so a reload doesn't ask again.
     clearSaveLink: () => history.replaceState(history.state, '', location.pathname + location.search),
     lastInput: () => touch.lastInput,
@@ -238,6 +241,19 @@ function boot(): void {
       }
     },
   });
+  loopReady = true;
+
+  /**
+   * Assists are developer tools: they only take effect while dev mode is on (values are kept),
+   * and, v0.4.74 (item 60), a file's Advanced cheats in its own runs (Game.liveAssists decides).
+   */
+  function applyAssists(): void {
+    // (The game may ask before the loop exists, while it is being made: applySettings follows.)
+    if (!loopReady) return;
+    const { slowMotion, ...assist } = game.liveAssists();
+    Object.assign(ctx.assist, assist);
+    loop.stepDivider = slowMotion;
+  }
 
   let packToken = 0;
   function applySettings(): void {
@@ -251,10 +267,7 @@ function boot(): void {
     touch.setMode(settings.input.touch);
     touch.setDpadStyle(settings.input.dpad);
     relayout();
-    // Assists are developer tools: they only take effect while dev mode is on (values are kept).
-    const { slowMotion, ...assist } = settings.assist;
-    Object.assign(ctx.assist, settings.dev ? assist : DEFAULT_ASSIST);
-    loop.stepDivider = settings.dev ? slowMotion : 1;
+    applyAssists();
     announcer.enabled = settings.announce;
     const token = ++packToken;
     void loadEnabledPacks(settings.packs, assets).then((packs) => {

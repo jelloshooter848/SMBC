@@ -12,7 +12,7 @@ import { makeGame, store, useStorage } from './heroes-harness';
 // a Classic run whose hero is an unreleased Expansion hero (Arthur), here in Single hero, where
 // the select is skipped after the first pick. The current life ends and the hero select opens,
 // as for any hero the select does not offer; the unreleased hero is not on it. The file stays
-// marked (devHero), so it waits for dev mode (NOT RELEASED) rather than playing as another.
+// marked (devHero): never dropped by a later write.
 
 useStorage();
 afterEach(() => store.clear());
@@ -49,8 +49,11 @@ describe('66: dev mode off mid-run with an unreleased hero', () => {
     h.until(() => inLevel(h), 900);
     expect(h.game.state.character.id).not.toBe('arthur');
     expect(loadClassicFile(F1)?.run.devHero).toBe(true);
+    // Its WORLD card wrote the run with the hero now playing, still marked (as 0.4.72's review
+    // case: a released hero took over, so the file plays with dev mode off).
+    expect(loadClassicFile(F1)?.run.hero).toBe(h.game.state.character.id);
     const off = makeGame({ deps: { settings: { ...defaultSettings() }, applySettings: () => {} } });
-    expect(off.game.classicFileProblem(F1)).toBe('not-released');
+    expect(off.game.classicFileProblem(F1)).toBeNull();
   });
 
   it('All heroes (the default): the same, the select without Arthur', () => {
