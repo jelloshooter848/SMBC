@@ -2401,12 +2401,14 @@ export class Game {
   }
 
   /**
-   * B-L: whether file `ref` is empty, used (and plays), or kept but unreadable (broken, or its
-   * hero or level gone): an unreadable file is never treated as empty, so a new game never
-   * overwrites it; ERASE FILE empties it.
+   * B-L: whether file `ref` is empty, used (and plays), unplayable (31d: it reads, but its hero
+   * or level is not there now: classicFileProblem says which) or kept but unreadable (broken).
+   * Only an empty file is ever treated as empty, so a new game never overwrites the others;
+   * ERASE FILE empties them.
    */
-  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unreadable' {
+  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unplayable' | 'unreadable' {
     if (this.classicFileAt(ref)) return 'used';
+    if (loadClassicFile(ref)) return 'unplayable';
     return hasClassicFile(ref) ? 'unreadable' : 'empty';
   }
 
@@ -2417,15 +2419,32 @@ export class Game {
     return f && this.playable(f) ? f : null;
   }
 
-  /** A file's run still plays: its hero is offered and its level loads. */
-  private playable(f: ClassicFile): boolean {
+  /**
+   * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
+   * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
+   * ('level'). Null when it plays, or when there is no readable file there.
+   */
+  classicFileProblem(ref: ClassicFileRef): 'hero-off' | 'hero' | 'level' | null {
+    this.migrateClassicFiles();
+    const f = loadClassicFile(ref);
+    return f ? this.fileProblem(f) : null;
+  }
+
+  private fileProblem(f: ClassicFile): 'hero-off' | 'hero' | 'level' | null {
     const r = f.run;
     try {
       this.deps.getLevel(r.levelId);
     } catch {
-      return false;
+      return 'level';
     }
-    return this.rosterFor(this.resumeRules(r)).some((c) => c.id === r.hero);
+    if (this.rosterFor(this.resumeRules(r)).some((c) => c.id === r.hero)) return null;
+    const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
+    return off ? 'hero-off' : 'hero';
+  }
+
+  /** A file's run still plays: its hero is offered and its level loads. */
+  private playable(f: ClassicFile): boolean {
+    return this.fileProblem(f) === null;
   }
 
   /**
