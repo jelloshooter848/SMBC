@@ -426,7 +426,12 @@ export class TitleScene extends MenuScene {
       if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
       this.game.ctx.audio.sfx('stamp');
     }
-    if (this.phase === 'rift' && t >= T.riftEnd) this.phase = 'ready';
+    if (this.phase === 'rift' && t >= T.riftEnd) {
+      this.phase = 'ready';
+      // 32b: the intro played out with no skip: "press any button to skip" is stale, so the
+      // menu's focused row is said, as after a skip.
+      this.announce();
+    }
     if (this.phase === 'drop' && t >= T.dropEnd) this.phase = 'ready';
     for (const a of this.actors) {
       if (a.walking && t >= a.start) {
