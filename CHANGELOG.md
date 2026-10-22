@@ -9,6 +9,41 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.4.71] - 2026-10-22
+
+### Changed
+
+- Release notes are now written as one small file per change in `changes/`, which a release
+  stamps into CHANGELOG.md (`pnpm changelog:stamp`, `pnpm changelog:preview`). CI fails a pull
+  request that adds lines under `## [Unreleased]` or a malformed change file.
+
+### Fixed
+
+- Classic mode save files: a game saved by an older version is no longer lost, and no longer
+  replaces a file, when its map set already has three files in use. It waits, and moves into the
+  next file that is freed. The set's ERASE FILE row and its "ERASE FILE N?" box say a game is
+  waiting, and once the file is erased the box says the old game has moved into it, which the
+  line under the box shows too.
+- Classic mode save files: a file whose hero is off in the Dev menu's Toggle heroes no longer
+  shows as UNREADABLE with "Erase it". It shows HERO OFF and says to turn that hero back on to
+  play it. A file whose hero or level is not in this version of the game shows CANNOT PLAY and
+  says why. ERASE FILE reads either one in full.
+- Classic mode save files: a game saved by an older version that cannot be read is no longer
+  deleted when the files load. It is kept as it is, and no file is made from it.
+- Classic mode save files: a game saved by an older version no longer replaces a file that
+  cannot be read (a damaged file, or one written by a newer version of the game), so that file
+  is kept for the version that can read it. The old game waits for a free file instead.
+- Screen reader: BACK from the dev Assists page (in the pause menu or a mini game's menu), and
+  BACK from the Dev menu to the title or the pause menu, now says the menu's focused row again.
+- Screen reader: when the title's intro plays to its end without a skip, the menu's focused row
+  is now said, so "Press any button to skip the intro" is no longer left as the last thing said.
+- Classic mode: quitting a practice run from the menus' Level Select, or MAIN MENU after its game
+  over, now lands on the CLASSIC menu with that level's map set focused, not always Super Mario
+  Bros.
+- Developer mode: turning a Toggle heroes "Plays as" swap on during a run and off again no longer
+  empties the hero's kit. He gets back the kit he had before the swap; only what he gained while
+  swapped goes.
+
 ## [0.4.70] - 2026-10-22
 
 ### Changed
@@ -1974,7 +2009,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.70...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.71...HEAD
+[0.4.71]: https://github.com/jelloshooter848/SMBC/compare/v0.4.70...v0.4.71
 [0.4.70]: https://github.com/jelloshooter848/SMBC/compare/v0.4.69...v0.4.70
 [0.4.69]: https://github.com/jelloshooter848/SMBC/compare/v0.4.68...v0.4.69
 [0.4.68]: https://github.com/jelloshooter848/SMBC/compare/v0.4.67...v0.4.68
