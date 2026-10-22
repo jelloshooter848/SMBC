@@ -18,8 +18,9 @@ under `## [Unreleased]`.
   again, and another look of the same hero shares them. A death resets only the hero who died. A
   new game or a continue resets everyone. The saved run keeps every hero's.
 - Classic mode: Mario, Luigi, their looks, Peach and Yoshi now bounce off a stomped enemy
-  exactly as Mario does in the campaign, higher while JUMP is held (BUG-07). Yoshi's ground pound
-  keeps its fixed bounce. This deliberately departs from the original, which bounces the same
+  exactly as Mario does in the campaign, reusing its held stomp bounce: higher while JUMP is held,
+  with no release latch, so pressing JUMP again while still rising holds again (BUG-07). Yoshi's
+  ground pound keeps its fixed bounce. This deliberately departs from the original, which bounces the same
   either way, by owner decision.
 - Classic mode: a saved run's power-ups are checked when it loads. A hero no select offers, or a
   power that hero cannot have, starts at that hero's default.
