@@ -23,6 +23,7 @@ under `## [Unreleased]`.
   open, and the page under them says its focused row again on the way back, as the boxes do.
 - Screen reader: skipping the REMIX title's intro says the focused menu row, so "Press any button
   to skip the intro" is no longer left as the last thing said.
+- Docs: the README says a checkout exactly at a release tag builds locked, even under `pnpm dev`.
 
 ## [0.4.69] - 2026-10-22
 
