@@ -21,6 +21,8 @@ under `## [Unreleased]`.
   with Wall Climb, is now as easy to hold as Up and a direction, with no firmer push. Jason on
   foot and every other hero keep the usual pad, whose down-diagonals still need a firmer push so
   running never crouches by accident.
+- Classic mode Tutorials: Sophia's Wall Climb box now says to hold down and the direction
+  toward the cliff to climb down it, which is what the tank needs (owner decision).
 
 ## [0.4.69] - 2026-10-22
 
