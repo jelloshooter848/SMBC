@@ -427,6 +427,46 @@ describe('import: all or nothing', () => {
   });
 });
 
+describe('storage dying midway (review 971b99d4, item 1)', () => {
+  it('the data marker changes before any key is removed', () => {
+    const data = { [SETTINGS_KEY]: '{"v":3}' };
+    seed();
+    const order: string[] = [];
+    const set = ls.setItem.bind(ls);
+    const remove = ls.removeItem.bind(ls);
+    ls.setItem = (k, v) => (order.push(`set ${k}`), set(k, v));
+    ls.removeItem = (k) => (order.push(`remove ${k}`), remove(k));
+    expect(replaceGameData(data).ok).toBe(true);
+    expect(order[0]).toBe(`set ${DATA_EPOCH_KEY}`);
+  });
+
+  it('every write after the first failing: the result says the old data could not all be put back', () => {
+    const before = seed();
+    const p = parseBackup(buildBackup({ gameVersion: VERSION, now: NOW }).text, VERSION);
+    if (!p.ok) throw new Error(p.reason);
+    // The marker is written, then storage dies: the new keys and the roll back both fail.
+    ls.diesAfterWrites = 1;
+    const r = replaceGameData({ ...p.backup.data, [SETTINGS_KEY]: '{"v":3,"other":1}' });
+    expect(r).toMatchObject({ ok: false, restored: false });
+    expect(gameKeys()).not.toEqual(before);
+  });
+
+  it('a failure the roll back fully repairs says restored', () => {
+    const before = seed();
+    ls.writesLeft = 3;
+    const r = replaceGameData({ [SETTINGS_KEY]: '{"v":3}', [saveKey(2)]: '{}', [saveKey(3)]: '{}' });
+    expect(r).toMatchObject({ ok: false, reason: 'quota', restored: true });
+    expect(gameKeys()).toEqual(before);
+  });
+
+  it('the old data fills storage exactly: the marker still goes in once the old keys are gone', () => {
+    seed();
+    ls.quota = ls.used();
+    expect(replaceGameData({ [SETTINGS_KEY]: '{"v":3}' }).ok).toBe(true);
+    expect(ls.getItem(DATA_EPOCH_KEY)).not.toBeNull();
+  });
+});
+
 describe('a stale tab (another tab open since before the import)', () => {
   /** A second tab: its own copy of the storage module, loaded now (its page load). */
   async function openTab() {

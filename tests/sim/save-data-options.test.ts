@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultSettings, SETTINGS_KEY } from '@engine/save/settings';
-import { adoptDataEpoch } from '@engine/save/storage';
+import { adoptDataEpoch, onStaleStorage, saveJson } from '@engine/save/storage';
 import { buildBackup, isGameKey } from '@engine/save/backup';
 import type { StoredPack } from '@engine/assets/idb';
 import { OptionsScene } from '@game/scenes/options';
-import { SaveDataOptions, type SaveDataEnv } from '@game/scenes/save-data';
+import { SaveDataOptions, browserSaveDataEnv, downloadAll, type SaveDataEnv } from '@game/scenes/save-data';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { newSave, saveKey, writeSave } from '@game/save/save-files';
 import { makeGame, type H } from './heroes-harness';
@@ -51,13 +51,17 @@ interface Rig {
   inEvent: boolean[];
 }
 
-function rig(opts: { packs?: StoredPack[]; clearFails?: boolean; dev?: boolean } = {}): Rig {
+function rig(
+  opts: { packs?: StoredPack[]; clearFails?: boolean; dev?: boolean; clearGate?: Promise<void> } = {},
+): Rig {
   const delivered: File[][] = [];
   const picks: ((f: File) => void)[] = [];
   const inEvent: boolean[] = [];
   let inside = false;
   const restart = vi.fn();
-  const clear = vi.fn(() => (opts.clearFails ? Promise.reject(new Error('IDB failed')) : Promise.resolve()));
+  const clear = vi.fn(() =>
+    opts.clearFails ? Promise.reject(new Error('IDB failed')) : (opts.clearGate ?? Promise.resolve()),
+  );
   const env: SaveDataEnv = {
     gameVersion: VERSION,
     now: () => new Date(2026, 9, 22, 9, 0),
@@ -183,6 +187,8 @@ describe('EXPORT BACKUP', () => {
     await openPage(r);
     press(r, 'Export backup');
     expect(titleOf(r.h)).toBe('ALSO EXPORT 1 ASSET PACK?');
+    // The packs are zipped once the question is up (not on every visit to the page).
+    await flush();
     press(r, 'Yes');
     await flush();
     const names = (r.delivered[0] as File[]).map((f) => f.name);
@@ -191,6 +197,30 @@ describe('EXPORT BACKUP', () => {
     const zip = readZip(new Uint8Array(await (r.delivered[0]![1] as File).arrayBuffer()));
     expect(zip.map((e) => e.path).sort()).toEqual(['manifest.json', 'mario.png']);
     expect(r.h.said.join(' | ')).toMatch(/importing a backup does not restore asset packs/i);
+    // Two files: the player is told to expect both.
+    expect(r.h.said.join(' | ')).toMatch(/2 files will download/i);
+  });
+
+  it('YES before the zips are ready: nothing half-made is handed over; it asks to press again', async () => {
+    const r = rig({ packs: [storedPack('retro')] });
+    await openPage(r);
+    press(r, 'Export backup');
+    press(r, 'Yes');
+    expect(r.delivered).toHaveLength(0);
+    expect(r.h.said.at(-1)).toMatch(/press yes again/i);
+    await flush();
+    press(r, 'Yes');
+    await flush();
+    expect(r.delivered[0]!.map((f) => f.name)).toEqual(['smbc-remix-backup-2026-10-22.json', 'retro.zip']);
+  });
+
+  it('opening the page zips nothing (the packs are only listed)', async () => {
+    const big = storedPack('retro');
+    const read = vi.fn(() => Promise.resolve(new ArrayBuffer(3)));
+    big.files['mario.png'] = { arrayBuffer: read, size: 3 } as unknown as Blob;
+    const r = rig({ packs: [big] });
+    await openPage(r);
+    expect(read).not.toHaveBeenCalled();
   });
 
   it('storage that cannot be read: nothing is delivered, and it says why', async () => {
@@ -290,6 +320,8 @@ describe('IMPORT BACKUP', () => {
     expect(r.inEvent).toEqual([true, true]);
     expect(JSON.parse(await r.delivered[0]![0]!.text()).data[saveKey(1)]).toBe(mine);
     expect(titleOf(r.h)).toBe('REPLACE ALL DATA ON THIS DEVICE?');
+    // The outcome shows on the question itself, not only on the page under it.
+    expect((r.h.top() as unknown as { status: string }).status).toBe('BACKUP SAVED');
   });
 
   it('YES replaces everything, says so, and OK starts the game again', async () => {
@@ -326,6 +358,31 @@ describe('IMPORT BACKUP', () => {
     expect(r.h.said.at(-1)).toMatch(/not enough space/i);
     expect(r.restart).not.toHaveBeenCalled();
     expect(titleOf(r.h)).toBe('SAVE DATA');
+  });
+});
+
+describe('IMPORT BACKUP: storage dying midway (review item 1)', () => {
+  it('never says nothing changed when the old data could not all be put back', async () => {
+    const r = rig();
+    writeSave(newSave(1, 'mario', null));
+    const other = installStorage(new FakeStorage());
+    adoptDataEpoch();
+    writeSave(newSave(2, 'link', null));
+    const t = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
+    installStorage(ls);
+    adoptDataEpoch();
+    void other;
+    await openPage(r);
+    press(r, 'Import backup');
+    r.picks[0]!(fileOf(t));
+    await flush();
+    ls.diesAfterWrites = 1;
+    press(r, 'Yes');
+    await flush();
+    const said = r.h.said.at(-1) as string;
+    expect(said).toMatch(/could not be put back/i);
+    expect(said).not.toMatch(/nothing changed/i);
+    expect((r.h.top() as unknown as { status: string }).status).toBe('SOME DATA WAS NOT PUT BACK');
   });
 });
 
@@ -398,6 +455,52 @@ describe('ERASE ALL DATA', () => {
     expect(ls.snapshot(isGameKey)).toEqual({});
   });
 
+  it('BACK at the pack question cancels the whole erase: nothing is erased', async () => {
+    const r = rig({ packs: [storedPack('retro')] });
+    seed();
+    const before = ls.snapshot();
+    await openPage(r);
+    press(r, 'Erase all data');
+    press(r, 'Yes');
+    press(r, 'Yes, erase');
+    expect(titleOf(r.h)).toBe('ALSO ERASE 1 ASSET PACK?');
+    r.h.idle(8);
+    r.h.tap('attack');
+    await flush();
+    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(ls.snapshot()).toEqual(before);
+    expect(r.clear).not.toHaveBeenCalled();
+    expect(r.restart).not.toHaveBeenCalled();
+    expect(r.h.said.at(-1)).toMatch(/nothing (was )?erased/i);
+  });
+
+  it('while the packs are being erased: no reload on a stale write, and no second erase or import', async () => {
+    let open!: () => void;
+    const gate = new Promise<void>((res) => (open = res));
+    const r = rig({ packs: [storedPack('retro')], clearGate: gate });
+    seed();
+    const stale = vi.fn();
+    onStaleStorage(stale);
+    await openPage(r);
+    press(r, 'Erase all data');
+    press(r, 'Yes');
+    press(r, 'Yes, erase');
+    press(r, 'Yes');
+    await flush();
+    expect(r.clear).toHaveBeenCalledTimes(1);
+    expect(titleOf(r.h)).toBe('SAVE DATA');
+    // This tab's own old state is stale now: its writes are refused, without a reload.
+    expect(saveJson(SETTINGS_KEY, { v: 3, old: true })).toBe(false);
+    expect(stale).not.toHaveBeenCalled();
+    press(r, 'Import backup');
+    expect(r.picks).toHaveLength(0);
+    press(r, 'Erase all data');
+    expect(titleOf(r.h)).toBe('SAVE DATA');
+    open();
+    await flush();
+    expect(titleOf(r.h)).toBe('ALL DATA ERASED');
+  });
+
   it('packs: YES erases them too', async () => {
     const r = rig({ packs: [storedPack('retro'), storedPack('b')] });
     seed();
@@ -455,5 +558,38 @@ describe('all the new text', () => {
   it('names no raw button letters', () => {
     const src = text(new TextEncoder().encode(SaveDataOptions.toString()));
     expect(src).not.toMatch(/PRESS [ABXY]\b|\b[ABXY] BUTTON/);
+  });
+});
+
+describe('the browser side (review items 3 and the restart)', () => {
+  it('several files download one after another, 400 ms apart, not in one burst', () => {
+    vi.useFakeTimers();
+    try {
+      const saved: string[] = [];
+      const files = ['a.json', 'b.zip', 'c.zip'].map((n) => new File(['x'], n));
+      downloadAll(files, (name) => saved.push(name));
+      expect(saved).toEqual(['a.json']);
+      vi.advanceTimersByTime(399);
+      expect(saved).toEqual(['a.json']);
+      vi.advanceTimersByTime(1);
+      expect(saved).toEqual(['a.json', 'b.zip']);
+      vi.advanceTimersByTime(400);
+      expect(saved).toEqual(['a.json', 'b.zip', 'c.zip']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("the restart keeps the page's query (?dev=1) and drops its #link", () => {
+    const replace = vi.fn();
+    const g = globalThis as { location?: unknown };
+    const was = g.location;
+    g.location = { pathname: '/SMBC/', search: '?dev=1', hash: '#save=X', replace };
+    try {
+      browserSaveDataEnv().restart();
+      expect(replace).toHaveBeenCalledWith('/SMBC/?dev=1');
+    } finally {
+      g.location = was;
+    }
   });
 });

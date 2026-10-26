@@ -83,6 +83,21 @@ describe('the pack template .zip', () => {
     expect(validateManifest(JSON.parse(example as string))).toBe(true);
   });
 
+  it("a pack's palette recolours are not listed as built-in colours (the boot snapshot is)", async () => {
+    const reg = registry();
+    const built = [...(PALETTES.default.mario as string[])];
+    reg.overridePalette('mario', ['#123456', '#123456', '#123456', '#123456', '#123456', '#123456']);
+    try {
+      const readme = text(
+        readZip(await buildTemplateZip(reg, lists)).find((e) => e.path === 'README.txt')!.data,
+      );
+      const line = readme.split('\n').find((l) => l.trim().startsWith('mario:'));
+      expect(line).toBe(`  mario: ${built.join(', ')}`);
+    } finally {
+      reg.overridePalette('mario', built);
+    }
+  });
+
   it('the lists are the ones handed in (the live registries), not a copy kept here', async () => {
     const readme = text(
       readZip(await buildTemplateZip(registry(), { ...lists, songs: ['only-song'], sfx: ['only-sfx'] })).find(

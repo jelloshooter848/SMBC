@@ -14,6 +14,8 @@ export class FakeStorage {
   throwOnWrite = false;
   /** Writes allowed before the next one throws a quota error, once (null: no limit). */
   writesLeft: number | null = null;
+  /** Writes allowed before storage dies for good: every later setItem throws (null: never). */
+  diesAfterWrites: number | null = null;
   /** Runs after each successful setItem (a second tab writing at that moment). */
   afterSet: ((key: string) => void) | null = null;
 
@@ -31,6 +33,10 @@ export class FakeStorage {
   }
   setItem(k: string, v: string): void {
     if (this.throwOnWrite) throw new Error('SecurityError: storage blocked');
+    if (this.diesAfterWrites !== null) {
+      if (this.diesAfterWrites <= 0) throw new Error('UnknownError: storage died');
+      this.diesAfterWrites--;
+    }
     if (this.writesLeft !== null) {
       if (this.writesLeft <= 0) {
         this.writesLeft = null;
