@@ -328,6 +328,33 @@ describe('import: files that change nothing', () => {
     refused(JSON.stringify({ ...b, gameVersion: 7 }), 'damaged');
   });
 
+  it('a hand-edited backup whose known keys hold the wrong shapes (review #217)', () => {
+    const bad: Record<string, string>[] = [
+      { [LIBRARY_KEY]: JSON.stringify({ v: 1, levels: null }) },
+      { [LIBRARY_KEY]: JSON.stringify({ v: 1, levels: [] }) },
+      { [LIBRARY_KEY]: JSON.stringify({ v: 1, levels: { a: 5 } }) },
+      { [LIBRARY_KEY]: JSON.stringify({ v: 2, levels: {} }) },
+      { [SETTINGS_KEY]: 'not json' },
+      { [SETTINGS_KEY]: '[]' },
+      { [SETTINGS_KEY]: 'null' },
+      { [PROGRESS_KEY]: '7' },
+      { [saveKey(1)]: '"text"' },
+      { [classicFileKey({ set: 'smb', slot: 1 })]: '[1]' },
+      { [DEV_LAST_KEY]: 'true' },
+      { 'smbc.future-thing': '{oops' },
+    ];
+    for (const data of bad) refused(JSON.stringify(withChecksum({ gameVersion: VERSION, data })), 'damaged');
+    // The right shapes go through.
+    const good = {
+      [LIBRARY_KEY]: JSON.stringify({ v: 1, levels: { a: 'name: a' } }),
+      [SETTINGS_KEY]: '{"v":3}',
+      'smbc.future-thing': '[1,2]',
+    };
+    expect(parseBackup(JSON.stringify(withChecksum({ gameVersion: VERSION, data: good })), VERSION).ok).toBe(
+      true,
+    );
+  });
+
   it('a newer format', () => {
     refused(
       JSON.stringify(withChecksum({ gameVersion: VERSION, data: {}, formatVersion: 2 })),

@@ -173,7 +173,7 @@ describe('EXPORT BACKUP', () => {
     await openPage(r);
     press(r, 'Export backup');
     expect(titleOf(r.h)).toBe('ALSO EXPORT 2 ASSET PACKS?');
-    expect(r.h.said.at(-1)).toMatch(/^Also export 2 asset packs\? No/);
+    expect(r.h.said.at(-1)).toMatch(/^Also export 2 asset packs\? .* No$/);
     expect(labels(r.h.top())).toEqual(['No', 'Yes']);
     expect(r.delivered).toHaveLength(0);
     press(r, 'No');
@@ -496,6 +496,13 @@ describe('ERASE ALL DATA', () => {
     expect(r.picks).toHaveLength(0);
     press(r, 'Erase all data');
     expect(titleOf(r.h)).toBe('SAVE DATA');
+    // Export and BACK are locked too until the erase is done.
+    press(r, 'Export backup');
+    await flush();
+    expect(r.delivered).toHaveLength(0);
+    r.h.idle(8);
+    r.h.tap('attack');
+    expect(titleOf(r.h)).toBe('SAVE DATA');
     open();
     await flush();
     expect(titleOf(r.h)).toBe('ALL DATA ERASED');
@@ -591,5 +598,51 @@ describe('the browser side (review items 3 and the restart)', () => {
     } finally {
       g.location = was;
     }
+  });
+});
+
+/** Letters and digits only, lower case: drawn text and spoken text compared word for word. */
+const words = (t: string) =>
+  t
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+describe('review #217: every line drawn on the pack questions is said', () => {
+  /** The box's drawn lines, and what was said when it opened. */
+  function box(h: H): { drawn: string; said: string } {
+    const lines = (h.top() as unknown as { lines: readonly string[] }).lines;
+    return { drawn: words(lines.join(' ')), said: words(h.said.at(-1) as string) };
+  }
+
+  it('ALSO EXPORT N ASSET PACKS? says every line it draws, how to use a pack zip again among them', async () => {
+    const r = rig({ packs: [storedPack('retro'), storedPack('beta')] });
+    await openPage(r);
+    press(r, 'Export backup');
+    const b = box(r.h);
+    expect(b.said).toContain(b.drawn);
+    expect(b.drawn).toMatch(/unzip it on a computer and pick its folder with import pack/);
+    for (const l of (r.h.top() as unknown as { lines: readonly string[] }).lines)
+      expect(l.length).toBeLessThanOrEqual(28);
+  });
+
+  it('ALSO ERASE N ASSET PACKS? says every line it draws', async () => {
+    const r = rig({ packs: [storedPack('retro')] });
+    await openPage(r);
+    press(r, 'Erase all data');
+    press(r, 'Yes');
+    press(r, 'Yes, erase');
+    const b = box(r.h);
+    expect(b.said).toContain(b.drawn);
+  });
+
+  it('after exporting packs, how to use one again is said', async () => {
+    const r = rig({ packs: [storedPack('retro')] });
+    await openPage(r);
+    press(r, 'Export backup');
+    await flush();
+    press(r, 'Yes');
+    await flush();
+    expect(r.h.said.at(-1)).toMatch(/unzip it on a computer and pick its folder with import pack/i);
   });
 });
