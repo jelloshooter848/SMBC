@@ -100,7 +100,8 @@ function moveTo(h: H, label: string): void {
   const at = labels(m).indexOf(label);
   expect(at, `${label} in ${labels(m).join(', ')}`).toBeGreaterThanOrEqual(0);
   const index = () => (h.top() as unknown as { index: number }).index;
-  while (index() !== at) h.tap(index() < at ? 'down' : 'up');
+  for (let i = 0; i < 40 && index() !== at; i++) h.tap(index() < at ? 'down' : 'up');
+  expect(index(), `cursor on ${label}`).toBe(at);
 }
 
 /** Picks row `label` as a key press does: in its keydown event, then the frame. */
@@ -492,15 +493,22 @@ describe('ERASE ALL DATA', () => {
     // This tab's own old state is stale now: its writes are refused, without a reload.
     expect(saveJson(SETTINGS_KEY, { v: 3, old: true })).toBe(false);
     expect(stale).not.toHaveBeenCalled();
-    press(r, 'Import backup');
-    expect(r.picks).toHaveLength(0);
-    press(r, 'Erase all data');
-    expect(titleOf(r.h)).toBe('SAVE DATA');
-    // Export and BACK are locked too until the erase is done.
-    press(r, 'Export backup');
-    await flush();
-    expect(r.delivered).toHaveLength(0);
+    // The page takes no press until the erase is done: no move, no Import, Erase or Export
+    // (in the key's own event or the frame), and not BACK.
+    const index = () => (r.h.top() as unknown as { index: number }).index;
+    const at = index();
     r.h.idle(8);
+    r.h.tap('down');
+    expect(index()).toBe(at);
+    for (const row of ['Export backup', 'Import backup', 'Erase all data']) {
+      (r.h.top() as unknown as { index: number }).index = labels(r.h.top()).indexOf(row);
+      r.h.game.gestures.key();
+      r.h.tap('jump');
+    }
+    await flush();
+    expect(r.picks).toHaveLength(0);
+    expect(r.delivered).toHaveLength(0);
+    expect(titleOf(r.h)).toBe('SAVE DATA');
     r.h.tap('attack');
     expect(titleOf(r.h)).toBe('SAVE DATA');
     open();
