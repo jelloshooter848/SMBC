@@ -18,7 +18,8 @@ import { FakeStorage, installStorage, readZip, text } from './save-data-helpers'
  * starts again from its first screen.
  */
 
-const VERSION = '0.4.74';
+// A made-up build version for these tests (not a planned release).
+const VERSION = '2.4.16';
 let ls: FakeStorage;
 beforeEach(() => {
   ls = installStorage(new FakeStorage());
@@ -230,7 +231,7 @@ describe('IMPORT BACKUP', () => {
   for (const [what, body, said] of [
     [
       'a damaged file',
-      '{"format":"smbc-remix-backup","formatVersion":1,"gameVersion":"0.4.74","data":{"smbc.settings":"x"},"checksum":"00000000"}',
+      '{"format":"smbc-remix-backup","formatVersion":1,"gameVersion":"2.4.16","data":{"smbc.settings":"x"},"checksum":"00000000"}',
       /damaged/i,
     ],
     ['a truncated file', '{"format":"smbc-remix-backup","formatVer', /not a backup|not readable/i],

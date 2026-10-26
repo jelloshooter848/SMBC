@@ -137,7 +137,7 @@ export const REFUSAL_SAID: Readonly<Record<BackupRefusal, string>> = {
   damaged: 'That backup is damaged. Nothing changed.',
 };
 
-/** The release numbers of a version ("0.4.74-dev.abc" → [0, 4, 74]); null when there are none. */
+/** The release numbers of a version ("2.4.16-dev.abc" → [2, 4, 16]); null when there are none. */
 function release(v: string): number[] | null {
   const m = /^(\d+)\.(\d+)\.(\d+)/.exec(v);
   return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;

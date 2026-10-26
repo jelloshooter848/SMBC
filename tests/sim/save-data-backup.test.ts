@@ -32,7 +32,8 @@ import { FakeStorage, installStorage } from './save-data-helpers';
  * or write is refused cleanly; a stale tab can never write its old state over a new import.
  */
 
-const VERSION = '0.4.74';
+// A made-up build version for these tests (not a planned release).
+const VERSION = '2.4.16';
 const NOW = new Date(2026, 9, 22, 14, 30);
 
 let ls: FakeStorage;
@@ -208,7 +209,7 @@ describe('import: the round trip', () => {
       [CLASSIC_RESUME_KEY]: JSON.stringify(oldRun('3-1')),
       [classicResumeKey('lost')]: JSON.stringify(oldRun('ll-2-1')),
     };
-    const old = parseBackup(JSON.stringify(withChecksum({ gameVersion: '0.4.60', data })), VERSION);
+    const old = parseBackup(JSON.stringify(withChecksum({ gameVersion: '2.3.0', data })), VERSION);
     expect(old.ok).toBe(true);
     if (!old.ok) return;
     expect(replaceGameData(old.backup.data).ok).toBe(true);
@@ -325,16 +326,16 @@ describe('import: files that change nothing', () => {
   });
 
   it('a backup from a newer game version (a downgrade could misread its data)', () => {
-    refused(JSON.stringify(withChecksum({ gameVersion: '0.4.75', data: {} })), 'newer-game');
-    refused(JSON.stringify(withChecksum({ gameVersion: '0.5.0', data: {} })), 'newer-game');
-    refused(JSON.stringify(withChecksum({ gameVersion: '1.0.0-dev.abc', data: {} })), 'newer-game');
+    refused(JSON.stringify(withChecksum({ gameVersion: '2.4.17', data: {} })), 'newer-game');
+    refused(JSON.stringify(withChecksum({ gameVersion: '2.5.0', data: {} })), 'newer-game');
+    refused(JSON.stringify(withChecksum({ gameVersion: '3.0.0-dev.abc', data: {} })), 'newer-game');
     // The same release, or a dev build of it, or older: fine.
-    for (const v of ['0.4.74', '0.4.74-dev.1234abc', '0.4.9', '0.3.99'])
+    for (const v of ['2.4.16', '2.4.16-dev.1234abc', '2.4.9', '1.9.99'])
       expect(parseBackup(JSON.stringify(withChecksum({ gameVersion: v, data: {} })), VERSION).ok, v).toBe(
         true,
       );
     expect(
-      parseBackup(JSON.stringify(withChecksum({ gameVersion: '0.4.74', data: {} })), '0.4.74-dev.9f').ok,
+      parseBackup(JSON.stringify(withChecksum({ gameVersion: '2.4.16', data: {} })), '2.4.16-dev.9f').ok,
     ).toBe(true);
   });
 
