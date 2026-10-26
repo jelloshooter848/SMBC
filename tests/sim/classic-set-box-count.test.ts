@@ -121,7 +121,8 @@ describe('38b: the set box counts every file in use', () => {
     expect(lost).toBe('1 file used');
   });
 
-  it('storage that throws: No files used, and the box still opens', () => {
+  // Item 120 (owner-approved): it says the saves cannot be read, not "No files used".
+  it("storage that throws: Saves can't be read, and the box still opens", () => {
     keep(ref(1));
     const h = game();
     (globalThis as { localStorage?: unknown }).localStorage = {
@@ -135,7 +136,7 @@ describe('38b: the set box counts every file in use', () => {
         throw new Error('denied');
       },
     };
-    expect(count(h)).toBe('No files used');
+    expect(hints(h)[0]).toMatch(/Saves can't be read right now$/);
     choose(h, 'Super Mario Bros.');
     expect(h.top()).toBeInstanceOf(ClassicFilesScene);
   });
