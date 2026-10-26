@@ -4,13 +4,7 @@ import { Actions, ActionLabels, type Action } from '@engine/input/actions';
 import { bindingClashes, describeCode, describePad } from '@engine/input/bindings';
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
-import {
-  exportTemplate,
-  importPackFiles,
-  PACK_ZIP_MAX_BYTES,
-  readPackZip,
-  storePack,
-} from '@engine/assets/pack-loader';
+import { exportTemplate, importPackFiles, importPackZip, PackImportError } from '@engine/assets/pack-loader';
 import { ZipError, type ZipErrorCode } from '@engine/save/zip';
 import { pickFile } from '@engine/file-pick';
 import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type AssistSettings, type Settings } from '@engine/save/settings';
@@ -527,63 +521,60 @@ class PacksOptions extends MenuScene {
   }
 
   /**
-   * Reads the file, then the pack in it, then stores it; each step's failure has its own line,
-   * and only a pack that is stored is turned on (nothing before that changes anything).
+   * importPackZip reads the file, then the pack in it, then stores it (committed); each step's
+   * failure has its own line (refuseZip), and only a stored pack is turned on.
    */
   private async importZip(file: File): Promise<void> {
     if (this.importing) return this.tell('READING ZIP...', 'Still reading the zip.');
-    if (file.size > PACK_ZIP_MAX_BYTES)
-      return this.tell(
-        'ZIP TOO BIG (OVER 100 MB)',
-        'That zip is over 100 MB, too big to import. Nothing changed.',
-        true,
-      );
     this.importing = true;
     this.tell('READING ZIP...', 'Reading the zip.');
-    let pack: Awaited<ReturnType<typeof readPackZip>>;
+    let name: string;
     try {
-      let bytes: Uint8Array;
-      try {
-        bytes = new Uint8Array(await file.arrayBuffer());
-      } catch {
-        return this.tell(
-          'COULD NOT READ FILE',
-          'The file could not be read. If it is in the cloud, download it to this device first. Nothing changed.',
-          true,
-        );
-      }
-      try {
-        pack = await readPackZip(bytes);
-      } catch (e) {
-        if (e instanceof ZipError) {
-          const [status, said] = ZIP_REFUSED[e.code];
-          return this.tell(status, `${said} Nothing changed.`, true);
-        }
-        return this.tell(
-          'NOT AN ASSET PACK',
-          `That zip is not an asset pack: ${(e as Error).message}. Nothing changed.`,
-          true,
-        );
-      }
-      try {
-        await storePack(pack);
-      } catch {
-        return this.tell(
-          'COULD NOT SAVE PACK',
-          'The pack could not be saved: storage may be full or blocked. Nothing changed.',
-          true,
-        );
-      }
+      name = await importPackZip(file);
+    } catch (e) {
+      return this.refuseZip(e);
     } finally {
       this.importing = false;
     }
-    // Stored: from here it is on, whatever else happens.
-    const name = pack.manifest.name;
+    // Stored (committed): from here it is on, whatever else happens.
     const s = settings(this.game);
     if (!s.packs.includes(name)) s.packs.push(name);
     apply(this.game);
     this.tell(`Imported ${name}`, `Imported ${name}. It is turned on.`);
     await this.refresh();
+  }
+
+  /** Why importPackZip stored nothing: its step's own line, said, ending "Nothing changed." */
+  private refuseZip(e: unknown): void {
+    const step = e instanceof PackImportError ? e.step : 'pack';
+    const cause = e instanceof PackImportError ? e.cause : e;
+    if (step === 'size')
+      return this.tell(
+        'ZIP TOO BIG (OVER 100 MB)',
+        'That zip is over 100 MB, too big to import. Nothing changed.',
+        true,
+      );
+    if (step === 'read')
+      return this.tell(
+        'COULD NOT READ FILE',
+        'The file could not be read. If it is in the cloud, download it to this device first. Nothing changed.',
+        true,
+      );
+    if (step === 'store')
+      return this.tell(
+        'COULD NOT SAVE PACK',
+        'The pack could not be saved: storage may be full or blocked. Nothing changed.',
+        true,
+      );
+    if (cause instanceof ZipError) {
+      const [status, said] = ZIP_REFUSED[cause.code];
+      return this.tell(status, `${said} Nothing changed.`, true);
+    }
+    this.tell(
+      'NOT AN ASSET PACK',
+      `That zip is not an asset pack: ${(cause as Error).message}. Nothing changed.`,
+      true,
+    );
   }
 
   private pickFolder(): void {

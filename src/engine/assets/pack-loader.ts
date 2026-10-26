@@ -101,10 +101,41 @@ export async function storePack(pack: {
   return pack.manifest.name;
 }
 
-/** Import pack (.zip): the whole file read and checked, then stored; any error stores nothing. */
+/** Where Import pack (.zip) failed: the file too big, unreadable, not a pack, or not saved. */
+export class PackImportError extends Error {
+  constructor(
+    readonly step: 'size' | 'read' | 'pack' | 'store',
+    override readonly cause: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : step);
+    this.name = 'PackImportError';
+  }
+}
+
+/**
+ * Import pack (.zip): the whole file read and checked, then stored (committed); any error
+ * stores nothing. Throws PackImportError naming the step (its `cause`: a ZipError for a zip
+ * that does not read, an Error for a pack that does not check out).
+ */
 export async function importPackZip(file: Blob): Promise<string> {
-  if (file.size > PACK_ZIP_MAX_BYTES) throw new ZipError('too-big');
-  return storePack(await readPackZip(new Uint8Array(await file.arrayBuffer())));
+  if (file.size > PACK_ZIP_MAX_BYTES) throw new PackImportError('size', new ZipError('too-big'));
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch (e) {
+    throw new PackImportError('read', e);
+  }
+  let pack: Awaited<ReturnType<typeof readPackZip>>;
+  try {
+    pack = await readPackZip(bytes);
+  } catch (e) {
+    throw new PackImportError('pack', e);
+  }
+  try {
+    return await storePack(pack);
+  } catch (e) {
+    throw new PackImportError('store', e);
+  }
 }
 
 /** Build sprite sheets and audio blobs from a stored pack, using built-in frame layouts when the pack omits them. */

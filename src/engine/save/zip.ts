@@ -239,6 +239,8 @@ export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<
   const utf8 = new TextDecoder('utf-8');
   const seen = new Set<string>();
   const out: UnzippedEntry[] = [];
+  /** Each entry's bytes, header to data end: two that overlap are a zip bomb's trick. */
+  const spans: [number, number][] = [];
   let total = 0;
   let p = cdAt;
   for (let i = 0; i < count; i++) {
@@ -274,6 +276,7 @@ export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<
       throw new ZipError('damaged', 'a file header');
     const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
     if (start + csize > cdAt) throw new ZipError('damaged', 'a file runs past the directory');
+    spans.push([local, start + csize]);
     out.push({
       path,
       size: usize,
@@ -285,5 +288,9 @@ export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<
       },
     });
   }
+  spans.sort((x, y) => x[0] - y[0]);
+  for (let i = 1; i < spans.length; i++)
+    if ((spans[i] as [number, number])[0] < (spans[i - 1] as [number, number])[1])
+      throw new ZipError('damaged', 'two entries share their bytes');
   return out;
 }
