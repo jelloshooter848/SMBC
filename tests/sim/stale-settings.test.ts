@@ -9,7 +9,7 @@ import {
   type Settings,
 } from '@engine/save/settings';
 import { DATA_EPOCH_KEY, adoptDataEpoch, onStaleStorage } from '@engine/save/storage';
-import { store, useStorage } from './heroes-harness';
+import { makeGame, store, useStorage } from './heroes-harness';
 
 /*
  * Item 150 (owner-approved, save safety; rule 33a: the edge cases first). Two tabs share one
@@ -24,6 +24,7 @@ useStorage();
 beforeEach(() => adoptDataEpoch());
 afterEach(() => {
   store.clear();
+  (settingsModule as unknown as { onSettingsMerged?: (fn: null) => void }).onSettingsMerged?.(null);
   onStaleStorage(null);
   adoptDataEpoch();
 });
@@ -153,5 +154,88 @@ describe('150: every Settings field is classified', () => {
     const fields: (keyof ClassicCheatsSettings)[] = ['on', 'unlocked', 'stats', 'beaten', 'continuesUsed'];
     expect(Object.keys(cheats).sort()).toEqual([...fields].sort());
     expect(Object.keys(defaultSettings().classicCheats).sort()).toEqual([...fields].sort());
+  });
+});
+
+describe('150 review: a merge whose write fails, counts, and the live game', () => {
+  it('the write after a merge fails once (storage full); the retry after another write is right', () => {
+    saveSettings(defaultSettings());
+    const a = loadSettings();
+    const b = loadSettings();
+    b.classicCheats.stats.enemiesDefeated = 5;
+    b.video.palette = 'x' as Settings['video']['palette'];
+    saveSettings(b);
+    a.classicCheats.stats.enemiesDefeated = 2;
+    // A's save merges, then its write fails (once).
+    const ls = globalThis.localStorage as Storage;
+    const set = ls.setItem.bind(ls);
+    let fail = true;
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: ls.getItem.bind(ls),
+      removeItem: ls.removeItem.bind(ls),
+      setItem: (k: string, v: string) => {
+        if (fail && k === SETTINGS_KEY) {
+          fail = false;
+          throw new Error('QuotaExceededError');
+        }
+        set(k, v);
+      },
+    };
+    saveSettings(a);
+    expect(stored().classicCheats.stats.enemiesDefeated).toBe(5);
+    // B changes the palette again; A saves again.
+    b.video.palette = 'y' as Settings['video']['palette'];
+    saveSettings(b);
+    saveSettings(a);
+    expect(stored().classicCheats.stats.enemiesDefeated).toBe(7);
+    expect(stored().video.palette).toBe('y');
+  });
+
+  it('merged counts stop at 999999; a count new since the last read adds all of this tab’s', () => {
+    saveSettings(defaultSettings());
+    const a = loadSettings();
+    const b = loadSettings();
+    b.classicCheats.stats.hammerBrosDefeated = 999990;
+    saveSettings(b);
+    a.classicCheats.stats.hammerBrosDefeated = 50;
+    saveSettings(a);
+    expect(stored().classicCheats.stats.hammerBrosDefeated).toBe(999999);
+    // A count missing from this tab's last read (an older file): all of this tab's is added.
+    const d = loadSettings();
+    // This tab's last read lacks the count (an older file).
+    const raw = JSON.parse(store.get(SETTINGS_KEY) ?? '{}');
+    delete raw.classicCheats.stats.cheepsDefeated;
+    store.set(SETTINGS_KEY, JSON.stringify(raw));
+    const e = loadSettings();
+    e.classicCheats.stats.cheepsDefeated = 4;
+    d.classicCheats.stats.cheepsDefeated = 3;
+    saveSettings(d);
+    saveSettings(e);
+    expect(stored().classicCheats.stats.cheepsDefeated).toBe(7);
+  });
+
+  it('a merge outside Options (a cheat-count flush) is reported, so the live game takes the other tab’s bindings and volume', () => {
+    saveSettings(defaultSettings());
+    const a = loadSettings();
+    const b = loadSettings();
+    b.audio.music = 0.25;
+    b.input.bindings[0]!.keyboard.jump = ['KeyQ'];
+    saveSettings(b);
+    const merged: Settings[] = [];
+    const hook = (
+      settingsModule as unknown as { onSettingsMerged?: (fn: ((s: Settings) => void) | null) => void }
+    ).onSettingsMerged;
+    expect(hook).toBeDefined();
+    hook?.((s) => merged.push(s));
+    const h = makeGame({ deps: { settings: a, applySettings: () => {} } });
+    a.classicCheats.stats.bricksBroken += 1;
+    (h.game as unknown as { cheatStatsDirty: boolean }).cheatStatsDirty = true;
+    h.game.flushCheatStats();
+    expect(merged).toEqual([a]);
+    expect(a.audio.music).toBe(0.25);
+    expect(a.input.bindings[0]?.keyboard.jump).toEqual(['KeyQ']);
+    // A save with nothing to merge reports nothing.
+    saveSettings(a);
+    expect(merged.length).toBe(1);
   });
 });
