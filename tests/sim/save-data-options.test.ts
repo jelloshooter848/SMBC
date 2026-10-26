@@ -100,7 +100,8 @@ function moveTo(h: H, label: string): void {
   const at = labels(m).indexOf(label);
   expect(at, `${label} in ${labels(m).join(', ')}`).toBeGreaterThanOrEqual(0);
   const index = () => (h.top() as unknown as { index: number }).index;
-  while (index() !== at) h.tap(index() < at ? 'down' : 'up');
+  for (let i = 0; i < 40 && index() !== at; i++) h.tap(index() < at ? 'down' : 'up');
+  expect(index(), `cursor on ${label}`).toBe(at);
 }
 
 /** Picks row `label` as a key press does: in its keydown event, then the frame. */
@@ -173,7 +174,7 @@ describe('EXPORT BACKUP', () => {
     await openPage(r);
     press(r, 'Export backup');
     expect(titleOf(r.h)).toBe('ALSO EXPORT 2 ASSET PACKS?');
-    expect(r.h.said.at(-1)).toMatch(/^Also export 2 asset packs\? No/);
+    expect(r.h.said.at(-1)).toMatch(/^Also export 2 asset packs\? .* No$/);
     expect(labels(r.h.top())).toEqual(['No', 'Yes']);
     expect(r.delivered).toHaveLength(0);
     press(r, 'No');
@@ -492,9 +493,23 @@ describe('ERASE ALL DATA', () => {
     // This tab's own old state is stale now: its writes are refused, without a reload.
     expect(saveJson(SETTINGS_KEY, { v: 3, old: true })).toBe(false);
     expect(stale).not.toHaveBeenCalled();
-    press(r, 'Import backup');
+    // The page takes no press until the erase is done: no move, no Import, Erase or Export
+    // (in the key's own event or the frame), and not BACK.
+    const index = () => (r.h.top() as unknown as { index: number }).index;
+    const at = index();
+    r.h.idle(8);
+    r.h.tap('down');
+    expect(index()).toBe(at);
+    for (const row of ['Export backup', 'Import backup', 'Erase all data']) {
+      (r.h.top() as unknown as { index: number }).index = labels(r.h.top()).indexOf(row);
+      r.h.game.gestures.key();
+      r.h.tap('jump');
+    }
+    await flush();
     expect(r.picks).toHaveLength(0);
-    press(r, 'Erase all data');
+    expect(r.delivered).toHaveLength(0);
+    expect(titleOf(r.h)).toBe('SAVE DATA');
+    r.h.tap('attack');
     expect(titleOf(r.h)).toBe('SAVE DATA');
     open();
     await flush();
@@ -591,5 +606,51 @@ describe('the browser side (review items 3 and the restart)', () => {
     } finally {
       g.location = was;
     }
+  });
+});
+
+/** Letters and digits only, lower case: drawn text and spoken text compared word for word. */
+const words = (t: string) =>
+  t
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+describe('review #217: every line drawn on the pack questions is said', () => {
+  /** The box's drawn lines, and what was said when it opened. */
+  function box(h: H): { drawn: string; said: string } {
+    const lines = (h.top() as unknown as { lines: readonly string[] }).lines;
+    return { drawn: words(lines.join(' ')), said: words(h.said.at(-1) as string) };
+  }
+
+  it('ALSO EXPORT N ASSET PACKS? says every line it draws, how to use a pack zip again among them', async () => {
+    const r = rig({ packs: [storedPack('retro'), storedPack('beta')] });
+    await openPage(r);
+    press(r, 'Export backup');
+    const b = box(r.h);
+    expect(b.said).toContain(b.drawn);
+    expect(b.drawn).toMatch(/unzip it on a computer and pick its folder with import pack/);
+    for (const l of (r.h.top() as unknown as { lines: readonly string[] }).lines)
+      expect(l.length).toBeLessThanOrEqual(28);
+  });
+
+  it('ALSO ERASE N ASSET PACKS? says every line it draws', async () => {
+    const r = rig({ packs: [storedPack('retro')] });
+    await openPage(r);
+    press(r, 'Erase all data');
+    press(r, 'Yes');
+    press(r, 'Yes, erase');
+    const b = box(r.h);
+    expect(b.said).toContain(b.drawn);
+  });
+
+  it('after exporting packs, how to use one again is said', async () => {
+    const r = rig({ packs: [storedPack('retro')] });
+    await openPage(r);
+    press(r, 'Export backup');
+    await flush();
+    press(r, 'Yes');
+    await flush();
+    expect(r.h.said.at(-1)).toMatch(/unzip it on a computer and pick its folder with import pack/i);
   });
 });

@@ -140,6 +140,42 @@ export const REFUSAL_SAID: Readonly<Record<BackupRefusal, string>> = {
   damaged: 'That backup is damaged. Nothing changed.',
 };
 
+/** Keys whose value is always a JSON object (the inventory above; a newer key is only JSON). */
+const OBJECT_KEYS: readonly RegExp[] = [
+  /^smbc\.settings$/,
+  /^smbc\.progress$/,
+  /^smbc\.save\.\d+$/,
+  /^smbc-classic-file-/,
+  /^smbc-classic-advanced-/,
+  /^smbc-classic-resume(-|$)/,
+  /^smbc\.devLast$/,
+  /^smbc\.levels$/,
+];
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * Whether `text` is a value key `key` can hold: JSON (the game writes nothing else), a plain
+ * object for the keys that hold one, and for the level library its `v: 1` and a `levels` map of
+ * text (Custom levels reads it as that). The stores' own readers check the rest as they load.
+ */
+export function valueFits(key: string, text: string): boolean {
+  let v: unknown;
+  try {
+    v = JSON.parse(text);
+  } catch {
+    return false;
+  }
+  if (OBJECT_KEYS.some((re) => re.test(key)) && !isPlainObject(v)) return false;
+  if (key === 'smbc.levels') {
+    const lib = v as Record<string, unknown>;
+    if (lib.v !== 1 || !isPlainObject(lib.levels)) return false;
+    if (!Object.values(lib.levels).every((t) => typeof t === 'string')) return false;
+  }
+  return true;
+}
+
 /** The release numbers of a version ("2.4.16-dev.abc" → [2, 4, 16]); null when there are none. */
 function release(v: string): number[] | null {
   const m = /^(\d+)\.(\d+)\.(\d+)/.exec(v);
@@ -184,6 +220,8 @@ export function parseBackup(text: string, gameVersion: string): ParsedBackup {
     if (!isGameKey(k) || typeof v !== 'string') return { ok: false, reason: 'damaged' };
   const d = data as Record<string, string>;
   if (typeof o.checksum !== 'string' || o.checksum !== checksumOf(d)) return { ok: false, reason: 'damaged' };
+  // A hand-edited file can carry a right checksum: each value must still be what its key holds.
+  for (const [k, v] of Object.entries(d)) if (!valueFits(k, v)) return { ok: false, reason: 'damaged' };
   return {
     ok: true,
     backup: {
