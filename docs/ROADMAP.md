@@ -94,8 +94,11 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
 - **Yoshi waits visibly for vine/pit/teleport entries into benched areas (owner 103A, later).** Classic mode's Yoshi
   mount already hops the hero off and waits at pipes and at the flagpole before a castle (0.4.73); the other ways in
   still leave him outside without showing it.
-- Music Lab: write and play your own songs in the game's MML on its 4-channel synth (text editor first: play/loop/tempo, error positions, load game songs as examples, save to library, share links), later custom-level music and maybe a tracker grid (owner 136C).
-- Whole-game text save code (R1 profile code from research/savecode, round 3: add the frozen classicTutorialsSeen dictionary, item 114); parked since SAVE DATA backup files cover moving devices (owner 137A).
+- Music Lab: write and play your own songs in the game's MML on its 4-channel synth (text editor first:
+  play/loop/tempo, error positions, load game songs as examples, save to library, share links), later custom-level
+  music and maybe a tracker grid (owner 136C).
+- Whole-game text save code (R1 profile code from research/savecode, round 3: add the frozen classicTutorialsSeen
+  dictionary, item 114); parked since SAVE DATA backup files cover moving devices (owner 137A).
 
 ## Details of the planned work
 

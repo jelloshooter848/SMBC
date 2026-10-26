@@ -660,10 +660,20 @@ export class ClassicFileRulesScene extends ClassicBox {
     );
   }
 
-  /** Item 135: "Left and right to change" only on a row they change (not START, where it opens). */
+  /** The row "Left and right to change" was last read out for (said once per row reached). */
+  private hintedAt = -1;
+
+  /**
+   * Item 135: "Left and right to change" only on a row they change (not START, where it opens),
+   * and only as the cursor reaches it, not again on each change.
+   */
   protected override spoken(): string {
     const line = super.spoken();
-    return this.items[this.index]?.adjust ? `${line.replace(/\.$/, '')}. Left and right to change` : line;
+    const fresh = this.index !== this.hintedAt;
+    this.hintedAt = this.index;
+    return fresh && this.items[this.index]?.adjust
+      ? `${line.replace(/\.$/, '')}. Left and right to change`
+      : line;
   }
 
   private get options(): OptionStore {
