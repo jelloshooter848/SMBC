@@ -1,4 +1,5 @@
 import type { Renderer } from '@engine/gfx/renderer';
+import type { InputFrame } from '@engine/input/input-manager';
 import { packStore, type StoredPack } from '@engine/assets/idb';
 import { download } from '@engine/assets/pack-loader';
 import { packZips } from '@engine/assets/pack-zip';
@@ -130,6 +131,17 @@ const NOTE = [
 const NOTE_SAID =
   'A backup holds every save, file, setting and custom level on this device. Importing one does not restore asset packs.';
 
+/** The pack question's lines, drawn and said (review #217: every drawn line is said). */
+const PACK_ZIP_LINES = [
+  'EACH PACK IS SAVED AS',
+  'ITS OWN .ZIP FILE. TO USE',
+  'ONE AGAIN, UNZIP IT ON A',
+  'COMPUTER AND PICK ITS FOLDER',
+  'WITH IMPORT PACK.',
+];
+const PACK_AGAIN_SAID = 'To use one again, unzip it on a computer and pick its folder with Import pack.';
+const PACK_ZIP_SAID = `Each pack is saved as its own zip file. ${PACK_AGAIN_SAID}`;
+
 /** Options > Save data. */
 export class SaveDataOptions extends MenuScene {
   private readonly env: SaveDataEnv;
@@ -188,6 +200,16 @@ export class SaveDataOptions extends MenuScene {
     return this.zipping;
   }
 
+  /** While busy (the packs being erased) the page takes no press at all: not even BACK. */
+  override update(input: InputFrame): void {
+    if (this.busy) return;
+    super.update(input);
+  }
+
+  override gesture(): (() => void) | null {
+    return this.busy ? null : super.gesture();
+  }
+
   /** The status line (the question's too, when one is up) and the screen reader. */
   private tell(status: string, said: string, bump = false): void {
     if (bump) this.game.ctx.audio.sfx('bump');
@@ -201,6 +223,7 @@ export class SaveDataOptions extends MenuScene {
 
   /** EXPORT BACKUP (and EXPORT FIRST): the pack question first when there are packs. */
   startExport(): void {
+    if (this.busy) return;
     if (!this.packs) {
       this.tell('ONE MOMENT', 'Reading the asset packs. Try again in a moment.', true);
       return;
@@ -232,8 +255,8 @@ export class SaveDataOptions extends MenuScene {
       new QuestionBox(
         this.game,
         `ALSO EXPORT ${plural(n, 'ASSET PACK')}?`,
-        `Also export ${pluralSaid(n, 'asset pack')}?`,
-        ['EACH PACK IS SAVED AS', 'ITS OWN .ZIP FILE.'],
+        `Also export ${pluralSaid(n, 'asset pack')}? ${PACK_ZIP_SAID}`,
+        PACK_ZIP_LINES,
         [answer(false), answer(true)],
         () => this.game.scenes.pop(),
       ),
@@ -258,7 +281,7 @@ export class SaveDataOptions extends MenuScene {
       const done = outcome === 'shared' ? 'BACKUP SHARED' : 'BACKUP SAVED';
       let said = outcome === 'shared' ? 'Backup shared.' : 'Backup saved.';
       if (packs) {
-        said += ` With ${pluralSaid(packs.files.length, 'asset pack')}. Importing a backup does not restore asset packs: keep the pack zip files.`;
+        said += ` With ${pluralSaid(packs.files.length, 'asset pack')}. Importing a backup does not restore asset packs. ${PACK_AGAIN_SAID}`;
         if (packs.failed.length)
           said += ` ${pluralSaid(packs.failed.length, 'pack')} could not be read and ${packs.failed.length === 1 ? 'was' : 'were'} left out: ${packs.failed.join(', ')}.`;
       }
@@ -433,7 +456,7 @@ export class SaveDataOptions extends MenuScene {
       new QuestionBox(
         this.game,
         `ALSO ERASE ${plural(n, 'ASSET PACK')}?`,
-        `Also erase ${pluralSaid(n, 'asset pack')}?`,
+        `Also erase ${pluralSaid(n, 'asset pack')}? No keeps them, turned off.`,
         ['NO KEEPS THEM, TURNED OFF.'],
         [answer(false), answer(true)],
         // BACK cancels the whole erase, as on every other question.
