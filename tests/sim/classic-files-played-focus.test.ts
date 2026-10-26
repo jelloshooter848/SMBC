@@ -5,8 +5,6 @@ import { GameOverScene } from '@game/scenes/game-over';
 import { ClassicMenuScene } from '@game/scenes/original-game';
 import { ClassicFilesScene } from '@game/scenes/original-files-menu';
 import type { ClassicFileRef } from '@game/original-files';
-import { LevelScene } from '@game/scenes/level';
-import { pickAtContinue } from './continue-select';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 import { choose } from './classic-files-nav';
 
@@ -59,17 +57,6 @@ describe('38e: the file box opens on the file just played', () => {
   it('with no run played yet: FILE 1', () => {
     const h = game();
     h.game.showClassicMenu();
-    expect(idx(openSet(h, 'Super Mario Bros.'))).toBe(0);
-  });
-
-  it('a practice run after it (no file) opens on FILE 1 again', () => {
-    const h = game();
-    play(h, { set: 'smb', slot: 2 }, '1-2');
-    h.game.quitClassicRun();
-    h.game.classicLevelSelect('1-3');
-    pickAtContinue(h);
-    h.until(() => h.top() instanceof LevelScene, 900);
-    h.game.quitClassicRun();
     expect(idx(openSet(h, 'Super Mario Bros.'))).toBe(0);
   });
 

@@ -315,6 +315,11 @@ export class LevelScene implements Scene {
     // So does a pickup's first explainer (0.4.46, tutorial/explainers.ts).
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
+    // v0.4.73 (item 66): dev mode turned off mid-run with an unreleased hero: that life ends.
+    if (this.game.classicRun) {
+      this.game.endUnreleasedLife(this.world, this.level);
+      if (this.game.scenes.top !== this) return;
+    }
     this.world.update(inputs);
     this.bossMusicCheck();
     if (this.afterFirstUpdate) {
@@ -597,6 +602,8 @@ export class LevelScene implements Scene {
     else if (game.campaign) game.levelCleared(this.level.id);
     // The cleared level goes along: in Survival a castle brings revival back (Game.levelExitTo).
     else if (game.classicRun) game.levelExitTo(next, this.level);
+    // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    else if (game.levelSelectBack) game.backToLevelSelect();
     else game.goToLevel(next, { mode: 'stand' });
   }
 

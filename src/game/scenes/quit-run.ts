@@ -30,12 +30,14 @@ export const QUIT_BOX_CY = 146;
 /** The question, and the line under it when the run is kept (Game.keepsResume: not dev, link or practice runs). */
 export const QUIT_RUN_TITLE = 'QUIT TO THE CLASSIC MENU?';
 export const QUIT_RUN_KEPT = 'YOUR RUN WAITS IN ITS FILE.';
+/** v0.4.73 (owner 97a): a CLEARED file's level replay goes back to its file box. */
+export const QUIT_REPLAY_TITLE = 'QUIT TO THE FILE BOX?';
 
 export class QuitRunScene extends MenuScene {
   constructor(game: Game, onNo: () => void, onYes: () => void) {
     super(
       game,
-      QUIT_RUN_TITLE,
+      game.replayRun ? QUIT_REPLAY_TITLE : QUIT_RUN_TITLE,
       [
         { label: 'No', select: onNo },
         { label: 'Yes', select: onYes },
@@ -73,7 +75,8 @@ export class QuitRunScene extends MenuScene {
   override enter(): void {
     const kept = this.status ? ' Your run waits in its file.' : '';
     // One line: the question, then the highlighted answer (NO); moving says "Yes" or "No".
-    this.game.deps.announcer?.say(`Quit to the Classic menu?${kept} No`);
+    const to = this.game.replayRun ? 'the file box' : 'the Classic menu';
+    this.game.deps.announcer?.say(`Quit to ${to}?${kept} No`);
   }
 }
 

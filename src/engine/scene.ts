@@ -25,6 +25,12 @@ export interface Scene {
    * skips the same press when GestureGate.take() says it was handled.
    */
   gesture?(): (() => void) | null;
+  /**
+   * Called as the scene is pushed, with the scene it goes over (undefined on an empty stack),
+   * before enter(): a page can take its look from the page it opens over (the Classic pause's
+   * boxes, MenuScene.pushedOver).
+   */
+  pushedOver?(below: Scene | undefined): void;
 }
 
 export class SceneStack {
@@ -38,7 +44,9 @@ export class SceneStack {
   }
 
   push(s: Scene): void {
+    const below = this.top;
     this.stack.push(s);
+    s.pushedOver?.(below);
     s.enter?.();
   }
   pop(): Scene | undefined {

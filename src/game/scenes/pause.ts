@@ -3,7 +3,7 @@ import { AssistOptionsScene, OptionsScene } from './options';
 import { confirmQuitRun } from './quit-run';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
-import { LevelSelectScene } from './level-select-cheat';
+import { advancedCheatsItem } from './advanced-cheats-menu';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -14,6 +14,10 @@ import { nextTouchMode } from '@engine/input/touch-logic';
 import { trainFromPause, trainingOffered } from '../tutorial/training';
 import { endStageRound } from '../arena/stage-round';
 import { lastTipsItem } from '../tutorial/last-tips';
+import { guidePages, TutorialBoxScene } from '../tutorial/original-tutorials';
+
+/** A Classic mode run's pause (not an editor play-test's): the original's short pause, in boxes. */
+const classicPause = (game: Game) => game.classicRun && !game.playtestDone;
 
 const TOUCH_MODE_LABELS: Record<TouchMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
@@ -22,14 +26,34 @@ export class PauseScene extends MenuScene {
     game: Game,
     private readonly world: World | null = null,
   ) {
-    super(game, 'PAUSE', [], null, true);
+    // v0.4.73 item 54: the Classic pause is a CLASSIC box (PauseMenu.as, a MenuBox), and BACK
+    // closes it as the original's cancel does; every page opened from it is a box too
+    // (MenuScene.pushedOver). The campaign's pause is as it was (no BACK, the panel).
+    super(game, 'PAUSE', [], classicPause(game) ? () => game.scenes.pop() : null, true);
+    if (classicPause(game)) this.boxStyle();
     this.rebuild();
+  }
+
+  /** The original's pause box has no title row (PauseMenu.as). */
+  protected override boxHeader(): string | null {
+    return null;
   }
 
   /** The menu, with the short SMBC REMIX logo in the panel's bottom right corner. */
   override render(r: Renderer): void {
     super.render(r);
-    r.sprite(this.game.ctx.assets.sheet('title-logo'), 'smbc-line', 146, 200);
+    if (!this.boxed) r.sprite(this.game.ctx.assets.sheet('title-logo'), 'smbc-line', 146, 200);
+  }
+
+  /**
+   * v0.4.73 item 67: back from Dev mode > Dev mode off. Its rows go, so the cursor goes to
+   * Continue (where the pause opens), and the page says so.
+   */
+  devModeOff(): void {
+    this.rebuild();
+    this.index = 0;
+    const it = this.items[0];
+    this.game.deps.announcer?.say(`Dev mode off. ${it ? it.label : ''}`.trim());
   }
 
   private rebuild(): void {
@@ -37,24 +61,18 @@ export class PauseScene extends MenuScene {
     const items: MenuItem[] = [{ label: 'Continue', select: () => game.scenes.pop() }];
     this.entryTitle = null;
     // A Classic mode run: the original's short pause, plus every developer row while dev mode is on.
-    if (game.classicRun && !game.playtestDone) {
+    if (classicPause(game)) {
       // 38f: it opens saying its name, then the focused row ("Paused. Continue").
       this.entryTitle = 'Paused';
       items.push(...this.reserveItem());
-      // The hero's own How to play page, as the run's rules play it (G-093).
-      items.push(...this.guideItems());
+      // v0.4.73 item 55: the Guide is the original's tutorial boxes for the hero played.
+      items.push(...this.classicGuideItems());
       items.push({
         label: 'Options',
         // 38f review: BACK says the pause's focused row again.
         select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
-      // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
-      if (game.deps.settings?.classicCheats.levelSelect)
-        items.push({
-          label: 'Level select',
-          select: () => game.scenes.push(new LevelSelectScene(game, () => game.scenes.pop(), true)),
-          hint: 'Go to any level, keeping your lives and score',
-        });
+      // v0.4.73 item 94 (owner): no Level Select cheat row (PauseMenu.as:37-38 had one).
       items.push(...this.devItems());
       // The cheats mid-run (G-031: the original's Pause > Options > Cheats): the unlocked ones,
       // with Classic rules (the only rules cheats play under). Invincible and the assist-like
@@ -86,6 +104,9 @@ export class PauseScene extends MenuScene {
             ),
           hint: 'Every original cheat, in developer mode',
         });
+      // v0.4.73 (item 60): a CLEARED file's replay, beaten on Hard: its Advanced cheats.
+      const adv = game.replayRun?.ref;
+      if (adv && game.advancedCheatsOf(adv)) items.push(advancedCheatsItem(game, adv));
       if (game.stageRound) items.push(this.giveUp());
       // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
       items.push({
@@ -94,9 +115,12 @@ export class PauseScene extends MenuScene {
         select: () => confirmQuitRun(game, null),
         // G-008, B-L: the run's file holds this level's start, only when the run has one
         // (Game.keepsResume: not a developer, link or practice run).
-        hint: game.keepsResume
-          ? 'Back to the Classic menu; your file picks the run up from this level'
-          : 'Back to the Classic menu',
+        hint: game.replayRun
+          ? // v0.4.73 (owner 97a): a CLEARED file's replay goes back to its file box.
+            'Back to the file box; the file stays cleared'
+          : game.keepsResume
+            ? 'Back to the Classic menu; your file picks the run up from this level'
+            : 'Back to the Classic menu',
       });
       this.setItems(items);
       return;
@@ -162,7 +186,12 @@ export class PauseScene extends MenuScene {
     } else
       items.push({
         label: 'Quit',
-        select: () => (game.playtestDone ? game.playtestDone() : game.showTitle()),
+        select: () => {
+          if (game.playtestDone) game.playtestDone();
+          // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
+          else if (!game.backToLevelSelect()) game.showTitle();
+        },
+        ...(game.levelSelectBack && !game.playtestDone ? { hint: 'Back to the level select' } : {}),
       });
     this.setItems(items);
   }
@@ -176,6 +205,26 @@ export class PauseScene extends MenuScene {
       return {
         label: heroes.length > 1 ? `Guide: ${def.name}` : 'Guide',
         select: () => game.scenes.push(new GuideScene(game, def, () => game.scenes.pop())),
+      };
+    });
+  }
+
+  /**
+   * v0.4.73 item 55 (owner): the Classic pause's Guide opens the original's tutorial boxes
+   * (TutorialBoxScene) for the hero being played (player two's too): its start box, then the
+   * boxes of what its Mushroom and Fire Flower bring (original-tutorials.ts guidePages). Each page
+   * is read out and waits for a press; after the last the pause says its Guide row again.
+   */
+  private classicGuideItems(): MenuItem[] {
+    const game = this.game;
+    const heroes = [game.state.character, ...(game.state.character2 ? [game.state.character2] : [])];
+    return heroes.map((c, i) => {
+      const def = this.world?.players[i]?.def ?? c;
+      const hero = game.slotOf(def).id;
+      return {
+        label: heroes.length > 1 ? `Guide: ${def.name}` : 'Guide',
+        select: () => game.scenes.push(new TutorialBoxScene(game, guidePages(game, hero), null)),
+        hint: `${def.name}'s tutorial`,
       };
     });
   }
