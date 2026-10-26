@@ -473,7 +473,7 @@ export type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done
 export const DOOR_TRANSFER_FRAMES = 24;
 
 /**
- * Classic scroll-back (v0.4.74 item 77, owner-approved deviation): a power-up keeps moving while
+ * Classic scroll-back (v0.4.73 item 77, owner-approved deviation): a power-up keeps moving while
  * it is within one screen past the camera's left edge, and only beyond that is parked. The
  * original takes every object off the stage while it is more than 2 tiles off screen and puts it
  * back when it is in range again (AnimatedObject.checkStgPos), but then a player who outran a
@@ -495,7 +495,7 @@ type PipeAnim = {
   hold: number | null;
   target: WorldEvent & { type: 'pipe' };
   /**
-   * A hop in place before the hero goes in (v0.4.74 item 74: off the Classic Yoshi mount, who
+   * A hop in place before the hero goes in (v0.4.73 item 74: off the Classic Yoshi mount, who
    * waits at the pipe): `t` of `n` frames, from feet-row y `y0`. Absent: straight in.
    */
   hop?: { t: number; n: number; y0: number };
@@ -2789,7 +2789,7 @@ export class World {
 
   /**
    * Scroll-back: what is parked off the stage instead of despawned: the map's entities, and
-   * (v0.4.74 item 77) every power-up out of a block (enemy drops are Pickups with their own
+   * (v0.4.73 item 77) every power-up out of a block (enemy drops are Pickups with their own
    * timed vanish).
    */
   private parks(e: Entity): boolean {
@@ -3209,20 +3209,7 @@ export class World {
       for (const e of this.enemies) {
         // A Classic frozen enemy is out of melee's reach (HP-C17).
         if (this.thrustIgnoresShell(p, e) || e.frozen > 0) continue;
-        if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
-          p.scratch[`hit${e.id}`] = 1;
-          const src: DamageSource = p.def.behaviour.meleeDamage?.(p, e) ?? {
-            kind: 'sword',
-            amount: 1,
-            owner: null,
-            dirX: p.facing,
-            by: p,
-          };
-          const res = e.hit(src, this);
-          this.scoreKill(e, src.kind, res);
-          if (res === 'hp') this.audio.sfx(this.hitSound(src));
-          if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
-        }
+        if (overlaps(p.activeMelee, e.body)) this.meleeHit(p, e);
       }
     } else {
       for (const k of Object.keys(p.scratch)) if (k.startsWith('hit')) delete p.scratch[k];
@@ -3259,6 +3246,46 @@ export class World {
       }
       if (p.dead || this.clear || this.bossClear || this.unmask) return;
     }
+  }
+
+  /** A melee hit on `e`, once until the hero's melee ends or re-arms (`hit<id>` in scratch). */
+  private meleeHit(p: Player, e: Enemy): void {
+    if (p.scratch[`hit${e.id}`]) return;
+    p.scratch[`hit${e.id}`] = 1;
+    const src: DamageSource = p.def.behaviour.meleeDamage?.(p, e) ?? {
+      kind: 'sword',
+      amount: 1,
+      owner: null,
+      dirX: p.facing,
+      by: p,
+    };
+    const res = e.hit(src, this);
+    this.scoreKill(e, src.kind, res);
+    if (res === 'hp') this.audio.sfx(this.hitSound(src));
+    if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
+  }
+
+  /**
+   * CharacterDef.thrustContact (Classic Link, item 104): his body meeting `e` while thrusting
+   * into it (down onto it from above, falling; up into it from below, rising) is the thrust's
+   * hit, never a hurt (Link.hitEnemy: landAttack). True when that handled the contact.
+   */
+  private thrustContact(p: Player, e: Enemy): boolean {
+    if (!p.def.thrustContact || this.thrustIgnoresShell(p, e)) return false;
+    const pb = p.body;
+    const eb = e.body;
+    const eh = eb.h;
+    const feet = pb.y + pb.h;
+    const down =
+      !!p.scratch.downThrust &&
+      p.fallSpeed > 0 &&
+      feet - eb.y <= eh * 0.8 &&
+      pb.prevBottom <= eb.y + eh * 0.6;
+    const up =
+      !!p.scratch.upThrust && pb.vy < 0 && pb.y >= eb.y + eh * 0.2 && pb.prevBottom - pb.h >= eb.y + eh * 0.4;
+    if (!down && !up) return false;
+    this.meleeHit(p, e);
+    return true;
   }
 
   private enemyVsEnemy(): void {
@@ -3316,6 +3343,7 @@ export class World {
       if (r !== 'immune') this.addScore(e.scoreFor('star'), e.body.x, e.body.y);
       return;
     }
+    if (this.thrustContact(p, e)) return;
     // Just after any kick the shell neither hurts nor can be stomped by any player
     // (KoopaGreen.NO_HIT_SHELL_TMR: Character.hitEnemy skips it, KoopaGreen.stomp returns early).
     if (e instanceof Koopa && e.noHitTimer > 0) return;
