@@ -17,11 +17,20 @@ import { assistItems } from './options';
  * box. With dev mode on the dev Assists play instead (its line under the box says so).
  */
 
-/** The row that opens it (the file's world box, its pause menu), next to Cheats. */
-export function advancedCheatsItem(game: Game, ref: ClassicFileRef, onBack?: () => void): MenuItem {
+/**
+ * The row that opens it (the file's world box, its pause menu), next to Cheats. `id`: the file's
+ * fingerprint as that box or replay was made (item 134), else the file the slot holds as it opens.
+ */
+export function advancedCheatsItem(
+  game: Game,
+  ref: ClassicFileRef,
+  onBack?: () => void,
+  id?: string,
+): MenuItem {
   return {
     label: 'Advanced cheats',
-    select: () => game.scenes.push(new AdvancedCheatsScene(game, ref, onBack ?? (() => backToMenu(game)))),
+    select: () =>
+      game.scenes.push(new AdvancedCheatsScene(game, ref, onBack ?? (() => backToMenu(game)), id)),
     hint: game.devMode
       ? "Every assist, for this file's runs. Dev mode's Assists play while dev mode is on"
       : "Every assist, for this file's runs only. You beat it on Hard",
@@ -38,6 +47,7 @@ export class AdvancedCheatsScene extends MenuScene {
     game: Game,
     readonly ref: ClassicFileRef,
     onBack: () => void,
+    id?: string,
   ) {
     super(game, 'ADVANCED CHEATS', [], onBack, true);
     this.moveSfx = 'fireball';
@@ -45,8 +55,9 @@ export class AdvancedCheatsScene extends MenuScene {
     this.adjustSfx = 'coin';
     this.okAdjustSfx = 'coin';
     this.entryTitle = `Advanced cheats, file ${ref.slot}`;
-    this.fileId = game.advancedCheatsId(ref) ?? '';
-    this.values = { ...(game.advancedCheatsOf(ref)?.assist ?? ADVANCED_OFF) };
+    this.fileId = id ?? game.advancedCheatsId(ref) ?? '';
+    // Item 134: another file in the slot now (another tab): its cheats are not shown or written.
+    this.values = { ...(game.advancedCheatsOf(ref, this.fileId)?.assist ?? ADVANCED_OFF) };
     this.setItems([
       ...assistItems(this.values, () => this.keep()),
       { label: 'Back', select: () => this.onBack?.() },

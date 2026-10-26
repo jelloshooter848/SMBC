@@ -18,7 +18,6 @@ import {
   type ClassicFileRules,
   type ClassicFileSlot,
 } from '../original-files';
-import { resumeSetOf } from '../run-resume';
 import { CLASSIC_EXTRAS } from '../characters/registry';
 import { worldLabel } from '../hud/world-label';
 import { MenuScene, type MenuItem } from './menu';
@@ -48,16 +47,11 @@ import { ClassicHeroesScene, type HeroesOffStore } from './disable-heroes';
  * "ERASE FILE N?" with NO first. BACK steps back one box everywhere.
  */
 
-/** The short name of a map set, for a run that went into another set. */
-export const SET_SHORT: Record<MapSetId, string> = { smb: 'SMB', special: 'SP', lost: 'LL' };
-
 const setOf = (id: MapSetId): MapSet => MAP_SETS.find((m) => m.id === id) ?? (MAP_SETS[0] as MapSet);
 
-/** Where a file's run is: "4-2", or "SP 2-1" when it is in another map set than its file's. */
+/** Where a file's run is: "4-2" (item 127: a file's run stays in its own map set since item 94). */
 export function fileWhere(f: ClassicFile): string {
-  const at = `${worldLabel(f.run.world)}-${f.run.stage}`;
-  const here = resumeSetOf(f.run.levelId);
-  return here === f.set ? at : `${SET_SHORT[here]} ${at}`;
+  return `${worldLabel(f.run.world)}-${f.run.stage}`;
 }
 
 /** A used file's row value: "HARD 4-2 X3". */
@@ -103,8 +97,7 @@ export function fileOwnRules(r: ClassicFileRules): boolean {
 export function fileSpoken(game: Game, f: ClassicFile): string {
   const own = fileOwnRules(f.rules) ? '. Your own rules are on' : '';
   const r = f.run;
-  const here = resumeSetOf(r.levelId);
-  const where = `World ${worldLabel(r.world)}-${r.stage}${here === f.set ? '' : ` of ${setOf(here).label.replace(/\.$/, '')}`}`;
+  const where = `World ${worldLabel(r.world)}-${r.stage}`;
   const lives = livesShown(f) ? `${r.lives} ${r.lives === 1 ? 'life' : 'lives'}` : '';
   const parts = [
     DIFFICULTY_NAMES[f.rules.difficulty],
@@ -656,7 +649,7 @@ export class ClassicFileRulesScene extends ClassicBox {
       closeTo(game, below);
       below.comeBack();
     });
-    this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts. Left and right to change`;
+    this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts`;
     this.refresh();
     // v0.4.73 item 53 (owner): the box opens on START, so a file with the original's rules starts
     // at once; the settings are above it (UP). 38c: back from the new game's hero select it is on
@@ -665,6 +658,22 @@ export class ClassicFileRulesScene extends ClassicBox {
       0,
       this.items.findIndex((i) => i.label === 'Start'),
     );
+  }
+
+  /** The row "Left and right to change" was last read out for (said once per row reached). */
+  private hintedAt = -1;
+
+  /**
+   * Item 135: "Left and right to change" only on a row they change (not START, where it opens),
+   * and only as the cursor reaches it, not again on each change.
+   */
+  protected override spoken(): string {
+    const line = super.spoken();
+    const fresh = this.index !== this.hintedAt;
+    this.hintedAt = this.index;
+    return fresh && this.items[this.index]?.adjust
+      ? `${line.replace(/\.$/, '')}. Left and right to change`
+      : line;
   }
 
   private get options(): OptionStore {

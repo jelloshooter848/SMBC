@@ -3268,7 +3268,7 @@ export class World {
   }
 
   /**
-   * CharacterDef.thrustContact (Classic Link, item 104): his body meeting `e` while thrusting
+   * CharacterDef.thrustContact (Link, items 104 and 122): his body meeting `e` while thrusting
    * into it (down onto it from above, falling; up into it from below, rising) is the thrust's
    * hit, never a hurt (Link.hitEnemy: landAttack). True when that handled the contact. A frozen
    * enemy is out of melee's reach (HP-C17), and one immune to the sword (a Podoboo, a fire bar:

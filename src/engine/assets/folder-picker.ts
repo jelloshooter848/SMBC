@@ -31,12 +31,13 @@ export interface PackPickerFacts {
 }
 
 /**
- * The ASSET PACKS page says ASSET PACKS NEED A COMPUTER instead of offering Import: only on a
- * touch device (pad shown, or a finger for a pointer) that cannot pick a folder. Both halves are
- * needed: a desktop browser without the picker still offers Import (its own picker says what it
- * can do, and a keyboard player can always reach a computer's file dialog), and a touch device
- * whose browser can pick folders (Chrome on Android, a touchscreen laptop) keeps Import too.
+ * The ASSET PACKS page says ASSET PACKS NEED A COMPUTER instead of offering Import, by the kind
+ * of device (item 128): a finger for the primary pointer is a phone or tablet, Android ones
+ * included (Chrome there has a folder picker, but a phone is no place to build a pack); the
+ * touch pad up on a device that cannot pick a folder is one too. A touchscreen laptop (a fine
+ * primary pointer and a folder picker) keeps Import, and so does a desktop browser without the
+ * picker (its own picker says what it can do).
  */
 export function packsNeedComputer(f: PackPickerFacts): boolean {
-  return (f.touchShown || f.coarsePointer) && !f.folderPicker;
+  return f.coarsePointer || (f.touchShown && !f.folderPicker);
 }

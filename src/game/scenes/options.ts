@@ -369,7 +369,11 @@ export function assistItems(a: AssistSettings, changed: () => void): MenuItem[] 
 
 class PacksOptions extends MenuScene {
   private names: string[] = [];
-  /** A touch device that cannot pick a folder (item 84): the page only says so. */
+  /**
+   * A phone or tablet (a coarse pointer), or the touch pad up with no folder picker (items 84,
+   * 128, packsNeedComputer): ASSET PACKS NEED A COMPUTER above the rows, no Import pack or Export
+   * template; the packs already stored stay listed (On/Off, OK deletes).
+   */
   private readonly needComputer: boolean;
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSET PACKS', [], onBack);
@@ -378,13 +382,9 @@ class PacksOptions extends MenuScene {
       coarsePointer: readTouchFacts().coarsePointer,
       folderPicker: folderPickerSupported(),
     });
-    if (this.needComputer) {
-      // Packs already stored keep loading (main.ts); only importing needs a computer.
-      this.status = PACKS_NEED_COMPUTER;
-      this.entryTitle = PACKS_NEED_COMPUTER;
-      this.setItems([{ label: 'Back', select: () => this.onBack?.() }]);
-      return;
-    }
+    // Packs already stored keep loading (main.ts) and can be turned off or deleted here; only
+    // importing needs a computer (item 128 review: an Android player may have imported in 0.4.73).
+    if (this.needComputer) this.entryTitle = PACKS_NEED_COMPUTER;
     this.rebuild();
     void this.refresh();
   }
@@ -394,25 +394,47 @@ class PacksOptions extends MenuScene {
     this.rebuild();
   }
 
+  /** Import pack and Export template: a computer's rows (not on a phone or tablet, item 128). */
+  private importRows(): MenuItem[] {
+    const game = this.game;
+    return [
+      {
+        label: 'Import pack',
+        select: () => this.pickFolder(),
+        // The file dialog only opens from inside the press's own event.
+        gesture: true,
+        hint: 'Choose a folder with manifest.json',
+      },
+      {
+        label: 'Export template',
+        // Item 92: one download, smbc-remix-pack-template.zip (the PNGs, their layouts and a README
+        // listing the ids, read live).
+        select: () =>
+          void exportTemplate(game.ctx.assets, game.ctx.audio.registeredIds?.() ?? { songs: [], sfx: [] }),
+        hint: 'Downloads a zip of PNGs to repaint',
+      },
+    ];
+  }
+
+  /** The first pack row's index (after Import pack and Export template, when they are there). */
+  private get packRowsFrom(): number {
+    return this.needComputer ? 0 : PACK_ROWS_FROM;
+  }
+
+  /** Item 128 review: ASSET PACKS NEED A COMPUTER above the rows (the status line in a box). */
+  override render(r: Renderer): void {
+    if (this.needComputer && this.boxed && !this.status) this.status = PACKS_NEED_COMPUTER;
+    super.render(r);
+    if (!this.needComputer || this.boxed) return;
+    const y = this.translucent ? 42 : 52;
+    r.text(this.game.ctx.assets.sheet('font'), PACKS_NEED_COMPUTER, 128 - PACKS_NEED_COMPUTER.length * 4, y);
+  }
+
   private rebuild(): void {
     const game = this.game;
     const s = settings(game);
     const items: MenuItem[] = [];
-    items.push({
-      label: 'Import pack',
-      select: () => this.pickFolder(),
-      // The file dialog only opens from inside the press's own event.
-      gesture: true,
-      hint: 'Choose a folder with manifest.json',
-    });
-    items.push({
-      label: 'Export template',
-      // Item 92: one download, smbc-remix-pack-template.zip (the PNGs, their layouts and a README
-      // listing the ids, read live).
-      select: () =>
-        void exportTemplate(game.ctx.assets, game.ctx.audio.registeredIds?.() ?? { songs: [], sfx: [] }),
-      hint: 'Downloads a zip of PNGs to repaint',
-    });
+    if (!this.needComputer) items.push(...this.importRows());
     for (const name of this.names) {
       items.push({
         label: name.slice(0, 12),
@@ -456,7 +478,8 @@ class PacksOptions extends MenuScene {
                 // The cursor stays on the nearest pack left, else Export template (never
                 // silently on Back), and the line names where it is.
                 const near = Math.min(at, this.names.length - 1);
-                this.index = near >= 0 ? PACK_ROWS_FROM + near : PACK_ROWS_FROM - 1;
+                const from = this.packRowsFrom;
+                this.index = near >= 0 ? from + near : Math.max(0, from - 1);
                 game.deps.announcer?.say(`${this.status}. ${this.focusLine()}`);
               })
               .catch(() => {

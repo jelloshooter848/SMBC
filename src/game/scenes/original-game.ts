@@ -12,7 +12,8 @@ import { OptionsScene } from './options';
 import { CheatsScene } from './cheats-menu';
 import { MUSIC_SET_ROW, optionItem } from './original-options';
 import type { Game } from './game';
-import { filesBoxFor } from './original-files-menu';
+import { STORAGE_UNREADABLE, filesBoxFor } from './original-files-menu';
+import { storageReadable } from '@engine/save/storage';
 import { CLASSIC_FILE_SLOTS } from '../original-files';
 import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import type { Renderer } from '@engine/gfx/renderer';
@@ -207,13 +208,19 @@ export class ClassicMenuScene extends MenuScene {
     // B-L: each set has three save files; picking a set opens its file box (original-files-menu.ts).
     // Map difficulty and Options are no longer here: a file's rules are chosen when it starts,
     // and the shared options are in the Start box's OPTIONS.
+    const readable = storageReadable();
     const items: MenuItem[] = MAP_SETS.map((set) => {
       // 38b: every file in use counts, an UNREADABLE, HERO OFF or CANNOT PLAY one too (a new
       // game never takes them), not only the ones that play now.
       const used = CLASSIC_FILE_SLOTS.filter(
         (slot) => game.classicFileState({ set: set.id, slot }) !== 'empty',
       ).length;
-      const files = used === 0 ? 'No files used' : `${used} ${used === 1 ? 'file' : 'files'} used`;
+      // Item 120: while saves cannot be read every file reads as empty: said instead of a count.
+      const files = !readable
+        ? STORAGE_UNREADABLE
+        : used === 0
+          ? 'No files used'
+          : `${used} ${used === 1 ? 'file' : 'files'} used`;
       return {
         label: set.label,
         // 38e: on the file just played, after a run.

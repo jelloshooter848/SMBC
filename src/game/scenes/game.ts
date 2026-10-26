@@ -2668,12 +2668,13 @@ export class Game {
   /** The map set the Classic run's file belongs to, for the CLASSIC menu's focus on leaving it. */
   get runSet(): MapSetId | undefined {
     if (this.classicFile) return this.classicFile.set;
-    // 36a: a run with no file (a practice run): the set of the level
-    // it is playing (its main level's, for a sub-area), else of the level its select was for.
+    // 36a: a run with no file (a dev Classic or link run): the set of the level it is playing
+    // (its main level's, for a sub-area).
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
-    // 38d: with no level on the stack (MAIN MENU after a game over), the level the run last
-    // played: a `?level=` link run has no select level, and it played its link's set.
-    const id = scene ? (scene.level.parent ?? scene.level.id) : (this.runLevel ?? this.selectLevel);
+    // 38d: with no level on the stack (MAIN MENU after a game over, a mid-run select), the level
+    // the run last played. Item 127: no run is left before it plays a level any more (item 94
+    // took the practice run quit from its select), so the select's level is not needed.
+    const id = scene ? (scene.level.parent ?? scene.level.id) : this.runLevel;
     return id ? mapSetOf(id).id : undefined;
   }
 
@@ -2952,11 +2953,13 @@ export class Game {
 
   /**
    * v0.4.73 (item 60): CLEARED file `ref`'s ADVANCED CHEATS (advanced-cheats.ts), or null when it
-   * has none (not CLEARED, not beaten on Hard, or storage cannot be read).
+   * has none (not CLEARED, not beaten on Hard, or storage cannot be read). With `id` (item 134:
+   * advancedCheatsId, taken as a world box or replay was made), null when the slot holds another
+   * file now (another tab erased it and cleared it again).
    */
-  advancedCheatsOf(ref: ClassicFileRef): AdvancedState | null {
+  advancedCheatsOf(ref: ClassicFileRef, id?: string): AdvancedState | null {
     const r = readAdvanced(ref);
-    if (!r) return null;
+    if (!r || (id !== undefined && r.fp !== id)) return null;
     const kept = this.advancedMemory.get(`${classicFileKey(ref)}|${r.fp}`);
     const st = kept ?? r.state;
     return { seen: st.seen, assist: { ...st.assist } };
@@ -3007,7 +3010,8 @@ export class Game {
     if (s?.dev) return { ...s.assist };
     const rp = this.replayRun;
     if (rp && this.campaign === null) {
-      const a = this.advancedCheatsOf(rp.ref);
+      // Item 134: only the file the replay was made for (its world box's fingerprint).
+      const a = this.advancedCheatsOf(rp.ref, rp.fp);
       if (a) return { ...a.assist };
     }
     return { ...ADVANCED_OFF };
@@ -3048,7 +3052,7 @@ export class Game {
    * hero pick), free play's lives and the normal timer. BACK from the select: the level box.
    * Nothing is written: no file (classicFile null), no beat, no cheat counts (practiceRun).
    */
-  replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string): void {
+  replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string, fp?: string): void {
     const f = this.classicClearedAt(ref);
     if (!f) {
       // Erased (or changed) by another tab since this box was drawn: said, and the file box again.
@@ -3058,10 +3062,18 @@ export class Game {
     }
     const rules = copyFileRules(f.rules);
     rules.options.gameMode = originalFileRules().options.gameMode;
-    this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage), {
+    const id = fp ?? this.advancedCheatsId(ref) ?? '';
+    this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage, false, id), {
       rules,
       practice: true,
-      replay: { ref: { set: ref.set, slot: ref.slot }, world, stage, levelId },
+      // Item 134: the fingerprint its world box was made with (else the file it holds now).
+      replay: {
+        ref: { set: ref.set, slot: ref.slot },
+        world,
+        stage,
+        levelId,
+        fp: id,
+      },
       tutorialsSeen: f.tutorialsSeen,
     });
   }
@@ -3113,7 +3125,7 @@ export class Game {
       this.showClassicFiles(rp.ref.set, rp.ref.slot);
       return;
     }
-    showReplayLevels(this, rp.ref, rp.world, rp.stage, to === 'next');
+    showReplayLevels(this, rp.ref, rp.world, rp.stage, to === 'next', rp.fp);
   }
 
   /**
