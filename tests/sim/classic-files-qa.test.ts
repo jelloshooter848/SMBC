@@ -46,9 +46,9 @@ const inLevel = (h: H) => h.top() instanceof LevelScene;
 const settingsWrites = () => JSON.parse(store.get(SETTINGS_KEY) ?? '{}').classicTutorialsSeen as unknown;
 
 describe('B-L QA 1: the Tutorials seen list is the file’s', () => {
-  it('file A keeps its list when file B starts and when a practice run plays', () => {
+  // v0.4.73 item 94: the practice run from the Level Select cheat went with the cheat.
+  it('file A keeps its list when file B starts', () => {
     const h = classic();
-    h.settings.classicCheats.levelSelect = true;
     h.game.classicGame(MARIO, '1-1', { ref: A });
     h.until(() => inLevel(h), 600);
     h.game.classicTutorials.restore(['characterSelect', 'marioStart']);
@@ -60,13 +60,6 @@ describe('B-L QA 1: the Tutorials seen list is the file’s', () => {
     h.game.classicSelect('1-1', () => {}, { file: B, rules: originalFileRules() });
     // (Its select's own box has just shown, so that one is B's.)
     expect(h.game.classicTutorials.seen).not.toContain('marioStart');
-    expect(loadClassicFile(A)?.tutorialsSeen).toEqual(['characterSelect', 'marioStart']);
-    // A practice Go from the menus: an in-memory list, no settings write, A untouched.
-    h.game.showClassicMenu();
-    h.game.classicLevelSelect('3-1');
-    expect(h.game.practiceRun).toBe(true);
-    expect(h.game.classicTutorials.seen).not.toContain('marioStart');
-    expect(settingsWrites()).toBeUndefined();
     expect(loadClassicFile(A)?.tutorialsSeen).toEqual(['characterSelect', 'marioStart']);
     // Continue A: its list comes back.
     h.game.showTitle();

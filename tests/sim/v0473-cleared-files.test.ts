@@ -172,7 +172,7 @@ describe('A: a CLEARED file is never overwritten', () => {
     expect(loadClearedFile(A)?.run.score).toBe(424242);
   });
 
-  it('a downgrade, then this version again: the CLEARED file reads as it was', () => {
+  it('this version reads a CLEARED file as it was and writes nothing on reading it (v0.4.72 itself: v0473-cleared-review)', () => {
     keepCleared(A, { score: 31337 });
     const before = stored();
     // An older version keeps it as unreadable (never written: its saves need an empty file).

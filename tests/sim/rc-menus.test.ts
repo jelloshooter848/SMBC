@@ -31,7 +31,7 @@ import { ClassicMenuScene } from '@game/scenes/original-game';
 import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { LevelScene } from '@game/scenes/level';
-import { GuideIndexScene } from '@game/scenes/guide';
+import { ClassicTutorialHeroesScene } from '@game/scenes/how-to-play-boxes';
 import { ClassicOptionsScene } from '@game/scenes/original-game';
 import { SaveFilesOptions } from '@game/scenes/save-codes';
 import {
@@ -318,27 +318,36 @@ describe('O-13: Classic options "All options" becomes "Video, audio, controls"',
   });
 });
 
-describe("O-14: no campaign guides in Classic (the title's How to play while the campaign is closed)", () => {
-  const guide = (h: H) => {
-    title(h);
-    pick(h, 'Options');
-    pick(h, 'How to play');
-    expect(h.top()).toBeInstanceOf(GuideIndexScene);
-    return labels(h.top()).filter((l) => l !== 'Back');
-  };
-
-  it("outside dev mode it lists the Classic select's heroes, each with its Classic page", () => {
-    const h = makeGame();
-    const names = guide(h);
-    expect(names).toContain('Bass');
-    expect(names.slice(0, 2)).toEqual(['Mario', 'Luigi']);
-    pick(h, names[0] as string);
-    expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
+// 0.4.73 (owner, item 81): the title's Options no longer has How to play, so O-14's title guide
+// is gone; Classic's own Options keep theirs (Classic heroes, Classic pages:
+// classic-pause-guide-cheats.test.ts) and the Campaign's keep the campaign roster.
+describe("O-14 / item 81: no campaign guides in Classic; none at all in the title's Options", () => {
+  it('the title > Options has no How to play, with dev mode off or on', () => {
+    for (const dev of [false, true]) {
+      const h = makeGame(dev);
+      title(h);
+      pick(h, 'Options');
+      expect(h.top()).toBeInstanceOf(OptionsScene);
+      expect(labels(h.top())).not.toContain('How to play');
+    }
   });
 
-  it('with dev mode on (the campaign open) it is the campaign roster, as before', () => {
+  it("Classic's Options list the Classic select's heroes, each with its Classic page", () => {
+    const h = makeGame();
+    h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
+    pick(h, 'How to play');
+    // v0.4.73 item 82: Classic's How to play is the Classic tutorial boxes' hero list
+    // (v0473-menus covers each hero's boxes).
+    expect(h.top()).toBeInstanceOf(ClassicTutorialHeroesScene);
+    const names = labels(h.top()).filter((l) => l !== 'Back');
+    expect(names.slice(0, 2)).toEqual(['Mario', 'Luigi']);
+  });
+
+  it("the Campaign's (in-game) Options list the campaign roster, as before", () => {
     const h = makeGame(true);
-    const names = guide(h);
+    h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), true));
+    pick(h, 'How to play');
+    const names = labels(h.top()).filter((l) => l !== 'Back');
     expect(names).not.toContain('Bass');
     expect(names).toEqual(h.game.roster.map((c) => c.name));
   });

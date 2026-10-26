@@ -50,6 +50,13 @@ export interface BoxedMenu {
   age?: number | null;
   /** The action that goes BACK on this page, named in the hint (MenuScene.backAction; 'attack'). */
   backAction?: 'attack' | 'select';
+  /**
+   * v0.4.73 item 54: where the box is centred (screen y) when it is not under the CLASSIC logo
+   * (the Classic pause's boxes over the paused level); absent: under the logo.
+   */
+  cy?: number;
+  /** False: the page has no BACK, so no BACK line (default true). */
+  back?: boolean;
 }
 
 /** A menu's rows in a box under the CLASSIC logo, its status line and the BACK hint under it. */
@@ -60,7 +67,7 @@ export function renderBoxedMenu(r: Renderer, game: Game, m: BoxedMenu): void {
     return { label: it.label, ...(value !== undefined ? { value } : {}) };
   });
   const status = m.status !== '';
-  const at = boxLayout(rows, status, boxCentreUnderLogo(rows, m.header), m.header);
+  const at = boxLayout(rows, status, m.cy ?? boxCentreUnderLogo(rows, m.header), m.header);
   const grow = m.age === null || m.age === undefined ? 1 : boxGrowth(m.age, calm);
   drawMenuBox(r, game.ctx.assets, rows, m.index, {
     cx: 128,
@@ -78,5 +85,5 @@ export function renderBoxedMenu(r: Renderer, game: Game, m: BoxedMenu): void {
     r.text(assets.sheet('font'), s, x, y);
   };
   if (status && at.statusY !== null) line(m.status.toUpperCase().slice(0, 31), at.statusY);
-  line(abilityHint(game, 'BACK', m.backAction ?? 'attack'), at.backY);
+  if (m.back !== false) line(abilityHint(game, 'BACK', m.backAction ?? 'attack'), at.backY);
 }

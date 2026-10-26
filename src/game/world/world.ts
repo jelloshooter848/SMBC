@@ -472,6 +472,19 @@ export type ClearPhase = 'slide' | 'hop' | 'walk' | 'countdown' | 'flag' | 'done
 /** Frames from UP at an open locked door to the next area (the hero has gone in). */
 export const DOOR_TRANSFER_FRAMES = 24;
 
+/**
+ * Classic scroll-back (v0.4.73 item 77, owner-approved deviation): a power-up keeps moving while
+ * it is within one screen past the camera's left edge, and only beyond that is parked. The
+ * original takes every object off the stage while it is more than 2 tiles off screen and puts it
+ * back when it is in range again (AnimatedObject.checkStgPos), but then a player who outran a
+ * power-up and waited ahead for it would wait forever. The right edge has the same screen of
+ * reach (owner OK): a power-up walking right while the hero goes back left would otherwise stop
+ * 48 px past the edge (the map entities' right reach). (A block struck off screen to the right
+ * parked its power-up as it came out: a test strikes 1-1's first ? block from the start. In play
+ * blocks are struck on screen, inside that 48 px.)
+ */
+const POWERUP_REACH_PX = 256;
+
 type PipeAnim = {
   player: Player;
   dir: PipeDir;
@@ -481,6 +494,11 @@ type PipeAnim = {
   /** Frames left hidden in the pipe before the transfer (PIPE_LEV_TRANS_DELAY); null while moving. */
   hold: number | null;
   target: WorldEvent & { type: 'pipe' };
+  /**
+   * A hop in place before the hero goes in (v0.4.73 item 74: off the Classic Yoshi mount, who
+   * waits at the pipe): `t` of `n` frames, from feet-row y `y0`. Absent: straight in.
+   */
+  hop?: { t: number; n: number; y0: number };
 };
 /**
  * A teleport pad's beam (entities/objects/teleporter.ts). `up`: the rider is hidden, the streak
@@ -1150,8 +1168,7 @@ export class World {
         )
           continue;
         if (!(e instanceof Pickup || e instanceof PowerUp)) this.fromMap.add(e);
-        if (this.camera.scrollBack && this.fromMap.has(e) && e.despawnMargin !== null && this.outOfReach(e))
-          this.parked.push(e);
+        if (this.camera.scrollBack && this.parks(e) && this.outOfReach(e)) this.parked.push(e);
         else this.entities.push(e);
       }
       this.areaMemory?.delete(level.id);
@@ -2737,10 +2754,13 @@ export class World {
         this.entities.splice(i, 1);
         continue;
       }
-      if (this.camera.scrollBack && e.despawnMargin !== null && this.fromMap.has(e) && this.outOfReach(e)) {
-        // Scroll-back: still, off the stage, until the camera comes back (see `parked`).
-        this.parked.push(e);
-        this.entities.splice(i, 1);
+      if (this.camera.scrollBack && this.parks(e)) {
+        // Scroll-back: still, off the stage, until the camera comes back (see `parked`); never
+        // despawned (a power-up moves on within POWERUP_REACH_PX of the screen).
+        if (this.outOfReach(e)) {
+          this.parked.push(e);
+          this.entities.splice(i, 1);
+        }
         continue;
       }
       if (e.despawnMargin !== null && e.body.x + e.body.w < left - px(e.despawnMargin)) {
@@ -2758,8 +2778,22 @@ export class World {
    */
   private outOfReach(e: Entity): boolean {
     const b = e.body;
+    // A power-up: a screen either side (POWERUP_REACH_PX).
+    if (e instanceof PowerUp)
+      return (
+        b.x + b.w < this.camera.x - px(POWERUP_REACH_PX) || b.x > this.camera.right + px(POWERUP_REACH_PX)
+      );
     if (b.x + b.w < this.camera.x - px(e.despawnMargin ?? 0)) return true;
     return b.x > this.camera.right + px(SPAWN_MARGIN_PX + 32);
+  }
+
+  /**
+   * Scroll-back: what is parked off the stage instead of despawned: the map's entities, and
+   * (v0.4.73 item 77) every power-up out of a block (enemy drops are Pickups with their own
+   * timed vanish).
+   */
+  private parks(e: Entity): boolean {
+    return e.despawnMargin !== null && (this.fromMap.has(e) || e instanceof PowerUp);
   }
 
   /** Scroll-back: parked entities the screen has come back to resume where they were. */
@@ -3175,20 +3209,7 @@ export class World {
       for (const e of this.enemies) {
         // A Classic frozen enemy is out of melee's reach (HP-C17).
         if (this.thrustIgnoresShell(p, e) || e.frozen > 0) continue;
-        if (overlaps(p.activeMelee, e.body) && !p.scratch[`hit${e.id}`]) {
-          p.scratch[`hit${e.id}`] = 1;
-          const src: DamageSource = p.def.behaviour.meleeDamage?.(p, e) ?? {
-            kind: 'sword',
-            amount: 1,
-            owner: null,
-            dirX: p.facing,
-            by: p,
-          };
-          const res = e.hit(src, this);
-          this.scoreKill(e, src.kind, res);
-          if (res === 'hp') this.audio.sfx(this.hitSound(src));
-          if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
-        }
+        if (overlaps(p.activeMelee, e.body)) this.meleeHit(p, e);
       }
     } else {
       for (const k of Object.keys(p.scratch)) if (k.startsWith('hit')) delete p.scratch[k];
@@ -3225,6 +3246,51 @@ export class World {
       }
       if (p.dead || this.clear || this.bossClear || this.unmask) return;
     }
+  }
+
+  /** A melee hit on `e`, once until the hero's melee ends or re-arms (`hit<id>` in scratch). */
+  private meleeHit(p: Player, e: Enemy): Reaction | null {
+    if (p.scratch[`hit${e.id}`]) return null;
+    const src: DamageSource = p.def.behaviour.meleeDamage?.(p, e) ?? {
+      kind: 'sword',
+      amount: 1,
+      owner: null,
+      dirX: p.facing,
+      by: p,
+    };
+    const res = e.hit(src, this);
+    // 2: it shrugged the hit off (thrustContact lets its body contact hurt as usual).
+    p.scratch[`hit${e.id}`] = res === 'immune' ? 2 : 1;
+    this.scoreKill(e, src.kind, res);
+    if (res === 'hp') this.audio.sfx(this.hitSound(src));
+    if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
+    return res;
+  }
+
+  /**
+   * CharacterDef.thrustContact (Classic Link, item 104): his body meeting `e` while thrusting
+   * into it (down onto it from above, falling; up into it from below, rising) is the thrust's
+   * hit, never a hurt (Link.hitEnemy: landAttack). True when that handled the contact. A frozen
+   * enemy is out of melee's reach (HP-C17), and one immune to the sword (a Podoboo, a fire bar:
+   * projectiles to the original) is plain contact.
+   */
+  private thrustContact(p: Player, e: Enemy): boolean {
+    if (!p.def.thrustContact || e.frozen > 0 || this.thrustIgnoresShell(p, e)) return false;
+    const pb = p.body;
+    const eb = e.body;
+    const eh = eb.h;
+    const feet = pb.y + pb.h;
+    const down =
+      !!p.scratch.downThrust &&
+      p.fallSpeed > 0 &&
+      feet - eb.y <= eh * 0.8 &&
+      pb.prevBottom <= eb.y + eh * 0.6;
+    // Up: from strictly below, his top a frame ago at or under the enemy's bottom, give or take
+    // one frame's rise (a jump into its side is plain contact).
+    const up = !!p.scratch.upThrust && pb.vy < 0 && pb.prevBottom - pb.h >= eb.y + eh - velToSub(-pb.vy);
+    if (!down && !up) return false;
+    const res = this.meleeHit(p, e);
+    return res === null ? p.scratch[`hit${e.id}`] !== 2 : res !== 'immune';
   }
 
   private enemyVsEnemy(): void {
@@ -3282,6 +3348,7 @@ export class World {
       if (r !== 'immune') this.addScore(e.scoreFor('star'), e.body.x, e.body.y);
       return;
     }
+    if (this.thrustContact(p, e)) return;
     // Just after any kick the shell neither hurts nor can be stomped by any player
     // (KoopaGreen.NO_HIT_SHELL_TMR: Character.hitEnemy skips it, KoopaGreen.stomp returns early).
     if (e instanceof Koopa && e.noHitTimer > 0) return;
@@ -3651,6 +3718,8 @@ export class World {
   }
 
   private enterPipe(p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): void {
+    // Classic rules: a Yoshi mount rider bound for a castle, water or bonus area hops off first.
+    const hop = this.rules === 'classic' ? (classicRules().pipeEntry?.(this, p, z, dir) ?? 0) : 0;
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
@@ -3668,6 +3737,7 @@ export class World {
       from: dir === 'down' ? p.body.y : p.body.x,
       hold: null,
       target: { type: 'pipe', target: z.target },
+      ...(hop > 0 ? { hop: { t: 0, n: hop, y0: p.body.y } } : {}),
     };
   }
 
@@ -3680,6 +3750,17 @@ export class World {
   private updatePipeAnim(): void {
     const a = this.pipeAnim as PipeAnim;
     const p = a.player;
+    if (a.hop) {
+      // A low hop in place (16 px at its top), then into the pipe from where it started.
+      const h = a.hop;
+      h.t++;
+      const up = Math.round((px(16) * 4 * h.t * (h.n - h.t)) / (h.n * h.n));
+      p.body.y = h.y0 - up;
+      p.body.onGround = h.t >= h.n;
+      if (h.t < h.n) return;
+      p.body.y = h.y0;
+      delete a.hop;
+    }
     a.t++;
     if (a.hold !== null) {
       if (--a.hold <= 0) {
@@ -4075,8 +4156,7 @@ export class World {
           if (e.alive && (e instanceof Decoration || e instanceof Firework)) e.update();
         if (c.t >= (c.fireworks > 0 ? 1 + c.fireworks * FIREWORK_FRAMES + 60 : 90)) {
           c.phase = 'done';
-          const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
-          this.events.push({ type: 'exit', next: this.exitNext(exit?.next) });
+          this.events.push({ type: 'exit', next: this.clearNext() });
         }
         break;
       }
@@ -4392,6 +4472,12 @@ export class World {
    * Where an exit marked `marked` leads: a Classic mode run's way on in place of `end` at an
    * ordinary castle or flagpole (classicEnd: Lost Levels 8-4 and 9-4, G-001/G-002).
    */
+  /** The level the flagpole's clear leads to (its `exit` zone's `next`, else the run's next). */
+  clearNext(): string {
+    const exit = this.level.zones.find((z): z is Zone & { kind: 'exit' } => z.kind === 'exit');
+    return this.exitNext(exit?.next);
+  }
+
   private exitNext(marked = 'end'): string {
     return marked === 'end' ? (this.classicEnd?.next ?? marked) : marked;
   }

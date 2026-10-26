@@ -64,7 +64,7 @@ export class Viewport {
 
   constructor(
     readonly display: HTMLCanvasElement,
-    public opts: ViewportOptions = { integerScale: true },
+    public opts: ViewportOptions = { integerScale: false },
   ) {
     this.back =
       typeof OffscreenCanvas !== 'undefined'

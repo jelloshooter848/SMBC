@@ -65,10 +65,11 @@ difficulty (Easy, Normal or Hard), then its rules (game mode, including **Surviv
 hero has one life; lives, attack, damage and the other settings; the weapons; heroes left out).
 A file's rules stay fixed for that file, and each file keeps its own continues, so **ERASE FILE**
 (with NO picked first) is the way to start one again. The Start box's **Options** holds what every
-file shares: the music set, tutorials, the **Cheats** the original unlocks, and video, audio and
-controls. The heroes play by the
-original's rules: their physics, power states, weapons and swimming, enemy hit points and
-armour. How to play (Options, or the pause menu) explains each hero as Classic plays it.
+file shares: the music set, tutorials, the **Cheats** the original unlocks (all but its Level
+Select: a cleared file's level replay does that job), and video, audio and controls. The heroes
+play by the original's rules: their physics, power states, weapons and swimming, enemy hit
+points and armour. How to play (Options) and the pause menu's Guide show the original's
+tutorial boxes for each hero. The pause menu and every page it opens are Classic boxes.
 
 ### Chapter 1 (coming soon)
 
@@ -141,7 +142,8 @@ levels) every hero stays playable. See [docs/HEROES.md](docs/HEROES.md).
 
 ### Characters
 
-**Options → How to play** opens a guide for every hero: its controls with the keys
+**How to play** (in the Options of Classic mode, the world map and the pause menu; not on the
+title screen) opens a guide for every hero: its controls with the keys
 you have bound, what the mushroom, flower and star do for it, and its tool belt. The pause menu
 has the same guide for the hero you are playing.
 
@@ -193,7 +195,8 @@ has the same guide for the hero you are playing.
 
 ### Options (title screen or pause)
 
-- **Video**: integer scaling, colour-blind safe palettes (deuteranopia, protanopia,
+- **Video**: picture size (FILL fills the screen; SHARP keeps crisp, even pixels and may
+  leave a border), colour-blind safe palettes (deuteranopia, protanopia,
   tritanopia) and high contrast, reduced flashing, FPS counter, screen-reader announcements.
 - **Audio**: master, music and sound volumes, mute.
 - **Controls**: full keyboard and gamepad remapping; touch pad auto/on/off, size, and fixed
@@ -206,9 +209,12 @@ has the same guide for the hero you are playing.
   code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
-- **How to play**: the per-hero guides (also in the pause menu for the hero you are playing),
+- **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
+  menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
-- **Asset packs**: import a folder, export repaintable templates, toggle packs.
+- **Asset packs**: import a folder, export repaintable templates, toggle packs (left / right) or
+  delete one (OK, then YES). Importing needs a computer: on a phone or tablet that cannot pick
+  a folder the page says so, and packs already stored keep working.
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own
   install prompt where there is one (Android, Chrome, Edge), else a short guide; hidden when the
   game already runs from the Home Screen and on desktop browsers that can't install it.

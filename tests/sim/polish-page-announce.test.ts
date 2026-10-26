@@ -31,7 +31,10 @@ function open(h: H, label: string): void {
 
 describe('P5: full pages say their title, and the focused row on return', () => {
   for (const [row, said] of [
-    ['Video', /^Video\. Integer scale: (On|Off)$/],
+    [
+      'Video',
+      /^Video\. Picture size: (Fill|Sharp)\. Fill: bigger picture\. Sharp: crisp, even pixels, may leave a border$/,
+    ],
     ['Audio', /^Audio\. Mute: (On|Off)$/],
     ['Controls', /^Controls\. Touch pad: /],
   ] as const) {
