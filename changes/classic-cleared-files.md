@@ -17,3 +17,5 @@
   NOT RELEASED file cannot play, and when a game saved by an older version is waiting for a free
   file. ERASE FILE lists those files with their state, and asking "ERASE FILE N?" says why one
   cannot play.
+- Classic mode: a beaten map set and the cheats it unlocks are saved as the ending begins, so
+  closing the game during the credits no longer loses them.

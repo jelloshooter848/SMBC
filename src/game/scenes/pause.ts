@@ -50,7 +50,8 @@ export class PauseScene extends MenuScene {
         select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
       // The Level Select cheat once unlocked (G-007; PauseMenu.as:37-38): on with the run.
-      if (game.deps.settings?.classicCheats.levelSelect)
+      // v0.4.73: not in a CLEARED file's level replay (its level box picks the levels there).
+      if (game.deps.settings?.classicCheats.levelSelect && !game.replayRun)
         items.push({
           label: 'Level select',
           select: () => game.scenes.push(new LevelSelectScene(game, () => game.scenes.pop(), true)),
@@ -98,9 +99,12 @@ export class PauseScene extends MenuScene {
         select: () => confirmQuitRun(game, null),
         // G-008, B-L: the run's file holds this level's start, only when the run has one
         // (Game.keepsResume: not a developer, link or practice run).
-        hint: game.keepsResume
-          ? 'Back to the Classic menu; your file picks the run up from this level'
-          : 'Back to the Classic menu',
+        hint: game.replayRun
+          ? // v0.4.73 (owner 97a): a CLEARED file's replay goes back to its file box.
+            'Back to the file box; the file stays cleared'
+          : game.keepsResume
+            ? 'Back to the Classic menu; your file picks the run up from this level'
+            : 'Back to the Classic menu',
       });
       this.setItems(items);
       return;

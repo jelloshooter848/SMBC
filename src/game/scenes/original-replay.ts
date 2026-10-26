@@ -190,6 +190,8 @@ export class ClassicNoteScene implements Scene {
     const lx = Math.round(128 - (label.length * 8) / 2) + 6;
     drawMushroom(r, lx - 12, oy, this.t, calm);
     r.text(assets.sheet('font', DEFAULT_SELECT_THEME.tintFont), label, lx, oy);
+    // The BACK line under the box: the box under this one (the file box) draws it at the foot of
+    // the screen, where every Classic box has it; with none under, this box draws it there.
     if (!this.opts.under) {
       const back = abilityHint(game, 'BACK', 'attack');
       const bx = Math.round(128 - (back.length * 8) / 2);
@@ -203,6 +205,13 @@ const setOf = (id: ClassicFileRef['set']): MapSet =>
   MAP_SETS.find((m) => m.id === id) ?? (MAP_SETS[0] as MapSet);
 
 /**
+ * How the beaten set's file came out (Game.clearFile): CLEARED; not saved (storage refused it:
+ * its last run is kept); or left alone because another tab emptied it or started another game
+ * there (95).
+ */
+export type ClearResult = 'cleared' | 'failed' | 'other';
+
+/**
  * B: the message after a beaten set's credits and cheat cards, over its file box (focused on the
  * file): "YOU BEAT <SET>! FILE N IS CLEARED.", then how to replay. `saved` false: storage did not
  * take the CLEARED file; its last run is kept in it.
@@ -211,21 +220,28 @@ export function clearedNote(
   game: Game,
   files: ClassicFilesScene,
   ref: ClassicFileRef,
-  saved: boolean,
+  result: ClearResult,
 ): ClassicNoteScene {
   const beat = `You beat ${setOf(ref.set).label}!`;
   // v0.4.73 (item 60): beaten on Hard (the file as stored says so): its Advanced cheats.
-  const advanced = saved && game.advancedCheatsOf(ref) !== null ? [ADVANCED_UNLOCKED(ref.slot)] : [];
-  const pages = saved
-    ? [
-        `${beat} File ${ref.slot} is cleared.`,
-        'Pick a cleared file to replay any level of this map set.',
-        ...advanced,
-      ]
-    : [
-        `${beat} File ${ref.slot} could not be saved as cleared.`,
-        'Its last run is kept in it, so nothing is lost.',
-      ];
+  const advanced =
+    result === 'cleared' && game.advancedCheatsOf(ref) !== null ? [ADVANCED_UNLOCKED(ref.slot)] : [];
+  const pages =
+    result === 'cleared'
+      ? [
+          `${beat} File ${ref.slot} is cleared.`,
+          'Pick a cleared file to replay any level of this map set.',
+          ...advanced,
+        ]
+      : result === 'failed'
+        ? [
+            `${beat} File ${ref.slot} could not be saved as cleared.`,
+            'Its last run is kept in it, so nothing is lost.',
+          ]
+        : [
+            `${beat} The beat is kept.`,
+            `File ${ref.slot} holds another game now, so it was not marked cleared.`,
+          ];
   return new ClassicNoteScene(game, pages, {
     under: files,
     onDone: () => files.comeBack(),
