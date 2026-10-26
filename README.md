@@ -219,7 +219,7 @@ has the same guide for the hero you are playing.
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
 - **Asset packs**: import a pack from a `.zip` file (every device, phones included) or, on a
-  computer, from a folder; export repaintable templates (a computer's page); toggle packs (left /
+  computer, from a folder (a pack with a name already stored is replaced only on YES); export repaintable templates (a computer's page); toggle packs (left /
   right) or delete one (OK, then YES).
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own
   install prompt where there is one (Android, Chrome, Edge), else a short guide; hidden when the

@@ -25,3 +25,14 @@ export function pickFile(accept: string, onPicked: (file: File) => void): void {
   picker = input;
   input.click();
 }
+
+/** Opens the folder chooser (Import pack (folder)); `onPicked` gets the folder's files. */
+export function pickFolder(onPicked: (files: File[]) => void): void {
+  if (typeof document === 'undefined') return;
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.setAttribute('webkitdirectory', '');
+  input.onchange = () => onPicked(Array.from(input.files ?? []));
+  input.click();
+}

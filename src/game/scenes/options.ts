@@ -6,7 +6,7 @@ import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles, importPackZip, PackImportError } from '@engine/assets/pack-loader';
 import { ZipError, type ZipErrorCode } from '@engine/save/zip';
-import { pickFile } from '@engine/file-pick';
+import { pickFile, pickFolder } from '@engine/file-pick';
 import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type AssistSettings, type Settings } from '@engine/save/settings';
 import { nextTouchMode, readTouchFacts } from '@engine/input/touch-logic';
 import { folderPickerSupported, packsFolderless } from '@engine/assets/folder-picker';
@@ -528,14 +528,16 @@ class PacksOptions extends MenuScene {
     if (this.importing) return this.tell('READING ZIP...', 'Still reading the zip.');
     this.importing = true;
     this.tell('READING ZIP...', 'Reading the zip.');
-    let name: string;
+    let name: string | null;
+    let kept = '';
     try {
-      name = await importPackZip(file);
+      name = await importPackZip(file, (n) => ((kept = n), this.askReplace(n)));
     } catch (e) {
       return this.refuseZip(e);
     } finally {
       this.importing = false;
     }
+    if (name === null) return this.keptPack(kept);
     // Stored (committed): from here it is on, whatever else happens.
     const s = settings(this.game);
     if (!s.packs.includes(name)) s.packs.push(name);
@@ -578,26 +580,57 @@ class PacksOptions extends MenuScene {
   }
 
   private pickFolder(): void {
-    if (typeof document === 'undefined') return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.setAttribute('webkitdirectory', '');
-    input.onchange = () => {
-      const files = Array.from(input.files ?? []);
-      void importPackFiles(files)
-        .then((name) => {
-          const s = settings(this.game);
-          if (!s.packs.includes(name)) s.packs.push(name);
-          apply(this.game);
-          this.status = `Imported ${name}`;
-          return this.refresh();
-        })
-        .catch((e: Error) => {
-          this.status = e.message.slice(0, 28);
-        });
-    };
-    input.click();
+    const pick = this.game.deps.pickFolder ?? pickFolder;
+    pick((files) => void this.importFolder(files));
+  }
+
+  /** Import pack (folder): the folder's pack read, asked about if its name is taken, stored. */
+  private async importFolder(files: File[]): Promise<void> {
+    let kept = '';
+    let name: string | null;
+    try {
+      name = await importPackFiles(files, (n) => ((kept = n), this.askReplace(n)));
+    } catch (e) {
+      this.tell((e as Error).message.slice(0, 28), `${(e as Error).message}. Nothing changed.`, true);
+      return;
+    }
+    if (name === null) return this.keptPack(kept);
+    const s = settings(this.game);
+    if (!s.packs.includes(name)) s.packs.push(name);
+    apply(this.game);
+    this.tell(`Imported ${name}`, `Imported ${name}. It is turned on.`);
+    await this.refresh();
+  }
+
+  /**
+   * Item 147: REPLACE PACK <NAME>? with NO first (BACK is NO), said; resolves true on YES. The
+   * name is cut to keep the title within 28 columns, as the delete confirm cuts it.
+   */
+  private askReplace(name: string): Promise<boolean> {
+    const game = this.game;
+    return new Promise((resolve) => {
+      const answer = (yes: boolean) => () => {
+        game.scenes.pop();
+        resolve(yes);
+      };
+      game.scenes.push(
+        new ConfirmMenu(
+          game,
+          `REPLACE PACK ${name.toUpperCase().slice(0, 14)}?`,
+          `Replace pack ${name}?`,
+          [
+            { label: 'No', select: answer(false) },
+            { label: 'Yes', select: answer(true) },
+          ],
+          answer(false),
+        ),
+      );
+    });
+  }
+
+  /** NO to REPLACE PACK: the stored pack is as it was, on or off as it was. */
+  private keptPack(name: string): void {
+    this.tell('NOTHING CHANGED', `Kept the stored pack ${name}. Nothing changed.`);
   }
 }
 

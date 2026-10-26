@@ -3,6 +3,8 @@
 - Options > Asset packs > Import pack (.zip): pick an asset pack's .zip file on any device,
   phones and tablets included (a pack zip saved by Options > Save data goes straight back in). A
   damaged, unsafe or oversized zip changes nothing and the page says why.
+- Importing an asset pack (from a .zip or a folder) whose name is already stored now asks
+  REPLACE PACK <NAME>? first; NO keeps the stored pack as it was.
 
 ### Changed
 

@@ -114,10 +114,11 @@ export class PackImportError extends Error {
 
 /**
  * Import pack (.zip): the whole file read and checked, then stored (committed); any error
- * stores nothing. Throws PackImportError naming the step (its `cause`: a ZipError for a zip
+ * stores nothing. With `confirm`, a pack of a name already stored is asked about first (null
+ * returned when it is kept). Throws PackImportError naming the step (its `cause`: a ZipError for a zip
  * that does not read, an Error for a pack that does not check out).
  */
-export async function importPackZip(file: Blob): Promise<string> {
+export async function importPackZip(file: Blob, confirm?: ConfirmReplace): Promise<string | null> {
   if (file.size > PACK_ZIP_MAX_BYTES) throw new PackImportError('size', new ZipError('too-big'));
   let bytes: Uint8Array;
   try {
@@ -131,6 +132,8 @@ export async function importPackZip(file: Blob): Promise<string> {
   } catch (e) {
     throw new PackImportError('pack', e);
   }
+  // Item 147: a same-name pack is replaced only on YES (null: kept as it was).
+  if (!(await mayStore(pack.manifest.name, confirm))) return null;
   try {
     return await storePack(pack);
   } catch (e) {
@@ -188,9 +191,22 @@ export function applyPack(pack: LoadedPack, registry: AssetRegistry): void {
     registry.overridePalette(name, colors);
 }
 
-/** Store a pack picked from files, returning its name. */
-export async function importPackFiles(files: File[]): Promise<string> {
+/**
+ * Asked before a pack replaces a stored one of the same name (owner item 147): true replaces
+ * it, false keeps the stored pack as it is.
+ */
+export type ConfirmReplace = (name: string) => Promise<boolean>;
+
+/** Whether `name` may be stored: free, or its replacing confirmed. */
+async function mayStore(name: string, confirm?: ConfirmReplace): Promise<boolean> {
+  if (!confirm || !(await packStore.get(name))) return true;
+  return confirm(name);
+}
+
+/** Store a pack picked from files, returning its name (null: a same-name pack was kept). */
+export async function importPackFiles(files: File[], confirm?: ConfirmReplace): Promise<string | null> {
   const { manifest, files: blobs } = await readPackFiles(files);
+  if (!(await mayStore(manifest.name, confirm))) return null;
   await packStore.put({ name: manifest.name, manifest, files: blobs, addedAt: Date.now() });
   return manifest.name;
 }
