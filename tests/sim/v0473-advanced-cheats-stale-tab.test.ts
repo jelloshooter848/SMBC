@@ -10,7 +10,7 @@ import { ADVANCED_OFF, advancedCheatsKey } from '@game/advanced-cheats';
 import type { MenuItem } from '@game/scenes/menu';
 import { PauseScene } from '@game/scenes/pause';
 import type { LevelScene } from '@game/scenes/level';
-import { REPLAY_HELP_KEY } from '@game/scenes/original-replay';
+import { ClassicReplayWorldsScene, REPLAY_HELP_KEY } from '@game/scenes/original-replay';
 import { AdvancedCheatsScene } from '@game/scenes/advanced-cheats-menu';
 import { makeGame, store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';
@@ -116,6 +116,44 @@ describe('item 134: a stale tab and Advanced cheats', () => {
     h.game.scenes.push(new PauseScene(h.game, (h.top() as LevelScene).world));
     flipNoDamage(h);
     expect(h.game.advancedCheatsOf(A)?.assist.invulnerable).toBe(true);
+    expect(h.game.liveAssists().invulnerable).toBe(true);
+  });
+  it('mid-replay, tab B clears the file again; the level is cleared and the next one played: still none of its cheats', () => {
+    const h = tabAWorldBox();
+    choose(h, 'World 1');
+    choose(h, '1-1');
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
+    const kept = tabBReclears();
+    // The level cleared: its world's level box again (rebuilt), on 1-2.
+    h.game.leaveReplay('next');
+    const worlds = h.game.scenes.find((s) => s instanceof ClassicReplayWorldsScene);
+    expect(worlds).toBeDefined();
+    expect(labels(worlds)).not.toContain('Advanced cheats');
+    choose(h, '1-2');
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
+    expect(h.game.liveAssists()).toEqual({ ...ADVANCED_OFF });
+    h.game.scenes.push(new PauseScene(h.game, (h.top() as LevelScene).world));
+    expect(labels(h.top())).not.toContain('Advanced cheats');
+    expect(store.get(advancedCheatsKey(A))).toBe(kept);
+  });
+
+  it('the same file, no other tab: after a clear the next level still plays its cheats', () => {
+    const h = tabAWorldBox();
+    expect(
+      h.game.setAdvancedCheats(A, h.game.advancedCheatsId(A) ?? '', {
+        assist: { ...ADVANCED_OFF, invulnerable: true },
+      }),
+    ).toBe(true);
+    choose(h, 'World 1');
+    choose(h, '1-1');
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
+    h.game.leaveReplay('next');
+    choose(h, '1-2');
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
     expect(h.game.liveAssists().invulnerable).toBe(true);
   });
 });

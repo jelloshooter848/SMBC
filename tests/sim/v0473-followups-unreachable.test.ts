@@ -16,7 +16,7 @@ useStorage();
 afterEach(() => store.clear());
 
 describe('item 127: what item 94 left unreachable is gone', () => {
-  it('no SET_SHORT: a file run never leaves its map set', () => {
+  it('no SET_SHORT: since v0.4.73 a file run never leaves its map set (older cross-set saves are not handled, owner rule)', () => {
     expect('SET_SHORT' in filesMenu).toBe(false);
   });
 
