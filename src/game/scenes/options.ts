@@ -4,7 +4,13 @@ import { Actions, ActionLabels, type Action } from '@engine/input/actions';
 import { bindingClashes, describeCode, describePad } from '@engine/input/bindings';
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
-import { exportTemplate, importPackFiles, importPackZip } from '@engine/assets/pack-loader';
+import {
+  exportTemplate,
+  importPackFiles,
+  PACK_ZIP_MAX_BYTES,
+  readPackZip,
+  storePack,
+} from '@engine/assets/pack-loader';
 import { ZipError, type ZipErrorCode } from '@engine/save/zip';
 import { pickFile } from '@engine/file-pick';
 import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type AssistSettings, type Settings } from '@engine/save/settings';
@@ -498,37 +504,86 @@ class PacksOptions extends MenuScene {
     game.scenes.push(box);
   }
 
-  /** Import pack (.zip): the chooser in this press's own event, then the whole zip checked. */
-  private pickZip(): void {
-    if (this.importing) return;
-    const pick = this.game.deps.pickFile ?? pickFile;
-    pick('.zip,application/zip,application/x-zip-compressed', (file) => void this.importZip(file));
+  /** The status line and the screen reader. */
+  private tell(status: string, said: string, bump = false): void {
+    if (bump) this.game.ctx.audio.sfx('bump');
+    this.status = status;
+    this.game.deps.announcer?.say(said);
   }
 
+  /** Import pack (.zip): the chooser in this press's own event, then the whole zip checked. */
+  private pickZip(): void {
+    if (this.importing) {
+      this.tell('READING ZIP...', 'Still reading the zip.');
+      return;
+    }
+    const pick = this.game.deps.pickFile ?? pickFile;
+    // Zips by name and type, and application/octet-stream: some Android pickers label zips so
+    // and would grey them out. What is picked is checked as a zip anyway.
+    pick(
+      '.zip,application/zip,application/x-zip-compressed,application/octet-stream',
+      (file) => void this.importZip(file),
+    );
+  }
+
+  /**
+   * Reads the file, then the pack in it, then stores it; each step's failure has its own line,
+   * and only a pack that is stored is turned on (nothing before that changes anything).
+   */
   private async importZip(file: File): Promise<void> {
-    if (this.importing) return;
+    if (this.importing) return this.tell('READING ZIP...', 'Still reading the zip.');
+    if (file.size > PACK_ZIP_MAX_BYTES)
+      return this.tell(
+        'ZIP TOO BIG (OVER 100 MB)',
+        'That zip is over 100 MB, too big to import. Nothing changed.',
+        true,
+      );
     this.importing = true;
-    const say = (status: string, said: string) => {
-      this.status = status;
-      this.game.deps.announcer?.say(said);
-    };
+    this.tell('READING ZIP...', 'Reading the zip.');
+    let pack: Awaited<ReturnType<typeof readPackZip>>;
     try {
-      const name = await importPackZip(file);
-      const s = settings(this.game);
-      if (!s.packs.includes(name)) s.packs.push(name);
-      apply(this.game);
-      await this.refresh();
-      say(`Imported ${name}`, `Imported ${name}. It is turned on.`);
-    } catch (e) {
-      this.game.ctx.audio.sfx('bump');
-      if (e instanceof ZipError) {
-        const [status, said] = ZIP_REFUSED[e.code];
-        say(status, `${said} Nothing changed.`);
-      } else
-        say('NOT AN ASSET PACK', `That zip is not an asset pack: ${(e as Error).message}. Nothing changed.`);
+      let bytes: Uint8Array;
+      try {
+        bytes = new Uint8Array(await file.arrayBuffer());
+      } catch {
+        return this.tell(
+          'COULD NOT READ FILE',
+          'The file could not be read. If it is in the cloud, download it to this device first. Nothing changed.',
+          true,
+        );
+      }
+      try {
+        pack = await readPackZip(bytes);
+      } catch (e) {
+        if (e instanceof ZipError) {
+          const [status, said] = ZIP_REFUSED[e.code];
+          return this.tell(status, `${said} Nothing changed.`, true);
+        }
+        return this.tell(
+          'NOT AN ASSET PACK',
+          `That zip is not an asset pack: ${(e as Error).message}. Nothing changed.`,
+          true,
+        );
+      }
+      try {
+        await storePack(pack);
+      } catch {
+        return this.tell(
+          'COULD NOT SAVE PACK',
+          'The pack could not be saved: storage may be full or blocked. Nothing changed.',
+          true,
+        );
+      }
     } finally {
       this.importing = false;
     }
+    // Stored: from here it is on, whatever else happens.
+    const name = pack.manifest.name;
+    const s = settings(this.game);
+    if (!s.packs.includes(name)) s.packs.push(name);
+    apply(this.game);
+    this.tell(`Imported ${name}`, `Imported ${name}. It is turned on.`);
+    await this.refresh();
   }
 
   private pickFolder(): void {
@@ -565,8 +620,12 @@ const ZIP_REFUSED: Readonly<Record<ZipErrorCode, readonly [string, string]>> = {
   crc: ['ZIP FILE IS DAMAGED', 'That zip file is damaged: a file inside it does not match its check.'],
   'unsafe-path': ['ZIP HAS UNSAFE PATHS', 'That zip has unsafe paths in it, so it was not read.'],
   'too-many': ['TOO MANY FILES IN ZIP', 'That zip holds too many files to be an asset pack.'],
-  'too-big': ['ZIP TOO BIG TO IMPORT', 'That zip is too big to import.'],
+  'too-big': ['ZIP TOO BIG TO IMPORT', 'That zip unpacks to more than 128 MB, too big to import.'],
   unsupported: ['ZIP KIND NOT SUPPORTED', 'That kind of zip is not supported: encrypted, split or zip64.'],
+  method: [
+    'ZIP COMPRESSION UNREADABLE',
+    "That zip is compressed in a way the game can't read. Zip the pack again with normal compression.",
+  ],
   'no-deflate': [
     'BROWSER CANNOT UNZIP IT',
     'This browser cannot read compressed zip files. Update it, or zip the pack without compression.',

@@ -27,12 +27,19 @@ export async function readPackFiles(
   return readPackEntries(byName, 'the selected files');
 }
 
-/** A pack from its files by path: manifest.json checked, then every file it names. */
+/** The file at `path`, as a Blob (or as an entry read when asked: a zip's). */
+type PackSource = ReadonlyMap<string, Blob | (() => Promise<Blob>)>;
+
+/** A pack from its files by path: manifest.json checked, then every file it names (only those). */
 async function readPackEntries(
-  byName: ReadonlyMap<string, Blob>,
+  byName: PackSource,
   where: string,
 ): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
-  const mf = byName.get('manifest.json');
+  const get = async (path: string): Promise<Blob | undefined> => {
+    const f = byName.get(path);
+    return typeof f === 'function' ? f() : f;
+  };
+  const mf = await get('manifest.json');
   if (!mf) throw new Error(`manifest.json not found in ${where}`);
   let manifest: unknown;
   try {
@@ -47,7 +54,7 @@ async function readPackEntries(
   for (const f of Object.values(manifest.music ?? {})) want.add(f);
   for (const f of Object.values(manifest.sfx ?? {})) want.add(f);
   for (const path of want) {
-    const f = byName.get(path);
+    const f = await get(path);
     if (!f) throw new Error(`pack file "${path}" is missing`);
     out[path] = f;
   }
@@ -59,8 +66,10 @@ export const PACK_ZIP_MAX_BYTES = 100 * 1024 * 1024;
 
 /**
  * A pack from a .zip (item 141): our own exports (SAVE DATA's `<name>.zip`, the template) hold
- * manifest.json at the top; a zip of the pack's folder holds one folder with it inside, which is
- * taken off, as Import pack (folder) does. Throws ZipError for the zip, Error for the pack.
+ * manifest.json at the top; a zip of the pack's folder holds it in one top-level folder, which
+ * is taken off as Import pack (folder) does, stray files beside that folder (a README) or not.
+ * Only the manifest and the files it names are inflated. Throws ZipError for the zip, Error
+ * for the pack.
  */
 export async function readPackZip(
   bytes: Uint8Array,
@@ -68,21 +77,34 @@ export async function readPackZip(
   const entries = await unzip(bytes);
   let strip = '';
   if (!entries.some((e) => e.path === 'manifest.json')) {
-    const tops = new Set(entries.map((e) => e.path.split('/')[0]));
-    const top = entries[0]?.path.split('/')[0];
-    if (tops.size === 1 && top && entries.every((e) => e.path.startsWith(`${top}/`))) strip = `${top}/`;
+    const tops = entries.filter((e) => /^[^/]+\/manifest\.json$/.test(e.path));
+    if (tops.length === 1) strip = (tops[0] as { path: string }).path.slice(0, -'manifest.json'.length);
   }
-  const byName = new Map<string, Blob>();
-  for (const e of entries) byName.set(e.path.slice(strip.length), new Blob([e.data as BlobPart]));
+  const byName = new Map<string, () => Promise<Blob>>();
+  for (const e of entries)
+    if (e.path.startsWith(strip))
+      byName.set(e.path.slice(strip.length), async () => new Blob([(await e.read()) as BlobPart]));
   return readPackEntries(byName, 'the zip');
+}
+
+/** Stores a pack read whole (packStore); its name. */
+export async function storePack(pack: {
+  manifest: PackManifest;
+  files: Record<string, Blob>;
+}): Promise<string> {
+  await packStore.put({
+    name: pack.manifest.name,
+    manifest: pack.manifest,
+    files: pack.files,
+    addedAt: Date.now(),
+  });
+  return pack.manifest.name;
 }
 
 /** Import pack (.zip): the whole file read and checked, then stored; any error stores nothing. */
 export async function importPackZip(file: Blob): Promise<string> {
   if (file.size > PACK_ZIP_MAX_BYTES) throw new ZipError('too-big');
-  const { manifest, files } = await readPackZip(new Uint8Array(await file.arrayBuffer()));
-  await packStore.put({ name: manifest.name, manifest, files, addedAt: Date.now() });
-  return manifest.name;
+  return storePack(await readPackZip(new Uint8Array(await file.arrayBuffer())));
 }
 
 /** Build sprite sheets and audio blobs from a stored pack, using built-in frame layouts when the pack omits them. */

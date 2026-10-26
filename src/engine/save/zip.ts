@@ -112,14 +112,25 @@ export function makeZip(entries: readonly ZipEntry[], when: Date = new Date()): 
 /*
  * The reader (item 141: Import pack (.zip) on every device). It reads what zip tools write:
  * stored entries, and deflated ones through the browser's DecompressionStream('deflate-raw')
- * (no dependencies). It is strict: every CRC is checked, ../ and absolute paths are refused,
- * and the entry count and the unpacked size are capped (zip bombs), the latter both as declared
- * and as actually inflated. Folder entries and macOS's extras (__MACOSX/, .DS_Store) are skipped.
+ * (no dependencies). It is strict: ../ and absolute paths are refused (a backslash counts as a
+ * folder, as old PowerShell zips write them), the entry count and the unpacked size are capped
+ * (zip bombs), the latter both as declared and as actually inflated, and each entry's CRC is
+ * checked when it is read. Folder entries and macOS's extras (__MACOSX/, .DS_Store) are skipped.
+ * The directory is read whole first; an entry's data is inflated only by its read(), so a pack
+ * import inflates only its manifest and the files the manifest names (a phone's memory).
  */
 
 /** Why a zip was not read. */
 export type ZipErrorCode =
-  'not-zip' | 'damaged' | 'crc' | 'unsafe-path' | 'too-many' | 'too-big' | 'unsupported' | 'no-deflate';
+  | 'not-zip'
+  | 'damaged'
+  | 'crc'
+  | 'unsafe-path'
+  | 'too-many'
+  | 'too-big'
+  | 'unsupported'
+  | 'method'
+  | 'no-deflate';
 
 export class ZipError extends Error {
   constructor(
@@ -143,11 +154,24 @@ export interface ZipLimits {
 
 export interface UnzippedEntry {
   path: string;
-  data: Uint8Array;
+  /** Its unpacked size, as the directory gives it. */
+  size: number;
+  /** Its bytes, inflated and checked now (throws ZipError). A stored entry is a view, not a copy. */
+  read(): Promise<Uint8Array>;
 }
 
 /** A path zip tools add that is never the pack's own file. */
 const junk = (path: string): boolean => path.startsWith('__MACOSX/') || path.split('/').pop() === '.DS_Store';
+
+/** Code page 437's upper half: what a name means without the UTF-8 flag (Windows' own zips). */
+const CP437_HIGH =
+  'ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
+
+function cp437(b: Uint8Array): string {
+  let out = '';
+  for (const c of b) out += c < 0x80 ? String.fromCharCode(c) : (CP437_HIGH[c - 0x80] as string);
+  return out;
+}
 
 /** Inflates raw deflate `data` to exactly `size` bytes; more than `size` is a lying header. */
 async function inflate(data: Uint8Array, size: number): Promise<Uint8Array> {
@@ -186,18 +210,22 @@ async function inflate(data: Uint8Array, size: number): Promise<Uint8Array> {
   return out;
 }
 
-/** Every file in zip `bytes`, checked whole. Throws ZipError. */
+/** The end record: the one whose comment runs exactly to the end of the file. */
+function findEnd(bytes: Uint8Array, v: DataView): number {
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 0xffff); i--)
+    if (v.getUint32(i, true) === 0x06054b50 && i + 22 + v.getUint16(i + 20, true) === bytes.length) return i;
+  return -1;
+}
+
+/**
+ * The files in zip `bytes`: the directory checked whole now (paths, caps, kinds), each file's
+ * data only when read. Throws ZipError.
+ */
 export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<UnzippedEntry[]> {
   const maxEntries = limits.maxEntries ?? ZIP_MAX_ENTRIES;
   const maxTotal = limits.maxTotal ?? ZIP_MAX_TOTAL;
   const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  // The end record: the last 22 bytes, or earlier behind a comment of up to 65,535 bytes.
-  let eocd = -1;
-  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 0xffff); i--)
-    if (v.getUint32(i, true) === 0x06054b50) {
-      eocd = i;
-      break;
-    }
+  const eocd = findEnd(bytes, v);
   if (eocd < 0) throw new ZipError('not-zip');
   if (v.getUint16(eocd + 4, true) !== 0 || v.getUint16(eocd + 6, true) !== 0)
     throw new ZipError('unsupported', 'a zip split over several files');
@@ -208,10 +236,9 @@ export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<
     throw new ZipError('unsupported', 'zip64');
   if (count > maxEntries) throw new ZipError('too-many');
   if (cdAt + cdSize > eocd) throw new ZipError('damaged', 'the directory is out of place');
-  const names = new TextDecoder('utf-8');
+  const utf8 = new TextDecoder('utf-8');
   const seen = new Set<string>();
-  const found: { path: string; method: number; crc: number; csize: number; usize: number; local: number }[] =
-    [];
+  const out: UnzippedEntry[] = [];
   let total = 0;
   let p = cdAt;
   for (let i = 0; i < count; i++) {
@@ -227,7 +254,9 @@ export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<
     const clen = v.getUint16(p + 32, true);
     const local = v.getUint32(p + 42, true);
     if (p + 46 + nlen > eocd) throw new ZipError('damaged', 'a directory entry');
-    const path = names.decode(bytes.subarray(p + 46, p + 46 + nlen));
+    const nameBytes = bytes.subarray(p + 46, p + 46 + nlen);
+    // Bit 11: a UTF-8 name; without it, code page 437. A backslash is a folder (old PowerShell).
+    const path = (flags & 0x0800 ? utf8.decode(nameBytes) : cp437(nameBytes)).replace(/\\/g, '/');
     p += 46 + nlen + xlen + clen;
     if (flags & 0x0001) throw new ZipError('unsupported', 'an encrypted entry');
     if (csize === 0xffffffff || usize === 0xffffffff || local === 0xffffffff)
@@ -235,28 +264,26 @@ export async function unzip(bytes: Uint8Array, limits: ZipLimits = {}): Promise<
     if (path.endsWith('/') && usize === 0) continue;
     if (!safeZipPath(path)) throw new ZipError('unsafe-path', `unsafe path "${path}"`);
     if (junk(path)) continue;
-    if (method !== 0 && method !== 8) throw new ZipError('unsupported', `compression method ${method}`);
+    if (method !== 0 && method !== 8) throw new ZipError('method', `compression method ${method}`);
+    if (method === 0 && csize !== usize) throw new ZipError('damaged', "a stored file's sizes differ");
     if (seen.has(path)) throw new ZipError('damaged', `"${path}" is in the zip twice`);
     seen.add(path);
     total += usize;
     if (total > maxTotal) throw new ZipError('too-big');
-    found.push({ path, method, crc, csize, usize, local });
-  }
-  const out: UnzippedEntry[] = [];
-  for (const e of found) {
-    const at = e.local;
-    if (at + 30 > cdAt || v.getUint32(at, true) !== 0x04034b50)
+    if (local + 30 > cdAt || v.getUint32(local, true) !== 0x04034b50)
       throw new ZipError('damaged', 'a file header');
-    const start = at + 30 + v.getUint16(at + 26, true) + v.getUint16(at + 28, true);
-    if (start + e.csize > cdAt) throw new ZipError('damaged', 'a file runs past the directory');
-    const raw = bytes.subarray(start, start + e.csize);
-    let data: Uint8Array;
-    if (e.method === 0) {
-      if (e.csize !== e.usize) throw new ZipError('damaged', "a stored file's sizes differ");
-      data = raw.slice();
-    } else data = await inflate(raw, e.usize);
-    if (crc32(data) !== e.crc) throw new ZipError('crc', `"${e.path}" is damaged`);
-    out.push({ path: e.path, data });
+    const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
+    if (start + csize > cdAt) throw new ZipError('damaged', 'a file runs past the directory');
+    out.push({
+      path,
+      size: usize,
+      async read() {
+        const raw = bytes.subarray(start, start + csize);
+        const data = method === 0 ? raw : await inflate(raw, usize);
+        if (crc32(data) !== crc) throw new ZipError('crc', `"${path}" is damaged`);
+        return data;
+      },
+    });
   }
   return out;
 }
