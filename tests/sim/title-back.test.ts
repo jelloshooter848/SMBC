@@ -1,16 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getLevel } from '@content/levels';
 import { NULL_AUDIO, type AudioSink } from '@engine/audio/audio-manager';
-import { BACK, TitleScene } from '@game/scenes/title';
-import { ClassicTitleScene, SMASH } from '@game/scenes/original-title';
+import { BACK, PORTAL, emergePose, portalStage, suckPose, TitleScene } from '@game/scenes/title';
+import { CLASSIC_AT, ClassicTitleScene, SMASH } from '@game/scenes/original-title';
 import { TITLE_TIMING } from '@game/scenes/title-anim';
 import { draw, makeGame, useStorage } from './heroes-harness';
 import { DEFAULT_ASSIST } from '@game/context';
 
-// 0.4.72 (owner, back transition option A): CLASSIC to REMIX. CLASSIC squashes, breaks into its
-// letters over the CLASSIC title's still frame, then the REMIX stamp pops and slams on, in about
-// 0.3 s; the heroes are already standing. Reduce flashing: an instant swap. The music: the
-// overworld cut under the shatter, the theme in on the slam from its loop point.
+// 0.4.73 (owner, 52A; replaces 0.4.72's shatter-and-slam): CLASSIC to REMIX through the rift.
+// A small rift portal opens over the logo, CLASSIC is sucked up into it (stretching, shrinking
+// and spinning), and REMIX comes out of it into its place; the heroes are already standing.
+// Reduce flashing: the same timeline, calm (steady colours, no spin, no shake, no dust). The
+// music, as in 0.4.72: the overworld cut as the way back starts, the theme in as REMIX lands,
+// from its loop point.
 
 useStorage();
 afterEach(() => vi.useRealTimers());
@@ -54,44 +56,82 @@ function back(
 const clock = (t: TitleScene) => (t as unknown as { clock: number }).clock;
 const frames = (t: TitleScene) => draw(t).sprites.map((x) => x.frame);
 
-describe('the way back from CLASSIC (option A)', () => {
-  it('breaks CLASSIC into its letters over the still frame, pops the stamp, slams in about 0.3 s', () => {
+const sprite = (t: TitleScene, frame: string) => draw(t).sprites.find((x) => x.frame === frame);
+const rift = (t: TitleScene) => draw(t).sprites.find((x) => x.key.startsWith('title-rift'));
+
+describe('the way back from CLASSIC (0.4.73: through the rift portal)', () => {
+  it('a portal opens, CLASSIC is sucked up into it, REMIX comes out into its place, in about 1.3 s', () => {
     const s = setup();
     const { title, classic } = back(s);
     expect(title.phase).toBe('back');
     const demoT = classic.demo.t;
-    // The squash, then seven pieces (one a letter) with a chip each, the CLASSIC frame held still.
-    expect(frames(title)).toContain('classic-squash');
-    s.h.idle(BACK.squash);
-    // The break's first frame: the seven pieces, their chips not yet out (not on the letters' feet).
-    const cracked = frames(title);
-    expect(cracked.filter((f) => f === 'classic')).toHaveLength(7);
-    expect(cracked).not.toContain('brick-bit');
-    s.h.step();
-    const broken = frames(title);
-    expect(broken.filter((f) => f === 'classic')).toHaveLength(7);
-    expect(broken.filter((f) => f === 'brick-bit')).toHaveLength(7);
-    expect(broken).not.toContain('remix');
-    expect(classic.demo.t).toBe(demoT); // the demo no longer runs: a still frame
-    // The pieces hop up, then fall.
-    const y0 = title.classicPieces(0, 173)[0]!.y;
-    expect(title.classicPieces(3, 173)[0]!.y).toBeLessThan(y0);
-    expect(title.classicPieces(12, 173)[0]!.y).toBeGreaterThan(y0);
-    // The stamp's big frame just before it lands.
-    while (clock(title) < BACK.slam - TITLE_TIMING.stampPop) s.h.step();
-    expect(frames(title)).toContain('remix-2x');
+    // The portal (the intro's rift) opens over the logo; CLASSIC still at rest in its place.
+    expect(rift(title)?.frame).toBe('rift-1');
+    const c0 = sprite(title, 'classic')!;
+    expect(c0.x).toBe(CLASSIC_AT.x);
+    expect(c0.y).toBe(CLASSIC_AT.y);
+    expect(frames(title)).not.toContain('remix');
+    // It opens to its stage, steadily.
+    s.h.idle(BACK.openStep * PORTAL.stage);
+    expect(rift(title)?.frame).toBe(`rift-${PORTAL.stage}`);
+    expect(classic.demo.t).toBe(demoT); // the demo no longer runs
+    // CLASSIC is pulled toward the portal: closer every frame, smaller, and turning.
+    let last = Infinity;
+    const dist = (p: { x: number; y: number }) => Math.hypot(p.x - PORTAL.x, p.y - PORTAL.y);
+    for (let f = BACK.suckFrom + 1; f < BACK.suckTo; f++) {
+      const p = suckPose(f, false)!;
+      expect(dist(p), `frame ${f}`).toBeLessThanOrEqual(last);
+      last = dist(p);
+    }
+    const early = suckPose(BACK.suckFrom + 6, false)!;
+    expect(early.sy).toBeGreaterThan(1); // the stretch toward it
+    const late = suckPose(BACK.suckTo - 2, false)!;
+    expect(late.sx).toBeLessThan(0.1);
+    expect(Math.abs(late.angle)).toBeGreaterThan(Math.PI); // spun round
+    expect(s.sfx).toContain('pipe');
+    // Gone into it: the portal alone for a moment.
+    while (clock(title) < BACK.suckTo) s.h.step();
+    expect(frames(title)).not.toContain('classic');
+    expect(frames(title)).not.toContain('remix');
+    expect(rift(title)).toBeDefined();
+    // REMIX comes out of the portal's centre, growing and unwinding into the stamp's place.
+    const out0 = emergePose(BACK.emergeFrom, false)!;
+    expect(out0.x).toBe(PORTAL.x);
+    expect(out0.y).toBe(PORTAL.y);
+    expect(out0.sx).toBeLessThan(0.05);
+    expect(Math.abs(out0.angle)).toBeGreaterThan(Math.PI);
+    while (clock(title) < BACK.emergeFrom + 10) s.h.step();
+    expect(frames(title)).toContain('remix');
+    expect(frames(title)).not.toContain('classic');
     expect(s.sfx).not.toContain('stamp');
-    // The slam, about 0.27 s in: the REMIX title, the shake.
+    // At rest on the arrival: exactly the finished title's stamp, no jump.
+    expect(emergePose(BACK.slam, false)).toEqual({ x: 206, y: 76, angle: -0, sx: 1, sy: 1, alpha: 1 });
     while (clock(title) < BACK.slam) s.h.step();
-    expect(BACK.slam / 60).toBeGreaterThan(0.2);
-    expect(BACK.slam / 60).toBeLessThan(0.35);
-    const slam = frames(title);
-    expect(slam).toContain('remix');
-    expect(slam).not.toContain('classic');
-    expect(title.shake()).not.toBe(0);
+    expect(BACK.slam / 60).toBeGreaterThan(1);
+    expect(BACK.slam / 60).toBeLessThan(1.6);
+    expect(sprite(title, 'remix')).toMatchObject({ x: 160, y: 54 });
+    expect(frames(title)).not.toContain('classic');
+    expect(title.shake()).toBe(0); // it comes out, it does not slam down
     expect(s.sfx.filter((x) => x === 'stamp')).toEqual(['stamp']);
-    s.h.idle(TITLE_TIMING.dustFrames);
+    // The portal closes behind it, then the finished title.
+    expect(rift(title)).toBeDefined();
+    while (clock(title) < BACK.end) {
+      for (const no of ['dust-0', 'dust-1', 'dust-2', 'remix-2x']) expect(frames(title)).not.toContain(no);
+      s.h.step();
+    }
+    expect(rift(title)).toBeUndefined();
     expect(title.phase).toBe('ready');
+    expect(sprite(title, 'remix')).toMatchObject({ x: 160, y: 54 });
+  });
+
+  it('the portal: open by stages, a gulp as CLASSIC goes in, closed by the end', () => {
+    expect(portalStage(0, false)).toBe(1);
+    expect(portalStage(BACK.openStep * PORTAL.stage, false)).toBe(PORTAL.stage);
+    expect(portalStage(BACK.suckTo, false)).toBe(PORTAL.stage - 1);
+    expect(portalStage(BACK.suckTo, true)).toBe(PORTAL.stage); // no gulp with Reduce flashing
+    expect(portalStage(BACK.emergeFrom, false)).toBe(PORTAL.stage);
+    expect(portalStage(BACK.end - 1, false)).toBeGreaterThan(0);
+    expect(portalStage(BACK.end, false)).toBe(0);
   });
 
   it('the speaker is hidden and cannot be tapped during the break; the CLASSIC title is let go on the slam', () => {
@@ -138,11 +178,12 @@ describe('the way back from CLASSIC (option A)', () => {
     for (const c of cross) expect(Math.abs(c.y - 30)).toBeLessThanOrEqual(2);
   });
 
-  it('the music: the overworld cut under the shatter, the theme in on the slam from its loop point', () => {
+  it('the music: the overworld cut as the way back starts, the theme in as REMIX lands, from its loop point', () => {
     const s = setup();
     const { title } = back(s);
     expect(s.music).toEqual(['fade 0.05']);
     while (clock(title) < BACK.slam - 1) s.h.step();
+    expect(frames(title)).toContain('remix'); // REMIX is coming out in silence
     expect(s.music).toEqual(['fade 0.05']);
     s.h.step();
     expect(s.music).toEqual(['fade 0.05', 'title@loop']);
@@ -165,20 +206,68 @@ describe('the way back from CLASSIC (option A)', () => {
     expect(s.h.top()).toBe(title); // the skip chose nothing
   });
 
-  it('with Reduce flashing: an instant swap, no break, no pop, no shake', () => {
+  it('a press late in the way back (the menu long since live) skips and still chooses nothing', () => {
+    for (const key of ['jump', 'start', 'attack'] as const) {
+      const s = setup();
+      const { title } = back(s);
+      s.h.idle(BACK.emergeFrom);
+      s.h.step([key]);
+      expect(title.phase, key).toBe('ready');
+      s.h.idle(10);
+      expect(s.h.top(), key).toBe(title);
+      expect(s.sfx, key).not.toContain('coin');
+      expect(frames(title), key).toContain('remix');
+      expect(rift(title), key).toBeUndefined();
+    }
+  });
+
+  it('with Reduce flashing: the same way back, calm (steady colours, no spin, no shake, no dust)', () => {
     const s = setup(true);
     const { title } = back(s);
-    // The music and the thud at once.
-    expect(s.music).toEqual(['fade 0.05', 'title@loop']);
-    expect(s.sfx.filter((x) => x === 'stamp')).toEqual(['stamp']);
-    for (let i = 0; i < 40; i++) {
+    // The music as without it: cut now, the theme as REMIX lands.
+    expect(s.music).toEqual(['fade 0.05']);
+    const palettes = new Set<string>();
+    let sawClassicGo = false;
+    let sawRemixCome = false;
+    while (clock(title) < BACK.end) {
       const f = frames(title);
-      expect(f).toContain('remix');
-      for (const no of ['classic', 'classic-squash', 'remix-2x', 'brick-bit']) expect(f).not.toContain(no);
+      const rk = rift(title)?.key;
+      if (rk) palettes.add(rk);
+      if (clock(title) > BACK.suckFrom && f.includes('classic')) sawClassicGo = true;
+      if (clock(title) < BACK.slam && f.includes('remix')) sawRemixCome = true;
+      for (const no of ['classic-squash', 'remix-2x', 'brick-bit', 'dust-0', 'dust-1', 'dust-2'])
+        expect(f, `frame ${clock(title)}`).not.toContain(no);
       expect(title.shake()).toBe(0);
+      expect(title.rimPhase()).toBe(0);
+      const t = clock(title);
+      // Nothing turns; CLASSIC fades as it shrinks, REMIX fades in as it grows, never past full size.
+      expect(suckPose(t, true)?.angle ?? 0).toBe(0);
+      expect(emergePose(t, true)?.angle ?? 0).toBe(0);
+      expect(emergePose(t, true)?.sx ?? 0).toBeLessThanOrEqual(1);
+      if (t === BACK.slam - 1) expect(s.music).toEqual(['fade 0.05']);
       s.h.step();
     }
+    expect(sawClassicGo).toBe(true);
+    expect(sawRemixCome).toBe(true);
+    expect(palettes.size).toBe(1); // the portal's colours never cycle
+    expect(s.music).toEqual(['fade 0.05', 'title@loop']);
+    expect(s.sfx.filter((x) => x === 'stamp')).toEqual(['stamp']);
+    expect(suckPose(BACK.suckTo - 2, true)!.alpha).toBeLessThan(0.5);
+    expect(emergePose(BACK.emergeFrom, true)!.alpha).toBe(0);
     expect(title.phase).toBe('ready');
+    expect(sprite(title, 'remix')).toMatchObject({ x: 160, y: 54 });
+  });
+
+  it('72: with Reduce flashing, no dust sparkles on any frame of the way back, the first included', () => {
+    const s = setup(true);
+    const { title } = back(s);
+    for (let i = 0; i <= BACK.end + 4; i++) {
+      expect(
+        frames(title).filter((f) => f.startsWith('dust-')),
+        `frame ${clock(title)}`,
+      ).toEqual([]);
+      s.h.step();
+    }
   });
 
   it("BACK during CLASSIC's fall: nothing was hit, so no break; the finished title, its theme back up", () => {
@@ -211,6 +300,89 @@ describe('the way back from CLASSIC (option A)', () => {
     expect(s.music).toEqual(['title']);
   });
 
+  it('with Reduce flashing, BACK while the theme is still crossing over: the finished title at once', () => {
+    const s = setup(true);
+    // A sink that crossfades: the overworld comes in 0.4 s after CLASSIC opens.
+    s.h.game.ctx.audio.crossfadeMusic = (id) => (s.music.push(`cross ${id}`), 0.4);
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    expect(s.music.at(-1)).toBe('cross overworld');
+    s.h.idle(4);
+    s.music.length = 0;
+    s.sfx.length = 0;
+    s.h.step(['attack']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('ready');
+    // From its loop point: brought back up if still current, never its fanfare (the crossfade
+    // runs on the clock and may already have handed over to the overworld).
+    expect(s.music).toEqual(['title@loop']);
+    for (let i = 0; i < 20; i++) {
+      expect(rift(title)).toBeUndefined();
+      expect(frames(title)).not.toContain('classic');
+      expect(frames(title).filter((f) => f.startsWith('dust-'))).toEqual([]);
+      s.h.step();
+    }
+  });
+
+  it("with Reduce flashing, the Start box's Back inside the crossfade takes the same shortcut", () => {
+    const s = setup(true);
+    s.h.game.ctx.audio.crossfadeMusic = (id) => (s.music.push(`cross ${id}`), 0.4);
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    const classic = s.h.top() as ClassicTitleScene;
+    s.h.idle(2);
+    s.h.step(['jump']); // the Start box
+    s.h.step();
+    expect(classic.phase).toBe('start');
+    // Up to its Back row (it wraps from the first), and OK, all inside the 0.4 s crossfade.
+    s.h.step(['up']);
+    s.h.step();
+    s.music.length = 0;
+    s.h.step(['jump']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('ready');
+    expect(s.music).toEqual(['title@loop']);
+    expect(rift(title)).toBeUndefined();
+  });
+
+  it("the Start box's Back after the crossfade: the calm way back through the portal", () => {
+    const s = setup(true);
+    s.h.game.ctx.audio.crossfadeMusic = (id) => (s.music.push(`cross ${id}`), 0.4);
+    s.h.game.showTitle();
+    s.h.idle(TITLE_TIMING.dropEnd + 2);
+    s.h.game.showClassicTitle();
+    s.h.idle(40);
+    s.h.step(['jump']);
+    s.h.idle(10); // the box open
+    for (let i = 0; i < 6 && !(s.h.said.at(-1) ?? '').startsWith('Back'); i++) {
+      s.h.step(['up']);
+      s.h.step();
+    }
+    expect(s.h.said.at(-1)).toMatch(/^Back/);
+    s.h.step(['jump']);
+    const title = s.h.top() as TitleScene;
+    expect(title).toBeInstanceOf(TitleScene);
+    expect(title.phase).toBe('back');
+    expect(rift(title)).toBeDefined();
+  });
+
+  it('a press after REMIX has landed, while the portal closes, is swallowed too', () => {
+    const s = setup();
+    const { title } = back(s);
+    while (clock(title) < BACK.slam + 5) s.h.step();
+    expect(clock(title)).toBeLessThan(BACK.end);
+    expect(title.phase).toBe('back');
+    s.h.step(['jump']);
+    expect(title.phase).toBe('ready');
+    s.h.idle(10);
+    expect(s.h.top()).toBe(title);
+    expect(s.sfx).not.toContain('coin');
+  });
+
   it('the first launch (the rift intro, the full fanfare) and the plain title are as they were', () => {
     const s = setup();
     s.h.game.showTitle();
@@ -237,7 +409,7 @@ describe('the REMIX field: 1-1 first screen, still (0.4.72)', () => {
     expect(decor(title)).toEqual(now);
   });
 
-  it('a scrolled demo (12 s on CLASSIC): the break plays over the still 1-1 field, never the demo, so the slam does not cut', () => {
+  it('a scrolled demo (12 s on CLASSIC): the way back plays over the still 1-1 field, never the demo, so the slam does not cut', () => {
     const s = setup();
     const { title, classic } = back(s, 12 * 60);
     expect(classic.demo.world.camera.pxX).toBeGreaterThan(256); // pipes and goombas on screen there
