@@ -25,7 +25,9 @@ describe('item 127: what item 94 left unreachable is gone', () => {
     ['lost', 'll-1-2'],
   ] as const) {
     it(`a ${set} dev Classic run with no level on the stack still gives its set (its last level)`, () => {
-      const h = makeGame({ deps: { settings: { ...defaultSettings(), dev: true }, applySettings: () => {} } });
+      const h = makeGame({
+        deps: { settings: { ...defaultSettings(), dev: true }, applySettings: () => {} },
+      });
       h.game.devClassicGame(MARIO, level, 'classic');
       h.until(() => h.top() instanceof LevelScene, 900);
       expect(h.game.classicFile).toBeNull();

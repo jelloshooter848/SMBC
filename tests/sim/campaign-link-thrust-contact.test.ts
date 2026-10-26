@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { px, velToSub } from '@engine/math/units';
+import { px } from '@engine/math/units';
 import { LINK } from '@game/characters/link';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';

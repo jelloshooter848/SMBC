@@ -2665,12 +2665,13 @@ export class Game {
   /** The map set the Classic run's file belongs to, for the CLASSIC menu's focus on leaving it. */
   get runSet(): MapSetId | undefined {
     if (this.classicFile) return this.classicFile.set;
-    // 36a: a run with no file (a practice run): the set of the level
-    // it is playing (its main level's, for a sub-area), else of the level its select was for.
+    // 36a: a run with no file (a dev Classic or link run): the set of the level it is playing
+    // (its main level's, for a sub-area).
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
-    // 38d: with no level on the stack (MAIN MENU after a game over), the level the run last
-    // played: a `?level=` link run has no select level, and it played its link's set.
-    const id = scene ? (scene.level.parent ?? scene.level.id) : (this.runLevel ?? this.selectLevel);
+    // 38d: with no level on the stack (MAIN MENU after a game over, a mid-run select), the level
+    // the run last played. Item 127: no run is left before it plays a level any more (item 94
+    // took the practice run quit from its select), so the select's level is not needed.
+    const id = scene ? (scene.level.parent ?? scene.level.id) : this.runLevel;
     return id ? mapSetOf(id).id : undefined;
   }
 
