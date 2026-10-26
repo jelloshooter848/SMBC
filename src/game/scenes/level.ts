@@ -316,7 +316,10 @@ export class LevelScene implements Scene {
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
     // v0.4.73 (item 66): dev mode turned off mid-run with an unreleased hero: that life ends.
-    if (this.game.classicRun) this.game.endUnreleasedLife(this.world);
+    if (this.game.classicRun) {
+      this.game.endUnreleasedLife(this.world, this.level);
+      if (this.game.scenes.top !== this) return;
+    }
     this.world.update(inputs);
     this.bossMusicCheck();
     if (this.afterFirstUpdate) {

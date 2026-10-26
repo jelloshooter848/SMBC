@@ -30,6 +30,8 @@ export function advancedCheatsItem(game: Game, ref: ClassicFileRef, onBack?: () 
 
 export class AdvancedCheatsScene extends MenuScene {
   private readonly values: AssistSettings;
+  /** The CLEARED file this page was opened for (review fix 1: it never writes another). */
+  private readonly fileId: string;
   private readonly over = demoUnder(this.game);
 
   constructor(
@@ -43,6 +45,7 @@ export class AdvancedCheatsScene extends MenuScene {
     this.adjustSfx = 'coin';
     this.okAdjustSfx = 'coin';
     this.entryTitle = `Advanced cheats, file ${ref.slot}`;
+    this.fileId = game.advancedCheatsId(ref) ?? '';
     this.values = { ...(game.advancedCheatsOf(ref)?.assist ?? ADVANCED_OFF) };
     this.setItems([
       ...assistItems(this.values, () => this.keep()),
@@ -53,7 +56,8 @@ export class AdvancedCheatsScene extends MenuScene {
 
   /** A change: kept with the file (this session at least, when storage refuses it). */
   private keep(): void {
-    this.game.setAdvancedCheats(this.ref, { assist: { ...this.values } });
+    if (!this.game.setAdvancedCheats(this.ref, this.fileId, { assist: { ...this.values } }))
+      this.game.ctx.audio.sfx('bump');
   }
 
   override update(input: InputFrame): void {

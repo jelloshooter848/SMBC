@@ -18,7 +18,7 @@ import type { MenuItem } from '@game/scenes/menu';
 import { AdvancedCheatsScene } from '@game/scenes/advanced-cheats-menu';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
-import { ClassicFilesScene } from '@game/scenes/original-files-menu';
+import type { ClassicFilesScene } from '@game/scenes/original-files-menu';
 import { ClassicNoteScene, REPLAY_HELP_KEY, ReplayDeathScene } from '@game/scenes/original-replay';
 import { makeGame, store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';

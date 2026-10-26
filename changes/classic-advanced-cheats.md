@@ -15,5 +15,5 @@
   file as a new game, so a real file is never written over.
 - Classic mode: on release builds a file whose hero is not released yet now says "This hero is
   not in this version yet. The file is kept." instead of asking to turn on dev mode.
-- Dev mode: turning dev mode off in the middle of a run with an unreleased hero ends the
-  current life and opens the hero select, even in Single hero; the file stays marked.
+- Dev mode: turning dev mode off in the middle of a run with an unreleased hero ends that life,
+  without costing it, and opens the hero select, even in Single hero; the file stays marked.

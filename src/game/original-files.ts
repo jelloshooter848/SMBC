@@ -235,8 +235,7 @@ export interface ClearedFile {
   fromOld?: OldSaveMark;
   /**
    * v0.4.73 (item 60): beaten on Hard, so ADVANCED CHEATS are unlocked on this file (written
-   * with the clear, the file's only write). A Hard CLEARED file from before it reads as
-   * unlocked too (advanced-cheats.ts advancedUnlocked).
+   * with the clear, the file's only write), the one source (advanced-cheats.ts).
    */
   advancedCheats?: true;
 }

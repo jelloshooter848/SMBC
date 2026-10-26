@@ -260,13 +260,15 @@ export function openClearedFile(game: Game, files: ClassicFilesScene, f: Cleared
   // v0.4.73 (item 60): the file's Advanced cheats box, once (OK marks it read; BACK does not).
   const worlds = () => {
     const adv = game.advancedCheatsOf(ref);
+    // Review fix 1: OK marks only the file this box was opened for.
+    const id = game.advancedCheatsId(ref) ?? '';
     if (!adv || adv.seen) return toWorlds();
     game.scenes.push(
       new ClassicNoteScene(game, ADVANCED_HELP, {
         under: files,
         lead: `File ${f.slot}, advanced cheats`,
         onDone: () => {
-          game.setAdvancedCheats(ref, { seen: true });
+          game.setAdvancedCheats(ref, id, { seen: true });
           toWorlds();
         },
         onBack: () => files.comeBack(),

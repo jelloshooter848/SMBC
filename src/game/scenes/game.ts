@@ -837,16 +837,31 @@ export class Game {
   }
 
   /**
-   * v0.4.73 (item 66, dev only): dev mode was turned off mid-run while an unreleased Expansion
-   * hero plays (LevelScene asks every frame): the current life ends, as a death does, and the
-   * hero select follows (chooseHero) without that hero. Its file keeps the devHero mark
-   * (runNow), so it waits for dev mode.
+   * v0.4.73 (item 66, dev only; review fix 4, the safe version): dev mode was turned off mid-run
+   * while an unreleased Expansion hero plays (LevelScene asks every frame). That life ends
+   * WITHOUT being charged (no life lost, no Survival fall, so never a GAME OVER), never while
+   * play is held (a flagpole or castle's end, a pipe: World.inControl), and the hero select
+   * follows without that hero (a replay: its death box, whose RETRY picks again). The run is
+   * written first with the hero still playing, so its file keeps the devHero mark (runNow).
    */
-  endUnreleasedLife(world: World): void {
+  endUnreleasedLife(world: World, level: LevelData): void {
     if (this.devMode || !this.classicRun || this.campaign !== null) return;
     const c = this.state.character;
     if (!this.devOnlyHero(c) || !this.heroUnoffered(c)) return;
-    if (!world.player.dead) world.kill(world.player);
+    if (!world.inControl || world.player.dead) return;
+    const s = this.state;
+    this.resetAfterDeath();
+    s.time = null;
+    const cp = s.checkpoint;
+    const main = cp?.level ?? level.parent ?? level.id;
+    const at = cp ? main : this.firstArea(main);
+    const start: LevelStart = cp
+      ? { x: cp.x, y: cp.y ?? 12, mode: 'stand', clearEnemies: 'all' }
+      : { mode: 'stand' };
+    if (this.replayRun) return this.replayDied(at, start);
+    this.selectLevel = at;
+    if (this.keepsResume) this.keepResume(at);
+    this.chooseHero(0, () => this.goToLevel(at, start));
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -2602,7 +2617,9 @@ export class Game {
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
     const ref = this.classicFile;
-    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run.
+    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run. Review fix
+    // 2: nor anything storage cannot show now (it may be CLEARED; reads throwing hide it).
+    if (!storageReadable()) return;
     if (ref && !classicFileKept(ref)) eraseClassicFile(ref);
   }
 
@@ -2867,22 +2884,36 @@ export class Game {
   }
 
   /**
-   * v0.4.73 (item 60): changes file `ref`'s Advanced cheats (its values, or its box read), applied
-   * at once. False when it has none, a later version's data is there, or storage refused it
-   * (then this session keeps the change).
+   * v0.4.73 (item 60, review fix 1): which CLEARED file `ref` holds now (its fingerprint), for a
+   * page, box or row to capture as it opens; null when it has no Advanced cheats.
    */
-  setAdvancedCheats(ref: ClassicFileRef, change: { seen?: true; assist?: AssistSettings }): boolean {
+  advancedCheatsId(ref: ClassicFileRef): string | null {
+    return readAdvanced(ref)?.fp ?? null;
+  }
+
+  /**
+   * v0.4.73 (item 60): changes file `ref`'s Advanced cheats (its values, or its box read), applied
+   * at once. `id` is the file the caller opened for (advancedCheatsId, captured when its page,
+   * box or row opened): when the slot holds another file now (another tab erased it and cleared
+   * it again), nothing is written (review fix 1). False then, when it has none, a later
+   * version's data is there, or storage refused it (then this session keeps the change).
+   */
+  setAdvancedCheats(
+    ref: ClassicFileRef,
+    id: string,
+    change: { seen?: true; assist?: AssistSettings },
+  ): boolean {
     const r = readAdvanced(ref);
-    if (!r || r.newer) return false;
+    if (!r || r.newer || r.fp !== id) return false;
     const now = this.advancedCheatsOf(ref) ?? r.state;
     const next: AdvancedState = {
       seen: change.seen ?? now.seen,
       assist: { ...(change.assist ?? now.assist) },
     };
-    const id = `${classicFileKey(ref)}|${r.fp}`;
-    const ok = writeAdvanced(ref, r.fp, next);
-    if (ok) this.advancedMemory.delete(id);
-    else this.advancedMemory.set(id, next);
+    const key = `${classicFileKey(ref)}|${id}`;
+    const ok = writeAdvanced(ref, id, next);
+    if (ok) this.advancedMemory.delete(key);
+    else this.advancedMemory.set(key, next);
     this.applyAssists();
     return ok;
   }

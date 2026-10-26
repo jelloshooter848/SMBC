@@ -436,6 +436,12 @@ export class ClassicFilesScene extends ClassicBox {
     this.problems = [null, null, null];
     this.waiting = false;
     const refuse = (what: string) => () => {
+      // Review fix 3: reads work again: the box as it is now, read out (nothing is acted on).
+      if (storageReadable()) {
+        this.refresh();
+        this.announce();
+        return;
+      }
       game.ctx.audio.sfx('bump');
       game.deps.announcer?.say(`${STORAGE_UNREADABLE}. ${what}`);
     };

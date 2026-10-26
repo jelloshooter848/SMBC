@@ -1,5 +1,6 @@
 import { loadJson, saveJson, storageReadable } from '@engine/save/storage';
 import type { AssistSettings } from '@engine/save/settings';
+import { DEFAULT_ASSIST } from './context';
 import {
   advancedCheatsKey,
   classicFileKey,
@@ -18,8 +19,7 @@ export { advancedCheatsKey };
  *
  * Where it lives. The set is beaten once per file, and that clear is the file's last write (a
  * CLEARED file, v 2, is never written again: original-files.ts). So:
- * - the unlock is written with the clear itself (ClearedFile.advancedCheats); a Hard CLEARED file
- *   from before v0.4.73 reads as unlocked too (its rules say Hard, fixed for the file's life);
+ * - the unlock is written with the clear itself (ClearedFile.advancedCheats), its one source;
  * - what changes later (each row's value, and whether its explanation box was read) is kept
  *   beside the frozen file, under advancedCheatsKey(ref), tied to that very CLEARED file by a
  *   fingerprint of its stored text (`of`), which never changes. A later clear of the same slot
@@ -28,16 +28,10 @@ export { advancedCheatsKey };
  *   Data a later version wrote there (a newer `v`) is kept as it is: never written, nothing on.
  */
 
-/** Every Advanced cheat off (the dev Assists' own defaults; slow motion: normal speed). */
+/** Every Advanced cheat off: the assists' defaults (DEFAULT_ASSIST), at normal speed. */
 export const ADVANCED_OFF: Readonly<AssistSettings> = Object.freeze({
-  allowLeftScroll: false,
-  infiniteLives: false,
-  invulnerable: false,
-  infiniteTime: false,
-  coyoteFrames: 0,
-  fireRevertsToBig: false,
-  safetyFloor: false,
-  showHidden: false,
+  ...DEFAULT_ASSIST,
+  showHidden: DEFAULT_ASSIST.showHidden === true,
   slowMotion: 1,
 });
 
@@ -56,9 +50,9 @@ interface StoredAdvanced {
   assist: AssistSettings;
 }
 
-/** CLEARED file `f` has its Advanced cheats: beaten on Hard. */
-export function advancedUnlocked(f: Pick<ClearedFile, 'rules' | 'advancedCheats'>): boolean {
-  return f.advancedCheats === true || f.rules.difficulty === 'hard';
+/** CLEARED file `f` has its Advanced cheats: beaten on Hard (its stored flag, the one source). */
+export function advancedUnlocked(f: Pick<ClearedFile, 'advancedCheats'>): boolean {
+  return f.advancedCheats === true;
 }
 
 /** Values as stored, each checked (anything else is off). */
