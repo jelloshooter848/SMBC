@@ -42,6 +42,10 @@ export class AdvancedCheatsScene extends MenuScene {
   /** The CLEARED file this page was opened for (review fix 1: it never writes another). */
   private readonly fileId: string;
   private readonly over = demoUnder(this.game);
+  /** Item 153: the values as last kept (a refused change goes back to them). */
+  private kept: AssistSettings;
+  /** Item 153: said before the row after a change the file refused (another window's file). */
+  private refusal: string | null = null;
 
   constructor(
     game: Game,
@@ -58,6 +62,7 @@ export class AdvancedCheatsScene extends MenuScene {
     this.fileId = id ?? game.advancedCheatsId(ref) ?? '';
     // Item 134: another file in the slot now (another tab): its cheats are not shown or written.
     this.values = { ...(game.advancedCheatsOf(ref, this.fileId)?.assist ?? ADVANCED_OFF) };
+    this.kept = { ...this.values };
     this.setItems([
       ...assistItems(this.values, () => this.keep()),
       { label: 'Back', select: () => this.onBack?.() },
@@ -67,8 +72,25 @@ export class AdvancedCheatsScene extends MenuScene {
 
   /** A change: kept with the file (this session at least, when storage refuses it). */
   private keep(): void {
-    if (!this.game.setAdvancedCheats(this.ref, this.fileId, { assist: { ...this.values } }))
-      this.game.ctx.audio.sfx('bump');
+    if (this.game.setAdvancedCheats(this.ref, this.fileId, { assist: { ...this.values } })) {
+      this.kept = { ...this.values };
+      return;
+    }
+    this.game.ctx.audio.sfx('bump');
+    // Item 153: the slot holds another file now (cleared again in another window): nothing is
+    // kept, so the shown value goes back, and the page says why (on the line under the box too).
+    if ((this.game.advancedCheatsId(this.ref) ?? '') !== this.fileId) {
+      Object.assign(this.values, this.kept);
+      this.status = 'FILE CHANGED IN ANOTHER WINDOW';
+      this.refusal = `File ${this.ref.slot} was changed in another window, so nothing here is saved.`;
+    }
+  }
+
+  protected override announce(): void {
+    const refusal = this.refusal;
+    this.refusal = null;
+    if (!refusal) return super.announce();
+    this.game.deps.announcer?.say(`${refusal} ${this.focusLine()}`);
   }
 
   override update(input: InputFrame): void {
