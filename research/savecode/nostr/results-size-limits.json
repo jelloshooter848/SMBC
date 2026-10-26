@@ -1,0 +1,438 @@
+{
+  "at": "2026-10-26T22:30:52.616Z",
+  "note": "event_bytes is the JSON event; the EVENT frame adds ~11 bytes",
+  "rows": [
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 15986,
+      "accepted": false,
+      "message": "connection failed: Unexpected server response: 503"
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 15986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 15986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 15986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 15986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 15986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 15986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 15986,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 32986,
+      "accepted": false,
+      "message": "connection failed: Unexpected server response: 503"
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 32986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 32986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 32986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 32986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 32986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 32986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 32986,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": "duplicate: have this event"
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 47986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 47986,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 59986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 59986,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 63986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 63986,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 65986,
+      "accepted": false,
+      "message": "connection failed: Unexpected server response: 503"
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 65986,
+      "accepted": false,
+      "message": "invalid: event too large: 65986"
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 65986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 65986,
+      "accepted": false,
+      "message": "invalid: event too large: 65986"
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 65986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 65986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 65986,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 65986,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 99987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 99987,
+      "accepted": false,
+      "message": "invalid: event too large: 99987"
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 99987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 99987,
+      "accepted": false,
+      "message": "invalid: event too large: 99987"
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 99987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 99987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 99987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 99987,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 127987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 127987,
+      "accepted": false,
+      "message": "invalid: event too large: 127987"
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 127987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 127987,
+      "accepted": false,
+      "message": "invalid: event too large: 127987"
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 127987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 127987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 127987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 127987,
+      "accepted": false,
+      "message": "no OK within timeout"
+    },
+    {
+      "relay": "wss://relay.damus.io",
+      "event_bytes": 199987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nos.lol",
+      "event_bytes": 199987,
+      "accepted": false,
+      "message": "socket closed 1006"
+    },
+    {
+      "relay": "wss://relay.primal.net",
+      "event_bytes": 199987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.mom",
+      "event_bytes": 199987,
+      "accepted": false,
+      "message": "socket closed 1006"
+    },
+    {
+      "relay": "wss://relay.nostr.net",
+      "event_bytes": 199987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://nostr.oxtr.dev",
+      "event_bytes": 199987,
+      "accepted": false,
+      "message": "socket closed 1006"
+    },
+    {
+      "relay": "wss://nostr-pub.wellorder.net",
+      "event_bytes": 199987,
+      "accepted": true,
+      "message": ""
+    },
+    {
+      "relay": "wss://relay.snort.social",
+      "event_bytes": 199987,
+      "accepted": false,
+      "message": "no OK within timeout"
+    }
+  ]
+}

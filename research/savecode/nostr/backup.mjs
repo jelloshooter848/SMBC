@@ -125,9 +125,10 @@ function connect(url, WebSocketClass, timeoutMs) {
       clearTimeout(t);
       resolve(ws);
     };
-    ws.onerror = () => {
+    ws.onerror = (e) => {
       clearTimeout(t);
-      reject(new Error('connection failed'));
+      // browsers give no reason; Node's ws does (e.g. 'Unexpected server response: 403')
+      reject(new Error(e?.message ? `connection failed: ${e.message}` : 'connection failed'));
     };
   });
 }
@@ -137,10 +138,18 @@ export function publish(urls, event, { WebSocket: W = globalThis.WebSocket, time
   return Promise.all(
     urls.map(async (url) => {
       let ws;
+      const notices = [];
+      const t0 = performance.now();
       try {
         ws = await connect(url, W, timeoutMs);
+        // NOTICE and AUTH frames are kept so a refusal can be explained (size limits, auth or payment required)
         const answer = await new Promise((resolve) => {
           const t = setTimeout(() => resolve({ ok: false, message: 'no OK within timeout' }), timeoutMs);
+          // a relay that drops the socket (e.g. 1009, frame too big) answers with the close code
+          ws.onclose = (e) => {
+            clearTimeout(t);
+            resolve({ ok: false, message: `socket closed ${e.code}${e.reason ? ` ${e.reason}` : ''}` });
+          };
           ws.onmessage = (m) => {
             let msg;
             try {
@@ -148,6 +157,7 @@ export function publish(urls, event, { WebSocket: W = globalThis.WebSocket, time
             } catch {
               return;
             }
+            if (msg[0] === 'NOTICE' || msg[0] === 'AUTH') notices.push(`${msg[0]} ${String(msg[1] ?? '').slice(0, 200)}`);
             if (msg[0] === 'OK' && msg[1] === event.id) {
               clearTimeout(t);
               resolve({ ok: msg[2] === true, message: String(msg[3] ?? '') });
@@ -155,9 +165,9 @@ export function publish(urls, event, { WebSocket: W = globalThis.WebSocket, time
           };
           ws.send(JSON.stringify(['EVENT', event]));
         });
-        return { url, ...answer };
+        return { url, ...answer, ms: Math.round(performance.now() - t0), ...(notices.length ? { notices } : {}) };
       } catch (e) {
-        return { url, ok: false, message: e.message };
+        return { url, ok: false, message: e.message, ...(notices.length ? { notices } : {}) };
       } finally {
         try {
           ws?.close();
@@ -172,12 +182,19 @@ export function query(urls, filter, { WebSocket: W = globalThis.WebSocket, timeo
   return Promise.all(
     urls.map(async (url) => {
       let ws;
+      const notices = [];
+      const t0 = performance.now();
       try {
         ws = await connect(url, W, timeoutMs);
         const events = await new Promise((resolve) => {
           const got = [];
           const sub = 'b' + Math.random().toString(36).slice(2, 10);
           const t = setTimeout(() => resolve(got), timeoutMs);
+          ws.onclose = (e) => {
+            notices.push(`socket closed ${e.code}`);
+            clearTimeout(t);
+            resolve(got);
+          };
           ws.onmessage = (m) => {
             let msg;
             try {
@@ -185,8 +202,10 @@ export function query(urls, filter, { WebSocket: W = globalThis.WebSocket, timeo
             } catch {
               return;
             }
+            if (msg[0] === 'NOTICE' || msg[0] === 'AUTH') notices.push(`${msg[0]} ${String(msg[1] ?? '').slice(0, 200)}`);
             if (msg[1] !== sub) return;
             if (msg[0] === 'EVENT' && got.length < 20) got.push(msg[2]);
+            if (msg[0] === 'CLOSED') notices.push(`CLOSED ${String(msg[2] ?? '')}`);
             if (msg[0] === 'EOSE' || msg[0] === 'CLOSED') {
               clearTimeout(t);
               resolve(got);
@@ -194,9 +213,9 @@ export function query(urls, filter, { WebSocket: W = globalThis.WebSocket, timeo
           };
           ws.send(JSON.stringify(['REQ', sub, filter]));
         });
-        return { url, events };
+        return { url, events, ms: Math.round(performance.now() - t0), ...(notices.length ? { notices } : {}) };
       } catch (e) {
-        return { url, events: [], error: e.message };
+        return { url, events: [], error: e.message, ...(notices.length ? { notices } : {}) };
       } finally {
         try {
           ws?.close();

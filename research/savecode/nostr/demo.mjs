@@ -2,18 +2,71 @@
  * Research only. Backs a save up under a short code and restores it with nothing but the code.
  *   node demo.mjs --local                      in-process relays (protocol checks only)
  *   node demo.mjs wss://relay.damus.io wss://nos.lol …   real relays (needs network access to them)
- * Writes results-local.json or results-live.json next to this file.
+ *   node demo.mjs --restore CODE [CODE…] wss://…     restore only, no upload: which relays still have it
+ * Writes results-local.json, results-live.json or (appending) results-retention.json next to this file.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import WebSocket from 'ws';
 import { HttpsProxyAgent } from 'https-proxy-agent';
-import { backup, CODE_CHARS, keysFromCode, makeBackupEvent, MAX_SAVE_BYTES, newBackupCode, normalizeCode, openBackupEvent, restore, SCRYPT } from './backup.mjs';
+import { backup, backupFilter, CODE_CHARS, keysFromCode, makeBackupEvent, MAX_SAVE_BYTES, newBackupCode, normalizeCode, openBackupEvent, publish, query, restore, SCRYPT } from './backup.mjs';
 import { startRelay } from './local-relay.mjs';
 import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
 
 const HERE = new URL('.', import.meta.url).pathname;
 const args = process.argv.slice(2);
 const local = args.includes('--local');
+const sha = (t) => createHash('sha256').update(t).digest('hex').slice(0, 16);
+
+// Live relays are reached through HTTPS_PROXY when one is set (as in this container).
+let W = WebSocket;
+const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+if (!local && proxy) {
+  const agent = new HttpsProxyAgent(proxy);
+  W = class extends WebSocket {
+    constructor(url) {
+      super(url, { agent });
+    }
+  };
+}
+
+// ---- restore only: no upload, one row per code and relay (retention re-checks)
+if (args[0] === '--restore') {
+  const codes = args.slice(1).filter((a) => !a.startsWith('ws'));
+  const urls = args.filter((a) => a.startsWith('ws'));
+  const live = existsSync(`${HERE}results-live.json`) ? JSON.parse(readFileSync(`${HERE}results-live.json`, 'utf8')) : {};
+  const run = { at: new Date().toISOString(), rows: [] };
+  for (const code of codes) {
+    const known = [...(live.backups ?? []), ...(live.earlier_backups ?? [])].find((b) => normalizeCode(b.code) === normalizeCode(code));
+    const answers = await query(urls, await backupFilter(code), { WebSocket: W, timeoutMs: 10000 });
+    for (const a of answers) {
+      let found = null;
+      for (const ev of a.events) {
+        const text = await openBackupEvent(code, ev);
+        if (text !== null && (!found || ev.created_at > found.created_at)) found = { created_at: ev.created_at, sha256_16: sha(text), bytes: Buffer.byteLength(text) };
+      }
+      const row = {
+        code,
+        save: known?.save,
+        relay: a.url,
+        still_there: !!found,
+        ...(found ?? {}),
+        ...(known && found ? { matches_upload: found.sha256_16 === known.sha256_16, hours_since_upload: +((Date.now() / 1000 - known.uploaded_at) / 3600).toFixed(2) } : {}),
+        ms: a.ms,
+        ...(a.error ? { error: a.error } : {}),
+        ...(a.notices ? { notices: a.notices } : {}),
+      };
+      run.rows.push(row);
+      console.log(`${row.still_there ? 'kept' : 'GONE'} ${code} ${a.url}${a.error ? ` (${a.error})` : ''}${row.hours_since_upload != null ? ` ${row.hours_since_upload} h after upload` : ''}`);
+    }
+  }
+  const file = `${HERE}results-retention.json`;
+  const all = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : [];
+  all.push(run);
+  writeFileSync(file, JSON.stringify(all, null, 2));
+  process.exit(0);
+}
+
 const out = { mode: local ? 'local in-process relays (protocol checks, not real relays)' : 'live relays', checks: [] };
 let failed = 0;
 const check = (ok, what, detail) => {
@@ -60,25 +113,17 @@ check(await makeBackupEvent(code, 'x'.repeat(MAX_SAVE_BYTES + 1)).then(() => fal
 
 // ---- relays
 let relays;
-let W = WebSocket;
 const servers = [];
 if (local) {
   for (const o of [{}, {}, { refuseWrites: true }]) servers.push(await startRelay(o));
   relays = [...servers.map((s) => s.url), 'ws://127.0.0.1:1']; // the last one is down
 } else {
   relays = args.filter((a) => a.startsWith('ws'));
-  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
-  if (proxy) {
-    const agent = new HttpsProxyAgent(proxy);
-    W = class extends WebSocket {
-      constructor(url) {
-        super(url, { agent });
-      }
-    };
-  }
 }
 const opts = { WebSocket: W, timeoutMs: local ? 2000 : 10000 };
 out.relays = relays;
+
+if (!local) await liveRun();
 
 const now = Math.floor(Date.now() / 1000);
 const up = await backup(code, saveFile, relays, { ...opts, now });
@@ -117,7 +162,67 @@ if (local) {
   for (const s of servers) await s.close();
 }
 
+finish();
+function finish() {
 out.failed = failed;
 writeFileSync(`${HERE}results-${local ? 'local' : 'live'}.json`, JSON.stringify(out, null, 2));
 console.log(failed ? `${failed} check(s) failed` : 'all checks passed');
 process.exit(failed ? 1 : 0);
+}
+
+/*
+ * Live: each relay on its own, so every row says what that relay did. Two codes, so each save size
+ * stays on the relays for later retention checks (`--restore`): one keeps the whole JSON file, one the `z` string.
+ */
+async function liveRun() {
+  const codes = { file: code, string: newBackupCode() };
+  const texts = { file: saveFile, string: saveString };
+  out.backups = [];
+  // codes from earlier live runs stay listed, so `--restore` can still match them to their upload
+  if (existsSync(`${HERE}results-live.json`)) {
+    const prev = JSON.parse(readFileSync(`${HERE}results-live.json`, 'utf8'));
+    out.earlier_backups = [...(prev.backups ?? []), ...(prev.earlier_backups ?? [])];
+  }
+  out.per_relay = Object.fromEntries(relays.map((u) => [u, {}]));
+  const now = Math.floor(Date.now() / 1000);
+  for (const name of ['file', 'string']) {
+    const ev = await makeBackupEvent(codes[name], texts[name], now);
+    const results = await publish(relays, ev, opts);
+    out.backups.push({ save: name, code: codes[name], event_bytes: Buffer.byteLength(JSON.stringify(ev)), event_id: ev.id, uploaded_at: now, sha256_16: sha(texts[name]) });
+    for (const r of results) {
+      const row = (out.per_relay[r.url][name] = { accepted: r.ok, message: r.message, publish_ms: r.ms, ...(r.notices ? { notices: r.notices } : {}) });
+      // restore from this relay alone, with only the code (key already derived; derive cost is reported separately)
+      if (r.ok) {
+        const t0 = performance.now();
+        const back = await restore(name === 'file' ? sloppy : codes[name], [r.url], opts);
+        row.restore_ms = +(performance.now() - t0).toFixed(0);
+        row.restored_byte_for_byte = back.best?.saveText === texts[name];
+        if (back.answers[0].notices) row.restore_notices = back.answers[0].notices;
+      }
+    }
+    const okCount = results.filter((r) => r.ok).length;
+    check(okCount > 0, `the ${name} save (${out.backups.at(-1).event_bytes} B event) is accepted by at least one relay`, results.map((r) => `${r.url} ${r.ok ? 'OK' : r.message}`));
+    check(relays.every((u) => !out.per_relay[u][name].accepted || out.per_relay[u][name].restored_byte_for_byte), `every relay that accepted the ${name} save gives it back byte for byte`);
+  }
+
+  // every relay together, as the game would: one restore with only the code
+  const t0 = performance.now();
+  const back = await restore(sloppy, relays, opts);
+  out.restore_all_relays_ms = +(performance.now() - t0).toFixed(0);
+  check(back.best?.saveText === saveFile, 'restore from all relays at once with only the code', { from: back.best?.from, ms: out.restore_all_relays_ms });
+
+  // replaceable: a newer upload of the string save under its code wins (the file code is left alone for retention checks)
+  const ev2 = await makeBackupEvent(codes.string, saveString, now + 60);
+  const res2 = await publish(relays, ev2, opts);
+  for (const r of res2) out.per_relay[r.url].newer_upload = { accepted: r.ok, message: r.message };
+  const back2 = await restore(codes.string, relays.filter((u, i) => res2[i].ok), opts);
+  for (const a of back2.answers) out.per_relay[a.url].replaced_by_newer = a.events.some((e) => e.id === ev2.id) && !a.events.some((e) => e.id === out.backups[1].event_id);
+  out.backups[1].event_id = ev2.id;
+  out.backups[1].uploaded_at = now + 60;
+  check(back2.best?.id === ev2.id, 'a newer upload under the same code replaces the older one', Object.fromEntries(back2.answers.map((a) => [a.url, a.events.length + ' event(s)'])));
+
+  const wrong = normalizeCode(code).replace(/^./, (c) => (c === 'A' ? 'B' : 'A'));
+  check((await restore(wrong, relays, opts)).best === null, 'a mistyped code finds no backup');
+  out.retention_command = `node demo.mjs --restore ${codes.file} ${codes.string} ${relays.join(' ')}`;
+  finish();
+}

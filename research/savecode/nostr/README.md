@@ -55,23 +55,104 @@ Everything fits under typical relay caps. Saves over 40 KB are refused before up
 - Searching against 10,000 players at once to hit *any* one: about 700 core-years. A GPU farm could cut that substantially (**F**).
 - Winning would let the attacker read or overwrite one random stranger's game save. This is low stakes, and it is the same exposure as someone seeing a save code today.
 
-## Not tested: real relays
+## Live relays (MEASURED)
 
-This container's network policy blocks every public relay tried: `relay.damus.io`, `nos.lol`, `relay.nostr.band`, `relay.primal.net`, `relay.snort.social` and `nostr.mom`. So the following are **unmeasured**:
-- whether free relays accept kind 30078 events of this size;
-- how long they keep them;
-- how fast they are from a phone.
+Measured on 2026-10-26 from this container, through its HTTPS proxy (data-centre network, not a phone). Two full live runs, about 4 minutes apart (22:24 and 22:29 UTC); each run uploads two backups under two new codes:
+- the whole JSON file (33,234-byte event);
+- the `z` string (4,562-byte event).
 
-The local relay checks only the prototype's own protocol code.
+Raw data: `results-live.json`, `results-size-limits.json`, `results-retention.json`.
 
-To run it live once those hosts are allowed (or from any machine with internet):
+Changes to the prototype for live use:
+- `publish` and `query` now record `NOTICE`, `AUTH` and `CLOSED` frames, and the time each relay took.
+- A socket the relay closes ends the wait with its close code; before, the prototype waited for the timeout.
+- Under Node, a failed connection includes the reason (e.g. `Unexpected server response: 403`). Browsers give none.
+- Live mode tests each relay on its own and uses two codes, so each save size can be re-checked later.
+- New `--restore` mode.
+- New `size-limits.mjs`.
+
+The protocol is unchanged. No relay needed NIP-42 AUTH to accept a write: only paid nostr.land sent `AUTH`, and it refuses unpaid keys either way.
+
+### Per relay (M)
+
+Restore times are for that one relay alone, with only the code. They exclude the scrypt derive, which is 140 ms here.
+
+| Relay | Software, cap | 33 KB file | 4.5 KB string | Restore file / string (ms) | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `wss://nos.lol` | strfry 1.1.3, **64 KB event cap** | OK | OK | 695 / 595, 644 / 516 | Took 64.0 KB; refused 66.0 KB: `invalid: event too large: 65986` |
+| `wss://relay.primal.net` | strfry 1.1.3 | OK | OK | 734 / 638, 773 / 620 | Took 200 KB |
+| `wss://nostr.mom` | strfry 1.1.3, **64 KB event cap** | OK | OK | 647 / 551, 642 / 513 | Same cap and message as nos.lol |
+| `wss://nostr-pub.wellorder.net` | nostr-rs-relay 0.9.0 | OK | OK | 504 / 423, 555 / 399 | Took 200 KB. Different software from the rest, which adds diversity |
+| `wss://nostr.oxtr.dev` | strfry 1.0.4 | OK | OK | 648 / 551, 652 / 522 | Took 128 KB; 200 KB: socket closed 1006 |
+| `wss://relay.nostr.net` | strfry, aggregator | OK | OK | 887 / 791, 973 / 717 | Often answers `duplicate: have this event`: it copies events from other relays |
+| `wss://relay.damus.io` | strfry | run 1 OK, run 2 **HTTP 503** | OK | 387 / 446, — / 322 | **Unreliable at connect.** It answered `Unexpected server response: 503` to many connections (3 of 9 in the size test, and 1 of 3 uploads in run 2). Took 200 KB when it connected |
+| `wss://offchain.pub` | strfry 1.1.0, web of trust | **refused** | run 1 refused, run 2 OK | — / 274 | `Policy violated and pubkey is not in our web of trust.` It later accepted newer events from keys it had refused: inconsistent |
+| `wss://nostr.bitcoiner.social` | strfry 1.1.0, web of trust | **refused** | run 1 refused, run 2 OK | — / 510 | Same message and behaviour as offchain.pub |
+| `wss://relay.nos.social` | strfry 1.0.3 | **refused** | **refused** | — | `blocked: kind not allowed` (kind 30078) |
+| `wss://relay.snort.social` | memlay 0.2.0 (in-memory) | no answer | no answer | — | Connects and answers REQ, but never sends OK within 10 s, at any size. In-memory, so retention is unlikely anyway |
+| `wss://nostr.land` | NFDB, paid | **refused** | **refused** | — | Sends an `AUTH` challenge, then `restricted: Pay on https://nostr.land for access.` |
+| `wss://nostr.wine` | paid | **refused** | **refused** | — | HTTP 403 on the WebSocket upgrade |
+| `wss://relay.nostr.band` | — | down | down | — | `read ECONNRESET` or timeout. curl also times out |
+| `wss://relay.nostr.bg` | — | down | down | — | HTTP 502 |
+| `wss://relay.mostr.pub` | — | down | down | — | HTTP 301; no relay at this URL |
+
+**Upload time (M):** 0.8–1.7 s for the 33 KB file and 0.4–1.0 s for the string, per relay, in parallel.
+
+**Restore from every relay at once (M):** 7.3 s in both runs. That is the slowest relays timing out at 10 s, not the data: any single good relay answers in 0.3–1.0 s. The game should keep the first valid backup as soon as it arrives, with a timeout of about 3 s per relay (**F**: about 1 s after the derive on a phone, on a decent connection).
+
+**Replace (M):** a newer upload under the same code replaced the older one on every relay that accepted it. Once, damus answered with no events right after a replace, then returned the event on later queries.
+
+### Retention (M, first data point only)
+
+RETENTION_PLACEHOLDER
+
+This is minutes, not weeks. Free relays promise nothing, and strfry operators prune by age or disk use. Re-check the same four codes over days and weeks. The command restores without uploading and appends a run to `results-retention.json`:
 
 ```sh
 cd research/savecode/nostr && npm install
-node demo.mjs wss://relay.damus.io wss://nos.lol wss://relay.primal.net wss://relay.nostr.band
+node demo.mjs --restore JPCFA-5HFPT YRT7G-ZPMVR T4EJC-ZYKHV FN1XX-M3ZVV \
+  wss://relay.damus.io wss://nos.lol wss://relay.primal.net wss://nostr.mom wss://relay.nostr.net \
+  wss://offchain.pub wss://nostr.oxtr.dev wss://nostr-pub.wellorder.net wss://nostr.bitcoiner.social wss://relay.snort.social
 ```
 
-It writes `results-live.json`. Run it again days or weeks later with the same code to see how long relays keep backups. That would need a small "restore only" flag; it is not built yet.
+| Code | Save | Uploaded (UTC) |
+| --- | --- | --- |
+| `JPCFA-5HFPT` | 33 KB file | 2026-10-26 22:24 |
+| `YRT7G-ZPMVR` | 4.5 KB string (replaced once) | 2026-10-26 22:25 |
+| `T4EJC-ZYKHV` | 33 KB file | 2026-10-26 22:29 |
+| `FN1XX-M3ZVV` | 4.5 KB string (replaced once) | 2026-10-26 22:30 |
+
+These are throwaway codes for synthetic test saves, so publishing them here is harmless.
+
+### Recommended defaults
+
+Use **5 relays**: `wss://relay.primal.net`, `wss://nos.lol`, `wss://nostr.mom`, `wss://nostr-pub.wellorder.net` and `wss://nostr.oxtr.dev`.
+- All five accepted both sizes in both runs and restored byte for byte in 0.4–0.8 s (M).
+- They are four operators on two relay programs.
+- Upload to all of them, and count the backup as made when at least 2 accept.
+
+Possible extras:
+- `wss://relay.damus.io` is popular and takes large events, but often answered 503 on connect (M).
+- `wss://relay.nostr.net` works, but it copies other relays' events, so it adds little independent durability.
+
+Avoid:
+- the web-of-trust relays (offchain.pub, nostr.bitcoiner.social), which refuse new keys;
+- relay.nos.social, which blocks kind 30078;
+- paid relays (nostr.land, nostr.wine);
+- relay.snort.social (no OK, in-memory);
+- the dead hosts.
+
+Relays come and go (three of the hosts tried are down), so the game should be able to update its relay list without a new release, or at least ship a list longer than it needs (**F**).
+
+### Is a 33 KB save safe?
+
+**Yes today, but send the `z` string by default.**
+- The strictest cap measured is **64 KB per event** (nos.lol and nostr.mom, the strfry default; M). The 33 KB file is half of that. The prototype's 40,000-byte save limit makes a **55,078-byte** event (M), which still fits.
+- The string is 7× smaller and uploads about twice as fast.
+- The string leaves room if the save format grows.
+- The string asks less of free relays that are carrying the backup for nothing.
+
+Use the whole file only if the string cannot hold everything the player needs back.
 
 ## What remains a product decision
 
@@ -83,6 +164,7 @@ It writes `results-live.json`. Run it again days or weeks later with the same co
 
 - `backup.mjs`: the module. It is browser-ready; relays are reached with any `WebSocket` class.
 - `local-relay.mjs`: a minimal in-memory NIP-01 relay, for tests only.
-- `demo.mjs`: the checks above, run locally or live.
+- `demo.mjs`: the checks above, run locally (`--local`), live (relay URLs), or restore only (`--restore CODE… relays…`).
+- `size-limits.mjs`: uploads events of growing size under a throwaway key, to find each relay's cap.
 - `size.mjs`: the bundle-size measurement.
-- `results-local.json`
+- `results-local.json`, `results-live.json`, `results-size-limits.json`, `results-retention.json`

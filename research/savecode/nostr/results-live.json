@@ -1,0 +1,491 @@
+{
+  "mode": "live relays",
+  "checks": [
+    {
+      "ok": true,
+      "what": "a new code has 10 characters",
+      "detail": {
+        "code": "T4EJC-ZYKHV"
+      }
+    },
+    {
+      "ok": true,
+      "what": "typed loosely (lower case, space, O for 0, L for 1) it is the same code",
+      "detail": {
+        "typed": "t4ejc zykhv"
+      }
+    },
+    {
+      "ok": true,
+      "what": "too short, or a character outside the alphabet, is not a code"
+    },
+    {
+      "ok": true,
+      "what": "the file save survives encrypt + sign + verify + decrypt",
+      "detail": {
+        "event_bytes": 33234
+      }
+    },
+    {
+      "ok": true,
+      "what": "the string save survives encrypt + sign + verify + decrypt",
+      "detail": {
+        "event_bytes": 4562
+      }
+    },
+    {
+      "ok": true,
+      "what": "a save over the size cap is refused before upload"
+    },
+    {
+      "ok": true,
+      "what": "the file save (33234 B event) is accepted by at least one relay",
+      "detail": [
+        "wss://relay.damus.io connection failed: Unexpected server response: 503",
+        "wss://nos.lol OK",
+        "wss://relay.primal.net OK",
+        "wss://relay.nostr.band timeout",
+        "wss://relay.snort.social no OK within timeout",
+        "wss://nostr.mom OK",
+        "wss://relay.nostr.bg connection failed: Unexpected server response: 502",
+        "wss://nostr.wine connection failed: Unexpected server response: 403",
+        "wss://nostr.land restricted: Pay on https://nostr.land for access.",
+        "wss://relay.nostr.net OK",
+        "wss://offchain.pub Policy violated and pubkey is not in our web of trust.",
+        "wss://nostr.oxtr.dev OK",
+        "wss://nostr-pub.wellorder.net OK",
+        "wss://relay.nos.social blocked: kind not allowed",
+        "wss://nostr.bitcoiner.social Policy violated and pubkey is not in our web of trust.",
+        "wss://relay.mostr.pub connection failed: Unexpected server response: 301"
+      ]
+    },
+    {
+      "ok": true,
+      "what": "every relay that accepted the file save gives it back byte for byte"
+    },
+    {
+      "ok": true,
+      "what": "the string save (4562 B event) is accepted by at least one relay",
+      "detail": [
+        "wss://relay.damus.io OK",
+        "wss://nos.lol OK",
+        "wss://relay.primal.net OK",
+        "wss://relay.nostr.band connection failed: read ECONNRESET",
+        "wss://relay.snort.social no OK within timeout",
+        "wss://nostr.mom OK",
+        "wss://relay.nostr.bg connection failed: Unexpected server response: 502",
+        "wss://nostr.wine connection failed: Unexpected server response: 403",
+        "wss://nostr.land restricted: Pay on https://nostr.land for access.",
+        "wss://relay.nostr.net OK",
+        "wss://offchain.pub OK",
+        "wss://nostr.oxtr.dev OK",
+        "wss://nostr-pub.wellorder.net OK",
+        "wss://relay.nos.social blocked: kind not allowed",
+        "wss://nostr.bitcoiner.social OK",
+        "wss://relay.mostr.pub connection failed: Unexpected server response: 301"
+      ]
+    },
+    {
+      "ok": true,
+      "what": "every relay that accepted the string save gives it back byte for byte"
+    },
+    {
+      "ok": true,
+      "what": "restore from all relays at once with only the code",
+      "detail": {
+        "from": "wss://nos.lol",
+        "ms": 7324
+      }
+    },
+    {
+      "ok": true,
+      "what": "a newer upload under the same code replaces the older one",
+      "detail": {
+        "wss://nos.lol": "1 event(s)",
+        "wss://relay.primal.net": "1 event(s)",
+        "wss://nostr.mom": "1 event(s)",
+        "wss://relay.nostr.net": "1 event(s)",
+        "wss://offchain.pub": "1 event(s)",
+        "wss://nostr.oxtr.dev": "1 event(s)",
+        "wss://nostr-pub.wellorder.net": "1 event(s)",
+        "wss://nostr.bitcoiner.social": "1 event(s)"
+      }
+    },
+    {
+      "ok": true,
+      "what": "a mistyped code finds no backup"
+    }
+  ],
+  "saves": {
+    "file_bytes": 23104,
+    "string_chars": 2941
+  },
+  "code_example": "T4EJC-ZYKHV",
+  "scrypt": {
+    "params": {
+      "N": 32768,
+      "r": 8,
+      "p": 1,
+      "dkLen": 32
+    },
+    "memory_mb": 32,
+    "ms_per_derive_node": 145
+  },
+  "guessing": {
+    "code_bits": 50,
+    "note": "brute force needs one scrypt per guess; the per-core rate is from this machine, a GPU farm can be thousands of times faster",
+    "years_per_core_to_search_all_codes": 5170000
+  },
+  "event_bytes_file": 33234,
+  "event_bytes_string": 4562,
+  "relays": [
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.primal.net",
+    "wss://relay.nostr.band",
+    "wss://relay.snort.social",
+    "wss://nostr.mom",
+    "wss://relay.nostr.bg",
+    "wss://nostr.wine",
+    "wss://nostr.land",
+    "wss://relay.nostr.net",
+    "wss://offchain.pub",
+    "wss://nostr.oxtr.dev",
+    "wss://nostr-pub.wellorder.net",
+    "wss://relay.nos.social",
+    "wss://nostr.bitcoiner.social",
+    "wss://relay.mostr.pub"
+  ],
+  "backups": [
+    {
+      "save": "file",
+      "code": "T4EJC-ZYKHV",
+      "event_bytes": 33234,
+      "event_id": "101239b29f0756a0a07fc1f3c42b98f60fe1bcb8225b17dd1b5aad2d3c697ff1",
+      "uploaded_at": 1793053752,
+      "sha256_16": "9b87fc0a9e31021d"
+    },
+    {
+      "save": "string",
+      "code": "FN1XX-M3ZVV",
+      "event_bytes": 4562,
+      "event_id": "90d74b22451202a93a10bc6ced8de56ad9c48062545a2e69173285fb7ac09097",
+      "uploaded_at": 1793053812,
+      "sha256_16": "2b89954aa1e7244f"
+    }
+  ],
+  "earlier_backups": [
+    {
+      "save": "file",
+      "code": "JPCFA-5HFPT",
+      "event_bytes": 33234,
+      "event_id": "567cf2d8816e26a46c9dd2e3e0e8ef97885e194c55d639bde2e3d4ba7da8b2ff",
+      "uploaded_at": 1793053483,
+      "sha256_16": "9b87fc0a9e31021d"
+    },
+    {
+      "save": "string",
+      "code": "YRT7G-ZPMVR",
+      "event_bytes": 4562,
+      "event_id": "8085094e75c49dd2dfd44678d66a27b6c467d551ff218352b8b2a2ac030f2afb",
+      "uploaded_at": 1793053543,
+      "sha256_16": "2b89954aa1e7244f"
+    }
+  ],
+  "per_relay": {
+    "wss://relay.damus.io": {
+      "file": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 503"
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 432,
+        "restore_ms": 322,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 503"
+      }
+    },
+    "wss://nos.lol": {
+      "file": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 981,
+        "restore_ms": 644,
+        "restored_byte_for_byte": true
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 799,
+        "restore_ms": 516,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://relay.primal.net": {
+      "file": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 944,
+        "restore_ms": 773,
+        "restored_byte_for_byte": true
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 898,
+        "restore_ms": 620,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://relay.nostr.band": {
+      "file": {
+        "accepted": false,
+        "message": "timeout"
+      },
+      "string": {
+        "accepted": false,
+        "message": "connection failed: read ECONNRESET"
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "connection failed: read ECONNRESET"
+      }
+    },
+    "wss://relay.snort.social": {
+      "file": {
+        "accepted": false,
+        "message": "no OK within timeout",
+        "publish_ms": 10661
+      },
+      "string": {
+        "accepted": false,
+        "message": "no OK within timeout",
+        "publish_ms": 10606
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "no OK within timeout"
+      }
+    },
+    "wss://nostr.mom": {
+      "file": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 889,
+        "restore_ms": 642,
+        "restored_byte_for_byte": true
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 791,
+        "restore_ms": 513,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://relay.nostr.bg": {
+      "file": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 502"
+      },
+      "string": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 502"
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 502"
+      }
+    },
+    "wss://nostr.wine": {
+      "file": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 403"
+      },
+      "string": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 403"
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 403"
+      }
+    },
+    "wss://nostr.land": {
+      "file": {
+        "accepted": false,
+        "message": "restricted: Pay on https://nostr.land for access.",
+        "publish_ms": 1031,
+        "notices": [
+          "AUTH cca6bfde-69c5-4de8-bb29-3d46d8d80b97"
+        ]
+      },
+      "string": {
+        "accepted": false,
+        "message": "restricted: Pay on https://nostr.land for access.",
+        "publish_ms": 858,
+        "notices": [
+          "AUTH 47968eb5-bd40-4f06-8edf-a8d33614d04f"
+        ]
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "restricted: Pay on https://nostr.land for access."
+      }
+    },
+    "wss://relay.nostr.net": {
+      "file": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 983,
+        "restore_ms": 973,
+        "restored_byte_for_byte": true
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 994,
+        "restore_ms": 717,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": "duplicate: have this event"
+      },
+      "replaced_by_newer": true
+    },
+    "wss://offchain.pub": {
+      "file": {
+        "accepted": false,
+        "message": "Policy violated and pubkey is not in our web of trust.",
+        "publish_ms": 633
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 548,
+        "restore_ms": 274,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://nostr.oxtr.dev": {
+      "file": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 882,
+        "restore_ms": 652,
+        "restored_byte_for_byte": true
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 809,
+        "restore_ms": 522,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://nostr-pub.wellorder.net": {
+      "file": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 808,
+        "restore_ms": 555,
+        "restored_byte_for_byte": true
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 721,
+        "restore_ms": 399,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://relay.nos.social": {
+      "file": {
+        "accepted": false,
+        "message": "blocked: kind not allowed",
+        "publish_ms": 627
+      },
+      "string": {
+        "accepted": false,
+        "message": "blocked: kind not allowed",
+        "publish_ms": 488
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "blocked: kind not allowed"
+      }
+    },
+    "wss://nostr.bitcoiner.social": {
+      "file": {
+        "accepted": false,
+        "message": "Policy violated and pubkey is not in our web of trust.",
+        "publish_ms": 735
+      },
+      "string": {
+        "accepted": true,
+        "message": "",
+        "publish_ms": 650,
+        "restore_ms": 510,
+        "restored_byte_for_byte": true
+      },
+      "newer_upload": {
+        "accepted": true,
+        "message": ""
+      },
+      "replaced_by_newer": true
+    },
+    "wss://relay.mostr.pub": {
+      "file": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 301"
+      },
+      "string": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 301"
+      },
+      "newer_upload": {
+        "accepted": false,
+        "message": "connection failed: Unexpected server response: 301"
+      }
+    }
+  },
+  "restore_all_relays_ms": 7324,
+  "retention_command": "node demo.mjs --restore T4EJC-ZYKHV FN1XX-M3ZVV wss://relay.damus.io wss://nos.lol wss://relay.primal.net wss://relay.nostr.band wss://relay.snort.social wss://nostr.mom wss://relay.nostr.bg wss://nostr.wine wss://nostr.land wss://relay.nostr.net wss://offchain.pub wss://nostr.oxtr.dev wss://nostr-pub.wellorder.net wss://relay.nos.social wss://nostr.bitcoiner.social wss://relay.mostr.pub",
+  "failed": 0
+}
