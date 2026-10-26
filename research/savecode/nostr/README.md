@@ -104,9 +104,22 @@ Restore times are for that one relay alone, with only the code. They exclude the
 
 ### Retention (M, first data point only)
 
-RETENTION_PLACEHOLDER
+Restore-only checks (`--restore`, no upload) at 22:34 UTC and three times at 23:01 UTC. The 23:01 checks were **31–37 minutes after upload**. All three gave the same picture:
 
-This is minutes, not weeks. Free relays promise nothing, and strfry operators prune by age or disk use. Re-check the same four codes over days and weeks. The command restores without uploading and appends a run to `results-retention.json`:
+| Relay | File, run 1 | String, run 1 | File, run 2 | String, run 2 |
+| --- | --- | --- | --- | --- |
+| nos.lol, relay.primal.net, nostr.mom, nostr.oxtr.dev, nostr-pub.wellorder.net, relay.nostr.net | kept | kept | kept | kept |
+| relay.snort.social | kept | kept | kept | kept |
+| relay.damus.io | 503 on connect | 503 on connect, then kept | not there (that upload got 503) | kept |
+| offchain.pub, nostr.bitcoiner.social | not there | kept | not there | kept |
+
+- Every save a relay accepted was still there and matched the upload byte for byte (sha-256 check).
+- **Nothing was pruned** in about 35 minutes.
+- relay.snort.social never answered OK, yet it serves all four backups. Most likely it copies them from other relays.
+- The two web-of-trust relays refused every direct write, yet serve the small strings, and only the newer replacement. Most likely they copy from other relays too, but not 33 KB events.
+- Restore time per relay with only the code was 0.5–1.2 s.
+
+This is minutes, not weeks. Free relays promise nothing, and strfry operators prune by age or disk use. Real retention needs re-checks of the same four codes after 1 day, 1 week and 1 month. The command restores without uploading and appends a run to `results-retention.json`:
 
 ```sh
 cd research/savecode/nostr && npm install
