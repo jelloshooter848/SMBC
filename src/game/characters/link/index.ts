@@ -338,6 +338,8 @@ export const LINK: CharacterDef = {
     knockback: { vx: 0x01800, vy: 0x02800 },
   },
   stomps: false,
+  // Body contact while thrusting is the thrust's hit, as in Classic (item 122: no hurt landing just off the sword box).
+  thrustContact: true,
   crouches: true,
   canBreakBricks: () => false, // the sword opens bricks, not the head
   hitbox: (p) => (p.crouching ? { w: 12, h: 16 } : { w: 12, h: 24 }),
