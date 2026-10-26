@@ -218,9 +218,9 @@ has the same guide for the hero you are playing.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
-- **Asset packs**: import a folder, export repaintable templates, toggle packs (left / right) or
-  delete one (OK, then YES). Importing needs a computer: on a phone or tablet that cannot pick
-  a folder the page says so, and packs already stored keep working.
+- **Asset packs**: import a pack from a `.zip` file (every device, phones included) or, on a
+  computer, from a folder (a pack with a name already stored is replaced only on YES); export repaintable templates (a computer's page); toggle packs (left /
+  right) or delete one (OK, then YES).
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own
   install prompt where there is one (Android, Chrome, Edge), else a short guide; hidden when the
   game already runs from the Home Screen and on desktop browsers that can't install it.
@@ -389,7 +389,9 @@ music you may load them locally without them ever entering the repository:
 - **In the game**: Options → Asset packs → _Export template_ downloads
   `smbc-remix-pack-template.zip`: one PNG and frame layout per sprite sheet, a `manifest.json`,
   and a `README.txt` listing every song, sound and palette a pack can replace. Unzip it, repaint
-  the PNGs keeping the layout, and pick the folder with _Import pack_. Packs are stored in the browser (IndexedDB).
+  the PNGs keeping the layout, and pick the folder with _Import pack (folder)_, or zip it and pick
+  the `.zip` with _Import pack (.zip)_ (any device; a pack zip exported by Options → Save data goes
+  straight back in the same way). Packs are stored in the browser (IndexedDB).
 - **In development**: drop pack folders in `user-packs/` (gitignored) and list them in
   `user-packs/index.json`; `pnpm dev` imports them automatically.
 

@@ -19,14 +19,25 @@ function open(): Promise<IDBDatabase> {
   });
 }
 
+/**
+ * One request in its own transaction. It settles when the transaction does: a write counts only
+ * once it has committed (#219 review: a quota error can abort the transaction at commit, after
+ * the request itself succeeded, and then nothing was written).
+ */
 function tx<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return open().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
         const t = db.transaction(STORE, mode);
         const req = fn(t.objectStore(STORE));
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        let result: T;
+        req.onsuccess = () => {
+          result = req.result;
+        };
+        // A failed request aborts its transaction; the abort reports it.
+        t.oncomplete = () => resolve(result);
+        t.onabort = () => reject(t.error ?? req.error ?? new Error('IndexedDB transaction aborted'));
+        t.onerror = () => reject(t.error ?? req.error ?? new Error('IndexedDB transaction failed'));
       }),
   );
 }

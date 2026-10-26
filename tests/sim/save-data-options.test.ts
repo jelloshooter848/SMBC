@@ -629,7 +629,8 @@ describe('review #217: every line drawn on the pack questions is said', () => {
     press(r, 'Export backup');
     const b = box(r.h);
     expect(b.said).toContain(b.drawn);
-    expect(b.drawn).toMatch(/unzip it on a computer and pick its folder with import pack/);
+    // Item 141: a pack zip goes straight back in with Import pack (.zip).
+    expect(b.drawn).toMatch(/to use one again pick it with import pack zip/);
     for (const l of (r.h.top() as unknown as { lines: readonly string[] }).lines)
       expect(l.length).toBeLessThanOrEqual(28);
   });
@@ -651,6 +652,6 @@ describe('review #217: every line drawn on the pack questions is said', () => {
     await flush();
     press(r, 'Yes');
     await flush();
-    expect(r.h.said.at(-1)).toMatch(/unzip it on a computer and pick its folder with import pack/i);
+    expect(r.h.said.at(-1)).toMatch(/to use one again, pick it with import pack \(\.zip\)/i);
   });
 });
