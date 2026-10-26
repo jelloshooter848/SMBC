@@ -78,7 +78,7 @@ export interface Settings {
   homeScreen?: HomeScreenFlags;
   /**
    * The rules a Classic mode run plays (title > CLASSIC > Options > Rules): 'classic' (the
-   * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
+   * original SMBC's, the default) or 'campaign'. A campaign file always plays Campaign rules.
    */
   classicRules: ClassicRules;
   /**
@@ -181,12 +181,8 @@ export interface ClassicCheatsSettings {
    * files' migration reads it once for a run that had no count of its own; nothing writes it.
    */
   continuesUsed: number;
-  /**
-   * The Level Select cheat (G-007; the original's 17th cheat, Cheats.as:47): unlocked by beating
-   * every map set on Hard (StatManager.allMapPacksBeatOnHard) or by the code. Not a rule: it opens
-   * the LEVEL SELECT page from the Cheats page and the Classic pause menu.
-   */
-  levelSelect: boolean;
+  // v0.4.73 item 94: no Level Select cheat (the original's 17th, Cheats.as:47). An old save's
+  // `levelSelect` key is left in storage as it is; nothing reads it.
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
@@ -206,7 +202,6 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
     stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
     beaten: { smb: false, special: false, lost: false },
     continuesUsed: 0,
-    levelSelect: false,
   };
 }
 
@@ -235,8 +230,8 @@ export interface ClassicDevToggles {
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
-export type ClassicRules = 'classic' | 'current';
-export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'current'];
+export type ClassicRules = 'classic' | 'campaign';
+export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'campaign'];
 
 export interface HomeScreenFlags {
   tipDone: boolean;
@@ -264,7 +259,9 @@ export const OLD_DEFAULT_MASTER = 0.8;
 export function defaultSettings(): Settings {
   return {
     v: SETTINGS_VERSION,
-    video: { integerScale: true, palette: 'default', reduceFlashing: false, showFps: false },
+    // integerScale false is Picture size: FILL, the default since 0.4.73 (owner). Saved files
+    // keep their value: no migration (owner's choice B).
+    video: { integerScale: false, palette: 'default', reduceFlashing: false, showFps: false },
     audio: { master: DEFAULT_MASTER, music: 1, sfx: 1, muted: false },
     input: {
       bindings: [defaultBindings(0), defaultBindings(1)],
@@ -342,6 +339,8 @@ export function loadSettings(): Settings {
   // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
+  // Item 76 (v0.4.73): the Campaign rules' old name reads as 'campaign' (the next save writes that).
+  if ((s.classicRules as string) === 'current') s.classicRules = 'campaign'; // rename-campaign: keep
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
   if (!MAP_DIFFICULTIES.includes(s.classicMapDifficulty)) s.classicMapDifficulty = 'normal';
   for (const k of CLASSIC_CHEAT_STATS) {

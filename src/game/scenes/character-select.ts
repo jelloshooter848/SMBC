@@ -162,7 +162,7 @@ const SHOW_CANVASES: Readonly<Record<string, SmbcCanvas>> = {
 /**
  * RC-007: where in frame `frame` (`w` px wide) of sheet `sheet` the hero's body centre is, so a
  * pick show's frames all stand where its standing art does: a canvas sheet's centre, Simon's
- * cropped frames' own origins, the Current Simon's whip frames (his body at their left), else the
+ * cropped frames' own origins, the Campaign Simon's whip frames (his body at their left), else the
  * frame's middle (a trimmed portrait).
  */
 function showAnchor(sheet: string, frame: string, w: number): number {

@@ -45,7 +45,7 @@ export interface SpriteSpec {
    * character.md YM-20): another frame whose centre line is `dx` px from this sprite's left edge
    * (mirrored with `flip`) and whose cut line is `dy` px below this sprite's top. Only the rows
    * above the cut show: a frame 16 px tall or less loses its bottom 5 rows, a taller one its bottom
-   * 13 (the legs, behind the saddle). Absent: nothing (every Current sprite).
+   * 13 (the legs, behind the saddle). Absent: nothing (every Campaign sprite).
    */
   rider?: { sheet: string; palette: string; frame: string; flip: boolean; dx: number; dy: number };
 }
@@ -83,7 +83,7 @@ export interface CharacterBehaviour {
   /**
    * The damage the published melee hitbox deals to `enemy` (TG-24; Classic defs: the original's
    * units, pierce, hit-stun, blocked sound; `owner: p`). Without it a melee hit is
-   * `{ kind: 'sword', amount: 1 }`, as for every Current def.
+   * `{ kind: 'sword', amount: 1 }`, as for every Campaign def.
    */
   meleeDamage?(p: Player, enemy: Enemy): DamageSource;
   /** Touched a dropped pickup. Return false to leave it lying there (already full). */
@@ -196,7 +196,7 @@ export interface MeterInfo {
   label: string;
   /**
    * A dark box behind the label and bar, so they read over castle ceilings (Classic Mega Man's
-   * weapon energy). Absent: drawn straight over the level (Current meters).
+   * weapon energy). Absent: drawn straight over the level (Campaign meters).
    */
   backing?: boolean;
 }
@@ -205,7 +205,7 @@ export interface MeterInfo {
  * A hero definition. Optional-field policy (TG-23): what Classic SMBC adds goes in OPTIONAL fields
  * here, on MovementProfile/SwimProfile (profile.ts) and on projectile specs, set only by Classic
  * defs (`characters/<id>/classic.ts`, `characters/classic/`). Absent, today's code path runs
- * unchanged; no Current def sets one. A shared system that must differ beyond that branches on
+ * unchanged; no Campaign def sets one. A shared system that must differ beyond that branches on
  * `world.rules` in exactly one place (Enemy.hit, World.strikeBlock, ...).
  */
 export interface CharacterDef {
@@ -327,7 +327,7 @@ export interface CharacterDef {
   hudAmmo?(p: Player): { icon: string; sheet?: string; count: number } | null;
   /**
    * The HUD shows a Mushroom or Fire Flower icon for this hero's power (Classic SMBC, PS-C26).
-   * Absent: no icon (Current heroes).
+   * Absent: no icon (Campaign heroes).
    */
   powerIcon?: boolean;
   /**
@@ -350,6 +350,13 @@ export interface CharacterDef {
    * stomper (Reaction 'hurtAttacker') on a Spiny kills it instead. Absent: as today.
    */
   stompsSpiky?: true;
+  /**
+   * Body contact while thrusting is the thrust's hit (Classic Link, v0.4.73 item 104; Link.hitEnemy
+   * landAttack): falling onto an enemy from above with `scratch.downThrust`, or rising into one from
+   * below with `scratch.upThrust`, hits it as the sword does (meleeDamage, onMeleeHit: the bounce,
+   * once per enemy per landing) and never hurts him. A still or just-kicked shell is plain contact.
+   */
+  thrustContact?: true;
   /**
    * Classic SMBC's death (ML-C18): `freeze` frames still, then a hop at -`vy` with `gravity`
    * (velocity units, gravity added before the move) capped at `maxFall`; the death ends at frame
@@ -514,7 +521,7 @@ export interface CharacterDef {
    * The original's per-hero level flags (Classic SMBC, Sophia III's SO-5): `usesHorzObjs`,
    * `usesVertObjs`, `isWideCharacter`, `isGoodSwimmer`, `poorBowserFighter`. Every Classic def
    * declares them (G-010); a Classic World lays each area's layers by them (level/layers.ts:
-   * helper pieces, stepping stones, wide shafts, Bowser blocks). No Current def sets it.
+   * helper pieces, stepping stones, wide shafts, Bowser blocks). No Campaign def sets it.
    */
   levelFlags?: {
     horz?: boolean;

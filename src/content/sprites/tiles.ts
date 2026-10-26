@@ -908,6 +908,13 @@ const lava1 = [
   'bbbbbbbbbbbbbbbb',
 ];
 
+/*
+ * The lava's body (v0.4.73 item 56): the open cells under a lava tile, down to the map's bottom
+ * row, drawn in the lava's own red (slot b, so every theme's lava and its body match). Plain, as
+ * the original's colorRed back layer; it never animates.
+ */
+const lavaBody = Array.from({ length: 16 }, () => 'b'.repeat(16));
+
 const water0 = [
   '..aa......aa....',
   '.a88a....a88a...',
@@ -2236,6 +2243,7 @@ export const tilesDef: SpriteDef = {
     'mushroom-stem': mushroomStem,
     'lava-0': lava0,
     'lava-1': lava1,
+    'lava-body': lavaBody,
     bridge,
     chain,
     'castle-brick': castleBrick,

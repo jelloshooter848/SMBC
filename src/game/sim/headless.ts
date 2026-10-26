@@ -79,7 +79,7 @@ export interface SimOptions {
    */
   castleOk?: boolean;
   /**
-   * The rules to play by (TG-37, default 'current'): put in the context and the state, so
+   * The rules to play by (TG-37, default 'campaign'): put in the context and the state, so
    * `runSim({ character: LINK, rules: 'classic', … })` plays Classic Link.
    */
   rules?: Rules;
@@ -104,7 +104,7 @@ export interface SimResult {
 /** Run a level with scripted input and no rendering or audio. Deterministic. */
 export function runSim(opts: SimOptions): SimResult {
   const assets = new AssetRegistry({ default: {} });
-  const rules = opts.rules ?? 'current';
+  const rules = opts.rules ?? 'campaign';
   const state = { ...newGameState(opts.character, null, rules), ...opts.state };
   const world = new World(
     opts.level,

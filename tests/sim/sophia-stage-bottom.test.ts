@@ -23,7 +23,7 @@ interface Trace {
   minXBelow: number;
 }
 
-function drive(level: LevelData, rules: 'classic' | 'current', x: number, y: number, frames = 900) {
+function drive(level: LevelData, rules: 'classic' | 'campaign', x: number, y: number, frames = 900) {
   const t: Trace = { under: false, maxY: 0, minXBelow: Infinity };
   let onCeil = false;
   const r = runSim({
@@ -51,7 +51,7 @@ function drive(level: LevelData, rules: 'classic' | 'current', x: number, y: num
 }
 
 describe('Sophia III: Wall Climb never wraps under the stage (38a)', () => {
-  for (const rules of ['classic', 'current'] as const)
+  for (const rules of ['classic', 'campaign'] as const)
     it(`${rules}: down 1-1's first pit wall she falls and dies below the stage`, () => {
       const { r, t } = drive(getLevel('1-1'), rules, 64, 12);
       expect(t.under).toBe(false);

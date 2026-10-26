@@ -5,6 +5,7 @@ import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { menuTouchLabels } from '../touch-labels';
 import { abilityHint } from './hints';
+import { renderBoxedMenu } from './original-box-menu';
 
 export interface MenuItem {
   label: string;
@@ -93,6 +94,8 @@ const FULL_SCREEN: MenuLayout = { titleY: 40, rowY: 64, statusY: 200, backY: 216
 const PANEL = { x: 16, y: 24, w: 224, h: 192 } as const;
 const IN_PANEL: MenuLayout = { titleY: 32, rowY: 52, statusY: 184, backY: 198 };
 const ROW_H = 14;
+/** Where a CLASSIC box over the level is centred (item 54): mid-screen, under the HUD. */
+const BOX_CY = 120;
 const LABEL_X = 36;
 const VALUE_RIGHT = 232;
 /** Columns a label without a value may take (to the panel's right margin). */
@@ -129,6 +132,46 @@ export class MenuScene implements Scene {
    */
   protected adjustSfx = 'select';
   protected okAdjustSfx: string | null = null;
+  /**
+   * v0.4.73 item 54 (owner): the page is a CLASSIC box (menu-box.ts: the orange box, the mushroom
+   * cursor, the original's sounds) over the paused level, as the Classic pause and the pages
+   * opened from it are (boxStyle, pushedOver). Every other menu keeps its own look.
+   */
+  private classicBox = false;
+
+  /** This page is a CLASSIC box over the level (item 54). */
+  get boxed(): boolean {
+    return this.classicBox;
+  }
+
+  /**
+   * Makes this page a CLASSIC box over the scene under it: drawn as the CLASSIC boxes are (centred
+   * over the level), see-through, with their sounds (RC-040, item 9). Returns the page.
+   */
+  boxStyle(): this {
+    this.classicBox = true;
+    this.translucent = true;
+    this.moveSfx = 'fireball';
+    this.backSfx = 'bump';
+    this.adjustSfx = 'coin';
+    this.okAdjustSfx = 'coin';
+    return this;
+  }
+
+  /** A page opened over a CLASSIC box is a CLASSIC box too (item 54: the Classic pause's pages). */
+  pushedOver(below: Scene | undefined): void {
+    if (below instanceof MenuScene && below.boxed && !this.classicBox) this.boxStyle();
+  }
+
+  /** The box's gold header row (item 54): the page's title; null for none (the pause's own box). */
+  protected boxHeader(): string | null {
+    return this.title;
+  }
+
+  /** Where the box is centred (screen y): mid-screen over the level; null: under the CLASSIC logo. */
+  protected boxCentre(): number | null {
+    return BOX_CY;
+  }
 
   constructor(
     protected readonly game: Game,
@@ -142,7 +185,7 @@ export class MenuScene implements Scene {
   }
 
   /**
-   * The page's title as it is said on entry, before the focused row ("Video. Integer scale: On"),
+   * The page's title as it is said on entry, before the focused row ("Video. Picture size: Fill"),
    * as the boxes say theirs; null: the focused row only.
    */
   protected entryTitle: string | null = null;
@@ -154,7 +197,7 @@ export class MenuScene implements Scene {
   }
 
   /** The focused row as said: its label, value and hint. */
-  private focusLine(): string {
+  protected focusLine(): string {
     const it = this.items[this.index];
     if (!it) return '';
     const v = it.value ? `: ${it.value()}` : '';
@@ -197,6 +240,12 @@ export class MenuScene implements Scene {
       this.game.ctx.audio.sfx('coin');
       select();
     };
+  }
+
+  /** Puts the cursor on the row labelled `label`, when there is one (a page rebuilt to come back to). */
+  focusLabel(label: string): void {
+    const i = this.items.findIndex((it) => it.label === label);
+    if (i >= 0) this.index = i;
   }
 
   setItems(items: MenuItem[]): void {
@@ -245,6 +294,22 @@ export class MenuScene implements Scene {
   }
 
   render(r: Renderer): void {
+    if (this.classicBox) {
+      const header = this.boxHeader();
+      const cy = this.boxCentre();
+      renderBoxedMenu(r, this.game, {
+        ...(header ? { header } : {}),
+        items: this.items,
+        index: this.index,
+        t: this.t,
+        status: this.status,
+        age: this.t,
+        backAction: this.backAction,
+        ...(cy !== null ? { cy } : {}),
+        back: this.onBack !== null,
+      });
+      return;
+    }
     const font = this.game.ctx.assets.sheet('font');
     const at = this.translucent ? IN_PANEL : FULL_SCREEN;
     if (!this.translucent) r.clear('#000');

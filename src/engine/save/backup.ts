@@ -13,9 +13,12 @@ import { crc32 } from './zip';
  * - `smbc-classic-file-{set}-{1..3}` game/original-files.ts Classic files (set: smb, lost, special)
  * - `smbc-classic-resume`, `smbc-classic-resume-{set}` game/run-resume.ts  old Classic slots
  *                                                          (0.4.67, 0.4.68) waiting to migrate
+ * - `smbc-classic-advanced-{set}-{1..3}` game/original-files.ts a Classic file's Advanced cheats
+ * - `smbc-classic-replay-help`   game/scenes/original-replay.ts the replay help seen
  * - `smbc.levels`                game/level/library.ts     the level editor's custom levels
  * - `smbc.devLast`               game/scenes/dev-play.ts   the dev Level select's last pick
  * - `smbc.dataEpoch`             engine/save/storage.ts    the data marker (not data: never exported)
+ * (`smbc-classic-probe`, engine/save/storage.ts storageReadable, is only ever read, never written.)
  * IndexedDB: database `smbc`, store `packs` (engine/assets/idb.ts), the asset packs: exported as
  * `<name>.zip` files beside the backup, never inside it, and never restored by an import.
  *

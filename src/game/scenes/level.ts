@@ -315,6 +315,11 @@ export class LevelScene implements Scene {
     // So does a pickup's first explainer (0.4.46, tutorial/explainers.ts).
     if (this.explainers.hold(inputs)) return;
     this.world.camera.allowLeftScroll = this.game.ctx.assist.allowLeftScroll; // dev assists can change mid-level
+    // v0.4.73 (item 66): dev mode turned off mid-run with an unreleased hero: that life ends.
+    if (this.game.classicRun) {
+      this.game.endUnreleasedLife(this.world, this.level);
+      if (this.game.scenes.top !== this) return;
+    }
     this.world.update(inputs);
     this.bossMusicCheck();
     if (this.afterFirstUpdate) {
@@ -498,7 +503,7 @@ export class LevelScene implements Scene {
         // Level.changePlayerLoc (pipe and pit arrivals) ends with destroyNearbyEnemies(true).
         if (exitDir !== 'climb') start.clearEnemies = 'keep-piranhas';
         // Classic SMBC: this area is kept as it is for a return within the stage (Level.loadArea →
-        // StatManager.saveAreaStats); a Current World keeps none (areaMemory null).
+        // StatManager.saveAreaStats); a Campaign World keeps none (areaMemory null).
         this.world.rememberArea();
         if (this.world.areaMemory) start.areaMemory = this.world.areaMemory;
         game.startLevel(target, start);
@@ -537,6 +542,17 @@ export class LevelScene implements Scene {
         // A stage tutorial: no life lost, straight back in at the current lesson.
         if (this.tutorial) {
           this.tutorial.respawn();
+          break;
+        }
+        // v0.4.73: a CLEARED file's level replay is free play: no life is lost, and its own box
+        // follows (Game.replayDied: RETRY at the checkpoint or the first area, and the rest).
+        if (game.replayRun) {
+          const cp = s.checkpoint;
+          const main = cp?.level ?? this.level.parent ?? this.level.id;
+          game.respawn(
+            cp ? main : game.firstArea(main),
+            cp ? { x: cp.x, y: cp.y ?? 12, mode: 'stand', clearEnemies: 'all' } : { mode: 'stand' },
+          );
           break;
         }
         // Classic mode's Survival: the hero falls instead, and no life is lost (Game.survivalFall).
@@ -586,6 +602,8 @@ export class LevelScene implements Scene {
     else if (game.campaign) game.levelCleared(this.level.id);
     // The cleared level goes along: in Survival a castle brings revival back (Game.levelExitTo).
     else if (game.classicRun) game.levelExitTo(next, this.level);
+    // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    else if (game.levelSelectBack) game.backToLevelSelect();
     else game.goToLevel(next, { mode: 'stand' });
   }
 

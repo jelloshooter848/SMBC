@@ -134,7 +134,7 @@ describe('a hero toggled off', () => {
     expect(h.game.rosterFor('classic')).toContain(YOSHI_CLASSIC);
     expect(h.game.yoshiMount).toBeUndefined();
     // The campaign roster never changes.
-    expect(h.game.rosterFor('current')).toBe(CHARACTERS);
+    expect(h.game.rosterFor('campaign')).toBe(CHARACTERS);
   });
 });
 

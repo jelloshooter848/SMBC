@@ -18,7 +18,6 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import { newFile } from './classic-files-nav';
-import { LevelSelectScene, levelSelectTarget } from '@game/scenes/level-select-cheat';
 import type { MenuItem } from '@game/scenes/menu';
 import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import {
@@ -236,18 +235,6 @@ describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
     expect(S(h).classicMapDifficulty).toBe('normal');
     expect(h.said.some((t) => /World 1-1/.test(t))).toBe(true);
   });
-
-  it('the Level Select cheat offers it with its eight worlds', () => {
-    const h = classic();
-    S(h).classicCheats.levelSelect = true;
-    const set = MAP_SETS[1];
-    expect(set?.lastWorld).toBe(8);
-    h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
-    h.idle(8);
-    h.tap('right');
-    expect(items(h.top())[0]?.value?.()).toBe('Special');
-    expect(levelSelectTarget(h.game, set as never, 3, 1)).toBe('sp-3-1');
-  });
 });
 
 describe('G-005 / G-020: beat status and the end of the game', () => {
@@ -405,11 +392,11 @@ describe('G-006 / G-010: the layers per difficulty and hero', () => {
     const enemies = (l: LevelData) =>
       ['icicle', 'crab', 'fly', 'barrel', 'fire-enemy', 'goomba'].reduce((n, t) => n + count(l, t), 0);
     expect(enemies(run('hard'))).toBeGreaterThan(enemies(run('easy')));
-    // A Current World plays the map as it is.
+    // A Campaign World plays the map as it is.
     const cur = runSim({
       level: getLevel('sp-4-2'),
       character: MARIO,
-      rules: 'current',
+      rules: 'campaign',
       script: { steps: [] },
       maxFrames: 1,
     });

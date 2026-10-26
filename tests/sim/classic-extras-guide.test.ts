@@ -7,7 +7,7 @@ import { makeGame, useStorage } from './heroes-harness';
 import { isolateClassicRegistry } from './classic-registry';
 
 // Options > How to play in a Classic run lists the Classic-only extras (Bass, Proto Man, Break Man,
-// Pit, Dark Pit) after the usual heroes, each with its own Classic guide; never under Current.
+// Pit, Dark Pit) after the usual heroes, each with its own Classic guide; never under Campaign.
 
 useStorage();
 isolateClassicRegistry();
@@ -63,9 +63,9 @@ describe('How to play lists the Classic extras', () => {
     });
   });
 
-  it('under Current: no extras', () => {
+  it('under Campaign: no extras', () => {
     const h = makeGame({ dev: true });
-    h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'current' });
+    h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'campaign' });
     const labels = rows(new GuideIndexScene(h.game, () => {})).map(([l]) => l);
     for (const c of CLASSIC_EXTRAS) expect(labels).not.toContain(c.name);
   });

@@ -1,7 +1,7 @@
 import type { MapSetId } from '@engine/save/progress';
 import { CLASSIC_GAME_MODES, type ClassicGameMode } from '@engine/save/original-options';
 import type { MapDifficulty } from '@engine/save/settings';
-import { defaultPower, type GameState, type Rules } from './context';
+import { defaultPower, readRules, type GameState, type Rules } from './context';
 import { startHp, type CharacterDef } from './characters/character';
 import { CHARACTERS, CLASSIC_EXTRAS, heroFor, isSkin } from './characters/registry';
 
@@ -72,6 +72,12 @@ export interface ClassicResume {
    * never rewritten; without the mark a hero no select offers plays as the first slot's (P1).
    */
   devHero?: true;
+  /**
+   * v0.4.73: the worlds this run has had a WORLD card in (each once, in order), kept so a CLEARED
+   * file's replay offers The Lost Levels' World 9 and A-D only when the run reached them. A run
+   * from before has none (unknown).
+   */
+  worlds?: number[];
   /**
    * An old per-set slot's continues (#196's item 8). Migration reads it; a file keeps its count
    * beside the run (ClassicFile.continues), never here.
@@ -212,7 +218,9 @@ export function parseResume(raw: unknown): ClassicResume | null {
   const r = raw as Partial<ClassicResume> | null;
   if (!r || typeof r !== 'object' || r.v !== 1) return null;
   if (typeof r.levelId !== 'string' || typeof r.hero !== 'string') return null;
-  if (r.rules !== 'classic' && r.rules !== 'current') return null;
+  // Item 76: a run kept before the rename names Campaign rules by their old name (readRules).
+  const rules = readRules(r.rules);
+  if (!rules) return null;
   // A Survival run may go on with no lives left (they only revive heroes): 0 reads there.
   const minLives = r.survival ? 0 : 1;
   if (![r.score, r.coins, r.lives, r.world, r.stage, r.hp].every(num) || (r.lives ?? 0) < minLives)
@@ -222,7 +230,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
   const heroKits = readHeroKits(r.heroKits);
   // The playing hero's own power and hp, checked as the others' are: one that does not read for
   // its hero is that hero's default (an unknown hero is left to Game.classicResume, which drops it).
-  const def = heroDef(r.hero, r.rules);
+  const def = heroDef(r.hero, rules);
   const power = def
     ? (checkedPower(def, r.powerState, r.hp, kit) ?? { powerState: defaultPower(def), hp: startHp(def) })
     : {};
@@ -241,15 +249,22 @@ export function parseResume(raw: unknown): ClassicResume | null {
     continued: cd,
     swapped: sw,
     devHero: dh,
+    worlds: wl,
     ...rest
   } = r as ClassicResume;
+  // v0.4.73: the worlds reached, each a world number of a set (1-13), once, in order.
+  const worlds = Array.isArray(wl)
+    ? [...new Set(wl.filter((w): w is number => Number.isInteger(w) && w >= 1 && w <= 13))]
+    : null;
   return {
     ...rest,
+    rules,
     // An old per-set slot's count (#196; migration reads it): a whole number of 0 or more, else none.
     ...(Number.isInteger(cn) && (cn as number) >= 0 ? { continues: cn } : {}),
     ...(cd === true ? { continued: true as const } : {}),
     ...(sw === true ? { swapped: true as const } : {}),
     ...(dh === true ? { devHero: true as const } : {}),
+    ...(worlds ? { worlds } : {}),
     // An older slot, or a value this version does not know: none (the caller falls back).
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),

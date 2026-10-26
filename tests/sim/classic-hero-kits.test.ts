@@ -244,15 +244,15 @@ describe('BUG-06: each hero keeps his power-ups in a Classic run', () => {
       put({ powerState: 'fire', hp });
       expect(loadClassicResume('smb'), String(hp)).toMatchObject({ powerState: 'fire', hp: 0 });
     }
-    // A hit-point hero (a developer run under Current rules): 0 < hp <= its max.
+    // A hit-point hero (a developer run under Campaign rules): 0 < hp <= its max.
     const max = startHp(LINK);
     for (const hp of [0, -3, max + 1]) {
-      put({ rules: 'current', hero: 'link', powerState: 'full', hp });
+      put({ rules: 'campaign', hero: 'link', powerState: 'full', hp });
       expect(loadClassicResume('smb'), String(hp)).toMatchObject({ powerState: 'full', hp: max });
     }
-    put({ rules: 'current', hero: 'link', powerState: 'full', hp: 2 });
+    put({ rules: 'campaign', hero: 'link', powerState: 'full', hp: 2 });
     expect(loadClassicResume('smb')).toMatchObject({ powerState: 'full', hp: 2 });
-    put({ rules: 'current', hero: 'link', powerState: 'fire', hp: 2 });
+    put({ rules: 'campaign', hero: 'link', powerState: 'fire', hp: 2 });
     expect(loadClassicResume('smb')).toMatchObject({ powerState: 'full', hp: max });
   });
 

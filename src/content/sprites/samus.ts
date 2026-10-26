@@ -412,7 +412,7 @@ const GUTS = [helmetRight, padRight, bootRight, helmetLeft, padLeft, bootLeft];
 /**
  * Classic SMBC Samus's sheet (`samus-classic`, the same palettes): every pose redrawn at the
  * original 3.1.21's sizes (R1, samus-classic.ts) and her death's pieces (SA-C32,
- * `guts-<1..6>-<0|1>`), so the Current sheet keeps its documented frame set.
+ * `guts-<1..6>-<0|1>`), so the Campaign sheet keeps its documented frame set.
  */
 export const samusClassicDef: SpriteDef = {
   palette: 'samus',

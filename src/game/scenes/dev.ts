@@ -55,9 +55,12 @@ export class DevMenuScene extends MenuScene {
             s.dev = false;
             game.deps.applySettings?.();
           }
-          if (fromPause)
-            game.scenes.pop(); // back to the pause menu, which rebuilds without the entry
-          else game.showTitle();
+          if (fromPause) {
+            // Back to the pause menu, which rebuilds without the dev rows. v0.4.73 item 67: its
+            // cursor goes to a row it still has, and it says so (PauseScene.devModeOff).
+            game.scenes.pop();
+            (game.scenes.top as { devModeOff?: () => void } | undefined)?.devModeOff?.();
+          } else game.showTitle();
         },
         hint: 'Hides developer mode until the code is entered again',
       },
@@ -258,7 +261,7 @@ export class DevToggleHeroesScene extends MenuScene {
       },
       {
         label: 'Campaign',
-        select: () => game.scenes.push(new DevPlaysAsScene(game, 'current', () => backToMenu(game))),
+        select: () => game.scenes.push(new DevPlaysAsScene(game, 'campaign', () => backToMenu(game))),
         hint: 'Plays as Campaign or Classic for each campaign hero',
       },
       { label: 'Back', select: onBack },
@@ -271,10 +274,10 @@ export class DevToggleHeroesScene extends MenuScene {
   }
 }
 
-/** The design names, by the rules each is resolved under (the 'current' rules are "Campaign"). */
-const DESIGN_NAMES: Record<Rules, string> = { classic: 'Classic', current: 'Campaign' };
+/** The design names, by the rules each is resolved under (the 'campaign' rules are "Campaign"). */
+const DESIGN_NAMES: Record<Rules, string> = { classic: 'Classic', campaign: 'Campaign' };
 
-const other = (r: Rules): Rules => (r === 'classic' ? 'current' : 'classic');
+const other = (r: Rules): Rules => (r === 'classic' ? 'campaign' : 'classic');
 
 /** The heroes with both designs (a Campaign def and a Classic one): the ones Plays as can swap. */
 function swappable(game: Game): CharacterDef[] {
@@ -282,7 +285,7 @@ function swappable(game: Game): CharacterDef[] {
 }
 
 /** The Settings.classicDev list a page under `rules` keeps: the heroes playing the other design. */
-const SWAP_KEY = { classic: 'playsCampaign', current: 'playsClassic' } as const;
+const SWAP_KEY = { classic: 'playsCampaign', campaign: 'playsClassic' } as const;
 
 /** "All Classic", "All Campaign" or "Mixed": the Classic page's Plays as row. */
 function playsAsSummary(game: Game, rules: Rules): string {
@@ -295,7 +298,7 @@ function playsAsSummary(game: Game, rules: Rules): string {
 
 /**
  * BUG-10, Dev > Toggle heroes > Classic > Plays as (`rules` 'classic') or > Campaign (`rules`
- * 'current'): one row per hero with both designs, playing its own design (Classic in Classic
+ * 'campaign'): one row per hero with both designs, playing its own design (Classic in Classic
  * mode, Campaign in the campaign) or the other one, so a dev can test either kit in either mode.
  * Saved in Settings.classicDev (playsCampaign / playsClassic); read only in dev mode
  * (Game.heroSwaps), from the next level on.

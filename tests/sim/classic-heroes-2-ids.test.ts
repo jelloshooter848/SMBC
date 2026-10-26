@@ -185,7 +185,7 @@ describe('Classic Ryu IDs', () => {
 });
 
 describe('Classic Sophia III IDs', () => {
-  it('SO-4: her name, slot and portrait are the Current hero’s', () => {
+  it('SO-4: her name, slot and portrait are the Campaign hero’s', () => {
     expect(heroFor(SOPHIA, 'classic')).toBe(SOPHIA_CLASSIC);
     expect(CHARACTERS.indexOf(SOPHIA)).toBe(8);
     expect([SOPHIA_CLASSIC.name, SOPHIA_CLASSIC.hudName, SOPHIA_CLASSIC.portrait]).toEqual([
@@ -218,7 +218,7 @@ describe('Classic Sophia III IDs', () => {
   });
 
   // G-010 (0.5.0 gap list) gives every Classic def the original's level flags; SO-49 now reads:
-  // no other hero is wide, and no Current def has flags.
+  // no other hero is wide, and no Campaign def has flags.
   it('SO-49: no other hero is wide (G-010: every Classic def has its own flags)', () => {
     for (const d of Object.values(CLASSIC_CHARACTERS))
       if (d && d.id !== 'sophia') expect(d.levelFlags?.wide, d.id).toBeUndefined();

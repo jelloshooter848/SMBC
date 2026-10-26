@@ -556,6 +556,8 @@ export const LINK_CLASSIC: CharacterDef = {
   // LK-C27: no stomp (landing on an enemy hurts unless thrusting); LK-C2: no crouch, no hearts,
   // meter, spells, shield block or belt.
   stomps: false,
+  // Item 104: landing a thrust off centre hits, as the original's landAttack (the sword box is 4 px).
+  thrustContact: true,
   crouches: false,
   canBreakBricks: () => false,
   hitbox: () => ({ w: 12, h: 16 }),

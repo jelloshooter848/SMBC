@@ -121,7 +121,7 @@ export function plumberClassicProfile(c: PlumberConstants): MovementProfile {
     fallReset: c.maxFall,
     canRun: true,
     coyoteFrames: 0,
-    // ML-C27: gap crossing, vines, pipes, the flagpole and the head bump as in Current.
+    // ML-C27: gap crossing, vines, pipes, the flagpole and the head bump as in Campaign.
     crossGapMinVx: MARIO_PROFILE.crossGapMinVx,
     swim: CLASSIC_SWIM.mario,
     rise,
@@ -170,7 +170,7 @@ export interface PlumberClassicParts {
   guide: CharacterGuide;
 }
 
-/** Builds a Classic plumber def on its Current def (same id, name, art and music; TG-18). */
+/** Builds a Classic plumber def on its Campaign def (same id, name, art and music; TG-18). */
 export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
   const kit: ClassicPowerKit = {
     grows: true,
@@ -210,7 +210,7 @@ export function plumberClassic(parts: PlumberClassicParts): CharacterDef {
     flagWalkFollow: true,
     seaFloorSafe: true,
   };
-  // A Classic def leaves out the Current HUD extras (TG-22).
+  // A Classic def leaves out the Campaign HUD extras (TG-22).
   delete def.tools;
   delete def.meter;
   delete def.hudExtra;

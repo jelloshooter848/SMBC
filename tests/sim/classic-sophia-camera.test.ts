@@ -33,7 +33,7 @@ interface Row {
   turning: boolean;
 }
 
-function climb(rules: 'classic' | 'current') {
+function climb(rules: 'classic' | 'campaign') {
   const log: Row[] = [];
   const res = runSim({
     level: wallRoom(12),
@@ -103,8 +103,8 @@ describe('SO-39: easing the camera through her turns', () => {
       if (def && def !== SOPHIA_CLASSIC) expect(def.cameraX, def.id).toBeUndefined();
   });
 
-  it('Current Sophia: the camera follows her box as before', () => {
-    const { world } = climb('current');
+  it('Campaign Sophia: the camera follows her box as before', () => {
+    const { world } = climb('campaign');
     expect(world.player.def.cameraX).toBeUndefined();
   });
 });

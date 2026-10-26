@@ -30,12 +30,12 @@ const WALK = 0x01755;
 const RUN = 0x02800;
 const INF = Infinity;
 
-describe('registry and Current (TG-17, TG-18, TG-38)', () => {
-  it('Classic rules play the Classic defs; Current keeps MARIO and LUIGI untouched', () => {
+describe('registry and Campaign (TG-17, TG-18, TG-38)', () => {
+  it('Classic rules play the Classic defs; Campaign keeps MARIO and LUIGI untouched', () => {
     expect(heroFor(MARIO, 'classic')).toBe(MARIO_CLASSIC);
     expect(heroFor(LUIGI, 'classic')).toBe(LUIGI_CLASSIC);
-    expect(heroFor(MARIO, 'current')).toBe(MARIO);
-    expect(heroFor(LUIGI, 'current')).toBe(LUIGI);
+    expect(heroFor(MARIO, 'campaign')).toBe(MARIO);
+    expect(heroFor(LUIGI, 'campaign')).toBe(LUIGI);
     for (const [cur, cl] of [
       [MARIO, MARIO_CLASSIC],
       [LUIGI, LUIGI_CLASSIC],
@@ -60,8 +60,8 @@ describe('registry and Current (TG-17, TG-18, TG-38)', () => {
     expect(FIREBALL.burstOnCeiling).toBeUndefined();
   });
 
-  it('Current Mario still peaks at 66 px standing (no Classic jump under Current)', () => {
-    expect(Math.floor(measureJump(MARIO, 0, INF, 'current').apex)).toBe(66);
+  it('Campaign Mario still peaks at 66 px standing (no Classic jump under Campaign)', () => {
+    expect(Math.floor(measureJump(MARIO, 0, INF, 'campaign').apex)).toBe(66);
     const r = runSim({ level: flatLevel(), character: MARIO, script: { steps: [] }, maxFrames: 1 });
     expect(r.world.player.def).toBe(MARIO);
   });
@@ -666,7 +666,7 @@ describe('guides and touch (TG-22, TG-40)', () => {
   for (const [id, def] of PLUMBERS)
     it(`${id}: a complete Classic guide that names abilities, not buttons`, () => {
       const g = def.guide;
-      expect(g).not.toBe(heroFor(def.id === 'mario' ? MARIO : LUIGI, 'current').guide);
+      expect(g).not.toBe(heroFor(def.id === 'mario' ? MARIO : LUIGI, 'campaign').guide);
       expect(g.tagline.length).toBeLessThanOrEqual(30);
       for (const c of g.controls) expect(ACTIONS.has(c.action), c.action).toBe(true);
       for (const item of ['mushroom', 'flower', 'star'])

@@ -117,7 +117,7 @@ export const YOSHI_CLASSIC_PROFILE: MovementProfile = {
   softCut: 60000,
   turnInAir: false,
   jumpBuffer: false,
-  // BUG-07 (owner decision): the campaign's held stomp bounce (Current Mario's).
+  // BUG-07 (owner decision): the campaign's held stomp bounce (Campaign Mario's).
   stompHeld: MARIO_PROFILE,
   swim: YOSHI_SWIM,
   flutter: YOSHI_FLUTTER,

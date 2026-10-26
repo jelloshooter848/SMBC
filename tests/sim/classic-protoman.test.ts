@@ -81,12 +81,12 @@ describe('Proto Man and Break Man: definitions (PM-1, PM-2, TG-41)', () => {
     expect(CLASSIC_EXTRAS[i + 1]).toBe(BREAKMAN_CLASSIC);
   });
 
-  it('Classic Mega Man and Current Mega Man are unchanged (TG-38)', () => {
+  it('Classic Mega Man and Campaign Mega Man are unchanged (TG-38)', () => {
     expect(MEGAMAN_CLASSIC.pickSfx).toBeUndefined();
     expect(MEGAMAN.pickSfx).toBeUndefined();
     for (const c of CHARACTERS) expect(c.pickSfx, c.id).toBeUndefined();
     expect(heroFor(MEGAMAN, 'classic')).toBe(MEGAMAN_CLASSIC);
-    expect(heroFor(MEGAMAN, 'current')).toBe(MEGAMAN);
+    expect(heroFor(MEGAMAN, 'campaign')).toBe(MEGAMAN);
   });
 
   it('their palettes exist (and the charge and star ones), and the spring tables know them', () => {
@@ -241,10 +241,10 @@ describe('PM-18: the whistle on the pick, Proto Man only', () => {
 });
 
 describe('roster (TG-41..43)', () => {
-  it('in a Classic run, never under Current or in the campaign roster', () => {
+  it('in a Classic run, never under Campaign or in the campaign roster', () => {
     const h = makeGame({ dev: true });
-    expect(h.game.rosterFor('current')).not.toContain(PROTOMAN_CLASSIC);
-    expect(h.game.rosterFor('current')).not.toContain(BREAKMAN_CLASSIC);
+    expect(h.game.rosterFor('campaign')).not.toContain(PROTOMAN_CLASSIC);
+    expect(h.game.rosterFor('campaign')).not.toContain(BREAKMAN_CLASSIC);
     expect(h.game.rosterFor('classic')).toContain(PROTOMAN_CLASSIC);
     expect(h.game.rosterFor('classic')).toContain(BREAKMAN_CLASSIC);
     expect(h.game.roster).not.toContain(PROTOMAN_CLASSIC);

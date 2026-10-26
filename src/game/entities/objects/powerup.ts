@@ -68,7 +68,7 @@ export class PowerUp extends Entity {
   private readonly targetY: number;
   /**
    * Drawn with this art instead of the item's own (CharacterDef.powerUpArt: Vic Viper's capsule).
-   * Null for every Current hero.
+   * Null for every Campaign hero.
    */
   art: { sheet: string; frames: readonly string[] } | null = null;
   /** The full power-up drawn as the original's logo (set by a Classic World only). */

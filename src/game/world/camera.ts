@@ -56,7 +56,7 @@ export class Camera {
   allowLeftScroll = false;
   /**
    * Scroll-back camera (followBack): set once by a Classic SMBC World. Only a plain camera
-   * (not locked, free or auto) uses it; `follow` stays the Current camera.
+   * (not locked, free or auto) uses it; `follow` stays the Campaign camera.
    */
   scrollBack = false;
   /** followBack: the lead's screen x (centre, subpixels) past which the camera follows. */

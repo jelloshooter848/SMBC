@@ -244,7 +244,7 @@ export class ClassicMenuScene extends MenuScene {
 
   /**
    * Over the CLASSIC title (O-04): the rows in a box over the demo (each value and BEATEN at the
-   * row's right), the Current-rules status line under it and the BACK line.
+   * row's right), the Campaign-rules status line under it and the BACK line.
    */
   private renderBox(r: Renderer): void {
     const game = this.game;

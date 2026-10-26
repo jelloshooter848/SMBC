@@ -64,7 +64,7 @@ abstract class GoombaKin extends Enemy {
 
 /**
  * Barrel (Barrel.as): a rolling Goomba that cannot be stomped, is armoured
- * (`PR_PIERCE_PAS, PIERCE_STR_ARMORED`: fireballs bounce off under Current rules as off a Buzzy
+ * (`PR_PIERCE_PAS, PIERCE_STR_ARMORED`: fireballs bounce off under Campaign rules as off a Buzzy
  * Beetle) and hops off a bumped block. HealthValue.BARREL 400; BARREL_* scores.
  */
 export class Barrel extends GoombaKin {
@@ -92,7 +92,7 @@ export class Barrel extends GoombaKin {
  * first hit that leaves it at 400 or less makes it angry (Mario's fireball does only that: it sets
  * 400), as does a bumped block: it then has 400, walks ×1.66 (ANGRY_SPEED_MULTIPLIER) towards the
  * player, and turns to the player each time it lands from a fall that was not a pop. SPINEY_*
- * scores. Under Current rules its first hit only angers it (hp 2).
+ * scores. Under Campaign rules its first hit only angers it (hp 2).
  */
 export class Crab extends GoombaKin {
   readonly kind = 'crab';
@@ -139,7 +139,7 @@ export class Crab extends GoombaKin {
     this.anger(world);
   }
 
-  /** A hit it lives through: angry at 400 or fewer Classic hit points (any hit under Current). */
+  /** A hit it lives through: angry at 400 or fewer Classic hit points (any hit under Campaign). */
   protected override onHpHit(_src: DamageSource, world: World): void {
     if (world.rules !== 'classic' || (this.classicHp ?? 0) <= Crab.ANGRY_HP) this.anger(world);
   }
@@ -186,7 +186,7 @@ export class FireEnemy extends GoombaKin {
     this.sheet = 'special-enemies';
     this.currentFrame = 'fire-enemy-0';
     this.scores = ENEMY_SCORES.SPINEY;
-    // Current rules: nothing but the Star (and the Hammer, which hits as one) puts it out.
+    // Campaign rules: nothing but the Star (and the Hammer, which hits as one) puts it out.
     this.vulnerability = { star: 'kill', bump: 'bounce', stomp: 'hurtAttacker' };
   }
 

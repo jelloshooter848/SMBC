@@ -51,7 +51,7 @@ function place(w: World): void {
   w.camera.snapTo(b.x);
 }
 
-function castleNews(character: CharacterDef, rules: 'classic' | 'current') {
+function castleNews(character: CharacterDef, rules: 'classic' | 'campaign') {
   const r = runSim({
     level: castle(),
     character,

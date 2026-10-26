@@ -32,7 +32,7 @@ const HIDE_FRAMES = 90;
 const THROW_FRAMES = 15;
 /**
  * `maxSpinyDifficulty` (Lakitu.as:246-258): this Lakitu's own Spinies alive at once
- * (`SPINEY_DCT`), by map difficulty (G-006; always Normal under Current rules).
+ * (`SPINEY_DCT`), by map difficulty (G-006; always Normal under Campaign rules).
  */
 export const MAX_SPINIES: Readonly<Record<MapDifficulty, number>> = { easy: 2, normal: 4, hard: 6 };
 /**

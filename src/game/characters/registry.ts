@@ -37,7 +37,13 @@ import { classicStrikeBlock } from '../rules/classic-bricks';
 import { applyClassicLevelEdits } from '../rules/classic-water';
 import { applyWideVariants } from '../rules/classic-level-variants';
 import { applyOptionSpawns } from '../rules/classic-options-level';
-import { yoshiClearHop, yoshiEggShown, yoshiEggStrike, yoshiWorldLoaded } from './classic/yoshi-mount';
+import {
+  yoshiClearHop,
+  yoshiEggShown,
+  yoshiEggStrike,
+  yoshiPipeEntry,
+  yoshiWorldLoaded,
+} from './classic/yoshi-mount';
 import {
   CLASSIC_EXPANSION_HEROES,
   CLASSIC_HERO_GAMES,
@@ -75,16 +81,17 @@ installClassicRules({
   worldLoaded: yoshiWorldLoaded,
   blockShown: yoshiEggShown,
   clearHop: yoshiClearHop,
+  pipeEntry: yoshiPipeEntry,
 });
 
 /** Playable characters in select-screen order. */
 export const CHARACTERS: CharacterDef[] = [MARIO, LUIGI, LINK, MEGAMAN, SAMUS, SIMON, RYU, BILL, SOPHIA];
 
 /**
- * Classic SMBC defs by Current hero id (TG-17): `src/game/characters/<id>/classic.ts` exports
- * `<ID>_CLASSIC` (same id, name, hudName, portrait and music as the Current def, `rules: 'classic'`).
+ * Classic SMBC defs by Campaign hero id (TG-17): `src/game/characters/<id>/classic.ts` exports
+ * `<ID>_CLASSIC` (same id, name, hudName, portrait and music as the Campaign def, `rules: 'classic'`).
  * This file is the only one outside the classic modules allowed to import them (TG-39). Empty
- * until the hero slices land: a hero with no entry plays Current under Classic rules (TG-20).
+ * until the hero slices land: a hero with no entry plays Campaign under Classic rules (TG-20).
  */
 export const CLASSIC_CHARACTERS: Partial<Record<string, CharacterDef>> = {
   mario: MARIO_CLASSIC,
@@ -212,7 +219,7 @@ export function playedHero(
   if (!ctx.heroSwaps) return heroFor(def, rules);
   const host = skinHost(def);
   const r = heroRulesOf(ctx, host.id, rules);
-  if (host !== def && r === 'current') return CHARACTERS.find((c) => c.id === host.id) ?? def;
+  if (host !== def && r === 'campaign') return CHARACTERS.find((c) => c.id === host.id) ?? def;
   return heroFor(def, r);
 }
 

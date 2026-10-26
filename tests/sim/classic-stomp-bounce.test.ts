@@ -18,7 +18,7 @@ import { levelSeed, World } from '@game/world/world';
 // (Character.bounce, Character.as 2610-2618, never reads jmpBtn): bouncePwr 300 (Character.as
 // 172), Link's 325 (Link.as 221, 409). Mario and Luigi stomp of their own (MarioBase.as 278,
 // 368); the others with Everyone Can Stomp (Character.canStomp, 3212-3220). Under the cheat every
-// other Classic hero bounced Current's -4 px/f, about 2.5 times too high: now the original's.
+// other Classic hero bounced Campaign's -4 px/f, about 2.5 times too high: now the original's.
 // By owner decision the SMB heroes (the ones that stomp of their own: Mario, Luigi, their looks,
 // Peach, Yoshi) instead use the campaign's own held stomp bounce (stompHeld: MARIO_PROFILE);
 // classic-stomp-campaign.test.ts proves it the campaign's frame for frame.
@@ -128,7 +128,7 @@ describe('BUG-07: the Classic stomp bounce', () => {
     }
   });
 
-  it('the Current heroes keep the campaign bounce (no Classic field)', () => {
+  it('the Campaign heroes keep the campaign bounce (no Classic field)', () => {
     for (const d of CHARACTERS) {
       expect(d.movement.stompBounce, d.id).toBeUndefined();
       expect(d.movement.stompHeld, d.id).toBeUndefined();
@@ -170,7 +170,7 @@ describe('BUG-07: the Classic stomp bounce', () => {
       expect(free, 'stomped').not.toBeNull();
       expect(held, 'stomped').not.toBeNull();
       if (!free || !held) return;
-      // The original's bouncePwr (before this fix: Current's -4 px/f, about 2.5 times as high).
+      // The original's bouncePwr (before this fix: Campaign's -4 px/f, about 2.5 times as high).
       expect(free.vy, `${d.id} vy`).toBe(-(d.movement.stompBounce ?? 0));
       expect(held.vy, `${d.id} vy held`).toBe(free.vy);
       expect(held.rise, `${d.id} rise`).toBe(free.rise);

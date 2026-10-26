@@ -22,7 +22,7 @@ export const CLASSIC_JUMP_SLASH_DAMAGE = 800;
 /** Armour-pierce strength of the Windmill and the Dragon Ball (LevObj pierce 6). */
 const PIERCE = 6;
 
-// The Current specs without their Current-only motion (the Windmill's timed return, the ring).
+// The Campaign specs without their Campaign-only motion (the Windmill's timed return, the ring).
 const { returns: _returns, ...WINDMILL_BODY } = WINDMILL;
 const { orbit: _orbit, ...FIRE_BODY } = FIRE_WHEEL;
 

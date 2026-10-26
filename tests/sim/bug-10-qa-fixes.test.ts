@@ -65,7 +65,7 @@ describe('BUG-10 QA: dev mode turned off with a hero swapped', () => {
     expect(level(h).world.players[0]?.def).toBe(CLASSIC_CHARACTERS.link);
     expect(h.game.state.powerState).toBe('fire');
     h.settings.dev = false;
-    reconcileRules(h.game, 'current');
+    reconcileRules(h.game, 'campaign');
     expect(h.game.state.powerState).toBe('full');
     expect(h.game.state.hp).toBe(startHp(LINK));
   });
@@ -87,7 +87,7 @@ describe('BUG-10 QA: dev mode turned off with a hero swapped', () => {
       h.settings.dev = dev;
       h.game.devStart('1-1', MARIO, 'fire', false, 1);
       level(h);
-      reconcileRules(h.game, 'current');
+      reconcileRules(h.game, 'campaign');
       expect(h.game.state.powerState).toBe('fire');
     }
   });
@@ -110,10 +110,10 @@ describe('BUG-10 QA: looks and pages', () => {
     expect(classic.title).toBe('TOGGLE HEROES: CLASSIC');
     h.game.scenes.push(classic);
     expect(h.said.at(-1)).toMatch(/^Toggle heroes: Classic\. /);
-    for (const rules of ['classic', 'current'] as const) {
+    for (const rules of ['classic', 'campaign'] as const) {
       const page = new DevPlaysAsScene(h.game, rules, () => h.game.scenes.pop());
       h.game.scenes.push(page);
-      if (rules === 'current') {
+      if (rules === 'campaign') {
         expect(page.title).toBe('TOGGLE HEROES: CAMPAIGN');
         expect(h.said.at(-1)).toMatch(/^Toggle heroes: Campaign\. /);
       }

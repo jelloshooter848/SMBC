@@ -46,10 +46,10 @@ function shots(r: Rig, kind?: string): Projectile[] {
   );
 }
 
-describe('registry and Current (TG-17, TG-18, TG-38, acceptance 11)', () => {
-  it('Classic rules play SIMON_CLASSIC; Current keeps SIMON untouched', () => {
+describe('registry and Campaign (TG-17, TG-18, TG-38, acceptance 11)', () => {
+  it('Classic rules play SIMON_CLASSIC; Campaign keeps SIMON untouched', () => {
     expect(heroFor(SIMON, 'classic')).toBe(SIMON_CLASSIC);
-    expect(heroFor(SIMON, 'current')).toBe(SIMON);
+    expect(heroFor(SIMON, 'campaign')).toBe(SIMON);
     expect(SIMON_CLASSIC.rules).toBe('classic');
     expect(SIMON.rules).toBeUndefined();
     expect([SIMON_CLASSIC.id, SIMON_CLASSIC.name, SIMON_CLASSIC.hudName, SIMON_CLASSIC.portrait]).toEqual([
@@ -68,11 +68,11 @@ describe('registry and Current (TG-17, TG-18, TG-38, acceptance 11)', () => {
     expect(CROSS.classicBlocks).toBeUndefined();
   });
 
-  it('Current Simon still walks 1.0 px/f and peaks at 67-68 px', () => {
-    const j = measureJump(SIMON, 0, INF, 'current');
+  it('Campaign Simon still walks 1.0 px/f and peaks at 67-68 px', () => {
+    const j = measureJump(SIMON, 0, INF, 'campaign');
     expect(Math.floor(j.apex)).toBeGreaterThanOrEqual(67);
     expect(Math.floor(j.apex)).toBeLessThanOrEqual(68);
-    const r = new Rig(SIMON, flatLevel(), 'current');
+    const r = new Rig(SIMON, flatLevel(), 'campaign');
     r.settle();
     for (let i = 0; i < 20; i++) r.step(['right']);
     expect(r.p.body.vx).toBe(0x01000);

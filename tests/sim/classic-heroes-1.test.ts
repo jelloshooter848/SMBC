@@ -19,12 +19,12 @@ import { flatLevel, Rig } from './classic-plumber-harness';
 const HEROES = [MARIO, LUIGI, LINK, MEGAMAN];
 
 describe('hero rules part 1', () => {
-  it('each plays its Classic def under Classic rules and its Current def under Current', () => {
+  it('each plays its Classic def under Classic rules and its Campaign def under Campaign', () => {
     for (const h of HEROES) {
       const c = heroFor(h, 'classic');
       expect(c, h.id).not.toBe(h);
       expect(c.rules).toBe('classic');
-      expect(heroFor(h, 'current')).toBe(h);
+      expect(heroFor(h, 'campaign')).toBe(h);
       expect(h.powerIcon).toBeUndefined();
     }
   });
@@ -37,12 +37,12 @@ describe('hero rules part 1', () => {
       expect(powerIcon(r.p), h.id).toBe('icon-flower');
       r.p.powerState = 'small';
       expect(powerIcon(r.p), h.id).toBeNull();
-      const cur = new Rig(h, flatLevel(), 'current', h.damage.kind === 'hp' ? 'full' : 'big');
+      const cur = new Rig(h, flatLevel(), 'campaign', h.damage.kind === 'hp' ? 'full' : 'big');
       expect(powerIcon(cur.p), h.id).toBeNull();
     }
   });
 
-  it("the Classic fireball treats bricks and ? blocks as ground (BR-C2); Current's is unchanged", () => {
+  it("the Classic fireball treats bricks and ? blocks as ground (BR-C2); Campaign's is unchanged", () => {
     expect(FIREBALL_CLASSIC.classicBlocks).toEqual({
       ground: 'collide',
       afterBlock: 'end',

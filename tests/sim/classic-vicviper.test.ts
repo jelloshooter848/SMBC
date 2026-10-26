@@ -96,7 +96,7 @@ describe('definition (VV-2, VV-3, VV-4, TG-41)', () => {
       expect(frames[f], f).toBeDefined();
   });
 
-  it('Current is unchanged (TG-38): Current heroes set none of the new fields', () => {
+  it('Campaign is unchanged (TG-38): Campaign heroes set none of the new fields', () => {
     for (const c of CHARACTERS) {
       expect(c.autoScroll, c.id).toBeUndefined();
       expect(c.pipesAirborne, c.id).toBeUndefined();
@@ -104,7 +104,7 @@ describe('definition (VV-2, VV-3, VV-4, TG-41)', () => {
       expect(c.powerBar, c.id).toBeUndefined();
       expect(c.powerUpArt, c.id).toBeUndefined();
     }
-    expect(heroFor(MARIO, 'current')).toBe(MARIO);
+    expect(heroFor(MARIO, 'campaign')).toBe(MARIO);
   });
 });
 
@@ -231,8 +231,8 @@ describe('flight and auto-scroll (VV-5..VV-12)', () => {
     expect(MARIO.autoScroll).toBeUndefined();
   });
 
-  it('a hero with no auto-scroll keeps the following camera (Current Mario on 1-1)', () => {
-    const r = new Rig(MARIO, getLevel('1-1'), 'current');
+  it('a hero with no auto-scroll keeps the following camera (Campaign Mario on 1-1)', () => {
+    const r = new Rig(MARIO, getLevel('1-1'), 'campaign');
     hold(r, 120);
     expect(r.world.camera.x).toBe(0);
   });
@@ -675,9 +675,9 @@ describe('power-ups (VV-M4..VV-M9)', () => {
 });
 
 describe('roster, guide and touch (TG-40..TG-43, TG-22)', () => {
-  it('in a Classic run, never under Current', () => {
+  it('in a Classic run, never under Campaign', () => {
     const h = makeGame({ dev: true });
-    expect(h.game.rosterFor('current')).not.toContain(VIC);
+    expect(h.game.rosterFor('campaign')).not.toContain(VIC);
     expect(h.game.rosterFor('classic')).toContain(VIC);
     expect(h.game.roster).not.toContain(VIC);
   });

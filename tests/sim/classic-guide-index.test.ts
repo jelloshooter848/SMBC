@@ -11,7 +11,7 @@ import type { MenuItem } from '@game/scenes/menu';
 import { file, makeGame, useStorage } from './heroes-harness';
 
 // Options > How to play lists the live roster as the run's rules play it (TG-22): the Classic
-// guides in a Classic run, today's guides under Current and in the campaign.
+// guides in a Classic run, today's guides under Campaign and in the campaign.
 
 useStorage();
 
@@ -35,9 +35,9 @@ describe('How to play follows the live rules', () => {
     }
   });
 
-  it('under Current and in the campaign it is exactly as today', () => {
+  it('under Campaign and in the campaign it is exactly as today', () => {
     const cur = makeGame({ dev: true });
-    cur.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'current' });
+    cur.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'campaign' });
     const expected = [...CHARACTERS.map((c) => [c.name, c.guide.tagline]), ['Back', undefined]];
     const rows = (s: GuideIndexScene) => items(s).map((i) => [i.label, (i as { hint?: string }).hint]);
     expect(rows(new GuideIndexScene(cur.game, () => {}))).toEqual(expected);
@@ -45,7 +45,7 @@ describe('How to play follows the live rules', () => {
     camp.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
     file();
     camp.game.openFile(1);
-    expect(camp.game.liveRules).toBe('current');
+    expect(camp.game.liveRules).toBe('campaign');
     const g = hints(new GuideIndexScene(camp.game, () => {}));
     for (const d of [MARIO, LINK, MEGAMAN]) expect(g[d.name], d.id).toBe(d.guide.tagline);
     expect(rows(new GuideIndexScene(camp.game, () => {}))).toEqual(expected);

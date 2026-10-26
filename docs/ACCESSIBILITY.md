@@ -11,7 +11,7 @@ here as an exception, with the owner decision behind it.
 - **Text never moves on by itself.** Every page, card and message waits for a press (owner note 4, 0.4.22).
 - **Every scene can be skipped.**
 - **Reduce flashing** (Options > Video) is respected everywhere: blinks are held steady or slowed, and flashes are
-  dimmed. This holds under both Classic rules and Current rules.
+  dimmed. This holds under both Classic rules and Campaign rules.
 - **No level numbers in hints** (the story's hint lines name places, never level numbers).
 - **Remapping** never leaves two actions on one key (G-091): a key that is another action's only key is refused,
   and the Controls screen says whose it is and asks for another; a spare key of another action (most have two or

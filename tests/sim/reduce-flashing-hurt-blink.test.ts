@@ -5,7 +5,7 @@ import { MARIO } from '@game/characters/mario';
 import { HURT_STEADY_ALPHA, type World } from '@game/world/world';
 import { classicWorld, step } from './classic-harness';
 
-// G-092: under Current rules (the campaign, and Classic mode with Classic rules set to Current)
+// G-092: under Campaign rules (the campaign, and Classic mode with Classic rules set to Campaign)
 // the hurt blink toggled the hero every 2 frames whatever Reduce flashing said. With Reduce
 // flashing on it is now held steady: the hero is drawn every frame, see-through.
 
@@ -37,7 +37,7 @@ function frames(world: World, n: number): Seen[] {
 }
 
 function hurtWorld(reduceFlashing: boolean): World {
-  const world = classicWorld(MARIO, undefined, 'current');
+  const world = classicWorld(MARIO, undefined, 'campaign');
   const ctx = world.ctx as { reduceFlashing: boolean; assets: unknown };
   ctx.reduceFlashing = reduceFlashing;
   ctx.assets = { sheet: (name: string) => ({ name, frames: new Map() }) };
@@ -45,7 +45,7 @@ function hurtWorld(reduceFlashing: boolean): World {
   return world;
 }
 
-describe('G-092 hurt blink and Reduce flashing (Current rules)', () => {
+describe('G-092 hurt blink and Reduce flashing (Campaign rules)', () => {
   it('without Reduce flashing the hero still blinks', () => {
     const seen = frames(hurtWorld(false), 12);
     expect(seen.some((s) => !s.drawn)).toBe(true);

@@ -53,7 +53,7 @@ function place(w: World): void {
   w.camera.snapTo(b.x);
 }
 
-function ending(character: CharacterDef, rules: 'classic' | 'current') {
+function ending(character: CharacterDef, rules: 'classic' | 'campaign') {
   const r = runSim({
     level: lastCastle(),
     character,
@@ -98,6 +98,6 @@ describe('the last castle in Classic: the original thank-you for every look (#17
     });
 
   it('the campaign keeps its own line', () => {
-    expect(ending(MARIO, 'current').text).toEqual(['THANK YOU MARIO!', '', 'YOUR QUEST IS OVER.']);
+    expect(ending(MARIO, 'campaign').text).toEqual(['THANK YOU MARIO!', '', 'YOUR QUEST IS OVER.']);
   });
 });

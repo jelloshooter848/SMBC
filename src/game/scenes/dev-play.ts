@@ -3,12 +3,12 @@ import { loadJson, saveJson } from '@engine/save/storage';
 import { MenuScene, backToMenu, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
-import type { Rules } from '../context';
+import { readRules, type Rules } from '../context';
 import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX, customLevelId, loadLibrary } from '../level/library';
 import { MAP_SETS, DIFFICULTY_NAMES, type MapSet } from './original-game';
-import { levelSelectTarget, worldName } from './level-select-cheat';
+import { levelSelectTarget, worldName } from './level-targets';
 import { DevMiniGamesScene } from './dev-minigames';
 import { DevBonusGamesScene } from '../bonus/dev';
 import { hasTraining, runTraining } from '../tutorial/training';
@@ -57,17 +57,19 @@ export function loadDevPick(game: Game): DevPick | null {
 
 /**
  * Kept pick `p` as it can start now, or why it cannot: it must name a level this build has and a
- * hero the START page offers now (Game.devSlotsFor: a hero set Off in Toggle heroes is not), with
- * one of that hero's looks. A power the played def does not have
+ * hero the START page offers (Game.devAllSlotsFor, v0.4.73 item 61: every hero, whatever Toggle
+ * heroes says), with one of that hero's looks. A power the played def does not have
  * falls back to its first state.
  */
 export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
   if (!p || typeof p !== 'object') return 'No start was kept';
-  const { branch, level, name, hero, look, power, rules, difficulty } = p;
+  const { branch, level, name, hero, look, power, difficulty } = p;
+  // Item 76: a start kept before the rename names Campaign rules by their old name (readRules).
+  const rules = readRules(p.rules);
   if (branch !== 'classic' && branch !== 'campaign') return 'The kept start is unreadable';
   if (typeof level !== 'string' || typeof name !== 'string' || typeof power !== 'string')
     return 'The kept start is unreadable';
-  if (rules !== 'classic' && rules !== 'current') return 'The kept start is unreadable';
+  if (!rules) return 'The kept start is unreadable';
   if (!MAP_DIFFICULTIES.includes(difficulty as MapDifficulty)) return 'The kept start is unreadable';
   if (level !== DEV_VILLAGE) {
     try {
@@ -76,10 +78,11 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
       return `${name} is not in this build`;
     }
   }
-  const offered = branch === 'campaign' ? game.deps.characters : game.devSlotsFor(rules);
+  // v0.4.73 item 61: every hero, as the START page's Hero row offers them.
+  const offered = branch === 'campaign' ? game.deps.characters : game.devAllSlotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
-  if (!slot) return `${named} is not offered now. Dev mode, Toggle heroes sets who is`;
+  if (!slot) return `${named} is not in this build`;
   const def = devLooks(game, slot, rules).find((c) => c.id === look);
   if (!def || (branch === 'campaign' && def !== slot)) return `That look of ${slot.name} is not offered now`;
   const states = powerStatesOf(game, def, rules);
@@ -123,14 +126,14 @@ export function canMount(game: Game, look: CharacterDef, rules: Rules): boolean 
 
 /** Slot hero `hero`'s looks on the roster under `rules` (its own first). */
 function devLooks(game: Game, hero: CharacterDef, rules: Rules): readonly CharacterDef[] {
-  const roster = game.rosterFor(rules);
+  const roster = game.devRosterFor(rules);
   const list = skinsOf(hero).filter((d) => d === hero || roster.includes(d));
   return list.length ? list : [hero];
 }
 
 /** Starts `pick` (and keeps it for Again); false, starting nothing, when its look is not on the roster. */
 export function playDevPick(game: Game, pick: DevPick): boolean {
-  const def = game.rosterFor(pick.rules).find((c) => c.id === pick.look);
+  const def = game.devRosterFor(pick.rules).find((c) => c.id === pick.look);
   if (!def) return false;
   saveJson(DEV_LAST_KEY, pick);
   game.devStart(pick.level, def, pick.power, pick.kit, undefined, {
@@ -139,12 +142,14 @@ export function playDevPick(game: Game, pick: DevPick): boolean {
     difficulty: pick.difficulty,
     ...(pick.branch === 'classic' ? { mount: pick.mount ?? 'none' } : {}),
   });
+  // v0.4.73 items 63 / 64: a clear, Quit and the last credits come back to Dev > Level select.
+  game.keepDevReturn(pick.branch, pick.level);
   return true;
 }
 
 /** The Again row's short value and its spoken line. */
 export function devPickSummary(game: Game, p: DevPick): { value: string; said: string } {
-  const look = game.rosterFor(p.rules).find((c) => c.id === p.look);
+  const look = game.devRosterFor(p.rules).find((c) => c.id === p.look);
   const who = look?.name ?? p.look;
   const parts = [p.name, who, p.power];
   if (p.branch === 'classic') {
@@ -176,11 +181,11 @@ export function devAgainItem(game: Game): MenuItem | null {
 }
 
 /** The START page's Rules row values and hint (dev Classic starts, TG rules model). */
-// Owner decision: the 'current' rules are shown and said as "Campaign" (the value stays).
-export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
+// Owner decision: the 'campaign' rules are shown and said as "Campaign" (item 76: the value too).
+export const RULES_LABELS: Record<Rules, string> = { campaign: 'Campaign', classic: 'Classic SMBC' };
 export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
 
-/** The short map set names (the cheat's Level select has the same). */
+/** The short map set names. */
 const SET_NAMES: Record<string, string> = { smb: 'SMB', special: 'Special', lost: 'Lost Levels' };
 
 /** A dev page: a MenuScene that says its title as it opens, then its row. */
@@ -517,7 +522,7 @@ export class DevTrainingScene extends DevPage {
  * The START page: Start, Hero (the select's slot heroes), Look (that hero's skins), Power, then
  * for a Classic start Mount (None / Yoshi, 0.4.72), Map difficulty and Rules, and Kit. Every
  * start plays as free play (99 lives, straight back after a death; 0.4.72 owner item 7: the Mode
- * row is gone); a campaign start plays Current rules.
+ * row is gone); a campaign start plays Campaign rules.
  */
 export class DevStartScene extends DevPage {
   private heroIndex = 0;
@@ -535,7 +540,7 @@ export class DevStartScene extends DevPage {
   ) {
     super(game, 'Start', [], false);
     const classic = target.branch === 'classic';
-    this.rules = classic ? 'classic' : 'current';
+    this.rules = classic ? 'classic' : 'campaign';
     // The Mount row starts as the Dev menu's Yoshi mount: Ride gives Yoshi (0.4.72 review).
     const t = game.classicToggles;
     this.yoshi = t.yoshiMount && t.yoshiRide === true;
@@ -611,7 +616,7 @@ export class DevStartScene extends DevPage {
           adjust: () => {
             const hero = this.hero.id;
             const look = this.look.id;
-            this.rules = this.rules === 'classic' ? 'current' : 'classic';
+            this.rules = this.rules === 'classic' ? 'campaign' : 'classic';
             // The slots and the power list can differ under the other rules: the same hero (and
             // look) when the new rules offer it, else the first hero.
             this.heroIndex = Math.max(
@@ -643,12 +648,12 @@ export class DevStartScene extends DevPage {
   }
 
   /**
-   * The heroes the select would offer this start (Game.devSlotsFor, 0.4.72: every hero not set
-   * Off; the campaign's roster).
+   * The heroes this start offers (v0.4.73 item 61, Game.devAllSlotsFor: every hero, released or
+   * not, whatever Toggle heroes says; the campaign's roster).
    */
   get heroes(): CharacterDef[] {
     if (this.target.branch === 'campaign') return this.game.deps.characters;
-    return this.game.devSlotsFor(this.rules);
+    return this.game.devAllSlotsFor(this.rules);
   }
 
   get hero(): CharacterDef {

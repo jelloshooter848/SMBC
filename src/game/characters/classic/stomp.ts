@@ -14,7 +14,7 @@ export const LINK_CLASSIC_STOMP_BOUNCE = 0x02b55;
 /*
  * BUG-07, by owner decision a deliberate departure from the original (which bounces every hero a
  * fixed bouncePwr, above): the Classic SMB heroes (Mario, Luigi and their looks, Peach, Yoshi and
- * the Yoshi mount) use the campaign's own held stomp bounce, the same code and numbers as Current
+ * the Yoshi mount) use the campaign's own held stomp bounce, the same code and numbers as Campaign
  * Mario's: MovementProfile.stompHeld = MARIO_PROFILE (Player.stompBounce). There are no
  * separately sourced SMB1 numbers.
  */

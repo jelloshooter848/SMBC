@@ -42,7 +42,7 @@ function rig(def: CharacterDef, power = 'small', rows: Record<number, string> = 
 }
 
 /** The highest the feet get above the floor after dropping onto a spring at column 8. */
-function springRise(def: CharacterDef, rules: 'classic' | 'current'): number {
+function springRise(def: CharacterDef, rules: 'classic' | 'campaign'): number {
   const r = new Rig(def, flatLevel(), rules, def.damage.kind === 'hp' ? 'full' : 'small');
   r.settle();
   r.world.spawn(new Spring(8, 12));
@@ -86,7 +86,7 @@ describe('Mario and Luigi (ML-C24, ML-C27)', () => {
     }
   });
 
-  it('ML-C27: gap crossing and the rest stay as in Current', () => {
+  it('ML-C27: gap crossing and the rest stay as in Campaign', () => {
     for (const d of [MARIO_CLASSIC, LUIGI_CLASSIC]) {
       expect(d.movement.crossGapMinVx).toBe(MARIO_PROFILE.crossGapMinVx);
       expect(d.canBreakBricks).toBeDefined();
@@ -106,9 +106,9 @@ describe('Classic Link (LK-C2, C11, C21, C27, C34, C39, C40, C42, C43, C44)', ()
     expect(r.p.crouching).toBe(false);
   });
 
-  it('LK-C11, MM-C12: springs throw the Classic heroes as high as the Current ones', () => {
+  it('LK-C11, MM-C12: springs throw the Classic heroes as high as the Campaign ones', () => {
     for (const base of [LINK, MEGAMAN]) {
-      const cur = springRise(base, 'current');
+      const cur = springRise(base, 'campaign');
       const cl = springRise(base, 'classic');
       expect(cl, base.id).toBeGreaterThan(40);
       expect(cl, base.id).toBe(cur);
@@ -295,10 +295,10 @@ describe('Classic Mega Man (MM-C32, MM-C35)', () => {
     expect(MEGAMAN_CLASSIC.tools?.(r.p) ?? []).toEqual([]);
   });
 
-  it('the weapon energy bar has a dark backing (it sits on castle ceilings); Current meters none', () => {
+  it('the weapon energy bar has a dark backing (it sits on castle ceilings); Campaign meters none', () => {
     const r = rig(MEGAMAN, 'fire');
     expect(MEGAMAN_CLASSIC.meter?.(r.p)?.backing).toBe(true);
-    const cur = new Rig(LINK, flatLevel(), 'current', 'full');
+    const cur = new Rig(LINK, flatLevel(), 'campaign', 'full');
     expect(LINK.meter?.(cur.p)?.backing).toBeUndefined();
   });
 

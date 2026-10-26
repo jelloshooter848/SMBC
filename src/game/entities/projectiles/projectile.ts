@@ -102,7 +102,7 @@ export interface ProjectileSpec {
   onBlocked?: 'burst' | 'deflect' | 'continue' | 'remove';
   /**
    * Classic rules: how the shot meets tiles and blocks (TG-26, classic-bricks-and-shots BR-C2).
-   * Specs that leave it out keep the flags above, so Current shots are unchanged.
+   * Specs that leave it out keep the flags above, so Campaign shots are unchanged.
    */
   classicBlocks?: ClassicBlocks;
   /**
@@ -306,7 +306,7 @@ export class Projectile extends Entity {
   /** Classic: block tiles ("x,y") the shot is touching now, each struck once per contact (made on first use). */
   touching: Set<string> | null = null;
 
-  /** The Classic contact set, made on first use (Current shots never allocate it). */
+  /** The Classic contact set, made on first use (Campaign shots never allocate it). */
   touchingTiles(): Set<string> {
     return (this.touching ??= new Set());
   }
@@ -319,7 +319,7 @@ export class Projectile extends Entity {
   bursting = 0;
   /**
    * Classic: frames it is held still (Simon's Stopwatch on enemy projectiles, SI-C25): World.update
-   * skips its update meanwhile; it still touches players. Never set under Current.
+   * skips its update meanwhile; it still touches players. Never set under Campaign.
    */
   stopFrames = 0;
   private angle = 0;

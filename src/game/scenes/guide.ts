@@ -11,6 +11,7 @@ import type { CharacterDef, DemoPose, GuideAction } from '../characters/characte
 import { Player } from '../entities/player';
 import { wrapText, fontText } from '../hud/text';
 import { heroFor } from '../characters/registry';
+import type { Rules } from '../context';
 
 const COLS = 30;
 const PAGE_X = 8;
@@ -56,9 +57,21 @@ export function wrapHanging(text: string, cols: number): string[] {
 }
 
 /**
+ * The heroes How to play lists, each as the def `rules` play (GuideIndexScene; v0.4.73 item 82's
+ * Classic list too). `classic`: opened from Classic mode's menus.
+ */
+export function guideHeroes(game: Game, classic: boolean): { heroes: CharacterDef[]; rules: Rules } {
+  const fromMenu = classic && !game.classicRun && game.campaign === null;
+  const rules = fromMenu ? game.classicRules : game.liveRules;
+  // 0.4.72: a Classic run lists its select's heroes (selectSlots: in dev mode the dev select's).
+  const heroes = fromMenu ? game.slotsFor(rules) : game.classicRun ? game.selectSlots : game.roster;
+  return { heroes, rules };
+}
+
+/**
  * Index of heroes; picking one opens its guide. The heroes are the live roster, each as the def
  * the run's rules play (TG-22): a Classic run's guides are the Classic defs' own (and list the
- * Classic-only extras); under Current it is deps.characters, unchanged.
+ * Classic-only extras); under Campaign it is deps.characters, unchanged.
  */
 export class GuideIndexScene extends MenuScene {
   /**
@@ -67,10 +80,7 @@ export class GuideIndexScene extends MenuScene {
    */
   constructor(game: Game, onBack: () => void, classic = false) {
     super(game, 'HOW TO PLAY', [], onBack);
-    const fromMenu = classic && !game.classicRun && game.campaign === null;
-    const rules = fromMenu ? game.classicRules : game.liveRules;
-    // 0.4.72: a Classic run lists its select's heroes (selectSlots: in dev mode the dev select's).
-    const heroes = fromMenu ? game.slotsFor(rules) : game.classicRun ? game.selectSlots : game.roster;
+    const { heroes, rules } = guideHeroes(game, classic);
     this.setItems([
       ...heroes
         .map((hero) => heroFor(hero, rules))

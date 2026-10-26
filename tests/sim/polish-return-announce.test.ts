@@ -87,7 +87,7 @@ describe('38f: the title and its Options', () => {
       } else pick(h, 'Back');
       expect(h.top()).toBeInstanceOf(TitleScene);
       expect(h.said.length).toBeGreaterThan(n);
-      expect(h.said.at(-1)).toMatch(/^Options\. Settings, how to play/);
+      expect(h.said.at(-1)).toBe('Options. Settings, custom levels and the level editor');
     }
   });
 

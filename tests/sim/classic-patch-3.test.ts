@@ -236,8 +236,8 @@ describe('3. Infinite Lives: a run’s continues are saved with it (B-L: in its 
 describe('4. Classic mode with Campaign rules: nothing counts toward the cheats', () => {
   it('no clear, no game beaten, no continue and no tally counts under Campaign rules', () => {
     const h = classicGame();
-    // BUG-11: a Current-rules Classic run is a START page (or `rules=`) run's; as a counted run.
-    h.game.devClassicGame(MARIO, '1-1', 'current', false);
+    // BUG-11: a Campaign-rules Classic run is a START page (or `rules=`) run's; as a counted run.
+    h.game.devClassicGame(MARIO, '1-1', 'campaign', false);
     expect(h.game.cheatGoalsCount).toBe(false);
     h.game.cheatEvent({ level: true, castle: true });
     h.game.cheatEvent({ beat: 'smb' });
@@ -457,22 +457,22 @@ describe('11. Revive mode on a standing hero says "OK to power up", as the scree
 describe("12. Survival's power-up under Campaign rules: each hero's own campaign upgrade", () => {
   const flatLevel1 = () => getLevel('1-1');
 
-  it("Current Mega Man: the helmet, then his first weapon (not the Classic Flower's path)", () => {
-    const w = world(flatLevel1(), null, MEGAMAN, 'current');
+  it("Campaign Mega Man: the helmet, then his first weapon (not the Classic Flower's path)", () => {
+    const w = world(flatLevel1(), null, MEGAMAN, 'campaign');
     applyRevivalBoost(w.player, w, 'megaman');
     expect(w.player.scratch.helmet).toBe(1);
     expect(w.player.scratch.weapons).toBe(1);
   });
 
-  it('Current Samus: the Varia Suit, then the next beam', () => {
-    const w = world(flatLevel1(), null, SAMUS, 'current');
+  it('Campaign Samus: the Varia Suit, then the next beam', () => {
+    const w = world(flatLevel1(), null, SAMUS, 'campaign');
     applyRevivalBoost(w.player, w, 'samus');
     expect(w.player.scratch.varia).toBe(1);
     expect(w.player.scratch.beam).toBe(1);
   });
 
-  it('Current Mario: the Mushroom, then the Flower; no points either way', () => {
-    const w = world(flatLevel1(), null, MARIO, 'current');
+  it('Campaign Mario: the Mushroom, then the Flower; no points either way', () => {
+    const w = world(flatLevel1(), null, MARIO, 'campaign');
     const score = w.state.score;
     applyRevivalBoost(w.player, w, 'mario');
     expect(w.player.powerState).toBe('fire');
@@ -544,8 +544,8 @@ describe('14. The walk to the castle after the flagpole uses the ground pose (Cl
     });
   }
 
-  it('Current rules: the walk is untouched (onGround is not set by it)', () => {
-    const r = walkFrames(MARIO, 'current');
+  it('Campaign rules: the walk is untouched (onGround is not set by it)', () => {
+    const r = walkFrames(MARIO, 'campaign');
     expect(r.grounded).toBe(0);
   });
 });

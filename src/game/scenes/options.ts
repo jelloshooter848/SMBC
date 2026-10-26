@@ -5,11 +5,14 @@ import { bindingClashes, describeCode, describePad } from '@engine/input/binding
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
 import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
-import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type Settings } from '@engine/save/settings';
-import { nextTouchMode } from '@engine/input/touch-logic';
-import { MenuScene, type MenuItem } from './menu';
+import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type AssistSettings, type Settings } from '@engine/save/settings';
+import { nextTouchMode, readTouchFacts } from '@engine/input/touch-logic';
+import { folderPickerSupported, packsNeedComputer } from '@engine/assets/folder-picker';
+import { MenuScene, backToMenu, type MenuItem } from './menu';
+import { controlScheme } from './hints';
 import type { Game } from './game';
 import { GuideIndexScene } from './guide';
+import { ClassicTutorialHeroesScene } from './how-to-play-boxes';
 import { homeScreenItems } from '../pwa/home-screen';
 import { SaveFilesOptions } from './save-codes';
 import { AboutScene } from './about';
@@ -43,16 +46,24 @@ export class OptionsScene extends MenuScene {
             },
           ]
         : []),
-      {
-        label: 'How to play',
-        // O-14: while the campaign is closed, the title's How to play is Classic's (its select's
-        // heroes and their Classic pages), as Classic's own options are.
-        select: () =>
-          this.push(
-            new GuideIndexScene(game, () => this.pop(), classic || (!translucent && !game.campaignOpen)),
-          ),
-        hint: 'Controls and power-ups for every hero',
-      },
+      // 0.4.73 (owner, item 81): not in the REMIX title's Options (neither translucent nor
+      // Classic's); the Campaign's Options (world map, pause) and Classic's keep it. Item 82:
+      // Classic mode's Options (the CLASSIC menu's and the Classic pause's) list the Classic
+      // select's heroes, each opening the original's tutorial boxes for that hero.
+      ...(translucent || classic
+        ? [
+            {
+              label: 'How to play',
+              select: () =>
+                this.push(
+                  classic
+                    ? new ClassicTutorialHeroesScene(game, () => this.pop())
+                    : new GuideIndexScene(game, () => this.pop(), false),
+                ),
+              hint: 'Controls and power-ups for every hero',
+            },
+          ]
+        : []),
       { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
       // iPhone Home Screen support (0.4.44): only where it can help (hidden in the app itself).
       ...homeScreenItems(game, (s) => (this.status = s)),
@@ -108,9 +119,12 @@ class VideoOptions extends MenuScene {
     const s = settings(game);
     this.setItems([
       {
-        label: 'Integer scale',
-        value: () => onOff(s.video.integerScale),
+        // 0.4.73 (owner): was "Integer scale: On/Off". FILL fills the screen (fractional scale,
+        // the default); SHARP keeps whole pixels and may leave a border. Stored as integerScale.
+        label: 'Picture size',
+        value: () => (s.video.integerScale ? 'Sharp' : 'Fill'),
         adjust: () => void ((s.video.integerScale = !s.video.integerScale), apply(game)),
+        hint: 'Fill: bigger picture. Sharp: crisp, even pixels, may leave a border',
       },
       {
         label: 'Palette',
@@ -309,46 +323,68 @@ export class AssistOptionsScene extends MenuScene {
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSISTS', [], onBack);
     this.entryTitle = 'Assists';
-    const s = settings(game);
-    const a = s.assist;
-    const toggle = (label: string, key: keyof typeof a, hint?: string): MenuItem => ({
-      label,
-      value: () => onOff(Boolean(a[key])),
-      adjust: () => {
-        (a as unknown as Record<string, boolean>)[key] = !a[key];
-        apply(game);
-      },
-      ...(hint ? { hint } : {}),
-    });
     this.setItems([
-      toggle('Scroll back', 'allowLeftScroll', 'Camera can scroll left'),
-      toggle('Inf. lives', 'infiniteLives'),
-      toggle('Inf. time', 'infiniteTime'),
-      toggle('No damage', 'invulnerable'),
-      toggle('Fire keeps big', 'fireRevertsToBig', 'Losing fire power keeps you big'),
-      toggle('Safety floor', 'safetyFloor', 'Pits and lava catch you'),
-      // 0.4.72 (owner item 8).
-      toggle('Show hidden items', 'showHidden', 'Every block shows what it holds; hidden blocks appear'),
-      {
-        label: 'Coyote time',
-        value: () => `${a.coyoteFrames}f`,
-        adjust: (d) => void ((a.coyoteFrames = Math.max(0, Math.min(10, a.coyoteFrames + d))), apply(game)),
-        hint: 'Frames you can still jump after leaving a ledge',
-      },
-      {
-        label: 'Slow motion',
-        value: () => (a.slowMotion === 2 ? 'Half' : 'Off'),
-        adjust: () => void ((a.slowMotion = a.slowMotion === 2 ? 1 : 2), apply(game)),
-      },
+      ...assistItems(settings(game).assist, () => apply(game)),
       { label: 'Back', select: onBack },
     ]);
   }
 }
 
+/**
+ * The Assists rows over values `a` (`changed` after each change): the dev Assists page's, and
+ * v0.4.73's ADVANCED CHEATS page's (item 60: every dev Assist, as each plays here).
+ */
+export function assistItems(a: AssistSettings, changed: () => void): MenuItem[] {
+  const toggle = (label: string, key: keyof AssistSettings, hint?: string): MenuItem => ({
+    label,
+    value: () => onOff(Boolean(a[key])),
+    adjust: () => {
+      (a as unknown as Record<string, boolean>)[key] = !a[key];
+      changed();
+    },
+    ...(hint ? { hint } : {}),
+  });
+  return [
+    toggle('Scroll back', 'allowLeftScroll', 'Camera can scroll left'),
+    toggle('Inf. lives', 'infiniteLives'),
+    toggle('Inf. time', 'infiniteTime'),
+    toggle('No damage', 'invulnerable'),
+    toggle('Fire keeps big', 'fireRevertsToBig', 'Losing fire power keeps you big'),
+    toggle('Safety floor', 'safetyFloor', 'Pits and lava catch you'),
+    // 0.4.72 (owner item 8).
+    toggle('Show hidden items', 'showHidden', 'Every block shows what it holds; hidden blocks appear'),
+    {
+      label: 'Coyote time',
+      value: () => `${a.coyoteFrames}f`,
+      adjust: (d) => void ((a.coyoteFrames = Math.max(0, Math.min(10, a.coyoteFrames + d))), changed()),
+      hint: 'Frames you can still jump after leaving a ledge',
+    },
+    {
+      label: 'Slow motion',
+      value: () => (a.slowMotion === 2 ? 'Half' : 'Off'),
+      adjust: () => void ((a.slowMotion = a.slowMotion === 2 ? 1 : 2), changed()),
+    },
+  ];
+}
+
 class PacksOptions extends MenuScene {
   private names: string[] = [];
+  /** A touch device that cannot pick a folder (item 84): the page only says so. */
+  private readonly needComputer: boolean;
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSET PACKS', [], onBack);
+    this.needComputer = packsNeedComputer({
+      touchShown: controlScheme(game) === 'touch',
+      coarsePointer: readTouchFacts().coarsePointer,
+      folderPicker: folderPickerSupported(),
+    });
+    if (this.needComputer) {
+      // Packs already stored keep loading (main.ts); only importing needs a computer.
+      this.status = PACKS_NEED_COMPUTER;
+      this.entryTitle = PACKS_NEED_COMPUTER;
+      this.setItems([{ label: 'Back', select: () => this.onBack?.() }]);
+      return;
+    }
     this.rebuild();
     void this.refresh();
   }
@@ -365,6 +401,8 @@ class PacksOptions extends MenuScene {
     items.push({
       label: 'Import pack',
       select: () => this.pickFolder(),
+      // The file dialog only opens from inside the press's own event.
+      gesture: true,
       hint: 'Choose a folder with manifest.json',
     });
     items.push({
@@ -382,27 +420,54 @@ class PacksOptions extends MenuScene {
           s.packs = s.packs.includes(name) ? s.packs.filter((n) => n !== name) : [...s.packs, name];
           apply(game);
         },
+        // 0.4.73 (item 84): OK deletes this pack (the old Delete pack row always took the first).
+        select: () => this.confirmDelete(name),
         hint: 'Left/right toggles. OK deletes it',
-      });
-    }
-    if (this.names.length) {
-      items.push({
-        label: 'Delete pack',
-        select: () => {
-          const name = this.names[0];
-          if (!name) return;
-          void packStore.remove(name).then(() => {
-            s.packs = s.packs.filter((n) => n !== name);
-            apply(game);
-            this.status = `Deleted ${name}`;
-            void this.refresh();
-          });
-        },
-        hint: 'Deletes the first listed pack',
       });
     }
     items.push({ label: 'Back', select: () => this.onBack?.() });
     this.setItems(items);
+  }
+
+  /** DELETE <NAME>? with NO first; YES deletes that pack and turns it off. */
+  private confirmDelete(name: string): void {
+    const game = this.game;
+    const keep = () => backToMenu(game);
+    const box = new ConfirmMenu(
+      game,
+      `DELETE ${name.toUpperCase().slice(0, 22)}?`,
+      `Delete ${name}?`,
+      [
+        { label: 'No', select: keep },
+        {
+          label: 'Yes',
+          select: () => {
+            game.scenes.pop();
+            const at = this.names.indexOf(name);
+            void packStore
+              .remove(name)
+              .then(async () => {
+                const s = settings(game);
+                s.packs = s.packs.filter((n) => n !== name);
+                apply(game);
+                this.status = `Deleted ${name}`;
+                await this.refresh();
+                // The cursor stays on the nearest pack left, else Export template (never
+                // silently on Back), and the line names where it is.
+                const near = Math.min(at, this.names.length - 1);
+                this.index = near >= 0 ? PACK_ROWS_FROM + near : PACK_ROWS_FROM - 1;
+                game.deps.announcer?.say(`${this.status}. ${this.focusLine()}`);
+              })
+              .catch(() => {
+                this.status = 'Could not delete';
+                game.deps.announcer?.say(this.status);
+              });
+          },
+        },
+      ],
+      keep,
+    );
+    game.scenes.push(box);
   }
 
   private pickFolder(): void {
@@ -426,5 +491,30 @@ class PacksOptions extends MenuScene {
         });
     };
     input.click();
+  }
+}
+
+/** The first pack row on the ASSET PACKS page (after Import pack and Export template). */
+const PACK_ROWS_FROM = 2;
+
+/** What the ASSET PACKS page says on a touch device that cannot pick a folder (item 84). */
+export const PACKS_NEED_COMPUTER = 'ASSET PACKS NEED A COMPUTER';
+
+/** A YES / NO question: its title said before the focused row. */
+class ConfirmMenu extends MenuScene {
+  constructor(
+    game: Game,
+    title: string,
+    private readonly question: string,
+    items: MenuItem[],
+    onBack: () => void,
+  ) {
+    super(game, title, items, onBack);
+  }
+
+  /** "Delete beta? No": the question, then the focused answer. */
+  override enter(): void {
+    const it = this.items[this.index];
+    this.game.deps.announcer?.say(it ? `${this.question} ${it.label}` : this.question);
   }
 }

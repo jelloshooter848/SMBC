@@ -49,7 +49,7 @@ function markerPixels(id: string): string[] {
   return out.sort();
 }
 
-function inLevel(id: string, rules: 'classic' | 'current', over: Partial<Settings> = {}) {
+function inLevel(id: string, rules: 'classic' | 'campaign', over: Partial<Settings> = {}) {
   const settings: Settings = { ...defaultSettings(), dev: true, ...over };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   h.game.ctx.assist.showHidden = true;
@@ -62,9 +62,9 @@ describe('0.4.72 review nits', () => {
   it("a power-up block's marker is what it gives this hero (an HP hero's own pick too)", () => {
     for (const [id, rules] of [
       ['mario', 'classic'],
-      ['link', 'current'],
-      ['samus', 'current'],
-      ['simon', 'current'],
+      ['link', 'campaign'],
+      ['samus', 'campaign'],
+      ['simon', 'campaign'],
     ] as const) {
       const { l } = inLevel(id, rules);
       const w = l.world;

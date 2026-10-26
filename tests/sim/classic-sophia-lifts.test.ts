@@ -15,7 +15,7 @@ import type { Action } from '@engine/input/actions';
  * Classic SMBC Sophia III on moving lifts (bug-reports/2026-10-07-sophia-build-classic-character.md
  * SO-38, SO-M12; Sophia.as:1177-1196, 1385-1393, 2803-2870): with Wall Climb she wraps from a lift's
  * top onto its sides and underside, grips its underside from a jump, rides it while attached and
- * lets go beyond MAX_PLAT_DIST. Current Sophia (the campaign's) is unchanged.
+ * lets go beyond MAX_PLAT_DIST. Campaign Sophia (the campaign's) is unchanged.
  */
 
 /** A 40-column room: floor on rows 13-14, the given entity lines. */
@@ -68,7 +68,7 @@ function play(
   entities: string[],
   controller: Ctl,
   frames: number,
-  opts: { start?: string; power?: string; rules?: 'classic' | 'current' } = {},
+  opts: { start?: string; power?: string; rules?: 'classic' | 'campaign' } = {},
 ) {
   const log: Frame[] = [];
   const res = runSim({
@@ -151,11 +151,11 @@ describe('SO-38: gripping a lift from below', () => {
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(px(10));
   });
 
-  it('no grip with Down held, nor without the Crusher, nor for Current Sophia', () => {
+  it('no grip with Down held, nor without the Crusher, nor for Campaign Sophia', () => {
     for (const run of [
       play(['lift-h 6 9 len=6'], jumpUnder(undefined, true), 200),
       play(['lift-h 6 9 len=6'], jumpUnder(), 200, { power: 'big' }),
-      play(['lift-h 6 9 len=6'], jumpUnder(), 200, { rules: 'current' }),
+      play(['lift-h 6 9 len=6'], jumpUnder(), 200, { rules: 'campaign' }),
     ]) {
       expect(run.log.some((r) => r.surface !== FLOOR || r.held)).toBe(false);
       expect(heldLift(run.world.player)).toBe(null);
@@ -283,14 +283,14 @@ describe('SO-38: falling and pulley lifts', () => {
 });
 
 describe('SO-38: only Classic Sophia', () => {
-  it('Current Sophia has no lift hooks; Classic has both', () => {
+  it('Campaign Sophia has no lift hooks; Classic has both', () => {
     expect(SOPHIA.behaviour.afterLifts).toBeUndefined();
     expect(SOPHIA_CLASSIC.behaviour.afterLifts).toBeTypeOf('function');
     expect(SOPHIA_CLASSIC.behaviour.drive).not.toBe(SOPHIA.behaviour.drive);
   });
 
-  it('Current Sophia drives straight off a lift where Classic wraps round it', () => {
-    const cur = play(SWING, () => ['right', 'down'], 120, { ...ON_TOP, rules: 'current' });
+  it('Campaign Sophia drives straight off a lift where Classic wraps round it', () => {
+    const cur = play(SWING, () => ['right', 'down'], 120, { ...ON_TOP, rules: 'campaign' });
     expect(cur.log.every((r) => r.surface === FLOOR && !r.held)).toBe(true);
   });
 });

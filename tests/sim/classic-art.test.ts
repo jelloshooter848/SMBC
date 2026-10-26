@@ -325,7 +325,7 @@ describe('review nits', () => {
   });
 
   /** Where player two's key icon is drawn with `p2` (under `rules`) beside Vic Viper. */
-  function keyAt(p2: CharacterDef, rules: 'current' | 'classic') {
+  function keyAt(p2: CharacterDef, rules: 'campaign' | 'classic') {
     const one = rig(VIC_CLASSIC);
     const two = new Rig(p2, flatLevel(), rules);
     const sprites: { f: string; x: number; y: number }[] = [];
@@ -344,7 +344,7 @@ describe('review nits', () => {
   it("player two's key icon: at 196 as today, after a seven-letter name (WARRIOR's last R) at 204", () => {
     expect(KEY_ICON_P2).toEqual({ x: 196, y: 24 });
     expect(SOPHIA.hudName.length).toBeLessThan(7);
-    expect(keyAt(SOPHIA, 'current')).toEqual([KEY_ICON_P2]);
+    expect(keyAt(SOPHIA, 'campaign')).toEqual([KEY_ICON_P2]);
     expect(WARRIORS_CLASSIC.hudName).toBe('WARRIOR');
     expect(keyAt(WARRIORS_CLASSIC, 'classic')).toEqual([KEY_ICON_P2_LONG]);
     expect(KEY_ICON_P2_LONG.x).toBeGreaterThanOrEqual(144 + 7 * 8);

@@ -247,7 +247,7 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
       hero: 'link',
       look: 'link',
       power: 'fire',
-      rules: 'current',
+      rules: 'campaign',
       classicRun: false,
     });
     expect(loadDevPick(h.game)?.power).toBe('full');
@@ -263,7 +263,8 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
     delete s.classicDev.heroesOn;
     expect(loadDevPick(h.game)?.hero).toBe('yoshi');
     s.classicDev.heroesOff = ['yoshi'];
-    expect(loadDevPick(h.game)).toBeNull();
+    // v0.4.73 item 61 (owner): the START page offers every hero, so a hero set Off is kept too.
+    expect(loadDevPick(h.game)?.hero).toBe('yoshi');
     // A look that is not that hero's is ignored too.
     kept({ hero: 'mario', look: 'link' });
     expect(loadDevPick(h.game)).toBeNull();
@@ -276,14 +277,14 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
     h.idle(8);
     const row = (l: string) => items(start).find((i) => i.label === l) as MenuItem;
     for (let i = 0; i < 20 && start.hero.id !== 'samus'; i++) row('Hero').adjust?.(1);
-    stepTo(h, 'Rules', () => start.pick.rules === 'current');
+    stepTo(h, 'Rules', () => start.pick.rules === 'campaign');
     expect(start.hero.id).toBe('samus');
     expect(h.said.at(-1)).toMatch(/^Rules: Campaign\..*Hero: Samus$/);
     row('Rules').adjust?.(1); // back to Classic SMBC
     for (let i = 0; i < 20 && start.hero.id !== 'bass'; i++) row('Hero').adjust?.(1);
     expect(start.hero.id).toBe('bass');
     row('Rules').adjust?.(1); // Campaign rules have no Bass
-    expect(start.hero.id).toBe(h.game.slotsFor('current')[0]?.id);
+    expect(start.hero.id).toBe(h.game.slotsFor('campaign')[0]?.id);
     expect(row('Rules').hint).toMatch(/Hero: Mario$/);
   });
 
@@ -366,7 +367,8 @@ describe('O-05 review: every area reachable, Again checked on the press, readabl
 
   // 0.4.72 (owner): a hero back on Release is still offered in dev mode, so only Off stops Again.
   it.each(['off'] as const)(
-    'Again is checked on the press: a hero set to %s since says why and starts nothing',
+    // v0.4.73 item 61 (owner): the START page offers every hero, so Again starts it all the same.
+    'Again is checked on the press: a hero set to %s since still starts (item 61)',
     (now) => {
       const h = dev();
       const s = h.game.deps.settings as Settings;
@@ -384,10 +386,9 @@ describe('O-05 review: every area reachable, Again checked on the press, readabl
       if (now === 'off') s.classicDev.heroesOff = ['yoshi'];
       h.idle(8);
       h.tap('jump');
-      expect(h.top()).toBe(menu);
-      expect(h.said.at(-1)).toMatch(/^Again cannot start\. Yoshi is not offered now/);
-      h.idle(30);
-      expect(h.game.scenes.find((x) => x instanceof LevelScene)).toBeUndefined();
+      expect(h.said.join('\n')).not.toMatch(/Again cannot start/);
+      h.until(() => h.game.scenes.find((x) => x instanceof LevelScene) !== undefined, 600);
+      expect(h.game.state.character.id).toBe('yoshi');
     },
   );
 });
@@ -398,7 +399,7 @@ function saveDevPick(start: DevStartScene): void {
 }
 
 describe('O-05: the Campaign branch', () => {
-  it('a story level starts as free play under Current rules, with no file', () => {
+  it('a story level starts as free play under Campaign rules, with no file', () => {
     const h = dev();
     h.game.scenes.push(new DevCampaignScene(h.game));
     pick(h, 'Lost story level');
@@ -411,7 +412,7 @@ describe('O-05: the Campaign branch', () => {
     const l = enterLevel(h);
     expect(l.level.id.startsWith('ll-2-1')).toBe(true);
     expect(h.game.campaign).toBeNull();
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
     expect(h.game.state.lives).toBe(99);
   });
 

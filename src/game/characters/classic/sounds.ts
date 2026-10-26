@@ -10,7 +10,7 @@ import type { World } from '../../world/world';
  * MegaManBase.as 845, 1702-1707, 2362; Samus.as 620, 1195; Ryu.as 1334). A hero or a sound with
  * no entry keeps the shared one. The armour sounds stay the weapons' own `blockedSfx` (HP-C14:
  * `armour`, Samus's `bump`), which already tell the heroes apart. Only Classic code reads it
- * (power.ts and the Classic enemy door), so a Current def never meets it.
+ * (power.ts and the Classic enemy door), so a Campaign def never meets it.
  */
 export interface ClassicHeroSounds {
   /** Taking a hit (in place of Mario's `pipe`). */

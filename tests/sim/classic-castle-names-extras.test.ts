@@ -57,7 +57,7 @@ function place(w: World): void {
   w.camera.snapTo(b.x);
 }
 
-function castleNews(character: CharacterDef, rules: 'classic' | 'current') {
+function castleNews(character: CharacterDef, rules: 'classic' | 'campaign') {
   const r = runSim({
     level: castle(),
     character,
@@ -101,10 +101,10 @@ describe('Classic-only heroes: castle text names their rescue', () => {
     expect(classic.say[0]).toContain('BUT OUR PRINCESS IS IN ANOTHER CASTLE!');
   });
 
-  it('Current is unaffected: no campaign hero carries a name and the line stays shared', () => {
+  it('Campaign is unaffected: no campaign hero carries a name and the line stays shared', () => {
     for (const def of CHARACTERS) expect(def.rescueName, def.id).toBeUndefined();
     for (const def of CHARACTERS.slice(0, 2)) {
-      const current = castleNews(def, 'current');
+      const current = castleNews(def, 'campaign');
       expect(current.text.slice(1)).toEqual(['', 'BUT OUR PRINCESS IS IN', 'ANOTHER CASTLE!']);
     }
   });

@@ -35,8 +35,8 @@ import { hideClassicHeroes, isolateClassicRegistry } from './classic-registry';
 isolateClassicRegistry({ hideExtras: true });
 
 // The Classic rules plumbing (umbrella report TG-9..TG-43, Classic mode's rules model): with no
-// Classic defs yet every hero plays Current under Classic rules and the tag reads CLASSIC?. Where
-// a test needs a Classic def it registers a stand-in (a copy of the Current def marked
+// Classic defs yet every hero plays Campaign under Classic rules and the tag reads CLASSIC?. Where
+// a test needs a Classic def it registers a stand-in (a copy of the Campaign def marked
 // `rules: 'classic'`) and takes it out again afterwards.
 
 useStorage();
@@ -82,7 +82,7 @@ afterEach(() => {
   for (const c of extras.splice(0)) CLASSIC_EXTRAS.splice(CLASSIC_EXTRAS.indexOf(c), 1);
 });
 
-function ctx(rules?: 'current' | 'classic'): GameContext {
+function ctx(rules?: 'campaign' | 'classic'): GameContext {
   return {
     assets: new AssetRegistry({ default: {} }),
     audio: NULL_AUDIO,
@@ -113,25 +113,25 @@ const level = (h: ReturnType<typeof makeGame>) => {
 };
 
 describe('Rules type and context (TG-9, TG-15)', () => {
-  it('rulesOf is current unless the context says classic', () => {
-    expect(rulesOf({})).toBe('current');
-    expect(rulesOf({ rules: 'current' })).toBe('current');
+  it('rulesOf is campaign unless the context says classic', () => {
+    expect(rulesOf({})).toBe('campaign');
+    expect(rulesOf({ rules: 'campaign' })).toBe('campaign');
     expect(rulesOf({ rules: 'classic' })).toBe('classic');
-    expect(rulesOf(ctx())).toBe('current');
+    expect(rulesOf(ctx())).toBe('campaign');
   });
 
-  it('newGameState writes rules only for classic, and Current states are as before', () => {
+  it('newGameState writes rules only for classic, and Campaign states are as before', () => {
     hideClassicHeroes(); // about heroes with no Classic def, whatever is built
     const cur = newGameState(MARIO, LINK);
     expect('rules' in cur).toBe(false);
-    expect(newGameState(MARIO, LINK, 'current')).toEqual(cur);
+    expect(newGameState(MARIO, LINK, 'campaign')).toEqual(cur);
     expect(cur.powerState).toBe('small');
     expect(cur.powerState2).toBe('full');
     expect(cur.hp2).toBe(LINK.damage.kind === 'hp' ? (LINK.startHp ?? LINK.damage.max) : 0);
     const cl = newGameState(MARIO, LINK, 'classic');
     expect(cl.rules).toBe('classic');
     expect(cl.character).toBe(MARIO);
-    // No Classic Link yet: he keeps his Current start.
+    // No Classic Link yet: he keeps his Campaign start.
     expect(cl.powerState2).toBe('full');
   });
 
@@ -149,7 +149,7 @@ describe('dev URL helper (TG-5..7)', () => {
     const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     const p = (q: string) => new URLSearchParams(q);
     expect(urlRules(p('?rules=classic'), true)).toBe('classic');
-    expect(urlRules(p('?rules=current'), true)).toBe('current');
+    expect(urlRules(p('?rules=campaign'), true)).toBe('campaign');
     expect(urlRules(p('?rules=bogus'), true)).toBeNull();
     expect(urlRules(p('?level=1-1'), true)).toBeNull();
     expect(urlRules(p('?rules=classic'), false)).toBeNull();
@@ -159,10 +159,10 @@ describe('dev URL helper (TG-5..7)', () => {
 });
 
 describe('heroFor and the registry (TG-17, TG-20)', () => {
-  it('returns the Current def under Current, and while a hero has no Classic def', () => {
+  it('returns the Campaign def under Campaign, and while a hero has no Classic def', () => {
     for (const c of CHARACTERS) {
-      expect(heroFor(c, 'current')).toBe(c);
-      // A hero whose Classic def is built plays it; one not built yet plays its Current def.
+      expect(heroFor(c, 'campaign')).toBe(c);
+      // A hero whose Classic def is built plays it; one not built yet plays its Campaign def.
       expect(heroFor(c, 'classic')).toBe(CLASSIC_CHARACTERS[c.id] ?? c);
     }
     // A hero that is certainly not built (a stand-in id no Classic file has).
@@ -172,20 +172,20 @@ describe('heroFor and the registry (TG-17, TG-20)', () => {
     expect(heroFor(MARIO, 'classic')).toBe(MARIO);
     const cm = fakeClassic(MARIO);
     expect(heroFor(MARIO, 'classic')).toBe(cm);
-    expect(heroFor(MARIO, 'current')).toBe(MARIO);
+    expect(heroFor(MARIO, 'campaign')).toBe(MARIO);
   });
 });
 
 describe('World.rules and the player build (TG-13, TG-14, TG-19, TG-37)', () => {
-  it('under Current every player plays the state def', () => {
+  it('under Campaign every player plays the state def', () => {
     for (const c of CHARACTERS) {
       const r = runSim({ level: getLevel('1-1'), character: c, script: { steps: [] }, maxFrames: 1 });
-      expect(r.world.rules).toBe('current');
+      expect(r.world.rules).toBe('campaign');
       expect(r.world.players[0]?.def).toBe(c);
     }
   });
 
-  it('under Classic each player plays the Classic def, or the Current one not yet built', () => {
+  it('under Classic each player plays the Classic def, or the Campaign one not yet built', () => {
     const cm = fakeClassic(MARIO);
     for (const c of CHARACTERS) {
       const r = runSim({
@@ -206,8 +206,8 @@ describe('World.rules and the player build (TG-13, TG-14, TG-19, TG-37)', () => 
 
   it('WorldStart.rules overrides the context', () => {
     fakeClassic(MARIO);
-    const w = new World(getLevel('1-1'), ctx('classic'), newGameState(MARIO), { rules: 'current' });
-    expect(w.rules).toBe('current');
+    const w = new World(getLevel('1-1'), ctx('classic'), newGameState(MARIO), { rules: 'campaign' });
+    expect(w.rules).toBe('campaign');
     expect(w.player.def).toBe(MARIO);
     const w2 = new World(getLevel('1-1'), ctx(), newGameState(MARIO), { rules: 'classic' });
     expect(w2.rules).toBe('classic');
@@ -223,11 +223,11 @@ describe('World.rules and the player build (TG-13, TG-14, TG-19, TG-37)', () => 
 });
 
 describe('Game.liveRules: one place decides (rules model)', () => {
-  it('devStart sets the run rules; Current by default', () => {
+  it('devStart sets the run rules; Campaign by default', () => {
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1);
-    expect(h.game.liveRules).toBe('current');
-    expect(level(h).world.rules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
+    expect(level(h).world.rules).toBe('campaign');
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
     expect(h.game.liveRules).toBe('classic');
     expect(h.game.ctx.rules).toBe('classic');
@@ -241,38 +241,38 @@ describe('Game.liveRules: one place decides (rules model)', () => {
     h.game.ctx.rules = 'classic';
     expect(h.game.runRules).toBe('classic');
     h.idle(5);
-    expect(l.world.rules).toBe('current');
+    expect(l.world.rules).toBe('campaign');
     h.game.goToLevel('1-2', { mode: 'stand', seed: 1 });
     expect(level(h).world.rules).toBe('classic');
   });
 
-  it('a campaign file always plays Current, even opened after a dev Classic start', () => {
+  it('a campaign file always plays Campaign, even opened after a dev Classic start', () => {
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1, { rules: 'classic' });
     level(h);
     file();
     h.game.openFile(1);
     expect(h.game.campaign).not.toBeNull();
-    expect(h.game.liveRules).toBe('current');
-    expect(rulesOf(h.game.ctx)).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
+    expect(rulesOf(h.game.ctx)).toBe('campaign');
     expect(h.game.state.rules).toBeUndefined();
     // The 1-1 bonus room (as from its pipe): no story scene comes first.
     h.game.startLevel(getLevel('1-1-bonus'), { mode: 'fall', x: 1, y: 1, time: 300 });
     h.step();
     const l = h.top() as LevelScene;
     expect(l).toBeInstanceOf(LevelScene);
-    expect(l.world.rules).toBe('current');
+    expect(l.world.rules).toBe('campaign');
     expect(l.world.player.def).toBe(h.game.state.character);
   });
 
-  it('the title, play-tests and shared levels go back to Current', () => {
+  it('the title, play-tests and shared levels go back to Campaign', () => {
     const h = makeGame({ dev: true });
     h.game.runRules = 'classic';
     h.game.showTitle();
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
     h.game.runRules = 'classic';
     h.game.playShared(getLevel('1-1'));
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
   });
 
   it('newGame keeps the run rules a Classic flow set, or takes opts.rules', () => {
@@ -280,8 +280,8 @@ describe('Game.liveRules: one place decides (rules model)', () => {
     h.game.runRules = 'classic';
     h.game.newGame(MARIO, '1-1');
     expect(h.game.state.rules).toBe('classic');
-    h.game.newGame(MARIO, '1-1', null, { rules: 'current' });
-    expect(h.game.liveRules).toBe('current');
+    h.game.newGame(MARIO, '1-1', null, { rules: 'campaign' });
+    expect(h.game.liveRules).toBe('campaign');
     expect('rules' in h.game.state).toBe(false);
   });
 });
@@ -316,11 +316,11 @@ describe('carried power when the rules change (TG-16)', () => {
     expect(h.said).not.toContain('Rules changed. Power reset.');
   });
 
-  it('back to Current leaves no rules key on the state', () => {
+  it('back to Campaign leaves no rules key on the state', () => {
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'fire', false, 1, { rules: 'classic' });
     level(h);
-    h.game.runRules = 'current';
+    h.game.runRules = 'campaign';
     h.game.goToLevel('1-2', { mode: 'stand', seed: 1 });
     level(h);
     expect('rules' in h.game.state).toBe(false);
@@ -338,8 +338,8 @@ describe('campaign saves never carry rules (TG-17b skipped)', () => {
   });
 });
 
-describe('mini games and training rooms stay Current (TG-14)', () => {
-  it('every mini game World plays Current defs while the run is Classic', () => {
+describe('mini games and training rooms stay Campaign (TG-14)', () => {
+  it('every mini game World plays Campaign defs while the run is Classic', () => {
     for (const c of CHARACTERS) fakeClassic(c);
     const h = makeGame({ dev: true });
     h.game.runRules = 'classic';
@@ -349,13 +349,13 @@ describe('mini games and training rooms stay Current (TG-14)', () => {
       const w = scene.world;
       if (!(w instanceof World)) continue;
       checked++;
-      expect(w.rules, def.hero).toBe('current');
+      expect(w.rules, def.hero).toBe('campaign');
       for (const p of w.players) expect(p.def.rules, def.hero).toBeUndefined();
     }
     expect(checked).toBeGreaterThan(0);
   });
 
-  it('training rooms play Current defs while the run is Classic', () => {
+  it('training rooms play Campaign defs while the run is Classic', () => {
     for (const c of CHARACTERS) fakeClassic(c);
     const h = makeGame({ dev: true });
     h.game.runRules = 'classic';
@@ -367,14 +367,14 @@ describe('mini games and training rooms stay Current (TG-14)', () => {
         replay: false,
         onEnd: () => undefined,
       }) as unknown as { world: World };
-      expect(scene.world.rules, c.id).toBe('current');
+      expect(scene.world.rules, c.id).toBe('campaign');
       expect(scene.world.player.def, c.id).toBe(c);
     }
   });
 });
 
 describe('the CLASSIC tag and the F1 line (TG-31..33)', () => {
-  it('shows CLASSIC? while a hero has no Classic def, CLASSIC when all have, nothing under Current', () => {
+  it('shows CLASSIC? while a hero has no Classic def, CLASSIC when all have, nothing under Campaign', () => {
     unbuilt(MARIO);
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', MARIO, 'small', false, 1);
@@ -395,7 +395,7 @@ describe('the CLASSIC tag and the F1 line (TG-31..33)', () => {
     h.game.runRules = 'classic';
     const intro = new IntroScene(h.game, () => undefined, 300);
     expect(texts(intro).map((t) => t.str)).toContain('CLASSIC?');
-    h.game.runRules = 'current';
+    h.game.runRules = 'campaign';
     expect(texts(intro).some((t) => t.str.startsWith('CLASSIC'))).toBe(false);
   });
 
@@ -406,8 +406,8 @@ describe('the CLASSIC tag and the F1 line (TG-31..33)', () => {
     const o = new DebugOverlay();
     o.enabled = true;
     const lines = texts({ render: (r) => o.render(r, w, 60) }).map((t) => t.str);
-    expect(lines).toContain('rules classic p1 mario classic p2 link current');
-    expect(rulesLine('classic', [LINK])).toBe('rules classic p1 link current');
+    expect(lines).toContain('rules classic p1 mario classic p2 link campaign');
+    expect(rulesLine('classic', [LINK])).toBe('rules classic p1 link campaign');
     const cur = new World(getLevel('1-1'), ctx(), newGameState(MARIO));
     const curLines = texts({ render: (r) => o.render(r, cur, 60) }).map((t) => t.str);
     expect(curLines.some((l) => l.startsWith('rules'))).toBe(false);
@@ -429,7 +429,7 @@ describe('HUD, pause guide and music read the played def (TG-19)', () => {
 });
 
 describe('roster plumbing (TG-41..43)', () => {
-  it('is deps.characters under Current and in the campaign', () => {
+  it('is deps.characters under Campaign and in the campaign', () => {
     const h = makeGame({ dev: true });
     fakeExtra('bass');
     expect(h.game.roster).toBe(h.game.deps.characters);
@@ -445,7 +445,7 @@ describe('roster plumbing (TG-41..43)', () => {
     h.game.runRules = 'classic';
     expect(h.game.roster).toEqual([...CHARACTERS, bass]);
     expect(h.game.heroLocked(bass)).toBe(false);
-    h.game.runRules = 'current';
+    h.game.runRules = 'campaign';
     expect(h.game.heroLocked(bass)).toBe(true);
     expect(h.game.heroesToFind).toBe(0);
   });
@@ -456,12 +456,12 @@ describe('roster plumbing (TG-41..43)', () => {
     expect(h.game.roster).toBe(h.game.deps.characters);
   });
 
-  it('a carried extra becomes small Mario when the rules go back to Current', () => {
+  it('a carried extra becomes small Mario when the rules go back to Campaign', () => {
     const bass = fakeExtra('bass');
     const h = makeGame({ dev: true });
     h.game.devStart('1-1', bass, 'fire', false, 1, { rules: 'classic' });
     expect(level(h).world.player.def).toBe(bass);
-    h.game.runRules = 'current';
+    h.game.runRules = 'campaign';
     h.game.goToLevel('1-2', { mode: 'stand', seed: 1 });
     const l = level(h);
     expect(h.game.state.character).toBe(MARIO);
@@ -486,7 +486,7 @@ describe('dev Level select Rules row', () => {
   });
 });
 
-describe('guard: Current untouched (TG-39)', () => {
+describe('guard: Campaign untouched (TG-39)', () => {
   it('CHARACTERS keeps its ids and order and no entry has rules', () => {
     expect(CHARACTERS.map((c) => c.id)).toEqual([
       'mario',

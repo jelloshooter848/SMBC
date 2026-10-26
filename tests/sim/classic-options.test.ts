@@ -154,9 +154,9 @@ describe('ctx.classic: only a Classic run with Classic rules', () => {
     h.game.newGame(MARIO, '1-1', null, { rules: 'classic' });
     expect(h.game.ctx.classic).toBeUndefined();
     expect(h.game.state.lives).toBe(3);
-    // A Classic run with Current rules (the dev START page's Rules row, BUG-11): no options either.
+    // A Classic run with Campaign rules (the dev START page's Rules row, BUG-11): no options either.
     h.settings.dev = true;
-    h.game.devClassicGame(MARIO, '1-1', 'current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
     expect(h.game.classicRun).toBe(true);
     expect(h.game.ctx.classic).toBeUndefined();
     expect(h.game.state.lives).toBe(3);
@@ -175,7 +175,7 @@ describe('ctx.classic: only a Classic run with Classic rules', () => {
     expect(h.game.ctx.classic).toBeUndefined();
   });
 
-  it('a World under Current rules never holds them, even when the context has them', () => {
+  it('a World under Campaign rules never holds them, even when the context has them', () => {
     const r = runSim({
       level: testLevel(),
       character: MARIO,

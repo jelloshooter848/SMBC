@@ -15,7 +15,7 @@ import type { World } from './world';
  * Super Mario Bros. Special's items (G-022; ground/Brick.as 420-434, characters/Character.as
  * 1619-1665): the Atom, the Hammer and the Wing. Each is a plain Pickup that rises out of its
  * block and stays there; any hero takes it for 1000 points (their SCORE_VALUE) and the power-up
- * sound. Here for both rules: the Special map set plays under Classic or Current rules alike.
+ * sound. Here for both rules: the Special map set plays under Classic or Campaign rules alike.
  */
 
 /** Atom.SCORE_VALUE, HammerPickup.SCORE_VALUE, Wing.SCORE_VALUE. */
@@ -70,7 +70,7 @@ export function takeSpecialItem(world: World, p: Player, e: PowerUp & { item: Sp
  * - With Classic power-ups (Classic rules): the Mushroom if the hero lacks it, then the Fire Flower
  *   if he lacks it (`if (!upgradeIsActive(...)) hitRandomUpgrade(charNum, false)`), so a hero
  *   already in the Fire Flower state gets no upgrade and no repeat-Flower bonus.
- * - Under Current rules (the original's other mode, addAllPowerups): the hero's own next upgrades
+ * - Under Campaign rules (the original's other mode, addAllPowerups): the hero's own next upgrades
  *   from a power block, one after another until he is fully upgraded (Character.as 1735-1741).
  * - Then setAllAmmoToMax: every ammo pickup the hero uses, given until its counter is full
  *   (through the hero's own pickup code, which caps each counter at its maximum).
@@ -80,7 +80,7 @@ export function takeSpecialItem(world: World, p: Player, e: PowerUp & { item: Sp
  */
 export function fullPowerUp(world: World, p: Player): void {
   quietly(world, () => {
-    if (world.rules === 'current') {
+    if (world.rules === 'campaign') {
       // addAllPowerups: `while (!charIsFullyUpgraded) hitRandomUpgrade`, here until a step no
       // longer changes the hero (his next upgrade gives nothing new).
       for (let i = 0; i < FULL_POWER_MAX_STEPS; i++) {
@@ -102,7 +102,7 @@ export function fullPowerUp(world: World, p: Player): void {
   });
 }
 
-/** A safe cap on fullyPowerup's Current loop (the longest path, Simon's to 99 hearts, takes ~20). */
+/** A safe cap on fullyPowerup's Campaign loop (the longest path, Simon's to 99 hearts, takes ~20). */
 export const FULL_POWER_MAX_STEPS = 64;
 
 /** What an upgrade can change on `p`: his power state and his own counters and flags. */

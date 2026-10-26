@@ -3,11 +3,13 @@ import { defaultSettings, type Settings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
 import { CheatsScene, HIDDEN_CHEAT } from '@game/scenes/cheats-menu';
-import { GuideIndexScene, GuideScene } from '@game/scenes/guide';
+import { GuideIndexScene } from '@game/scenes/guide';
 import { LevelScene } from '@game/scenes/level';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { PauseScene } from '@game/scenes/pause';
+import { TutorialBoxScene } from '@game/tutorial/original-tutorials';
+import { ClassicTutorialHeroesScene } from '@game/scenes/how-to-play-boxes';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
 // G-031: the original's Pause > Options > Cheats mid-run: the unlocked cheats, applied at once.
@@ -88,12 +90,12 @@ describe('G-031 cheats from the Classic pause', () => {
   });
 
   it('is not offered under Campaign rules, where no cheat plays', () => {
-    // O-12: Classic rules set to Current is developer mode's: the run starts there, and its
+    // O-12: Classic rules set to Campaign is developer mode's: the run starts there, and its
     // pause is a player's (dev mode off; developer mode's pause offers every cheat).
     // BUG-11: such a run is the dev START page's (Rules: Campaign, Mode: Classic run).
     const h = classic({ dev: true });
-    h.game.devClassicGame(MARIO, '1-1', 'current');
-    expect(h.game.liveRules).toBe('current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
+    expect(h.game.liveRules).toBe('campaign');
     h.settings.dev = false;
     h.until(() => h.top() instanceof LevelScene, 600);
     h.idle(4);
@@ -104,32 +106,34 @@ describe('G-031 cheats from the Classic pause', () => {
 });
 
 describe('G-093 the Classic guide', () => {
-  it('the Classic pause opens the Classic hero’s own page', () => {
+  // v0.4.73 item 55 (owner): the Classic pause's Guide is the original's tutorial boxes for the
+  // hero played (tests/sim/v0473-menus.test.ts), no longer the hero's GuideScene page.
+  it('the Classic pause opens the Classic hero’s own tutorial boxes (item 55)', () => {
     const h = classic();
     pausedRun(h, LINK);
     pick(h, 'Guide');
-    expect(h.top()).toBeInstanceOf(GuideScene);
-    const g = h.top() as unknown as { def: { rules?: string; id: string } };
-    expect(g.def.id).toBe('link');
-    expect(g.def.rules).toBe('classic');
+    expect(h.top()).toBeInstanceOf(TutorialBoxScene);
+    const g = h.top() as TutorialBoxScene;
+    expect(g.pages[0]).toMatch(/^Link:/);
   });
 
   it('How to play from the Classic menus lists the Classic select’s heroes, as Classic defs', () => {
     const h = classic();
     h.game.showClassicMenu();
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
     pick(h, 'How to play');
-    const idx = h.top() as GuideIndexScene;
-    expect(idx).toBeInstanceOf(GuideIndexScene);
+    // v0.4.73 item 82: a Classic box of the heroes (tests/sim/v0473-menus.test.ts).
+    const idx = h.top() as ClassicTutorialHeroesScene;
+    expect(idx).toBeInstanceOf(ClassicTutorialHeroesScene);
     const names = labels(idx).filter((l) => l !== 'Back');
     const slots = h.game.slotsFor('classic');
     expect(names).toHaveLength(slots.length);
     // The Classic select's heroes: Bass is one (Classic only), no campaign-only extras.
     expect(names).toContain('Bass');
-    // Picking one opens its Classic page.
+    // Picking one opens its Classic tutorial (item 82).
     pick(h, names[0] as string);
-    expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
+    expect(h.top()).toBeInstanceOf(TutorialBoxScene);
   });
 
   it('#179: from Classic > Options > Video, audio, controls: the Classic select’s heroes, with Expansion off and on; a look (Peach) is its slot (Luigi)', () => {
@@ -168,7 +172,7 @@ describe('G-093 the Classic guide', () => {
   });
 
   it('a saved Campaign rules setting is ignored (BUG-11): it lists the Classic heroes', () => {
-    const h = classic({ classicRules: 'current', dev: true });
+    const h = classic({ classicRules: 'campaign', dev: true });
     h.game.showClassicMenu();
     h.game.scenes.push(new GuideIndexScene(h.game, () => h.game.scenes.pop(), true));
     const names = labels(h.top()).filter((l) => l !== 'Back');

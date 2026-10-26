@@ -34,7 +34,7 @@ release-sized slices. Nothing here is built yet. Facts about the original come f
 
 Add `Settings.classic: ClassicSettings` (normalised on load, every field defaulting to the original) and an
 optional `GameContext.classic?: ClassicSettings` that `Game` fills **only for a Classic run with Classic rules**
-(campaign and Current rules: absent, so nothing reads it). Each consumer reads it in the one hook it already
+(campaign and Campaign rules: absent, so nothing reads it). Each consumer reads it in the one hook it already
 owns, never in shared code. The CLASSIC > Options menu grows sub-menus that mirror the original's:
 **Game Mode**, **Customize Weapons**, **More Settings**, **Cheats**. Each row says what it changes; a row whose
 value differs from the original shows it (so a run is never silently non-original), and a "Restore originals"
@@ -96,7 +96,7 @@ the Bow) must follow the choice; each hero's tests already cover the full kit, s
 
 The original's second power-up system (3.0's): Mushrooms and ? blocks hand out each hero's own upgrade list one at a
 time, only Mario and Luigi get Fire Flowers, Start With Mushroom becomes available, When Hit becomes Lose Some / Lose
-All / Keep Most / Instant Death, and Customize Weapons is disabled. Our Current rules are **not** this system. It
+All / Keep Most / Instant Death, and Customize Weapons is disabled. Our Campaign rules are **not** this system. It
 needs every hero's Modern upgrade order, the upgrade pool per hero, its own hit rules and HUD. **Size L. Value:** low
 for "play the original"; most players know Classic. **Recommendation: park.**
 

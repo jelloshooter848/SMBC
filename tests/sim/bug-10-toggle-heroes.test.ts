@@ -86,7 +86,7 @@ describe('BUG-10 the Toggle heroes pages', () => {
   it('START on a Plays as row leaves the page, never flipping it', () => {
     const h = devGame();
     h.game.scenes.push(new DevMenuScene(h.game));
-    const page = new DevPlaysAsScene(h.game, 'current', () => h.game.scenes.pop());
+    const page = new DevPlaysAsScene(h.game, 'campaign', () => h.game.scenes.pop());
     h.game.scenes.push(page);
     h.idle(8);
     h.tap('start');
@@ -96,7 +96,7 @@ describe('BUG-10 the Toggle heroes pages', () => {
 
   it('Campaign: each campaign hero, Campaign until flipped to Classic', () => {
     const h = devGame();
-    const page = new DevPlaysAsScene(h.game, 'current', () => {});
+    const page = new DevPlaysAsScene(h.game, 'campaign', () => {});
     expect(labels(page)).toEqual([...CHARACTERS.map((c) => c.name), 'Back']);
     expect(row(page, 'Mario').value?.()).toBe('Campaign');
     row(page, 'Mario').adjust?.(1);
@@ -149,7 +149,7 @@ describe('BUG-10 Plays as in play', () => {
     h.idle(12);
     h.tap('jump');
     const l = level(h);
-    expect(l.world.rules).toBe('current');
+    expect(l.world.rules).toBe('campaign');
     expect(l.world.players[0]?.def).toBe(CLASSIC_CHARACTERS.mario);
   });
 
@@ -170,11 +170,11 @@ describe('BUG-10 Plays as in play', () => {
     level(h);
     expect(h.game.state.powerState).toBe('full');
     h.settings.classicDev.playsClassic = ['link'];
-    reconcileRules(h.game, 'current');
+    reconcileRules(h.game, 'campaign');
     expect(h.game.state.powerState).toBe('small');
     expect(h.said.at(-1)).toBe('Hero design changed. Power reset.');
     delete h.settings.classicDev.playsClassic;
-    reconcileRules(h.game, 'current');
+    reconcileRules(h.game, 'campaign');
     expect(h.game.state.powerState).toBe('full');
   });
 
@@ -184,18 +184,18 @@ describe('BUG-10 Plays as in play', () => {
     h.settings.classicDev.playsClassic = ['mario', 'link'];
     expect(h.game.heroSwaps).toBeUndefined();
     expect(h.game.ctx.heroSwaps).toBeUndefined();
-    expect(playedHero(h.game.ctx, MARIO, 'current')).toBe(MARIO);
+    expect(playedHero(h.game.ctx, MARIO, 'campaign')).toBe(MARIO);
     expect(playedHero(h.game.ctx, LINK, 'classic')).toBe(CLASSIC_CHARACTERS.link);
     h.game.classicGame(LINK, '1-1');
     expect(level(h).world.players[0]?.def).toBe(CLASSIC_CHARACTERS.link);
   });
 
   it('heroRulesOf swaps only the named heroes, each way', () => {
-    const ctx = { heroSwaps: { classic: ['link'], current: ['samus'] } };
-    expect(heroRulesOf(ctx, 'link', 'classic')).toBe('current');
+    const ctx = { heroSwaps: { classic: ['link'], campaign: ['samus'] } };
+    expect(heroRulesOf(ctx, 'link', 'classic')).toBe('campaign');
     expect(heroRulesOf(ctx, 'mario', 'classic')).toBe('classic');
-    expect(heroRulesOf(ctx, 'samus', 'current')).toBe('classic');
-    expect(heroRulesOf(ctx, 'link', 'current')).toBe('current');
+    expect(heroRulesOf(ctx, 'samus', 'campaign')).toBe('classic');
+    expect(heroRulesOf(ctx, 'link', 'campaign')).toBe('campaign');
     expect(heroRulesOf({}, 'link', 'classic')).toBe('classic');
   });
 });

@@ -103,7 +103,7 @@ export function newArea(ctx: GameContext, hero: CharacterDef, opts: AreaOptions 
   const layout = areaStage();
   const state = tankState(hero);
   const world = new World(layout.level, ctx, state, {
-    rules: 'current', // mini games are scripted around Current kits (TG-14)
+    rules: 'campaign', // mini games are scripted around Campaign kits (TG-14)
     seed: opts.seed ?? 0x5091a,
     scorePopups: false,
     extraEntities: (s) => cavernEntities(s),
@@ -138,7 +138,7 @@ export function newBossRoom(
   seed = 0x9107,
 ): { world: World; boss: PlutoniumBoss } {
   const state = tankState(hero);
-  const world = new World(bossStage(), ctx, state, { seed, scorePopups: false, rules: 'current' }); // TG-14
+  const world = new World(bossStage(), ctx, state, { seed, scorePopups: false, rules: 'campaign' }); // TG-14
   world.time = null;
   world.camera.locked = true;
   const boss = new PlutoniumBoss(BOSS_RIGHT, BOSS_FLOOR, hooks);

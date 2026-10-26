@@ -4,8 +4,6 @@ import { DevCampaignScene, DevClassicScene, DevLevelPagesScene, DevStartScene } 
 import { DevMenuScene } from '@game/scenes/dev';
 import { DevMiniGamesScene } from '@game/scenes/dev-minigames';
 import { DevBonusGamesScene } from '@game/bonus/dev';
-import { LevelSelectScene } from '@game/scenes/level-select-cheat';
-import { CheatsScene } from '@game/scenes/cheats-menu';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { levelIds, specialLevelIds } from '@content/levels';
 import { DEV_VILLAGE } from '@game/town/secret-house';
@@ -118,17 +116,5 @@ describe('BUG-09 one dev Level select', () => {
     expect((h.top() as MenuScene).translucent).toBe(true);
     pick(h, 'Classic');
     expect((h.top() as MenuScene).translucent).toBe(true);
-  });
-
-  it('the cheat Level select players reach is a different scene, still there', () => {
-    const settings = defaultSettings();
-    settings.classicCheats.levelSelect = true;
-    const h = makeGame({ deps: { settings, applySettings: () => {} } });
-    const cheats = new CheatsScene(h.game, () => {}, { all: true });
-    const row = items(cheats).find((i) => i.label === 'Level select');
-    expect(row).toBeDefined();
-    row?.select?.();
-    expect(h.top()).toBeInstanceOf(LevelSelectScene);
-    expect(h.top()).not.toBeInstanceOf(DevLevelPagesScene);
   });
 });

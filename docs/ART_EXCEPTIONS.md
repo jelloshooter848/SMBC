@@ -20,9 +20,11 @@ Konami or anyone else, may be taken.
   their colours.
 - **How it is stored.** As text pixel arrays in `src/content/sprites/rabbit-logo.ts`. No image file
   is in the repository.
-- **Where it shows.** Classic mode (Classic rules) only. Under Current rules the item keeps our own
+- **Where it shows.** Classic mode (Classic rules) only. Under Campaign rules the item keeps our own
   drawing, the Fire Flower's.
 - **Who decided.** The owner, in 0.5.0, accepting the risk. If Jay Pavlina or Exploding Rabbit
   object, the sprite will be replaced with our own drawing.
 - **Credit.** The same line is in the in-game credits (`CREDITS_RABBIT_LOGO` in
-  `src/game/scenes/credits.ts`), in the README, and in `tools/check-no-binaries.mjs`.
+  `src/game/scenes/credits.ts`), in the README, and in `tools/check-no-binaries.mjs`. The About
+  screen names the exception too: "Our own art and music, except the Exploding Rabbit logo." (its
+  page text and `ABOUT_SAID` in `src/game/scenes/about.ts`).

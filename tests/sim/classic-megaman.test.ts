@@ -32,7 +32,7 @@ import { testLevel, tile } from './classic-harness';
 
 // Classic SMBC Mega Man (bug-reports/2026-10-07-megaman-classic-smbc-rules.md, MM-C1..MM-C36): the
 // report's acceptance checks that the engine can measure, played through runSim with
-// rules: 'classic' (TG-37), and TG-38's "Current is unchanged".
+// rules: 'classic' (TG-37), and TG-38's "Campaign is unchanged".
 
 type Hold = Action[];
 
@@ -40,7 +40,7 @@ type Hold = Action[];
 function mmWorld(
   level = testLevel(),
   state: Partial<GameState> = {},
-  opts: { hurt?: boolean; rules?: 'classic' | 'current' } = {},
+  opts: { hurt?: boolean; rules?: 'classic' | 'campaign' } = {},
 ): World {
   return runSim({
     level,
@@ -89,7 +89,7 @@ describe('Classic Mega Man resolves under Classic only (TG-17, TG-18, TG-38)', (
   it('is registered and keeps the roster identity', () => {
     expect(CLASSIC_CHARACTERS.megaman).toBe(MEGAMAN_CLASSIC);
     expect(heroFor(MEGAMAN, 'classic')).toBe(MEGAMAN_CLASSIC);
-    expect(heroFor(MEGAMAN, 'current')).toBe(MEGAMAN);
+    expect(heroFor(MEGAMAN, 'campaign')).toBe(MEGAMAN);
     expect(CHARACTERS.every((c) => c.rules === undefined)).toBe(true);
     for (const k of ['id', 'name', 'hudName', 'portrait'] as const)
       expect(MEGAMAN_CLASSIC[k]).toEqual(MEGAMAN[k]);
@@ -101,13 +101,13 @@ describe('Classic Mega Man resolves under Classic only (TG-17, TG-18, TG-38)', (
     expect(MEGAMAN_CLASSIC.startHp).toBeUndefined();
   });
 
-  it('a Classic world plays it; a Current world plays Current Mega Man, unchanged', () => {
+  it('a Classic world plays it; a Campaign world plays Campaign Mega Man, unchanged', () => {
     const w = mmWorld();
     expect(w.player.def).toBe(MEGAMAN_CLASSIC);
     expect(w.state.character).toBe(MEGAMAN);
-    const c = mmWorld(testLevel(), {}, { rules: 'current' });
+    const c = mmWorld(testLevel(), {}, { rules: 'campaign' });
     expect(c.player.def).toBe(MEGAMAN);
-    // The Current profile sets none of the Classic optional fields (TG-23).
+    // The Campaign profile sets none of the Classic optional fields (TG-23).
     const p = MEGAMAN_PROFILE;
     expect(p.softCut).toBeUndefined();
     expect(p.airStop).toBeUndefined();
@@ -118,8 +118,8 @@ describe('Classic Mega Man resolves under Classic only (TG-17, TG-18, TG-38)', (
     expect(MEGAMAN.damage.kind).toBe('hp');
   });
 
-  it('Current Mega Man still cuts his jump at once on release (no soft cut)', () => {
-    const w = mmWorld(testLevel(), {}, { rules: 'current' });
+  it('Campaign Mega Man still cuts his jump at once on release (no soft cut)', () => {
+    const w = mmWorld(testLevel(), {}, { rules: 'campaign' });
     settle(w);
     let vy = 0;
     drive(

@@ -116,6 +116,8 @@ function boot(): void {
   const ctx = { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: false };
   const getLevel = (id: string) =>
     (id.startsWith('custom-') ? getCustomLevel(loadLibrary(), id) : null) ?? getBuiltinLevel(id);
+  // v0.4.73: applyAssists waits for the loop (made after the game).
+  let loopReady = false;
   const game = new Game({
     ctx,
     getLevel,
@@ -149,6 +151,7 @@ function boot(): void {
       applyUpdate: () => updates.apply(),
     },
     applySettings: () => applySettings(),
+    applyAssists: () => applyAssists(),
     // A resume link (#save=<code>) answered: off the address, so a reload doesn't ask again.
     clearSaveLink: () => history.replaceState(history.state, '', location.pathname + location.search),
     lastInput: () => touch.lastInput,
@@ -245,6 +248,19 @@ function boot(): void {
       }
     },
   });
+  loopReady = true;
+
+  /**
+   * Assists are developer tools: they only take effect while dev mode is on (values are kept),
+   * and, v0.4.73 (item 60), a file's Advanced cheats in its own runs (Game.liveAssists decides).
+   */
+  function applyAssists(): void {
+    // (The game may ask before the loop exists, while it is being made: applySettings follows.)
+    if (!loopReady) return;
+    const { slowMotion, ...assist } = game.liveAssists();
+    Object.assign(ctx.assist, assist);
+    loop.stepDivider = slowMotion;
+  }
 
   let packToken = 0;
   function applySettings(): void {
@@ -258,10 +274,7 @@ function boot(): void {
     touch.setMode(settings.input.touch);
     touch.setDpadStyle(settings.input.dpad);
     relayout();
-    // Assists are developer tools: they only take effect while dev mode is on (values are kept).
-    const { slowMotion, ...assist } = settings.assist;
-    Object.assign(ctx.assist, settings.dev ? assist : DEFAULT_ASSIST);
-    loop.stepDivider = settings.dev ? slowMotion : 1;
+    applyAssists();
     announcer.enabled = settings.announce;
     const token = ++packToken;
     void loadEnabledPacks(settings.packs, assets).then((packs) => {
@@ -308,12 +321,12 @@ function boot(): void {
   // levels as before, SMB, Special and Lost Levels levels as a Classic run, anything else the title.
   const start = urlLevelStart(params, settings.dev);
   if (level && start) {
-    // `&rules=classic|current` (dev mode only, dev-url.ts): the run's rules; `char` reads the
+    // `&rules=classic|campaign` (dev mode only, dev-url.ts): the run's rules; `char` reads the
     // roster for them (the Classic extras too). `&mode=classic` (dev mode only): a Classic mode
     // run (its rules: `rules=`, else Classic rules). The dev Level select has no Mode row since
     // 0.4.72 (its starts are free play); only this link starts a dev Classic run.
     const classic = start === 'classic';
-    const rules = urlRules(params, settings.dev) ?? (classic ? game.classicRules : 'current');
+    const rules = urlRules(params, settings.dev) ?? (classic ? game.classicRules : 'campaign');
     // `&yoshi=1|ride` (dev mode only): the Classic Yoshi mount for this session (YM-1).
     game.yoshiUrl = urlYoshi(params, settings.dev);
     const roster = game.rosterFor(rules);

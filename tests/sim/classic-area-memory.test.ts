@@ -18,7 +18,7 @@ import { SCROLL_BACK_CENTER } from '@game/world/camera';
 function world(
   id: string,
   start: WorldStart,
-  rules: 'classic' | 'current' = 'classic',
+  rules: 'classic' | 'campaign' = 'classic',
   character: CharacterDef = MARIO,
 ): World {
   const level = getLevel(id);
@@ -119,8 +119,8 @@ describe('Classic area memory (1-1 and its bonus room)', () => {
     expect(fresh.map.get(16, 9)).toBe(before().blank);
   });
 
-  it('Current keeps no area memory', () => {
-    const w = world('1-1', { x: 20, y: 12, mode: 'stand' }, 'current');
+  it('Campaign keeps no area memory', () => {
+    const w = world('1-1', { x: 20, y: 12, mode: 'stand' }, 'campaign');
     expect(w.areaMemory).toBeNull();
     w.rememberArea();
     expect(w.areaMemory).toBeNull();
@@ -129,7 +129,7 @@ describe('Classic area memory (1-1 and its bonus room)', () => {
 
 describe('Classic flag walk camera', () => {
   function flagWalk(
-    rules: 'classic' | 'current',
+    rules: 'classic' | 'campaign',
     hero: CharacterDef = MARIO,
   ): { atWalk: number; end: number } {
     const w = world('1-1', { x: 190, y: 12, mode: 'stand' }, rules, hero);
@@ -147,8 +147,8 @@ describe('Classic flag walk camera', () => {
     expect(end).toBeGreaterThan(atWalk);
   });
 
-  it('Current: the screen holds still through the walk, as before', () => {
-    const { atWalk, end } = flagWalk('current');
+  it('Campaign: the screen holds still through the walk, as before', () => {
+    const { atWalk, end } = flagWalk('campaign');
     expect(end).toBe(atWalk);
   });
 
@@ -169,8 +169,8 @@ describe('Classic castle camera (axe)', () => {
     expect(w.camera.x).toBeLessThanOrEqual(AXE_END);
   });
 
-  it('Current keeps its own castle end', () => {
-    const cur = world('1-4', { x: 139, y: 8, mode: 'stand' }, 'current');
+  it('Campaign keeps its own castle end', () => {
+    const cur = world('1-4', { x: 139, y: 8, mode: 'stand' }, 'campaign');
     const cls = world('1-4', { x: 139, y: 8, mode: 'stand' });
     expect(cur.camera.maxX).toBeGreaterThan(cls.camera.maxX);
   });

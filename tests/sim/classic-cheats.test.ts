@@ -26,7 +26,7 @@ import { TileMap } from '@game/world/tilemap';
 
 // Classic mode's cheats in the World (FU-7e; src/game/cheats.ts, rules/classic-cheats.ts): each
 // rule and level-edit cheat does what the original's does when on, and changes nothing when off
-// (a guard per cheat: off plays exactly as a World with no cheats at all). Current Worlds never
+// (a guard per cheat: off plays exactly as a World with no cheats at all). Campaign Worlds never
 // read them.
 
 type Flags = Partial<Record<ClassicCheatId, boolean>>;
@@ -134,15 +134,17 @@ describe('cheats off change nothing (guards)', () => {
       expect(trace(level, { [id]: false })).toBe(trace(level, null));
     });
 
-  it('a Current World never reads a cheat, even with every one on in the context', () => {
+  it('a Campaign World never reads a cheat, even with every one on in the context', () => {
     for (const id of ['1-1', '8-3']) {
-      const w = cheatWorld(getLevel(id), ALL_ON, MARIO, 'current');
+      const w = cheatWorld(getLevel(id), ALL_ON, MARIO, 'campaign');
       expect(w.cheats).toBe(NO_CHEATS);
-      expect(trace(getLevel(id), ALL_ON, MARIO, 'current')).toBe(trace(getLevel(id), null, MARIO, 'current'));
+      expect(trace(getLevel(id), ALL_ON, MARIO, 'campaign')).toBe(
+        trace(getLevel(id), null, MARIO, 'campaign'),
+      );
     }
   });
 
-  it('a Classic World with no cheats in its context has none (the campaign, Current rules)', () => {
+  it('a Classic World with no cheats in its context has none (the campaign, Campaign rules)', () => {
     expect(cheatWorld(getLevel('1-1'), null).cheats).toBe(NO_CHEATS);
     expect(cheatWorld(getLevel('1-1'), null).assist.infiniteLives).toBe(false);
   });

@@ -81,7 +81,7 @@ describe('BUG-02 the CLASSIC title keeps the REMIX title’s logo place', () => 
       expect(Math.max(...ys) + 8 + 7).toBeLessThanOrEqual(bottom);
     };
     for (const dev of [false, true]) {
-      const h = classic(dev ? ({ dev: true, classicRules: 'current' } as Partial<Settings>) : {});
+      const h = classic(dev ? ({ dev: true, classicRules: 'campaign' } as Partial<Settings>) : {});
       h.game.showClassicTitle('start');
       check(boxRows(h.top() as never, ['Start', 'Options', 'Back']));
       h.game.showClassicMenu();
