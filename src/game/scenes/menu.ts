@@ -154,7 +154,7 @@ export class MenuScene implements Scene {
   }
 
   /** The focused row as said: its label, value and hint. */
-  private focusLine(): string {
+  protected focusLine(): string {
     const it = this.items[this.index];
     if (!it) return '';
     const v = it.value ? `: ${it.value()}` : '';

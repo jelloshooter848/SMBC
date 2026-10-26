@@ -418,14 +418,25 @@ class PacksOptions extends MenuScene {
           label: 'Yes',
           select: () => {
             game.scenes.pop();
-            void packStore.remove(name).then(() => {
-              const s = settings(game);
-              s.packs = s.packs.filter((n) => n !== name);
-              apply(game);
-              this.status = `Deleted ${name}`;
-              game.deps.announcer?.say(this.status);
-              return this.refresh();
-            });
+            const at = this.names.indexOf(name);
+            void packStore
+              .remove(name)
+              .then(async () => {
+                const s = settings(game);
+                s.packs = s.packs.filter((n) => n !== name);
+                apply(game);
+                this.status = `Deleted ${name}`;
+                await this.refresh();
+                // The cursor stays on the nearest pack left, else Export template (never
+                // silently on Back), and the line names where it is.
+                const near = Math.min(at, this.names.length - 1);
+                this.index = near >= 0 ? PACK_ROWS_FROM + near : PACK_ROWS_FROM - 1;
+                game.deps.announcer?.say(`${this.status}. ${this.focusLine()}`);
+              })
+              .catch(() => {
+                this.status = 'Could not delete';
+                game.deps.announcer?.say(this.status);
+              });
           },
         },
       ],
@@ -457,6 +468,9 @@ class PacksOptions extends MenuScene {
     input.click();
   }
 }
+
+/** The first pack row on the ASSET PACKS page (after Import pack and Export template). */
+const PACK_ROWS_FROM = 2;
 
 /** What the ASSET PACKS page says on a touch device that cannot pick a folder (item 84). */
 export const PACKS_NEED_COMPUTER = 'ASSET PACKS NEED A COMPUTER';
