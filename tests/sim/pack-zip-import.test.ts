@@ -21,6 +21,12 @@ const enc = (s: string) => new TextEncoder().encode(s);
 const MANIFEST = JSON.stringify({ schema: 1, name: 'retro', sprites: { mario: { image: 'img/mario.png' } } });
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
 
+/** Every entry read (each is inflated and checked only when read: item 141 review, memory). */
+async function unzipAll(bytes: Uint8Array, limits?: Parameters<typeof unzip>[1]) {
+  const entries = await unzip(bytes, limits);
+  return Promise.all(entries.map(async (e) => ({ path: e.path, data: await e.read() })));
+}
+
 async function code(p: Promise<unknown>): Promise<string> {
   try {
     await p;
@@ -43,7 +49,7 @@ afterEach(() => {
 describe('unzip: what it reads', () => {
   it('our own stored zips, byte for byte', async () => {
     const bin = new Uint8Array(5000).map((_, i) => (i * 7) & 0xff);
-    const out = await unzip(
+    const out = await unzipAll(
       makeZip([
         { path: 'a/b.bin', data: bin },
         { path: 'c.txt', data: 'hé' },
@@ -56,7 +62,7 @@ describe('unzip: what it reads', () => {
 
   it('deflated entries (what most zip tools write)', async () => {
     const text = 'repeat '.repeat(2000);
-    const out = await unzip(
+    const out = await unzipAll(
       buildZip([
         { name: 'x.txt', data: text, method: 8 },
         { name: 'y.bin', data: PNG },
@@ -67,7 +73,7 @@ describe('unzip: what it reads', () => {
   });
 
   it('skips folder entries and macOS extras (__MACOSX/, .DS_Store)', async () => {
-    const out = await unzip(
+    const out = await unzipAll(
       buildZip([
         { name: 'pack/' },
         { name: 'pack/manifest.json', data: MANIFEST },
@@ -80,24 +86,62 @@ describe('unzip: what it reads', () => {
 
   it('deflate where the browser cannot inflate: a clear reason, not a crash', async () => {
     vi.stubGlobal('DecompressionStream', undefined);
-    expect(await code(unzip(buildZip([{ name: 'x.txt', data: 'abc', method: 8 }])))).toBe('no-deflate');
+    expect(await code(unzipAll(buildZip([{ name: 'x.txt', data: 'abc', method: 8 }])))).toBe('no-deflate');
     // Stored zips (our own exports) still read without it.
-    expect(await code(unzip(makeZip([{ path: 'x.txt', data: 'abc' }])))).toBe('ok');
+    expect(await code(unzipAll(makeZip([{ path: 'x.txt', data: 'abc' }])))).toBe('ok');
+  });
+});
+
+describe('unzip: review of 39868fd2', () => {
+  it('reads nothing until asked: an entry is inflated and checked only by its read()', async () => {
+    const z = buildZip([
+      { name: 'good.txt', data: 'fine' },
+      { name: 'bad.txt', data: 'abc', crc: 1 },
+    ]);
+    const entries = await unzip(z);
+    expect(entries.map((e) => [e.path, e.size])).toEqual([
+      ['good.txt', 4],
+      ['bad.txt', 3],
+    ]);
+    expect(new TextDecoder().decode(await entries[0]!.read())).toBe('fine');
+    expect(await code(entries[1]!.read())).toBe('crc');
+  });
+
+  it('the end record must close the file: trailing junk is not a zip; a real comment is fine', async () => {
+    const z = makeZip([{ path: 'a.txt', data: 'x' }]);
+    const junk = new Uint8Array(z.length + 5);
+    junk.set(z);
+    expect(await code(unzipAll(junk))).toBe('not-zip');
+    expect(
+      await code(unzipAll(buildZip([{ name: 'a.txt', data: 'x' }], { comment: 'made by a tool' }))),
+    ).toBe('ok');
+  });
+
+  it('names without the UTF-8 flag are CP437 (Windows "Send to compressed folder")', async () => {
+    const out = await unzipAll(
+      buildZip([{ name: '', nameBytes: new Uint8Array([0x81, 0x2e, 0x74]), flags: 0, data: 'x' }]),
+    );
+    expect(out[0]!.path).toBe('ü.t');
+  });
+
+  it('backslash folders (old PowerShell zips) read as folders', async () => {
+    const out = await unzipAll(buildZip([{ name: 'img\\mario.png', data: 'x' }]));
+    expect(out[0]!.path).toBe('img/mario.png');
   });
 });
 
 describe('unzip: what it refuses', () => {
   it('not a zip at all, or cut short', async () => {
-    expect(await code(unzip(enc('hello')))).toBe('not-zip');
-    expect(await code(unzip(new Uint8Array(0)))).toBe('not-zip');
+    expect(await code(unzipAll(enc('hello')))).toBe('not-zip');
+    expect(await code(unzipAll(new Uint8Array(0)))).toBe('not-zip');
     const z = makeZip([{ path: 'a.txt', data: 'x'.repeat(100) }]);
-    expect(await code(unzip(z.slice(0, z.length - 30)))).toBe('not-zip');
-    expect(await code(unzip(z.slice(40)))).toBe('damaged');
+    expect(await code(unzipAll(z.slice(0, z.length - 30)))).toBe('not-zip');
+    expect(await code(unzipAll(z.slice(40)))).toBe('damaged');
   });
 
   it('a wrong CRC, stored or deflated', async () => {
-    expect(await code(unzip(buildZip([{ name: 'a.txt', data: 'abc', crc: 1 }])))).toBe('crc');
-    expect(await code(unzip(buildZip([{ name: 'a.txt', data: 'abc', method: 8, crc: 1 }])))).toBe('crc');
+    expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'abc', crc: 1 }])))).toBe('crc');
+    expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'abc', method: 8, crc: 1 }])))).toBe('crc');
   });
 
   it('path traversal and absolute paths', async () => {
@@ -109,39 +153,42 @@ describe('unzip: what it refuses', () => {
       'a\\..\\b.txt',
       'a//b.txt',
     ])
-      expect(await code(unzip(buildZip([{ name, data: 'x' }]))), name).toBe('unsafe-path');
+      expect(await code(unzipAll(buildZip([{ name, data: 'x' }]))), name).toBe('unsafe-path');
   });
 
   it('a zip bomb: too many entries', async () => {
     const many = Array.from({ length: 11 }, (_, i) => ({ name: `f${i}.txt`, data: 'x' }));
-    expect(await code(unzip(buildZip(many), { maxEntries: 10 }))).toBe('too-many');
-    expect(await code(unzip(buildZip(many.slice(0, 10)), { maxEntries: 10 }))).toBe('ok');
+    expect(await code(unzipAll(buildZip(many), { maxEntries: 10 }))).toBe('too-many');
+    expect(await code(unzipAll(buildZip(many.slice(0, 10)), { maxEntries: 10 }))).toBe('ok');
   });
 
   it('a zip bomb: more unpacked bytes than the cap, refused before inflating', async () => {
     const zeros = new Uint8Array(2 * 1024 * 1024);
     const z = buildZip([{ name: 'zeros.bin', data: zeros, method: 8 }]);
     expect(z.length).toBeLessThan(10_000);
-    expect(await code(unzip(z, { maxTotal: 1024 * 1024 }))).toBe('too-big');
+    expect(await code(unzipAll(z, { maxTotal: 1024 * 1024 }))).toBe('too-big');
   });
 
   it('a zip bomb that lies about its size: inflating stops at the size it gave', async () => {
     const zeros = new Uint8Array(4 * 1024 * 1024);
     const z = buildZip([{ name: 'zeros.bin', data: zeros, method: 8, usize: 100 }]);
-    expect(await code(unzip(z))).toBe('damaged');
+    expect(await code(unzipAll(z))).toBe('damaged');
   });
 
   it('encrypted entries, zip64 and unknown methods', async () => {
-    expect(await code(unzip(buildZip([{ name: 'a.txt', data: 'x', flags: 0x0801 }])))).toBe('unsupported');
-    expect(await code(unzip(buildZip([{ name: 'a.txt', data: 'x', method: 12 }])))).toBe('unsupported');
-    expect(await code(unzip(buildZip([{ name: 'a.txt', data: 'x' }], { zip64: true })))).toBe('unsupported');
+    expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'x', flags: 0x0801 }])))).toBe('unsupported');
+    // Deflate64, LZMA, …: its own reason (review nit).
+    expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'x', method: 12 }])))).toBe('method');
+    expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'x' }], { zip64: true })))).toBe(
+      'unsupported',
+    );
   });
 
   it('a stored entry whose sizes disagree, or the same path twice', async () => {
-    expect(await code(unzip(buildZip([{ name: 'a.txt', data: 'abc', usize: 5 }])))).toBe('damaged');
+    expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'abc', usize: 5 }])))).toBe('damaged');
     expect(
       await code(
-        unzip(
+        unzipAll(
           buildZip([
             { name: 'a.txt', data: 'x' },
             { name: 'a.txt', data: 'y' },
@@ -187,6 +234,25 @@ describe('importPackZip', () => {
     expect(Object.keys(got.files).sort()).toEqual(Object.keys(pack.files).sort());
     for (const [p, b] of Object.entries(pack.files))
       expect(await bytesOf(got.files[p] as Blob), p).toEqual(await bytesOf(b));
+  });
+
+  it('manifest.json under one top folder imports even with stray files at the top (a README)', async () => {
+    const z = buildZip([
+      { name: 'README.txt', data: 'hello' },
+      { name: 'retro/manifest.json', data: MANIFEST },
+      { name: 'retro/img/mario.png', data: PNG },
+    ]);
+    expect(await importPackZip(new Blob([z as BlobPart]))).toBe('retro');
+    expect(Object.keys(puts[0]!.files)).toEqual(['img/mario.png']);
+  });
+
+  it('only the manifest and the files it names are read: a damaged extra file is never inflated', async () => {
+    const z = buildZip([
+      { name: 'manifest.json', data: MANIFEST },
+      { name: 'img/mario.png', data: PNG },
+      { name: 'notes/extra.bin', data: 'zzz', crc: 1 },
+    ]);
+    expect(await importPackZip(new Blob([z as BlobPart]))).toBe('retro');
   });
 
   it('a zip of the pack folder (one top-level folder, deflated) imports the same', async () => {

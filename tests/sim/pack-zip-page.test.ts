@@ -110,6 +110,8 @@ for (const phone of [true, false]) {
       expect(r.picks).toHaveLength(1);
       expect(r.picks[0]!.inEvent).toBe(true);
       expect(r.picks[0]!.accept).toMatch(/\.zip/);
+      // Some Android pickers label zips application/octet-stream (review): those stay pickable.
+      expect(r.picks[0]!.accept).toContain('application/octet-stream');
     });
 
     it('a good zip is stored, turned on, listed, and said', async () => {
@@ -157,6 +159,74 @@ for (const phone of [true, false]) {
     });
   });
 }
+
+describe('review of 39868fd2: what each failure says', () => {
+  /** A picked file whose read waits for `gate`, or fails. */
+  const fileLike = (o: { size?: number; read: () => Promise<ArrayBuffer> }) =>
+    ({ name: 'x.zip', size: o.size ?? 10, arrayBuffer: o.read }) as unknown as File;
+
+  it('a file that cannot be read (a cloud file on a phone): COULD NOT READ FILE, said', async () => {
+    const r = await rig(true);
+    press(r, 'Import pack (.zip)');
+    r.picks[0]!.cb(fileLike({ read: () => Promise.reject(new DOMException('gone', 'NotReadableError')) }));
+    await flush();
+    expect(status(r.h)).toBe('COULD NOT READ FILE');
+    expect(r.h.said.at(-1)).toMatch(/could not be read/i);
+    expect(r.h.said.at(-1)).not.toMatch(/not an asset pack/i);
+    expect(stored).toEqual([]);
+  });
+
+  it('storage refusing the pack (quota): COULD NOT SAVE PACK, said, nothing turned on', async () => {
+    const r = await rig(false);
+    vi.spyOn(packStore, 'put').mockImplementation(() =>
+      Promise.reject(new DOMException('full', 'QuotaExceededError')),
+    );
+    press(r, 'Import pack (.zip)');
+    r.picks[0]!.cb(await zipFile(pack('retro')));
+    await flush();
+    expect(status(r.h)).toBe('COULD NOT SAVE PACK');
+    expect(r.h.said.at(-1)).toMatch(/could not be saved/i);
+    expect(r.h.said.at(-1)).not.toMatch(/not an asset pack/i);
+    expect(r.settings.packs).toEqual([]);
+  });
+
+  it('reading shows and says READING ZIP; a second press says it is still reading', async () => {
+    let open!: (b: ArrayBuffer) => void;
+    const bytes = (await packZip(pack('retro'))).bytes;
+    const r = await rig(true);
+    press(r, 'Import pack (.zip)');
+    r.picks[0]!.cb(fileLike({ size: bytes.length, read: () => new Promise((res) => (open = res)) }));
+    expect(status(r.h)).toBe('READING ZIP...');
+    expect(r.h.said.at(-1)).toMatch(/^Reading the zip/);
+    press(r, 'Import pack (.zip)');
+    expect(r.picks).toHaveLength(1);
+    expect(r.h.said.at(-1)).toBe('Still reading the zip.');
+    open(bytes.slice().buffer as ArrayBuffer);
+    await flush();
+    expect(stored.map((p) => p.name)).toEqual(['retro']);
+  });
+
+  it('a file over 100 MB says the limit, unread', async () => {
+    const r = await rig(false);
+    const read = vi.fn();
+    press(r, 'Import pack (.zip)');
+    r.picks[0]!.cb(fileLike({ size: 100 * 1024 * 1024 + 1, read }));
+    await flush();
+    expect(status(r.h)).toBe('ZIP TOO BIG (OVER 100 MB)');
+    expect(r.h.said.at(-1)).toMatch(/100 MB/);
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it('a compression the game cannot read (Deflate64, LZMA) has its own reason', async () => {
+    const r = await rig(false);
+    press(r, 'Import pack (.zip)');
+    r.picks[0]!.cb(
+      new File([buildZip([{ name: 'manifest.json', data: '{}', method: 9 }]) as BlobPart], 'x.zip'),
+    );
+    await flush();
+    expect(r.h.said.at(-1)).toMatch(/compressed in a way the game can't read/i);
+  });
+});
 
 describe('which rows each device gets (item 141)', () => {
   it('a phone: Import pack (.zip) and its packs; no folder import, no Export template', async () => {

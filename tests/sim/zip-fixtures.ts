@@ -20,6 +20,8 @@ export interface FixtureEntry {
   usize?: number;
   /** The compressed bytes to store instead of the real ones. */
   raw?: Uint8Array;
+  /** The name's bytes as stored (a CP437 name), instead of `name` in UTF-8. */
+  nameBytes?: Uint8Array;
 }
 
 const enc = (d: Uint8Array | string | undefined) =>
@@ -28,7 +30,7 @@ const enc = (d: Uint8Array | string | undefined) =>
 /** A zip of `entries` (local headers, data, central directory, end record). */
 export function buildZip(
   entries: FixtureEntry[],
-  opts: { eocdCount?: number; zip64?: boolean } = {},
+  opts: { eocdCount?: number; zip64?: boolean; comment?: string } = {},
 ): Uint8Array {
   const parts: Uint8Array[] = [];
   const central: Uint8Array[] = [];
@@ -37,7 +39,7 @@ export function buildZip(
     const data = enc(e.data);
     const method = e.method ?? 0;
     const body = e.raw ?? (method === 8 ? new Uint8Array(deflateRawSync(data)) : data);
-    const name = new TextEncoder().encode(e.name);
+    const name = e.nameBytes ?? new TextEncoder().encode(e.name);
     const crc = e.crc ?? refCrc32(data);
     const usize = e.usize ?? data.length;
     const flags = e.flags ?? 0x0800;
@@ -70,8 +72,11 @@ export function buildZip(
     offset += local.length + body.length;
   }
   const cdSize = central.reduce((n, c) => n + c.length, 0);
-  const end = new Uint8Array(22);
+  const comment = new TextEncoder().encode(opts.comment ?? '');
+  const end = new Uint8Array(22 + comment.length);
   const ev = new DataView(end.buffer);
+  ev.setUint16(20, comment.length, true);
+  end.set(comment, 22);
   ev.setUint32(0, 0x06054b50, true);
   ev.setUint16(8, opts.eocdCount ?? entries.length, true);
   ev.setUint16(10, opts.eocdCount ?? entries.length, true);
