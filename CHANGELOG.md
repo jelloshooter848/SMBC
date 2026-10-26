@@ -9,6 +9,119 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.4.73] - 2026-10-26
+
+### Added
+
+- Classic mode: beating a map set on Hard unlocks ADVANCED CHEATS on that file only: every
+  assist (no damage, safety floor, show hidden items, slow motion and the rest) for that
+  cleared file's level replays. Turn them on from the file's world box or its pause menu. The
+  unlock is said after the credits, and a short box explains it the first time the file is
+  picked. Erasing the file clears them; no other file and never the campaign gets them.
+- Classic mode: beating a map set keeps its save file as CLEARED instead of emptying it. The
+  file keeps the score, lives and hero it finished with, shows CLEARED on the file box, and is
+  never written over; only ERASE FILE empties it for a new game.
+- Classic mode: after a beaten set's credits and cheat unlocks, its file box opens on the
+  cleared file with a message saying so.
+- Classic mode: pick a CLEARED file to replay any level of its map set with that file's rules:
+  choose a world (The Lost Levels' World 9 and A-D once your run reached them), a level and a
+  hero. Lives are unlimited; after a lost life choose RETRY, SELECT CHARACTER or RETURN TO
+  MENU, and a cleared level goes back to the level box. A short guide explains it the first
+  time.
+
+### Changed
+
+- The game's own rules, called "Current" in developer mode, are now called "Campaign"
+  everywhere: the dev overlay's rules line says "campaign", and dev links take
+  `rules=campaign`. Settings, Classic files, kept runs, kept dev starts and links saved with the
+  old name still load, as Campaign, with everything in them.
+- CI: a new push to a branch or pull request cancels that branch's older, still running check
+  (never on main).
+- Classic mode: the file box now shows, on the line under it, why a HERO OFF, CANNOT PLAY or
+  NOT RELEASED file cannot play, and when a game saved by an older version is waiting for a free
+  file. ERASE FILE lists those files with their state, and asking "ERASE FILE N?" says why one
+  cannot play.
+- Classic mode: a beaten map set and the cheats it unlocks are saved as the ending begins, so
+  closing the game during the credits no longer loses them.
+- Classic mode: the pause menu is a Classic box (the mushroom cursor and the original's
+  sounds) over the paused level, and so is every page opened from it. BACK closes one box at a
+  time, the last one going back to the game. The campaign's pause is unchanged.
+- Classic mode: the pause menu's Guide shows the original's tutorial boxes for the hero you
+  are playing. Each page is read out and waits for OK, and SKIP closes it.
+- Classic mode: How to play in Classic Options and in the Classic pause's Options lists the
+  Classic heroes in a Classic box. Each hero opens the same tutorial boxes as the pause's
+  Guide. The campaign's How to play is unchanged.
+- Classic mode: a new file's rules box opens with the cursor on START. The settings are above
+  it.
+- Developer mode: the Level select's start page offers every hero. Toggle heroes only changes
+  Classic and campaign play. A level started from it goes back to the Level select when you
+  clear it, quit, or finish the credits, with the cursor on the level you just played.
+- Options > Video: "Integer scale: On/Off" is now "Picture size: FILL / SHARP". FILL makes the
+  picture as big as the screen allows; SHARP keeps crisp, even pixels and may leave a border.
+- New players start on FILL. A setting you already saved stays as it was.
+- Title: going back from CLASSIC to REMIX now plays through the rift. A small rift portal opens
+  over the logo, CLASSIC stretches toward it and is sucked up into it, shrinking and spinning, and
+  REMIX comes out of the portal into its place before the portal closes (about 1.3 seconds). It
+  replaces the shatter-and-slam, which went by too fast to follow. The music is still cut as you
+  press BACK and the REMIX theme comes in from its loop point as REMIX lands, over the still 1-1
+  field; any button skips it, and BACK while CLASSIC is still falling skips it too.
+- With Reduce flashing on, the way back from CLASSIC is a calm version of the same thing: the
+  portal's colours hold still, nothing spins or bounces, CLASSIC fades as it shrinks and REMIX
+  fades in as it grows. BACK while the music is still crossing over to CLASSIC goes straight back
+  to the finished title.
+- Classic mode's Yoshi mount: going into a castle, water or bonus area, the hero now hops off
+  and Yoshi sits waiting at the pipe, or at the flagpole outside the castle, as in Super Mario
+  World, instead of vanishing. Back out in an area he can ride in, he rejoins as before.
+
+### Removed
+
+- Classic mode: the Level Select cheat (the original's 17th cheat). It no longer appears on the
+  Cheats page or in the pause menu, and beating every map set on Hard no longer unlocks it.
+  Replaying a level from a cleared file does the same job.
+- The title screen's Options no longer has How to play. It is still in the Options of Classic
+  mode, the world map and the pause menu.
+
+### Fixed
+
+- Options > Asset packs on an iPhone or iPad: Import pack did nothing there. The page now says
+  ASSET PACKS NEED A COMPUTER, and packs you already added keep working.
+- Options > Asset packs: OK on a pack deletes that pack, after `DELETE <NAME>?` YES / NO (NO
+  first). The Delete pack row, which always deleted the first pack, is gone.
+- Castle lava has a body: under the lava's surface, the space down to the bottom of the screen is
+  filled in the lava's red, as in the original, instead of the background showing through. This
+  covers every castle and every lava pool in Super Mario Bros., The Lost Levels and Special. An
+  owner-approved Campaign change: the campaign's castles share these maps and get the lava body too.
+- Classic mode: erasing a file that holds a game moved in from an older version no longer
+  brings that game back on the next visit when the old save could not be removed before.
+- Classic mode: when saves cannot be read (the browser blocks storage), the file box says
+  "SAVES CAN'T BE READ RIGHT NOW" and refuses new games and erasing instead of showing every
+  file as a new game, so a real file is never written over.
+- Classic mode: on release builds a file whose hero is not released yet now says "This hero is
+  not in this version yet. The file is kept." instead of asking to turn on dev mode.
+- Dev mode: turning dev mode off in the middle of a run with an unreleased hero ends that life,
+  without costing it, and opens the hero select, even in Single hero; the file stays marked.
+- Classic mode: Link's down-thrust no longer hurts him when he lands a little off centre on an
+  enemy, and his up-thrust no longer hurts him when he rises into one off centre. Touching an
+  enemy with the thrust from above (or from below) is the thrust's hit and bounce, as in the
+  original; a shell lying still or just kicked is still touched as usual.
+- Developer mode: turning dev mode off from the pause menu puts the cursor on Continue and
+  says so. Before, it moved silently to another row.
+- Classic mode: with the screen scrolling back, a power-up left behind is no longer lost. Within
+  a screen behind you it keeps moving, so you can wait ahead for it; further back it waits where
+  it was and comes back when you return. (A deliberate change from the original, which takes it
+  off the stage more than two tiles off screen and puts it back when it is in range again, so a
+  power-up you waited for ahead would never arrive.) One that falls
+  into a pit is still lost.
+- Sophia III: a Crusher jump that meets a hidden block and a visible block at once no longer
+  grips the ceiling and skips the hidden block; it bumps them both, so the hidden block appears.
+  This is an owner-approved Campaign change too: the campaign's Sophia III had the same gap.
+- Title: a button pressed to skip the way back from CLASSIC no longer also picks the menu row
+  under the cursor (it could send you straight back into CLASSIC). With Reduce flashing on, the
+  REMIX stamp's dust sparkles no longer show on the way back.
+- Classic mode: a file saved by v0.4.71 or earlier as a hero that is not released yet (Vic Viper,
+  Warriors of Light, Arthur or Yoshi) now shows NOT RELEASED with dev mode off and is kept as it is, instead
+  of playing as Mario and losing its hero, power and items at the next save.
+
 ## [0.4.72] - 2026-10-22
 
 ### Added
@@ -2071,7 +2184,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.72...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.73...HEAD
+[0.4.73]: https://github.com/jelloshooter848/SMBC/compare/v0.4.72...v0.4.73
 [0.4.72]: https://github.com/jelloshooter848/SMBC/compare/v0.4.71...v0.4.72
 [0.4.71]: https://github.com/jelloshooter848/SMBC/compare/v0.4.70...v0.4.71
 [0.4.70]: https://github.com/jelloshooter848/SMBC/compare/v0.4.69...v0.4.70
