@@ -397,6 +397,12 @@ export const LINK: CharacterDef = {
       p.scratch.downThrust = thrusting ? 1 : 0;
       if (thrusting) {
         p.scratch.upThrust = 0;
+        // Item 122 review: each landing is a new hit, as in Classic (link/classic.ts _rehit):
+        // once the bounce is over, the enemies this thrust hit can be hit again.
+        if (p.scratch._rehit && b.vy >= 0) {
+          p.scratch._rehit = 0;
+          for (const k of Object.keys(p.scratch)) if (/^hit\d+$/.test(k)) delete p.scratch[k];
+        }
         p.activeMelee = { x: b.x + px(2), y: b.y + b.h, w: px(8), h: px(8) };
         if (b.vy >= 0 && strikeBlocks(p, world, p.activeMelee)) p.stompBounce();
         return;
@@ -438,7 +444,9 @@ export const LINK: CharacterDef = {
       } else p.activeMelee = null;
     },
     onMeleeHit(p) {
-      if (p.scratch.downThrust) p.stompBounce();
+      if (!p.scratch.downThrust) return;
+      p.stompBounce();
+      p.scratch._rehit = 1;
     },
     blocks(p, proj) {
       // The shield covers the front: anything flying toward Link from the side he faces.

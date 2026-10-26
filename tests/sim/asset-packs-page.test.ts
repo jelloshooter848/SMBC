@@ -7,7 +7,7 @@ import { AssetRegistry } from '@engine/assets/registry';
 import { defaultSettings, type Settings } from '@engine/save/settings';
 import type { MenuItem } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
-import { makeGame, store, useStorage, type H } from './heroes-harness';
+import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // 0.4.73 (owner, item 84, choice A). (1) On a phone the ASSET PACKS page's Import pack did
 // nothing (iOS has no folder picker), so where a folder cannot be picked on a touch device the
@@ -107,17 +107,18 @@ describe('item 84 (1): the folder picker check', () => {
 });
 
 describe('item 84 (1): ASSET PACKS on a phone that cannot pick a folder', () => {
-  it('an iPhone: one announced line and Back, no Import pack or Export template', async () => {
+  // Item 128 review (owner-approved): the stored packs stay listed; the line is drawn above them.
+  it('an iPhone: one announced line, its stored packs and Back, no Import pack or Export template', async () => {
     browser({ dir: true, ua: IPHONE_UA, touchPoints: 5, coarse: true });
     const h = game(true);
     packs = ['retro'];
     await packsPage(h);
-    expect(labels(h.top())).toEqual(['Back']);
-    expect(status(h)).toBe('ASSET PACKS NEED A COMPUTER');
+    await flush();
+    expect(labels(h.top())).toEqual(['retro', 'Back']);
+    expect(draw(h.top() as never).texts.map((t) => t.str)).toContain('ASSET PACKS NEED A COMPUTER');
     expect(h.said.some((s) => s.startsWith('ASSET PACKS NEED A COMPUTER'))).toBe(true);
     // Back returns to Options.
-    h.idle(8);
-    h.tap('jump');
+    pick(h, 'Back');
     expect(h.top()).toBeInstanceOf(OptionsScene);
     expect(labels(h.top())).toContain('Asset packs');
   });
