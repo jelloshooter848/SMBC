@@ -200,7 +200,7 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       yoshi.destroy();
       break;
     case 'park':
-      // v0.4.74 item 74 (Super Mario World): off at the way into a castle, water or bonus area,
+      // v0.4.73 item 74 (Super Mario World): off at the way into a castle, water or bonus area,
       // Yoshi sitting there waiting; benched (2) for the areas beyond, as 'bench'.
       p.scratch[RIDE_KEY] = 2;
       yoshi.state = 'wait';
@@ -254,7 +254,7 @@ export function yoshiClearHop(world: World, p: Player): void {
     (e): e is YoshiMount => e instanceof YoshiMount && e.alive && e.state === 'wait' && e.rider === null,
   );
   if (!yoshi) return;
-  // v0.4.74 item 74: the next level is a castle (or water): he stays sitting at the pole's base
+  // v0.4.73 item 74: the next level is a castle (or water): he stays sitting at the pole's base
   // and the hero walks on alone, as Yoshi waits outside Super Mario World's castles.
   if (benchedLevel(world, world.clearNext())) {
     p.scratch[RIDE_KEY] = 2;
@@ -283,11 +283,11 @@ export function benchedLevel(world: World, id: string): boolean {
   return !mountLevel(l);
 }
 
-/** v0.4.74 item 74: the hop off Yoshi before going on into a pipe, in frames. */
+/** v0.4.73 item 74: the hop off Yoshi before going on into a pipe, in frames. */
 export const PARK_HOP = 20;
 
 /**
- * ClassicRulesHooks.pipeEntry (v0.4.74 item 74): a rider starting into a pipe to a castle, water
+ * ClassicRulesHooks.pipeEntry (v0.4.73 item 74): a rider starting into a pipe to a castle, water
  * or bonus area gets off (Super Mario World): Yoshi sits at the pipe, the hero hops off and goes
  * in on foot. Coming back out into an allowed area he rejoins as before (yoshiWorldLoaded).
  */
@@ -601,7 +601,7 @@ export class YoshiMount extends Entity {
   leftBy: Player | null = null;
   leftT = 0;
   /**
-   * Left waiting at the way into a castle, water or bonus area (v0.4.74 item 74): he sits there,
+   * Left waiting at the way into a castle, water or bonus area (v0.4.73 item 74): he sits there,
    * nobody gets back on in this area (the rider is benched, RIDE_KEY 2).
    */
   parked = false;

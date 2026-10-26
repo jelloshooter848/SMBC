@@ -909,7 +909,7 @@ const lava1 = [
 ];
 
 /*
- * The lava's body (v0.4.74 item 56): the open cells under a lava tile, down to the map's bottom
+ * The lava's body (v0.4.73 item 56): the open cells under a lava tile, down to the map's bottom
  * row, drawn in the lava's own red (slot b, so every theme's lava and its body match). Plain, as
  * the original's colorRed back layer; it never animates.
  */

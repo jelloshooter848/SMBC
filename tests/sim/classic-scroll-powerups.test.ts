@@ -13,7 +13,7 @@ import { T } from '@game/level/tiles';
 import { flatLevel } from './classic-plumber-harness';
 
 /*
- * v0.4.74 item 77 (owner-approved, Classic only): with the Classic scroll-back camera a power-up
+ * v0.4.73 item 77 (owner-approved, Classic only): with the Classic scroll-back camera a power-up
  * left behind is never destroyed. Within one screen (256 px) past the camera's left edge it keeps
  * moving; further back it is parked, still, like the map's entities, and comes back when the
  * camera does. (A deliberate change from AnimatedObject.checkStgPos's 2 tiles: a player who

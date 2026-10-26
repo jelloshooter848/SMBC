@@ -7,7 +7,7 @@ import { T } from '@game/level/tiles';
 import type { World } from '@game/world/world';
 
 /*
- * v0.4.74 item 59: a Crusher jump whose head strikes a brick and a hidden block in one move must
+ * v0.4.73 item 59: a Crusher jump whose head strikes a brick and a hidden block in one move must
  * not grip the brick. The hidden block only exists for heads, so it is bumped (revealed) instead,
  * as a jump under a hidden block alone always did.
  */

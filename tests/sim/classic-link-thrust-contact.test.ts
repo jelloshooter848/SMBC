@@ -10,7 +10,7 @@ import type { World } from '@game/world/world';
 import { flatLevel } from './classic-plumber-harness';
 
 /*
- * v0.4.74 item 104 (owner bug): Classic Link's down-thrust hurt him when he landed a little off
+ * v0.4.73 item 104 (owner bug): Classic Link's down-thrust hurt him when he landed a little off
  * centre on an enemy: the sword box is 4 px wide, his hurt box 13.5, and only an overlapping sword
  * box spared him the body contact. The original (Link.hitEnemy, Link.as:1077-1094): body contact
  * on his bottom side while down-thrusting (or his top side while up-thrusting) is landAttack,

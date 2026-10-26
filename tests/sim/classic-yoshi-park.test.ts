@@ -25,7 +25,7 @@ import { flatLevel } from './classic-plumber-harness';
 import { useStorage } from './heroes-harness';
 
 /*
- * v0.4.74 item 74: the Classic Yoshi mount, Super Mario World style. Bound for a castle, water or
+ * v0.4.73 item 74: the Classic Yoshi mount, Super Mario World style. Bound for a castle, water or
  * bonus area, the hero hops off and Yoshi waits at the way in (a pipe, or the castle after the
  * flagpole) instead of vanishing; coming back out into an allowed area he rejoins as before.
  */

@@ -16,7 +16,7 @@ import { renderTiles } from './tile-render';
 import { TileMap } from './tilemap';
 
 /*
- * v0.4.74 item 56: the castle lava's body. The original lays its back-layer colorRed under each
+ * v0.4.73 item 56: the castle lava's body. The original lays its back-layer colorRed under each
  * wavesLava down to the bottom row (levelDataSmb.xml 1-4: wavesLava on rows 12-13, colorRed on
  * 13-14 of 15). renderTiles draws `lava-body` in every open cell under a lava tile, to the map's
  * bottom row; the cells stay air (nothing about play changes).

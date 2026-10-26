@@ -499,7 +499,7 @@ function canGrip(
   if (!hasCeilingClimb(p) || vy >= 0 || input.held('down') || st.engaged) return false;
   if (p.inWater && !st.push) return false;
   // A hidden block exists only for heads: a jump that strikes one is a bump, never a grip, even
-  // when the same move meets a visible block beside it (v0.4.74 item 59).
+  // when the same move meets a visible block beside it (v0.4.73 item 59).
   if (struck.some(([tx, ty]) => map.inBounds(tx, ty) && !map.isSolid(tx, ty))) return false;
   return struck.some(([tx, ty]) => climbable(map, tx, ty) && ty < map.height - 1);
 }

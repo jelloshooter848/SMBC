@@ -19,7 +19,7 @@ export function renderTiles(r: Renderer, view: View, map: TileMap, showHidden = 
   const top = view.camY === undefined ? 0 : Math.max(0, view.camY >> 4);
   const bottom =
     view.camY === undefined ? map.height - 1 : Math.min(map.height - 1, (view.camY + SCREEN_H) >> 4);
-  // v0.4.74 item 56: the lava's body. Under each lava tile the open cells down to the map's
+  // v0.4.73 item 56: the lava's body. Under each lava tile the open cells down to the map's
   // bottom row are drawn in the lava's body colour (the original lays its back-layer colorRed
   // there). It is only drawn: those cells stay air for every rule. `under[i]` says the column's
   // nearest tile above is lava; a scrolled-down view seeds it from the rows above the screen.
