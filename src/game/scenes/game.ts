@@ -2595,7 +2595,6 @@ export class Game {
     this.fileUnreadEarly = false;
   }
 
-  /** Item 142: this file run can no longer save to its file (another window, or a game there). */
   /**
    * Item 151: checks the run's file now (the Quit box, before any save was refused): taken by
    * another window, the run saves no more and its note waits to be shown (takeFileNote).
@@ -2606,6 +2605,7 @@ export class Game {
     if (ref && claim && this.keepsResume) this.checkFileLost(ref, claim);
   }
 
+  /** Item 142: this file run can no longer save to its file (another window, or a game there). */
   get runFileLost(): boolean {
     return this.fileLost;
   }

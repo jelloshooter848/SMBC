@@ -452,7 +452,9 @@ function fillBindings(b: PlayerBindings | null, player: number): PlayerBindings 
  * - 'union': ids collected (the old Tutorials list): every id from both.
  * - an object: its fields, each by its own rule.
  * Every field of Settings is named here (the type requires it, and a test checks it), so a new
- * field cannot be forgotten. A SAVE DATA import or erase is not merged: a stale tab writes
+ * field cannot be forgotten. An 'or' or 'count' field never goes back down while another tab
+ * writes (that tab's copy brings it back): a future "reset" option for one needs its own data
+ * marker (as SAVE DATA's erase has), not a plain save. A SAVE DATA import or erase is not merged: a stale tab writes
  * nothing and reloads (storage.ts, the data marker).
  */
 export type MergeRule =
@@ -492,6 +494,20 @@ export const SETTINGS_MERGE: { readonly [K in keyof Settings]-?: MergeRule } = {
 /** What this tab last read or wrote, per settings object: the stored text, and a copy. */
 const synced = new WeakMap<Settings, { text: string; copy: unknown }>();
 
+/** A merged count's cap (the cheats' own counts stop there: cheats.ts). */
+const MAX_MERGED_COUNT = 999999;
+
+let mergedHandler: ((s: Settings) => void) | null = null;
+
+/**
+ * Item 150 review: told when a save merged another tab's settings into `s` (main.ts: the live
+ * game takes them: volume, bindings, picture, packs), whoever saved (Options, a cheat-count
+ * flush, the cheats menu...).
+ */
+export function onSettingsMerged(fn: ((s: Settings) => void) | null): void {
+  mergedHandler = fn;
+}
+
 const clone = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -508,8 +524,10 @@ function mergeField(rule: MergeRule, mine: unknown, base: unknown, theirs: unkno
     if (rule === 'count' && !isRecord(mine) && !isRecord(theirs)) {
       const m = typeof mine === 'number' ? mine : 0;
       const t = typeof theirs === 'number' ? theirs : 0;
-      const b = typeof base === 'number' ? base : t;
-      return t + Math.max(0, m - b);
+      // A count this tab's last read lacked: all of this tab's is new.
+      const b = typeof base === 'number' ? base : 0;
+      // Capped as the cheats' counts are (cheats.ts).
+      return Math.min(MAX_MERGED_COUNT, t + Math.max(0, m - b));
     }
     if (rule === 'each' && !isRecord(mine) && !isRecord(theirs))
       return mergeField('pref', mine, base, theirs);
@@ -570,6 +588,11 @@ export function saveSettings(s: Settings): void {
     ) as Record<string, unknown>;
     merged.v = SETTINGS_VERSION;
     assignInPlace(s as unknown as Record<string, unknown>, merged);
+    // Review MUST 1: from here this tab's changes are measured against what it merged with, so
+    // a write that fails now neither counts the other tab's additions twice nor takes its old
+    // choices for this tab's on the next save.
+    synced.set(s, { text: JSON.stringify(raw), copy: clone(theirs) });
+    mergedHandler?.(s);
   }
   if (saveJson(SETTINGS_KEY, s)) remember(s, clone(s));
 }
