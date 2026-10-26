@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { packStore, type StoredPack } from '@engine/assets/idb';
-import { folderPickerSupported, packsNeedComputer } from '@engine/assets/folder-picker';
+import { folderPickerSupported, packsFolderless } from '@engine/assets/folder-picker';
 import { loadEnabledPacks } from '@engine/assets/pack-loader';
 import { AssetRegistry } from '@engine/assets/registry';
 import { defaultSettings, type Settings } from '@engine/save/settings';
@@ -11,8 +11,10 @@ import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // 0.4.73 (owner, item 84, choice A). (1) On a phone the ASSET PACKS page's Import pack did
 // nothing (iOS has no folder picker), so where a folder cannot be picked on a touch device the
-// page says ASSET PACKS NEED A COMPUTER, with only Back. (2) OK on a pack's row deletes THAT pack,
-// after DELETE <NAME>? NO / YES (NO first); the old Delete pack row always took the first pack.
+// page said ASSET PACKS NEED A COMPUTER. Item 141 (owner) replaces that: every device gets
+// Import pack (.zip); a phone or tablet has no folder import and no Export template, a computer
+// keeps Import pack (folder) too. (2) OK on a pack's row deletes THAT pack, after DELETE <NAME>?
+// NO / YES (NO first); the old Delete pack row always took the first pack.
 
 useStorage();
 
@@ -83,15 +85,15 @@ async function packsPage(h: H): Promise<void> {
 }
 
 describe('item 84 (1): the folder picker check', () => {
-  it('needs a computer only on a touch device without a folder picker', () => {
-    expect(packsNeedComputer({ touchShown: true, coarsePointer: true, folderPicker: false })).toBe(true);
-    expect(packsNeedComputer({ touchShown: true, coarsePointer: false, folderPicker: false })).toBe(true);
-    expect(packsNeedComputer({ touchShown: false, coarsePointer: true, folderPicker: false })).toBe(true);
+  it('no folder import only on a touch device without a folder picker (or a phone or tablet)', () => {
+    expect(packsFolderless({ touchShown: true, coarsePointer: true, folderPicker: false })).toBe(true);
+    expect(packsFolderless({ touchShown: true, coarsePointer: false, folderPicker: false })).toBe(true);
+    expect(packsFolderless({ touchShown: false, coarsePointer: true, folderPicker: false })).toBe(true);
     // Item 128 (owner-approved): a coarse pointer is a phone or tablet, folder picker or not.
-    expect(packsNeedComputer({ touchShown: true, coarsePointer: true, folderPicker: true })).toBe(true);
-    expect(packsNeedComputer({ touchShown: true, coarsePointer: false, folderPicker: true })).toBe(false);
+    expect(packsFolderless({ touchShown: true, coarsePointer: true, folderPicker: true })).toBe(true);
+    expect(packsFolderless({ touchShown: true, coarsePointer: false, folderPicker: true })).toBe(false);
     // A desktop always keeps Import, picker or not (its browser will say what it can do).
-    expect(packsNeedComputer({ touchShown: false, coarsePointer: false, folderPicker: false })).toBe(false);
+    expect(packsFolderless({ touchShown: false, coarsePointer: false, folderPicker: false })).toBe(false);
   });
 
   it('iPhone and iPad have no folder picker, even though their inputs know webkitdirectory', () => {
@@ -107,16 +109,17 @@ describe('item 84 (1): the folder picker check', () => {
 });
 
 describe('item 84 (1): ASSET PACKS on a phone that cannot pick a folder', () => {
-  // Item 128 review (owner-approved): the stored packs stay listed; the line is drawn above them.
-  it('an iPhone: one announced line, its stored packs and Back, no Import pack or Export template', async () => {
+  // Item 128 review (owner-approved): the stored packs stay listed. Item 141 (owner): Import
+  // pack (.zip) above them, and the NEED A COMPUTER line is gone.
+  it('an iPhone: Import pack (.zip), its stored packs and Back, no folder import or Export template', async () => {
     browser({ dir: true, ua: IPHONE_UA, touchPoints: 5, coarse: true });
     const h = game(true);
     packs = ['retro'];
     await packsPage(h);
     await flush();
-    expect(labels(h.top())).toEqual(['retro', 'Back']);
-    expect(draw(h.top() as never).texts.map((t) => t.str)).toContain('ASSET PACKS NEED A COMPUTER');
-    expect(h.said.some((s) => s.startsWith('ASSET PACKS NEED A COMPUTER'))).toBe(true);
+    expect(labels(h.top())).toEqual(['Import pack (.zip)', 'retro', 'Back']);
+    expect(draw(h.top() as never).texts.map((t) => t.str)).not.toContain('ASSET PACKS NEED A COMPUTER');
+    expect(h.said.some((s) => s.includes('NEED A COMPUTER'))).toBe(false);
     // Back returns to Options.
     pick(h, 'Back');
     expect(h.top()).toBeInstanceOf(OptionsScene);
@@ -127,7 +130,7 @@ describe('item 84 (1): ASSET PACKS on a phone that cannot pick a folder', () => 
     browser({ dir: false, ua: ANDROID_UA, touchPoints: 5, coarse: true });
     const h = game(false);
     await packsPage(h);
-    expect(labels(h.top())).toEqual(['Back']);
+    expect(labels(h.top())).toEqual(['Import pack (.zip)', 'Back']);
   });
 
   // Item 128 (owner-approved): an Android phone (coarse pointer) needs a computer even with a
@@ -136,14 +139,15 @@ describe('item 84 (1): ASSET PACKS on a phone that cannot pick a folder', () => 
     browser({ dir: true, ua: ANDROID_UA, touchPoints: 5, coarse: true });
     const h = game(true);
     await packsPage(h);
-    expect(labels(h.top())).toEqual(['Back']);
+    expect(labels(h.top())).toEqual(['Import pack (.zip)', 'Back']);
   });
 
   it('a touchscreen laptop with a folder picker still offers Import pack', async () => {
     browser({ dir: true, ua: DESKTOP_UA, touchPoints: 10, coarse: false });
     const h = game(true);
     await packsPage(h);
-    expect(labels(h.top())).toContain('Import pack');
+    expect(labels(h.top())).toContain('Import pack (folder)');
+    expect(labels(h.top())).toContain('Import pack (.zip)');
     expect(labels(h.top())).toContain('Export template');
   });
 
@@ -181,17 +185,25 @@ describe('item 84 (1): a desktop keeps Import pack', () => {
     const h = game(false);
     packs = ['alpha', 'beta'];
     await packsPage(h);
-    expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'alpha', 'beta', 'Back']);
+    expect(labels(h.top())).toEqual([
+      'Import pack (folder)',
+      'Import pack (.zip)',
+      'Export template',
+      'alpha',
+      'beta',
+      'Back',
+    ]);
     expect(status(h)).toBe('');
     const items = (h.top() as unknown as { items: MenuItem[] }).items;
     expect(items[0]?.gesture).toBe(true);
+    expect(items[1]?.gesture).toBe(true);
   });
 
   it('a desktop browser without a folder picker still lists Import pack', async () => {
     browser({ dir: false, ua: DESKTOP_UA });
     const h = game(false);
     await packsPage(h);
-    expect(labels(h.top())).toContain('Import pack');
+    expect(labels(h.top())).toContain('Import pack (folder)');
   });
 });
 
@@ -223,7 +235,14 @@ describe('item 84 (2): OK on a pack deletes that pack, after a confirm', () => {
     expect(removed).toEqual(['gamma']);
     const s = h.game.deps.settings as Settings;
     expect(s.packs).toEqual(['alpha', 'beta']);
-    expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'alpha', 'beta', 'Back']);
+    expect(labels(h.top())).toEqual([
+      'Import pack (folder)',
+      'Import pack (.zip)',
+      'Export template',
+      'alpha',
+      'beta',
+      'Back',
+    ]);
     expect(status(h)).toBe('Deleted gamma');
     expect(h.said.at(-1)).toMatch(/^Deleted gamma/);
   });
@@ -280,7 +299,14 @@ describe('item 84 (2): the cursor and the line after YES', () => {
     pick(h, 'beta');
     pick(h, 'Yes');
     await flush();
-    expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'alpha', 'gamma', 'Back']);
+    expect(labels(h.top())).toEqual([
+      'Import pack (folder)',
+      'Import pack (.zip)',
+      'Export template',
+      'alpha',
+      'gamma',
+      'Back',
+    ]);
     expect(focused(h)).toBe('gamma');
     expect(h.said.at(-1)).toBe('Deleted beta. gamma: On. Left/right toggles. OK deletes it');
   });
@@ -299,7 +325,12 @@ describe('item 84 (2): the cursor and the line after YES', () => {
     pick(h, 'alpha');
     pick(h, 'Yes');
     await flush();
-    expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'Back']);
+    expect(labels(h.top())).toEqual([
+      'Import pack (folder)',
+      'Import pack (.zip)',
+      'Export template',
+      'Back',
+    ]);
     expect(focused(h)).toBe('Export template');
     expect(h.said.at(-1)).toBe('Deleted alpha. Export template. Downloads a zip of PNGs to repaint');
   });

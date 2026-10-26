@@ -2,7 +2,7 @@ import type { AssetRegistry } from './registry';
 import type { FrameRect, SpriteSheet } from '../gfx/spritesheet';
 import { validateManifest, type PackManifest } from './manifest';
 import { packStore, type StoredPack } from './idb';
-import { makeZip, type ZipEntry } from '../save/zip';
+import { makeZip, unzip, ZipError, type ZipEntry } from '../save/zip';
 
 export interface LoadedPack {
   name: string;
@@ -17,16 +17,36 @@ export interface LoadedPack {
 export async function readPackFiles(
   files: File[],
 ): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
-  const byName = new Map<string, File>();
+  const byName = new Map<string, Blob>();
   for (const f of files) {
     const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name;
     const parts = rel.split('/');
     byName.set(parts.slice(1).join('/') || f.name, f);
     byName.set(f.name, f);
   }
-  const mf = byName.get('manifest.json');
-  if (!mf) throw new Error('manifest.json not found in the selected files');
-  const manifest: unknown = JSON.parse(await mf.text());
+  return readPackEntries(byName, 'the selected files');
+}
+
+/** The file at `path`, as a Blob (or as an entry read when asked: a zip's). */
+type PackSource = ReadonlyMap<string, Blob | (() => Promise<Blob>)>;
+
+/** A pack from its files by path: manifest.json checked, then every file it names (only those). */
+async function readPackEntries(
+  byName: PackSource,
+  where: string,
+): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
+  const get = async (path: string): Promise<Blob | undefined> => {
+    const f = byName.get(path);
+    return typeof f === 'function' ? f() : f;
+  };
+  const mf = await get('manifest.json');
+  if (!mf) throw new Error(`manifest.json not found in ${where}`);
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(await mf.text());
+  } catch {
+    throw new Error('manifest.json is not a valid pack manifest');
+  }
   if (!validateManifest(manifest)) throw new Error('manifest.json is not a valid pack manifest');
   const out: Record<string, Blob> = {};
   const want = new Set<string>();
@@ -34,11 +54,91 @@ export async function readPackFiles(
   for (const f of Object.values(manifest.music ?? {})) want.add(f);
   for (const f of Object.values(manifest.sfx ?? {})) want.add(f);
   for (const path of want) {
-    const f = byName.get(path);
+    const f = await get(path);
     if (!f) throw new Error(`pack file "${path}" is missing`);
     out[path] = f;
   }
   return { manifest, files: out };
+}
+
+/** A pack .zip bigger than this is refused before it is read (item 141). */
+export const PACK_ZIP_MAX_BYTES = 100 * 1024 * 1024;
+
+/**
+ * A pack from a .zip (item 141): our own exports (SAVE DATA's `<name>.zip`, the template) hold
+ * manifest.json at the top; a zip of the pack's folder holds it in one top-level folder, which
+ * is taken off as Import pack (folder) does, stray files beside that folder (a README) or not.
+ * Only the manifest and the files it names are inflated. Throws ZipError for the zip, Error
+ * for the pack.
+ */
+export async function readPackZip(
+  bytes: Uint8Array,
+): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
+  const entries = await unzip(bytes);
+  let strip = '';
+  if (!entries.some((e) => e.path === 'manifest.json')) {
+    const tops = entries.filter((e) => /^[^/]+\/manifest\.json$/.test(e.path));
+    if (tops.length === 1) strip = (tops[0] as { path: string }).path.slice(0, -'manifest.json'.length);
+  }
+  const byName = new Map<string, () => Promise<Blob>>();
+  for (const e of entries)
+    if (e.path.startsWith(strip))
+      byName.set(e.path.slice(strip.length), async () => new Blob([(await e.read()) as BlobPart]));
+  return readPackEntries(byName, 'the zip');
+}
+
+/** Stores a pack read whole (packStore); its name. */
+export async function storePack(pack: {
+  manifest: PackManifest;
+  files: Record<string, Blob>;
+}): Promise<string> {
+  await packStore.put({
+    name: pack.manifest.name,
+    manifest: pack.manifest,
+    files: pack.files,
+    addedAt: Date.now(),
+  });
+  return pack.manifest.name;
+}
+
+/** Where Import pack (.zip) failed: the file too big, unreadable, not a pack, or not saved. */
+export class PackImportError extends Error {
+  constructor(
+    readonly step: 'size' | 'read' | 'pack' | 'store',
+    override readonly cause: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : step);
+    this.name = 'PackImportError';
+  }
+}
+
+/**
+ * Import pack (.zip): the whole file read and checked, then stored (committed); any error
+ * stores nothing. With `confirm`, a pack of a name already stored is asked about first (null
+ * returned when it is kept). Throws PackImportError naming the step (its `cause`: a ZipError for a zip
+ * that does not read, an Error for a pack that does not check out).
+ */
+export async function importPackZip(file: Blob, confirm?: ConfirmReplace): Promise<string | null> {
+  if (file.size > PACK_ZIP_MAX_BYTES) throw new PackImportError('size', new ZipError('too-big'));
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch (e) {
+    throw new PackImportError('read', e);
+  }
+  let pack: Awaited<ReturnType<typeof readPackZip>>;
+  try {
+    pack = await readPackZip(bytes);
+  } catch (e) {
+    throw new PackImportError('pack', e);
+  }
+  // Item 147: a same-name pack is replaced only on YES (null: kept as it was).
+  if (!(await mayStore(pack.manifest.name, confirm))) return null;
+  try {
+    return await storePack(pack);
+  } catch (e) {
+    throw new PackImportError('store', e);
+  }
 }
 
 /** Build sprite sheets and audio blobs from a stored pack, using built-in frame layouts when the pack omits them. */
@@ -91,9 +191,22 @@ export function applyPack(pack: LoadedPack, registry: AssetRegistry): void {
     registry.overridePalette(name, colors);
 }
 
-/** Store a pack picked from files, returning its name. */
-export async function importPackFiles(files: File[]): Promise<string> {
+/**
+ * Asked before a pack replaces a stored one of the same name (owner item 147): true replaces
+ * it, false keeps the stored pack as it is.
+ */
+export type ConfirmReplace = (name: string) => Promise<boolean>;
+
+/** Whether `name` may be stored: free, or its replacing confirmed. */
+async function mayStore(name: string, confirm?: ConfirmReplace): Promise<boolean> {
+  if (!confirm || !(await packStore.get(name))) return true;
+  return confirm(name);
+}
+
+/** Store a pack picked from files, returning its name (null: a same-name pack was kept). */
+export async function importPackFiles(files: File[], confirm?: ConfirmReplace): Promise<string | null> {
   const { manifest, files: blobs } = await readPackFiles(files);
+  if (!(await mayStore(manifest.name, confirm))) return null;
   await packStore.put({ name: manifest.name, manifest, files: blobs, addedAt: Date.now() });
   return manifest.name;
 }

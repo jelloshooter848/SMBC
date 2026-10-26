@@ -217,6 +217,13 @@ export interface GameDeps {
   clearSaveLink?: () => void;
   /** Options > Save data's files, packs and restart (save-data.ts; default: the browser's). */
   saveDataEnv?: SaveDataEnv;
+  /**
+   * The device's file chooser for one file of `accept` (item 141's Import pack (.zip); default:
+   * engine/file-pick.ts). Called inside the press's own event.
+   */
+  pickFile?: (accept: string, onPicked: (file: File) => void) => void;
+  /** The folder chooser (Import pack (folder); default: engine/file-pick.ts). */
+  pickFolder?: (onPicked: (files: File[]) => void) => void;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */
