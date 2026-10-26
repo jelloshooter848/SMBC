@@ -386,6 +386,8 @@ class PacksOptions extends MenuScene {
       coarsePointer: readTouchFacts().coarsePointer,
       folderPicker: folderPickerSupported(),
     });
+    // Item 143: the page says its name as it opens.
+    this.entryTitle = 'Asset packs';
     this.rebuild();
     void this.refresh();
   }

@@ -33,7 +33,11 @@ import {
   classicFileKey,
   copyFileRules,
   eraseClassicFile,
+  fileClaimState,
   hasClassicFile,
+  newGameClaim,
+  readClassicFile,
+  resumeClaim,
   listClassicFiles,
   loadClassicFile,
   loadClearedFile,
@@ -44,6 +48,7 @@ import {
   type ClassicFile,
   type ClearedFile,
   type ClassicFileRef,
+  type FileClaim,
   type ClassicFileRules,
   type ClassicFileSlot,
 } from '../original-files';
@@ -382,6 +387,17 @@ export class Game {
    * resume, written with every save: only the game still in the file may write it CLEARED.
    */
   private runToken = newRunToken();
+  /**
+   * Item 142: what this file run may write its file over (original-files.ts FileClaim): set by
+   * each new game and resume. A save it refuses (another tab erased the file, cleared it or
+   * started another game in it) ends the run's saving: `fileLost`, and `fileNote` is shown and
+   * said once, on the next WORLD card.
+   */
+  private fileClaim: FileClaim | null = null;
+  private fileLost = false;
+  private fileNote: string | null = null;
+  /** Item 142 review: a save before the run's first write was refused as its file could not be read. */
+  private fileUnreadEarly = false;
   /**
    * v0.4.73 (owner B): the file this run's ending made CLEARED (and whether storage took it),
    * for the message after the credits and the cheat cards.
@@ -1028,7 +1044,9 @@ export class Game {
    * The lives the pre-level card shows: the lives left, or 1 in Survival (InformativeBlackScreen:
    * numLives = 1 when the campaign mode is SURVIVAL), where each hero has one life.
    */
-  get cardLives(): number {
+  get cardLives(): number | null {
+    // Item 143: a CLEARED file's replay has unlimited lives: its card shows none.
+    if (this.replayRun) return null;
     return this.survivalRun ? 1 : this.state.lives;
   }
 
@@ -2265,6 +2283,7 @@ export class Game {
       this.replay = null;
       this.runWorlds = [];
       this.runToken = newRunToken();
+      this.claimFile(newGameClaim(this.runToken));
       this.fileContinues = 0;
       this.classicDifficulty = this.runFileRules.difficulty;
     }
@@ -2551,16 +2570,69 @@ export class Game {
    */
   private keepResume(levelId: string, continued = false): void {
     const ref = this.classicFile;
-    if (!ref) return;
+    const claim = this.fileClaim;
+    if (!ref || !claim || this.fileLost) return;
     const r = this.runNow(levelId, ref);
-    saveClassicFile({
-      ...ref,
-      rules: this.classicRunRules,
-      continues: this.fileContinues,
-      tutorialsSeen: this.classicTutorials.seen,
-      run: continued ? { ...r, continued: true } : r,
-      runId: this.runToken,
-    });
+    const ok = saveClassicFile(
+      {
+        ...ref,
+        rules: this.classicRunRules,
+        continues: this.fileContinues,
+        tutorialsSeen: this.classicTutorials.seen,
+        run: continued ? { ...r, continued: true } : r,
+        runId: this.runToken,
+      },
+      claim,
+    );
+    if (!ok) this.checkFileLost(ref, claim);
+  }
+
+  /** Item 142: the file run's claim (a new game's or a resume's); its saving starts afresh. */
+  private claimFile(claim: FileClaim | null): void {
+    this.fileClaim = claim;
+    this.fileLost = false;
+    this.fileNote = null;
+    this.fileUnreadEarly = false;
+  }
+
+  /** Item 142: this file run can no longer save to its file (another window, or a game there). */
+  get runFileLost(): boolean {
+    return this.fileLost;
+  }
+
+  /**
+   * Item 148: the note that the run cannot save to its file, once: the first of the next WORLD
+   * card, the game over or the Quit card takes it (shown and said there); null after that.
+   */
+  takeFileNote(): string | null {
+    const note = this.fileNote;
+    this.fileNote = null;
+    return note;
+  }
+
+  /**
+   * Item 142: a save was refused. When the file is no longer the run's (another tab erased it,
+   * cleared it or started another game in it), the run saves no more and the next WORLD card
+   * says so, once. Storage that cannot be read now is not that (nothing is said).
+   */
+  private checkFileLost(ref: ClassicFileRef, claim: FileClaim): void {
+    if (this.fileLost) return;
+    // Review NIT 5: the CLEARED file this run itself wrote is not another window's change.
+    const news = this.clearedNews;
+    if (news?.result === 'cleared' && news.ref.set === ref.set && news.ref.slot === ref.slot) return;
+    const state = fileClaimState(ref, claim);
+    if (state === 'unread') {
+      if (claim.took !== undefined) this.fileUnreadEarly = true;
+      return;
+    }
+    if (state !== 'taken') return;
+    this.fileLost = true;
+    // Review NIT 3: refused since its first save, the file unreadable then (only its key failed):
+    // the run cannot tell another window did it.
+    this.fileNote =
+      this.fileUnreadEarly && claim.took !== undefined
+        ? `File ${ref.slot} already holds a game, so this run can't save to it.`
+        : `File ${ref.slot} was changed in another window, so this run can't save to it.`;
   }
 
   /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
@@ -2626,11 +2698,17 @@ export class Game {
       // 95: only over this game: a file another tab emptied or started again is left alone.
       this.runToken,
     );
-    const result: ClearResult =
-      ok || loadClearedFile(ref) !== null
-        ? 'cleared'
-        : loadClassicFile(ref)?.runId === this.runToken
-          ? 'failed'
+    // Item 143: a file another tab CLEARED first is not this run's clear: 'twin' when it was
+    // the same game (a twin tab), 'other' for another game. Review: storage that cannot be read
+    // (or still the run's game) is 'failed'.
+    const claim = this.fileClaim;
+    const state = claim ? fileClaimState(ref, claim) : 'unread';
+    const result: ClearResult = ok
+      ? 'cleared'
+      : state === 'unread' || loadClassicFile(ref)?.runId === this.runToken
+        ? 'failed'
+        : loadClearedFile(ref)?.runId === this.runToken
+          ? 'twin'
           : 'other';
     this.clearedNews = { ref: { ...ref }, result };
   }
@@ -2648,7 +2726,8 @@ export class Game {
     // everything else it left go, as on any way back to the menus (quitClassicRun).
     this.leaveRun();
     this.scenes.clear();
-    const files = this.showClassicFiles(news.ref.set, news.ref.slot);
+    // Item 143: the file box opens on the file only when it holds this run's game (or its clear).
+    const files = this.showClassicFiles(news.ref.set, news.result === 'other' ? undefined : news.ref.slot);
     this.scenes.push(clearedNote(this, files, news.ref, news.result));
   }
 
@@ -2659,9 +2738,12 @@ export class Game {
    */
   keepTutorialsSeen(seen: readonly string[]): void {
     const ref = this.classicFile;
-    if (!ref || !this.keepsResume) return;
+    const claim = this.fileClaim;
+    if (!ref || !claim || this.fileLost || !this.keepsResume) return;
     const f = loadClassicFile(ref);
-    if (f) saveClassicFile({ ...f, tutorialsSeen: seen });
+    // Item 142: only into the run's own game (claim): never another tab's.
+    if (f && !saveClassicFile({ ...f, tutorialsSeen: seen, runId: this.runToken }, claim))
+      this.checkFileLost(ref, claim);
   }
 
   /**
@@ -2706,7 +2788,10 @@ export class Game {
     // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run. Review fix
     // 2: nor anything storage cannot show now (it may be CLEARED; reads throwing hide it).
     if (!storageReadable()) return;
-    if (ref && !classicFileKept(ref)) eraseClassicFile(ref);
+    // Item 142: only the run's own game: never another tab's, never one it cannot see.
+    const claim = this.fileClaim;
+    if (!ref || !claim || this.fileLost || fileClaimState(ref, claim) !== 'held') return;
+    if (!classicFileKept(ref)) eraseClassicFile(ref);
   }
 
   /**
@@ -2825,7 +2910,10 @@ export class Game {
    */
   resumeClassic(ref: ClassicFileRef): boolean {
     this.classicTutorials.clearQueue();
-    const f = this.classicFileAt(ref);
+    // Item 142 review: one read, so the run's claim is tied to the very text it loaded.
+    this.migrateClassicFiles();
+    const read = readClassicFile(ref);
+    const f = read.file && this.playable(read.file) ? read.file : null;
     // The boxes this file's game has seen come back with it (TutorialManager.loadData).
     if (f) this.classicTutorials.restore(f.tutorialsSeen);
     const r = f?.run;
@@ -2840,6 +2928,7 @@ export class Game {
     this.replay = null;
     this.runWorlds = [...(r.worlds ?? [])];
     this.runToken = f.runId ?? newRunToken();
+    this.claimFile(resumeClaim(read.raw, this.runToken));
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = rules;
@@ -3222,6 +3311,7 @@ export class Game {
     if (run.tutorialsSeen) this.classicTutorials.restore(run.tutorialsSeen);
     this.runWorlds = [];
     this.runToken = newRunToken();
+    this.claimFile(run.file ? newGameClaim(this.runToken) : null);
     this.fileContinues = 0;
     this.classicDifficulty = this.classicRunRules.difficulty;
     this.runRules = this.classicRules;
@@ -3453,8 +3543,11 @@ export class Game {
     this.sayHero = null;
     const first = this.sayFirst ? `${this.sayFirst} ` : '';
     this.sayFirst = null;
+    const lives = this.cardLives;
+    // Item 142: a file the run could not save to, said once with the card (shown on it too).
+    const note = this.takeFileNote();
     this.deps.announcer?.say(
-      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}. ${this.cardLives} ${this.cardLives === 1 ? 'life' : 'lives'}.`,
+      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}.${lives === null ? '' : ` ${lives} ${lives === 1 ? 'life' : 'lives'}.`}${note ? ` ${note}` : ''}`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).
@@ -3466,6 +3559,7 @@ export class Game {
       ? {
           skippable: true,
           frames: this.classicRunRules.options.gameMode === 'single' ? INTRO_FRAMES_SINGLE : INTRO_FRAMES,
+          ...(note ? { note } : {}),
         }
       : {};
     this.scenes.push(new IntroScene(this, () => this.startLevel(level, start), time, intro));

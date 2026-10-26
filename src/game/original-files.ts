@@ -149,6 +149,15 @@ export function loadClassicFile(ref: ClassicFileRef): ClassicFile | null {
   return parseFile(loadJson<unknown>(classicFileKey(ref)), ref);
 }
 
+/**
+ * Item 142 review: file `ref` and the stored text it was read from, in one read (a resume's
+ * claim is tied to that very text: resumeClaim).
+ */
+export function readClassicFile(ref: ClassicFileRef): { file: ClassicFile | null; raw: unknown } {
+  const raw = loadJson<unknown>(classicFileKey(ref));
+  return { file: parseFile(raw, ref), raw };
+}
+
 function parseFile(raw: unknown, ref: ClassicFileRef): ClassicFile | null {
   if (!raw || typeof raw !== 'object') return null;
   const f = raw as Partial<ClassicFile>;
@@ -206,12 +215,62 @@ function storedNow(key: string): { read: boolean; value: unknown } {
   }
 }
 
-/** Writes file `f` (stamped now); false when storage refused it, or the file is CLEARED. */
+/**
+ * Item 142: what a Classic run may write its file over (Game keeps one per run). `runId` is the
+ * run's game (ClassicFile.runId). `took` is what the slot held when the run took it, until the
+ * run's first write lands: null for a new game (the slot was empty), a resumed file's
+ * fingerprint (fileFingerprint of its stored text); undefined once the run has written.
+ */
+export interface FileClaim {
+  runId: string;
+  took: string | null | undefined;
+}
+
+/** A new game's claim on an empty slot (its first write may fill it). */
+export function newGameClaim(runId: string): FileClaim {
+  return { runId, took: null };
+}
+
+/** A resumed file's claim: its game, and the stored text it was loaded from (readClassicFile). */
+export function resumeClaim(raw: unknown, runId: string): FileClaim {
+  return { runId, took: fileFingerprint(raw) };
+}
+
+/**
+ * Item 142: whether the run with `claim` may write over stored value `now`: the slot holds the
+ * run's game (the same runId), or the run has not written yet and the slot still holds what it
+ * took (empty for a new game; the very file it loaded for a resume). A slot another tab erased
+ * (empty again after the run wrote it, or after it loaded it), or another tab's game, is refused.
+ */
+function claimHolds(now: unknown, claim: FileClaim): boolean {
+  if (now !== null && holdsGame(now, claim.runId)) return true;
+  if (claim.took === undefined) return false;
+  return claim.took === null ? now === null : now !== null && fileFingerprint(now) === claim.took;
+}
+
+/**
+ * Item 142: file `ref` for the run with `claim`: 'held' (it may write), 'taken' (another tab
+ * erased it, cleared it or started another game in it: the player is told), or 'unread' (storage
+ * cannot show it now: nothing is written, and nothing is said).
+ */
+export function fileClaimState(ref: ClassicFileRef, claim: FileClaim): 'held' | 'taken' | 'unread' {
+  if (!storageReadable()) return 'unread';
+  const stored = storedNow(classicFileKey(ref));
+  if (!stored.read) return 'unread';
+  return claimHolds(stored.value, claim) ? 'held' : 'taken';
+}
+
+/**
+ * Writes file `f` (stamped now); false when storage refused it, or the file is CLEARED. Item 142:
+ * with `claim` (a run's save), false too unless the slot is still the run's (claimHolds); the
+ * claim's first write marks it written (took undefined), so the slot is the run's by runId only.
+ */
 export function saveClassicFile(
   f: Omit<ClassicFile, 'savedAt' | 'v' | 'tutorialsSeen'> & {
     savedAt?: number;
     tutorialsSeen?: readonly string[];
   },
+  claim?: FileClaim,
 ): boolean {
   // v0.4.73 (item 69): storage that cannot be read hides what is there (a CLEARED file too):
   // nothing is written over a file that cannot be seen.
@@ -222,6 +281,7 @@ export function saveClassicFile(
   // any tab: a stale tab's WORLD card, Tutorials list or continue point leaves it as it is. A
   // read that fails cannot rule one out: nothing is written then either.
   if (!stored.read || keptForGood(now)) return false;
+  if (claim && !claimHolds(now, claim)) return false;
   // #205: the file's old-save mark stays through every save that does not set its own.
   const fromOld = f.fromOld ?? storedMark(now);
   const out: ClassicFile = {
@@ -241,7 +301,9 @@ export function saveClassicFile(
   delete out.run.gameMode;
   delete out.run.continues;
   delete out.run.savedAt;
-  return saveJson(classicFileKey(f), out);
+  const ok = saveJson(classicFileKey(f), out);
+  if (ok && claim && out.runId === claim.runId) claim.took = undefined;
+  return ok;
 }
 
 /**
@@ -274,6 +336,11 @@ export interface ClearedFile {
    * with the clear, the file's only write), the one source (advanced-cheats.ts).
    */
   advancedCheats?: true;
+  /**
+   * Item 142 review: the game that cleared it (ClassicFile.runId; saveClearedFile's `only`), so
+   * a twin tab of the same game says it was already cleared in another window.
+   */
+  runId?: string;
 }
 
 /** File `ref` when it is CLEARED and reads, else null (empty, a run, or broken). */
@@ -297,6 +364,7 @@ export function loadClearedFile(ref: ClassicFileRef): ClearedFile | null {
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
     ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
     ...(f.advancedCheats === true ? { advancedCheats: true as const } : {}),
+    ...(typeof f.runId === 'string' ? { runId: f.runId } : {}),
   };
 }
 
@@ -333,6 +401,7 @@ export function saveClearedFile(
     ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
     // v0.4.73 (item 60): beaten on Hard: ADVANCED CHEATS on this file.
     ...(f.rules.difficulty === 'hard' ? { advancedCheats: true as const } : {}),
+    ...(only !== undefined ? { runId: only } : {}),
   };
   delete out.run.difficulty;
   delete out.run.gameMode;

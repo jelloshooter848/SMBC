@@ -4,6 +4,7 @@ import type { Renderer } from '@engine/gfx/renderer';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { menuTouchLabels, NO_TOUCH_BUTTONS } from '../touch-labels';
+import { drawFileNote } from './intro';
 
 /**
  * How long GAME OVER shows before the continue prompt: the original's
@@ -25,12 +26,16 @@ export class GameOverScene implements Scene {
   private t = 0;
   private _prompting = false;
   private _yes = true;
+  /** Item 148: the run could not save to its file: said and shown here, once (Game.takeFileNote). */
+  private readonly note: string | null;
   constructor(
     private readonly game: Game,
     private readonly onContinue: (() => void) | null = null,
     /** A Classic mode run's choices: CONTINUE / MAIN MENU (BUG-05). */
     private readonly classic = false,
-  ) {}
+  ) {
+    this.note = classic ? game.takeFileNote() : null;
+  }
 
   /** The two choices as said (YES / NO, or a Classic run's CONTINUE / MAIN MENU). */
   private get choices(): [string, string] {
@@ -53,7 +58,7 @@ export class GameOverScene implements Scene {
 
   enter(): void {
     this.game.ctx.audio.playJingle('game-over');
-    this.game.deps.announcer?.say('Game over.');
+    this.game.deps.announcer?.say(this.note ? `Game over. ${this.note}` : 'Game over.');
   }
 
   update(input: InputFrame, inputs: InputFrame[] = [input]): void {
@@ -95,7 +100,8 @@ export class GameOverScene implements Scene {
     this._yes = true;
     this.game.deps.announcer?.say(
       this.classic
-        ? 'Continue or main menu? Both keep your run. Continue. Up and down to choose, OK to confirm.'
+        ? // Item 148: a run that cannot save to its file keeps nothing there.
+          `Continue or main menu?${this.game.runFileLost ? '' : ' Both keep your run.'} Continue. Up and down to choose, OK to confirm.`
         : 'Continue? Yes. Up and down to choose, OK to confirm.',
     );
   }
@@ -103,6 +109,7 @@ export class GameOverScene implements Scene {
   render(r: Renderer): void {
     r.clear('#000');
     const font = this.game.ctx.assets.sheet('font');
+    if (this.note) drawFileNote(r, font, this.note, 168);
     if (!this._prompting) {
       r.text(font, 'GAME OVER', 92, 112);
       return;
