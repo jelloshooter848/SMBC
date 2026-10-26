@@ -149,6 +149,15 @@ export function loadClassicFile(ref: ClassicFileRef): ClassicFile | null {
   return parseFile(loadJson<unknown>(classicFileKey(ref)), ref);
 }
 
+/**
+ * Item 142 review: file `ref` and the stored text it was read from, in one read (a resume's
+ * claim is tied to that very text: resumeClaim).
+ */
+export function readClassicFile(ref: ClassicFileRef): { file: ClassicFile | null; raw: unknown } {
+  const raw = loadJson<unknown>(classicFileKey(ref));
+  return { file: parseFile(raw, ref), raw };
+}
+
 function parseFile(raw: unknown, ref: ClassicFileRef): ClassicFile | null {
   if (!raw || typeof raw !== 'object') return null;
   const f = raw as Partial<ClassicFile>;
@@ -222,9 +231,9 @@ export function newGameClaim(runId: string): FileClaim {
   return { runId, took: null };
 }
 
-/** A resumed file's claim: its game, and the file as it was loaded. */
-export function resumeClaim(ref: ClassicFileRef, runId: string): FileClaim {
-  return { runId, took: fileFingerprint(loadJson<unknown>(classicFileKey(ref))) };
+/** A resumed file's claim: its game, and the stored text it was loaded from (readClassicFile). */
+export function resumeClaim(raw: unknown, runId: string): FileClaim {
+  return { runId, took: fileFingerprint(raw) };
 }
 
 /**
@@ -327,6 +336,11 @@ export interface ClearedFile {
    * with the clear, the file's only write), the one source (advanced-cheats.ts).
    */
   advancedCheats?: true;
+  /**
+   * Item 142 review: the game that cleared it (ClassicFile.runId; saveClearedFile's `only`), so
+   * a twin tab of the same game says it was already cleared in another window.
+   */
+  runId?: string;
 }
 
 /** File `ref` when it is CLEARED and reads, else null (empty, a run, or broken). */
@@ -350,6 +364,7 @@ export function loadClearedFile(ref: ClassicFileRef): ClearedFile | null {
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
     ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
     ...(f.advancedCheats === true ? { advancedCheats: true as const } : {}),
+    ...(typeof f.runId === 'string' ? { runId: f.runId } : {}),
   };
 }
 
@@ -386,6 +401,7 @@ export function saveClearedFile(
     ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
     // v0.4.73 (item 60): beaten on Hard: ADVANCED CHEATS on this file.
     ...(f.rules.difficulty === 'hard' ? { advancedCheats: true as const } : {}),
+    ...(only !== undefined ? { runId: only } : {}),
   };
   delete out.run.difficulty;
   delete out.run.gameMode;

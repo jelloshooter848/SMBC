@@ -4,6 +4,7 @@ import { MenuScene } from './menu';
 import type { Game } from './game';
 import { abilityHint } from './hints';
 import { drawMenuBox, type BoxRow } from './menu-box';
+import { drawFileNote } from './intro';
 
 /*
  * O-16: leaving a Classic run asks first. The mid-run select's BACK and Pause > Quit open this
@@ -34,6 +35,8 @@ export const QUIT_RUN_KEPT = 'YOUR RUN WAITS IN ITS FILE.';
 export const QUIT_REPLAY_TITLE = 'QUIT TO THE FILE BOX?';
 
 export class QuitRunScene extends MenuScene {
+  /** Item 148: the run could not save to its file: said and shown here, once (Game.takeFileNote). */
+  private readonly note: string | null;
   constructor(game: Game, onNo: () => void, onYes: () => void) {
     super(
       game,
@@ -45,7 +48,9 @@ export class QuitRunScene extends MenuScene {
       onNo,
       true,
     );
-    this.status = game.keepsResume ? QUIT_RUN_KEPT : '';
+    // Item 148: no promise that the run waits in its file when it cannot save there.
+    this.status = game.keepsResume && !game.runFileLost ? QUIT_RUN_KEPT : '';
+    this.note = game.takeFileNote();
     // The original's box sounds (MessageBoxSounds SN_CHANGE_SELECTION, SN_CANCEL_ITEM; RC-040).
     this.moveSfx = 'fireball';
     this.backSfx = 'bump';
@@ -65,6 +70,14 @@ export class QuitRunScene extends MenuScene {
       header: this.title,
       ...(this.status ? { footer: this.status } : {}),
     });
+    if (this.note)
+      drawFileNote(
+        r,
+        game.ctx.assets.sheet('font'),
+        this.note,
+        44,
+        game.ctx.assets.sheet('font', FONT_COLOURS.black),
+      );
     const back = abilityHint(game, 'BACK', this.backAction);
     const x = Math.round(128 - (back.length * 8) / 2);
     const y = at.y + at.h + 4;
@@ -76,7 +89,8 @@ export class QuitRunScene extends MenuScene {
     const kept = this.status ? ' Your run waits in its file.' : '';
     // One line: the question, then the highlighted answer (NO); moving says "Yes" or "No".
     const to = this.game.replayRun ? 'the file box' : 'the Classic menu';
-    this.game.deps.announcer?.say(`Quit to ${to}?${kept} No`);
+    const note = this.note ? ` ${this.note}` : '';
+    this.game.deps.announcer?.say(`Quit to ${to}?${kept}${note} No`);
   }
 }
 

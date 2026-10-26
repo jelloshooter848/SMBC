@@ -36,6 +36,7 @@ import {
   fileClaimState,
   hasClassicFile,
   newGameClaim,
+  readClassicFile,
   resumeClaim,
   listClassicFiles,
   loadClassicFile,
@@ -388,6 +389,8 @@ export class Game {
   private fileClaim: FileClaim | null = null;
   private fileLost = false;
   private fileNote: string | null = null;
+  /** Item 142 review: a save before the run's first write was refused as its file could not be read. */
+  private fileUnreadEarly = false;
   /**
    * v0.4.73 (owner B): the file this run's ending made CLEARED (and whether storage took it),
    * for the message after the credits and the cheat cards.
@@ -2582,6 +2585,22 @@ export class Game {
     this.fileClaim = claim;
     this.fileLost = false;
     this.fileNote = null;
+    this.fileUnreadEarly = false;
+  }
+
+  /** Item 142: this file run can no longer save to its file (another window, or a game there). */
+  get runFileLost(): boolean {
+    return this.fileLost;
+  }
+
+  /**
+   * Item 148: the note that the run cannot save to its file, once: the first of the next WORLD
+   * card, the game over or the Quit card takes it (shown and said there); null after that.
+   */
+  takeFileNote(): string | null {
+    const note = this.fileNote;
+    this.fileNote = null;
+    return note;
   }
 
   /**
@@ -2590,9 +2609,23 @@ export class Game {
    * says so, once. Storage that cannot be read now is not that (nothing is said).
    */
   private checkFileLost(ref: ClassicFileRef, claim: FileClaim): void {
-    if (this.fileLost || fileClaimState(ref, claim) !== 'taken') return;
+    if (this.fileLost) return;
+    // Review NIT 5: the CLEARED file this run itself wrote is not another window's change.
+    const news = this.clearedNews;
+    if (news?.result === 'cleared' && news.ref.set === ref.set && news.ref.slot === ref.slot) return;
+    const state = fileClaimState(ref, claim);
+    if (state === 'unread') {
+      if (claim.took !== undefined) this.fileUnreadEarly = true;
+      return;
+    }
+    if (state !== 'taken') return;
     this.fileLost = true;
-    this.fileNote = `File ${ref.slot} was changed in another window, so this run can't save to it.`;
+    // Review NIT 3: refused since its first save, the file unreadable then (only its key failed):
+    // the run cannot tell another window did it.
+    this.fileNote =
+      this.fileUnreadEarly && claim.took !== undefined
+        ? `File ${ref.slot} already holds a game, so this run can't save to it.`
+        : `File ${ref.slot} was changed in another window, so this run can't save to it.`;
   }
 
   /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
@@ -2658,12 +2691,18 @@ export class Game {
       // 95: only over this game: a file another tab emptied or started again is left alone.
       this.runToken,
     );
-    // Item 143: a file another tab CLEARED first is not this run's clear ('other').
+    // Item 143: a file another tab CLEARED first is not this run's clear: 'twin' when it was
+    // the same game (a twin tab), 'other' for another game. Review: storage that cannot be read
+    // (or still the run's game) is 'failed'.
+    const claim = this.fileClaim;
+    const state = claim ? fileClaimState(ref, claim) : 'unread';
     const result: ClearResult = ok
       ? 'cleared'
-      : loadClassicFile(ref)?.runId === this.runToken
+      : state === 'unread' || loadClassicFile(ref)?.runId === this.runToken
         ? 'failed'
-        : 'other';
+        : loadClearedFile(ref)?.runId === this.runToken
+          ? 'twin'
+          : 'other';
     this.clearedNews = { ref: { ...ref }, result };
   }
 
@@ -2864,7 +2903,10 @@ export class Game {
    */
   resumeClassic(ref: ClassicFileRef): boolean {
     this.classicTutorials.clearQueue();
-    const f = this.classicFileAt(ref);
+    // Item 142 review: one read, so the run's claim is tied to the very text it loaded.
+    this.migrateClassicFiles();
+    const read = readClassicFile(ref);
+    const f = read.file && this.playable(read.file) ? read.file : null;
     // The boxes this file's game has seen come back with it (TutorialManager.loadData).
     if (f) this.classicTutorials.restore(f.tutorialsSeen);
     const r = f?.run;
@@ -2879,7 +2921,7 @@ export class Game {
     this.replay = null;
     this.runWorlds = [...(r.worlds ?? [])];
     this.runToken = f.runId ?? newRunToken();
-    this.claimFile(resumeClaim(ref, this.runToken));
+    this.claimFile(resumeClaim(read.raw, this.runToken));
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = rules;
@@ -3496,8 +3538,7 @@ export class Game {
     this.sayFirst = null;
     const lives = this.cardLives;
     // Item 142: a file the run could not save to, said once with the card (shown on it too).
-    const note = this.fileNote;
-    this.fileNote = null;
+    const note = this.takeFileNote();
     this.deps.announcer?.say(
       `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}.${lives === null ? '' : ` ${lives} ${lives === 1 ? 'life' : 'lives'}.`}${note ? ` ${note}` : ''}`,
     );

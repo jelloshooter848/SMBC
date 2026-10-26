@@ -3,6 +3,7 @@ import { worldLabel } from '../hud/world-label';
 import { shownPlace, shownStage } from '../map/campaign-order';
 import { drawHud } from '../hud/hud';
 import type { Renderer } from '@engine/gfx/renderer';
+import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import type { Game } from './game';
 import type { TouchLabels } from '@engine/input/touch';
 import { NO_TOUCH_BUTTONS } from '../touch-labels';
@@ -14,6 +15,24 @@ import type { InputFrame } from '@engine/input/input-manager';
 import { CARD_GUARD_FRAMES } from './message';
 import { wrapPrompt } from '../tutorial/stage-prompts';
 import { fontText } from '../hud/text';
+
+/**
+ * Item 142 / 148: the note that a run cannot save to its file, centred from `y` down, 28 columns
+ * a line (the WORLD card, the game over, the Quit card), over a `shadow` where the scene shows.
+ */
+export function drawFileNote(
+  r: Renderer,
+  font: SpriteSheet,
+  note: string,
+  y: number,
+  shadow?: SpriteSheet,
+): void {
+  wrapPrompt(fontText(note.toUpperCase()), 28).forEach((l, i) => {
+    const x = (256 - l.length * 8) >> 1;
+    if (shadow) r.text(shadow, l, x + 1, y + i * 12 + 1);
+    r.text(font, l, x, y + i * 12);
+  });
+}
 
 /** Frames the card stays up: the original's 2000 ms (PRELEVEL_DEFAULT_ALL_CHARS). */
 export const INTRO_FRAMES = 120;
@@ -91,11 +110,8 @@ export class IntroScene implements Scene {
     // Classic Survival shows 1: each hero has one life (Game.cardLives); a replay none (143).
     const lives = this.game.cardLives;
     if (lives !== null) r.text(font, `×  ${lives}`, 120, 120);
-    // Item 142: the note, under the hero (28 columns a line).
-    if (this.opts.note)
-      wrapPrompt(fontText(this.opts.note.toUpperCase()), 28).forEach((l, i) =>
-        r.text(font, l, (256 - l.length * 8) >> 1, 156 + i * 12),
-      );
+    // Item 142: the note, under the hero.
+    if (this.opts.note) drawFileNote(r, font, this.opts.note, 156);
     // The Classic rules tag, as the level will show it (TG-32).
     const rules = rulesOf(this.game.ctx);
     const heroes = [s.character, ...(s.character2 ? [s.character2] : [])].map((d) =>

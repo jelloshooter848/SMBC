@@ -214,7 +214,7 @@ const setOf = (id: ClassicFileRef['set']): MapSet =>
  * its last run is kept); or left alone because another tab emptied it or started another game
  * there (95).
  */
-export type ClearResult = 'cleared' | 'failed' | 'other';
+export type ClearResult = 'cleared' | 'failed' | 'twin' | 'other';
 
 /**
  * B: the message after a beaten set's credits and cheat cards, over its file box (focused on the
@@ -238,15 +238,17 @@ export function clearedNote(
           'Pick a cleared file to replay any level of this map set.',
           ...advanced,
         ]
-      : result === 'failed'
-        ? [
-            `${beat} File ${ref.slot} could not be saved as cleared.`,
-            'Its last run is kept in it, so nothing is lost.',
-          ]
-        : [
-            `${beat} The beat is kept.`,
-            `File ${ref.slot} holds another game now, so it was not marked cleared.`,
-          ];
+      : result === 'twin'
+        ? [`${beat} File ${ref.slot} was already cleared in another window.`]
+        : result === 'failed'
+          ? [
+              `${beat} File ${ref.slot} could not be saved as cleared.`,
+              'Its last run is kept in it, so nothing is lost.',
+            ]
+          : [
+              `${beat} The beat is kept.`,
+              `File ${ref.slot} holds another game now, so it was not marked cleared.`,
+            ];
   return new ClassicNoteScene(game, pages, {
     under: files,
     onDone: () => files.comeBack(),
