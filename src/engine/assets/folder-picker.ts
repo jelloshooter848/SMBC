@@ -31,13 +31,14 @@ export interface PackPickerFacts {
 }
 
 /**
- * The ASSET PACKS page says ASSET PACKS NEED A COMPUTER instead of offering Import, by the kind
- * of device (item 128): a finger for the primary pointer is a phone or tablet, Android ones
- * included (Chrome there has a folder picker, but a phone is no place to build a pack); the
+ * Whether the ASSET PACKS page leaves out Import pack (folder) and Export template, by the kind
+ * of device (items 84, 128; since item 141 every device has Import pack (.zip) instead of the old
+ * ASSET PACKS NEED A COMPUTER): a finger for the primary pointer is a phone or tablet, Android
+ * ones included (Chrome there has a folder picker, but a phone is no place to build a pack); the
  * touch pad up on a device that cannot pick a folder is one too. A touchscreen laptop (a fine
- * primary pointer and a folder picker) keeps Import, and so does a desktop browser without the
+ * primary pointer and a folder picker) keeps them, and so does a desktop browser without the
  * picker (its own picker says what it can do).
  */
-export function packsNeedComputer(f: PackPickerFacts): boolean {
+export function packsFolderless(f: PackPickerFacts): boolean {
   return f.coarsePointer || (f.touchShown && !f.folderPicker);
 }

@@ -2,7 +2,7 @@ import type { AssetRegistry } from './registry';
 import type { FrameRect, SpriteSheet } from '../gfx/spritesheet';
 import { validateManifest, type PackManifest } from './manifest';
 import { packStore, type StoredPack } from './idb';
-import { makeZip, type ZipEntry } from '../save/zip';
+import { makeZip, unzip, ZipError, type ZipEntry } from '../save/zip';
 
 export interface LoadedPack {
   name: string;
@@ -17,16 +17,29 @@ export interface LoadedPack {
 export async function readPackFiles(
   files: File[],
 ): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
-  const byName = new Map<string, File>();
+  const byName = new Map<string, Blob>();
   for (const f of files) {
     const rel = (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name;
     const parts = rel.split('/');
     byName.set(parts.slice(1).join('/') || f.name, f);
     byName.set(f.name, f);
   }
+  return readPackEntries(byName, 'the selected files');
+}
+
+/** A pack from its files by path: manifest.json checked, then every file it names. */
+async function readPackEntries(
+  byName: ReadonlyMap<string, Blob>,
+  where: string,
+): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
   const mf = byName.get('manifest.json');
-  if (!mf) throw new Error('manifest.json not found in the selected files');
-  const manifest: unknown = JSON.parse(await mf.text());
+  if (!mf) throw new Error(`manifest.json not found in ${where}`);
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(await mf.text());
+  } catch {
+    throw new Error('manifest.json is not a valid pack manifest');
+  }
   if (!validateManifest(manifest)) throw new Error('manifest.json is not a valid pack manifest');
   const out: Record<string, Blob> = {};
   const want = new Set<string>();
@@ -39,6 +52,37 @@ export async function readPackFiles(
     out[path] = f;
   }
   return { manifest, files: out };
+}
+
+/** A pack .zip bigger than this is refused before it is read (item 141). */
+export const PACK_ZIP_MAX_BYTES = 100 * 1024 * 1024;
+
+/**
+ * A pack from a .zip (item 141): our own exports (SAVE DATA's `<name>.zip`, the template) hold
+ * manifest.json at the top; a zip of the pack's folder holds one folder with it inside, which is
+ * taken off, as Import pack (folder) does. Throws ZipError for the zip, Error for the pack.
+ */
+export async function readPackZip(
+  bytes: Uint8Array,
+): Promise<{ manifest: PackManifest; files: Record<string, Blob> }> {
+  const entries = await unzip(bytes);
+  let strip = '';
+  if (!entries.some((e) => e.path === 'manifest.json')) {
+    const tops = new Set(entries.map((e) => e.path.split('/')[0]));
+    const top = entries[0]?.path.split('/')[0];
+    if (tops.size === 1 && top && entries.every((e) => e.path.startsWith(`${top}/`))) strip = `${top}/`;
+  }
+  const byName = new Map<string, Blob>();
+  for (const e of entries) byName.set(e.path.slice(strip.length), new Blob([e.data as BlobPart]));
+  return readPackEntries(byName, 'the zip');
+}
+
+/** Import pack (.zip): the whole file read and checked, then stored; any error stores nothing. */
+export async function importPackZip(file: Blob): Promise<string> {
+  if (file.size > PACK_ZIP_MAX_BYTES) throw new ZipError('too-big');
+  const { manifest, files } = await readPackZip(new Uint8Array(await file.arrayBuffer()));
+  await packStore.put({ name: manifest.name, manifest, files, addedAt: Date.now() });
+  return manifest.name;
 }
 
 /** Build sprite sheets and audio blobs from a stored pack, using built-in frame layouts when the pack omits them. */

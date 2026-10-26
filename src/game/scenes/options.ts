@@ -4,10 +4,12 @@ import { Actions, ActionLabels, type Action } from '@engine/input/actions';
 import { bindingClashes, describeCode, describePad } from '@engine/input/bindings';
 import { PALETTE_MODES, type PaletteMode } from '@engine/gfx/palette';
 import { packStore } from '@engine/assets/idb';
-import { exportTemplate, importPackFiles } from '@engine/assets/pack-loader';
+import { exportTemplate, importPackFiles, importPackZip } from '@engine/assets/pack-loader';
+import { ZipError, type ZipErrorCode } from '@engine/save/zip';
+import { pickFile } from '@engine/file-pick';
 import { TOUCH_SCALE_MAX, TOUCH_SCALE_MIN, type AssistSettings, type Settings } from '@engine/save/settings';
 import { nextTouchMode, readTouchFacts } from '@engine/input/touch-logic';
-import { folderPickerSupported, packsNeedComputer } from '@engine/assets/folder-picker';
+import { folderPickerSupported, packsFolderless } from '@engine/assets/folder-picker';
 import { MenuScene, backToMenu, type MenuItem } from './menu';
 import { controlScheme } from './hints';
 import type { Game } from './game';
@@ -371,20 +373,19 @@ class PacksOptions extends MenuScene {
   private names: string[] = [];
   /**
    * A phone or tablet (a coarse pointer), or the touch pad up with no folder picker (items 84,
-   * 128, packsNeedComputer): ASSET PACKS NEED A COMPUTER above the rows, no Import pack or Export
-   * template; the packs already stored stay listed (On/Off, OK deletes).
+   * 128, packsFolderless): no Import pack (folder) or Export template. Every device has Import
+   * pack (.zip) (item 141), and the packs already stored stay listed (On/Off, OK deletes).
    */
-  private readonly needComputer: boolean;
+  private readonly folderless: boolean;
+  /** A zip being read: a second pick waits for it. */
+  private importing = false;
   constructor(game: Game, onBack: () => void) {
     super(game, 'ASSET PACKS', [], onBack);
-    this.needComputer = packsNeedComputer({
+    this.folderless = packsFolderless({
       touchShown: controlScheme(game) === 'touch',
       coarsePointer: readTouchFacts().coarsePointer,
       folderPicker: folderPickerSupported(),
     });
-    // Packs already stored keep loading (main.ts) and can be turned off or deleted here; only
-    // importing needs a computer (item 128 review: an Android player may have imported in 0.4.73).
-    if (this.needComputer) this.entryTitle = PACKS_NEED_COMPUTER;
     this.rebuild();
     void this.refresh();
   }
@@ -394,17 +395,29 @@ class PacksOptions extends MenuScene {
     this.rebuild();
   }
 
-  /** Import pack and Export template: a computer's rows (not on a phone or tablet, item 128). */
+  /**
+   * The import rows: Import pack (folder) on a computer, Import pack (.zip) everywhere (item
+   * 141), then Export template on a computer (not on a phone or tablet, item 128).
+   */
   private importRows(): MenuItem[] {
     const game = this.game;
+    const zip: MenuItem = {
+      label: 'Import pack (.zip)',
+      select: () => this.pickZip(),
+      // The file dialog only opens from inside the press's own event.
+      gesture: true,
+      hint: 'Choose an asset pack zip file',
+    };
+    if (this.folderless) return [zip];
     return [
       {
-        label: 'Import pack',
+        label: 'Import pack (folder)',
         select: () => this.pickFolder(),
         // The file dialog only opens from inside the press's own event.
         gesture: true,
         hint: 'Choose a folder with manifest.json',
       },
+      zip,
       {
         label: 'Export template',
         // Item 92: one download, smbc-remix-pack-template.zip (the PNGs, their layouts and a README
@@ -416,25 +429,16 @@ class PacksOptions extends MenuScene {
     ];
   }
 
-  /** The first pack row's index (after Import pack and Export template, when they are there). */
+  /** The first pack row's index (after the import rows and Export template). */
   private get packRowsFrom(): number {
-    return this.needComputer ? 0 : PACK_ROWS_FROM;
-  }
-
-  /** Item 128 review: ASSET PACKS NEED A COMPUTER above the rows (the status line in a box). */
-  override render(r: Renderer): void {
-    if (this.needComputer && this.boxed && !this.status) this.status = PACKS_NEED_COMPUTER;
-    super.render(r);
-    if (!this.needComputer || this.boxed) return;
-    const y = this.translucent ? 42 : 52;
-    r.text(this.game.ctx.assets.sheet('font'), PACKS_NEED_COMPUTER, 128 - PACKS_NEED_COMPUTER.length * 4, y);
+    return this.folderless ? 1 : PACK_ROWS_FROM;
   }
 
   private rebuild(): void {
     const game = this.game;
     const s = settings(game);
     const items: MenuItem[] = [];
-    if (!this.needComputer) items.push(...this.importRows());
+    items.push(...this.importRows());
     for (const name of this.names) {
       items.push({
         label: name.slice(0, 12),
@@ -494,6 +498,39 @@ class PacksOptions extends MenuScene {
     game.scenes.push(box);
   }
 
+  /** Import pack (.zip): the chooser in this press's own event, then the whole zip checked. */
+  private pickZip(): void {
+    if (this.importing) return;
+    const pick = this.game.deps.pickFile ?? pickFile;
+    pick('.zip,application/zip,application/x-zip-compressed', (file) => void this.importZip(file));
+  }
+
+  private async importZip(file: File): Promise<void> {
+    if (this.importing) return;
+    this.importing = true;
+    const say = (status: string, said: string) => {
+      this.status = status;
+      this.game.deps.announcer?.say(said);
+    };
+    try {
+      const name = await importPackZip(file);
+      const s = settings(this.game);
+      if (!s.packs.includes(name)) s.packs.push(name);
+      apply(this.game);
+      await this.refresh();
+      say(`Imported ${name}`, `Imported ${name}. It is turned on.`);
+    } catch (e) {
+      this.game.ctx.audio.sfx('bump');
+      if (e instanceof ZipError) {
+        const [status, said] = ZIP_REFUSED[e.code];
+        say(status, `${said} Nothing changed.`);
+      } else
+        say('NOT AN ASSET PACK', `That zip is not an asset pack: ${(e as Error).message}. Nothing changed.`);
+    } finally {
+      this.importing = false;
+    }
+  }
+
   private pickFolder(): void {
     if (typeof document === 'undefined') return;
     const input = document.createElement('input');
@@ -518,11 +555,23 @@ class PacksOptions extends MenuScene {
   }
 }
 
-/** The first pack row on the ASSET PACKS page (after Import pack and Export template). */
-const PACK_ROWS_FROM = 2;
+/** The first pack row on a computer's ASSET PACKS page (after the two imports and Export template). */
+const PACK_ROWS_FROM = 3;
 
-/** What the ASSET PACKS page says on a touch device that cannot pick a folder (item 84). */
-export const PACKS_NEED_COMPUTER = 'ASSET PACKS NEED A COMPUTER';
+/** What a zip that could not be imported shows (font text) and says, by its reason (item 141). */
+const ZIP_REFUSED: Readonly<Record<ZipErrorCode, readonly [string, string]>> = {
+  'not-zip': ['NOT A ZIP FILE', 'That file is not a zip file.'],
+  damaged: ['ZIP FILE IS DAMAGED', 'That zip file is damaged.'],
+  crc: ['ZIP FILE IS DAMAGED', 'That zip file is damaged: a file inside it does not match its check.'],
+  'unsafe-path': ['ZIP HAS UNSAFE PATHS', 'That zip has unsafe paths in it, so it was not read.'],
+  'too-many': ['TOO MANY FILES IN ZIP', 'That zip holds too many files to be an asset pack.'],
+  'too-big': ['ZIP TOO BIG TO IMPORT', 'That zip is too big to import.'],
+  unsupported: ['ZIP KIND NOT SUPPORTED', 'That kind of zip is not supported: encrypted, split or zip64.'],
+  'no-deflate': [
+    'BROWSER CANNOT UNZIP IT',
+    'This browser cannot read compressed zip files. Update it, or zip the pack without compression.',
+  ],
+};
 
 /** A YES / NO question: its title said before the focused row. */
 class ConfirmMenu extends MenuScene {

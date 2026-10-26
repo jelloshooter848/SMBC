@@ -4,6 +4,7 @@ import { packStore, type StoredPack } from '@engine/assets/idb';
 import { download } from '@engine/assets/pack-loader';
 import { packZips } from '@engine/assets/pack-zip';
 import { readTouchFacts } from '@engine/input/touch-logic';
+import { pickFile } from '@engine/file-pick';
 import {
   CHANGE_FAILURE_TEXT,
   MAX_BACKUP_CHARS,
@@ -50,8 +51,6 @@ export interface SaveDataEnv {
   restart(): void;
 }
 
-let picker: HTMLInputElement | null = null;
-
 /** The browser's: share sheet or downloads, a file input, packStore, a reload. */
 export function browserSaveDataEnv(): SaveDataEnv {
   return {
@@ -76,24 +75,7 @@ export function browserSaveDataEnv(): SaveDataEnv {
         return 'failed';
       }
     },
-    pickFile(onPicked) {
-      if (typeof document === 'undefined') return;
-      picker?.remove();
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
-      // In the page (iOS Safari opens a chooser more reliably for one that is), out of sight.
-      input.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;';
-      input.onchange = () => {
-        const f = input.files?.[0];
-        input.remove();
-        if (picker === input) picker = null;
-        if (f) onPicked(f);
-      };
-      document.body.appendChild(input);
-      picker = input;
-      input.click();
-    },
+    pickFile: (onPicked) => pickFile('.json,application/json', onPicked),
     packs: { list: () => packStore.list(), clear: () => packStore.clear() },
     restart() {
       // The page again from its start: its query (?dev=1) kept, its #link (a save link) dropped.
@@ -135,11 +117,11 @@ const NOTE_SAID =
 const PACK_ZIP_LINES = [
   'EACH PACK IS SAVED AS',
   'ITS OWN .ZIP FILE. TO USE',
-  'ONE AGAIN, UNZIP IT ON A',
-  'COMPUTER AND PICK ITS FOLDER',
-  'WITH IMPORT PACK.',
+  'ONE AGAIN, PICK IT WITH',
+  'IMPORT PACK (.ZIP).',
 ];
-const PACK_AGAIN_SAID = 'To use one again, unzip it on a computer and pick its folder with Import pack.';
+// Item 141: a pack zip goes straight back in, on any device.
+const PACK_AGAIN_SAID = 'To use one again, pick it with Import pack (.zip).';
 const PACK_ZIP_SAID = `Each pack is saved as its own zip file. ${PACK_AGAIN_SAID}`;
 
 /** Options > Save data. */
