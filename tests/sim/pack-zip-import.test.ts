@@ -3,7 +3,13 @@ import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
 import { packStore, type StoredPack } from '@engine/assets/idb';
-import { buildPack, buildTemplateZip, importPackZip, PACK_ZIP_MAX_BYTES } from '@engine/assets/pack-loader';
+import {
+  buildPack,
+  buildTemplateZip,
+  importPackZip,
+  PACK_ZIP_MAX_BYTES,
+  PackImportError,
+} from '@engine/assets/pack-loader';
 import { packZip } from '@engine/assets/pack-zip';
 import { AssetRegistry } from '@engine/assets/registry';
 import { makeZip, unzip, ZIP_MAX_ENTRIES, ZIP_MAX_TOTAL, ZipError } from '@engine/save/zip';
@@ -25,6 +31,16 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]);
 async function unzipAll(bytes: Uint8Array, limits?: Parameters<typeof unzip>[1]) {
   const entries = await unzip(bytes, limits);
   return Promise.all(entries.map(async (e) => ({ path: e.path, data: await e.read() })));
+}
+
+/** The step importPackZip failed at (size, read, pack or store), or 'ok'. */
+async function step(p: Promise<unknown>): Promise<string> {
+  try {
+    await p;
+  } catch (e) {
+    return e instanceof PackImportError ? e.step : `other: ${(e as Error).message}`;
+  }
+  return 'ok';
 }
 
 async function code(p: Promise<unknown>): Promise<string> {
@@ -175,6 +191,25 @@ describe('unzip: what it refuses', () => {
     expect(await code(unzipAll(z))).toBe('damaged');
   });
 
+  it('the lying size is caught by the inflate guard itself (not by a write past the buffer)', async () => {
+    const z = buildZip([{ name: 'zeros.bin', data: new Uint8Array(4 * 1024 * 1024), method: 8, usize: 100 }]);
+    try {
+      await unzipAll(z);
+      throw new Error('read');
+    } catch (e) {
+      expect(e).toBeInstanceOf(ZipError);
+      expect((e as Error).message).toBe('an entry inflates past its size');
+    }
+  });
+
+  it('entries whose data overlap (a known zip bomb shape) are refused', async () => {
+    const z = buildZip([
+      { name: 'a.txt', data: 'same' },
+      { name: 'b.txt', data: 'same', localAt: 0 },
+    ]);
+    expect(await code(unzipAll(z))).toBe('damaged');
+  });
+
   it('encrypted entries, zip64 and unknown methods', async () => {
     expect(await code(unzipAll(buildZip([{ name: 'a.txt', data: 'x', flags: 0x0801 }])))).toBe('unsupported');
     // Deflate64, LZMA, …: its own reason (review nit).
@@ -300,13 +335,14 @@ describe('importPackZip', () => {
       ]),
       buildZip([{ name: 'zeros.bin', data: new Uint8Array(1000), method: 8, usize: 10 }]),
     ];
-    for (const b of bad) await expect(importPackZip(new Blob([b as BlobPart]))).rejects.toThrow();
+    for (const b of bad) expect(await step(importPackZip(new Blob([b as BlobPart])))).toBe('pack');
     expect(puts).toEqual([]);
   });
 
   it('a file bigger than the cap is refused before it is read', async () => {
     const big = { size: PACK_ZIP_MAX_BYTES + 1, arrayBuffer: vi.fn() } as unknown as Blob;
-    expect(await code(importPackZip(big))).toBe('too-big');
+    // #219 nit: importPackZip names the step that failed (the page's own lines come from it).
+    expect(await step(importPackZip(big))).toBe('size');
     expect((big as unknown as { arrayBuffer: ReturnType<typeof vi.fn> }).arrayBuffer).not.toHaveBeenCalled();
     expect(puts).toEqual([]);
   });

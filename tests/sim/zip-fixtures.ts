@@ -20,6 +20,8 @@ export interface FixtureEntry {
   usize?: number;
   /** The compressed bytes to store instead of the real ones. */
   raw?: Uint8Array;
+  /** The local header offset the directory gives (default: where the entry really is). */
+  localAt?: number;
   /** The name's bytes as stored (a CP437 name), instead of `name` in UTF-8. */
   nameBytes?: Uint8Array;
 }
@@ -65,7 +67,7 @@ export function buildZip(
     cv.setUint32(20, opts.zip64 ? 0xffffffff : body.length, true);
     cv.setUint32(24, opts.zip64 ? 0xffffffff : usize, true);
     cv.setUint16(28, name.length, true);
-    cv.setUint32(42, offset, true);
+    cv.setUint32(42, e.localAt ?? offset, true);
     c.set(name, 46);
     parts.push(local, body);
     central.push(c);
