@@ -3,6 +3,7 @@ import { AssistOptionsScene, OptionsScene } from './options';
 import { confirmQuitRun } from './quit-run';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
+import { advancedCheatsItem } from './advanced-cheats-menu';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -103,6 +104,9 @@ export class PauseScene extends MenuScene {
             ),
           hint: 'Every original cheat, in developer mode',
         });
+      // v0.4.73 (item 60): a CLEARED file's replay, beaten on Hard: its Advanced cheats.
+      const adv = game.replayRun?.ref;
+      if (adv && game.advancedCheatsOf(adv)) items.push(advancedCheatsItem(game, adv));
       if (game.stageRound) items.push(this.giveUp());
       // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
       items.push({
@@ -111,9 +115,12 @@ export class PauseScene extends MenuScene {
         select: () => confirmQuitRun(game, null),
         // G-008, B-L: the run's file holds this level's start, only when the run has one
         // (Game.keepsResume: not a developer, link or practice run).
-        hint: game.keepsResume
-          ? 'Back to the Classic menu; your file picks the run up from this level'
-          : 'Back to the Classic menu',
+        hint: game.replayRun
+          ? // v0.4.73 (owner 97a): a CLEARED file's replay goes back to its file box.
+            'Back to the file box; the file stays cleared'
+          : game.keepsResume
+            ? 'Back to the Classic menu; your file picks the run up from this level'
+            : 'Back to the Classic menu',
       });
       this.setItems(items);
       return;
