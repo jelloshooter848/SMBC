@@ -7,9 +7,9 @@ import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 
 // Item 128 review: on a phone or tablet (a coarse pointer) the ASSET PACKS page still lists the
 // packs already stored (On/Off, OK deletes after the confirm): an Android player who imported
-// one in v0.4.73 can turn it off or delete it. Only Import pack and Export template are gone,
-// and the ASSET PACKS NEED A COMPUTER line is drawn above the rows. Helpers copied from
-// asset-packs-page.test.ts.
+// one in v0.4.73 can turn it off or delete it. Only the folder import and Export template are
+// gone; item 141 (owner) puts Import pack (.zip) above the packs instead of the ASSET PACKS NEED
+// A COMPUTER line. Helpers copied from asset-packs-page.test.ts.
 
 useStorage();
 
@@ -86,16 +86,17 @@ describe('item 128 review: stored packs on a phone', () => {
     return h;
   }
 
-  it('lists the stored packs and Back, no Import pack or Export template; the line is above the rows', async () => {
+  it('lists Import pack (.zip), the stored packs and Back; no folder import, Export template or NEED line', async () => {
     const h = await phone();
-    expect(labels(h.top())).toEqual(['neon', 'retro', 'Back']);
-    expect(h.said.some((s) => s.startsWith('ASSET PACKS NEED A COMPUTER'))).toBe(true);
+    expect(labels(h.top())).toEqual(['Import pack (.zip)', 'neon', 'retro', 'Back']);
+    expect(h.said.some((s) => s.includes('NEED A COMPUTER'))).toBe(false);
     const texts = draw(h.top() as never).texts;
-    const line = texts.find((t) => t.str === 'ASSET PACKS NEED A COMPUTER');
+    expect(texts.find((t) => t.str === 'ASSET PACKS NEED A COMPUTER')).toBeUndefined();
+    const zip = texts.find((t) => t.str === 'IMPORT PACK (.ZIP)');
     const row = texts.find((t) => t.str === 'NEON');
-    expect(line).toBeDefined();
+    expect(zip).toBeDefined();
     expect(row).toBeDefined();
-    expect(line!.y).toBeLessThan(row!.y);
+    expect(zip!.y).toBeLessThan(row!.y);
   });
 
   it('left / right toggles a stored pack', async () => {
@@ -119,13 +120,13 @@ describe('item 128 review: stored packs on a phone', () => {
     await flush();
     expect(removed).toEqual(['retro']);
     expect((h.game.deps.settings as Settings).packs).toEqual([]);
-    expect(labels(h.top())).toEqual(['neon', 'Back']);
+    expect(labels(h.top())).toEqual(['Import pack (.zip)', 'neon', 'Back']);
     expect(labels(h.top())[index(h)]).toBe('neon');
     expect(h.said.at(-1)).toMatch(/^Deleted retro/);
   });
 
   it('an iPhone too: its stored packs stay listed', async () => {
     const h = await phone(IPHONE_UA);
-    expect(labels(h.top())).toEqual(['neon', 'retro', 'Back']);
+    expect(labels(h.top())).toEqual(['Import pack (.zip)', 'neon', 'retro', 'Back']);
   });
 });
