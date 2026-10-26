@@ -100,6 +100,8 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
   music and maybe a tracker grid (owner 136C).
 - Whole-game text save code (R1 profile code from research/savecode, round 3: add the frozen classicTutorialsSeen
   dictionary, item 114); parked since SAVE DATA backup files cover moving devices (owner 137A).
+- Asset packs: refuse absurdly large images in a pack (zip ratio / pixel cap), so a hostile pack can't freeze startup;
+  low risk, owner 152: log only, build if ever needed.
 
 ## Details of the planned work
 
