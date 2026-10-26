@@ -300,7 +300,7 @@ describe('item 84 (2): the cursor and the line after YES', () => {
     await flush();
     expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'Back']);
     expect(focused(h)).toBe('Export template');
-    expect(h.said.at(-1)).toBe('Deleted alpha. Export template. Downloads PNGs to repaint');
+    expect(h.said.at(-1)).toBe('Deleted alpha. Export template. Downloads a zip of PNGs to repaint');
   });
 
   it('a store that cannot delete: "Could not delete", said, and the pack is kept and still on', async () => {

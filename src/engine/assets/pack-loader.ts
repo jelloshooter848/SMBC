@@ -2,6 +2,7 @@ import type { AssetRegistry } from './registry';
 import type { FrameRect, SpriteSheet } from '../gfx/spritesheet';
 import { validateManifest, type PackManifest } from './manifest';
 import { packStore, type StoredPack } from './idb';
+import { makeZip, type ZipEntry } from '../save/zip';
 
 export interface LoadedPack {
   name: string;
@@ -141,35 +142,123 @@ export async function importDevPacks(base = '/user-packs/'): Promise<string[]> {
   }
 }
 
-/**
- * Export the built-in sheets as PNG templates plus a manifest, so pack authors can repaint them
- * keeping the frame layout. Triggers one download per file.
- */
-export async function exportTemplate(registry: AssetRegistry, sheetIds: string[]): Promise<void> {
-  const manifest: PackManifest = { schema: 1, name: 'my-pack', sprites: {} };
-  for (const id of sheetIds) {
-    const sheet = registry.sheet(id);
-    const img = sheet.image;
-    if (!img) continue;
-    const canvas = document.createElement('canvas');
-    const w = (img as HTMLCanvasElement).width;
-    const h = (img as HTMLCanvasElement).height;
-    canvas.width = w;
-    canvas.height = h;
-    canvas.getContext('2d')?.drawImage(img, 0, 0);
-    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
-    if (!blob) continue;
-    download(`${id}.png`, blob);
-    (manifest.sprites as NonNullable<PackManifest['sprites']>)[id] = { image: `${id}.png` };
-    // A frames.json beside it documents the layout for editors that want explicit rects.
-    const rects: Record<string, [number, number, number, number]> = {};
-    for (const [k, f] of sheet.frames) rects[k] = [f.x, f.y, f.w, f.h];
-    download(`${id}.frames.json`, new Blob([JSON.stringify(rects, null, 2)], { type: 'application/json' }));
-  }
-  download('manifest.json', new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' }));
+/** What the pack template lists beside the sheets: the live song and sfx ids (main.ts's registries). */
+export interface TemplateLists {
+  songs: readonly string[];
+  sfx: readonly string[];
+  /** A sheet's PNG (default: drawn from its canvas); null leaves the sheet out. */
+  encodePng?: (id: string) => Promise<Uint8Array | null>;
 }
 
-function download(name: string, blob: Blob): void {
+/** The template's file name (one download, owner item 92). */
+export const TEMPLATE_ZIP = 'smbc-remix-pack-template.zip';
+
+/** A sheet's image as PNG bytes, through a canvas (browsers). */
+async function canvasPng(registry: AssetRegistry, id: string): Promise<Uint8Array | null> {
+  if (typeof document === 'undefined') return null;
+  const img = registry.sheet(id).image;
+  if (!img) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = (img as HTMLCanvasElement).width;
+  canvas.height = (img as HTMLCanvasElement).height;
+  canvas.getContext('2d')?.drawImage(img, 0, 0);
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
+  return blob ? new Uint8Array(await blob.arrayBuffer()) : null;
+}
+
+/** The README.txt of the pack template: what a pack can replace, all read live. */
+export function templateReadme(
+  registry: AssetRegistry,
+  sheets: readonly string[],
+  lists: Pick<TemplateLists, 'songs' | 'sfx'>,
+): string {
+  const example: PackManifest = {
+    schema: 1,
+    name: 'my-pack',
+    sprites: { mario: { image: 'mario.png' } },
+    music: { [lists.songs[0] ?? 'overworld']: 'overworld.ogg' },
+    sfx: { [lists.sfx[0] ?? 'jump-small']: 'jump.wav' },
+  };
+  const list = (ids: readonly string[]) => [...ids].sort().map((id) => `  ${id}`);
+  return [
+    'SMBC REMIX ASSET PACK TEMPLATE',
+    '',
+    "An asset pack replaces the game's pictures and sounds by id. It holds no code and no levels.",
+    'To make one: repaint the PNG files you want to change (keep each frame where its',
+    '<sheet>.frames.json says it is), delete the ones you do not change from this folder and from',
+    'manifest.json, rename the pack in manifest.json ("name": letters, digits, - and _), then pick',
+    'the folder with Options > Asset packs > Import pack on a computer.',
+    '',
+    'manifest.json keys:',
+    '  sprites   sheet id -> { "image": "<file>.png" } (optional "frames": { name: [x, y, w, h] })',
+    '  palettes  palette name -> list of colours, replacing a built-in palette (see below)',
+    '  music     song id -> audio file (ogg, mp3, wav) played instead of the built-in song',
+    '  sfx       sound id -> audio file played instead of the built-in sound',
+    '',
+    'A minimal example manifest:',
+    '```json',
+    JSON.stringify(example, null, 2),
+    '```',
+    '',
+    `SPRITE SHEETS (${sheets.length}): <id>.png and <id>.frames.json in this folder`,
+    ...list(sheets),
+    '',
+    `MUSIC IDS (${lists.songs.length}) for "music":`,
+    ...list(lists.songs),
+    '',
+    `SFX IDS (${lists.sfx.length}) for "sfx":`,
+    ...list(lists.sfx),
+    '',
+    'PALETTES for "palettes": name: colours, in order. A palette entry recolours every built-in',
+    "sheet drawn with that palette, without repainting it: the heroes' power-up colours such as",
+    'Fire Mario, the level and map themes, star flashes and other colour cycles. A sheet a pack',
+    'repaints as a PNG ignores palettes.',
+    ...Object.entries(registry.builtinPalettes())
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([name, colors]) => `  ${name}: ${colors.join(', ')}`),
+    '',
+  ].join('\n');
+}
+
+/**
+ * The pack template as one zip (owner item 92): manifest.json naming every sheet, each sheet's
+ * PNG and frames.json (sheet ids read live from the registry), and README.txt.
+ */
+export async function buildTemplateZip(registry: AssetRegistry, lists: TemplateLists): Promise<Uint8Array> {
+  const encode = lists.encodePng ?? ((id: string) => canvasPng(registry, id));
+  const manifest: PackManifest = { schema: 1, name: 'my-pack', sprites: {} };
+  const sprites = manifest.sprites as NonNullable<PackManifest['sprites']>;
+  const entries: ZipEntry[] = [];
+  const sheets: string[] = [];
+  for (const id of registry.ids()) {
+    const png = await encode(id);
+    if (!png) continue;
+    const rects: Record<string, [number, number, number, number]> = {};
+    for (const [k, f] of registry.sheet(id).frames) rects[k] = [f.x, f.y, f.w, f.h];
+    entries.push({ path: `${id}.png`, data: png });
+    entries.push({ path: `${id}.frames.json`, data: JSON.stringify(rects, null, 2) });
+    sprites[id] = { image: `${id}.png` };
+    sheets.push(id);
+  }
+  return makeZip([
+    { path: 'manifest.json', data: JSON.stringify(manifest, null, 2) },
+    { path: 'README.txt', data: templateReadme(registry, sheets, lists) },
+    ...entries,
+  ]);
+}
+
+/** Export template: one download, smbc-remix-pack-template.zip. */
+export async function exportTemplate(
+  registry: AssetRegistry,
+  lists: TemplateLists,
+  save: (name: string, blob: Blob) => void = download,
+): Promise<void> {
+  const bytes = await buildTemplateZip(registry, lists);
+  save(TEMPLATE_ZIP, new Blob([bytes as BlobPart], { type: 'application/zip' }));
+}
+
+/** Saves `blob` as a download named `name`. */
+export function download(name: string, blob: Blob): void {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;
