@@ -7,7 +7,7 @@ import type { SpriteDef } from '@engine/gfx/pixelart';
  * MapInfo.ExplodingRabbitPowerup: ar(324,194,67,16) of BmdInfo_Map000), pixel for pixel and in
  * its colours, written out as text. Exploding Rabbit logo (c) Jay Pavlina / Exploding Rabbit,
  * used as a tribute in Classic mode; it will be replaced on request. Classic mode only: under
- * Current rules the item keeps our own drawing (the Fire Flower's). Not a precedent: no other
+ * Campaign rules the item keeps our own drawing (the Fire Flower's). Not a precedent: no other
  * original asset is taken.
  *
  * Four frames, its explosion cycling red, orange, yellow and white on ANIM_MODERATE_TMR (75 ms).

@@ -90,12 +90,12 @@ describe('G-031 cheats from the Classic pause', () => {
   });
 
   it('is not offered under Campaign rules, where no cheat plays', () => {
-    // O-12: Classic rules set to Current is developer mode's: the run starts there, and its
+    // O-12: Classic rules set to Campaign is developer mode's: the run starts there, and its
     // pause is a player's (dev mode off; developer mode's pause offers every cheat).
     // BUG-11: such a run is the dev START page's (Rules: Campaign, Mode: Classic run).
     const h = classic({ dev: true });
-    h.game.devClassicGame(MARIO, '1-1', 'current');
-    expect(h.game.liveRules).toBe('current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
+    expect(h.game.liveRules).toBe('campaign');
     h.settings.dev = false;
     h.until(() => h.top() instanceof LevelScene, 600);
     h.idle(4);
@@ -120,7 +120,7 @@ describe('G-093 the Classic guide', () => {
   it('How to play from the Classic menus lists the Classic select’s heroes, as Classic defs', () => {
     const h = classic();
     h.game.showClassicMenu();
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
     pick(h, 'How to play');
     // v0.4.73 item 82: a Classic box of the heroes (tests/sim/v0473-menus.test.ts).
@@ -172,7 +172,7 @@ describe('G-093 the Classic guide', () => {
   });
 
   it('a saved Campaign rules setting is ignored (BUG-11): it lists the Classic heroes', () => {
-    const h = classic({ classicRules: 'current', dev: true });
+    const h = classic({ classicRules: 'campaign', dev: true });
     h.game.showClassicMenu();
     h.game.scenes.push(new GuideIndexScene(h.game, () => h.game.scenes.pop(), true));
     const names = labels(h.top()).filter((l) => l !== 'Back');

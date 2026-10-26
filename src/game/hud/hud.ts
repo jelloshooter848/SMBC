@@ -58,14 +58,14 @@ export interface HudOptions {
 
 /**
  * Where a Classic SMBC hero's power icon goes (PS-C26, 8x8, the third HUD row): player 1's, then
- * player 2's (where player 2's hearts are in Current).
+ * player 2's (where player 2's hearts are in Campaign).
  */
 export const POWER_ICON_P1 = { x: 24, y: 24 } as const;
 export const POWER_ICON_P2 = { x: 144, y: 32 } as const;
 
 /**
  * A Classic SMBC hero's power icon (PS-C26): the Mushroom or the Fire Flower, nothing when small.
- * Only defs with `powerIcon` (Classic defs) show one; Current Mario keeps today's HUD.
+ * Only defs with `powerIcon` (Classic defs) show one; Campaign Mario keeps today's HUD.
  */
 export function powerIcon(p: Player | undefined): 'icon-mushroom' | 'icon-flower' | null {
   if (!p || !p.def.powerIcon) return null;
@@ -169,7 +169,7 @@ export function drawHud(
     r.text(font, str, x, y);
   };
   // The hero being played (players[i].def: the def for the World's rules, TG-19), else the
-  // state's (the intro card has no players yet). Under Current both are the same def.
+  // state's (the intro card has no players yet). Under Campaign both are the same def.
   // Up to 7 letters, the score's width under it (Classic Warriors of Light's WARRIOR, WL-M13);
   // every other hero's name has 6 or fewer.
   const name = (players[0]?.def ?? state.character).hudName.slice(0, 7).padEnd(6);

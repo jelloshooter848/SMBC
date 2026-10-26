@@ -45,7 +45,7 @@ describe('G-010: each Classic def declares its level flags', () => {
   const defs = new Set<CharacterDef>([
     ...(Object.values(CLASSIC_CHARACTERS) as CharacterDef[]),
     ...CLASSIC_EXTRAS,
-    // A skin list starts with its slot's hero as the Current def (the World plays heroFor's).
+    // A skin list starts with its slot's hero as the Campaign def (the World plays heroFor's).
     ...Object.values(CLASSIC_SKINS)
       .flat()
       .map((d) => heroFor(d, 'classic')),
@@ -74,7 +74,7 @@ describe('G-010: each Classic def declares its level flags', () => {
     expect(f(BASS)).toEqual(['badswimmer']);
   });
 
-  it('no Current def has level flags', async () => {
+  it('no Campaign def has level flags', async () => {
     const { CHARACTERS } = await import('@game/characters/registry');
     for (const d of CHARACTERS) expect(d.levelFlags, d.id).toBeUndefined();
   });
@@ -84,12 +84,12 @@ describe('G-010: the layers hold the pieces the hand-made Sophia sections and ta
   it("1-1's flagpole lift (charHorz) is laid for Link under Classic rules only", () => {
     const level = getLevel('1-1');
     const lift = (l: LevelData) => l.entities.some((e) => e.type === 'lift-fall' && e.x === 193 && e.y === 4);
-    const play = (character: CharacterDef, rules: 'classic' | 'current') =>
+    const play = (character: CharacterDef, rules: 'classic' | 'campaign') =>
       runSim({ level, character, rules, script: { steps: [] }, maxFrames: 1 }).world.level;
     expect(lift(play(LINK, 'classic'))).toBe(true);
     expect(lift(play(SOPHIA, 'classic'))).toBe(true);
     expect(lift(play(MARIO, 'classic'))).toBe(false);
-    expect(lift(play(LINK, 'current'))).toBe(false);
+    expect(lift(play(LINK, 'campaign'))).toBe(false);
   });
 
   it("every `[variant sophia classic]` section's pieces are in Sophia's layers", () => {
@@ -221,15 +221,15 @@ describe('G-006: Map Difficulty layers', () => {
     }
   });
 
-  it('a Classic World is built for the run difficulty; a Current one never is', () => {
+  it('a Classic World is built for the run difficulty; a Campaign one never is', () => {
     const level = getLevel('1-1');
-    const run = (rules: 'classic' | 'current') =>
+    const run = (rules: 'classic' | 'campaign') =>
       runSim({ level, character: MARIO, rules, mapDifficulty: 'hard', script: { steps: [] }, maxFrames: 1 })
         .world;
     expect(run('classic').mapDifficulty).toBe('hard');
     expect(run('classic').level.entities.some((e) => e.type === 'lakitu')).toBe(true);
-    expect(run('current').mapDifficulty).toBe('normal');
-    expect(run('current').level).toBe(level);
+    expect(run('campaign').mapDifficulty).toBe('normal');
+    expect(run('campaign').level).toBe(level);
   });
 });
 

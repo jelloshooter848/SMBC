@@ -339,7 +339,7 @@ describe('Mario and Luigi stroke; the surface line (SW-C1, SW-C9, SW-C10)', () =
 
 describe('no stomp under water (SW-C7)', () => {
   /** Big Mario drops onto a Goomba on the floor of a water room. */
-  const dropOn = (def: CharacterDef, rules: 'classic' | 'current') => {
+  const dropOn = (def: CharacterDef, rules: 'classic' | 'campaign') => {
     let goomba: Goomba | null = null;
     const r = runSim({
       level: deepWater(12),
@@ -373,15 +373,15 @@ describe('no stomp under water (SW-C7)', () => {
     expect(r.goombaAlive).toBe(true);
   });
 
-  it('Current Mario still stomps under water', () => {
-    const r = dropOn(MARIO, 'current');
+  it('Campaign Mario still stomps under water', () => {
+    const r = dropOn(MARIO, 'campaign');
     expect(r.power).toBe('big');
     expect(r.goombaAlive).toBe(false);
   });
 });
 
-describe('Current swimming is unchanged (TG-27)', () => {
-  it('Current Link still strokes in mid-water with his own swim numbers', () => {
+describe('Campaign swimming is unchanged (TG-27)', () => {
+  it('Campaign Link still strokes in mid-water with his own swim numbers', () => {
     const vys: number[] = [];
     runSim({
       level: deepWater(),
@@ -399,7 +399,7 @@ describe('Current swimming is unchanged (TG-27)', () => {
     expect(vys[0]).toBe(-(sw?.stroke ?? 0) + (sw?.gravity ?? 0));
   });
 
-  it('no Current def sets a Classic swim field', () => {
+  it('no Campaign def sets a Classic swim field', () => {
     for (const d of [MARIO, LUIGI, LINK, SAMUS, SIMON, MEGAMAN, BILL, RYU]) {
       const sw = d.movement.swim;
       expect(sw?.floorJumpOnly, d.id).toBeUndefined();
@@ -412,7 +412,7 @@ describe('Current swimming is unchanged (TG-27)', () => {
 
 describe('stepping stones for floor jumpers (SW-C12, TG-45)', () => {
   const at = (w: World, x: number, y: number) => w.map.get(x, y);
-  const world = (def: CharacterDef, rules: 'classic' | 'current', id = '2-2') =>
+  const world = (def: CharacterDef, rules: 'classic' | 'campaign', id = '2-2') =>
     runSim({ level: getLevel(id), character: def, rules, script: none, maxFrames: 1 }).world;
 
   it('Classic Link in 2-2 has the coral at (134, 13) and the coins moved up', () => {
@@ -430,12 +430,12 @@ describe('stepping stones for floor jumpers (SW-C12, TG-45)', () => {
     expect(at(w, 68, 13)).toBe(T.HARD);
   });
 
-  it('Classic Mario, Current Link and Current Mario get the map as it is', () => {
+  it('Classic Mario, Campaign Link and Campaign Mario get the map as it is', () => {
     const plain = new TileMap(getLevel('2-2'));
     for (const w of [
       world(classicStandIn(MARIO), 'classic'),
-      world(LINK, 'current'),
-      world(MARIO, 'current'),
+      world(LINK, 'campaign'),
+      world(MARIO, 'campaign'),
     ]) {
       expect(at(w, 134, 13)).toBe(plain.get(134, 13));
       expect(at(w, 134, 13)).not.toBe(T.HARD);
@@ -443,8 +443,8 @@ describe('stepping stones for floor jumpers (SW-C12, TG-45)', () => {
     }
   });
 
-  it('Link under Classic rules with no Classic def yet (a Current def) gets no stones', () => {
-    // heroFor returns the Current def while Link has no classic.ts (TG-20): not a floor jumper.
+  it('Link under Classic rules with no Classic def yet (a Campaign def) gets no stones', () => {
+    // heroFor returns the Campaign def while Link has no classic.ts (TG-20): not a floor jumper.
     expect(at(world(LINK, 'classic'), 134, 13)).not.toBe(T.HARD);
   });
 

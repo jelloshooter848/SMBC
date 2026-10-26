@@ -125,9 +125,9 @@ describe('YM-1, YM-2: off by default, nothing changes', () => {
     // Dev mode off: the defaults (no mount), whatever is saved.
     (h.game.deps.settings as Settings).dev = false;
     expect(h.game.ctx.classicYoshi).toBeUndefined();
-    // Current rules: never.
+    // Campaign rules: never.
     (h.game.deps.settings as Settings).dev = true;
-    h.game.devStart('1-1', LINK, 'small', false, 1, { rules: 'current' });
+    h.game.devStart('1-1', LINK, 'small', false, 1, { rules: 'campaign' });
     expect(h.game.ctx.classicYoshi).toBeUndefined();
   });
 

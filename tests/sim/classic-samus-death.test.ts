@@ -18,7 +18,7 @@ import type { WorldEvent } from '@game/world/world';
  * Classic SMBC Samus's death (SA-C32; Samus.as:142-143, 1334-1358, SamusGuts.as): she vanishes,
  * her suit bursts into 6 pieces and her own death jingle plays; the death lasts 180 frames
  * (DIE_TMR_DEL_NORMAL 3000 ms), 150 in a pit (DIE_TMR_DEL_PIT 2500 ms), with no pieces there.
- * Current Samus keeps the shared death.
+ * Campaign Samus keeps the shared death.
  */
 
 const level = () =>
@@ -35,7 +35,7 @@ const level = () =>
     ].join('\n'),
   );
 
-function dieAfter(rules: 'classic' | 'current', pit = false) {
+function dieAfter(rules: 'classic' | 'campaign', pit = false) {
   const jingles: string[] = [];
   const sfx: string[] = [];
   const audio: AudioSink = {
@@ -71,10 +71,10 @@ function dieAfter(rules: 'classic' | 'current', pit = false) {
 }
 
 describe('SA-C32: Classic Samus bursts into six pieces', () => {
-  it('the Classic def sets it; no Current def and no other Classic def does', () => {
+  it('the Classic def sets it; no Campaign def and no other Classic def does', () => {
     expect(SAMUS_CLASSIC.deathBurst?.pieces).toHaveLength(6);
     for (const def of [...CHARACTERS, ...Object.values(CLASSIC_CHARACTERS)])
-      // G-054 (0.5.0): Classic Mega Man, Bass and their looks burst into orbs; no Current def does.
+      // G-054 (0.5.0): Classic Mega Man, Bass and their looks burst into orbs; no Campaign def does.
       // Pit and Dark Pit, Samus's looks, burst into her pieces (0.5.0 QA).
       if (
         def !== SAMUS_CLASSIC &&
@@ -96,7 +96,7 @@ describe('SA-C32: Classic Samus bursts into six pieces', () => {
   it('she stays where she died (no hop) while the pieces fly', () => {
     const d = dieAfter('classic');
     expect(d.p.body.y).toBe(d.y0);
-    const cur = dieAfter('current');
+    const cur = dieAfter('campaign');
     expect(cur.jingles).toEqual(['death']);
     expect(cur.diedAt).not.toBe(180);
   });

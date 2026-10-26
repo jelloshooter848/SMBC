@@ -29,7 +29,7 @@ import { draw, file, makeGame, store, useStorage, type H } from './heroes-harnes
 // original's names, On/Off, ????? rows with their goals, Enter code; settings.classicCheats is its
 // own key, deep-merged into old files; play in a Classic run (not a developer one) counts toward
 // the goals and the unlocks are told; developer mode opens every cheat from the Classic pause;
-// the campaign and Current rules never see a cheat.
+// the campaign and Campaign rules never see a cheat.
 
 useStorage();
 afterEach(() => store.clear());
@@ -239,9 +239,9 @@ describe('cheats are Classic only', () => {
     expect(h.game.ctx.classicCheats?.invincible).toBe(true);
     h.game.showTitle();
     expect(h.game.ctx.classicCheats).toBeUndefined();
-    // A Classic run under Current rules (the dev START page's Rules row, BUG-11): no cheats.
+    // A Classic run under Campaign rules (the dev START page's Rules row, BUG-11): no cheats.
     h.settings.dev = true;
-    h.game.devClassicGame(MARIO, '1-1', 'current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
     expect(h.game.ctx.classicCheats).toBeUndefined();
     // Free play with Classic rules (dev Level select's Free play): no cheats.
     h.game.newGame(MARIO, '1-1', null, { rules: 'classic' });

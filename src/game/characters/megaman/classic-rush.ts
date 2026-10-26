@@ -11,7 +11,7 @@ import type { World } from '../../world/world';
  * Classic SMBC's Rush Coil (2026-10-07-megaman-classic-smbc-rules.md MM-C28..MM-C31;
  * `pickups/Rush.as`). Summoned free by a Select tap, he drops in from the top of the screen,
  * lands, waits, warns, and flies off; a falling hero who touches him is launched about 103 px.
- * Current keeps entities/objects/rush-coil.ts.
+ * Campaign keeps entities/objects/rush-coil.ts.
  */
 
 /** Rush's fall and fly-off acceleration, 2300 px/s² (0.31944 px/f², MM-C29). */

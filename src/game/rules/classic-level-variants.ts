@@ -12,9 +12,9 @@ import type { CharacterDef } from '../characters/character';
  *
  * Most of the original's pieces for her are already in the maps' `[variant sophia classic]`
  * sections (level/variants.ts: SMB's 4-4 and every Lost Levels area but these). This table holds
- * the areas those sections leave out (the Lost Levels castles our Current tank gets through
+ * the areas those sections leave out (the Lost Levels castles our Campaign tank gets through
  * nose first). It is applied only by the World's Classic level-load step, for a player whose
- * def has `levelFlags.wide`, so under Current the maps are their own.
+ * def has `levelFlags.wide`, so under Campaign the maps are their own.
  */
 
 /** One area's edits: tiles set (x, y, tile id), and spawns moved (type at `from` → `to`). */

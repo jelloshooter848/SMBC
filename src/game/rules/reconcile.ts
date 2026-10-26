@@ -7,7 +7,7 @@ import type { Game } from '../scenes/game';
  * Before a World is built (LevelScene, TG-16): power, hit points and kit carried from other rules
  * go back to each hero's start for `rules` (lives, score, coins, checkpoint, time and the rest
  * stay), and a Classic-only extra no longer in the roster gives way to the first hero (TG-42).
- * `state.rules` is then set ('classic', or no key for Current). Said aloud. With the rules
+ * `state.rules` is then set ('classic', or no key for Campaign). Said aloud. With the rules
  * unchanged and no extra carried it touches nothing but reads `game.state`.
  */
 export function reconcileRules(game: Game, rules: Rules): void {
@@ -43,7 +43,7 @@ export function reconcileRules(game: Game, rules: Rules): void {
   } else delete s.swapped2;
   if (!s.swapped || s.swapKit?.hero !== s.character.id) delete s.swapKit;
   if (!s.swapped2 || s.swapKit2?.hero !== s.character2?.id) delete s.swapKit2;
-  if ((s.rules ?? 'current') !== rules) {
+  if ((s.rules ?? 'campaign') !== rules) {
     const reset = (c: CharacterDef) => {
       const d = playedHero(game.ctx, c, rules);
       return { powerState: defaultPower(d), hp: startHp(d) };

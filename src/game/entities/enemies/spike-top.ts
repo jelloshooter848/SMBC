@@ -30,7 +30,7 @@ export class SpikeTop extends Enemy {
     this.scores = ENEMY_SCORES.GOOMBA;
     this.corpseGravity = 0x0031c; // Goomba.setStats: gravity = 1400 Flash px/s² (0.194 px/f²)
     this.stompable = false;
-    // Current rules (a custom level's): fireballs bounce off its shell, as off a Buzzy Beetle's.
+    // Campaign rules (a custom level's): fireballs bounce off its shell, as off a Buzzy Beetle's.
     this.vulnerability = { ...this.vulnerability, fireball: 'immune', bump: 'bounce' };
   }
 

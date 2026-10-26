@@ -54,8 +54,8 @@ import { CLASSIC_STOMP_BOUNCE } from '../classic/stomp';
 
 /*
  * Sophia III under Classic SMBC rules (bug-reports/2026-10-07-sophia-build-classic-character.md,
- * SO-1 to SO-62). The report was written before our Current Sophia existed; she is the same tank
- * (id `sophia`), so this def keeps the Current one's driving (drive.ts: SO-6 to SO-21, SO-35 to
+ * SO-1 to SO-62). The report was written before our Campaign Sophia existed; she is the same tank
+ * (id `sophia`), so this def keeps the Campaign one's driving (drive.ts: SO-6 to SO-21, SO-35 to
  * SO-37), art and shot classes and changes what Classic changes:
  * - power through the shared Classic helpers (PS-C3, PS-C4's 60-frame freeze, 720-frame Star);
  *   the Crusher alone gives Wall and Ceiling Climb (no campaign items);
@@ -142,7 +142,7 @@ const KIT: ClassicPowerKit = {
 const CLASSIC_FRAMES = new Set(Object.keys(sophiaSmbcDef.frames));
 
 /**
- * The Classic Star cycle (PS-C19) on her hull; the poses are the Current sprite's, drawn from her
+ * The Classic Star cycle (PS-C19) on her hull; the poses are the Campaign sprite's, drawn from her
  * Classic sheet at the original sizes (R1). Jason's 18-row frames stand on his box's bottom.
  */
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {

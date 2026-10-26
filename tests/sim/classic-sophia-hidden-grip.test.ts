@@ -24,7 +24,7 @@ function level(row8: string, startX: number) {
 }
 const row = (cells: Record<number, string>) => Array.from({ length: W }, (_, i) => cells[i] ?? '.').join('');
 
-function jump(lv: ReturnType<typeof level>, nudge: number, rules: 'classic' | 'current' = 'classic') {
+function jump(lv: ReturnType<typeof level>, nudge: number, rules: 'classic' | 'campaign' = 'classic') {
   let gripped = false;
   const r = runSim({
     level: lv,
@@ -58,8 +58,8 @@ describe('Classic Sophia: no grip on a ceiling that includes a hidden block (ite
     expect(world.map.get(7, 8)).not.toBe(T.HIDDEN_COIN);
   });
 
-  it('Current Sophia (same drive code) refuses the grip there too and reveals the block', () => {
-    const { gripped, world } = jump(level(row({ 6: '=', 7: '2' }), 6), 0, 'current');
+  it('Campaign Sophia (same drive code) refuses the grip there too and reveals the block', () => {
+    const { gripped, world } = jump(level(row({ 6: '=', 7: '2' }), 6), 0, 'campaign');
     expect(gripped).toBe(false);
     expect(world.map.get(7, 8)).not.toBe(T.HIDDEN_COIN);
   });

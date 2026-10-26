@@ -490,7 +490,7 @@ describe('G-020: Special water areas, Mario and Link (the water bot)', () => {
           level: getLevel(id),
           character: def,
           // The water bot is tuned to the shared swim (as tests/sim/water-routes.test.ts plays it).
-          rules: 'current',
+          rules: 'campaign',
           state: { powerState: power },
           script: { steps: [] },
           maxFrames: 6000,

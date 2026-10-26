@@ -7,7 +7,7 @@ import { fxPalette } from '@content/sprites/palette-fx';
 /**
  * The Classic rules tag (TG-31, TG-32) at the top right, under TIME and its digits (200, 8-23),
  * clear of the screen's top edge and of every HUD line: CLASSIC while every hero plays a Classic def, CLASSIC? at x 188 while any hero has
- * no Classic def yet and plays Current (TG-20). Nothing under Current rules.
+ * no Classic def yet and plays Campaign (TG-20). Nothing under Campaign rules.
  */
 export function rulesTag(rules: Rules, heroes: readonly CharacterDef[]): string | null {
   if (rules !== 'classic') return null;
@@ -64,8 +64,8 @@ export function drawRulesTag(
   r.text(assets.sheet('font'), tag, x, y);
 }
 
-/** The F1 overlay's rules line (TG-33), e.g. `rules classic p1 link classic p2 mario current`. */
+/** The F1 overlay's rules line (TG-33), e.g. `rules classic p1 link classic p2 mario campaign`. */
 export function rulesLine(rules: Rules, heroes: readonly CharacterDef[]): string {
-  const who = heroes.map((d, i) => `p${i + 1} ${d.id} ${d.rules === 'classic' ? 'classic' : 'current'}`);
+  const who = heroes.map((d, i) => `p${i + 1} ${d.id} ${d.rules === 'classic' ? 'classic' : 'campaign'}`);
   return [`rules ${rules}`, ...who].join(' ');
 }

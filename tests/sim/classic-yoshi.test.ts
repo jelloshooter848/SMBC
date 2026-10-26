@@ -56,7 +56,7 @@ function place<E extends Enemy>(r: Rig, e: E, dx: number): E {
 const eggs = (r: Rig) => r.world.entities.filter((e): e is YoshiEgg => e instanceof YoshiEgg && e.alive);
 
 describe('YO-1, YO-2: definition and roster', () => {
-  it('a Classic-only def, last in CLASSIC_EXTRAS, never a Current hero', () => {
+  it('a Classic-only def, last in CLASSIC_EXTRAS, never a Campaign hero', () => {
     expect(Y).toMatchObject({ id: 'yoshi', name: 'Yoshi', hudName: 'YOSHI', rules: 'classic' });
     expect(Y.notInOriginal).toBe(true);
     expect(Y.damage).toEqual({ kind: 'powerup', states: ['small', 'big', 'fire'] });
@@ -87,12 +87,12 @@ describe('YO-1, YO-2: definition and roster', () => {
       ).toBe(true);
   });
 
-  it('Classic rosters list him; Current ones, and the campaign roster, never (TG-38)', () => {
+  it('Classic rosters list him; Campaign ones, and the campaign roster, never (TG-38)', () => {
     const h = makeGame({ dev: true });
     expect(h.game.rosterFor('classic')).toContain(Y);
-    expect(h.game.rosterFor('current')).not.toContain(Y);
-    // Under Current the roster's defs are unchanged.
-    expect(heroFor(MARIO, 'current')).toBe(MARIO);
+    expect(h.game.rosterFor('campaign')).not.toContain(Y);
+    // Under Campaign the roster's defs are unchanged.
+    expect(heroFor(MARIO, 'campaign')).toBe(MARIO);
   });
 
   it('every frame he can show is on his sheet, in every palette', () => {

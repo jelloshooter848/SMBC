@@ -11,10 +11,10 @@ import { Camera, SCROLL_BACK_CENTER } from '@game/world/camera';
 import type { World, WorldStart } from '@game/world/world';
 
 // Classic SMBC's camera scrolls back left (SMBC 3.1.21's default: Level.scrollScreen with
-// screenScrollsLeft, i.e. the Classic Screen Scroll cheat off). Current keeps SMB1's right-only
+// screenScrollsLeft, i.e. the Classic Screen Scroll cheat off). Campaign keeps SMB1's right-only
 // camera, and the Scroll back assist is its own thing.
 
-function world(rules: 'classic' | 'current', level = getLevel('1-1'), start?: WorldStart): World {
+function world(rules: 'classic' | 'campaign', level = getLevel('1-1'), start?: WorldStart): World {
   if (!level) throw new Error('no level');
   return runSim({
     level,
@@ -91,8 +91,8 @@ describe('Classic camera scrolls back left (SMBC 3.1.21 default)', () => {
     expect(w.camera.x).toBe(0);
   });
 
-  it('Current is unchanged: the camera never goes back left', () => {
-    const w = world('current', cageLevel());
+  it('Campaign is unchanged: the camera never goes back left', () => {
+    const w = world('campaign', cageLevel());
     expect(w.camera.scrollBack).toBe(false);
     hold(w, ['right', 'run'], 200);
     hold(w, [], 40);
@@ -124,8 +124,8 @@ describe('Classic camera scrolls back left (SMBC 3.1.21 default)', () => {
     expect(w.entities.filter((e) => e instanceof Goomba)).toHaveLength(1);
   });
 
-  it('Current: the same enemy despawns for good', () => {
-    const w = world('current', cageLevel());
+  it('Campaign: the same enemy despawns for good', () => {
+    const w = world('campaign', cageLevel());
     hold(w, ['right'], 120);
     const g = w.entities.find((e): e is Goomba => e instanceof Goomba)!;
     hold(w, ['right', 'run'], 260);

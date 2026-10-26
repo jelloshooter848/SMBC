@@ -157,7 +157,7 @@ export interface MovementProfile {
    */
   airJumps?: number | undefined;
   /*
-   * ---- Classic SMBC jump and run model (optional; no Current profile sets any of these) ----
+   * ---- Classic SMBC jump and run model (optional; no Campaign profile sets any of these) ----
    * Built for Mario and Luigi (2026-10-07-mario-luigi-classic-smbc-rules.md, ML-C) and meant to be
    * shared by the other Classic heroes. Each one is read in Player only when set, so a profile
    * without them runs today's code unchanged (TG-23).
@@ -241,7 +241,7 @@ export interface MovementProfile {
   /**
    * Classic SMBC Ryu's wall climb (RY-C10..RY-C16; Player.wall): he grabs a wall in the air while
    * pressing toward it, stays on with no input, climbs, throws, and leaves by the hop table. The
-   * Current cling (`Player.clinging`, the wall kick) is not used. Absent: none.
+   * Campaign cling (`Player.clinging`, the wall kick) is not used. Absent: none.
    */
   wallClimb?: WallClimbProfile | undefined;
   /**

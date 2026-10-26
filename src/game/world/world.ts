@@ -262,7 +262,7 @@ export interface WorldFeats {
 export interface WorldStart {
   /**
    * The rules this World plays by, instead of the context's (TG-14). Mini games and training
-   * rooms pass 'current': they are scripted around Current kits.
+   * rooms pass 'campaign': they are scripted around Campaign kits.
    */
   rules?: Rules;
   /**
@@ -614,7 +614,7 @@ export class World {
   readonly rules: Rules;
   /**
    * Classic mode's cheats that are on (cheats.ts, FU-7e): the context's live view in a Classic
-   * World, NO_CHEATS in every Current one (so Current play never reads a cheat).
+   * World, NO_CHEATS in every Campaign one (so Campaign play never reads a cheat).
    */
   get cheats(): CheatFlags {
     return this.rules === 'classic' ? (this.ctx.classicCheats ?? NO_CHEATS) : NO_CHEATS;
@@ -645,7 +645,7 @@ export class World {
    */
   private readonly fromMap = new WeakSet<Entity>();
   private parked: Entity[] = [];
-  /** Classic SMBC: this stage's areas as they were left (see AreaSnapshot); null under Current. */
+  /** Classic SMBC: this stage's areas as they were left (see AreaSnapshot); null under Campaign. */
   readonly areaMemory: AreaMemory | null;
   /** Subpixel y of the water line in water levels; Infinity elsewhere. */
   waterTop = Infinity;
@@ -673,7 +673,7 @@ export class World {
   private readonly coinBlocks = new Map<string, { left: number; until: number }>();
   /**
    * Classic rules: hit points of plain bricks a weapon has hurt ("x,y"; 125 when absent, BR-C1).
-   * Each level or area is a new World, so it starts empty. Current never writes it.
+   * Each level or area is a new World, so it starts empty. Campaign never writes it.
    */
   readonly brickHp = new Map<string, number>();
   /** Scratch for shotBlocks: the block tiles a Classic shot touches this frame. */
@@ -849,7 +849,7 @@ export class World {
     const shown = this.rules === 'classic' ? classicRules().blockShown?.(this, tx, ty, this.player) : null;
     return shown ?? this.blockItems.get(`${tx},${ty}`) ?? block.content;
   }
-  /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Current). */
+  /** Classic mode's Map Difficulty for this World (GameContext.mapDifficulty; Normal under Campaign). */
   readonly mapDifficulty: MapDifficulty;
   /** The CLASSIC title's demo World (WorldStart.demo). */
   readonly demo: boolean;
@@ -872,7 +872,7 @@ export class World {
     }
     this.level = level;
     // Classic mode's Infinite Lives, Infinite Time and Invincible cheats are the assists' own
-    // (cheatAssist); a Current World has the context's assists as they are.
+    // (cheatAssist); a Campaign World has the context's assists as they are.
     this.assist = this.rules === 'classic' ? cheatAssist(ctx.assist, () => this.cheats) : ctx.assist;
     this.classic = this.rules === 'classic' ? (ctx.classic ?? null) : null;
     this.extraEntities = start.extraEntities;
@@ -942,7 +942,7 @@ export class World {
     }
     this.spawns = this.spawns.filter((e) => e.type !== 'stairs');
     this.bowserFire = BowserFire.forLevel(level);
-    // The state holds the roster (Current) defs; the players play the defs for these rules (TG-19).
+    // The state holds the roster (Campaign) defs; the players play the defs for these rules (TG-19).
     const defs: [CharacterDef, string, number][] = [
       [playedHero(ctx, state.character, this.rules), state.powerState, state.hp],
     ];
@@ -1105,7 +1105,7 @@ export class World {
       this.waterTop = tileToSub(row) + px(8);
     }
     // Per-rules level variants (TG-45): Classic SMBC's cells (2-2's and 7-2's stepping stones for
-    // floor jumpers, SW-C12; wide heroes' shafts, SO-48). Under Current the map is the level's own.
+    // floor jumpers, SW-C12; wide heroes' shafts, SO-48). Under Campaign the map is the level's own.
     if (this.rules === 'classic') {
       classicRules().levelEdits(
         this.map,
@@ -1694,7 +1694,7 @@ export class World {
     for (let ty = tileAt(box.y); ty <= tileAt(box.y + box.h - 1); ty++)
       for (let tx = tileAt(box.x); tx <= tileAt(box.x + box.w - 1); tx++) {
         // Blasts always break (Classic: they take `amount` off a brick's 125 and open hidden
-        // blocks too, BR-C11/BR-C13; Current's strikeBlock leaves hidden blocks to heads).
+        // blocks too, BR-C11/BR-C13; Campaign's strikeBlock leaves hidden blocks to heads).
         if (weaponStrikable(this.map.get(tx, ty)))
           this.strikeBlock(tx, ty, breaker, true, { source: 'blast', damage: opts.amount ?? 2 });
       }
@@ -1774,7 +1774,7 @@ export class World {
     const def = tileDef(this.map.get(tx, ty));
     if (!def.block || def.block.kind === 'hidden') return;
     const p = owner instanceof Player ? owner : this.nearestPlayer(x);
-    // Only brick-breaking shots (Current specs) call this: they break a brick outright, under
+    // Only brick-breaking shots (Campaign specs) call this: they break a brick outright, under
     // Classic rules too.
     this.strikeBlock(tx, ty, p, true, { source: 'shot', damage: Number.MAX_SAFE_INTEGER });
   }
@@ -2849,7 +2849,7 @@ export class World {
    * Strike a block on a player's behalf: the only place a block reacts (TG-25). `breakBricks`
    * decides whether plain bricks shatter; `hit` says what struck it (a head bump by default) and
    * how hard. Under Classic rules the strike goes to rules/classic-bricks.ts (brick HP, weapons
-   * from the side) and reports what it did; Current bumps or breaks it as from below and reports
+   * from the side) and reports what it did; Campaign bumps or breaks it as from below and reports
    * nothing.
    */
   strikeBlock(
@@ -2860,7 +2860,7 @@ export class World {
     hit: BlockHit = { source: 'head' },
   ): BlockStrike | undefined {
     if (this.rules === 'classic') return classicRules().strikeBlock(this, tx, ty, p, breakBricks, hit);
-    // Current: only a head opens a hidden block (shots, blasts and melee pass them by).
+    // Campaign: only a head opens a hidden block (shots, blasts and melee pass them by).
     if (hit.source !== 'head' && tileDef(this.map.get(tx, ty)).block?.kind === 'hidden') return undefined;
     this.bumpBlock(tx, ty, p, breakBricks);
     return undefined;

@@ -392,11 +392,11 @@ describe('G-006 / G-010: the layers per difficulty and hero', () => {
     const enemies = (l: LevelData) =>
       ['icicle', 'crab', 'fly', 'barrel', 'fire-enemy', 'goomba'].reduce((n, t) => n + count(l, t), 0);
     expect(enemies(run('hard'))).toBeGreaterThan(enemies(run('easy')));
-    // A Current World plays the map as it is.
+    // A Campaign World plays the map as it is.
     const cur = runSim({
       level: getLevel('sp-4-2'),
       character: MARIO,
-      rules: 'current',
+      rules: 'campaign',
       script: { steps: [] },
       maxFrames: 1,
     });

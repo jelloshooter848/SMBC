@@ -78,7 +78,7 @@ export interface Settings {
   homeScreen?: HomeScreenFlags;
   /**
    * The rules a Classic mode run plays (title > CLASSIC > Options > Rules): 'classic' (the
-   * original SMBC's, the default) or 'current'. Campaign files always play 'current'.
+   * original SMBC's, the default) or 'campaign'. A campaign file always plays Campaign rules.
    */
   classicRules: ClassicRules;
   /**
@@ -230,8 +230,8 @@ export interface ClassicDevToggles {
 }
 
 /** Classic mode's rules (Options in the CLASSIC menu): the original SMBC's, or today's. */
-export type ClassicRules = 'classic' | 'current';
-export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'current'];
+export type ClassicRules = 'classic' | 'campaign';
+export const CLASSIC_RULES: readonly ClassicRules[] = ['classic', 'campaign'];
 
 export interface HomeScreenFlags {
   tipDone: boolean;
@@ -339,6 +339,8 @@ export function loadSettings(): Settings {
   // Fields added later (input.dpad, the `run` action) are filled in here; no migration needed.
   if (!TOUCH_MODES.includes(s.input.touch)) s.input.touch = 'auto';
   if (!DPAD_STYLES.includes(s.input.dpad)) s.input.dpad = 'fixed';
+  // Item 76 (v0.4.73): the Campaign rules' old name reads as 'campaign' (the next save writes that).
+  if ((s.classicRules as string) === 'current') s.classicRules = 'campaign'; // rename-campaign: keep
   if (!CLASSIC_RULES.includes(s.classicRules)) s.classicRules = 'classic';
   if (!MAP_DIFFICULTIES.includes(s.classicMapDifficulty)) s.classicMapDifficulty = 'normal';
   for (const k of CLASSIC_CHEAT_STATS) {

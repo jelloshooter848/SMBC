@@ -18,10 +18,14 @@ import { flatLevel } from './classic-plumber-harness';
  * moving; further back it is parked, still, like the map's entities, and comes back when the
  * camera does. (A deliberate change from AnimatedObject.checkStgPos's 2 tiles: a player who
  * outruns one and waits ahead for it would otherwise wait forever.) A power-up that falls into a
- * pit is still lost; Current (the campaign) still despawns it 64 px past the edge.
+ * pit is still lost; Campaign mode still despawns it 64 px past the edge.
  */
 
-function world(level: LevelData, rules: 'classic' | 'current' = 'classic', def: CharacterDef = MARIO): World {
+function world(
+  level: LevelData,
+  rules: 'classic' | 'campaign' = 'classic',
+  def: CharacterDef = MARIO,
+): World {
   return runSim({ level, character: def, script: { steps: [] }, maxFrames: 0, rules }).world;
 }
 
@@ -159,8 +163,8 @@ describe('item 77: a power-up left behind under Classic scroll-back', () => {
     expect(u.alive).toBe(false);
   });
 
-  it('Current (the campaign): the same 1-up still despawns 64 px past the edge', () => {
-    const w = world(getLevel('8-2'), 'current');
+  it('Campaign mode: the same 1-up still despawns 64 px past the edge', () => {
+    const w = world(getLevel('8-2'), 'campaign');
     const u = oneUp(w);
     standAt(w, 60, 5);
     expect(u.alive).toBe(false);

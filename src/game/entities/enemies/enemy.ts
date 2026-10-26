@@ -73,7 +73,7 @@ const FREEZE_FLASH_FRAMES = 75;
  * Whether a Classic Ice-frozen enemy (`frozen` frames left) shows the frozen colour now (SA-C21,
  * HP-C17): all the freeze, except that from frame 285 it switches between the frozen colour and
  * its own every 40 ms (2 and 3 frames in turn); with Reduce flashing it stays frozen-coloured.
- * Never for `frozen` 0 (Current never freezes).
+ * Never for `frozen` 0 (Campaign never freezes).
  */
 export function frozenLook(frozen: number, reduceFlashing: boolean): boolean {
   if (frozen <= 0) return false;
@@ -117,7 +117,7 @@ export abstract class Enemy extends Entity {
   /** Popped up by a bumped block: falls with BUMP_POP_GRAVITY until it lands. */
   protected bumpPopped = false;
 
-  // Classic rules only (rules/classic-enemies.ts, HP-C1..HP-C17). Current never sets them, so
+  // Classic rules only (rules/classic-enemies.ts, HP-C1..HP-C17). Campaign never sets them, so
   // they stay at their resting values and change nothing.
   /** Classic hit points (the original's units), set on the first Classic hit; null until then. */
   classicHp: number | null = null;
@@ -156,7 +156,7 @@ export abstract class Enemy extends Entity {
     return this.currentHit(src, world);
   }
 
-  /** The Current reaction-table hit (also what Classic uses for stomps, bumps and the like). */
+  /** The Campaign reaction-table hit (also what Classic uses for stomps, bumps and the like). */
   currentHit(src: DamageSource, world: World): Reaction {
     const reaction = this.vulnerability[src.kind] ?? 'immune';
     switch (reaction) {

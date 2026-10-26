@@ -18,7 +18,7 @@ useStorage();
 const labels = (m: unknown) => (m as { items: MenuItem[] }).items.map((i) => i.label.replace(/\*$/, ''));
 
 function game(dev: boolean): H & { settings: Settings } {
-  const settings: Settings = { ...defaultSettings(), dev, classicRules: 'current' };
+  const settings: Settings = { ...defaultSettings(), dev, classicRules: 'campaign' };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   return { ...h, settings };
 }
@@ -46,7 +46,7 @@ describe('BUG-11 no Classic rules row', () => {
       expect(h.top()).toBeInstanceOf(ClassicMenuScene);
       h.game.classicGame(MARIO);
       expect(h.game.liveRules).toBe('classic');
-      expect(h.settings.classicRules).toBe('current');
+      expect(h.settings.classicRules).toBe('campaign');
     }
   });
 
@@ -66,8 +66,8 @@ describe('BUG-11 no Classic rules row', () => {
 
   it('the dev START page still starts a whole run under Campaign rules', () => {
     const h = game(true);
-    h.game.devClassicGame(MARIO, '1-1', 'current');
-    expect(h.game.liveRules).toBe('current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
+    expect(h.game.liveRules).toBe('campaign');
     expect(h.game.classicRun).toBe(true);
   });
 });

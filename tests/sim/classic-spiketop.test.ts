@@ -64,8 +64,8 @@ describe('the enemy', () => {
     expect(e.sheet).toBe('spike-top');
   });
 
-  it('cannot be stomped: landing on it hurts (Classic and Current)', () => {
-    for (const rules of ['classic', 'current'] as const) {
+  it('cannot be stomped: landing on it hurts (Classic and Campaign)', () => {
+    for (const rules of ['classic', 'campaign'] as const) {
       const w = classicWorld(MARIO, testLevel(), rules);
       const e = withSpikeTop(w, 2);
       e.walkSpeed = 0;

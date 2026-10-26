@@ -17,7 +17,7 @@ import { TileMap } from '@game/world/tilemap';
 // G-013: Classic SMBC's PitVacuum (enemies/PitVacuum.as; Level.as 762-777, setUpPitVacs). In an
 // area that starts under water every empty bottom-row tile pulls Mario and Luigi (MarioBase only)
 // down at 600 and toward the pit's middle at 400 px/s², lifting the sink cap to the water level's
-// fall cap (MarioBase vyMaxPsv 400). Current rules and the other heroes are never pulled.
+// fall cap (MarioBase vyMaxPsv 400). Campaign rules and the other heroes are never pulled.
 
 const none = { steps: [{ frame: 0, hold: [] as Action[] }] };
 
@@ -45,7 +45,7 @@ function pitRoom(theme = 'water', swim = true) {
 /** Sinks `def` from above column `col` for `frames` frames; the body's vx and vy each frame. */
 function sink(
   def: CharacterDef,
-  rules: 'classic' | 'current',
+  rules: 'classic' | 'campaign',
   col = 20,
   frames = 40,
   level = pitRoom(),
@@ -138,14 +138,14 @@ describe('G-013: the pull', () => {
     expect(Math.min(...right.vx)).toBeLessThan(0);
   });
 
-  it('no pull away from the pits, for the other heroes, under Current rules, or out of water', () => {
+  it('no pull away from the pits, for the other heroes, under Campaign rules, or out of water', () => {
     const sw = CLASSIC_SWIM.mario;
     const away = sink(classicStandIn(MARIO), 'classic', 6);
     expect(away.vx.every((x) => x === 0)).toBe(true);
     expect(Math.max(...away.vy)).toBeLessThanOrEqual(sw?.sinkMax ?? 0);
     const link = sink(classicStandIn(LINK), 'classic', 20);
     expect(link.vx.every((x) => x === 0)).toBe(true);
-    const current = sink(MARIO, 'current', 20);
+    const current = sink(MARIO, 'campaign', 20);
     expect(current.vx.every((x) => x === 0)).toBe(true);
     // A dry level with the same pit: no vacuums (Level._initialWaterLevel).
     const dry = sink(classicStandIn(MARIO), 'classic', 20, 10, pitRoom('overworld', false));

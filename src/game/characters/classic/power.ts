@@ -10,7 +10,7 @@ import { heroSound, pickupSound } from './sounds';
 /**
  * Classic SMBC power states, hit response, drops and Star (`2026-10-07-classic-power-states.md`,
  * PS-C1..PS-C27; umbrella TG-21, TG-28, TG-29). No rules branch: each Classic def plugs these
- * helpers into its own hooks, so a Current def never meets them.
+ * helpers into its own hooks, so a Campaign def never meets them.
  *
  * A Classic def wires them like this (one `ClassicPowerKit` row per hero, see each hero report):
  *
@@ -38,7 +38,7 @@ import { heroSound, pickupSound } from './sounds';
  * ```
  */
 
-/** Star power lasts 12.0 s (PS-C19). Current keeps STAR_FRAMES = 600. */
+/** Star power lasts 12.0 s (PS-C19). Campaign keeps STAR_FRAMES = 600. */
 export const CLASSIC_STAR_FRAMES = 720;
 /** From this many frames after the pickup the Star flashes slowly (PS-C19). */
 export const CLASSIC_STAR_SLOW_FROM = 570;
@@ -305,7 +305,7 @@ function startResponse(p: Player, fromDir: -1 | 1, kit: ClassicPowerKit, shrinks
   }
   p.refitHitbox();
   const b = p.body;
-  // On Castlevania stairs a hit never knocks the hero off (as in Current): no push, no lock.
+  // On Castlevania stairs a hit never knocks the hero off (as in Campaign): no push, no lock.
   if (p.stairs) {
     p.invuln = r.invuln;
     return;
@@ -385,7 +385,7 @@ export function classicHurtPaletteStep(
 /**
  * For a Classic sprite under Star power (PS-C19): the Star palette step, the next one every 2
  * frames for the first 570 frames, then every 6 (100 ms); null without Star. Reduce flashing
- * holds step 0, as Current does.
+ * holds step 0, as Campaign does.
  */
 export function classicStarPaletteStep(p: Player, frame: number, reduceFlashing: boolean): number | null {
   if (p.star <= 0) return null;

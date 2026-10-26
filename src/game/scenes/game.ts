@@ -396,10 +396,10 @@ export class Game {
   /**
    * The rules chosen for this non-campaign run (Classic mode, TG-9 rules model). Run starters set
    * it: devStart's and newGame's `opts.rules`, or the Classic mode flow before it starts a run;
-   * showTitle, playtest and playShared put it back to 'current'. Never read directly to decide
+   * showTitle, playtest and playShared put it back to 'campaign'. Never read directly to decide
    * play: liveRules does that, and ignores it while a campaign file is open.
    */
-  runRules: Rules = 'current';
+  runRules: Rules = 'campaign';
   /** Cheats unlocked and not yet shown: each gets its YOU UNLOCKED card (showCheatUnlocks). */
   cheatUnlocks: ClassicCheatId[] = [];
   /**
@@ -691,7 +691,7 @@ export class Game {
   /**
    * Classic mode's gameplay options (More Settings, Customize Weapons) for the run being played:
    * its file's (B-L), only in a Classic run (Classic mode, or a dev Classic run) with Classic
-   * rules, else undefined, so the campaign and every Current run never see them. A developer
+   * rules, else undefined, so the campaign and every Campaign run never see them. A developer
    * start without settings (the test harnesses) has none either: the original's values.
    */
   get classicOptions(): ClassicSettings | undefined {
@@ -765,8 +765,8 @@ export class Game {
   /**
    * The select screen's slots: in a Classic-rules run, the original's eleven heroes in its order
    * (registry CLASSIC_SLOTS), then the released heroes the original never had
-   * (expansionHeroOffered); every other look is a skin on one of them. Any other run (the campaign, Current
-   * rules): the roster itself, untouched.
+   * (expansionHeroOffered); every other look is a skin on one of them. Any other run (a campaign file, or
+   * Campaign rules in Classic mode): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
     return this.withoutDisabled(this.slotsFor(this.liveRules));
@@ -1107,7 +1107,7 @@ export class Game {
     if (!this.devMode) return undefined;
     const t = this.classicToggles;
     if (!t.playsCampaign?.length && !t.playsClassic?.length) return undefined;
-    return { classic: t.playsCampaign ?? [], current: t.playsClassic ?? [] };
+    return { classic: t.playsCampaign ?? [], campaign: t.playsClassic ?? [] };
   }
 
   /** False for a hero not in SMBC 3.1.21 (CharacterDef.notInOriginal) toggled off in the Dev menu. */
@@ -1116,11 +1116,11 @@ export class Game {
   }
 
   /**
-   * The one place that decides the live rules (TG-9 rules model): 'current' whenever a campaign
+   * The one place that decides the live rules (TG-9 rules model): 'campaign' whenever a campaign
    * file is open, else the run's (runRules). A World reads them once, when it is built.
    */
   get liveRules(): Rules {
-    return this.campaign !== null ? 'current' : this.runRules;
+    return this.campaign !== null ? 'campaign' : this.runRules;
   }
 
   /**
@@ -1191,7 +1191,7 @@ export class Game {
   private recordSetBeaten(from: string): void {
     this.beatRecorded = true;
     const set = mapSetOf(from).id;
-    // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
+    // Under Campaign rules every level plays as Normal (no layers): the beat counts as Normal.
     recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
     // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
     // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
@@ -1342,7 +1342,7 @@ export class Game {
   private leaveRun(keepMusic = false): void {
     this.flushCheatStats();
     this.airship = null;
-    this.runRules = 'current';
+    this.runRules = 'campaign';
     if (!keepMusic) this.deps.ctx.audio.stopMusic();
     this.pendingLevel = null;
     this.playtestDone = null;
@@ -2095,7 +2095,7 @@ export class Game {
   /**
    * Developer level select: any level, character and power state, with 99 lives. `seed` fixes the
    * level's world seed (tests); otherwise LevelScene picks it (GameDeps.freshSeeds). `opts.rules`
-   * is the run's rules (default 'current'); the kit and power come from the def played under them.
+   * is the run's rules (default 'campaign'); the kit and power come from the def played under them.
    */
   devStart(
     levelId: string,
@@ -2111,7 +2111,7 @@ export class Game {
     if (classic && !this.classicStartable(levelId)) levelId = '1-1';
     this.tutorialRun = null;
     this.campaign = null;
-    this.runRules = opts.rules ?? 'current';
+    this.runRules = opts.rules ?? 'campaign';
     this.classicRun = classic;
     this.classicDev = classic;
     this.linkRun = false;
@@ -2190,7 +2190,7 @@ export class Game {
   /** Run a level from the editor; returns to it when the level ends or the player quits. */
   playtest(level: LevelData, done: () => void): void {
     this.tutorialRun = null;
-    this.runRules = 'current';
+    this.runRules = 'campaign';
     this.state = newGameState(this.state.character);
     this.state.lives = 99;
     this.playtestDone = done;
@@ -2205,7 +2205,7 @@ export class Game {
   playShared(level: LevelData): void {
     this.tutorialRun = null;
     this.sharedLevel = level;
-    this.runRules = 'current';
+    this.runRules = 'campaign';
     this.state = newGameState(this.deps.characters[0] as CharacterDef);
     this.playtestDone = null;
     this.quickRespawn = false;
@@ -2217,7 +2217,7 @@ export class Game {
 
   /**
    * A non-campaign run from `levelId`. `opts.rules` sets the run's rules; left out, the run keeps
-   * runRules as it stands (rules-toggle.test.ts relies on it; showTitle resets them to 'current',
+   * runRules as it stands (rules-toggle.test.ts relies on it; showTitle resets them to 'campaign',
    * and Classic paths pass theirs). Never a Classic run: it clears classicRun.
    */
   newGame(
@@ -2309,7 +2309,7 @@ export class Game {
 
   /**
    * Classic mode's cheats play now (FU-7e, scenes/cheats-menu.ts): a Classic run under Classic
-   * rules. Never with a campaign file open, never under Current rules.
+   * rules. Never with a campaign file open, never under Campaign rules.
    */
   get cheatsLive(): boolean {
     return (
@@ -2345,7 +2345,7 @@ export class Game {
 
   /**
    * Play counts toward the cheats' goals: a Classic run with Classic rules, not started from
-   * developer mode. Cheats play only with Classic rules, so under Current rules nothing counts:
+   * developer mode. Cheats play only with Classic rules, so under Campaign rules nothing counts:
    * no kill, no clear, no game beaten, no continue.
    */
   get cheatGoalsCount(): boolean {
@@ -2656,7 +2656,7 @@ export class Game {
 
   /**
    * The rules a kept run goes on under: its own in developer mode; outside it Classic rules, the
-   * only ones a release Classic run plays (O-12: a slot saved under Current rules too).
+   * only ones a release Classic run plays (O-12: a slot saved under Campaign rules too).
    */
   private resumeRules(r: ClassicResume): Rules {
     return this.devMode ? r.rules : 'classic';
@@ -2848,8 +2848,8 @@ export class Game {
     s.lives = r.lives;
     s.world = r.world;
     s.stage = r.stage;
-    // O-12: a run kept under Current rules goes on under Classic rules outside developer mode,
-    // with its level, lives, score and coins; its power and kit (Current's) start afresh.
+    // O-12: a run kept under Campaign rules goes on under Classic rules outside developer mode,
+    // with its level, lives, score and coins; its power and kit (Campaign's) start afresh.
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
     // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
@@ -3123,7 +3123,7 @@ export class Game {
     const played = this.classicFile;
     this.endClassicRun();
     this.playedFile = played;
-    this.runRules = 'current';
+    this.runRules = 'campaign';
     const title = new ClassicTitleScene(this, 'start', true);
     this.leaveClassicTitle();
     this.scenes.push(title);
@@ -3164,7 +3164,7 @@ export class Game {
    */
   showClassicTitle(phase: ClassicTitlePhase = 'demo'): void {
     this.endClassicRun();
-    this.runRules = 'current';
+    this.runRules = 'campaign';
     const title = new ClassicTitleScene(this, phase);
     this.leaveClassicTitle();
     this.scenes.push(title);

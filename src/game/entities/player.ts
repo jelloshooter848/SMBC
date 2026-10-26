@@ -212,7 +212,7 @@ export class Player {
   private sinceGround = 0;
   /*
    * Classic SMBC movement state (MovementProfile.rise / softCut / inertia / step / slide.distance;
-   * Player.root). Unused, and left at these values, for every Current profile.
+   * Player.root). Unused, and left at these values, for every Campaign profile.
    */
   /** Feet height (subpixels) at the last jump's take-off, until landing; null when not in a jump. */
   riseY0: number | null = null;
@@ -236,7 +236,7 @@ export class Player {
    * MM-C24, Ryu's slash and throw RY-C5): on the ground no walking (vx 0) and no slide start; on a
    * wall (MovementProfile.wallClimb) no climbing or hopping. With `rootFreeze` the body also hangs
    * still in the air (no gravity, no move: Hard Knuckle fired in the air, MM-C25). Always 0 for
-   * Current heroes.
+   * Campaign heroes.
    */
   root = 0;
   rootFreeze = false;
@@ -1499,7 +1499,7 @@ export class Player {
 
   /**
    * The box enemies and enemy shots hit: CharacterDef.hurtbox's size centred on the body, on its
-   * feet; the body itself when the def has none (every Current def).
+   * feet; the body itself when the def has none (every Campaign def).
    */
   hurtBody(): AABB {
     const b = this.body;

@@ -15,7 +15,7 @@ import { makeGame, useStorage } from './heroes-harness';
 
 useStorage();
 
-function level(def: CharacterDef, rules: 'classic' | 'current') {
+function level(def: CharacterDef, rules: 'classic' | 'campaign') {
   const settings: Settings = { ...defaultSettings(), dev: true };
   const h = makeGame({ deps: { settings, applySettings: () => {} } });
   h.game.devStart('1-1', def, 'fire', false, undefined, { rules, classic: rules === 'classic' });
@@ -31,7 +31,7 @@ describe('touch d-pad zones by hero', () => {
   });
 
   it('the campaign tank gets it too; Jason on foot keeps the default pad', () => {
-    const { scene } = level(SOPHIA, 'current');
+    const { scene } = level(SOPHIA, 'campaign');
     const p = scene.world.player;
     expect(scene.touchDpad()).toBe('eight-way');
     const st = sophiaState(p);

@@ -153,7 +153,7 @@ describe("Samus's missile fired in play", () => {
   };
 
   it('campaign rules: nose first fired right and fired left', () => {
-    const r = new Rig(SAMUS, flatLevel(), 'current');
+    const r = new Rig(SAMUS, flatLevel(), 'campaign');
     r.p.scratch.missiles = 9;
     r.settle();
     r.step(['special']);

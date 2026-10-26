@@ -41,7 +41,7 @@ describe('a new run starts at the played design power', () => {
   it('Campaign-rules run, Link plays as Classic (both players): small from the start, no reset said', () => {
     const h = devGame();
     h.settings.classicDev.playsClassic = ['link'];
-    h.game.newGame(LINK, '1-1', LINK, { rules: 'current' });
+    h.game.newGame(LINK, '1-1', LINK, { rules: 'campaign' });
     const classicLink = CLASSIC_CHARACTERS.link;
     expect(classicLink).toBeDefined();
     expect(h.game.state.powerState).toBe('small');

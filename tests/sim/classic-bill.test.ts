@@ -29,7 +29,7 @@ function setup(
     power?: Power;
     kit?: Record<string, number>;
     level?: ReturnType<typeof parseTextMap>;
-    rules?: 'classic' | 'current';
+    rules?: 'classic' | 'campaign';
   } = {},
 ) {
   const w = runSim({
@@ -78,11 +78,11 @@ const place = <E extends Enemy>(w: World, e: E): E => {
 const feet = (w: World) => w.player.body.y + w.player.body.h;
 const centre = (w: World) => w.player.body.x + (w.player.body.w >> 1);
 
-describe('Classic Bill: registry and Current (TG-17, TG-38, check 11)', () => {
-  it('Classic resolves to BILL_CLASSIC; Current stays the Current def, unchanged', () => {
+describe('Classic Bill: registry and Campaign (TG-17, TG-38, check 11)', () => {
+  it('Classic resolves to BILL_CLASSIC; Campaign stays the Campaign def, unchanged', () => {
     expect(CLASSIC_CHARACTERS.bill).toBe(BILL_CLASSIC);
     expect(heroFor(BILL, 'classic')).toBe(BILL_CLASSIC);
-    expect(heroFor(BILL, 'current')).toBe(BILL);
+    expect(heroFor(BILL, 'campaign')).toBe(BILL);
     expect(BILL_CLASSIC.rules).toBe('classic');
     expect(BILL_CLASSIC.id).toBe('bill');
     expect(CHARACTERS.find((c) => c.id === 'bill')?.rules).toBeUndefined();
@@ -90,14 +90,14 @@ describe('Classic Bill: registry and Current (TG-17, TG-38, check 11)', () => {
     expect(BILL.deathThrow).toBeUndefined();
   });
 
-  it('under Current Bill walks at 1.5 px/f, has 3 hits, and his shots stop on tiles', () => {
-    const { w, p, run } = setup({ rules: 'current' });
+  it('under Campaign Bill walks at 1.5 px/f, has 3 hits, and his shots stop on tiles', () => {
+    const { w, p, run } = setup({ rules: 'campaign' });
     expect(p.def).toBe(BILL);
     expect(p.hp).toBe(3);
     run(20, ['right']);
     expect(p.body.vx).toBe(0x01800);
     const lvl = testLevel({ 11: '..........B' });
-    const c = setup({ rules: 'current', level: lvl });
+    const c = setup({ rules: 'campaign', level: lvl });
     c.frame(['attack']);
     c.run(60);
     expect(c.w.entities.some((e) => e instanceof Projectile && e.alive)).toBe(false);

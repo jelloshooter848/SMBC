@@ -132,7 +132,7 @@ describe("BUG-07: the Classic SMB heroes' stomp bounce is the campaign's", () =>
     const t = MARIO_PROFILE.jump[0];
     expect(t).toEqual({ maxVx: 0x01000, initial: 0x04000, holdGravity: 0x00200, fallGravity: 0x00700 });
     for (const [name, pat] of PATTERNS) {
-      const got = riseProfile(MARIO, 'current', pat);
+      const got = riseProfile(MARIO, 'campaign', pat);
       // The tier path: the move, then the tier's hold gravity while rising with JUMP held, else
       // its fall gravity (no latch: a second press takes the hold gravity again).
       const want = [-0x04000];
@@ -154,7 +154,7 @@ describe("BUG-07: the Classic SMB heroes' stomp bounce is the campaign's", () =>
     expect(smb.map((d) => d.id).sort()).toEqual(['luigi', 'luigi3', 'mario', 'mario3', 'peach', 'yoshi']);
   });
 
-  const campaign = new Map(PATTERNS.map(([n, p]) => [n, riseProfile(MARIO, 'current', p)]));
+  const campaign = new Map(PATTERNS.map(([n, p]) => [n, riseProfile(MARIO, 'campaign', p)]));
   for (const d of smb) {
     for (const [name, pat] of PATTERNS) {
       it(`${d.id}, ${name}: the same rise as campaign Mario, frame for frame`, () => {
@@ -180,7 +180,7 @@ describe("BUG-07: the Classic SMB heroes' stomp bounce is the campaign's", () =>
   // arc, rise and fall, to the landing, is the same frame for frame, across as well as up.
   it('a running stomp (RUN held, equal speed): the same tier and the same arc to the landing', () => {
     const cm = heroFor(CHARACTERS.find((c) => c.id === 'mario') as CharacterDef, 'classic');
-    const camp = movingStomp(MARIO, 'current', 0x02800, true);
+    const camp = movingStomp(MARIO, 'campaign', 0x02800, true);
     const classic = movingStomp(cm, 'classic', 0x02800, true);
     expect(classic.frames[0]?.vy).toBe(camp.frames[0]?.vy);
     expect(classic.frames).toEqual(camp.frames);
@@ -195,7 +195,7 @@ describe("BUG-07: the Classic SMB heroes' stomp bounce is the campaign's", () =>
   it("a walking stomp (no RUN): the same vertical arc; the travel differs only by Classic's own deceleration", () => {
     const cm = heroFor(CHARACTERS.find((c) => c.id === 'mario') as CharacterDef, 'classic');
     const start = 0x01700;
-    const camp = movingStomp(MARIO, 'current', start, false);
+    const camp = movingStomp(MARIO, 'campaign', start, false);
     const classic = movingStomp(cm, 'classic', start, false);
     expect(classic.frames.map((f) => f.vy)).toEqual(camp.frames.map((f) => f.vy));
     expect(classic.landed).toBe(camp.landed);

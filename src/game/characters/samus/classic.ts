@@ -709,7 +709,7 @@ export function classicSamus(
       onRespawn: (p) => classicRespawn(p, {}),
     },
   };
-  // A Classic def leaves out the Current HUD extras (TG-22); `tools` only lists the dev kit's.
+  // A Classic def leaves out the Campaign HUD extras (TG-22); `tools` only lists the dev kit's.
   delete def.meter;
   delete def.hudExtra;
   delete def.reserve;

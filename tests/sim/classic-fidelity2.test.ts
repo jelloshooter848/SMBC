@@ -28,7 +28,7 @@ import { Projectile } from '@game/entities/projectiles/projectile';
 
 // F2 fidelity (the original 3.1.21's numbers, measured from its SWF and source): walk timing per
 // hero, the air states and their conditions, hurt boxes (HRect) and shot sizes. Classic only;
-// the Current defs keep today's paths.
+// the Campaign defs keep today's paths.
 
 useStorage();
 
@@ -94,7 +94,7 @@ describe('walk cycles (CharacterDef.walkAnim)', () => {
       expect([...seen].sort()).toEqual([...Array(want.frames).keys()]);
     });
 
-  it('Current defs keep the shared 3-frame cycle (no walkAnim)', () => {
+  it('Campaign defs keep the shared 3-frame cycle (no walkAnim)', () => {
     expect(MEGAMAN.walkAnim).toBeUndefined();
     expect(CLASSIC_WALK_ANIM.link.ticks).toBe(6);
   });
@@ -276,8 +276,8 @@ describe('hurt boxes (CharacterDef.hurtbox: the original HRect)', () => {
     expect(box(c).h).toBe(15.75);
   });
 
-  it('a Current def is hit on its body (no hurtbox)', () => {
-    const r = new Rig(MEGAMAN, flatLevel(), 'current');
+  it('a Campaign def is hit on its body (no hurtbox)', () => {
+    const r = new Rig(MEGAMAN, flatLevel(), 'campaign');
     r.settle();
     expect(MEGAMAN.hurtbox).toBeUndefined();
     expect(r.p.hurtBody()).toBe(r.p.body);

@@ -24,7 +24,7 @@ const PROTO_RULES: Partial<ClassicMegaManOptions> = {
   guide: PROTOMAN_CLASSIC_GUIDE,
 };
 
-/** The roster identity (id, names, portrait): no Current def exists, so Mega Man's with these. */
+/** The roster identity (id, names, portrait): no Campaign def exists, so Mega Man's with these. */
 function identity(id: string, name: string, hudName: string, palette: string): CharacterDef {
   return {
     ...MEGAMAN,

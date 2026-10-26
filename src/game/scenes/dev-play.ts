@@ -3,7 +3,7 @@ import { loadJson, saveJson } from '@engine/save/storage';
 import { MenuScene, backToMenu, type MenuItem } from './menu';
 import type { Game } from './game';
 import type { CharacterDef } from '../characters/character';
-import type { Rules } from '../context';
+import { readRules, type Rules } from '../context';
 import { CLASSIC_EXTRAS, playedHero, skinsOf } from '../characters/registry';
 import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX, customLevelId, loadLibrary } from '../level/library';
@@ -63,11 +63,13 @@ export function loadDevPick(game: Game): DevPick | null {
  */
 export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick | string {
   if (!p || typeof p !== 'object') return 'No start was kept';
-  const { branch, level, name, hero, look, power, rules, difficulty } = p;
+  const { branch, level, name, hero, look, power, difficulty } = p;
+  // Item 76: a start kept before the rename names Campaign rules by their old name (readRules).
+  const rules = readRules(p.rules);
   if (branch !== 'classic' && branch !== 'campaign') return 'The kept start is unreadable';
   if (typeof level !== 'string' || typeof name !== 'string' || typeof power !== 'string')
     return 'The kept start is unreadable';
-  if (rules !== 'classic' && rules !== 'current') return 'The kept start is unreadable';
+  if (!rules) return 'The kept start is unreadable';
   if (!MAP_DIFFICULTIES.includes(difficulty as MapDifficulty)) return 'The kept start is unreadable';
   if (level !== DEV_VILLAGE) {
     try {
@@ -179,8 +181,8 @@ export function devAgainItem(game: Game): MenuItem | null {
 }
 
 /** The START page's Rules row values and hint (dev Classic starts, TG rules model). */
-// Owner decision: the 'current' rules are shown and said as "Campaign" (the value stays).
-export const RULES_LABELS: Record<Rules, string> = { current: 'Campaign', classic: 'Classic SMBC' };
+// Owner decision: the 'campaign' rules are shown and said as "Campaign" (item 76: the value too).
+export const RULES_LABELS: Record<Rules, string> = { campaign: 'Campaign', classic: 'Classic SMBC' };
 export const RULES_HINT = 'Classic SMBC: heroes play as in SMBC 3.1.21';
 
 /** The short map set names. */
@@ -520,7 +522,7 @@ export class DevTrainingScene extends DevPage {
  * The START page: Start, Hero (the select's slot heroes), Look (that hero's skins), Power, then
  * for a Classic start Mount (None / Yoshi, 0.4.72), Map difficulty and Rules, and Kit. Every
  * start plays as free play (99 lives, straight back after a death; 0.4.72 owner item 7: the Mode
- * row is gone); a campaign start plays Current rules.
+ * row is gone); a campaign start plays Campaign rules.
  */
 export class DevStartScene extends DevPage {
   private heroIndex = 0;
@@ -538,7 +540,7 @@ export class DevStartScene extends DevPage {
   ) {
     super(game, 'Start', [], false);
     const classic = target.branch === 'classic';
-    this.rules = classic ? 'classic' : 'current';
+    this.rules = classic ? 'classic' : 'campaign';
     // The Mount row starts as the Dev menu's Yoshi mount: Ride gives Yoshi (0.4.72 review).
     const t = game.classicToggles;
     this.yoshi = t.yoshiMount && t.yoshiRide === true;
@@ -614,7 +616,7 @@ export class DevStartScene extends DevPage {
           adjust: () => {
             const hero = this.hero.id;
             const look = this.look.id;
-            this.rules = this.rules === 'classic' ? 'current' : 'classic';
+            this.rules = this.rules === 'classic' ? 'campaign' : 'classic';
             // The slots and the power list can differ under the other rules: the same hero (and
             // look) when the new rules offer it, else the first hero.
             this.heroIndex = Math.max(

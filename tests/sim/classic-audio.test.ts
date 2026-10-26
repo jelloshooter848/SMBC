@@ -444,20 +444,20 @@ describe('G-070 to G-074: the heroes’ own sounds', () => {
   });
 
   it('Classic mode under Campaign rules: the hero music, hit and death sounds still play (G-060, G-065, G-072)', () => {
-    const h = audioGame({ classicRules: 'current' });
-    h.game.devClassicGame(LINK, '1-1', 'current');
+    const h = audioGame({ classicRules: 'campaign' });
+    h.game.devClassicGame(LINK, '1-1', 'campaign');
     h.until(() => h.top() instanceof LevelScene, 600);
     const w = (h.top() as LevelScene).world;
-    expect(w.rules).toBe('current');
+    expect(w.rules).toBe('campaign');
     expect(h.music.at(-1)).toBe('zelda2-field');
     expect(w.hitSound({ kind: 'sword', amount: 1, owner: w.player, dirX: 1 })).toBe('link-hit');
     w.kill(w.player);
     expect(h.sounds).toContain('link-death');
     expect(h.jingles).not.toContain('death');
-    // Music set Map: the SMB set, under Current rules too.
+    // Music set Map: the SMB set, under Campaign rules too.
     const classic = { ...defaultClassicSettings(), musicSet: 'map' as const };
-    const m = audioGame({ classicRules: 'current', classic });
-    m.game.devClassicGame(LINK, '1-1', 'current');
+    const m = audioGame({ classicRules: 'campaign', classic });
+    m.game.devClassicGame(LINK, '1-1', 'campaign');
     m.until(() => m.top() instanceof LevelScene, 600);
     expect(m.music.at(-1)).toBe('overworld');
   });

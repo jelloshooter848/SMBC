@@ -11,7 +11,7 @@ import type { LayerFlag, LevelData, MapDifficulty, Zone } from './schema';
  * layers lay, so laying in order every layer that matches gives exactly the original's level.
  *
  * Classic SMBC play only: the World lays them for its heroes' flags (CharacterDef.levelFlags,
- * which every Classic def declares) and the run's Map Difficulty. Current play never does.
+ * which every Classic def declares) and the run's Map Difficulty. Campaign play never does.
  */
 
 /** Who an area is built for: the run's map difficulty and the heroes' flags. */

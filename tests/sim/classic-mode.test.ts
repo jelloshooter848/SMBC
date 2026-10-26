@@ -259,8 +259,8 @@ describe('the title and the CLASSIC menu', () => {
 
   it('settings: classicRules defaults to classic, survives a reload, and bad values fall back', () => {
     expect(defaultSettings().classicRules).toBe('classic');
-    store.set(SETTINGS_KEY, JSON.stringify({ ...defaultSettings(), classicRules: 'current' }));
-    expect(loadSettings().classicRules).toBe('current');
+    store.set(SETTINGS_KEY, JSON.stringify({ ...defaultSettings(), classicRules: 'campaign' }));
+    expect(loadSettings().classicRules).toBe('campaign');
     store.set(SETTINGS_KEY, JSON.stringify({ ...defaultSettings(), classicRules: 'turbo' }));
     expect(loadSettings().classicRules).toBe('classic');
     const old: Record<string, unknown> = { ...defaultSettings() };
@@ -330,12 +330,12 @@ describe('a Classic run', () => {
   );
 
   it('BUG-11: a saved Campaign rules setting is ignored; the dev START page still plays a Campaign-rules run', () => {
-    const h = classic({ classicRules: 'current', dev: true });
+    const h = classic({ classicRules: 'campaign', dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.runRules).toBe('classic');
-    expect(h.settings.classicRules).toBe('current');
-    h.game.devClassicGame(MARIO, '1-1', 'current');
-    expect(h.game.runRules).toBe('current');
+    expect(h.settings.classicRules).toBe('campaign');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
+    expect(h.game.runRules).toBe('campaign');
     expect(h.game.classicRun).toBe(true);
   });
 
@@ -583,7 +583,7 @@ describe('QA nits', () => {
 
   it("a rules change resets player two's kit only when there is a player two", () => {
     const h = classic();
-    h.game.newGame(MARIO, '1-1', null, { rules: 'current' });
+    h.game.newGame(MARIO, '1-1', null, { rules: 'campaign' });
     const s = h.game.state;
     s.kit2 = { keep: 1 };
     reconcileRules(h.game, 'classic');
@@ -594,7 +594,7 @@ describe('QA nits', () => {
     reconcileRules(h.game, 'classic');
     expect(s.kit).toEqual({ tool: 2 });
     // With a player two, a change resets both kits.
-    h.game.newGame(MARIO, '1-1', LINK, { rules: 'current' });
+    h.game.newGame(MARIO, '1-1', LINK, { rules: 'campaign' });
     const t = h.game.state;
     t.kit = { a: 1 };
     t.kit2 = { b: 1 };
@@ -620,7 +620,7 @@ describe('the Classic pause menu', () => {
     pick(h, 'Yes');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
     expect(h.game.classicRun).toBe(false);
-    expect(h.game.runRules).toBe('current');
+    expect(h.game.runRules).toBe('campaign');
 
     const d = classic({ dev: true });
     d.game.classicGame(MARIO);
@@ -680,7 +680,7 @@ describe('dev Level select: Mode', () => {
 });
 
 describe('the campaign is unaffected', () => {
-  it('Campaign (dev mode, 0.5.0, O-02) still opens the file select; a file plays Current, never as a Classic run', () => {
+  it('Campaign (dev mode, 0.5.0, O-02) still opens the file select; a file plays Campaign, never as a Classic run', () => {
     const h = classic({ dev: true });
     h.game.classicGame(MARIO);
     expect(h.game.classicRun).toBe(true);
@@ -692,13 +692,13 @@ describe('the campaign is unaffected', () => {
     h.game.openFile(1);
     expect(h.top()).toBeInstanceOf(WorldMapScene);
     expect(h.game.classicRun).toBe(false);
-    expect(h.game.runRules).toBe('current');
+    expect(h.game.runRules).toBe('campaign');
   });
 
   it('every other start ends a Classic run', () => {
     const h = classic();
     h.game.classicGame(MARIO);
-    h.game.newGame(MARIO, '1-1', null, { rules: 'current' });
+    h.game.newGame(MARIO, '1-1', null, { rules: 'campaign' });
     expect(h.game.classicRun).toBe(false);
     const starts: Array<() => void> = [
       () => h.game.devStart('1-1', MARIO, 'small'),
@@ -709,7 +709,7 @@ describe('the campaign is unaffected', () => {
       h.game.classicGame(MARIO);
       start();
       expect(h.game.classicRun).toBe(false);
-      expect(h.game.runRules).toBe('current');
+      expect(h.game.runRules).toBe('campaign');
     }
   });
 
@@ -756,12 +756,12 @@ describe('the select screen: Classic extras on a second row', () => {
     expect((h.top() as CharacterSelectScene).chars).toContain(EXTRA);
     // BUG-11: a saved Campaign rules setting is ignored (the extra is offered); a dev START page
     // Campaign-rules run still leaves it out.
-    const c = classic({ classicRules: 'current', dev: true });
+    const c = classic({ classicRules: 'campaign', dev: true });
     toClassicMenu(c);
     pick(c, 'Super Mario Bros.');
     newFile(c);
     expect((c.top() as CharacterSelectScene).chars).toContain(EXTRA);
-    c.game.devClassicGame(MARIO, '1-1', 'current');
+    c.game.devClassicGame(MARIO, '1-1', 'campaign');
     expect(c.game.heroSlots).not.toContain(EXTRA);
   });
 
@@ -817,7 +817,7 @@ describe('the select screen: Classic extras on a second row', () => {
 
   it('Campaign rules (a dev START page run, BUG-11): the registry, in one row', () => {
     const h = classic({ dev: true });
-    h.game.devClassicGame(MARIO, '1-1', 'current');
+    h.game.devClassicGame(MARIO, '1-1', 'campaign');
     expect(h.game.slotsFor(h.game.liveRules)).toBe(CHARACTERS);
     die(h);
     const sel = h.top() as CharacterSelectScene;
@@ -848,7 +848,7 @@ describe('one player only', () => {
 });
 
 describe('newGame after a Classic run', () => {
-  it('is never a Classic run; from the title it plays Current', () => {
+  it('is never a Classic run; from the title it plays Campaign', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     expect(h.game.liveRules).toBe('classic');
@@ -858,7 +858,7 @@ describe('newGame after a Classic run', () => {
     h.game.showTitle();
     h.game.newGame(MARIO);
     expect(h.game.classicRun).toBe(false);
-    expect(h.game.liveRules).toBe('current');
+    expect(h.game.liveRules).toBe('campaign');
   });
 });
 

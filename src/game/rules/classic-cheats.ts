@@ -7,7 +7,7 @@ import type { World } from '../world/world';
  * Classic mode's level-edit cheats (FU-7e; cheats.ts has their names and goals): the World's
  * Classic level-load step (rules/hooks.ts levelEdits) applies them to the area being built, as
  * the original's Level.as does while it reads the level data. Only a Classic World reads them
- * (World.cheats is NO_CHEATS under Current).
+ * (World.cheats is NO_CHEATS under Campaign).
  */
 
 /**

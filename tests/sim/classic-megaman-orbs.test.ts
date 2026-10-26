@@ -17,7 +17,7 @@ import { px } from '@engine/math/units';
  * G-054: Classic Mega Man and Bass burst into orbs (MegaManBase.initiateNormalDeath,
  * MegaManParticle.as) with his own death sound in place of Mario's jingle; a pit death plays the
  * sound only. Mega Man's look: 12 colour orbs parting after 200 ms; Bass's: 16 white ones at once.
- * Current Mega Man keeps the shared death.
+ * Campaign Mega Man keeps the shared death.
  */
 
 const level = () =>
@@ -34,7 +34,7 @@ const level = () =>
     ].join('\n'),
   );
 
-function die(def: CharacterDef, rules: 'classic' | 'current', pit = false) {
+function die(def: CharacterDef, rules: 'classic' | 'campaign', pit = false) {
   const jingles: string[] = [];
   const sfx: string[] = [];
   let stopped = 0;
@@ -73,7 +73,7 @@ function die(def: CharacterDef, rules: 'classic' | 'current', pit = false) {
 describe('G-054 Mega Man and Bass burst into orbs', () => {
   const mm = heroFor(MEGAMAN, 'classic');
 
-  it('Classic Mega Man: 12 orbs, Bass: 16; the Current def has none', () => {
+  it('Classic Mega Man: 12 orbs, Bass: 16; the Campaign def has none', () => {
     expect(mm.deathBurst?.pieces).toHaveLength(12);
     expect(BASS_CLASSIC.deathBurst?.pieces).toHaveLength(16);
     expect(CHARACTERS.find((c) => c.id === 'megaman')?.deathBurst).toBeUndefined();
@@ -118,8 +118,8 @@ describe('G-054 Mega Man and Bass burst into orbs', () => {
     expect([...frames]).toEqual(['orb-0']);
   });
 
-  it('Current Mega Man keeps the shared death jingle', () => {
-    const r = die(MEGAMAN, 'current');
+  it('Campaign Mega Man keeps the shared death jingle', () => {
+    const r = die(MEGAMAN, 'campaign');
     expect(r.jingles).toContain('death');
   });
 

@@ -59,7 +59,7 @@ describe('Pit and Dark Pit: definitions (PI-1, PI-2, TG-41)', () => {
       expect(CHARACTERS).not.toContain(d);
       expect(heroFor(d, 'classic')).toBe(d);
       expect(fontText(d.hudName)).toBe(d.hudName);
-      // TG-22: no Current HUD extras.
+      // TG-22: no Campaign HUD extras.
       expect(d.meter).toBeUndefined();
       expect(d.startHp).toBeUndefined();
     }
@@ -70,9 +70,9 @@ describe('Pit and Dark Pit: definitions (PI-1, PI-2, TG-41)', () => {
     expect(SPRING_RISE_GRAVITY.darkpit).toBe(SPRING_RISE_GRAVITY.samus);
   });
 
-  it('Classic Samus and Current Samus are unchanged (TG-38)', () => {
+  it('Classic Samus and Campaign Samus are unchanged (TG-38)', () => {
     expect(heroFor(SAMUS, 'classic')).toBe(SAMUS_CLASSIC);
-    expect(heroFor(SAMUS, 'current')).toBe(SAMUS);
+    expect(heroFor(SAMUS, 'campaign')).toBe(SAMUS);
     expect(SAMUS_CLASSIC.jumpSfx({} as never)).toBe('jump-big');
     expect(SAMUS.pickSfx).toBeUndefined();
   });
@@ -278,10 +278,10 @@ describe('PI-17: no morph ball, no bombs', () => {
 });
 
 describe('roster and guide (TG-41..43, PI-25, TG-40)', () => {
-  it('in a Classic run, never under Current', () => {
+  it('in a Classic run, never under Campaign', () => {
     const h = makeGame({ dev: true });
     for (const d of [PIT_CLASSIC, DARKPIT_CLASSIC]) {
-      expect(h.game.rosterFor('current')).not.toContain(d);
+      expect(h.game.rosterFor('campaign')).not.toContain(d);
       expect(h.game.rosterFor('classic')).toContain(d);
       expect(h.game.roster).not.toContain(d);
     }

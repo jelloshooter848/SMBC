@@ -51,10 +51,10 @@ function hold(e: Enemy): void {
   e.update = () => {};
 }
 
-describe('Classic Samus: resolution and Current (SA-C34, TG-38)', () => {
-  it('Classic rules play SAMUS_CLASSIC; Current keeps SAMUS untouched', () => {
+describe('Classic Samus: resolution and Campaign (SA-C34, TG-38)', () => {
+  it('Classic rules play SAMUS_CLASSIC; Campaign keeps SAMUS untouched', () => {
     expect(heroFor(SAMUS, 'classic')).toBe(SAMUS_CLASSIC);
-    expect(heroFor(SAMUS, 'current')).toBe(SAMUS);
+    expect(heroFor(SAMUS, 'campaign')).toBe(SAMUS);
     expect(SAMUS.rules).toBeUndefined();
     expect(SAMUS_CLASSIC.rules).toBe('classic');
     expect(SAMUS_CLASSIC.id).toBe('samus');
@@ -66,12 +66,12 @@ describe('Classic Samus: resolution and Current (SA-C34, TG-38)', () => {
     expect(SAMUS.movement.softCut).toBeUndefined();
   });
 
-  it('a Current world plays Current Samus (EN 30, 2 beams)', () => {
-    const r = new Rig(SAMUS, flatLevel(), 'current', 'full');
+  it('a Campaign world plays Campaign Samus (EN 30, 2 beams)', () => {
+    const r = new Rig(SAMUS, flatLevel(), 'campaign', 'full');
     r.settle();
     expect(r.p.def).toBe(SAMUS);
     expect(r.p.hp).toBe(30);
-    const cur = measureJump(SAMUS, 0, Infinity, 'current', 'full');
+    const cur = measureJump(SAMUS, 0, Infinity, 'campaign', 'full');
     expect(cur.apex).toBeGreaterThanOrEqual(72);
     expect(cur.apex).toBeLessThanOrEqual(75);
   });
