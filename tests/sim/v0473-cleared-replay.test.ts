@@ -27,6 +27,19 @@ import { classic, keepCleared, openFiles, readNote, stored, type G } from './cle
 // level box. BACK steps back one box. The file is never written.
 
 useStorage();
+
+/** Changes `ref`'s Advanced cheats as a page opened now would (its file read at open). */
+function setAdv(
+  g: {
+    advancedCheatsId(r: ClassicFileRef): string | null;
+    setAdvancedCheats(r: ClassicFileRef, id: string, c: object): boolean;
+  },
+  ref: ClassicFileRef,
+  change: object,
+): boolean {
+  return g.setAdvancedCheats(ref, g.advancedCheatsId(ref) ?? '', change);
+}
+
 afterEach(() => store.clear());
 
 const A: ClassicFileRef = { set: 'smb', slot: 1 };
@@ -201,6 +214,8 @@ describe("C: the replay plays the file's rules, free play, and never writes the 
     rules.heroesOff = ['luigi'];
     keepCleared(A, {}, rules);
     helpSeen();
+    // v0.4.73 (item 60): a Hard CLEARED file has Advanced cheats; their box is read already.
+    setAdv(classic().game, A, { seen: true });
     const before = stored();
     const h = classic();
     openFiles(h);

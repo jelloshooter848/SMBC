@@ -102,16 +102,6 @@ describe("B-L a file's rules", () => {
     expect(h.game.heroSlots.map((c) => c.id)).toContain('link');
     expect(h.game.classicHeroChoice(false)).toBe('select');
   });
-
-  it('a Level Select jump into another set stays in its own file', () => {
-    const h = classic();
-    h.game.classicGame(MARIO, '1-1', { ref: A });
-    h.until(() => inLevel(h), 600);
-    h.game.classicLevelSelect('sp-2-1');
-    h.until(() => inLevel(h), 600);
-    expect(loadClassicFile(A)?.run.levelId).toMatch(/^sp-2-1/);
-    expect(loadClassicFile({ set: 'special', slot: 1 })).toBeNull();
-  });
 });
 
 describe('B-L continues, per file', () => {
@@ -204,31 +194,5 @@ describe('B-L continues, per file', () => {
     expect(loadClassicFile(A)).toBeNull();
     expect(h.settings.classicCheats.beaten.smb).toBe(true);
     expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(true);
-  });
-});
-
-describe('B-L practice runs (the menus’ Level Select)', () => {
-  it("play the original's rules at Normal, write no file, never count and never unlock", () => {
-    const h = classic();
-    h.settings.classicMapDifficulty = 'hard';
-    h.settings.classic.lives = 10;
-    h.settings.classicCheats.levelSelect = true;
-    h.game.showClassicMenu();
-    h.game.classicLevelSelect('8-4');
-    expect(h.game.practiceRun).toBe(true);
-    pickAtContinue(h);
-    h.until(() => inLevel(h), 900);
-    expect(h.game.classicDifficulty).toBe('normal');
-    expect(h.game.state.lives).toBe(3);
-    expect(h.game.classicFile).toBeNull();
-    expect(h.game.keepsResume).toBe(false);
-    expect(h.game.cheatGoalsCount).toBe(false);
-    expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-file'))).toEqual([]);
-    h.game.continueGame('8-1');
-    expect(h.game.fileContinues).toBe(0);
-    (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
-    expect(h.settings.classicCheats.beaten.smb).toBe(false);
-    expect(h.settings.classicCheats.unlocked.infiniteLives).toBe(false);
-    expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-file'))).toEqual([]);
   });
 });

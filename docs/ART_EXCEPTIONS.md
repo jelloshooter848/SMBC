@@ -25,4 +25,6 @@ Konami or anyone else, may be taken.
 - **Who decided.** The owner, in 0.5.0, accepting the risk. If Jay Pavlina or Exploding Rabbit
   object, the sprite will be replaced with our own drawing.
 - **Credit.** The same line is in the in-game credits (`CREDITS_RABBIT_LOGO` in
-  `src/game/scenes/credits.ts`), in the README, and in `tools/check-no-binaries.mjs`.
+  `src/game/scenes/credits.ts`), in the README, and in `tools/check-no-binaries.mjs`. The About
+  screen names the exception too: "Our own art and music, except the Exploding Rabbit logo." (its
+  page text and `ABOUT_SAID` in `src/game/scenes/about.ts`).
