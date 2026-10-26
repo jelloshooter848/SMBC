@@ -324,6 +324,7 @@ export class ClassicReplayWorldsScene extends ClassicBox {
     readonly files: ClassicFilesScene,
     readonly file: ClearedFile,
     focus?: number,
+    advancedId?: string,
   ) {
     super(game, `Replay file ${file.slot}`, () => {
       closeTo(game, files);
@@ -339,7 +340,8 @@ export class ClassicReplayWorldsScene extends ClassicBox {
     }));
     // v0.4.73 (item 60): beaten on Hard: its Advanced cheats, before BACK.
     const ref: ClassicFileRef = { set: file.set, slot: file.slot };
-    this.advancedId = game.advancedCheatsId(ref) ?? '';
+    // Item 134: rebuilt after a replay, the box keeps the replay's fingerprint (advancedId).
+    this.advancedId = advancedId ?? game.advancedCheatsId(ref) ?? '';
     if (game.advancedCheatsOf(ref, this.advancedId))
       items.push(
         advancedCheatsItem(
@@ -420,11 +422,13 @@ export function showReplayLevels(
   world: number,
   stage: number,
   next = false,
+  fp?: string,
 ): void {
   const files = game.showClassicFiles(ref.set, ref.slot);
   const f = game.classicClearedAt(ref);
   if (!f) return;
-  const worlds = new ClassicReplayWorldsScene(game, files, f, world);
+  // Item 134: `fp`, the replay's fingerprint, so the rebuilt box stays tied to that file.
+  const worlds = new ClassicReplayWorldsScene(game, files, f, world, fp);
   game.scenes.push(worlds);
   // A clear: on the level after it, when the world has one (focused before the box is read out).
   const prefix = setOf(ref.set).start.replace(/\d+-\d+$/, '');

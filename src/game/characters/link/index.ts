@@ -383,6 +383,8 @@ export const LINK: CharacterDef = {
       if (p.stun > 0 || p.transition) {
         p.activeMelee = null;
         p.scratch.upThrust = 0;
+        // Item 122 review: no thrust contact mid-stun either (thrustContact reads it).
+        p.scratch.downThrust = 0;
         return;
       }
       if (input.pressed('special') && p.attackTimer === 0) useTool(p, world, input);

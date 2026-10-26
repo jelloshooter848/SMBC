@@ -3062,7 +3062,8 @@ export class Game {
     }
     const rules = copyFileRules(f.rules);
     rules.options.gameMode = originalFileRules().options.gameMode;
-    this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage), {
+    const id = fp ?? this.advancedCheatsId(ref) ?? '';
+    this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage, false, id), {
       rules,
       practice: true,
       // Item 134: the fingerprint its world box was made with (else the file it holds now).
@@ -3071,7 +3072,7 @@ export class Game {
         world,
         stage,
         levelId,
-        fp: fp ?? this.advancedCheatsId(ref) ?? '',
+        fp: id,
       },
       tutorialsSeen: f.tutorialsSeen,
     });
@@ -3124,7 +3125,7 @@ export class Game {
       this.showClassicFiles(rp.ref.set, rp.ref.slot);
       return;
     }
-    showReplayLevels(this, rp.ref, rp.world, rp.stage, to === 'next');
+    showReplayLevels(this, rp.ref, rp.world, rp.stage, to === 'next', rp.fp);
   }
 
   /**
