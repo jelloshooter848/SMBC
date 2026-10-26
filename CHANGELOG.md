@@ -9,6 +9,59 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.4.74] - 2026-10-26
+
+### Added
+
+- Options > Asset packs > Import pack (.zip): pick an asset pack's .zip file on any device,
+  phones and tablets included (a pack zip saved by Options > Save data goes straight back in). A
+  damaged, unsafe or oversized zip changes nothing and the page says why.
+- Importing an asset pack (from a .zip or a folder) whose name is already stored now asks
+  REPLACE PACK <NAME>? first; NO keeps the stored pack as it was.
+- Options > Save data on the title screen: Export backup saves everything the game keeps in this
+  browser to one file (and, if you choose, each asset pack as a .zip); Import backup checks the
+  file first, asks before replacing everything, offers to export the current data first, and
+  changes nothing if the file is damaged, not a backup or from a newer version; Erase all data
+  asks twice, offering a backup first, and asks separately about asset packs. After an import or
+  an erase the game starts again from the title.
+- Another open tab of the game can no longer save its old state over imported or erased data:
+  it reloads instead.
+
+### Changed
+
+- Options > Asset packs > Export template now saves one file, smbc-remix-pack-template.zip,
+  instead of two downloads per picture. Beside the pictures and manifest.json it holds a
+  README.txt listing every song, sound and palette a pack can replace, with an example manifest.
+- Options > Asset packs on a phone or tablet no longer says ASSET PACKS NEED A COMPUTER: it offers
+  Import pack (.zip) above the stored packs. On a computer the folder import is now called Import
+  pack (folder).
+- Options > Save data: after exporting asset packs, the game says to pick a pack's .zip with Import
+  pack (.zip) to use it again.
+- CI runs once per commit: on pull requests and on pushes to main.
+
+### Fixed
+
+- Classic mode: a CLEARED file's world box or level replay left open in another browser tab no
+  longer changes, shows or plays the Advanced cheats of a new file cleared in that slot since.
+- Campaign mode: Link's down-thrust no longer hurts him when he lands a little off centre on an
+  enemy, nor his up-thrust when he rises into one off centre: touching an enemy with the thrust
+  is the thrust's hit, as in Classic mode.
+- Classic mode: a new file's rules box no longer says "Left and right to change" on START, where
+  it opens; the rows that left and right do change still say it.
+- Classic mode: while saves can't be read, the map set box says so on each map set instead of
+  "No files used".
+- Classic mode: a run left open in another window no longer saves over a file that was erased,
+  cleared or started again there since; it says once, on its next WORLD card, game over or Quit
+  box, that it can't save to that file. An erased file never comes back.
+- Classic mode: a run that started while its file couldn't be read never saves over that file
+  once it can be read again.
+- Classic mode: beating a map set in a file another window already cleared no longer says the
+  file is cleared, and the file box doesn't open on it; the same game cleared in another window
+  says so.
+- Classic mode: ERASE FILE N? of a file whose hero is not in this version no longer says the file
+  is kept; a cleared file's replay WORLD card no longer shows lives (they are unlimited).
+- Options > Asset packs says its name as it opens.
+
 ## [0.4.73] - 2026-10-26
 
 ### Added
@@ -2184,7 +2237,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.73...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.74...HEAD
+[0.4.74]: https://github.com/jelloshooter848/SMBC/compare/v0.4.73...v0.4.74
 [0.4.73]: https://github.com/jelloshooter848/SMBC/compare/v0.4.72...v0.4.73
 [0.4.72]: https://github.com/jelloshooter848/SMBC/compare/v0.4.71...v0.4.72
 [0.4.71]: https://github.com/jelloshooter848/SMBC/compare/v0.4.70...v0.4.71
