@@ -139,7 +139,7 @@ describe('item 81: the Campaign Options keep How to play', () => {
     expect(l.indexOf('How to play')).toBeLessThan(l.indexOf('Asset packs'));
   });
 
-  it("Classic's Options are unchanged (item 82 pending): How to play is still there", () => {
+  it("Classic's Options keep How to play", () => {
     const h = game();
     expect(labels(new OptionsScene(h.game, () => {}, false, true))).toContain('How to play');
     expect(labels(new OptionsScene(h.game, () => {}, true, true))).toContain('How to play');

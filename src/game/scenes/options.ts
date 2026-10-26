@@ -384,7 +384,8 @@ class PacksOptions extends MenuScene {
     });
     // Packs already stored keep loading (main.ts) and can be turned off or deleted here; only
     // importing needs a computer (item 128 review: an Android player may have imported in 0.4.73).
-    if (this.needComputer) this.entryTitle = PACKS_NEED_COMPUTER;
+    // Item 143: the page says its name as it opens (the line, on a phone or tablet).
+    this.entryTitle = this.needComputer ? PACKS_NEED_COMPUTER : 'Asset packs';
     this.rebuild();
     void this.refresh();
   }

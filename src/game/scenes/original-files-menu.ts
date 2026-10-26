@@ -191,6 +191,10 @@ export function notReleasedLine(lock: DevLock): string {
   return lock.mode === 'open' ? PROBLEM_LINE['not-released'] : 'NOT IN THIS VERSION. FILE KEPT';
 }
 
+/** Item 143: "the file is kept", said and shown, left out on ERASE FILE N? (it would not be). */
+const KEPT_SPOKEN = /\.? ?The file is kept\.?$/;
+const KEPT_LINE = /\. FILE KEPT$/;
+
 /** The line under the box for a file that cannot play (42), by the build (68). */
 function problemLine(game: Game, problem: FileProblem): string {
   return problem === 'not-released' ? notReleasedLine(game.devLock) : PROBLEM_LINE[problem];
@@ -828,9 +832,10 @@ export class ClassicEraseConfirmScene extends ClassicBox {
       picker.comeBack();
     });
     // 44: why the file cannot play, said and shown (under the box).
-    const why = file && problem ? problemRow(game, file, problem).why : '';
+    // Item 143: never "the file is kept" over the question that erases it.
+    const why = file && problem ? problemRow(game, file, problem).why.replace(KEPT_SPOKEN, '') : '';
     const cannot = why ? `. It cannot play now: ${why.charAt(0).toLowerCase()}${why.slice(1)}` : '';
-    this.status = problem ? problemLine(game, problem) : '';
+    this.status = problem ? problemLine(game, problem).replace(KEPT_LINE, '') : '';
     const what = cleared
       ? clearedSpoken(game, cleared)
       : file

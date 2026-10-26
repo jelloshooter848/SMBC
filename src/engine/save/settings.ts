@@ -182,7 +182,7 @@ export interface ClassicCheatsSettings {
    */
   continuesUsed: number;
   // v0.4.73 item 94: no Level Select cheat (the original's 17th, Cheats.as:47). An old save's
-  // `levelSelect` key is left in storage as it is; nothing reads it.
+  // `levelSelect` flags are dropped on its next save (loadSettings keeps only these keys).
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */

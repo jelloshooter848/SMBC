@@ -12,6 +12,7 @@ import {
 } from '@game/original-files';
 import { ClassicFilesScene } from '@game/scenes/original-files-menu';
 import { ClassicNoteScene } from '@game/scenes/original-replay';
+import { IntroScene } from '@game/scenes/intro';
 import { store, useStorage } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
 import { classic, closeUnlockCards, inLevel, readNote, run, type G } from './cleared-nav';
@@ -57,19 +58,30 @@ function tab2NewGame(ref = A, level = '1-1'): string {
 
 const notes = (t: G) => t.said.filter((s) => NOTE.test(s)).length;
 
+/** The hero select, then the WORLD card (a card with the note waits for a press), then the level. */
+function backIn(t: G): void {
+  pickAtContinue(t);
+  t.until(() => t.top() instanceof IntroScene || inLevel(t), 300);
+  if (t.top() instanceof IntroScene && NOTE.test(t.said.at(-1) ?? '')) {
+    // A card with the note never moves on by itself.
+    t.idle(400);
+    expect(t.top()).toBeInstanceOf(IntroScene);
+    t.tap('jump');
+  }
+  t.until(() => inLevel(t), 900);
+}
+
 describe("item 142: a stale tab never writes over another tab's game", () => {
   it('a death: the file keeps tab 2’s game; tab 1 says so once, on its next WORLD card', () => {
     const t1 = tab1In();
     const theirs = tab2NewGame();
     t1.game.respawn('1-1', { mode: 'stand' });
     expect(store.get(key)).toBe(theirs);
-    pickAtContinue(t1);
-    t1.until(() => inLevel(t1), 900);
+    backIn(t1);
     expect(notes(t1)).toBe(1);
     // A second death: still nothing written, and not said again.
     t1.game.respawn('1-1', { mode: 'stand' });
-    pickAtContinue(t1);
-    t1.until(() => inLevel(t1), 900);
+    backIn(t1);
     expect(store.get(key)).toBe(theirs);
     expect(notes(t1)).toBe(1);
   });
@@ -104,8 +116,7 @@ describe("item 142: a stale tab never writes over another tab's game", () => {
     eraseClassicFile(A);
     t1.game.respawn('1-1', { mode: 'stand' });
     expect(store.has(key)).toBe(false);
-    pickAtContinue(t1);
-    t1.until(() => inLevel(t1), 900);
+    backIn(t1);
     expect(notes(t1)).toBe(1);
     t1.game.goToLevel('1-2', { mode: 'stand' });
     t1.game.keepTutorialsSeen(['mario-start']);
