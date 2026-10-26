@@ -248,3 +248,62 @@ describe('item 84 (2): OK on a pack deletes that pack, after a confirm', () => {
     expect(removed).toEqual([]);
   });
 });
+
+// Break-it review (0.4.73): after a delete the cursor stays on a pack (or Export template when
+// none are left) and the line says so; a store that cannot delete says so too.
+describe('item 84 (2): the cursor and the line after YES', () => {
+  async function packsWith(names: string[]): Promise<H> {
+    browser({ dir: true, ua: DESKTOP_UA });
+    const s = defaultSettings();
+    s.packs = [...names];
+    const h = game(false, s);
+    packs = [...names];
+    await packsPage(h);
+    return h;
+  }
+  const focused = (h: H) => labels(h.top())[index(h)];
+
+  it('deleting a middle pack: the cursor moves to the next pack, and the line names it', async () => {
+    const h = await packsWith(['alpha', 'beta', 'gamma']);
+    pick(h, 'beta');
+    pick(h, 'Yes');
+    await flush();
+    expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'alpha', 'gamma', 'Back']);
+    expect(focused(h)).toBe('gamma');
+    expect(h.said.at(-1)).toBe('Deleted beta. gamma: On. Left/right toggles. OK deletes it');
+  });
+
+  it('deleting the last listed pack: the cursor moves to the pack above it', async () => {
+    const h = await packsWith(['alpha', 'beta']);
+    pick(h, 'beta');
+    pick(h, 'Yes');
+    await flush();
+    expect(focused(h)).toBe('alpha');
+    expect(h.said.at(-1)).toBe('Deleted beta. alpha: On. Left/right toggles. OK deletes it');
+  });
+
+  it('deleting the only pack: the cursor goes to Export template, never silently to Back', async () => {
+    const h = await packsWith(['alpha']);
+    pick(h, 'alpha');
+    pick(h, 'Yes');
+    await flush();
+    expect(labels(h.top())).toEqual(['Import pack', 'Export template', 'Back']);
+    expect(focused(h)).toBe('Export template');
+    expect(h.said.at(-1)).toBe('Deleted alpha. Export template. Downloads PNGs to repaint');
+  });
+
+  it('a store that cannot delete: "Could not delete", said, and the pack is kept and still on', async () => {
+    const h = await packsWith(['alpha', 'beta']);
+    vi.spyOn(packStore, 'remove').mockImplementation(async () => {
+      throw new Error('QuotaExceededError');
+    });
+    pick(h, 'beta');
+    pick(h, 'Yes');
+    await flush();
+    expect(status(h)).toBe('Could not delete');
+    expect(h.said.at(-1)).toBe('Could not delete');
+    expect((h.game.deps.settings as Settings).packs).toEqual(['alpha', 'beta']);
+    expect(labels(h.top())).toContain('beta');
+    expect(focused(h)).toBe('beta');
+  });
+});
