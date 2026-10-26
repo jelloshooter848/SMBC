@@ -8,7 +8,7 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { makeGame, store, useStorage } from './heroes-harness';
 
-// v0.4.74 item 66 (dev only; owner-approved; tests first): dev mode turned off in the middle of
+// v0.4.73 item 66 (dev only; owner-approved; tests first): dev mode turned off in the middle of
 // a Classic run whose hero is an unreleased Expansion hero (Arthur), here in Single hero, where
 // the select is skipped after the first pick. The current life ends and the hero select opens,
 // as for any hero the select does not offer; the unreleased hero is not on it. The file stays

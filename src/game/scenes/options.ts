@@ -311,7 +311,7 @@ export class AssistOptionsScene extends MenuScene {
 
 /**
  * The Assists rows over values `a` (`changed` after each change): the dev Assists page's, and
- * v0.4.74's ADVANCED CHEATS page's (item 60: every dev Assist, as each plays here).
+ * v0.4.73's ADVANCED CHEATS page's (item 60: every dev Assist, as each plays here).
  */
 export function assistItems(a: AssistSettings, changed: () => void): MenuItem[] {
   const toggle = (label: string, key: keyof AssistSettings, hint?: string): MenuItem => ({

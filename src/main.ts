@@ -109,7 +109,7 @@ function boot(): void {
   const ctx = { assets, audio, assist: { ...DEFAULT_ASSIST }, reduceFlashing: false };
   const getLevel = (id: string) =>
     (id.startsWith('custom-') ? getCustomLevel(loadLibrary(), id) : null) ?? getBuiltinLevel(id);
-  // v0.4.74: applyAssists waits for the loop (made after the game).
+  // v0.4.73: applyAssists waits for the loop (made after the game).
   let loopReady = false;
   const game = new Game({
     ctx,
@@ -245,7 +245,7 @@ function boot(): void {
 
   /**
    * Assists are developer tools: they only take effect while dev mode is on (values are kept),
-   * and, v0.4.74 (item 60), a file's Advanced cheats in its own runs (Game.liveAssists decides).
+   * and, v0.4.73 (item 60), a file's Advanced cheats in its own runs (Game.liveAssists decides).
    */
   function applyAssists(): void {
     // (The game may ask before the loop exists, while it is being made: applySettings follows.)

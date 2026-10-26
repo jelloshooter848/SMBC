@@ -201,7 +201,7 @@ describe("C: the replay plays the file's rules, free play, and never writes the 
     rules.heroesOff = ['luigi'];
     keepCleared(A, {}, rules);
     helpSeen();
-    // v0.4.74 (item 60): a Hard CLEARED file has Advanced cheats; their box is read already.
+    // v0.4.73 (item 60): a Hard CLEARED file has Advanced cheats; their box is read already.
     classic().game.setAdvancedCheats(A, { seen: true });
     const before = stored();
     const h = classic();

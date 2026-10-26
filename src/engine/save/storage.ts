@@ -47,7 +47,7 @@ export function hasKey(key: string): boolean {
 }
 
 /**
- * v0.4.74 (item 69): whether storage can be read at all (false when getItem throws, or there
+ * v0.4.73 (item 69): whether storage can be read at all (false when getItem throws, or there
  * is no storage). A read that throws looks like an empty key to loadJson and hasKey, so a writer
  * that must never put a run over a file it cannot see asks this first.
  */

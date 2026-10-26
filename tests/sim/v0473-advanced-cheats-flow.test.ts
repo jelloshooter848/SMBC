@@ -15,7 +15,7 @@ import { choose } from './classic-files-nav';
 import { pickAtContinue } from './continue-select';
 import { closeUnlockCards, inLevel, keepCleared, openFiles, readNote } from './cleared-nav';
 
-// v0.4.74 item 60 (owner-approved): the unlock said after the credits with v0.4.73's message;
+// v0.4.73 item 60 (owner-approved): the unlock said after the credits with v0.4.73's message;
 // the explanation box the first time that file is picked after it (once per file, read out,
 // waiting for OK); the ADVANCED CHEATS row next to Cheats (the file's replay boxes and its pause
 // menu), a Classic box with every dev Assist.

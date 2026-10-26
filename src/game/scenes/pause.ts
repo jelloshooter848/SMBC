@@ -87,7 +87,7 @@ export class PauseScene extends MenuScene {
             ),
           hint: 'Every original cheat, in developer mode',
         });
-      // v0.4.74 (item 60): a CLEARED file's replay, beaten on Hard: its Advanced cheats.
+      // v0.4.73 (item 60): a CLEARED file's replay, beaten on Hard: its Advanced cheats.
       const adv = game.replayRun?.ref;
       if (adv && game.advancedCheatsOf(adv)) items.push(advancedCheatsItem(game, adv));
       if (game.stageRound) items.push(this.giveUp());

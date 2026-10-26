@@ -179,8 +179,8 @@ describe('provenance: the copy that carries it', () => {
     expect(oldRunsWaiting('smb')).toBe(1);
   });
 
-  it('erasing the copied file retires the kept old key: it never moves in again (v0.4.74 item 65)', () => {
-    // Before v0.4.74 the erased game came back here (owner item 65 changed this on purpose).
+  it('erasing the copied file retires the kept old key: it never moves in again (v0.4.73 item 65)', () => {
+    // Before v0.4.73 the erased game came back here (owner item 65 changed this on purpose).
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const oldKey = classicResumeKey('smb');
     put(oldKey, { ...run({ score: 77 }), savedAt: 9 });

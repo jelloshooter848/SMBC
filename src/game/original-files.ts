@@ -184,7 +184,7 @@ export function saveClassicFile(
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
-  // v0.4.74 (item 69): storage that cannot be read hides what is there (a CLEARED file too):
+  // v0.4.73 (item 69): storage that cannot be read hides what is there (a CLEARED file too):
   // nothing is written over a file that cannot be seen.
   if (!storageReadable()) return false;
   const now = loadJson<unknown>(classicFileKey(f));
@@ -234,7 +234,7 @@ export interface ClearedFile {
   savedAt: number;
   fromOld?: OldSaveMark;
   /**
-   * v0.4.74 (item 60): beaten on Hard, so ADVANCED CHEATS are unlocked on this file (written
+   * v0.4.73 (item 60): beaten on Hard, so ADVANCED CHEATS are unlocked on this file (written
    * with the clear, the file's only write). A Hard CLEARED file from before it reads as
    * unlocked too (advanced-cheats.ts advancedUnlocked).
    */
@@ -291,7 +291,7 @@ export function saveClearedFile(
     run: { ...f.run },
     savedAt: f.savedAt ?? Date.now(),
     ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
-    // v0.4.74 (item 60): beaten on Hard: ADVANCED CHEATS on this file.
+    // v0.4.73 (item 60): beaten on Hard: ADVANCED CHEATS on this file.
     ...(f.rules.difficulty === 'hard' ? { advancedCheats: true as const } : {}),
   };
   delete out.run.difficulty;
@@ -325,7 +325,7 @@ export function classicFileGone(ref: ClassicFileRef): boolean {
 }
 
 /**
- * v0.4.74 (item 60): where file `ref`'s ADVANCED CHEATS live (their values and whether their box
+ * v0.4.73 (item 60): where file `ref`'s ADVANCED CHEATS live (their values and whether their box
  * was read), beside the file: a CLEARED file is never written again (advanced-cheats.ts).
  */
 export function advancedCheatsKey(ref: ClassicFileRef): string {
@@ -339,7 +339,7 @@ export function fileFingerprint(raw: unknown): string {
 
 /**
  * ERASE FILE (and a run ending): file `ref` is empty again, with what is kept beside it (its
- * ADVANCED CHEATS). v0.4.74 (item 65): the old save it was copied from, when that key is still
+ * ADVANCED CHEATS). v0.4.73 (item 65): the old save it was copied from, when that key is still
  * there with the very text it was copied from (its removal was refused then), is retired first,
  * so the erased game never migrates back in.
  */
@@ -361,7 +361,7 @@ function retiredKey(key: string): string {
 }
 
 /**
- * v0.4.74 (item 65): old key `mark.key`, holding the text `mark` was copied from, goes: deleted,
+ * v0.4.73 (item 65): old key `mark.key`, holding the text `mark` was copied from, goes: deleted,
  * or when the delete is refused, renamed (its text copied to `<key>-erased`, which marks it as
  * retired: migration then only retries the delete). A key with other text (a new save an older
  * version wrote there since) is a different game, and stays.
@@ -422,7 +422,7 @@ export function migrateClassicFiles(sharedRules: SharedClassicRules | (() => Sha
   const take = (key: string, set: MapSetId | null) => {
     if (!hasKey(key)) return;
     const raw = loadJson<unknown>(key);
-    // v0.4.74 (item 65): erased already (its delete was refused then): only the delete is retried.
+    // v0.4.73 (item 65): erased already (its delete was refused then): only the delete is retried.
     if (isRetired(key, raw)) {
       removeKey(key);
       if (keyAbsent(key)) removeKey(retiredKey(key));

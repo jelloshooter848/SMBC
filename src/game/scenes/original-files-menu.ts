@@ -154,7 +154,7 @@ function problemRow(
   if (problem === 'not-released') {
     // 0.4.72: played in dev mode, or saved by v0.4.71 or earlier, by a hero players do not have
     // yet; never played as another.
-    // v0.4.74 (item 68): a release build cannot turn dev mode on: it says only what is so.
+    // v0.4.73 (item 68): a release build cannot turn dev mode on: it says only what is so.
     if (game.devLock.mode !== 'open') return { value: 'NOT RELEASED', why: RELEASE_NOT_RELEASED };
     const name = fileHeroName(game, f);
     return {
@@ -187,11 +187,11 @@ export const PROBLEM_LINE: Record<FileProblem, string> = {
   'not-released': 'HERO IS NOT RELEASED YET',
 };
 
-/** v0.4.74 (item 68): a NOT RELEASED file's reason on a release build, as read out. */
+/** v0.4.73 (item 68): a NOT RELEASED file's reason on a release build, as read out. */
 const RELEASE_NOT_RELEASED = 'This hero is not in this version yet. The file is kept';
 
 /**
- * v0.4.74 (item 68): a NOT RELEASED file's line under the box: a release build's (31 columns at
+ * v0.4.73 (item 68): a NOT RELEASED file's line under the box: a release build's (31 columns at
  * most, no dev mode in it), or the dev build's as before.
  */
 export function notReleasedLine(lock: DevLock): string {
@@ -206,7 +206,7 @@ function problemLine(game: Game, problem: FileProblem): string {
 /** 42: an old save waiting for a free file, shown under the box on the ERASE FILE row. */
 export const WAITING_LINE = 'A GAME IS WAITING FOR A FILE';
 
-/** v0.4.74 (item 69): storage cannot be read now, said and shown (at most 31 columns). */
+/** v0.4.73 (item 69): storage cannot be read now, said and shown (at most 31 columns). */
 export const STORAGE_UNREADABLE = "Saves can't be read right now";
 export const UNREADABLE_STORAGE_LINE = "SAVES CAN'T BE READ RIGHT NOW";
 const STORAGE_KEPT = 'Your files are kept as they are. New games and erasing wait until they can be read';
@@ -324,7 +324,7 @@ export class ClassicFilesScene extends ClassicBox {
    */
   private note: { slot: ClassicFileSlot; moved: boolean } | null = null;
   /**
-   * v0.4.74 (item 69): storage cannot be read now (getItem throws): every file would read as
+   * v0.4.73 (item 69): storage cannot be read now (getItem throws): every file would read as
    * empty, so none is shown as NEW GAME, and new games and erases are refused until it can.
    */
   private blocked = false;
@@ -349,7 +349,7 @@ export class ClassicFilesScene extends ClassicBox {
     return CLASSIC_FILE_SLOTS[i];
   }
 
-  /** v0.4.74 (item 69): storage cannot be read now (the box refuses new games and erases). */
+  /** v0.4.73 (item 69): storage cannot be read now (the box refuses new games and erases). */
   get storageBlocked(): boolean {
     return this.blocked;
   }

@@ -15,7 +15,7 @@ import { draw, store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';
 import { classic, openFiles, readNote } from './cleared-nav';
 
-// v0.4.74 item 69 (owner-approved; rule 33a: written before the fix). When storage reads throw
+// v0.4.73 item 69 (owner-approved; rule 33a: written before the fix). When storage reads throw
 // (getItem throws) but writes still work, every file read as empty: the file box showed NEW
 // GAME on used files, and a new game there wrote over the real file. Now the file box itself
 // says "SAVES CAN'T BE READ RIGHT NOW" (on its line, and read out as it opens; it still opens,

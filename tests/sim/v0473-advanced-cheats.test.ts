@@ -17,7 +17,7 @@ import { makeGame, store, useStorage } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
 import { keepCleared, run } from './cleared-nav';
 
-// v0.4.74 item 60 (owner-approved; rule 33a: the save cases were written before the code).
+// v0.4.73 item 60 (owner-approved; rule 33a: the save cases were written before the code).
 // Beating a map set on HARD unlocks ADVANCED CHEATS on that file only: every dev Assist, as it
 // plays today, for runs of that file and nothing else (no other file, never the campaign).
 //

@@ -9,7 +9,7 @@ import { draw, makeGame, store, useStorage } from './heroes-harness';
 import { choose } from './classic-files-nav';
 import { openFiles } from './cleared-nav';
 
-// v0.4.74 item 68 (owner-approved): on a release build a NOT RELEASED file (its hero is an
+// v0.4.73 item 68 (owner-approved): on a release build a NOT RELEASED file (its hero is an
 // Expansion hero players do not have yet) says "This hero is not in this version yet. The file
 // is kept.", never "turn dev mode on" (players cannot). The line under the box fits its width.
 // A dev build (the lock open) keeps the dev hint.

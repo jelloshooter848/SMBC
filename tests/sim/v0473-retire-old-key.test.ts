@@ -16,7 +16,7 @@ import {
 import { CLASSIC_RESUME_KEY, classicResumeKey, type ClassicResume } from '@game/run-resume';
 import { store, useStorage } from './heroes-harness';
 
-// v0.4.74 item 65 (owner-approved; rule 33a: written before the fix). When removing an old
+// v0.4.73 item 65 (owner-approved; rule 33a: written before the fix). When removing an old
 // per-set key failed once (its copy is in a file, marked fromOld), ERASE FILE of the file that
 // holds the migrated game used to drop the only mark, so the old key migrated back in on the
 // next read: the erased game came back. Now erasing a file whose fromOld matches a still-present

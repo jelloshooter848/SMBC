@@ -9,7 +9,7 @@ import { demoUnder, renderBoxedMenu } from './original-box-menu';
 import { assistItems } from './options';
 
 /*
- * v0.4.74 (owner item 60): a CLEARED file's ADVANCED CHEATS page, unlocked by beating its map set
+ * v0.4.73 (owner item 60): a CLEARED file's ADVANCED CHEATS page, unlocked by beating its map set
  * on Hard: every dev Assist (the same rows as dev mode's Assists page, each playing as it does
  * there), for that file's runs only. A Classic box with the original's box sounds: over the
  * CLASSIC title from the file's world box, or over the paused level from its pause menu. Each

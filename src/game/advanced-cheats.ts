@@ -12,14 +12,14 @@ import {
 export { advancedCheatsKey };
 
 /*
- * v0.4.74 (owner item 60): ADVANCED CHEATS. Beating a map set on HARD unlocks them on THAT file
+ * v0.4.73 (owner item 60): ADVANCED CHEATS. Beating a map set on HARD unlocks them on THAT file
  * only: every dev Assist (Options' Assists page in dev mode, as each plays today), for the runs
  * of that file (its level replays), never another file's, never the campaign.
  *
  * Where it lives. The set is beaten once per file, and that clear is the file's last write (a
  * CLEARED file, v 2, is never written again: original-files.ts). So:
  * - the unlock is written with the clear itself (ClearedFile.advancedCheats); a Hard CLEARED file
- *   from before v0.4.74 reads as unlocked too (its rules say Hard, fixed for the file's life);
+ *   from before v0.4.73 reads as unlocked too (its rules say Hard, fixed for the file's life);
  * - what changes later (each row's value, and whether its explanation box was read) is kept
  *   beside the frozen file, under advancedCheatsKey(ref), tied to that very CLEARED file by a
  *   fingerprint of its stored text (`of`), which never changes. A later clear of the same slot
