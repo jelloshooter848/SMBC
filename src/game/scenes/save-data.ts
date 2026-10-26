@@ -6,6 +6,7 @@ import { readTouchFacts } from '@engine/input/touch-logic';
 import {
   CHANGE_FAILURE_TEXT,
   MAX_BACKUP_CHARS,
+  NOT_RESTORED_TEXT,
   REFUSAL_SAID,
   REFUSAL_TEXT,
   buildBackup,
@@ -68,7 +69,7 @@ export function browserSaveDataEnv(): SaveDataEnv {
         }
       }
       try {
-        for (const f of files) download(f.name, f);
+        downloadAll(files);
         return 'downloaded';
       } catch {
         return 'failed';
@@ -94,9 +95,25 @@ export function browserSaveDataEnv(): SaveDataEnv {
     },
     packs: { list: () => packStore.list(), clear: () => packStore.clear() },
     restart() {
-      location.replace(location.pathname);
+      // The page again from its start: its query (?dev=1) kept, its #link (a save link) dropped.
+      location.replace(location.pathname + location.search);
     },
   };
+}
+
+/** Gap between downloads: one burst of several is blocked or cut short (Chrome's prompt, old iOS). */
+export const DOWNLOAD_GAP_MS = 400;
+
+/** Downloads `files` one after another, the first now (in the press's event), DOWNLOAD_GAP_MS apart. */
+export function downloadAll(
+  files: readonly File[],
+  save: (name: string, blob: Blob) => void = download,
+  gap = DOWNLOAD_GAP_MS,
+): void {
+  files.forEach((f, i) => {
+    if (i === 0) save(f.name, f);
+    else setTimeout(() => save(f.name, f), i * gap);
+  });
 }
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 'S'}`;
@@ -116,8 +133,11 @@ const NOTE_SAID =
 /** Options > Save data. */
 export class SaveDataOptions extends MenuScene {
   private readonly env: SaveDataEnv;
-  /** The stored packs and their zips, ready before any press (null: still being read). */
-  private packs: { count: number; files: File[]; failed: string[] } | null = null;
+  /** The stored packs, listed on opening (null: still being read). */
+  private packs: StoredPack[] | null = null;
+  /** Their zips, made once the pack question is up (null: not ready yet). */
+  private zips: { files: File[]; failed: string[] } | null = null;
+  private zipping: Promise<void> | null = null;
   private busy = false;
 
   constructor(game: Game, onBack: () => void) {
@@ -148,21 +168,32 @@ export class SaveDataOptions extends MenuScene {
     void this.readPacks();
   }
 
-  /** The packs are read and zipped now, so a press can hand them over in its own event. */
+  /** The packs are only listed on opening: they are zipped when the player is asked about them. */
   private async readPacks(): Promise<void> {
-    const list = await this.env.packs.list().catch(() => [] as StoredPack[]);
-    const { zips, failed } = await packZips(list);
-    this.packs = {
-      count: list.length,
-      files: zips.map((z) => new File([z.bytes as BlobPart], z.fileName, { type: 'application/zip' })),
-      failed,
-    };
+    this.packs = await this.env.packs.list().catch(() => [] as StoredPack[]);
   }
 
-  /** The status line and the screen reader. */
+  /**
+   * Zips the packs (once). A zip needs each file's CRC-32, so its bytes are read first, which is
+   * async; the share sheet must still run in a press's own event, so the zips are made while the
+   * pack question is up, and its YES hands over files already made.
+   */
+  private zipPacks(): Promise<void> {
+    this.zipping ??= packZips(this.packs ?? []).then(({ zips, failed }) => {
+      this.zips = {
+        files: zips.map((z) => new File([z.bytes as BlobPart], z.fileName, { type: 'application/zip' })),
+        failed,
+      };
+    });
+    return this.zipping;
+  }
+
+  /** The status line (the question's too, when one is up) and the screen reader. */
   private tell(status: string, said: string, bump = false): void {
     if (bump) this.game.ctx.audio.sfx('bump');
     this.status = status;
+    const top = this.game.scenes.top;
+    if (top instanceof QuestionBox) top.note(status);
     this.game.deps.announcer?.say(said);
   }
 
@@ -174,15 +205,24 @@ export class SaveDataOptions extends MenuScene {
       this.tell('ONE MOMENT', 'Reading the asset packs. Try again in a moment.', true);
       return;
     }
-    const n = this.packs.count;
+    const n = this.packs.length;
     if (n === 0) {
       this.exportNow(false);
       return;
     }
+    void this.zipPacks();
     const answer = (withPacks: boolean): MenuItem => ({
       label: withPacks ? 'Yes' : 'No',
       gesture: true,
       select: () => {
+        if (withPacks && !this.zips) {
+          this.tell(
+            'ONE MOMENT',
+            'The asset packs are still being packed. Press YES again in a moment.',
+            true,
+          );
+          return;
+        }
         // The files go first, still inside the press's own event.
         this.exportNow(withPacks);
         this.game.scenes.pop();
@@ -210,7 +250,7 @@ export class SaveDataOptions extends MenuScene {
       return;
     }
     const files = [new File([backup.text], backup.fileName, { type: 'application/json' })];
-    const packs = withPacks && this.packs ? this.packs : null;
+    const packs = withPacks && this.zips ? this.zips : null;
     if (packs) files.push(...packs.files);
     void this.env.deliver(files).then((outcome) => {
       if (outcome === 'cancelled') return this.tell('EXPORT CANCELLED', 'Export cancelled.');
@@ -222,6 +262,8 @@ export class SaveDataOptions extends MenuScene {
         if (packs.failed.length)
           said += ` ${pluralSaid(packs.failed.length, 'pack')} could not be read and ${packs.failed.length === 1 ? 'was' : 'were'} left out: ${packs.failed.join(', ')}.`;
       }
+      if (outcome === 'downloaded' && files.length > 1)
+        said += ` ${files.length} files will download, one after another.`;
       this.tell(packs?.failed.length ? `${plural(packs.failed.length, 'PACK')} LEFT OUT` : done, said);
     });
   }
@@ -286,19 +328,29 @@ export class SaveDataOptions extends MenuScene {
   private applyImport(b: Backup): void {
     this.game.scenes.pop();
     const r = replaceGameData(b.data);
-    if (!r.ok) return this.failed(r.reason, 'Nothing changed.');
+    if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing changed.');
     this.finish('BACKUP IMPORTED', 'Backup imported.', []);
   }
 
-  /** An import or erase that changed nothing: why, said. */
-  private failed(reason: ChangeFailure, nothing: string): void {
+  /**
+   * An import or erase that failed: why, said. `restored`: everything was put back (then
+   * `nothing` is said); otherwise the player is told some data could not be put back, never
+   * that nothing changed.
+   */
+  private failed(reason: ChangeFailure, restored: boolean, nothing: string): void {
     const why: Record<ChangeFailure, string> = {
       read: "This device's storage cannot be read.",
       quota: 'Not enough space on this device.',
       write: 'Storage refused the change.',
       changed: 'Another tab changed the data meanwhile. Close other tabs of the game and try again.',
     };
-    this.tell(CHANGE_FAILURE_TEXT[reason], `${why[reason]} ${nothing}`, true);
+    if (restored) this.tell(CHANGE_FAILURE_TEXT[reason], `${why[reason]} ${nothing}`, true);
+    else
+      this.tell(
+        NOT_RESTORED_TEXT,
+        `${why[reason]} Some of this device's data could not be put back. Export a backup now if you can, and close other tabs of the game.`,
+        true,
+      );
   }
 
   /** Done: a card that waits for OK, then the game starts again from its first screen. */
@@ -321,6 +373,7 @@ export class SaveDataOptions extends MenuScene {
   // ---- Erase -----------------------------------------------------------------------------
 
   private askErase(): void {
+    if (this.busy) return;
     this.status = '';
     this.game.scenes.push(
       new QuestionBox(
@@ -357,7 +410,7 @@ export class SaveDataOptions extends MenuScene {
             label: 'Yes, erase',
             select: () => {
               this.game.scenes.pop();
-              const n = this.packs?.count ?? 0;
+              const n = this.packs?.length ?? 0;
               if (n > 0) this.askPacks(n);
               else void this.erase(false);
             },
@@ -383,9 +436,10 @@ export class SaveDataOptions extends MenuScene {
         `Also erase ${pluralSaid(n, 'asset pack')}?`,
         ['NO KEEPS THEM, TURNED OFF.'],
         [answer(false), answer(true)],
+        // BACK cancels the whole erase, as on every other question.
         () => {
           this.game.scenes.pop();
-          void this.erase(false);
+          this.tell('ERASE CANCELLED', 'Erase cancelled. Nothing was erased.');
         },
       ),
     );
@@ -393,7 +447,11 @@ export class SaveDataOptions extends MenuScene {
 
   private async erase(withPacks: boolean): Promise<void> {
     const r = eraseGameData();
-    if (!r.ok) return this.failed(r.reason, 'Nothing was erased.');
+    if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing was erased.');
+    // From here this tab's state is stale: no reload on its refused writes, and no second action
+    // while the packs are being erased.
+    onStaleStorage(null);
+    this.busy = true;
     let packsFailed = false;
     if (withPacks) await this.env.packs.clear().catch(() => (packsFailed = true));
     this.finish(
@@ -427,6 +485,11 @@ class QuestionBox extends MenuScene {
     onBack: () => void,
   ) {
     super(game, title, items, onBack);
+  }
+
+  /** A line on the question's own status row (an Export first's outcome). */
+  note(status: string): void {
+    this.status = status;
   }
 
   override enter(): void {

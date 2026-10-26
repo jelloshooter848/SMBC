@@ -408,10 +408,10 @@ class PacksOptions extends MenuScene {
     items.push({
       label: 'Export template',
       // Item 92: one download, smbc-remix-pack-template.zip (the PNGs, their layouts and a README
-      // listing the ids, read live). The hint keeps its words (item 84's page test reads them).
+      // listing the ids, read live).
       select: () =>
         void exportTemplate(game.ctx.assets, game.ctx.audio.registeredIds?.() ?? { songs: [], sfx: [] }),
-      hint: 'Downloads PNGs to repaint',
+      hint: 'Downloads a zip of PNGs to repaint',
     });
     for (const name of this.names) {
       items.push({

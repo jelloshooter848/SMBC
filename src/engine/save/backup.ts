@@ -198,11 +198,15 @@ export function parseBackup(text: string, gameVersion: string): ParsedBackup {
 }
 
 /**
- * Why an import or an erase changed nothing: storage could not be read ('read'), ran out of room
+ * Why an import or an erase failed: storage could not be read ('read'), ran out of room
  * ('quota'), refused a write ('write'), or another tab changed the data meanwhile ('changed').
  */
 export type ChangeFailure = 'read' | 'quota' | 'write' | 'changed';
-export type ChangeResult = { ok: true } | { ok: false; reason: ChangeFailure };
+/**
+ * `restored`: the roll back put every key and the marker back exactly as they were (read back to
+ * check). False only when storage failed during the roll back too: then not everything came back.
+ */
+export type ChangeResult = { ok: true } | { ok: false; reason: ChangeFailure; restored: boolean };
 
 const isQuota = (e: unknown): boolean => {
   const n = (e as { name?: string; code?: number } | null)?.name;
@@ -216,9 +220,12 @@ function newEpoch(): string {
 }
 
 /**
- * Makes the game's keys exactly `data` (an import; an erase is `{}`), all or nothing: the old
- * keys go (room for the new), the data marker changes (stale tabs stop writing), the new ones
- * are written and read back (a write that slipped in shows there). Any failure puts every key, and the marker, back as it was.
+ * Makes the game's keys exactly `data` (an import; an erase is `{}`), all or nothing: the data
+ * marker changes first (stale tabs stop writing before anything goes; only when storage is too
+ * full even for the marker does it go in once the old keys are gone), the old keys go (room for
+ * the new), the new ones are written and read back (a write that slipped in shows there). Any
+ * failure puts every key, and the marker, back as it was, and reads them back to say whether it
+ * managed (`restored`).
  */
 export function replaceGameData(data: Record<string, string>, store: KeyValueStore = local()): ChangeResult {
   let before: Record<string, string>;
@@ -227,9 +234,9 @@ export function replaceGameData(data: Record<string, string>, store: KeyValueSto
     before = readGameData(store);
     epoch = store.getItem(DATA_EPOCH_KEY);
   } catch {
-    return { ok: false, reason: 'read' };
+    return { ok: false, reason: 'read', restored: true };
   }
-  const rollBack = (): void => {
+  const rollBack = (): boolean => {
     try {
       for (const k of Object.keys(readGameData(store))) store.removeItem(k);
     } catch {
@@ -251,30 +258,40 @@ export function replaceGameData(data: Record<string, string>, store: KeyValueSto
       try {
         store.setItem(k, v);
       } catch {
-        /* the old data fitted before: this only fails with storage itself failing */
+        /* keep going: the read back below says what is missing */
       }
     }
+    try {
+      return (
+        sortedJson(readGameData(store)) === sortedJson(before) && store.getItem(DATA_EPOCH_KEY) === epoch
+      );
+    } catch {
+      return false;
+    }
   };
+  const fail = (reason: ChangeFailure): ChangeResult => ({ ok: false, reason, restored: rollBack() });
   try {
+    let marked = false;
+    try {
+      store.setItem(DATA_EPOCH_KEY, newEpoch());
+      marked = true;
+    } catch (e) {
+      if (!isQuota(e)) throw e;
+    }
     for (const k of Object.keys(before)) store.removeItem(k);
-    store.setItem(DATA_EPOCH_KEY, newEpoch());
+    if (!marked) store.setItem(DATA_EPOCH_KEY, newEpoch());
     for (const k of Object.keys(data).sort()) store.setItem(k, data[k] as string);
   } catch (e) {
-    rollBack();
-    return { ok: false, reason: isQuota(e) ? 'quota' : 'write' };
+    return fail(isQuota(e) ? 'quota' : 'write');
   }
   // Read back: every key as written and no other (an old build's tab may have written meanwhile).
   let now: Record<string, string>;
   try {
     now = readGameData(store);
   } catch {
-    rollBack();
-    return { ok: false, reason: 'read' };
+    return fail('read');
   }
-  if (sortedJson(now) !== sortedJson(data)) {
-    rollBack();
-    return { ok: false, reason: 'changed' };
-  }
+  if (sortedJson(now) !== sortedJson(data)) return fail('changed');
   return { ok: true };
 }
 
@@ -282,6 +299,9 @@ export function replaceGameData(data: Record<string, string>, store: KeyValueSto
 export function eraseGameData(store: KeyValueStore = local()): ChangeResult {
   return replaceGameData({}, store);
 }
+
+/** When the roll back could not put everything back (font text). */
+export const NOT_RESTORED_TEXT = 'SOME DATA WAS NOT PUT BACK';
 
 /** What the screen says when an import or erase changed nothing (font text, 28 characters at most). */
 export const CHANGE_FAILURE_TEXT: Readonly<Record<ChangeFailure, string>> = {

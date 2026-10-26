@@ -213,7 +213,7 @@ export function templateReadme(
     "sheet drawn with that palette, without repainting it: the heroes' power-up colours such as",
     'Fire Mario, the level and map themes, star flashes and other colour cycles. A sheet a pack',
     'repaints as a PNG ignores palettes.',
-    ...Object.entries(registry.paletteTable())
+    ...Object.entries(registry.builtinPalettes())
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([name, colors]) => `  ${name}: ${colors.join(', ')}`),
     '',
