@@ -7,4 +7,5 @@
   still say `'current'`; it is read as `'campaign'`
   (`readRules()` in `src/game/context.ts`; settings.ts maps `classicRules` itself) and never written again.
 - **Classic mode**: the original SMBC's rules (`'classic'`), played from the title's CLASSIC menu.
+  In dev mode a Classic run can be played on Campaign rules instead (Dev > Level select's Rules).
 - A _campaign file_ is a REMIX save file; a campaign file always plays Campaign rules.

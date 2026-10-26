@@ -34,7 +34,7 @@ release-sized slices. Nothing here is built yet. Facts about the original come f
 
 Add `Settings.classic: ClassicSettings` (normalised on load, every field defaulting to the original) and an
 optional `GameContext.classic?: ClassicSettings` that `Game` fills **only for a Classic run with Classic rules**
-(campaign and Campaign rules: absent, so nothing reads it). Each consumer reads it in the one hook it already
+(the campaign, and a Classic run on Campaign rules: absent, so nothing reads it). Each consumer reads it in the one hook it already
 owns, never in shared code. The CLASSIC > Options menu grows sub-menus that mirror the original's:
 **Game Mode**, **Customize Weapons**, **More Settings**, **Cheats**. Each row says what it changes; a row whose
 value differs from the original shows it (so a run is never silently non-original), and a "Restore originals"
