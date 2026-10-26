@@ -1,0 +1,19 @@
+{
+  "name": "smbc-nostr-backup-prototype",
+  "private": true,
+  "description": "Research only: back up an SMBC Remix save to Nostr relays under a short code. Not game code.",
+  "type": "module",
+  "scripts": {
+    "demo": "node demo.mjs --local",
+    "size": "node size.mjs"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.0.1",
+    "nostr-tools": "2.25.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "https-proxy-agent": "7.0.6",
+    "ws": "8.18.3"
+  }
+}

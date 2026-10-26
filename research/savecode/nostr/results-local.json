@@ -1,0 +1,135 @@
+{
+  "mode": "local in-process relays (protocol checks, not real relays)",
+  "checks": [
+    {
+      "ok": true,
+      "what": "a new code has 10 characters",
+      "detail": {
+        "code": "SCVXH-D05XC"
+      }
+    },
+    {
+      "ok": true,
+      "what": "typed loosely (lower case, space, O for 0, L for 1) it is the same code",
+      "detail": {
+        "typed": "scvxh do5xc"
+      }
+    },
+    {
+      "ok": true,
+      "what": "too short, or a character outside the alphabet, is not a code"
+    },
+    {
+      "ok": true,
+      "what": "the file save survives encrypt + sign + verify + decrypt",
+      "detail": {
+        "event_bytes": 33234
+      }
+    },
+    {
+      "ok": true,
+      "what": "the string save survives encrypt + sign + verify + decrypt",
+      "detail": {
+        "event_bytes": 4562
+      }
+    },
+    {
+      "ok": true,
+      "what": "a save over the size cap is refused before upload"
+    },
+    {
+      "ok": true,
+      "what": "upload accepted by at least one relay",
+      "detail": [
+        "ws://127.0.0.1:36259 OK",
+        "ws://127.0.0.1:36879 OK",
+        "ws://127.0.0.1:34383 blocked: writes refused",
+        "ws://127.0.0.1:1 connection failed"
+      ]
+    },
+    {
+      "ok": true,
+      "what": "restore with only the code gives the file back byte for byte",
+      "detail": {
+        "from": "ws://127.0.0.1:36259",
+        "ms": 23
+      }
+    },
+    {
+      "ok": true,
+      "what": "a second upload under the same code is accepted"
+    },
+    {
+      "ok": true,
+      "what": "restore gives the newest upload"
+    },
+    {
+      "ok": true,
+      "what": "a mistyped code finds no backup (it derives a different key)"
+    },
+    {
+      "ok": true,
+      "what": "tampered or forged events on a relay are rejected; the real backup still restores"
+    },
+    {
+      "ok": true,
+      "what": "one relay pruned it: another relay still has it"
+    },
+    {
+      "ok": true,
+      "what": "every relay pruned it: the backup is gone (the local code must stay the real backup)"
+    }
+  ],
+  "saves": {
+    "file_bytes": 23104,
+    "string_chars": 2941
+  },
+  "code_example": "SCVXH-D05XC",
+  "scrypt": {
+    "params": {
+      "N": 32768,
+      "r": 8,
+      "p": 1,
+      "dkLen": 32
+    },
+    "memory_mb": 32,
+    "ms_per_derive_node": 177
+  },
+  "guessing": {
+    "code_bits": 50,
+    "note": "brute force needs one scrypt per guess; the per-core rate is from this machine, a GPU farm can be thousands of times faster",
+    "years_per_core_to_search_all_codes": 6310000
+  },
+  "event_bytes_file": 33234,
+  "event_bytes_string": 4562,
+  "relays": [
+    "ws://127.0.0.1:36259",
+    "ws://127.0.0.1:36879",
+    "ws://127.0.0.1:34383",
+    "ws://127.0.0.1:1"
+  ],
+  "upload": [
+    {
+      "url": "ws://127.0.0.1:36259",
+      "ok": true,
+      "message": ""
+    },
+    {
+      "url": "ws://127.0.0.1:36879",
+      "ok": true,
+      "message": ""
+    },
+    {
+      "url": "ws://127.0.0.1:34383",
+      "ok": false,
+      "message": "blocked: writes refused"
+    },
+    {
+      "url": "ws://127.0.0.1:1",
+      "ok": false,
+      "message": "connection failed"
+    }
+  ],
+  "restore_ms": 23,
+  "failed": 0
+}
