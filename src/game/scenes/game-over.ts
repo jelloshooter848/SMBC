@@ -76,7 +76,9 @@ export class GameOverScene implements Scene {
       } else {
         this.game.ctx.audio.sfx('select');
         // NO: a Classic mode run goes back to the CLASSIC menu, on its own set; everything else to the title.
+        // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
         if (this.game.classicRun) this.game.showClassicMenu(this.game.runSet);
+        else if (this.game.levelSelectBack) this.game.backToLevelSelect();
         else this.game.showTitle();
       }
     }
@@ -84,7 +86,9 @@ export class GameOverScene implements Scene {
 
   private showPrompt(): void {
     if (!this.onContinue) {
-      this.game.showTitle();
+      // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
+      if (this.game.levelSelectBack) this.game.backToLevelSelect();
+      else this.game.showTitle();
       return;
     }
     this._prompting = true;

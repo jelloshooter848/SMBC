@@ -73,17 +73,6 @@ describe('98: the beat is kept before the credits', () => {
     (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
     expect(loadProgress().classicBeat?.smb ?? 'none').toBe('none');
   });
-
-  it('a practice run records nothing', () => {
-    const h = classic((s) => (s.classicCheats.levelSelect = true));
-    h.game.showClassicMenu();
-    h.game.classicLevelSelect('8-4');
-    pickAtContinue(h);
-    h.until(() => inLevel(h), 900);
-    h.game.showEnding('8-4');
-    expect(loadProgress().classicBeat?.smb ?? 'none').toBe('none');
-    expect(h.settings.classicCheats.beaten.smb).toBe(false);
-  });
 });
 
 describe('97a: Quit in a replay names the file box', () => {

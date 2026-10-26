@@ -109,9 +109,11 @@ describe('96 (2): a real Lost Levels run into World 9', () => {
     pickAtContinue(h);
     h.until(() => inLevel(h), 900);
     expect(levelOf(h)).toMatch(/^ll-9-1/);
-    // The Level Select cheat in the run, on to D-4, and its castle ends the set.
-    h.game.classicLevelSelect('ll-13-4');
-    h.until(() => inLevel(h), 900);
+    // On to D-4 (a level exit straight there; the Level Select cheat is gone, item 94), and its
+    // castle ends the set.
+    (h.top() as LevelScene).world.events.push({ type: 'exit', next: 'll-13-4' });
+    pickAtContinue(h);
+    h.until(() => inLevel(h) && levelOf(h) === 'll-13-4', 900);
     h.game.showEnding('ll-13-4');
     const f = loadClearedFile(L);
     expect(f?.run.worlds).toEqual([8, 9, 13]);

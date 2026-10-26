@@ -15,7 +15,6 @@ import {
 } from '@game/scenes/original-files-menu';
 import { ClassicOptionRowsScene } from '@game/scenes/original-options';
 import { ClassicHeroesScene } from '@game/scenes/disable-heroes';
-import { LevelSelectScene } from '@game/scenes/level-select-cheat';
 import { loadClassicFile, originalFileRules, type ClassicFileRef } from '@game/original-files';
 import { draw, makeGame, store, useStorage, type H } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
@@ -133,18 +132,6 @@ describe('B-L the file box', () => {
     expect((h.top() as LevelScene).world.level.id).toMatch(/^3-1/);
     expect(h.said.find((s) => s.startsWith('Continue.'))).toMatch(/^Continue\. Survival, Hard\./);
   });
-
-  it('a Level Select jump into another set shows where the file is', () => {
-    const h = classic();
-    h.game.classicGame(MARIO, '1-1', { ref: F1 });
-    h.until(() => inLevel(h), 600);
-    h.game.classicLevelSelect('ll-2-1');
-    h.until(() => inLevel(h), 600);
-    h.game.showTitle();
-    const box = openSet(h);
-    expect(values(box)[0]).toBe('NORMAL LL 2-1 X3');
-    expect(items(box)[0]?.hint).toMatch(/World 2-1 of The Lost Levels/);
-  });
 });
 
 describe('B-L a new file', () => {
@@ -187,8 +174,9 @@ describe('B-L a new file', () => {
     choose(h, 'File 1');
     choose(h, 'Normal');
     const r = h.top() as ClassicFileRulesScene;
-    // Game mode, with left and right, the coin.
+    // Game mode, with left and right, the coin (v0.4.73 item 53: UP from START to it).
     h.idle(8);
+    for (let i = 0; i < 6 && idx(r) !== 0; i++) h.tap('up');
     h.audio.sfx.mockClear();
     h.tap('right');
     h.tap('left');
@@ -227,6 +215,7 @@ describe('B-L a new file', () => {
     choose(h, 'Easy');
     const r = h.top() as ClassicFileRulesScene;
     h.idle(8);
+    for (let i = 0; i < 6 && idx(r) !== 0; i++) h.tap('up'); // v0.4.73 item 53: from START
     h.tap('right'); // Game mode: Survival
     choose(h, 'Start');
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
@@ -383,36 +372,8 @@ describe('B-L phone touch', () => {
   });
 });
 
-describe('B-L the Level Select cheat', () => {
-  it('Go from the menus is a practice run: no warning, no file; in a run it keeps its file', () => {
-    const h = classic();
-    h.settings.classicCheats.levelSelect = true;
-    keep(h, F1, '3-1');
-    h.game.showClassicMenu();
-    h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
-    expect(labels(h.top())).toEqual(['Map set', 'World', 'Level', 'Go', 'Back']);
-    choose(h, 'Go');
-    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
-    expect(h.game.practiceRun).toBe(true);
-    pickAtContinue(h);
-    h.until(() => inLevel(h), 900);
-    expect(loadClassicFile(F1)?.run.levelId).toMatch(/^3-1/);
-    expect([...store.keys()].filter((k) => k.startsWith('smbc-classic-file'))).toHaveLength(1);
-  });
-
-  it('O-16: quitting a run goes back to one boxed CLASSIC menu, its file kept', () => {
-    const h = classic();
-    keep(h, F1, '3-1');
-    h.game.resumeClassic(F1);
-    pickAtContinue(h);
-    h.until(() => inLevel(h), 900);
-    h.game.quitClassicRun();
-    const menu = h.top() as ClassicMenuScene;
-    expect(menu.over).toBeInstanceOf(ClassicTitleScene);
-    expect(titles(h)).toBe(1);
-    expect(loadClassicFile(F1)?.run.levelId).toMatch(/^3-1/);
-  });
-
+// Kept from the removed "B-L the Level Select cheat" block (v0.4.73 item 94): it never used the cheat.
+describe('B-E the Tutorials seen with Continue', () => {
   it('B-E: Continue keeps the Tutorials seen this game; a new file starts with none of its own', () => {
     const h = classic();
     keep(h, F1, '3-1');

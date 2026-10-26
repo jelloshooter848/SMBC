@@ -47,7 +47,6 @@ describe('review 1: the credits finishing with no cheat card', () => {
   it('leave no level under the file box (the run is left as any way back leaves it)', () => {
     const h = classic((s) => {
       for (const id of CLASSIC_CHEAT_IDS) s.classicCheats.unlocked[id] = true;
-      s.classicCheats.levelSelect = true;
       s.classicCheats.beaten.smb = true;
     });
     h.game.classicGame(MARIO, '8-4', { ref: A });
@@ -68,10 +67,11 @@ describe('review 1: the credits finishing with no cheat card', () => {
 });
 
 describe('review 2: Pause > Level select', () => {
-  it('is not offered inside a replay (it is in a file run)', () => {
+  // v0.4.73 item 94 (owner): the Level Select cheat is gone, so no pause offers the row.
+  it('is not offered inside a replay, nor in a file run', () => {
     keepCleared(A);
     helpSeen();
-    const h = classic((s) => (s.classicCheats.levelSelect = true));
+    const h = classic();
     openFiles(h);
     choose(h, 'File 1');
     choose(h, 'World 1');
@@ -81,10 +81,10 @@ describe('review 2: Pause > Level select', () => {
     const world = (h.top() as LevelScene).world;
     expect(items(new PauseScene(h.game, world)).map((i) => i.label)).not.toContain('Level select');
     store.clear();
-    const f = classic((s) => (s.classicCheats.levelSelect = true));
+    const f = classic();
     f.game.classicGame(MARIO, '1-1', { ref: { set: 'smb', slot: 2 } });
     f.until(() => inLevel(f), 900);
-    expect(items(new PauseScene(f.game, (f.top() as LevelScene).world)).map((i) => i.label)).toContain(
+    expect(items(new PauseScene(f.game, (f.top() as LevelScene).world)).map((i) => i.label)).not.toContain(
       'Level select',
     );
   });

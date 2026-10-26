@@ -6,7 +6,6 @@ import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import {
-  allSetsBeaten,
   loadProgress,
   lostLettersOpen,
   recordLostGameBeaten,
@@ -149,6 +148,7 @@ import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { filesBoxFor, fileRulesSpoken, type ClassicFilesScene } from './original-files-menu';
+import { openDevLevelSelect } from './level-select-return';
 import {
   clearedNote,
   openClearedFile,
@@ -281,7 +281,7 @@ export class Game {
   classicRun = false;
   /**
    * The Classic run's Map Difficulty (G-006): set as the run starts (the CLASSIC menu's Map
-   * difficulty row, settings.classicMapDifficulty, or the Level Select cheat's row), Normal for
+   * difficulty row, settings.classicMapDifficulty), Normal for
    * a dev run. GameContext.mapDifficulty is a live view of it while a Classic run plays Classic
    * rules.
    */
@@ -293,6 +293,38 @@ export class Game {
    */
   private devFreePlay = false;
   /**
+   * v0.4.73 items 63 / 64: this run goes back to Dev > Level select (a clear, Quit, the last
+   * castle's credits): a dev START page start (item 94: the Level Select cheat that also did is gone).
+   */
+  get levelSelectBack(): boolean {
+    return this.devFreePlay && this.devBack !== null;
+  }
+
+  /** v0.4.73 items 63 / 64: the dev START page's start just begun (playDevPick) goes back there. */
+  keepDevReturn(branch: 'classic' | 'campaign', level: string): void {
+    if (this.devFreePlay) this.devBack = { branch, level };
+  }
+
+  /**
+   * v0.4.73 items 63 / 64: back to the level select this run was started from, its cursor on the
+   * level just played (the one under the scenes on top, else the one picked), which it says. The
+   * run is left as Quit leaves it; nothing is written. False (doing nothing) for any other run.
+   */
+  backToLevelSelect(): boolean {
+    if (!this.levelSelectBack) return false;
+    const here = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const played = here ? (here.world.level.parent ?? here.world.level.id) : null;
+    const back = this.devBack as { branch: 'classic' | 'campaign'; level: string };
+    this.showTitle();
+    openDevLevelSelect(this, back, played ?? back.level);
+    return true;
+  }
+
+  /** A dev START page free play start is playing (v0.4.73 item 61: its hero is any hero). */
+  get devFreePlaying(): boolean {
+    return this.devFreePlay;
+  }
+  /**
    * 0.4.72 (owner item 6): the dev START page's Mount for this start: 'ride' starts every area
    * riding Yoshi (the mount on, as the Dev menu's Ride); 'none' starts without him (a Ride toggle
    * plays as On); null: no START page start (the toggle and `&yoshi=` decide). Cleared with
@@ -301,8 +333,8 @@ export class Game {
   private devYoshi: 'ride' | 'none' | null = null;
   /**
    * B-L: the save file this Classic run belongs to (its set and slot): every WORLD card and a
-   * game over's continue point write it, the credits empty it. Null for a practice run (the
-   * menus' Level Select), a developer run and a link run, which never write a file.
+   * game over's continue point write it, the credits empty it. Null for a practice run (a
+   * CLEARED file's replay), a developer run and a link run, which never write a file.
    */
   classicFile: ClassicFileRef | null = null;
   /**
@@ -314,10 +346,16 @@ export class Game {
   /** B-L: the continues this run's file has used (Infinite Lives' goal). */
   fileContinues = 0;
   /**
-   * B-L: a practice run (the menus' Level Select, owner): the original's rules, no file, and it
-   * counts for nothing (no beat, no cheat counts, no unlocks), as a developer run.
+   * B-L: a practice run: no file, and it counts for nothing (no beat, no cheat counts, no
+   * unlocks), as a developer run. Since v0.4.73 (item 94, the Level Select cheat removed) only a
+   * CLEARED file's level replay is one (replayRun).
    */
   practiceRun = false;
+  /**
+   * v0.4.73 items 63 / 64: a dev START page start (keepDevReturn): its branch and level, for the
+   * way back to Dev > Level select. Read only while that free play plays (devFreePlay).
+   */
+  private devBack: { branch: 'classic' | 'campaign'; level: string } | null = null;
   /**
    * v0.4.73 (owner C): the level replay of a CLEARED file playing (or its select), with the
    * file, world and level it was picked from. Only with practiceRun (replayRun reads both): it
@@ -339,8 +377,6 @@ export class Game {
    * for the message after the credits and the cheat cards.
    */
   private clearedNews: { ref: ClassicFileRef; result: ClearResult } | null = null;
-  /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
-  private levelSelectUnlocked = false;
   /**
    * Classic mode's Survival (Options > Game mode): which heroes have fallen and whether the next
    * select may revive (survival.ts). Null in every other run, the campaign's included.
@@ -762,6 +798,21 @@ export class Game {
     });
   }
 
+  /**
+   * v0.4.73 item 61 (owner): the dev START page's Hero row offers every hero there is under
+   * `rules`, released or not, whatever Dev > Toggle heroes says (Toggle heroes is for Classic and
+   * campaign play only). The heroes in the select's order (slotsFor), on devRosterFor.
+   */
+  devAllSlotsFor(rules: Rules): CharacterDef[] {
+    return this.slotsFor(rules, () => true, this.devRosterFor(rules));
+  }
+
+  /** rosterFor `rules` with every Classic extra, the ones Toggle heroes set Off too (item 61). */
+  devRosterFor(rules: Rules): CharacterDef[] {
+    if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
+    return [...this.deps.characters, ...CLASSIC_EXTRAS];
+  }
+
   /** `slots` without the heroes the Classic run's Disable heroes turned off (G-032). */
   private withoutDisabled(slots: CharacterDef[]): CharacterDef[] {
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
@@ -780,8 +831,8 @@ export class Game {
   slotsFor(
     rules: Rules,
     offered: (id: string) => boolean = (id) => this.expansionHeroOffered(id),
+    roster: CharacterDef[] = this.rosterFor(rules),
   ): CharacterDef[] {
-    const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
     const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter(offered)];
     const slots: CharacterDef[] = [];
@@ -1130,31 +1181,18 @@ export class Game {
   }
 
   /**
-   * A Classic mode run beat the map set of `from` (G-004, G-005, D3): its beat status is kept,
-   * the Level Select cheat opens once every set is beaten on Hard, and the cheats whose goals it
-   * completes are unlocked (their cards follow the credits). v0.4.73 (owner 98): called as the
-   * ending begins, with the CLEARED write, so a tab closed during the credits keeps it all; the
-   * end of the credits does it only for a run that has not (beatRecorded).
+   * A Classic mode run beat the map set of `from` (G-004, G-005, D3): its beat status is kept
+   * and the cheats whose goals it completes are unlocked (their cards follow the credits).
+   * v0.4.73 item 94 (owner): every set beaten on Hard no longer opens a Level Select cheat
+   * (StatManager 516-517): a CLEARED file's replay is the level select. v0.4.73 (owner 98):
+   * called as the ending begins, with the CLEARED write, so a tab closed during the credits keeps
+   * it all; the end of the credits does it only for a run that has not (beatRecorded).
    */
   private recordSetBeaten(from: string): void {
     this.beatRecorded = true;
     const set = mapSetOf(from).id;
+    // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
     recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
-    // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
-    const cheats = this.deps.settings?.classicCheats;
-    if (
-      cheats &&
-      !cheats.levelSelect &&
-      allSetsBeaten(
-        loadProgress(),
-        'hard',
-        MAP_SETS.map((m) => m.id),
-      )
-    ) {
-      cheats.levelSelect = true;
-      this.levelSelectUnlocked = true;
-      saveSettings(this.deps.settings as Settings);
-    }
     // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
     // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
     // count and no-continue goals.
@@ -1175,7 +1213,7 @@ export class Game {
     // StatManager.beatGameHandler's unlock boxes -> restartGame).
     if (this.classicRun) {
       // A developer-started run counts for nothing: the title, as free play. So does a practice
-      // run (the menus' Level Select, B-L owner).
+      // run (B-L owner).
       if (this.classicDev || this.practiceRun) return this.showTitle();
       // v0.4.73 (owner 98): kept as the ending began (recordSetBeaten), never twice.
       if (!this.beatRecorded) this.recordSetBeaten(from);
@@ -1193,7 +1231,8 @@ export class Game {
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
-    this.showTitle();
+    // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    if (!this.backToLevelSelect()) this.showTitle();
   }
 
   /**
@@ -1227,8 +1266,10 @@ export class Game {
     const world = below instanceof LevelScene ? below.world : null;
     // "THANK YOU <hero>!" names the hero who took the axe, as Toad's thanks do (World.castleText).
     const hero = fontText((world?.castleHero ?? s.character).name);
+    // v0.4.73 items 63 / 64: a dev START page start's 8-4 says only THANK YOU (its next stop is
+    // Dev > Level select, not a world to select).
     const card =
-      from === 'll-8-4' || from === 'll-13-4'
+      (from === 'll-8-4' && !this.levelSelectBack) || from === 'll-13-4'
         ? [
             `THANK YOU ${hero}!`,
             '',
@@ -1240,7 +1281,9 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    if (from === 'll-8-4' && !campaign) {
+    // v0.4.73 items 63 / 64: a dev START page start's castle is a clear like any other: its card,
+    // then Dev > Level select (no games-beaten tally: a dev run writes nothing).
+    if (from === 'll-8-4' && !campaign && !this.levelSelectBack) {
       const warped = s.warped;
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, warped);
@@ -1271,7 +1314,11 @@ export class Game {
         this.scenes.pop(); // the card; the level (if any) stays beneath the credits
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
-    } else then = () => (campaign ? this.returnToMap() : this.showTitle());
+    } else
+      then = () => {
+        if (campaign) this.returnToMap();
+        else if (!this.backToLevelSelect()) this.showTitle();
+      };
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
@@ -2069,6 +2116,8 @@ export class Game {
     this.classicDev = classic;
     this.linkRun = false;
     this.devFreePlay = !classic;
+    // Items 63 / 64: only the START page's own starts go back to it (playDevPick: keepDevReturn).
+    this.devBack = null;
     // 0.4.72 (owner item 6): the START page's Mount row; null leaves the Dev menu's toggle alone.
     this.devYoshi = opts.mount === 'yoshi' ? 'ride' : opts.mount === 'none' ? 'none' : null;
     // B-L: a dev start has no file and reads the old shared options.
@@ -2220,7 +2269,7 @@ export class Game {
    * shared link on a release build) it counts as any Classic run does, as the original counts a
    * run that its Level Select started anywhere (LevelSelectMenu.as 115-131 only sets the map pack
    * and difficulty and creates the level; StatManager.beatGameHandler 506-529 asks nothing of
-   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect). It never
+   * where the run began). It never
    * writes or clears a save file (RC-004, linkRun). B-L: a link run plays the original's rules
    * at Normal (no file's); a developer run reads the old shared options, as every dev start does.
    */
@@ -2445,26 +2494,6 @@ export class Game {
     this.goToLevel(id, { mode: 'stand' });
   }
 
-  /**
-   * The Level Select cheat's Go (G-007; LevelSelectMenu GO_TO_WORLD): `levelId`. In a Classic run
-   * (its pause menu) the run goes on there, with its lives and score, on its file's Map difficulty
-   * and in its own file, whichever set the level is in (B-L). From the menus it is a practice run
-   * (B-L, owner): the select screen first, the original's rules at Normal, no file, and it counts
-   * for nothing.
-   */
-  classicLevelSelect(levelId: string): void {
-    if (
-      this.classicRun &&
-      this.campaign === null &&
-      this.scenes.find((s) => s instanceof LevelScene) !== undefined
-    ) {
-      this.state.checkpoint = null;
-      this.goToLevel(levelId, { mode: 'stand' });
-      return;
-    }
-    this.classicSelect(levelId, () => this.showClassicMenu(), { practice: true, rules: originalFileRules() });
-  }
-
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     // Tutorials (O-15): no box queued in the run left behind shows in the next one.
@@ -2507,8 +2536,8 @@ export class Game {
   /**
    * G-008, B-L: writes the run's file (classicFile) for the WORLD card of `levelId`, with its
    * rules and continues. `continued`: written by a game over at its continue point (BUG-05):
-   * going on from it counts as a continue used. A run the Level Select cheat took into another
-   * map set stays in its own file.
+   * going on from it counts as a continue used. A run that went into another map set stays in
+   * its own file.
    */
   private keepResume(levelId: string, continued = false): void {
     const ref = this.classicFile;
@@ -2636,7 +2665,7 @@ export class Game {
   /** The map set the Classic run's file belongs to, for the CLASSIC menu's focus on leaving it. */
   get runSet(): MapSetId | undefined {
     if (this.classicFile) return this.classicFile.set;
-    // 36a: a run with no file (a practice run from the menus' Level Select): the set of the level
+    // 36a: a run with no file (a practice run): the set of the level
     // it is playing (its main level's, for a sub-area), else of the level its select was for.
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
     // 38d: with no level on the stack (MAIN MENU after a game over), the level the run last
@@ -3124,8 +3153,7 @@ export class Game {
    */
   private leaveClassicTitle(): void {
     this.scenes.pop();
-    // Every scene opened from the CLASSIC title goes with it, however deep (Options > Cheats >
-    // Level select > Go leaves the select over all of them).
+    // Every scene opened from the CLASSIC title goes with it, however deep.
     const isTitle = (sc: unknown) => sc instanceof ClassicTitleScene || sc instanceof ClassicMenuScene;
     while (this.scenes.find(isTitle)) this.scenes.pop();
   }
@@ -3234,20 +3262,6 @@ export class Game {
    */
   private showClassicUnlocks(): void {
     const id = this.cheatUnlocks.shift();
-    if (!id && this.levelSelectUnlocked) {
-      // The Level Select cheat (G-007): its own card, last (MessageBoxMessages UNLOCKED_CHEAT_).
-      this.levelSelectUnlocked = false;
-      const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
-      this.deps.ctx.audio.sfx('1up');
-      this.deps.announcer?.say(`You unlocked the Level Select cheat! ${ok}.`);
-      this.scenes.clear();
-      this.scenes.push(
-        new MessageScene(this, ['YOU UNLOCKED', 'LEVEL SELECT', 'CHEAT!', '', ok], () =>
-          this.showClassicUnlocks(),
-        ),
-      );
-      return;
-    }
     if (!id) return this.afterClassicBeat();
     const lines = unlockedLines(id);
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);

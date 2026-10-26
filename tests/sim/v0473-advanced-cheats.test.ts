@@ -268,7 +268,7 @@ describe('60 (c): it applies only to runs of that file', () => {
     expect(h.game.ctx.assist.invulnerable).toBe(false);
   });
 
-  it('never another file’s replay, a file run, a practice run, or the campaign', () => {
+  it('never another file’s replay, a file run, or the campaign', () => {
     store.set(REPLAY_HELP_KEY, 'true');
     hard(A);
     keepCleared(B, {}, rulesOn('normal'));
@@ -278,9 +278,6 @@ describe('60 (c): it applies only to runs of that file', () => {
     expect(h.game.liveAssists().invulnerable).toBe(false);
     h.game.leaveReplay('files');
     h.game.classicGame(MARIO, '1-1', { ref: C, rules: rulesOn('hard') });
-    h.idle(5);
-    expect(h.game.liveAssists().invulnerable).toBe(false);
-    h.game.classicLevelSelect('1-1');
     h.idle(5);
     expect(h.game.liveAssists().invulnerable).toBe(false);
     expect(h.game.ctx.assist.invulnerable).toBe(false);

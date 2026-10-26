@@ -10,6 +10,7 @@ import { nextTouchMode } from '@engine/input/touch-logic';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 import { GuideIndexScene } from './guide';
+import { ClassicTutorialHeroesScene } from './how-to-play-boxes';
 import { homeScreenItems } from '../pwa/home-screen';
 import { SaveFilesOptions } from './save-codes';
 import { AboutScene } from './about';
@@ -46,9 +47,13 @@ export class OptionsScene extends MenuScene {
         label: 'How to play',
         // O-14: while the campaign is closed, the title's How to play is Classic's (its select's
         // heroes and their Classic pages), as Classic's own options are.
+        // v0.4.73 item 82: Classic mode's Options (the CLASSIC menu's and the Classic pause's) list
+        // the Classic select's heroes, each opening the original's tutorial boxes for that hero.
         select: () =>
           this.push(
-            new GuideIndexScene(game, () => this.pop(), classic || (!translucent && !game.campaignOpen)),
+            classic
+              ? new ClassicTutorialHeroesScene(game, () => this.pop())
+              : new GuideIndexScene(game, () => this.pop(), !translucent && !game.campaignOpen),
           ),
         hint: 'Controls and power-ups for every hero',
       },
