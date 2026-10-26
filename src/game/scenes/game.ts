@@ -2950,11 +2950,13 @@ export class Game {
 
   /**
    * v0.4.73 (item 60): CLEARED file `ref`'s ADVANCED CHEATS (advanced-cheats.ts), or null when it
-   * has none (not CLEARED, not beaten on Hard, or storage cannot be read).
+   * has none (not CLEARED, not beaten on Hard, or storage cannot be read). With `id` (item 134:
+   * advancedCheatsId, taken as a world box or replay was made), null when the slot holds another
+   * file now (another tab erased it and cleared it again).
    */
-  advancedCheatsOf(ref: ClassicFileRef): AdvancedState | null {
+  advancedCheatsOf(ref: ClassicFileRef, id?: string): AdvancedState | null {
     const r = readAdvanced(ref);
-    if (!r) return null;
+    if (!r || (id !== undefined && r.fp !== id)) return null;
     const kept = this.advancedMemory.get(`${classicFileKey(ref)}|${r.fp}`);
     const st = kept ?? r.state;
     return { seen: st.seen, assist: { ...st.assist } };
@@ -3005,7 +3007,8 @@ export class Game {
     if (s?.dev) return { ...s.assist };
     const rp = this.replayRun;
     if (rp && this.campaign === null) {
-      const a = this.advancedCheatsOf(rp.ref);
+      // Item 134: only the file the replay was made for (its world box's fingerprint).
+      const a = this.advancedCheatsOf(rp.ref, rp.fp);
       if (a) return { ...a.assist };
     }
     return { ...ADVANCED_OFF };
@@ -3046,7 +3049,7 @@ export class Game {
    * hero pick), free play's lives and the normal timer. BACK from the select: the level box.
    * Nothing is written: no file (classicFile null), no beat, no cheat counts (practiceRun).
    */
-  replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string): void {
+  replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string, fp?: string): void {
     const f = this.classicClearedAt(ref);
     if (!f) {
       // Erased (or changed) by another tab since this box was drawn: said, and the file box again.
@@ -3059,7 +3062,14 @@ export class Game {
     this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage), {
       rules,
       practice: true,
-      replay: { ref: { set: ref.set, slot: ref.slot }, world, stage, levelId },
+      // Item 134: the fingerprint its world box was made with (else the file it holds now).
+      replay: {
+        ref: { set: ref.set, slot: ref.slot },
+        world,
+        stage,
+        levelId,
+        fp: fp ?? this.advancedCheatsId(ref) ?? '',
+      },
       tutorialsSeen: f.tutorialsSeen,
     });
   }

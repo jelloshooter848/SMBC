@@ -91,7 +91,7 @@ describe('item 134: a stale tab and Advanced cheats', () => {
     expect(row?.value?.()).toBe('Off');
   });
 
-  it('mid-replay, tab B clears the file again: the replay does not play its cheats, its pause page writes nothing', () => {
+  it('mid-replay, tab B clears the file again: the replay does not play its cheats, its pause menu has no page for it', () => {
     const h = tabAWorldBox();
     choose(h, 'World 1');
     choose(h, '1-1');
@@ -100,8 +100,9 @@ describe('item 134: a stale tab and Advanced cheats', () => {
     expect(h.game.liveAssists().invulnerable).toBe(false);
     const kept = tabBReclears();
     expect(h.game.liveAssists()).toEqual({ ...ADVANCED_OFF });
+    // Its pause menu offers no Advanced cheats for the new file.
     h.game.scenes.push(new PauseScene(h.game, (h.top() as LevelScene).world));
-    flipNoDamage(h);
+    expect(labels(h.top())).not.toContain('Advanced cheats');
     expect(store.get(advancedCheatsKey(A))).toBe(kept);
     expect(h.game.liveAssists()).toEqual({ ...ADVANCED_OFF });
   });

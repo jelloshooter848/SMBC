@@ -42,6 +42,11 @@ export interface ReplayRun {
   stage: number;
   /** The area the level starts in (its intro, or its first area). */
   levelId: string;
+  /**
+   * Item 134: the file's Advanced cheats fingerprint (Game.advancedCheatsId) as its world box was
+   * made; '' for none. Its Advanced cheats play and change only while the slot holds that file.
+   */
+  fp: string;
 }
 
 /** Where the instructions are marked as read (once, for every CLEARED file: D). */
@@ -311,6 +316,8 @@ const worldLabel = (w: number) => `World ${worldName(w)}`;
 /** C (1): a CLEARED file's worlds; BACK to the file box. */
 export class ClassicReplayWorldsScene extends ClassicBox {
   protected readonly spokenTitle: string;
+  /** Item 134: the file's Advanced cheats fingerprint as this box was made ('' for none). */
+  readonly advancedId: string;
 
   constructor(
     game: Game,
@@ -332,12 +339,18 @@ export class ClassicReplayWorldsScene extends ClassicBox {
     }));
     // v0.4.73 (item 60): beaten on Hard: its Advanced cheats, before BACK.
     const ref: ClassicFileRef = { set: file.set, slot: file.slot };
-    if (game.advancedCheatsOf(ref))
+    this.advancedId = game.advancedCheatsId(ref) ?? '';
+    if (game.advancedCheatsOf(ref, this.advancedId))
       items.push(
-        advancedCheatsItem(game, ref, () => {
-          closeTo(game, this);
-          this.comeBack();
-        }),
+        advancedCheatsItem(
+          game,
+          ref,
+          () => {
+            closeTo(game, this);
+            this.comeBack();
+          },
+          this.advancedId,
+        ),
       );
     items.push({ label: 'Back', select: () => this.onBack?.(), hint: 'To the files' });
     this.setItems(items);
@@ -386,7 +399,8 @@ export class ClassicReplayLevelsScene extends ClassicBox {
     const ref: ClassicFileRef = { set: file.set, slot: file.slot };
     const items: MenuItem[] = stages.map((n) => ({
       label: `${worldName(world)}-${n}`,
-      select: () => game.replaySelect(ref, world, n, levelSelectTarget(game, set, world, n)),
+      select: () =>
+        game.replaySelect(ref, world, n, levelSelectTarget(game, set, world, n), worlds.advancedId),
       hint: 'Choose your hero and play it',
     }));
     items.push({ label: 'Back', select: () => this.onBack?.(), hint: 'To the worlds' });

@@ -105,8 +105,10 @@ export class PauseScene extends MenuScene {
           hint: 'Every original cheat, in developer mode',
         });
       // v0.4.73 (item 60): a CLEARED file's replay, beaten on Hard: its Advanced cheats.
-      const adv = game.replayRun?.ref;
-      if (adv && game.advancedCheatsOf(adv)) items.push(advancedCheatsItem(game, adv));
+      // Item 134: only while the slot still holds the file the replay was made for.
+      const rp = game.replayRun;
+      if (rp && game.advancedCheatsOf(rp.ref, rp.fp))
+        items.push(advancedCheatsItem(game, rp.ref, undefined, rp.fp));
       if (game.stageRound) items.push(this.giveUp());
       // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
       items.push({
