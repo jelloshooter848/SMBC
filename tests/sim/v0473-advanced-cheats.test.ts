@@ -22,13 +22,25 @@ import { keepCleared, run } from './cleared-nav';
 // plays today, for runs of that file and nothing else (no other file, never the campaign).
 //
 // Where it lives: the CLEARED file (v 2) is written once, at the clear, and never again; the
-// unlock is part of that one write (`advancedCheats: true`, and a Hard CLEARED file from before
-// it reads as unlocked too). What changes later (the rows' values, and whether its explanation
+// unlock is part of that one write (`advancedCheats: true`, the one source). What changes later (the rows' values, and whether its explanation
 // box was read) cannot go into the frozen file, so it goes beside it, under
 // `smbc-classic-advanced-<set>-<slot>`, tied to that very CLEARED file by a fingerprint of its
 // stored text. ERASE FILE removes it; a later clear in the same slot never inherits it.
 
 useStorage();
+
+/** Changes `ref`'s Advanced cheats as a page opened now would (its file read at open). */
+function setAdv(
+  g: {
+    advancedCheatsId(r: ClassicFileRef): string | null;
+    setAdvancedCheats(r: ClassicFileRef, id: string, c: object): boolean;
+  },
+  ref: ClassicFileRef,
+  change: object,
+): boolean {
+  return g.setAdvancedCheats(ref, g.advancedCheatsId(ref) ?? '', change);
+}
+
 afterEach(() => {
   store.clear();
   vi.restoreAllMocks();
@@ -83,12 +95,12 @@ describe('60 (a): the unlock is the file’s, at the clear', () => {
     expect(h.game.advancedCheatsOf(C)).toBeNull();
   });
 
-  it('a Hard CLEARED file written before the flag existed (v0.4.73) reads as unlocked', () => {
+  it('the stored flag is the one source: a Hard CLEARED file without it has none', () => {
     hard(A);
     const raw = JSON.parse(store.get(classicFileKey(A))!);
     delete raw.advancedCheats;
     store.set(classicFileKey(A), JSON.stringify(raw));
-    expect(game().game.advancedCheatsOf(A)).not.toBeNull();
+    expect(game().game.advancedCheatsOf(A)).toBeNull();
   });
 
   it('a run on Hard that is not CLEARED unlocks nothing (an empty file, a used one)', () => {
@@ -96,7 +108,7 @@ describe('60 (a): the unlock is the file’s, at the clear', () => {
     const h = game();
     expect(h.game.advancedCheatsOf(A)).toBeNull();
     expect(h.game.advancedCheatsOf(B)).toBeNull();
-    expect(h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }) })).toBe(false);
+    expect(setAdv(h.game, A, { assist: on({ invulnerable: true }) })).toBe(false);
     expect(store.has(advancedCheatsKey(A))).toBe(false);
   });
 
@@ -111,8 +123,8 @@ describe('60: save safety', () => {
     hard(A);
     const file = store.get(classicFileKey(A));
     const h = game();
-    expect(h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true, coyoteFrames: 4 }) })).toBe(true);
-    expect(h.game.setAdvancedCheats(A, { seen: true })).toBe(true);
+    expect(setAdv(h.game, A, { assist: on({ invulnerable: true, coyoteFrames: 4 }) })).toBe(true);
+    expect(setAdv(h.game, A, { seen: true })).toBe(true);
     const again = game();
     expect(again.game.advancedCheatsOf(A)).toEqual({
       seen: true,
@@ -124,8 +136,8 @@ describe('60: save safety', () => {
   it('full sets: every file has its own, and a file’s never reach another', () => {
     for (const ref of [A, B, C, L]) hard(ref, ref === L ? { levelId: 'lost-8-4' } : {});
     const h = game();
-    h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }) });
-    h.game.setAdvancedCheats(C, { assist: on({ safetyFloor: true }), seen: true });
+    setAdv(h.game, A, { assist: on({ invulnerable: true }) });
+    setAdv(h.game, C, { assist: on({ safetyFloor: true }), seen: true });
     expect(h.game.advancedCheatsOf(A)?.assist.invulnerable).toBe(true);
     expect(h.game.advancedCheatsOf(B)).toEqual({ seen: false, assist: ADVANCED_OFF });
     expect(h.game.advancedCheatsOf(C)).toEqual({ seen: true, assist: on({ safetyFloor: true }) });
@@ -135,7 +147,7 @@ describe('60: save safety', () => {
   it('ERASE FILE clears it; a new Hard clear in that slot starts afresh (unread, all off)', () => {
     hard(A);
     const h = game();
-    h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }), seen: true });
+    setAdv(h.game, A, { assist: on({ invulnerable: true }), seen: true });
     eraseClassicFile(A);
     expect(store.has(advancedCheatsKey(A))).toBe(false);
     expect(h.game.advancedCheatsOf(A)).toBeNull();
@@ -146,7 +158,7 @@ describe('60: save safety', () => {
   it('a left-over entry from an earlier clear of the slot (its erase refused) is never inherited', () => {
     hard(A);
     const h = game();
-    h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }), seen: true });
+    setAdv(h.game, A, { assist: on({ invulnerable: true }), seen: true });
     const left = store.get(advancedCheatsKey(A))!;
     eraseClassicFile(A);
     store.set(advancedCheatsKey(A), left);
@@ -161,7 +173,7 @@ describe('60: save safety', () => {
     // Another tab: ERASE, then a new run of the file.
     eraseClassicFile(A);
     saveClassicFile({ ...A, rules: rulesOn('hard'), continues: 0, run: run({ levelId: '1-1' }) });
-    expect(stale.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }) })).toBe(false);
+    expect(setAdv(stale.game, A, { assist: on({ invulnerable: true }) })).toBe(false);
     expect(store.has(advancedCheatsKey(A))).toBe(false);
     // ... and cleared again on Hard: the stale tab's write goes to the new file only by its own read.
     eraseClassicFile(A);
@@ -175,14 +187,14 @@ describe('60: save safety', () => {
       store.set(advancedCheatsKey(A), junk);
       expect(game().game.advancedCheatsOf(A)).toEqual({ seen: false, assist: ADVANCED_OFF });
     }
-    expect(game().game.setAdvancedCheats(A, { seen: true })).toBe(true);
+    expect(setAdv(game().game, A, { seen: true })).toBe(true);
     expect(game().game.advancedCheatsOf(A)?.seen).toBe(true);
   });
 
   it('each value checked: out-of-range or wrong types read as off', () => {
     hard(A);
     const h = game();
-    h.game.setAdvancedCheats(A, { seen: true });
+    setAdv(h.game, A, { seen: true });
     const raw = JSON.parse(store.get(advancedCheatsKey(A))!);
     raw.assist = { invulnerable: 'yes', coyoteFrames: 99, slowMotion: 7, safetyFloor: true };
     store.set(advancedCheatsKey(A), JSON.stringify(raw));
@@ -195,13 +207,13 @@ describe('60: save safety', () => {
     store.set(advancedCheatsKey(A), newer);
     const h = game();
     expect(h.game.advancedCheatsOf(A)).toEqual({ seen: true, assist: ADVANCED_OFF });
-    expect(h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }) })).toBe(false);
+    expect(setAdv(h.game, A, { assist: on({ invulnerable: true }) })).toBe(false);
     expect(store.get(advancedCheatsKey(A))).toBe(newer);
   });
 
   it('a downgrade: an older version ignores the entry; back on this one it reads as before', () => {
     hard(A);
-    game().game.setAdvancedCheats(A, { assist: on({ infiniteTime: true }), seen: true });
+    setAdv(game().game, A, { assist: on({ infiniteTime: true }), seen: true });
     const kept = store.get(advancedCheatsKey(A));
     // (v0.4.73 reads the CLEARED file without the field and never writes it or the entry.)
     expect(game().game.advancedCheatsOf(A)).toEqual({ seen: true, assist: on({ infiniteTime: true }) });
@@ -216,7 +228,7 @@ describe('60: save safety', () => {
       if (k === advancedCheatsKey(A)) throw new Error('quota');
       real(k, v);
     };
-    expect(h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }), seen: true })).toBe(false);
+    expect(setAdv(h.game, A, { assist: on({ invulnerable: true }), seen: true })).toBe(false);
     expect(h.game.advancedCheatsOf(A)).toEqual({ seen: true, assist: on({ invulnerable: true }) });
     expect(store.has(advancedCheatsKey(A))).toBe(false);
     // Another session (a reload) has nothing.
@@ -230,7 +242,7 @@ describe('60: save safety', () => {
       throw new Error('blocked');
     };
     expect(h.game.advancedCheatsOf(A)).toBeNull();
-    expect(h.game.setAdvancedCheats(A, { seen: true })).toBe(false);
+    expect(setAdv(h.game, A, { seen: true })).toBe(false);
   });
 });
 
@@ -247,7 +259,7 @@ describe('60 (c): it applies only to runs of that file', () => {
     store.set(REPLAY_HELP_KEY, 'true');
     hard(A);
     const h = game();
-    h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true, safetyFloor: true }), seen: true });
+    setAdv(h.game, A, { assist: on({ invulnerable: true, safetyFloor: true }), seen: true });
     replayOf(h, A);
     expect(h.game.liveAssists()).toMatchObject({ invulnerable: true, safetyFloor: true });
     expect(h.game.ctx.assist.invulnerable).toBe(true);
@@ -261,7 +273,7 @@ describe('60 (c): it applies only to runs of that file', () => {
     hard(A);
     keepCleared(B, {}, rulesOn('normal'));
     const h = game();
-    h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }), seen: true });
+    setAdv(h.game, A, { assist: on({ invulnerable: true }), seen: true });
     replayOf(h, B);
     expect(h.game.liveAssists().invulnerable).toBe(false);
     h.game.leaveReplay('files');
@@ -281,7 +293,7 @@ describe('60 (c): it applies only to runs of that file', () => {
       s.dev = true;
       s.assist.infiniteTime = true;
     });
-    h.game.setAdvancedCheats(A, { assist: on({ invulnerable: true }), seen: true });
+    setAdv(h.game, A, { assist: on({ invulnerable: true }), seen: true });
     replayOf(h, A);
     expect(h.game.liveAssists()).toMatchObject({ infiniteTime: true, invulnerable: false });
     h.settings.dev = false;

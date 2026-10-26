@@ -21,6 +21,19 @@ import { closeUnlockCards, inLevel, keepCleared, openFiles, readNote } from './c
 // menu), a Classic box with every dev Assist.
 
 useStorage();
+
+/** Changes `ref`'s Advanced cheats as a page opened now would (its file read at open). */
+function setAdv(
+  g: {
+    advancedCheatsId(r: ClassicFileRef): string | null;
+    setAdvancedCheats(r: ClassicFileRef, id: string, c: object): boolean;
+  },
+  ref: ClassicFileRef,
+  change: object,
+): boolean {
+  return g.setAdvancedCheats(ref, g.advancedCheatsId(ref) ?? '', change);
+}
+
 afterEach(() => store.clear());
 
 const A: ClassicFileRef = { set: 'smb', slot: 1 };
@@ -136,7 +149,7 @@ describe('60 (c): the ADVANCED CHEATS row', () => {
     store.set(REPLAY_HELP_KEY, 'true');
     keepCleared(A, {}, hardRules());
     const h = game();
-    h.game.setAdvancedCheats(A, { seen: true });
+    setAdv(h.game, A, { seen: true });
     openFiles(h);
     choose(h, 'File 1');
     expect(labels(h.top())).toContain('Advanced cheats');
@@ -179,7 +192,7 @@ describe('60 (c): the ADVANCED CHEATS row', () => {
     store.set(REPLAY_HELP_KEY, 'true');
     keepCleared(A, {}, hardRules());
     const h = game();
-    h.game.setAdvancedCheats(A, { seen: true });
+    setAdv(h.game, A, { seen: true });
     openFiles(h);
     choose(h, 'File 1');
     choose(h, 'World 1');

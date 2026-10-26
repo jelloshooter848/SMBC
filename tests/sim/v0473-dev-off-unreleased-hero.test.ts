@@ -10,7 +10,7 @@ import { makeGame, store, useStorage } from './heroes-harness';
 
 // v0.4.73 item 66 (dev only; owner-approved; tests first): dev mode turned off in the middle of
 // a Classic run whose hero is an unreleased Expansion hero (Arthur), here in Single hero, where
-// the select is skipped after the first pick. The current life ends and the hero select opens,
+// the select is skipped after the first pick. The current life ends (not charged) and the hero select opens,
 // as for any hero the select does not offer; the unreleased hero is not on it. The file stays
 // marked (devHero): never dropped by a later write.
 
@@ -38,7 +38,8 @@ describe('66: dev mode off mid-run with an unreleased hero', () => {
     const lives = h.game.state.lives;
     settings.dev = false;
     h.until(() => h.top() instanceof CharacterSelectScene, 900);
-    expect(h.game.state.lives).toBe(lives - 1);
+    // Review fix 4: the life ends without being charged.
+    expect(h.game.state.lives).toBe(lives);
     const sel = h.top() as CharacterSelectScene;
     expect(sel.chars.map((c) => c.id)).not.toContain('arthur');
     expect(loadClassicFile(F1)?.run.devHero).toBe(true);
