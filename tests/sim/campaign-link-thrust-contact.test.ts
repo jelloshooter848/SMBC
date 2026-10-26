@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { px } from '@engine/math/units';
 import { LINK } from '@game/characters/link';
 import { Goomba } from '@game/entities/enemies/goomba';
+import { Crab } from '@game/entities/enemies/special-enemies';
 import { Koopa } from '@game/entities/enemies/koopa';
 import { Podoboo } from '@game/entities/enemies/podoboo';
 import type { Enemy } from '@game/entities/enemies/enemy';
@@ -198,4 +199,51 @@ describe('item 122: Campaign Link thrusts by body contact', () => {
     expect(hopAt).toBeGreaterThan(0);
     expect(hurt).toBe(true);
   });
+});
+
+describe('item 122 review: Campaign Link re-arms the thrust hit each landing (Down held)', () => {
+  for (const dx of [0, 6, 10.5])
+    it(`two landings on a Crab that survives the first hit, offset ${dx}: a hit and a bounce both times, never hurt`, () => {
+      const e = new Crab(0, 0);
+      const ex = px(20 * 16 + 2);
+      const ey = px(13 * 16) - e.body.h;
+      let hits = 0;
+      let bounces = 0;
+      let hurt = false;
+      let prevVy = 0;
+      const hit = e.hit.bind(e);
+      e.hit = (src, w) => {
+        hits++;
+        return hit(src, w);
+      };
+      runSim({
+        level: flatLevel({}, 60),
+        character: LINK,
+        rules: 'campaign',
+        script: { steps: [] },
+        maxFrames: 160,
+        state: { powerState: 'big' },
+        controller: (w: World, f: number): Action[] => {
+          const p = w.player;
+          const b = p.body;
+          if (f === 0) {
+            w.spawn(e);
+            e.activated = true;
+            b.x = ex + (e.body.w >> 1) + px(dx) - (b.w >> 1);
+            b.y = ey - px(40) - b.h;
+            b.vx = 0;
+            b.vy = 0;
+            b.onGround = false;
+          }
+          if (e.alive) hold(e, ex, ey);
+          if (p.invuln > 0 || p.powerState !== 'big') hurt = true;
+          if (prevVy >= 0 && b.vy < 0 && f > 1) bounces++;
+          prevVy = b.vy;
+          return f >= 1 ? ['down'] : [];
+        },
+      });
+      expect(hits, 'hits').toBeGreaterThanOrEqual(2);
+      expect(bounces, 'bounces').toBeGreaterThanOrEqual(2);
+      expect(hurt, 'hurt').toBe(false);
+    });
 });
