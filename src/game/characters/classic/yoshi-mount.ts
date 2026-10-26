@@ -9,7 +9,8 @@ import type { World } from '../../world/world';
 import type { CharacterBehaviour, CharacterDef, SpriteSpec } from '../character';
 import type { MovementProfile } from '../profile';
 import type { BlockStrike } from '../../rules/hooks';
-import { isSwimLevel } from '../../level/schema';
+import { isSwimLevel, type LevelData, type PipeDir, type Zone } from '../../level/schema';
+import { getLevel } from '@content/levels';
 import { T, tileDef } from '../../level/tiles';
 import { Koopa } from '../../entities/enemies/koopa';
 import { Projectile, type ProjectileSpec } from '../../entities/projectiles/projectile';
@@ -74,7 +75,11 @@ export function mayRide(def: CharacterDef): boolean {
 
 /** Overworld, underground and athletic areas; never castles, water or bonus rooms. */
 export function mountArea(world: World): boolean {
-  const l = world.level;
+  return mountLevel(world.level);
+}
+
+/** The same test for a level by its data (mountArea's). */
+export function mountLevel(l: LevelData): boolean {
   if (l.bonus || isSwimLevel(l) || l.theme.startsWith('castle')) return false;
   // The coin rooms under pipes and the vine cloud areas (`<level>-bonus`, `<level>-sky`).
   return !/-(bonus|sky)\d*$/.test(l.id);
@@ -131,7 +136,10 @@ export function mount(p: Player, yoshi: YoshiMount, world: World, quiet = false)
   if (!quiet) say(world, 'Riding Yoshi');
 }
 
-export type Dismount = 'off' | 'leap' | 'hit' | 'flag' | 'bench' | 'death';
+export type Dismount = 'off' | 'leap' | 'hit' | 'flag' | 'bench' | 'park' | 'death';
+
+/** The screen reader's line when Yoshi is left outside a castle, water or bonus area (YM-7). */
+export const WAITS_SAID = 'Yoshi waits outside';
 
 /** Gets `p` off (YM-7, YM-17, YM-19, YM-21): the base def back first, then what `how` does. */
 export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1 = 1): void {
@@ -191,6 +199,16 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       yoshi.state = 'gone';
       yoshi.destroy();
       break;
+    case 'park':
+      // v0.4.73 item 74 (Super Mario World): off at the way into a castle, water or bonus area,
+      // Yoshi sitting there waiting; benched (2) for the areas beyond, as 'bench'.
+      p.scratch[RIDE_KEY] = 2;
+      yoshi.state = 'wait';
+      yoshi.parked = true;
+      yoshi.body.vy = 0;
+      yoshi.body.vx = 0;
+      // The caller says WAITS_SAID, once for every Yoshi left at the same way in.
+      break;
     case 'death':
       yoshi.state = 'gone';
       yoshi.destroy();
@@ -236,9 +254,117 @@ export function yoshiClearHop(world: World, p: Player): void {
     (e): e is YoshiMount => e instanceof YoshiMount && e.alive && e.state === 'wait' && e.rider === null,
   );
   if (!yoshi) return;
+  // v0.4.73 item 74: the next level is a castle (or water): he stays sitting at the pole's base
+  // and the hero walks on alone, as Yoshi waits outside Super Mario World's castles.
+  if (benchedLevel(world, world.clearNext())) {
+    p.scratch[RIDE_KEY] = 2;
+    yoshi.parked = true;
+    if (!world.events.some((e) => e.type === 'say' && e.text === WAITS_SAID)) say(world, WAITS_SAID);
+    return;
+  }
   const facing = p.facing;
   mount(p, yoshi, world, true);
   p.facing = facing;
+}
+
+/**
+ * Whether the level `id` (a pipe's, or the clear's next) is a castle, water or bonus area: one
+ * the mount is benched for. The area being left, or an id that is no bundled level (the world
+ * map, the run's end), is not.
+ */
+export function benchedLevel(world: World, id: string): boolean {
+  if (id === world.level.id) return false;
+  let l: LevelData;
+  try {
+    l = getLevel(id);
+  } catch {
+    return false;
+  }
+  return !mountLevel(l);
+}
+
+/** v0.4.73 item 74: the hop off Yoshi before going on into a pipe, in frames. */
+export const PARK_HOP = 20;
+
+/**
+ * ClassicRulesHooks.pipeEntry (v0.4.73 item 74): a rider starting into a pipe to a castle, water
+ * or bonus area gets off (Super Mario World): Yoshi sits at the pipe, the hero hops off and goes
+ * in on foot. Coming back out into an allowed area he rejoins as before (yoshiWorldLoaded).
+ */
+export function yoshiPipeEntry(world: World, p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): number {
+  if (!world.ctx.classicYoshi || !benchedLevel(world, z.target.level)) return 0;
+  // Every rider goes along (World.enterPipe takes the other players in too; a dev free-play
+  // Classic run can have two): each Yoshi waits, side by side, and the line is said once.
+  const hops = RIDES.has(p);
+  let slot = 0;
+  for (const o of [p, ...world.players.filter((q) => q !== p)]) {
+    const ride = RIDES.get(o);
+    if (!ride) continue;
+    dismount(o, world, 'park');
+    parkBeside(ride.mount, p, world, z, dir, slot++);
+  }
+  if (slot > 0) say(world, WAITS_SAID);
+  return hops ? PARK_HOP : 0;
+}
+
+/**
+ * Where Yoshi waits at a pipe: beside a down pipe on the floor, on the side the hero who went in
+ * came from (his back), else on the pipe top at that edge; behind the hero at a side pipe, or the
+ * nearest free spot further back. Facing it. `slot`: a second Yoshi (co-op) sits one place
+ * further out.
+ */
+function parkBeside(
+  yoshi: YoshiMount,
+  p: Player,
+  world: World,
+  z: Zone & { kind: 'pipe' },
+  dir: PipeDir,
+  slot = 0,
+): void {
+  const b = yoshi.body;
+  const map = world.map;
+  const back = p.facing > 0 ? -1 : 1;
+  yoshi.facing = -back as -1 | 1;
+  const fits = (x: number, feet: number): boolean => {
+    for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++)
+      for (let ty = tileAt(feet - b.h); ty <= tileAt(feet - 1); ty++) if (map.isSolid(tx, ty)) return false;
+    return true;
+  };
+  const step = back * (b.w + px(4)) * slot;
+  if (dir === 'down') {
+    const x = (back < 0 ? tileToSub(z.x) - b.w - px(2) : tileToSub(z.x + 2) + px(2)) + step;
+    // Down from the pipe top's row to the first floor under him.
+    for (let ty = z.y; ty < world.level.height; ty++) {
+      const solid = map.isSolid(tileAt(x), ty) || map.isSolid(tileAt(x + b.w - 1), ty);
+      if (!solid) continue;
+      if (ty > z.y && fits(x, tileToSub(ty))) {
+        b.x = x;
+        b.y = tileToSub(ty) - b.h;
+        b.onGround = true;
+        return;
+      }
+      break;
+    }
+    // A wall or a pit beside the pipe: he sits on the pipe top at that edge (a second one at the
+    // other edge).
+    const edge = slot % 2 === 0 ? back : -back;
+    b.x = edge < 0 ? tileToSub(z.x) : tileToSub(z.x + 2) - b.w;
+    b.y = tileToSub(z.y) - b.h;
+    b.onGround = true;
+    return;
+  }
+  // A side pipe: behind the hero, feet on his floor (where the pair stood, if a wall is there).
+  const feet = p.body.y + p.body.h;
+  const x0 = (back < 0 ? p.body.x - b.w - px(2) : p.body.x + p.body.w + px(2)) + step;
+  // A wall right behind: the nearest free spot further back (up to 3 tiles), else beside the hero.
+  b.x = p.body.x;
+  for (let d = 0; d <= px(48); d += px(4))
+    if (fits(x0 + back * d, feet)) {
+      b.x = x0 + back * d;
+      break;
+    }
+  b.y = feet - b.h;
+  b.onGround = true;
 }
 
 /* ---------- the overlay def (YM-9..YM-16, YM-25) ---------- */
@@ -474,6 +600,11 @@ export class YoshiMount extends Entity {
    */
   leftBy: Player | null = null;
   leftT = 0;
+  /**
+   * Left waiting at the way into a castle, water or bonus area (v0.4.73 item 74): he sits there,
+   * nobody gets back on in this area (the rider is benched, RIDE_KEY 2).
+   */
+  parked = false;
   /** Frames walking after the hatch, and the drop's carried speed (stepping off the block). */
   private walkT = 0;
   private stepVx = 0;
@@ -491,6 +622,7 @@ export class YoshiMount extends Entity {
   update(world: World): void {
     const b = this.body;
     if (this.state === 'gone') return this.destroy();
+    if (this.parked) return;
     if (this.state === 'ridden') {
       const p = this.rider;
       if (!p || p.dead || !world.players.includes(p)) {
@@ -630,7 +762,7 @@ export function yoshiWorldLoaded(world: World): void {
     const ride = carried > 0 || (mode === 'ride' && mayRide(p.def));
     if (!ride) continue;
     if (!allowed) {
-      if (carried === 1) say(world, 'Yoshi waits outside');
+      if (carried === 1) say(world, WAITS_SAID);
       p.scratch[RIDE_KEY] = 2;
       continue;
     }

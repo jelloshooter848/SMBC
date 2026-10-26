@@ -31,7 +31,7 @@ import { ClassicMenuScene } from '@game/scenes/original-game';
 import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
 import { LevelScene } from '@game/scenes/level';
-import { GuideIndexScene } from '@game/scenes/guide';
+import { ClassicTutorialHeroesScene } from '@game/scenes/how-to-play-boxes';
 import { ClassicOptionsScene } from '@game/scenes/original-game';
 import { SaveFilesOptions } from '@game/scenes/save-codes';
 import {
@@ -336,12 +336,11 @@ describe("O-14 / item 81: no campaign guides in Classic; none at all in the titl
     const h = makeGame();
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
     pick(h, 'How to play');
-    expect(h.top()).toBeInstanceOf(GuideIndexScene);
+    // v0.4.73 item 82: Classic's How to play is the Classic tutorial boxes' hero list
+    // (v0473-menus covers each hero's boxes).
+    expect(h.top()).toBeInstanceOf(ClassicTutorialHeroesScene);
     const names = labels(h.top()).filter((l) => l !== 'Back');
-    expect(names).toContain('Bass');
     expect(names.slice(0, 2)).toEqual(['Mario', 'Luigi']);
-    pick(h, names[0] as string);
-    expect((h.top() as unknown as { def: { rules?: string } }).def.rules).toBe('classic');
   });
 
   it("the Campaign's (in-game) Options list the campaign roster, as before", () => {

@@ -91,6 +91,9 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
 - **New heroes** from PR #51's candidate list: in Classic mode, each added to the select as it is released (0.6.0 to 0.9.x,
   above). In the campaign, Yoshi first: the Top Secret Area's egg will hatch him, as a rideable partner or a hero.
 - Asset packs on phones: import a single .zip pack picked from the Files app (zip reader + a tap-safe file button inside the touch handler); owner item 84B, roadmap only.
+- **Yoshi waits visibly for vine/pit/teleport entries into benched areas (owner 103A, later).** Classic mode's Yoshi
+  mount already hops the hero off and waits at pipes and at the flagpole before a castle (0.4.73); the other ways in
+  still leave him outside without showing it.
 
 ## Details of the planned work
 

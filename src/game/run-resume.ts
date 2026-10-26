@@ -73,6 +73,12 @@ export interface ClassicResume {
    */
   devHero?: true;
   /**
+   * v0.4.73: the worlds this run has had a WORLD card in (each once, in order), kept so a CLEARED
+   * file's replay offers The Lost Levels' World 9 and A-D only when the run reached them. A run
+   * from before has none (unknown).
+   */
+  worlds?: number[];
+  /**
    * An old per-set slot's continues (#196's item 8). Migration reads it; a file keeps its count
    * beside the run (ClassicFile.continues), never here.
    */
@@ -241,8 +247,13 @@ export function parseResume(raw: unknown): ClassicResume | null {
     continued: cd,
     swapped: sw,
     devHero: dh,
+    worlds: wl,
     ...rest
   } = r as ClassicResume;
+  // v0.4.73: the worlds reached, each a world number of a set (1-13), once, in order.
+  const worlds = Array.isArray(wl)
+    ? [...new Set(wl.filter((w): w is number => Number.isInteger(w) && w >= 1 && w <= 13))]
+    : null;
   return {
     ...rest,
     // An old per-set slot's count (#196; migration reads it): a whole number of 0 or more, else none.
@@ -250,6 +261,7 @@ export function parseResume(raw: unknown): ClassicResume | null {
     ...(cd === true ? { continued: true as const } : {}),
     ...(sw === true ? { swapped: true as const } : {}),
     ...(dh === true ? { devHero: true as const } : {}),
+    ...(worlds ? { worlds } : {}),
     // An older slot, or a value this version does not know: none (the caller falls back).
     ...(d === 'easy' || d === 'normal' || d === 'hard' ? { difficulty: d } : {}),
     ...((CLASSIC_GAME_MODES as readonly string[]).includes(gm as string) ? { gameMode: gm } : {}),

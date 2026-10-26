@@ -1,4 +1,4 @@
-import { clipped, type Renderer } from '@engine/gfx/renderer';
+import { transformed, translucent, type Renderer } from '@engine/gfx/renderer';
 import type { InputFrame } from '@engine/input/input-manager';
 import { Actions } from '@engine/input/actions';
 import type { TouchLabels } from '@engine/input/touch';
@@ -65,20 +65,112 @@ const RIFT_CY = 50;
 const SKY = '#5c94fc';
 
 /**
- * 0.4.72 (owner, back transition option A): the way back from CLASSIC. CLASSIC squashes, breaks
- * into its letters, which hop and fall over the CLASSIC title's still frame, then the REMIX stamp
- * pops and slams on. Frames from the REMIX title's start.
+ * 0.4.73 (owner, 52A): the way back from CLASSIC, through the rift. A small rift portal (the
+ * intro's own rift) tears open over the logo, CLASSIC stretches toward it and is sucked up into
+ * it, shrinking and spinning, and then REMIX comes out of it, unwinding and growing into its
+ * place; the portal closes behind it. It replaces 0.4.72's shatter-and-slam, which the owner
+ * found went by too fast to read. Frames from the REMIX title's start. Reduce flashing plays the
+ * same timeline calmly: the portal's colours hold still, nothing spins or overshoots, CLASSIC
+ * fades as it shrinks and REMIX fades in as it grows.
  */
 export const BACK = {
-  /** CLASSIC's squash. */
-  squash: 3,
-  /** The slam: the stamp lands, the REMIX title is there (about 0.27 s in). */
-  slam: 16,
+  /** Frames a portal stage (it tears open and closes through these, as the intro's rift does). */
+  openStep: 3,
+  /** CLASSIC is pulled up into the portal over these frames (gone at `suckTo`). */
+  suckFrom: 6,
+  suckTo: 42,
+  /** REMIX comes out of the portal. */
+  emergeFrom: 48,
+  /**
+   * REMIX is in its place (named for 0.4.72's slam): the stamp's thud, the theme from its loop
+   * point, the heroes and the menu (about 1.33 s in).
+   */
+  slam: 80,
+  /** The portal has closed: the finished title. */
+  end: 92,
 } as const;
-/** CLASSIC's pieces: one a letter (the block word's letters are 24 px apart, after a 4 px pad). */
-const CLASSIC_LETTERS = 7;
-const CLASSIC_LETTER_W = 24;
-const CLASSIC_PAD = 4;
+/** The portal's centre on screen, and the rift stage it opens to (of RIFT_STAGES). */
+export const PORTAL = { x: 186, y: 42, stage: 4 } as const;
+/** CLASSIC's size (the 'classic' frame) and the REMIX stamp's ('remix'). */
+const CLASSIC_W = 173;
+const CLASSIC_H = 29;
+const STAMP_W = 92;
+const STAMP_H = 44;
+
+/** Where a logo word is drawn on the way back: its centre, turn (radians), scale and opacity. */
+export interface Pose {
+  x: number;
+  y: number;
+  angle: number;
+  sx: number;
+  sy: number;
+  alpha: number;
+}
+
+const clamp01 = (k: number) => Math.min(1, Math.max(0, k));
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+
+/**
+ * CLASSIC `t` frames into the way back (null once it is gone into the portal). It waits while
+ * the portal opens, stretches toward it, then is pulled in, faster and faster, shrinking (and
+ * spinning, two turns, unless `calm`).
+ */
+export function suckPose(t: number, calm: boolean): Pose | null {
+  if (t >= BACK.suckTo) return null;
+  // CLASSIC's centre at rest, with half its size rounded down as posed() does, so the first
+  // frames draw it exactly where it rests (the pull then moves it in fractions of a pixel).
+  const x0 = CLASSIC_AT.x + (CLASSIC_W >> 1);
+  const y0 = CLASSIC_AT.y + (CLASSIC_H >> 1);
+  const k = clamp01((t - BACK.suckFrom) / (BACK.suckTo - BACK.suckFrom));
+  // The stretch: taller and narrower, leaning a little toward the portal.
+  const s = Math.sin(clamp01(k / 0.25) * (Math.PI / 2));
+  // The pull: q runs 0..1 after the stretch.
+  const q = clamp01((k - 0.25) / 0.75);
+  const size = Math.pow(1 - q, 1.3);
+  const m = 0.1 * s + 0.9 * q * q;
+  // A swirl off the straight line (not calm).
+  const off = calm ? 0 : Math.sin(m * Math.PI) * 12;
+  return {
+    x: lerp(x0, PORTAL.x, m) + off,
+    y: lerp(y0, PORTAL.y, m) + off * 0.4,
+    angle: calm ? 0 : -0.12 * s + q * q * 4 * Math.PI,
+    sx: (1 - 0.2 * s) * size,
+    sy: (1 + 0.5 * s) * size,
+    alpha: calm ? 1 - 0.7 * q : 1,
+  };
+}
+
+/**
+ * REMIX `t` frames into the way back (null before it comes out): out of the portal's centre
+ * into its place, growing (with a little overshoot) and unwinding one turn, unless `calm`. At
+ * BACK.slam it is exactly at rest.
+ */
+export function emergePose(t: number, calm: boolean): Pose | null {
+  if (t < BACK.emergeFrom) return null;
+  const q = clamp01((t - BACK.emergeFrom) / (BACK.slam - BACK.emergeFrom));
+  const out = 1 - (1 - q) * (1 - q);
+  // easeOutBack: 0 to 1, a little past 1 near the end.
+  const c = 1.70158;
+  const back = 1 + (c + 1) * Math.pow(q - 1, 3) + c * Math.pow(q - 1, 2);
+  const s = calm ? out : back;
+  return {
+    x: lerp(PORTAL.x, STAMP_X + (STAMP_W >> 1), out),
+    y: lerp(PORTAL.y, STAMP_Y + (STAMP_H >> 1), out),
+    angle: calm ? 0 : -2 * Math.PI * (1 - q) * (1 - q),
+    sx: s,
+    sy: s,
+    alpha: calm ? clamp01(q * 1.5) : 1,
+  };
+}
+
+/** The portal's rift stage `t` frames into the way back (0: none): open, a gulp, then closing. */
+export function portalStage(t: number, calm: boolean): number {
+  const S = PORTAL.stage;
+  if (t >= BACK.slam) return Math.max(0, S - Math.floor((t - BACK.slam) / BACK.openStep));
+  // It gulps (one stage smaller for a moment) as CLASSIC goes in; not with Reduce flashing.
+  if (!calm && t >= BACK.suckTo && t < BACK.suckTo + 4) return S - 1;
+  return Math.min(S, 1 + Math.floor(t / BACK.openStep));
+}
 
 /**
  * The speaker in the top-right corner (0.4.35, owner): sound on / off without a menu, the same
@@ -151,8 +243,8 @@ export class TitleScene extends MenuScene {
   constructor(
     game: Game,
     /**
-     * The CLASSIC title this one comes back from (0.4.72): its still frame is the backdrop CLASSIC
-     * breaks over, and its overworld is cut for the REMIX theme (the back transition).
+     * The CLASSIC title this one comes back from (0.4.72): whether it got as far as its overworld
+     * (cut for the REMIX theme on the way back) and whether BACK came before CLASSIC arrived.
      */
     private classic: ClassicTitleScene | null = null,
   ) {
@@ -165,18 +257,26 @@ export class TitleScene extends MenuScene {
     this.heroes = heroRow(game.deps.characters, game.campaignOpen ? titleFreed(listSaves()) : all);
     const intro = game.deps.titleIntro === true && !game.titleIntroPlayed;
     game.titleIntroPlayed = true;
-    // BACK while CLASSIC was still falling: it never hit the stamp, so nothing breaks; the
-    // finished title at once (the stamp was there all along), its theme coming back up.
-    const unhit = !intro && classic !== null && classic.backBeforeImpact && !classic.overworldAsked;
+    // BACK while CLASSIC was still falling (or, with Reduce flashing, while the theme was still
+    // fading out under the crossfade): CLASSIC never arrived, so there is no way back to play;
+    // the finished title at once (the stamp was there all along), its theme coming back up.
+    const unhit =
+      !intro &&
+      classic !== null &&
+      ((classic.backBeforeImpact && !classic.overworldAsked) || classic.backMidCrossfade);
     if (unhit) this.classic = null;
+    // The calm shortcut decides by CLASSIC's frame count, but its crossfade runs on the clock: on
+    // a slow device the overworld may already have taken over, so the theme comes in from its
+    // loop point (or, still current, only comes back up), never from its fanfare.
+    this.themeFromLoop = unhit && classic?.backMidCrossfade === true;
     const back = !intro && this.classic !== null;
     if (intro) {
       this.phase = needsStartGate(game.ctx.audio) ? 'gate' : 'rift';
       this.stampAt = T.riftStamp;
     } else if (back) {
       this.phase = 'back';
-      // With Reduce flashing the way back is an instant swap: the stamp on from the first frame.
-      this.stampAt = game.ctx.reduceFlashing ? 0 : BACK.slam;
+      // 0.4.73: Reduce flashing plays the same timeline, calmly (no more instant swap).
+      this.stampAt = BACK.slam;
     } else if (unhit) {
       this.phase = 'ready';
       this.stampAt = -T.dustFrames - T.stampShake; // landed long ago: no shake, no dust
@@ -203,6 +303,9 @@ export class TitleScene extends MenuScene {
     });
     this.rebuild();
   }
+
+  /** Enter brings the theme in from its loop point (the calm shortcut back from CLASSIC). Once. */
+  private themeFromLoop = false;
 
   private rebuild(): void {
     const game = this.game;
@@ -241,7 +344,10 @@ export class TitleScene extends MenuScene {
     const audio = this.game.ctx.audio;
     if (this.phase === 'rift') audio.playJingle('title-rift');
     else if (this.phase === 'back') this.startBack();
-    else audio.playMusic('title');
+    else if (this.themeFromLoop) {
+      this.themeFromLoop = false;
+      audio.playMusic('title', 0, true);
+    } else audio.playMusic('title');
     this.sayTitle();
   }
 
@@ -251,8 +357,8 @@ export class TitleScene extends MenuScene {
   private slammed = false;
 
   /**
-   * The music of the way back (0.4.72): the overworld is cut under the shatter, and the stamp's
-   * thud on the slam is the sting the REMIX theme comes in on. BACK before CLASSIC's impact left
+   * The music of the way back (0.4.72): the overworld is cut as the portal opens, and the stamp's
+   * thud as REMIX lands in place is the sting the REMIX theme comes in on. BACK before CLASSIC's impact left
    * the theme playing (no overworld yet): it just comes back up (BUG-12).
    */
   private startBack(): void {
@@ -260,10 +366,9 @@ export class TitleScene extends MenuScene {
     if (!this.classic?.overworldAsked) audio.playMusic('title');
     else if (audio.fadeOutMusic) audio.fadeOutMusic(TITLE_MUSIC.shatterOut);
     else audio.stopMusic();
-    if (this.stampAt <= this.clock) this.slam();
   }
 
-  /** The stamp lands: its thud, and the theme from bar 3 (past its fanfare). Once. */
+  /** REMIX lands in place: the stamp's thud, and the theme from bar 3 (past its fanfare). Once. */
   private slam(): void {
     if (this.slammed) return;
     this.slammed = true;
@@ -375,7 +480,7 @@ export class TitleScene extends MenuScene {
     this.game.deps.announcer?.say(s.audio.muted ? 'Sound off.' : 'Sound on.');
   }
 
-  /** The speaker is on screen (not behind the gate, in the rift, or during the way back's break). */
+  /** The speaker is on screen (not behind the gate, in the rift, or before REMIX is back in place). */
   get speakerShown(): boolean {
     if (this.phase === 'gate' || this.phase === 'rift') return false;
     return !(this.phase === 'back' && this.clock < this.stampAt);
@@ -455,9 +560,12 @@ export class TitleScene extends MenuScene {
     return this.game.ctx.reduceFlashing;
   }
 
-  /** Vertical screen shake in px as the stamp lands (always 0 with reduce flashing). */
+  /**
+   * Vertical screen shake in px as the stamp lands (always 0 with reduce flashing, and on the
+   * way back, where REMIX comes out of the portal rather than slamming down).
+   */
   shake(): number {
-    if (this.calm) return 0;
+    if (this.calm || this.phase === 'back') return 0;
     const t = this.clock - this.stampAt;
     return t >= 0 && t < T.stampShake ? (t % 2 === 0 ? -2 : 2) : 0;
   }
@@ -496,12 +604,13 @@ export class TitleScene extends MenuScene {
   private tick(): void {
     this.clock++;
     const t = this.clock;
+    if (this.phase === 'back' && t === BACK.suckFrom) this.game.ctx.audio.sfx('pipe');
     if (t === this.stampAt && this.phase === 'back') this.slam();
     else if (t === this.stampAt) {
       if (this.phase === 'rift') this.game.ctx.audio.playMusic('title');
       this.game.ctx.audio.sfx('stamp');
     }
-    if (this.phase === 'back' && t >= this.stampAt + (this.calm ? 0 : T.dustFrames)) this.phase = 'ready';
+    if (this.phase === 'back' && t >= BACK.end) this.phase = 'ready';
     if (this.phase === 'rift' && t >= T.riftEnd) {
       this.phase = 'ready';
       // 32b: the intro played out with no skip: "press any button to skip" is stale, so the
@@ -565,8 +674,13 @@ export class TitleScene extends MenuScene {
       this.unlockDev('');
       return; // the final press of the code must not also activate a menu item
     }
-    if ((this.phase === 'drop' || this.phase === 'back') && Actions.some((a) => input.pressed(a)))
+    if (this.phase === 'back' && Actions.some((a) => input.pressed(a))) {
       this.finish();
+      // 0.4.73: the press that skips the way back never reaches the menu (it would pick CLASSIC
+      // again once the menu's first frames are past, now the way back is longer).
+      return;
+    }
+    if (this.phase === 'drop' && Actions.some((a) => input.pressed(a))) this.finish();
     if (input.pressed('select')) {
       this.toggleSound();
       return;
@@ -722,7 +836,9 @@ export class TitleScene extends MenuScene {
     if (st < 0) return;
     r.sprite(sheet, 'remix-shadow', STAMP_X + 2, STAMP_Y + 2 + dy);
     r.sprite(sheet, 'remix', STAMP_X, STAMP_Y + dy);
-    if (st < T.dustFrames && this.phase !== 'ready') {
+    // The landing's dust, not on the way back (REMIX comes out of the portal; 72: so never
+    // with Reduce flashing there either).
+    if (st < T.dustFrames && this.phase !== 'ready' && this.phase !== 'back') {
       const k = Math.min(2, Math.floor(st / (T.dustFrames / 3)));
       r.sprite(sheet, `dust-${k}`, STAMP_X - 14, STAMP_Y + 34 + dy);
       r.sprite(sheet, `dust-${k}`, STAMP_X + 74, STAMP_Y + 18 + dy);
@@ -783,61 +899,47 @@ export class TitleScene extends MenuScene {
     if (on) this.ctext(r, 'DEV MODE UNLOCKED', UNLOCKED_Y + dy, 'gold', true);
   }
 
+  /** The way back's rift portal (the intro's rift, smaller), at its stage now. */
+  private portal(r: Renderer): void {
+    const stage = portalStage(this.clock, this.calm);
+    if (stage <= 0) return;
+    const sheet = this.game.ctx.assets.sheet('title-rift', RIFT_PALETTES[this.rimPhase()]);
+    // The rift's frames are the whole width with the tear at their centre (RIFT_CX, RIFT_CY).
+    r.sprite(sheet, `rift-${stage}`, PORTAL.x - RIFT_CX, PORTAL.y - RIFT_CY);
+  }
+
+  /** `frame` of the logo sheet drawn centred at `p`'s place, turned, scaled and faded. */
+  private posed(r: Renderer, frame: string, w: number, h: number, p: Pose, shadow = false): void {
+    const sheet = this.game.ctx.assets.sheet('title-logo');
+    // One fade for the frame and its shadow, so the shadow never shows through it.
+    translucent(r, p.alpha, () => {
+      if (shadow)
+        transformed(r, p.x + 2 * p.sx, p.y + 2 * p.sy, p.angle, p.sx, p.sy, (l) =>
+          l.sprite(sheet, `${frame}-shadow`, -(w >> 1), -(h >> 1)),
+        );
+      transformed(r, p.x, p.y, p.angle, p.sx, p.sy, (l) => l.sprite(sheet, frame, -(w >> 1), -(h >> 1)));
+    });
+  }
+
   /**
-   * The way back before the slam: the REMIX field (1-1's first screen, still) from the BACK press
-   * on, so nothing behind moves or cuts however far the demo had scrolled; SMB and CROSSOVER in
-   * place, CLASSIC squashed and then in pieces, one a letter, each hopping and falling with a chip
-   * of brick; the stamp's big frame just before it lands.
+   * The way back before REMIX is in place (0.4.73): the REMIX field (1-1's first screen, still)
+   * from the BACK press on, so nothing behind moves or cuts however far the demo had scrolled;
+   * SMB and CROSSOVER in place, the portal over them, and CLASSIC going into it or REMIX coming
+   * out. No heroes or menu yet: they are there when REMIX lands.
    */
-  private renderBreak(r: Renderer): void {
+  private renderBack(r: Renderer): void {
     const sheet = this.game.ctx.assets.sheet('title-logo');
     this.field(r, 0);
     r.sprite(sheet, 'smb-tag', TAG_X, TAG_Y);
     for (let i = 0; i < CROSSOVER_LETTERS.length; i++)
       r.sprite(sheet, `cross-${i}`, CROSS_X + i * CROSSOVER_ADVANCE, CROSS_Y);
-    const k = this.clock;
-    const word = sheet.frames.get('classic');
-    const w = word?.w ?? 173;
-    const h = word?.h ?? 29;
-    if (k < BACK.squash) {
-      const flat = sheet.frames.get('classic-squash')?.h ?? 22;
-      r.sprite(sheet, 'classic-squash', CLASSIC_AT.x, CLASSIC_AT.y + h - flat);
-    } else {
-      const a = k - BACK.squash;
-      for (const p of this.classicPieces(a, w)) {
-        clipped(r, p.clipX, p.y, p.clipW, h, () => r.sprite(sheet, 'classic', p.wordX, p.y));
-        // The chips fly from the first frame the pieces move (not sitting on the letters' feet).
-        if (a > 0) r.sprite(sheet, 'brick-bit', p.chipX, p.chipY);
-      }
+    this.portal(r);
+    const gone = suckPose(this.clock, this.calm);
+    if (gone) this.posed(r, 'classic', CLASSIC_W, CLASSIC_H, gone);
+    const out = emergePose(this.clock, this.calm);
+    if (out) {
+      this.posed(r, 'remix', STAMP_W, STAMP_H, out, true);
     }
-    if (k >= this.stampAt - T.stampPop) {
-      const f = sheet.frames.get('remix');
-      r.sprite(sheet, 'remix-2x', STAMP_X - ((f?.w ?? 92) >> 1), STAMP_Y - ((f?.h ?? 44) >> 1));
-    }
-  }
-
-  /** CLASSIC's pieces `a` frames after it breaks: where each is cut from the word and drawn. */
-  classicPieces(
-    a: number,
-    w: number,
-  ): { clipX: number; clipW: number; wordX: number; y: number; chipX: number; chipY: number }[] {
-    const out = [];
-    for (let i = 0; i < CLASSIC_LETTERS; i++) {
-      // Out from the middle letter, odd ones hopping a little higher, then falling.
-      const dx = Math.round((i - 3) * 0.9 * a);
-      const dy = Math.round((-2.4 - (i % 2) * 0.8) * a + 0.4 * a * a);
-      const from = i === 0 ? 0 : CLASSIC_PAD + i * CLASSIC_LETTER_W;
-      const to = i === CLASSIC_LETTERS - 1 ? w : CLASSIC_PAD + (i + 1) * CLASSIC_LETTER_W;
-      out.push({
-        clipX: CLASSIC_AT.x + from + dx,
-        clipW: to - from,
-        wordX: CLASSIC_AT.x + dx,
-        y: CLASSIC_AT.y + dy,
-        chipX: CLASSIC_AT.x + from + 10 + dx * 2,
-        chipY: CLASSIC_AT.y + 20 + dy - a,
-      });
-    }
-    return out;
   }
 
   override render(r: Renderer): void {
@@ -848,12 +950,14 @@ export class TitleScene extends MenuScene {
       return;
     }
     if (this.phase === 'back' && this.clock < this.stampAt) {
-      this.renderBreak(r);
+      this.renderBack(r);
       return;
     }
     const dy = this.shake();
     const t = this.clock;
     this.field(r, dy);
+    // The way back's portal closing behind REMIX.
+    if (this.phase === 'back') this.portal(r);
     if (this.phase === 'rift') {
       // Space around the rift, fading to the SMB field as the logo and heroes land.
       const fade = t < T.fadeFrom ? 1 : Math.max(0, 1 - (t - T.fadeFrom) / (T.fadeTo - T.fadeFrom));

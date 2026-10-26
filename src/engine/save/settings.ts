@@ -181,12 +181,8 @@ export interface ClassicCheatsSettings {
    * files' migration reads it once for a run that had no count of its own; nothing writes it.
    */
   continuesUsed: number;
-  /**
-   * The Level Select cheat (G-007; the original's 17th cheat, Cheats.as:47): unlocked by beating
-   * every map set on Hard (StatManager.allMapPacksBeatOnHard) or by the code. Not a rule: it opens
-   * the LEVEL SELECT page from the Cheats page and the Classic pause menu.
-   */
-  levelSelect: boolean;
+  // v0.4.73 item 94: no Level Select cheat (the original's 17th, Cheats.as:47). An old save's
+  // `levelSelect` key is left in storage as it is; nothing reads it.
 }
 
 /** Unlocked from the start in the original (Cheats.as: their `locked` is false). */
@@ -206,7 +202,6 @@ export function defaultClassicCheats(): ClassicCheatsSettings {
     stats: Object.fromEntries(CLASSIC_CHEAT_STATS.map((k) => [k, 0])) as Record<ClassicCheatStat, number>,
     beaten: { smb: false, special: false, lost: false },
     continuesUsed: 0,
-    levelSelect: false,
   };
 }
 

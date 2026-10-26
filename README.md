@@ -65,10 +65,11 @@ difficulty (Easy, Normal or Hard), then its rules (game mode, including **Surviv
 hero has one life; lives, attack, damage and the other settings; the weapons; heroes left out).
 A file's rules stay fixed for that file, and each file keeps its own continues, so **ERASE FILE**
 (with NO picked first) is the way to start one again. The Start box's **Options** holds what every
-file shares: the music set, tutorials, the **Cheats** the original unlocks, and video, audio and
-controls. The heroes play by the
-original's rules: their physics, power states, weapons and swimming, enemy hit points and
-armour. How to play (Options, or the pause menu) explains each hero as Classic plays it.
+file shares: the music set, tutorials, the **Cheats** the original unlocks (all but its Level
+Select: a cleared file's level replay does that job), and video, audio and controls. The heroes
+play by the original's rules: their physics, power states, weapons and swimming, enemy hit
+points and armour. How to play (Options) and the pause menu's Guide show the original's
+tutorial boxes for each hero. The pause menu and every page it opens are Classic boxes.
 
 ### Chapter 1 (coming soon)
 

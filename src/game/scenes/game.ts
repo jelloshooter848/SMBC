@@ -6,7 +6,6 @@ import { GestureGate } from '@engine/input/gesture';
 import type { HomeScreenHooks } from '../pwa/home-screen';
 import type { LastInput } from '@engine/input/touch-logic';
 import {
-  allSetsBeaten,
   loadProgress,
   lostLettersOpen,
   recordLostGameBeaten,
@@ -30,15 +29,20 @@ import { TitleScene } from './title';
 import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
 import { resumeOf, type ClassicResume } from '../run-resume';
 import {
+  classicFileKept,
+  classicFileKey,
   copyFileRules,
   eraseClassicFile,
   hasClassicFile,
   listClassicFiles,
   loadClassicFile,
+  loadClearedFile,
   migrateClassicFiles,
   originalFileRules,
   saveClassicFile,
+  saveClearedFile,
   type ClassicFile,
+  type ClearedFile,
   type ClassicFileRef,
   type ClassicFileRules,
   type ClassicFileSlot,
@@ -55,9 +59,12 @@ import {
   type ClassicCheatId,
   type ClassicCheatStat,
   type ClassicDevToggles,
+  type AssistSettings,
   type MapDifficulty,
   type Settings,
 } from '@engine/save/settings';
+import { storageReadable } from '@engine/save/storage';
+import { ADVANCED_OFF, readAdvanced, writeAdvanced, type AdvancedState } from '../advanced-cheats';
 import { addCheatStat, cheatInfo, unlockedLines, unlockEarned, type CheatEvent } from '../cheats';
 import type { ClassicSettings } from '@engine/save/original-options';
 import type { InputManager } from '@engine/input/input-manager';
@@ -141,6 +148,15 @@ import { FileSelectScene } from './file-select';
 import { ClassicTitleScene, type ClassicTitlePhase } from './original-title';
 import { ClassicMenuScene, MAP_SETS, classicNextWorld, mapSetOf, recordClassicBeat } from './original-game';
 import { filesBoxFor, fileRulesSpoken, type ClassicFilesScene } from './original-files-menu';
+import { openDevLevelSelect } from './level-select-return';
+import {
+  clearedNote,
+  openClearedFile,
+  ReplayDeathScene,
+  showReplayLevels,
+  type ClearResult,
+  type ReplayRun,
+} from './original-replay';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
 
@@ -153,6 +169,11 @@ export interface GameDeps {
   /** Live settings object and a callback that applies + persists it (wired by main). */
   settings?: Settings;
   applySettings?: () => void;
+  /**
+   * v0.4.73 (item 60): puts Game.liveAssists into ctx.assist (and slow motion into the loop),
+   * main.ts; applySettings does it too. Absent in the sims: ctx.assist is left as a test sets it.
+   */
+  applyAssists?: () => void;
   input?: InputManager;
   announcer?: Announcer;
   /** Every playable level id (built-in and custom), for the developer level select. */
@@ -225,6 +246,11 @@ function fitsHero(def: CharacterDef, k: HeroPower): boolean {
 const RANDOM_PICK_SEED = 0x5eed1;
 
 /** Orchestrates scenes and carries GameState between levels. */
+/** A new file game's token (ClassicFile.runId). */
+function newRunToken(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /** Why a Classic file that reads cannot play now (Game.classicFileProblem, 31d; 0.4.72). */
 export type FileProblem = 'hero-off' | 'hero' | 'level' | 'not-released';
 
@@ -255,7 +281,7 @@ export class Game {
   classicRun = false;
   /**
    * The Classic run's Map Difficulty (G-006): set as the run starts (the CLASSIC menu's Map
-   * difficulty row, settings.classicMapDifficulty, or the Level Select cheat's row), Normal for
+   * difficulty row, settings.classicMapDifficulty), Normal for
    * a dev run. GameContext.mapDifficulty is a live view of it while a Classic run plays Classic
    * rules.
    */
@@ -267,6 +293,38 @@ export class Game {
    */
   private devFreePlay = false;
   /**
+   * v0.4.73 items 63 / 64: this run goes back to Dev > Level select (a clear, Quit, the last
+   * castle's credits): a dev START page start (item 94: the Level Select cheat that also did is gone).
+   */
+  get levelSelectBack(): boolean {
+    return this.devFreePlay && this.devBack !== null;
+  }
+
+  /** v0.4.73 items 63 / 64: the dev START page's start just begun (playDevPick) goes back there. */
+  keepDevReturn(branch: 'classic' | 'campaign', level: string): void {
+    if (this.devFreePlay) this.devBack = { branch, level };
+  }
+
+  /**
+   * v0.4.73 items 63 / 64: back to the level select this run was started from, its cursor on the
+   * level just played (the one under the scenes on top, else the one picked), which it says. The
+   * run is left as Quit leaves it; nothing is written. False (doing nothing) for any other run.
+   */
+  backToLevelSelect(): boolean {
+    if (!this.levelSelectBack) return false;
+    const here = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const played = here ? (here.world.level.parent ?? here.world.level.id) : null;
+    const back = this.devBack as { branch: 'classic' | 'campaign'; level: string };
+    this.showTitle();
+    openDevLevelSelect(this, back, played ?? back.level);
+    return true;
+  }
+
+  /** A dev START page free play start is playing (v0.4.73 item 61: its hero is any hero). */
+  get devFreePlaying(): boolean {
+    return this.devFreePlay;
+  }
+  /**
    * 0.4.72 (owner item 6): the dev START page's Mount for this start: 'ride' starts every area
    * riding Yoshi (the mount on, as the Dev menu's Ride); 'none' starts without him (a Ride toggle
    * plays as On); null: no START page start (the toggle and `&yoshi=` decide). Cleared with
@@ -275,8 +333,8 @@ export class Game {
   private devYoshi: 'ride' | 'none' | null = null;
   /**
    * B-L: the save file this Classic run belongs to (its set and slot): every WORLD card and a
-   * game over's continue point write it, the credits empty it. Null for a practice run (the
-   * menus' Level Select), a developer run and a link run, which never write a file.
+   * game over's continue point write it, the credits empty it. Null for a practice run (a
+   * CLEARED file's replay), a developer run and a link run, which never write a file.
    */
   classicFile: ClassicFileRef | null = null;
   /**
@@ -288,12 +346,37 @@ export class Game {
   /** B-L: the continues this run's file has used (Infinite Lives' goal). */
   fileContinues = 0;
   /**
-   * B-L: a practice run (the menus' Level Select, owner): the original's rules, no file, and it
-   * counts for nothing (no beat, no cheat counts, no unlocks), as a developer run.
+   * B-L: a practice run: no file, and it counts for nothing (no beat, no cheat counts, no
+   * unlocks), as a developer run. Since v0.4.73 (item 94, the Level Select cheat removed) only a
+   * CLEARED file's level replay is one (replayRun).
    */
   practiceRun = false;
-  /** The Level Select cheat was just unlocked (G-007): its card follows the other unlocks. */
-  private levelSelectUnlocked = false;
+  /**
+   * v0.4.73 items 63 / 64: a dev START page start (keepDevReturn): its branch and level, for the
+   * way back to Dev > Level select. Read only while that free play plays (devFreePlay).
+   */
+  private devBack: { branch: 'classic' | 'campaign'; level: string } | null = null;
+  /**
+   * v0.4.73 (owner C): the level replay of a CLEARED file playing (or its select), with the
+   * file, world and level it was picked from. Only with practiceRun (replayRun reads both): it
+   * writes no file, counts for nothing, and has free play's lives.
+   */
+  private replay: ReplayRun | null = null;
+  /**
+   * v0.4.73: the worlds this file run has had a WORLD card in (ClassicResume.worlds), for its
+   * CLEARED file's replay (The Lost Levels' World 9 and A-D only when reached).
+   */
+  private runWorlds: number[] = [];
+  /**
+   * v0.4.73 (owner 95): this file run's game (ClassicFile.runId), set by each new game and
+   * resume, written with every save: only the game still in the file may write it CLEARED.
+   */
+  private runToken = newRunToken();
+  /**
+   * v0.4.73 (owner B): the file this run's ending made CLEARED (and whether storage took it),
+   * for the message after the credits and the cheat cards.
+   */
+  private clearedNews: { ref: ClassicFileRef; result: ClearResult } | null = null;
   /**
    * Classic mode's Survival (Options > Game mode): which heroes have fallen and whether the next
    * select may revive (survival.ts). Null in every other run, the campaign's included.
@@ -715,6 +798,21 @@ export class Game {
     });
   }
 
+  /**
+   * v0.4.73 item 61 (owner): the dev START page's Hero row offers every hero there is under
+   * `rules`, released or not, whatever Dev > Toggle heroes says (Toggle heroes is for Classic and
+   * campaign play only). The heroes in the select's order (slotsFor), on devRosterFor.
+   */
+  devAllSlotsFor(rules: Rules): CharacterDef[] {
+    return this.slotsFor(rules, () => true, this.devRosterFor(rules));
+  }
+
+  /** rosterFor `rules` with every Classic extra, the ones Toggle heroes set Off too (item 61). */
+  devRosterFor(rules: Rules): CharacterDef[] {
+    if (rules !== 'classic' || CLASSIC_EXTRAS.length === 0) return this.deps.characters;
+    return [...this.deps.characters, ...CLASSIC_EXTRAS];
+  }
+
   /** `slots` without the heroes the Classic run's Disable heroes turned off (G-032). */
   private withoutDisabled(slots: CharacterDef[]): CharacterDef[] {
     // G-032: a Classic mode run leaves out the heroes Options > Disable heroes turned off,
@@ -733,8 +831,8 @@ export class Game {
   slotsFor(
     rules: Rules,
     offered: (id: string) => boolean = (id) => this.expansionHeroOffered(id),
+    roster: CharacterDef[] = this.rosterFor(rules),
   ): CharacterDef[] {
-    const roster = this.rosterFor(rules);
     if (rules !== 'classic' || this.campaign !== null) return roster;
     const ids = [...CLASSIC_SLOTS, ...EXPANSION_HEROES.filter(offered)];
     const slots: CharacterDef[] = [];
@@ -790,6 +888,44 @@ export class Game {
     return EXPANSION_HEROES.includes(id) && !this.heroReleased(id);
   }
 
+  /**
+   * v0.4.73 (item 66): in a Classic mode run, hero `c` is one the select does not offer now (an
+   * unreleased Expansion hero after dev mode was turned off mid-run, a hero toggled off): the
+   * next pick shows the select, even where the Game mode keeps the hero.
+   */
+  heroUnoffered(c: CharacterDef): boolean {
+    if (!this.classicRun || this.campaign !== null) return false;
+    return !this.selectSlots.includes(this.slotOf(c));
+  }
+
+  /**
+   * v0.4.73 (item 66, dev only; review fix 4, the safe version): dev mode was turned off mid-run
+   * while an unreleased Expansion hero plays (LevelScene asks every frame). That life ends
+   * WITHOUT being charged (no life lost, no Survival fall, so never a GAME OVER), never while
+   * play is held (a flagpole or castle's end, a pipe: World.inControl), and the hero select
+   * follows without that hero (a replay: its death box, whose RETRY picks again). The run is
+   * written first with the hero still playing, so its file keeps the devHero mark (runNow).
+   */
+  endUnreleasedLife(world: World, level: LevelData): void {
+    if (this.devMode || !this.classicRun || this.campaign !== null) return;
+    const c = this.state.character;
+    if (!this.devOnlyHero(c) || !this.heroUnoffered(c)) return;
+    if (!world.inControl || world.player.dead) return;
+    const s = this.state;
+    this.resetAfterDeath();
+    s.time = null;
+    const cp = s.checkpoint;
+    const main = cp?.level ?? level.parent ?? level.id;
+    const at = cp ? main : this.firstArea(main);
+    const start: LevelStart = cp
+      ? { x: cp.x, y: cp.y ?? 12, mode: 'stand', clearEnemies: 'all' }
+      : { mode: 'stand' };
+    if (this.replayRun) return this.replayDied(at, start);
+    this.selectLevel = at;
+    if (this.keepsResume) this.keepResume(at);
+    this.chooseHero(0, () => this.goToLevel(at, start));
+  }
+
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
   slotOf(c: CharacterDef): CharacterDef {
     const host = skinHost(c);
@@ -804,8 +940,10 @@ export class Game {
    */
   restoreSlotHero(c: CharacterDef): CharacterDef {
     const host = this.slotOf(c);
-    // A hero the select does not offer now (an unreleased Expansion hero from a link or save): the first slot's hero, Mario, in his chosen look, so Survival has a
-    // hero standing and the select shows who plays.
+    // A hero the select does not offer now: the first slot's hero, Mario, in his chosen look, so
+    // Survival has a hero standing and the select shows who plays. Item 40: a file of an unreleased
+    // Expansion hero never gets here (NOT RELEASED); what still does is a `?char=` link or dev
+    // start naming one, and a file whose hero its own Disable heroes left out (P1).
     // A hero the dev select offers (selectSlots: dev mode shows every hero not set Off) plays.
     const slots = this.selectSlots;
     if (!slots.includes(host)) {
@@ -1020,8 +1158,15 @@ export class Game {
    * D-4 is the final ending, with the credits.
    */
   showEnding(from = ''): void {
-    // G-008, B-L: a Classic run that reaches the credits is over; its file is emptied.
-    if (this.keepsResume) this.dropResume();
+    // v0.4.73 (owner C, 48A): a replayed level's castle goes back to its world's level box.
+    if (this.replayRun) return this.replayCleared();
+    // G-008, B-L: a Classic run that reaches the credits is over. v0.4.73 (owner 46B): its file
+    // is kept as CLEARED, never emptied.
+    if (this.keepsResume) this.clearFile(from);
+    // v0.4.73 (owner 98): the beat and its unlocks are kept now, before the credits (a Classic
+    // mode run that counts: not a developer or practice run).
+    if (this.classicRun && this.campaign === null && !this.classicDev && !this.practiceRun)
+      this.recordSetBeaten(from);
     // A Classic mode run ends every map set as SMB (G-001): D-4's castle said the quest is over.
     if (from.startsWith('ll-') && !this.classicRun) return this.showLostEnding(from);
     const below = this.scenes.top;
@@ -1036,6 +1181,28 @@ export class Game {
   }
 
   /**
+   * A Classic mode run beat the map set of `from` (G-004, G-005, D3): its beat status is kept
+   * and the cheats whose goals it completes are unlocked (their cards follow the credits).
+   * v0.4.73 item 94 (owner): every set beaten on Hard no longer opens a Level Select cheat
+   * (StatManager 516-517): a CLEARED file's replay is the level select. v0.4.73 (owner 98):
+   * called as the ending begins, with the CLEARED write, so a tab closed during the credits keeps
+   * it all; the end of the credits does it only for a run that has not (beatRecorded).
+   */
+  private recordSetBeaten(from: string): void {
+    this.beatRecorded = true;
+    const set = mapSetOf(from).id;
+    // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
+    recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
+    // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
+    // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
+    // count and no-continue goals.
+    this.cheatEvent({ beat: set });
+  }
+
+  /** v0.4.73 (98): this run's beat is recorded already (recordSetBeaten). */
+  private beatRecorded = false;
+
+  /**
    * The credits are over: campaign files record the clear and save, then the map page of the
    * castle (SMB 8-4: World 8, its road on to Lost World 1 drawn in; Lost Levels D-4). Otherwise
    * (and for a campaign level on no map page) the title.
@@ -1046,30 +1213,10 @@ export class Game {
     // StatManager.beatGameHandler's unlock boxes -> restartGame).
     if (this.classicRun) {
       // A developer-started run counts for nothing: the title, as free play. So does a practice
-      // run (the menus' Level Select, B-L owner).
+      // run (B-L owner).
       if (this.classicDev || this.practiceRun) return this.showTitle();
-      const set = mapSetOf(from).id;
-      // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
-      recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
-      // Every map set beaten on Hard opens the Level Select cheat (G-007; StatManager 516-517).
-      const cheats = this.deps.settings?.classicCheats;
-      if (
-        cheats &&
-        !cheats.levelSelect &&
-        allSetsBeaten(
-          loadProgress(),
-          'hard',
-          MAP_SETS.map((m) => m.id),
-        )
-      ) {
-        cheats.levelSelect = true;
-        this.levelSelectUnlocked = true;
-        saveSettings(this.deps.settings as Settings);
-      }
-      // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
-      // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
-      // count and no-continue goals.
-      this.cheatEvent({ beat: set });
+      // v0.4.73 (owner 98): kept as the ending began (recordSetBeaten), never twice.
+      if (!this.beatRecorded) this.recordSetBeaten(from);
       this.showClassicUnlocks();
       return;
     }
@@ -1084,7 +1231,8 @@ export class Game {
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
-    this.showTitle();
+    // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    if (!this.backToLevelSelect()) this.showTitle();
   }
 
   /**
@@ -1118,8 +1266,10 @@ export class Game {
     const world = below instanceof LevelScene ? below.world : null;
     // "THANK YOU <hero>!" names the hero who took the axe, as Toad's thanks do (World.castleText).
     const hero = fontText((world?.castleHero ?? s.character).name);
+    // v0.4.73 items 63 / 64: a dev START page start's 8-4 says only THANK YOU (its next stop is
+    // Dev > Level select, not a world to select).
     const card =
-      from === 'll-8-4' || from === 'll-13-4'
+      (from === 'll-8-4' && !this.levelSelectBack) || from === 'll-13-4'
         ? [
             `THANK YOU ${hero}!`,
             '',
@@ -1131,7 +1281,9 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    if (from === 'll-8-4' && !campaign) {
+    // v0.4.73 items 63 / 64: a dev START page start's castle is a clear like any other: its card,
+    // then Dev > Level select (no games-beaten tally: a dev run writes nothing).
+    if (from === 'll-8-4' && !campaign && !this.levelSelectBack) {
       const warped = s.warped;
       const before = loadProgress();
       const progress = recordLostGameBeaten(before, warped);
@@ -1162,7 +1314,11 @@ export class Game {
         this.scenes.pop(); // the card; the level (if any) stays beneath the credits
         this.scenes.push(new CreditsScene(this, head, () => this.afterCredits(from), world));
       };
-    } else then = () => (campaign ? this.returnToMap() : this.showTitle());
+    } else
+      then = () => {
+        if (campaign) this.returnToMap();
+        else if (!this.backToLevelSelect()) this.showTitle();
+      };
     const audio = this.deps.ctx.audio;
     audio.stopMusic();
     audio.playJingle('world-clear');
@@ -1172,8 +1328,8 @@ export class Game {
   }
 
   showTitle(): void {
-    // Back from the CLASSIC title (or a box over it), 0.4.72: the REMIX title breaks CLASSIC over
-    // that title's still frame (TitleScene's back transition). Its music is not stopped here:
+    // Back from the CLASSIC title (or a box over it): the REMIX title's way back (0.4.73: CLASSIC
+    // is sucked up into the rift portal and REMIX comes out of it, TitleScene's back transition). Its music is not stopped here:
     // the REMIX title takes it from where it is.
     const classic =
       (this.scenes.find((s) => s instanceof ClassicTitleScene) as ClassicTitleScene | undefined) ?? null;
@@ -1697,6 +1853,8 @@ export class Game {
    * two picks next.
    */
   warpToLevel(levelId: string, start: LevelStart, pipe = true): void {
+    // v0.4.73: a replayed level left by a warp pipe (a warp zone) is over, as a clear is.
+    if (this.replayRun) return this.replayCleared();
     const s = this.state;
     const go = () => this.goToLevel(levelId, start);
     this.selectLevel = levelId;
@@ -1710,7 +1868,8 @@ export class Game {
     // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
     if (this.classicRun) {
       const choice = this.classicHeroChoice(false);
-      if (choice === 'keep') return go();
+      // v0.4.73 (item 66): a hero no select offers now picks again.
+      if (choice === 'keep' && !this.heroUnoffered(s.character)) return go();
       if (choice === 'random') {
         const c = this.singleRandomHero();
         if (c !== s.character) this.setHero(0, c);
@@ -1753,6 +1912,8 @@ export class Game {
    * (EventManager.beatLevel → StatManager.beatLevelHandler).
    */
   levelExitTo(levelId: string, cleared?: { world: number; stage: number }): void {
+    // v0.4.73 (owner C, 48A): a replayed level's clear goes back to its world's level box.
+    if (this.replayRun) return this.replayCleared();
     if (cleared) this.survival?.levelCleared(cleared.world, cleared.stage);
     if (this.classicRun && this.campaign === null) return this.warpToLevel(levelId, { mode: 'stand' }, false);
     this.goToLevel(levelId, { mode: 'stand' });
@@ -1955,6 +2116,8 @@ export class Game {
     this.classicDev = classic;
     this.linkRun = false;
     this.devFreePlay = !classic;
+    // Items 63 / 64: only the START page's own starts go back to it (playDevPick: keepDevReturn).
+    this.devBack = null;
     // 0.4.72 (owner item 6): the START page's Mount row; null leaves the Dev menu's toggle alone.
     this.devYoshi = opts.mount === 'yoshi' ? 'ride' : opts.mount === 'none' ? 'none' : null;
     // B-L: a dev start has no file and reads the old shared options.
@@ -2082,12 +2245,16 @@ export class Game {
   ): void {
     // 31e: an empty file only, as startClassicFile: a used or unreadable one is emptied only
     // through ERASE FILE, never started over.
-    if (file && this.classicFileState(file.ref) !== 'empty') return;
+    // v0.4.73 (item 69): nor while storage cannot be read (every file would read as empty).
+    if (file && (!storageReadable() || this.classicFileState(file.ref) !== 'empty')) return;
     this.pendingLevel = null;
     if (file) {
       this.classicFile = { set: file.ref.set, slot: file.ref.slot };
       this.runFileRules = copyFileRules(file.rules ?? originalFileRules());
       this.practiceRun = false;
+      this.replay = null;
+      this.runWorlds = [];
+      this.runToken = newRunToken();
       this.fileContinues = 0;
       this.classicDifficulty = this.runFileRules.difficulty;
     }
@@ -2102,7 +2269,7 @@ export class Game {
    * shared link on a release build) it counts as any Classic run does, as the original counts a
    * run that its Level Select started anywhere (LevelSelectMenu.as 115-131 only sets the map pack
    * and difficulty and creates the level; StatManager.beatGameHandler 506-529 asks nothing of
-   * where the run began), and as our Level Select cheat's runs do (classicLevelSelect). It never
+   * where the run began). It never
    * writes or clears a save file (RC-004, linkRun). B-L: a link run plays the original's rules
    * at Normal (no file's); a developer run reads the old shared options, as every dev start does.
    */
@@ -2327,26 +2494,6 @@ export class Game {
     this.goToLevel(id, { mode: 'stand' });
   }
 
-  /**
-   * The Level Select cheat's Go (G-007; LevelSelectMenu GO_TO_WORLD): `levelId`. In a Classic run
-   * (its pause menu) the run goes on there, with its lives and score, on its file's Map difficulty
-   * and in its own file, whichever set the level is in (B-L). From the menus it is a practice run
-   * (B-L, owner): the select screen first, the original's rules at Normal, no file, and it counts
-   * for nothing.
-   */
-  classicLevelSelect(levelId: string): void {
-    if (
-      this.classicRun &&
-      this.campaign === null &&
-      this.scenes.find((s) => s instanceof LevelScene) !== undefined
-    ) {
-      this.state.checkpoint = null;
-      this.goToLevel(levelId, { mode: 'stand' });
-      return;
-    }
-    this.classicSelect(levelId, () => this.showClassicMenu(), { practice: true, rules: originalFileRules() });
-  }
-
   /** Any Classic mode run is over (the title, and every other start); runRules are reset by each. */
   private endClassicRun(): void {
     // Tutorials (O-15): no box queued in the run left behind shows in the next one.
@@ -2366,6 +2513,11 @@ export class Game {
     this.runFileRules = null;
     this.fileContinues = 0;
     this.practiceRun = false;
+    this.replay = null;
+    this.clearedNews = null;
+    this.beatRecorded = false;
+    // v0.4.73 (item 60): a file's Advanced cheats end with its run.
+    this.applyAssists();
   }
 
   /**
@@ -2384,12 +2536,25 @@ export class Game {
   /**
    * G-008, B-L: writes the run's file (classicFile) for the WORLD card of `levelId`, with its
    * rules and continues. `continued`: written by a game over at its continue point (BUG-05):
-   * going on from it counts as a continue used. A run the Level Select cheat took into another
-   * map set stays in its own file.
+   * going on from it counts as a continue used. A run that went into another map set stays in
+   * its own file.
    */
   private keepResume(levelId: string, continued = false): void {
     const ref = this.classicFile;
     if (!ref) return;
+    const r = this.runNow(levelId, ref);
+    saveClassicFile({
+      ...ref,
+      rules: this.classicRunRules,
+      continues: this.fileContinues,
+      tutorialsSeen: this.classicTutorials.seen,
+      run: continued ? { ...r, continued: true } : r,
+      runId: this.runToken,
+    });
+  }
+
+  /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
+  private runNow(levelId: string, ref: ClassicFileRef): ClassicResume {
     const sv = this.survival;
     const survival = sv
       ? {
@@ -2419,13 +2584,62 @@ export class Game {
     // A mark the file has is never dropped (a later write by another hero keeps it).
     if (this.devOnlyHero(this.state.character) || loadClassicFile(ref)?.run.devHero === true)
       r.devHero = true;
-    saveClassicFile({
-      ...ref,
-      rules: this.classicRunRules,
-      continues: this.fileContinues,
-      tutorialsSeen: this.classicTutorials.seen,
-      run: continued ? { ...r, continued: true } : r,
-    });
+    // v0.4.73: the worlds reached (its CLEARED file's replay offers Lost World 9 and A-D by them).
+    if (!this.runWorlds.includes(r.world)) this.runWorlds.push(r.world);
+    r.worlds = [...this.runWorlds];
+    return r;
+  }
+
+  /**
+   * v0.4.73 (owner 46B, 47A): the set is beaten (its ending, before the credits): the run's file
+   * is kept as CLEARED, with the run as it is now (score, lives, hero), once. A file CLEARED
+   * already (another tab's run) stays as it was; storage refusing the write leaves the file's
+   * last run in it (nothing lost), and the message after the credits says it was not saved.
+   */
+  private clearFile(from: string): void {
+    const ref = this.classicFile;
+    if (!ref) return;
+    let main = from;
+    try {
+      main = this.deps.getLevel(from).parent ?? from;
+    } catch {
+      /* kept as given */
+    }
+    const ok = saveClearedFile(
+      {
+        ...ref,
+        rules: this.classicRunRules,
+        continues: this.fileContinues,
+        tutorialsSeen: this.classicTutorials.seen,
+        run: this.runNow(main, ref),
+      },
+      // 95: only over this game: a file another tab emptied or started again is left alone.
+      this.runToken,
+    );
+    const result: ClearResult =
+      ok || loadClearedFile(ref) !== null
+        ? 'cleared'
+        : loadClassicFile(ref)?.runId === this.runToken
+          ? 'failed'
+          : 'other';
+    this.clearedNews = { ref: { ...ref }, result };
+  }
+
+  /**
+   * v0.4.73 (owner B): after the credits and the cheat cards of a beaten set: that set's file box
+   * on the CLEARED file, with the message box over it (read out, waiting for OK). A run with no
+   * file to clear (a link run) goes to the title as before.
+   */
+  private afterClassicBeat(): void {
+    const news = this.clearedNews;
+    this.clearedNews = null;
+    if (!news) return this.showTitle();
+    // The run is over: its level (still under the credits when no cheat card followed) and
+    // everything else it left go, as on any way back to the menus (quitClassicRun).
+    this.leaveRun();
+    this.scenes.clear();
+    const files = this.showClassicFiles(news.ref.set, news.ref.slot);
+    this.scenes.push(clearedNote(this, files, news.ref, news.result));
   }
 
   /**
@@ -2451,7 +2665,7 @@ export class Game {
   /** The map set the Classic run's file belongs to, for the CLASSIC menu's focus on leaving it. */
   get runSet(): MapSetId | undefined {
     if (this.classicFile) return this.classicFile.set;
-    // 36a: a run with no file (a practice run from the menus' Level Select): the set of the level
+    // 36a: a run with no file (a practice run): the set of the level
     // it is playing (its main level's, for a sub-area), else of the level its select was for.
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
     // 38d: with no level on the stack (MAIN MENU after a game over), the level the run last
@@ -2477,7 +2691,11 @@ export class Game {
 
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
-    if (this.classicFile) eraseClassicFile(this.classicFile);
+    const ref = this.classicFile;
+    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run. Review fix
+    // 2: nor anything storage cannot show now (it may be CLEARED; reads throwing hide it).
+    if (!storageReadable()) return;
+    if (ref && !classicFileKept(ref)) eraseClassicFile(ref);
   }
 
   /**
@@ -2511,10 +2729,21 @@ export class Game {
    * Only an empty file is ever treated as empty, so a new game never overwrites the others;
    * ERASE FILE empties them.
    */
-  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'unplayable' | 'unreadable' {
+  classicFileState(ref: ClassicFileRef): 'empty' | 'used' | 'cleared' | 'unplayable' | 'unreadable' {
     if (this.classicFileAt(ref)) return 'used';
+    // v0.4.73 (owner 46B): its set was beaten in it; only ERASE FILE empties it.
+    if (this.classicClearedAt(ref)) return 'cleared';
     if (loadClassicFile(ref)) return 'unplayable';
     return hasClassicFile(ref) ? 'unreadable' : 'empty';
+  }
+
+  /**
+   * v0.4.73: file `ref` when it is CLEARED (whatever its hero: the replay's select offers the
+   * heroes its rules do), else null.
+   */
+  classicClearedAt(ref: ClassicFileRef): ClearedFile | null {
+    this.migrateClassicFiles();
+    return loadClearedFile(ref);
   }
 
   /** B-L: file `ref` when it is used and still plays, else null. */
@@ -2528,7 +2757,8 @@ export class Game {
    * 31d: why readable file `ref` cannot play now: its hero is off in Dev > Toggle heroes
    * ('hero-off'), its hero is not one this version has ('hero'), or its level does not load
    * ('level'). 0.4.72: its run was played in dev mode by a hero only dev mode offers (devHero)
-   * and dev mode is off now ('not-released'). Null when it plays, or when there is no readable
+   * and dev mode is off now ('not-released'); 0.4.73 item 40: so is any run of an unreleased
+   * Expansion hero, marked or not. Null when it plays, or when there is no readable
    * file there.
    */
   classicFileProblem(ref: ClassicFileRef): FileProblem | null {
@@ -2547,9 +2777,12 @@ export class Game {
     const rules = this.resumeRules(r);
     const hero = this.rosterFor(rules).find((c) => c.id === r.hero);
     if (hero) {
-      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's);
-      // an unmarked one whose hero no select offers plays as the first slot's hero (P1).
-      if (r.devHero && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
+      // 0.4.72: a marked run (devHero) waits for a select that offers its hero (dev mode's).
+      // 0.4.73 item 40: so does an unmarked one whose hero is an unreleased Expansion hero (a
+      // file saved by v0.4.71 or earlier), never played as another hero or rewritten. Only a
+      // hero that is neither offered nor an Expansion hero plays as the first slot's (P1).
+      const waits = r.devHero === true || this.devOnlyHero(hero);
+      if (waits && !this.devSlotsFor(rules).includes(this.slotOf(hero))) return 'not-released';
       return null;
     }
     const off = CLASSIC_EXTRAS.find((d) => d.id === r.hero && !this.classicHeroOn(d));
@@ -2567,8 +2800,9 @@ export class Game {
    * empty, and BACK from the select (`back`) goes back to the rules box.
    */
   startClassicFile(ref: ClassicFileRef, rules: ClassicFileRules, back: () => void): void {
-    // An empty file only: a used or unreadable one is emptied only through ERASE FILE.
-    if (this.classicFileState(ref) !== 'empty') return;
+    // An empty file only: a used or unreadable one is emptied only through ERASE FILE. Item 69:
+    // storage that cannot be read shows every file as empty, so nothing starts then.
+    if (!storageReadable() || this.classicFileState(ref) !== 'empty') return;
     const set = MAP_SETS.find((m) => m.id === ref.set) ?? (MAP_SETS[0] as (typeof MAP_SETS)[number]);
     this.classicSelect(set.start, back, { file: ref, rules: copyFileRules(rules) });
   }
@@ -2592,6 +2826,9 @@ export class Game {
     this.classicFile = { set: ref.set, slot: ref.slot };
     this.fileContinues = f.continues;
     this.practiceRun = false;
+    this.replay = null;
+    this.runWorlds = [...(r.worlds ?? [])];
+    this.runToken = f.runId ?? newRunToken();
     this.tutorialRun = null;
     this.campaign = null;
     this.runRules = rules;
@@ -2616,7 +2853,9 @@ export class Game {
     // BUG-06: the other heroes' kits come back with it (a slot without them: every hero afresh).
     this.classicKits = {};
     // A hero no select offers now plays as the first slot's (restoreSlotHero): that hero starts
-    // at his own default, not with the saved hero's power and kit.
+    // at his own default, not with the saved hero's power and kit. Item 40: only a hero that is no
+    // Expansion hero gets here from a file (one its own Disable heroes left out, P1); an
+    // unreleased Expansion hero's file is NOT RELEASED (fileProblem).
     const unoffered = this.slotOf(played) !== this.slotOf(hero);
     if (rules === r.rules) {
       if (!unoffered) {
@@ -2705,17 +2944,173 @@ export class Game {
     return { onCancel: () => confirmQuitRun(this, 'No. Choose your hero.') };
   }
 
+  /** v0.4.73 (item 60): Advanced cheats storage refused, kept for this session (key|fingerprint). */
+  private advancedMemory = new Map<string, AdvancedState>();
+
+  /**
+   * v0.4.73 (item 60): CLEARED file `ref`'s ADVANCED CHEATS (advanced-cheats.ts), or null when it
+   * has none (not CLEARED, not beaten on Hard, or storage cannot be read).
+   */
+  advancedCheatsOf(ref: ClassicFileRef): AdvancedState | null {
+    const r = readAdvanced(ref);
+    if (!r) return null;
+    const kept = this.advancedMemory.get(`${classicFileKey(ref)}|${r.fp}`);
+    const st = kept ?? r.state;
+    return { seen: st.seen, assist: { ...st.assist } };
+  }
+
+  /**
+   * v0.4.73 (item 60, review fix 1): which CLEARED file `ref` holds now (its fingerprint), for a
+   * page, box or row to capture as it opens; null when it has no Advanced cheats.
+   */
+  advancedCheatsId(ref: ClassicFileRef): string | null {
+    return readAdvanced(ref)?.fp ?? null;
+  }
+
+  /**
+   * v0.4.73 (item 60): changes file `ref`'s Advanced cheats (its values, or its box read), applied
+   * at once. `id` is the file the caller opened for (advancedCheatsId, captured when its page,
+   * box or row opened): when the slot holds another file now (another tab erased it and cleared
+   * it again), nothing is written (review fix 1). False then, when it has none, a later
+   * version's data is there, or storage refused it (then this session keeps the change).
+   */
+  setAdvancedCheats(
+    ref: ClassicFileRef,
+    id: string,
+    change: { seen?: true; assist?: AssistSettings },
+  ): boolean {
+    const r = readAdvanced(ref);
+    if (!r || r.newer || r.fp !== id) return false;
+    const now = this.advancedCheatsOf(ref) ?? r.state;
+    const next: AdvancedState = {
+      seen: change.seen ?? now.seen,
+      assist: { ...(change.assist ?? now.assist) },
+    };
+    const key = `${classicFileKey(ref)}|${id}`;
+    const ok = writeAdvanced(ref, id, next);
+    if (ok) this.advancedMemory.delete(key);
+    else this.advancedMemory.set(key, next);
+    this.applyAssists();
+    return ok;
+  }
+
+  /**
+   * v0.4.73 (item 60): the one place that decides the assists in play. Dev mode on: the dev
+   * Assists, as always. Off: a CLEARED file's level replay plays its Advanced cheats; anything
+   * else (other files, practice, the campaign) plays with every assist off.
+   */
+  liveAssists(): AssistSettings {
+    const s = this.deps.settings;
+    if (s?.dev) return { ...s.assist };
+    const rp = this.replayRun;
+    if (rp && this.campaign === null) {
+      const a = this.advancedCheatsOf(rp.ref);
+      if (a) return { ...a.assist };
+    }
+    return { ...ADVANCED_OFF };
+  }
+
+  /** Puts liveAssists into play (main.ts; nothing in the sims without the hook). */
+  applyAssists(): void {
+    this.deps.applyAssists?.();
+  }
+
   /**
    * O-16: leave the Classic run for the CLASSIC menu (its Continue slot is already written): the
    * map set box over the CLASSIC title's demo, as on any way back (O-04), with the demo's tune.
    */
   quitClassicRun(): void {
+    // v0.4.73: leaving a level replay goes back to its CLEARED file on the file box.
+    if (this.replayRun) return this.leaveReplay('files');
     const set = this.runSet;
     const played = this.classicFile;
     this.leaveRun();
     this.scenes.clear();
     this.showClassicMenu(set);
     this.playedFile = played;
+  }
+
+  /**
+   * v0.4.73 (owner C): the level replay of a CLEARED file being played (or its select), else
+   * null. Only a Classic practice-style run has one: it writes no file and counts for nothing.
+   */
+  get replayRun(): ReplayRun | null {
+    return this.practiceRun && this.campaign === null ? this.replay : null;
+  }
+
+  /**
+   * v0.4.73 (owner C, 51A, 49A): a CLEARED file's level `levelId` (World `world`, level `stage`)
+   * picked on its level box: the Classic hero select, then the level, with the file's rules (its
+   * Map difficulty, More settings, Weapons and Disable heroes; its Game mode played as the normal
+   * hero pick), free play's lives and the normal timer. BACK from the select: the level box.
+   * Nothing is written: no file (classicFile null), no beat, no cheat counts (practiceRun).
+   */
+  replaySelect(ref: ClassicFileRef, world: number, stage: number, levelId: string): void {
+    const f = this.classicClearedAt(ref);
+    if (!f) {
+      // Erased (or changed) by another tab since this box was drawn: said, and the file box again.
+      this.deps.ctx.audio.sfx('bump');
+      this.showClassicFiles(ref.set, ref.slot).sayWith(`File ${ref.slot} is no longer cleared.`);
+      return;
+    }
+    const rules = copyFileRules(f.rules);
+    rules.options.gameMode = originalFileRules().options.gameMode;
+    this.classicSelect(levelId, () => showReplayLevels(this, ref, world, stage), {
+      rules,
+      practice: true,
+      replay: { ref: { set: ref.set, slot: ref.slot }, world, stage, levelId },
+      tutorialsSeen: f.tutorialsSeen,
+    });
+  }
+
+  /**
+   * v0.4.73 (49A): a death in a replayed level costs no life: its box over the level, RETRY
+   * (`levelId` at `start`: the checkpoint, or the level's first area), SELECT CHARACTER, RETURN
+   * TO MENU; BACK steps back to the level box.
+   */
+  replayDied(levelId: string, start: LevelStart): void {
+    const rp = this.replayRun;
+    if (!rp) return;
+    this.selectLevel = levelId;
+    this.scenes.push(new ReplayDeathScene(this, rp, levelId, start));
+  }
+
+  /** The death box's RETRY: the replayed level again, the same hero. */
+  replayRetry(levelId: string, start: LevelStart): void {
+    this.goToLevel(levelId, start);
+  }
+
+  /** The death box's SELECT CHARACTER, then the level: the picked hero starts at his default. */
+  replayHero(c: CharacterDef, levelId: string, start: LevelStart): void {
+    this.heroChosen = true;
+    if (c !== this.state.character) this.setHero(0, c);
+    this.goToLevel(levelId, start);
+  }
+
+  /** v0.4.73 (owner C, D): a CLEARED file picked on its file box: (the instructions,) the world box. */
+  openClearedFile(files: ClassicFilesScene, f: ClearedFile): void {
+    openClearedFile(this, files, f);
+  }
+
+  /** v0.4.73 (48A): a replayed level cleared (or left by a warp zone): its world's level box. */
+  private replayCleared(): void {
+    this.leaveReplay('next');
+  }
+
+  /**
+   * Leaves the level replay for its CLEARED file: the file box on the file ('files'), or that
+   * world's level box on the level played ('levels') or on the one after it ('next': a clear).
+   */
+  leaveReplay(to: 'files' | 'levels' | 'next'): void {
+    const rp = this.replay;
+    this.leaveRun();
+    this.scenes.clear();
+    if (!rp) return this.showClassicMenu();
+    if (to === 'files') {
+      this.showClassicFiles(rp.ref.set, rp.ref.slot);
+      return;
+    }
+    showReplayLevels(this, rp.ref, rp.world, rp.stage, to === 'next');
   }
 
   /**
@@ -2758,8 +3153,7 @@ export class Game {
    */
   private leaveClassicTitle(): void {
     this.scenes.pop();
-    // Every scene opened from the CLASSIC title goes with it, however deep (Options > Cheats >
-    // Level select > Go leaves the select over all of them).
+    // Every scene opened from the CLASSIC title goes with it, however deep.
     const isTitle = (sc: unknown) => sc instanceof ClassicTitleScene || sc instanceof ClassicMenuScene;
     while (this.scenes.find(isTitle)) this.scenes.pop();
   }
@@ -2783,7 +3177,14 @@ export class Game {
   classicSelect(
     levelId: string,
     back: () => void,
-    run: { file?: ClassicFileRef; rules?: ClassicFileRules; practice?: boolean } = {},
+    run: {
+      file?: ClassicFileRef;
+      rules?: ClassicFileRules;
+      practice?: boolean;
+      /** v0.4.73: a CLEARED file's level replay (with practice), and its file's Tutorials seen. */
+      replay?: ReplayRun;
+      tutorialsSeen?: readonly string[];
+    } = {},
   ): void {
     // The run's rules are set before the pick, so the roster (Game.roster) offers the Classic
     // extras on the very first select.
@@ -2795,6 +3196,10 @@ export class Game {
     this.classicFile = run.file ? { set: run.file.set, slot: run.file.slot } : null;
     this.runFileRules = run.rules ? copyFileRules(run.rules) : null;
     this.practiceRun = run.practice === true;
+    this.replay = run.practice === true && run.replay ? { ...run.replay } : null;
+    if (run.tutorialsSeen) this.classicTutorials.restore(run.tutorialsSeen);
+    this.runWorlds = [];
+    this.runToken = newRunToken();
     this.fileContinues = 0;
     this.classicDifficulty = this.classicRunRules.difficulty;
     this.runRules = this.classicRules;
@@ -2857,21 +3262,7 @@ export class Game {
    */
   private showClassicUnlocks(): void {
     const id = this.cheatUnlocks.shift();
-    if (!id && this.levelSelectUnlocked) {
-      // The Level Select cheat (G-007): its own card, last (MessageBoxMessages UNLOCKED_CHEAT_).
-      this.levelSelectUnlocked = false;
-      const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
-      this.deps.ctx.audio.sfx('1up');
-      this.deps.announcer?.say(`You unlocked the Level Select cheat! ${ok}.`);
-      this.scenes.clear();
-      this.scenes.push(
-        new MessageScene(this, ['YOU UNLOCKED', 'LEVEL SELECT', 'CHEAT!', '', ok], () =>
-          this.showClassicUnlocks(),
-        ),
-      );
-      return;
-    }
-    if (!id) return this.showTitle();
+    if (!id) return this.afterClassicBeat();
     const lines = unlockedLines(id);
     const ok = fontText(`PRESS ${abilityHint(this, 'OK', 'jump')}`);
     this.deps.ctx.audio.sfx('1up');
@@ -2987,6 +3378,8 @@ export class Game {
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
   goToLevel(levelId: string, start: LevelStart): void {
     if (this.chapterBlocked(levelId)) return this.chapterGateBack();
+    // v0.4.73 (item 60): the assists this level plays with (a file's Advanced cheats, or dev's).
+    this.applyAssists();
     let level: LevelData;
     try {
       level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
@@ -3121,6 +3514,8 @@ export class Game {
    * coins and the checkpoint are kept. Dev-mode starts respawn straight away.
    */
   respawn(levelId: string, start: LevelStart, player = 0): void {
+    // v0.4.73: a replayed level's death has its own box (RETRY, SELECT CHARACTER, RETURN TO MENU).
+    if (this.replayRun) return this.replayDied(levelId, start);
     this.selectLevel = levelId;
     // G-008: the slot follows the death (its lives) before the select, so quitting there resumes it.
     if (this.keepsResume) this.keepResume(levelId);
@@ -3139,7 +3534,8 @@ export class Game {
     // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
     if (this.classicRun) {
       const choice = this.classicHeroChoice(false);
-      if (choice !== 'select') {
+      // v0.4.73 (item 66): Single hero keeps the hero, unless no select offers it now.
+      if (choice === 'random' || (choice === 'keep' && !this.heroUnoffered(current))) {
         this.setHero(0, choice === 'random' ? this.singleRandomHero() : current);
         return then();
       }

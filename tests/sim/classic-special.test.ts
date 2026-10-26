@@ -18,7 +18,6 @@ import { CharacterSelectScene } from '@game/scenes/character-select';
 import { CreditsScene } from '@game/scenes/credits';
 import { LevelScene } from '@game/scenes/level';
 import { newFile } from './classic-files-nav';
-import { LevelSelectScene, levelSelectTarget } from '@game/scenes/level-select-cheat';
 import type { MenuItem } from '@game/scenes/menu';
 import { CARD_GUARD_FRAMES, MessageScene } from '@game/scenes/message';
 import {
@@ -235,18 +234,6 @@ describe('G-020 / D3: the CLASSIC menu entry and its order', () => {
     expect(h.game.ctx.mapDifficulty).toBe('easy');
     expect(S(h).classicMapDifficulty).toBe('normal');
     expect(h.said.some((t) => /World 1-1/.test(t))).toBe(true);
-  });
-
-  it('the Level Select cheat offers it with its eight worlds', () => {
-    const h = classic();
-    S(h).classicCheats.levelSelect = true;
-    const set = MAP_SETS[1];
-    expect(set?.lastWorld).toBe(8);
-    h.game.scenes.push(new LevelSelectScene(h.game, () => h.game.scenes.pop()));
-    h.idle(8);
-    h.tap('right');
-    expect(items(h.top())[0]?.value?.()).toBe('Special');
-    expect(levelSelectTarget(h.game, set as never, 3, 1)).toBe('sp-3-1');
   });
 });
 
