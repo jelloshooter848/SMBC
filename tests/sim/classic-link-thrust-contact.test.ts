@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { px } from '@engine/math/units';
+import { px, velToSub } from '@engine/math/units';
 import { LINK } from '@game/characters/link';
 import { Goomba } from '@game/entities/enemies/goomba';
 import { Koopa } from '@game/entities/enemies/koopa';
+import { Podoboo } from '@game/entities/enemies/podoboo';
 import type { Enemy } from '@game/entities/enemies/enemy';
 import { runSim } from '@game/sim/headless';
 import type { Action } from '@engine/input/actions';
@@ -23,6 +24,8 @@ interface Result {
   hurt: boolean;
   bounced: boolean;
   contact: boolean;
+  /** Hurt on the frame it first touches it, or the next (not later, off the ground or a second pass). */
+  hurtAtContact: boolean;
 }
 
 /** The enemy, held still where it is put (an enemy that walks off would muddy the sweep). */
@@ -46,7 +49,8 @@ function thrust(
   const e = make();
   const ex = px(20 * 16 + 2);
   const ey = dir === 'down' ? px(13 * 16) - e.body.h : px(9 * 16) - e.body.h;
-  const res: Result = { hits: 0, hurt: false, bounced: false, contact: false };
+  const res: Result = { hits: 0, hurt: false, bounced: false, contact: false, hurtAtContact: false };
+  let touchedAt = -1;
   let hitY: number | null = null;
   const hit = e.hit.bind(e);
   e.hit = (src, w) => {
@@ -82,6 +86,9 @@ function thrust(
         hb.y < e.body.y + e.body.h &&
         hb.y + hb.h > e.body.y;
       if (over || res.hits > 0) res.contact = true;
+      if (res.contact && touchedAt < 0) touchedAt = f;
+      if (touchedAt >= 0 && f <= touchedAt + 1 && (p.invuln > 0 || p.powerState !== 'big'))
+        res.hurtAtContact = true;
       // After the hit: down, back up off it (the thrust bounce); up, the rise stopped.
       if (hitY !== null && dir === 'down' && b.y < hitY - px(4)) res.bounced = true;
       if (hitY !== null && dir === 'up' && b.vy >= 0) res.bounced = true;
@@ -137,6 +144,60 @@ describe('item 104: Classic Link thrusts by body contact', () => {
       expect(r.contact, `${dx}`).toBe(true);
       // Body contact as usual (Link.hitEnemy skips landAttack for it): the shell is kicked.
       expect(r.hits, `${dx}`).toBe(0);
+    }
+  });
+
+  it('a Podoboo (immune to the sword) is plain contact: landing on it off the sword box hurts', () => {
+    for (const dx of [-10, 9, 10]) {
+      const r = thrust('down', dx, 'classic', () => new Podoboo(0, 0));
+      expect(r.contact, `${dx}`).toBe(true);
+      expect(r.hurtAtContact, `${dx}`).toBe(true);
+    }
+  });
+
+  it('jumping into an enemy from the side while holding Up hurts (not from below)', () => {
+    // The review's case: rising with the up-thrust on, a sliver of overlap at his front, his head
+    // 8 px below the enemy's top. Side contact, so a hurt (the original's takeDamage).
+    for (const facing of [1, -1] as const) {
+      const e = new Goomba(0, 0);
+      let placed = -1;
+      let hurt = false;
+      let hits = 0;
+      const hit = e.hit.bind(e);
+      e.hit = (src, w) => {
+        hits++;
+        return hit(src, w);
+      };
+      runSim({
+        level: flatLevel({}, 60),
+        character: LINK,
+        rules: 'classic',
+        script: { steps: [] },
+        maxFrames: 40,
+        state: { powerState: 'big' },
+        controller: (w: World, f: number): Action[] => {
+          const p = w.player;
+          const b = p.body;
+          if (f === 0) {
+            w.spawn(e);
+            e.activated = true;
+            hold(e, px(40 * 16), px(5 * 16));
+            p.facing = facing;
+          }
+          // Late in the rise (under 3 px a frame), as in the review's case.
+          if (placed < 0 && p.scratch.upThrust && b.vy < 0 && velToSub(-b.vy) < px(3)) {
+            placed = f;
+            const hb = p.hurtBody();
+            const x = facing > 0 ? hb.x + hb.w - px(0.5) : hb.x - e.body.w + px(0.5);
+            hold(e, x, hb.y - px(8));
+          } else if (placed >= 0) hold(e, e.body.x, e.body.y);
+          if (placed >= 0 && f <= placed + 2 && (p.invuln > 0 || p.powerState !== 'big')) hurt = true;
+          return f >= 2 ? ['jump', 'up'] : [];
+        },
+      });
+      expect(placed, `facing ${facing}`).toBeGreaterThan(0);
+      expect(hits, `facing ${facing}`).toBe(0);
+      expect(hurt, `facing ${facing}`).toBe(true);
     }
   });
 

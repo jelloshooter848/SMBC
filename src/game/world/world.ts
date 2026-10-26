@@ -3249,9 +3249,8 @@ export class World {
   }
 
   /** A melee hit on `e`, once until the hero's melee ends or re-arms (`hit<id>` in scratch). */
-  private meleeHit(p: Player, e: Enemy): void {
-    if (p.scratch[`hit${e.id}`]) return;
-    p.scratch[`hit${e.id}`] = 1;
+  private meleeHit(p: Player, e: Enemy): Reaction | null {
+    if (p.scratch[`hit${e.id}`]) return null;
     const src: DamageSource = p.def.behaviour.meleeDamage?.(p, e) ?? {
       kind: 'sword',
       amount: 1,
@@ -3260,18 +3259,23 @@ export class World {
       by: p,
     };
     const res = e.hit(src, this);
+    // 2: it shrugged the hit off (thrustContact lets its body contact hurt as usual).
+    p.scratch[`hit${e.id}`] = res === 'immune' ? 2 : 1;
     this.scoreKill(e, src.kind, res);
     if (res === 'hp') this.audio.sfx(this.hitSound(src));
     if (res !== 'immune') p.def.behaviour.onMeleeHit?.(p, e, this);
+    return res;
   }
 
   /**
    * CharacterDef.thrustContact (Classic Link, item 104): his body meeting `e` while thrusting
    * into it (down onto it from above, falling; up into it from below, rising) is the thrust's
-   * hit, never a hurt (Link.hitEnemy: landAttack). True when that handled the contact.
+   * hit, never a hurt (Link.hitEnemy: landAttack). True when that handled the contact. A frozen
+   * enemy is out of melee's reach (HP-C17), and one immune to the sword (a Podoboo, a fire bar:
+   * projectiles to the original) is plain contact.
    */
   private thrustContact(p: Player, e: Enemy): boolean {
-    if (!p.def.thrustContact || this.thrustIgnoresShell(p, e)) return false;
+    if (!p.def.thrustContact || e.frozen > 0 || this.thrustIgnoresShell(p, e)) return false;
     const pb = p.body;
     const eb = e.body;
     const eh = eb.h;
@@ -3281,11 +3285,12 @@ export class World {
       p.fallSpeed > 0 &&
       feet - eb.y <= eh * 0.8 &&
       pb.prevBottom <= eb.y + eh * 0.6;
-    const up =
-      !!p.scratch.upThrust && pb.vy < 0 && pb.y >= eb.y + eh * 0.2 && pb.prevBottom - pb.h >= eb.y + eh * 0.4;
+    // Up: from strictly below, his top a frame ago at or under the enemy's bottom, give or take
+    // one frame's rise (a jump into its side is plain contact).
+    const up = !!p.scratch.upThrust && pb.vy < 0 && pb.prevBottom - pb.h >= eb.y + eh - velToSub(-pb.vy);
     if (!down && !up) return false;
-    this.meleeHit(p, e);
-    return true;
+    const res = this.meleeHit(p, e);
+    return res === null ? p.scratch[`hit${e.id}`] !== 2 : res !== 'immune';
   }
 
   private enemyVsEnemy(): void {

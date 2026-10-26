@@ -354,7 +354,7 @@ export interface CharacterDef {
    * Body contact while thrusting is the thrust's hit (Classic Link, v0.4.73 item 104; Link.hitEnemy
    * landAttack): falling onto an enemy from above with `scratch.downThrust`, or rising into one from
    * below with `scratch.upThrust`, hits it as the sword does (meleeDamage, onMeleeHit: the bounce,
-   * once a landing) and never hurts him. A still or just-kicked shell is plain contact.
+   * once per enemy per landing) and never hurts him. A still or just-kicked shell is plain contact.
    */
   thrustContact?: true;
   /**
