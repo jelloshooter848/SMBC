@@ -78,7 +78,7 @@ export interface Settings {
   homeScreen?: HomeScreenFlags;
   /**
    * The rules a Classic mode run plays (title > CLASSIC > Options > Rules): 'classic' (the
-   * original SMBC's, the default) or 'campaign'. Campaign files always play 'campaign'.
+   * original SMBC's, the default) or 'campaign'. A campaign file always plays Campaign rules.
    */
   classicRules: ClassicRules;
   /**

@@ -141,9 +141,10 @@ export interface GameContext {
   classicCheats?: CheatFlags;
   /**
    * Classic mode's options (Settings.classic: More Settings, Customize Weapons), present only in a
-   * Classic mode run with Classic rules (Game.classicOptions); absent everywhere else (the
-   * campaign, Campaign rules, every hand-built context), where nothing reads them. A World reads it
-   * once, in its constructor (World.classic); absent there means the original's values.
+   * Classic mode run with Classic rules (Game.classicOptions); absent everywhere else (a campaign
+   * file, Campaign rules in Classic mode, every hand-built context), where nothing reads them. A
+   * World reads it once, in its constructor (World.classic); absent there means the original's
+   * values.
    */
   classic?: ClassicSettings;
   /**

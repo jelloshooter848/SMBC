@@ -765,8 +765,8 @@ export class Game {
   /**
    * The select screen's slots: in a Classic-rules run, the original's eleven heroes in its order
    * (registry CLASSIC_SLOTS), then the released heroes the original never had
-   * (expansionHeroOffered); every other look is a skin on one of them. Any other run (the campaign, Campaign
-   * rules): the roster itself, untouched.
+   * (expansionHeroOffered); every other look is a skin on one of them. Any other run (a campaign file, or
+   * Campaign rules in Classic mode): the roster itself, untouched.
    */
   get heroSlots(): CharacterDef[] {
     return this.withoutDisabled(this.slotsFor(this.liveRules));
