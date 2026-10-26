@@ -18,6 +18,7 @@ import { ClassicBox, closeTo, type ClassicFilesScene } from './original-files-me
 import { MAP_SETS, type MapSet } from './original-game';
 import { levelSelectTarget, worldName } from './level-select-cheat';
 import { QUIT_BOX_CY } from './quit-run';
+import { advancedCheatsItem } from './advanced-cheats-menu';
 import { DEFAULT_SELECT_THEME, drawPanel } from './select-grid';
 
 /*
@@ -222,9 +223,16 @@ export function clearedNote(
   result: ClearResult,
 ): ClassicNoteScene {
   const beat = `You beat ${setOf(ref.set).label}!`;
+  // v0.4.73 (item 60): beaten on Hard (the file as stored says so): its Advanced cheats.
+  const advanced =
+    result === 'cleared' && game.advancedCheatsOf(ref) !== null ? [ADVANCED_UNLOCKED(ref.slot)] : [];
   const pages =
     result === 'cleared'
-      ? [`${beat} File ${ref.slot} is cleared.`, 'Pick a cleared file to replay any level of this map set.']
+      ? [
+          `${beat} File ${ref.slot} is cleared.`,
+          'Pick a cleared file to replay any level of this map set.',
+          ...advanced,
+        ]
       : result === 'failed'
         ? [
             `${beat} File ${ref.slot} could not be saved as cleared.`,
@@ -240,6 +248,19 @@ export function clearedNote(
   });
 }
 
+/** v0.4.73 (item 60): the unlock, said after the credits with the cleared message. */
+export const ADVANCED_UNLOCKED = (slot: number) =>
+  `Beating it on Hard unlocked ADVANCED CHEATS for File ${slot} only!`;
+
+/**
+ * v0.4.73 (item 60): what Advanced cheats are, the first time the file is picked after the
+ * unlock (once per file: Game.setAdvancedCheats marks it read on OK).
+ */
+export const ADVANCED_HELP: readonly string[] = [
+  "This file has ADVANCED CHEATS: every assist, for this file's replays only.",
+  'Turn them on in ADVANCED CHEATS, on the world box or in the pause menu.',
+];
+
 /** D: the instructions, before the first world box any CLEARED file opens. */
 export const REPLAY_HELP: readonly string[] = [
   "A cleared file lets you replay any level of its map set, with that file's rules.",
@@ -250,7 +271,26 @@ export const REPLAY_HELP: readonly string[] = [
 
 /** C, D: a CLEARED file picked on its file box: the instructions the first time, then its worlds. */
 export function openClearedFile(game: Game, files: ClassicFilesScene, f: ClearedFile): void {
-  const worlds = () => game.scenes.push(new ClassicReplayWorldsScene(game, files, f));
+  const ref: ClassicFileRef = { set: f.set, slot: f.slot };
+  const toWorlds = () => game.scenes.push(new ClassicReplayWorldsScene(game, files, f));
+  // v0.4.73 (item 60): the file's Advanced cheats box, once (OK marks it read; BACK does not).
+  const worlds = () => {
+    const adv = game.advancedCheatsOf(ref);
+    // Review fix 1: OK marks only the file this box was opened for.
+    const id = game.advancedCheatsId(ref) ?? '';
+    if (!adv || adv.seen) return toWorlds();
+    game.scenes.push(
+      new ClassicNoteScene(game, ADVANCED_HELP, {
+        under: files,
+        lead: `File ${f.slot}, advanced cheats`,
+        onDone: () => {
+          game.setAdvancedCheats(ref, id, { seen: true });
+          toWorlds();
+        },
+        onBack: () => files.comeBack(),
+      }),
+    );
+  };
   if (helpRead(game)) return worlds();
   game.scenes.push(
     new ClassicNoteScene(game, REPLAY_HELP, {
@@ -290,6 +330,15 @@ export class ClassicReplayWorldsScene extends ClassicBox {
       select: () => this.openWorld(w),
       hint: 'Choose a level of it',
     }));
+    // v0.4.73 (item 60): beaten on Hard: its Advanced cheats, before BACK.
+    const ref: ClassicFileRef = { set: file.set, slot: file.slot };
+    if (game.advancedCheatsOf(ref))
+      items.push(
+        advancedCheatsItem(game, ref, () => {
+          closeTo(game, this);
+          this.comeBack();
+        }),
+      );
     items.push({ label: 'Back', select: () => this.onBack?.(), hint: 'To the files' });
     this.setItems(items);
     if (focus !== undefined) this.index = Math.max(0, worlds.indexOf(focus));
@@ -396,7 +445,13 @@ export class ReplayDeathScene extends MenuScene {
       true,
     );
     this.setItems([
-      { label: 'Retry', select: () => game.replayRetry(levelId, start), hint: 'Play the level again' },
+      {
+        label: 'Retry',
+        // v0.4.73 (item 66): a hero no select offers now (dev mode turned off) picks again.
+        select: () =>
+          game.heroUnoffered(game.state.character) ? this.pickHero() : game.replayRetry(levelId, start),
+        hint: 'Play the level again',
+      },
       {
         label: 'Select character',
         select: () => this.pickHero(),

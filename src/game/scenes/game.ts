@@ -31,6 +31,7 @@ import { INTRO_FRAMES, INTRO_FRAMES_SINGLE, IntroScene } from './intro';
 import { resumeOf, type ClassicResume } from '../run-resume';
 import {
   classicFileKept,
+  classicFileKey,
   copyFileRules,
   eraseClassicFile,
   hasClassicFile,
@@ -59,9 +60,12 @@ import {
   type ClassicCheatId,
   type ClassicCheatStat,
   type ClassicDevToggles,
+  type AssistSettings,
   type MapDifficulty,
   type Settings,
 } from '@engine/save/settings';
+import { storageReadable } from '@engine/save/storage';
+import { ADVANCED_OFF, readAdvanced, writeAdvanced, type AdvancedState } from '../advanced-cheats';
 import { addCheatStat, cheatInfo, unlockedLines, unlockEarned, type CheatEvent } from '../cheats';
 import type { ClassicSettings } from '@engine/save/original-options';
 import type { InputManager } from '@engine/input/input-manager';
@@ -165,6 +169,11 @@ export interface GameDeps {
   /** Live settings object and a callback that applies + persists it (wired by main). */
   settings?: Settings;
   applySettings?: () => void;
+  /**
+   * v0.4.73 (item 60): puts Game.liveAssists into ctx.assist (and slow motion into the loop),
+   * main.ts; applySettings does it too. Absent in the sims: ctx.assist is left as a test sets it.
+   */
+  applyAssists?: () => void;
   input?: InputManager;
   announcer?: Announcer;
   /** Every playable level id (built-in and custom), for the developer level select. */
@@ -826,6 +835,44 @@ export class Game {
   devOnlyHero(c: CharacterDef): boolean {
     const id = this.slotOf(c).id;
     return EXPANSION_HEROES.includes(id) && !this.heroReleased(id);
+  }
+
+  /**
+   * v0.4.73 (item 66): in a Classic mode run, hero `c` is one the select does not offer now (an
+   * unreleased Expansion hero after dev mode was turned off mid-run, a hero toggled off): the
+   * next pick shows the select, even where the Game mode keeps the hero.
+   */
+  heroUnoffered(c: CharacterDef): boolean {
+    if (!this.classicRun || this.campaign !== null) return false;
+    return !this.selectSlots.includes(this.slotOf(c));
+  }
+
+  /**
+   * v0.4.73 (item 66, dev only; review fix 4, the safe version): dev mode was turned off mid-run
+   * while an unreleased Expansion hero plays (LevelScene asks every frame). That life ends
+   * WITHOUT being charged (no life lost, no Survival fall, so never a GAME OVER), never while
+   * play is held (a flagpole or castle's end, a pipe: World.inControl), and the hero select
+   * follows without that hero (a replay: its death box, whose RETRY picks again). The run is
+   * written first with the hero still playing, so its file keeps the devHero mark (runNow).
+   */
+  endUnreleasedLife(world: World, level: LevelData): void {
+    if (this.devMode || !this.classicRun || this.campaign !== null) return;
+    const c = this.state.character;
+    if (!this.devOnlyHero(c) || !this.heroUnoffered(c)) return;
+    if (!world.inControl || world.player.dead) return;
+    const s = this.state;
+    this.resetAfterDeath();
+    s.time = null;
+    const cp = s.checkpoint;
+    const main = cp?.level ?? level.parent ?? level.id;
+    const at = cp ? main : this.firstArea(main);
+    const start: LevelStart = cp
+      ? { x: cp.x, y: cp.y ?? 12, mode: 'stand', clearEnemies: 'all' }
+      : { mode: 'stand' };
+    if (this.replayRun) return this.replayDied(at, start);
+    this.selectLevel = at;
+    if (this.keepsResume) this.keepResume(at);
+    this.chooseHero(0, () => this.goToLevel(at, start));
   }
 
   /** The select slot hero `c` plays in (itself, or the hero it is a skin of). */
@@ -1774,7 +1821,8 @@ export class Game {
     // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
     if (this.classicRun) {
       const choice = this.classicHeroChoice(false);
-      if (choice === 'keep') return go();
+      // v0.4.73 (item 66): a hero no select offers now picks again.
+      if (choice === 'keep' && !this.heroUnoffered(s.character)) return go();
       if (choice === 'random') {
         const c = this.singleRandomHero();
         if (c !== s.character) this.setHero(0, c);
@@ -2148,7 +2196,8 @@ export class Game {
   ): void {
     // 31e: an empty file only, as startClassicFile: a used or unreadable one is emptied only
     // through ERASE FILE, never started over.
-    if (file && this.classicFileState(file.ref) !== 'empty') return;
+    // v0.4.73 (item 69): nor while storage cannot be read (every file would read as empty).
+    if (file && (!storageReadable() || this.classicFileState(file.ref) !== 'empty')) return;
     this.pendingLevel = null;
     if (file) {
       this.classicFile = { set: file.ref.set, slot: file.ref.slot };
@@ -2438,6 +2487,8 @@ export class Game {
     this.replay = null;
     this.clearedNews = null;
     this.beatRecorded = false;
+    // v0.4.73 (item 60): a file's Advanced cheats end with its run.
+    this.applyAssists();
   }
 
   /**
@@ -2612,7 +2663,9 @@ export class Game {
   /** G-008, B-L: the run is over (its credits, or a game over with nowhere to go on): its file is empty. */
   private dropResume(): void {
     const ref = this.classicFile;
-    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run.
+    // v0.4.73 (47A): a CLEARED file (another tab's clear) is never emptied by a run. Review fix
+    // 2: nor anything storage cannot show now (it may be CLEARED; reads throwing hide it).
+    if (!storageReadable()) return;
     if (ref && !classicFileKept(ref)) eraseClassicFile(ref);
   }
 
@@ -2718,8 +2771,9 @@ export class Game {
    * empty, and BACK from the select (`back`) goes back to the rules box.
    */
   startClassicFile(ref: ClassicFileRef, rules: ClassicFileRules, back: () => void): void {
-    // An empty file only: a used or unreadable one is emptied only through ERASE FILE.
-    if (this.classicFileState(ref) !== 'empty') return;
+    // An empty file only: a used or unreadable one is emptied only through ERASE FILE. Item 69:
+    // storage that cannot be read shows every file as empty, so nothing starts then.
+    if (!storageReadable() || this.classicFileState(ref) !== 'empty') return;
     const set = MAP_SETS.find((m) => m.id === ref.set) ?? (MAP_SETS[0] as (typeof MAP_SETS)[number]);
     this.classicSelect(set.start, back, { file: ref, rules: copyFileRules(rules) });
   }
@@ -2859,6 +2913,77 @@ export class Game {
   private classicQuitPick(): { onCancel?: () => void } {
     if (!this.classicRun || this.campaign !== null || this.playtestDone) return {};
     return { onCancel: () => confirmQuitRun(this, 'No. Choose your hero.') };
+  }
+
+  /** v0.4.73 (item 60): Advanced cheats storage refused, kept for this session (key|fingerprint). */
+  private advancedMemory = new Map<string, AdvancedState>();
+
+  /**
+   * v0.4.73 (item 60): CLEARED file `ref`'s ADVANCED CHEATS (advanced-cheats.ts), or null when it
+   * has none (not CLEARED, not beaten on Hard, or storage cannot be read).
+   */
+  advancedCheatsOf(ref: ClassicFileRef): AdvancedState | null {
+    const r = readAdvanced(ref);
+    if (!r) return null;
+    const kept = this.advancedMemory.get(`${classicFileKey(ref)}|${r.fp}`);
+    const st = kept ?? r.state;
+    return { seen: st.seen, assist: { ...st.assist } };
+  }
+
+  /**
+   * v0.4.73 (item 60, review fix 1): which CLEARED file `ref` holds now (its fingerprint), for a
+   * page, box or row to capture as it opens; null when it has no Advanced cheats.
+   */
+  advancedCheatsId(ref: ClassicFileRef): string | null {
+    return readAdvanced(ref)?.fp ?? null;
+  }
+
+  /**
+   * v0.4.73 (item 60): changes file `ref`'s Advanced cheats (its values, or its box read), applied
+   * at once. `id` is the file the caller opened for (advancedCheatsId, captured when its page,
+   * box or row opened): when the slot holds another file now (another tab erased it and cleared
+   * it again), nothing is written (review fix 1). False then, when it has none, a later
+   * version's data is there, or storage refused it (then this session keeps the change).
+   */
+  setAdvancedCheats(
+    ref: ClassicFileRef,
+    id: string,
+    change: { seen?: true; assist?: AssistSettings },
+  ): boolean {
+    const r = readAdvanced(ref);
+    if (!r || r.newer || r.fp !== id) return false;
+    const now = this.advancedCheatsOf(ref) ?? r.state;
+    const next: AdvancedState = {
+      seen: change.seen ?? now.seen,
+      assist: { ...(change.assist ?? now.assist) },
+    };
+    const key = `${classicFileKey(ref)}|${id}`;
+    const ok = writeAdvanced(ref, id, next);
+    if (ok) this.advancedMemory.delete(key);
+    else this.advancedMemory.set(key, next);
+    this.applyAssists();
+    return ok;
+  }
+
+  /**
+   * v0.4.73 (item 60): the one place that decides the assists in play. Dev mode on: the dev
+   * Assists, as always. Off: a CLEARED file's level replay plays its Advanced cheats; anything
+   * else (other files, practice, the campaign) plays with every assist off.
+   */
+  liveAssists(): AssistSettings {
+    const s = this.deps.settings;
+    if (s?.dev) return { ...s.assist };
+    const rp = this.replayRun;
+    if (rp && this.campaign === null) {
+      const a = this.advancedCheatsOf(rp.ref);
+      if (a) return { ...a.assist };
+    }
+    return { ...ADVANCED_OFF };
+  }
+
+  /** Puts liveAssists into play (main.ts; nothing in the sims without the hook). */
+  applyAssists(): void {
+    this.deps.applyAssists?.();
   }
 
   /**
@@ -3239,6 +3364,8 @@ export class Game {
   /** Intro card then the level. Levels that don't exist yet end the run with a thank-you card. */
   goToLevel(levelId: string, start: LevelStart): void {
     if (this.chapterBlocked(levelId)) return this.chapterGateBack();
+    // v0.4.73 (item 60): the assists this level plays with (a file's Advanced cheats, or dev's).
+    this.applyAssists();
     let level: LevelData;
     try {
       level = this.sharedLevel?.id === levelId ? this.sharedLevel : this.deps.getLevel(levelId);
@@ -3393,7 +3520,8 @@ export class Game {
     // Classic mode's Game mode may skip the select screen (classicHeroChoice); one player.
     if (this.classicRun) {
       const choice = this.classicHeroChoice(false);
-      if (choice !== 'select') {
+      // v0.4.73 (item 66): Single hero keeps the hero, unless no select offers it now.
+      if (choice === 'random' || (choice === 'keep' && !this.heroUnoffered(current))) {
         this.setHero(0, choice === 'random' ? this.singleRandomHero() : current);
         return then();
       }

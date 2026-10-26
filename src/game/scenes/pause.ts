@@ -4,6 +4,7 @@ import { confirmQuitRun } from './quit-run';
 import { DevMenuScene } from './dev';
 import { CheatsScene } from './cheats-menu';
 import { LevelSelectScene } from './level-select-cheat';
+import { advancedCheatsItem } from './advanced-cheats-menu';
 import { GuideScene } from './guide';
 import type { Game } from './game';
 import type { World } from '../world/world';
@@ -87,6 +88,9 @@ export class PauseScene extends MenuScene {
             ),
           hint: 'Every original cheat, in developer mode',
         });
+      // v0.4.73 (item 60): a CLEARED file's replay, beaten on Hard: its Advanced cheats.
+      const adv = game.replayRun?.ref;
+      if (adv && game.advancedCheatsOf(adv)) items.push(advancedCheatsItem(game, adv));
       if (game.stageRound) items.push(this.giveUp());
       // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
       items.push({
