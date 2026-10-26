@@ -649,7 +649,7 @@ export class ClassicFileRulesScene extends ClassicBox {
       closeTo(game, below);
       below.comeBack();
     });
-    this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts. Left and right to change`;
+    this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts`;
     this.refresh();
     // v0.4.73 item 53 (owner): the box opens on START, so a file with the original's rules starts
     // at once; the settings are above it (UP). 38c: back from the new game's hero select it is on
@@ -658,6 +658,12 @@ export class ClassicFileRulesScene extends ClassicBox {
       0,
       this.items.findIndex((i) => i.label === 'Start'),
     );
+  }
+
+  /** Item 135: "Left and right to change" only on a row they change (not START, where it opens). */
+  protected override spoken(): string {
+    const line = super.spoken();
+    return this.items[this.index]?.adjust ? `${line.replace(/\.$/, '')}. Left and right to change` : line;
   }
 
   private get options(): OptionStore {
