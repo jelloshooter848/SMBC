@@ -326,7 +326,7 @@ export class TitleScene extends MenuScene {
         label: 'Options',
         // 38f: back from Options, the title says its focused row again.
         select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game))),
-        hint: 'Settings, how to play, custom levels and the level editor',
+        hint: 'Settings, custom levels and the level editor',
       },
     ];
     if (game.devMode) items.push({ label: 'Dev mode', select: () => game.showDevMenu() });

@@ -67,7 +67,7 @@ describe('settings', () => {
 
   it('ignores values of the wrong type', () => {
     store.set(SETTINGS_KEY, JSON.stringify({ v: 1, video: { integerScale: 'yes' } }));
-    expect(loadSettings().video.integerScale).toBe(true);
+    expect(loadSettings().video.integerScale).toBe(false); // FILL, the default (0.4.73)
   });
 });
 

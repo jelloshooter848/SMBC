@@ -123,8 +123,16 @@ describe('player-facing text names abilities, never button letters', () => {
     const options = new OptionsScene(game, () => game.scenes.pop());
     game.scenes.push(options);
     texts.push(...menuTexts(options));
-    for (const label of ['Video', 'Audio', 'Controls', 'How to play']) {
-      const it = (options as unknown as { items: MenuItem[] }).items.find((i) => i.label === label);
+    // How to play is in the Campaign's (in-game) Options, not the title's (0.4.73, item 81).
+    const inGame = new OptionsScene(game, () => game.scenes.pop(), true);
+    for (const [page, label] of [
+      [options, 'Video'],
+      [options, 'Audio'],
+      [options, 'Controls'],
+      [inGame, 'How to play'],
+    ] as const) {
+      const it = (page as unknown as { items: MenuItem[] }).items.find((i) => i.label === label);
+      expect(it, label).toBeDefined();
       it?.select?.();
       texts.push(...menuTexts(game.scenes.top as MenuScene));
       game.scenes.pop();

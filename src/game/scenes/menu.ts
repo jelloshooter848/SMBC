@@ -185,7 +185,7 @@ export class MenuScene implements Scene {
   }
 
   /**
-   * The page's title as it is said on entry, before the focused row ("Video. Integer scale: On"),
+   * The page's title as it is said on entry, before the focused row ("Video. Picture size: Fill"),
    * as the boxes say theirs; null: the focused row only.
    */
   protected entryTitle: string | null = null;
@@ -197,7 +197,7 @@ export class MenuScene implements Scene {
   }
 
   /** The focused row as said: its label, value and hint. */
-  private focusLine(): string {
+  protected focusLine(): string {
     const it = this.items[this.index];
     if (!it) return '';
     const v = it.value ? `: ${it.value()}` : '';

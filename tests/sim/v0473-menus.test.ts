@@ -494,8 +494,9 @@ describe('item 82: Classic Options > How to play is the Classic tutorial boxes',
     expect(h.top()).toBeInstanceOf(GuideIndexScene);
     pick(h, 'Mario');
     expect(h.top()).toBeInstanceOf(GuideScene);
+    // The world map's Options (translucent); the REMIX title's has no How to play (item 81).
     h.game.scenes.clear();
-    h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop()));
+    h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), true));
     pick(h, 'How to play');
     expect(h.top()).toBeInstanceOf(GuideIndexScene);
   });
