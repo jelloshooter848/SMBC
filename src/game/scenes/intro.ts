@@ -13,6 +13,7 @@ import { playedHero } from '../characters/registry';
 import { shownPortrait } from '../characters/character';
 import type { InputFrame } from '@engine/input/input-manager';
 import { CARD_GUARD_FRAMES } from './message';
+import { abilityHint } from './hints';
 import { wrapPrompt } from '../tutorial/stage-prompts';
 import { fontText } from '../hud/text';
 
@@ -111,7 +112,14 @@ export class IntroScene implements Scene {
     const lives = this.game.cardLives;
     if (lives !== null) r.text(font, `×  ${lives}`, 120, 120);
     // Item 142: the note, under the hero.
-    if (this.opts.note) drawFileNote(r, font, this.opts.note, 156);
+    if (this.opts.note) {
+      drawFileNote(r, font, this.opts.note, 156);
+      // Item 153: the card waits for OK: it says so (the bound key), once a press counts.
+      if (this.t > CARD_GUARD_FRAMES) {
+        const press = fontText(`PRESS ${abilityHint(this.game, 'OK', 'jump')}`);
+        r.text(font, press, (256 - press.length * 8) >> 1, 208);
+      }
+    }
     // The Classic rules tag, as the level will show it (TG-32).
     const rules = rulesOf(this.game.ctx);
     const heroes = [s.character, ...(s.character2 ? [s.character2] : [])].map((d) =>

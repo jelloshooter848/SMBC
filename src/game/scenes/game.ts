@@ -2595,6 +2595,16 @@ export class Game {
     this.fileUnreadEarly = false;
   }
 
+  /**
+   * Item 151: checks the run's file now (the Quit box, before any save was refused): taken by
+   * another window, the run saves no more and its note waits to be shown (takeFileNote).
+   */
+  checkRunFile(): void {
+    const ref = this.classicFile;
+    const claim = this.fileClaim;
+    if (ref && claim && this.keepsResume) this.checkFileLost(ref, claim);
+  }
+
   /** Item 142: this file run can no longer save to its file (another window, or a game there). */
   get runFileLost(): boolean {
     return this.fileLost;
@@ -3547,7 +3557,7 @@ export class Game {
     // Item 142: a file the run could not save to, said once with the card (shown on it too).
     const note = this.takeFileNote();
     this.deps.announcer?.say(
-      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}.${lives === null ? '' : ` ${lives} ${lives === 1 ? 'life' : 'lives'}.`}${note ? ` ${note}` : ''}`,
+      `${first}${hero}${spokenLevel(level.world, level.stage, this.state.campaignOrder)}.${lives === null ? '' : ` ${lives} ${lives === 1 ? 'life' : 'lives'}.`}${note ? ` ${note} ${abilityHint(this, 'OK', 'jump')} to go on.` : ''}`,
     );
     // A stage tutorial has no clock (LevelScene stops it): the card shows none either. Any
     // other level ends a tutorial's run (its exit, outside the campaign, leads on to 1-1).

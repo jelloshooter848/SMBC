@@ -1,7 +1,7 @@
 import type { PaletteMode } from '../gfx/palette';
 import type { PlayerBindings } from '../input/bindings';
 import { defaultBindings } from '../input/bindings';
-import { loadJson, saveJson } from './storage';
+import { loadJson, saveJson, storageIsStale } from './storage';
 import type { BeatDifficulty } from './progress';
 import { defaultClassicSettings, normaliseClassic, type ClassicSettings } from './original-options';
 
@@ -324,9 +324,21 @@ function merge<T>(base: T, over: unknown): T {
   return (typeof over === typeof base ? over : base) as T;
 }
 
+/**
+ * The settings as stored now, and remembered as this tab's own read of them (item 150: a later
+ * saveSettings of the returned object writes only what this tab changed since).
+ */
 export function loadSettings(): Settings {
-  let stored = loadJson<Record<string, unknown>>(SETTINGS_KEY);
-  if (!stored || typeof stored !== 'object') return defaultSettings();
+  const raw = loadJson<unknown>(SETTINGS_KEY);
+  const s = parseSettings(raw);
+  remember(s, raw);
+  return s;
+}
+
+/** Stored settings (any version, any damage) as this version's, every field normalised. */
+function parseSettings(raw: unknown): Settings {
+  let stored = raw as Record<string, unknown> | null;
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return defaultSettings();
   let v = Number(stored.v ?? 1);
   while (v < 1 + migrations.length) {
     const m = migrations[v - 1];
@@ -428,6 +440,159 @@ function fillBindings(b: PlayerBindings | null, player: number): PlayerBindings 
   };
 }
 
+/*
+ * Item 150 (owner-approved, save safety): two tabs share smbc.settings. A save re-reads what is
+ * stored and, when another tab wrote since this tab last read or wrote it, writes the merge of
+ * the two, field by field, by SETTINGS_MERGE:
+ * - 'pref': a preference: this tab's value only if this tab changed it since, else the stored.
+ * - 'each': each key of it is a 'pref' of its own (a video setting, a hero's skin...).
+ * - 'or': flags set once (cheat unlocks, games beaten, notes shown once): set in either stays set.
+ * - 'count': counts (the cheats' goals): the stored count plus what this tab added since.
+ * - 'max': a number that only grows: the larger.
+ * - 'union': ids collected (the old Tutorials list): every id from both.
+ * - an object: its fields, each by its own rule.
+ * Every field of Settings is named here (the type requires it, and a test checks it), so a new
+ * field cannot be forgotten. An 'or' or 'count' field never goes back down while another tab
+ * writes (that tab's copy brings it back): a future "reset" option for one needs its own data
+ * marker (as SAVE DATA's erase has), not a plain save. A SAVE DATA import or erase is not merged: a stale tab writes
+ * nothing and reloads (storage.ts, the data marker).
+ */
+export type MergeRule =
+  'pref' | 'each' | 'or' | 'count' | 'max' | 'union' | { readonly [k: string]: MergeRule };
+
+const CHEATS_MERGE: { readonly [K in keyof ClassicCheatsSettings]-?: MergeRule } = {
+  on: 'each',
+  unlocked: 'or',
+  stats: 'count',
+  beaten: 'or',
+  continuesUsed: 'max',
+};
+
+export const SETTINGS_MERGE: { readonly [K in keyof Settings]-?: MergeRule } = {
+  v: 'pref',
+  video: 'each',
+  audio: 'each',
+  input: 'each',
+  assist: 'each',
+  packs: 'pref',
+  announce: 'pref',
+  dev: 'pref',
+  devUnlock: 'pref',
+  backupReminders: 'pref',
+  homeScreen: 'or',
+  classicRules: 'pref',
+  classicMapDifficulty: 'pref',
+  classic: 'each',
+  classicDev: 'each',
+  classicSkins: 'each',
+  classicHeroesOff: 'pref',
+  classicTutorials: 'pref',
+  classicTutorialsSeen: 'union',
+  classicCheats: CHEATS_MERGE,
+};
+
+/** What this tab last read or wrote, per settings object: the stored text, and a copy. */
+const synced = new WeakMap<Settings, { text: string; copy: unknown }>();
+
+/** A merged count's cap (the cheats' own counts stop there: cheats.ts). */
+const MAX_MERGED_COUNT = 999999;
+
+let mergedHandler: ((s: Settings) => void) | null = null;
+
+/**
+ * Item 150 review: told when a save merged another tab's settings into `s` (main.ts: the live
+ * game takes them: volume, bindings, picture, packs), whoever saved (Options, a cheat-count
+ * flush, the cheats menu...).
+ */
+export function onSettingsMerged(fn: ((s: Settings) => void) | null): void {
+  mergedHandler = fn;
+}
+
+const clone = <T>(v: T): T => (v === undefined ? v : (JSON.parse(JSON.stringify(v)) as T));
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === 'object' && !Array.isArray(v);
+
+function remember(s: Settings, raw: unknown): void {
+  synced.set(s, { text: JSON.stringify(raw ?? null), copy: clone(s) });
+}
+
+/** One field: `mine` (this tab), `base` (as this tab last read or wrote it), `theirs` (stored). */
+function mergeField(rule: MergeRule, mine: unknown, base: unknown, theirs: unknown): unknown {
+  if (typeof rule === 'object' || rule === 'each' || rule === 'or' || rule === 'count') {
+    if (rule === 'or' && !isRecord(mine) && !isRecord(theirs)) return mine === true || theirs === true;
+    if (rule === 'count' && !isRecord(mine) && !isRecord(theirs)) {
+      const m = typeof mine === 'number' ? mine : 0;
+      const t = typeof theirs === 'number' ? theirs : 0;
+      // A count this tab's last read lacked: all of this tab's is new.
+      const b = typeof base === 'number' ? base : 0;
+      // Capped as the cheats' counts are (cheats.ts).
+      return Math.min(MAX_MERGED_COUNT, t + Math.max(0, m - b));
+    }
+    if (rule === 'each' && !isRecord(mine) && !isRecord(theirs))
+      return mergeField('pref', mine, base, theirs);
+    const m = isRecord(mine) ? mine : {};
+    const b = isRecord(base) ? base : {};
+    const t = isRecord(theirs) ? theirs : {};
+    if (!isRecord(mine) && !isRecord(theirs)) return mergeField('pref', mine, base, theirs);
+    const out: Record<string, unknown> = {};
+    for (const k of new Set([...Object.keys(t), ...Object.keys(m), ...Object.keys(b)])) {
+      const sub: MergeRule = typeof rule === 'object' ? (rule[k] ?? 'pref') : rule === 'each' ? 'pref' : rule;
+      const v = mergeField(sub, m[k], b[k], t[k]);
+      if (v !== undefined) out[k] = v;
+    }
+    return out;
+  }
+  if (rule === 'max') {
+    const m = typeof mine === 'number' ? mine : 0;
+    const t = typeof theirs === 'number' ? theirs : 0;
+    return Math.max(m, t);
+  }
+  if (rule === 'union') {
+    const t = Array.isArray(theirs) ? theirs : [];
+    const m = Array.isArray(mine) ? mine : [];
+    const all = [...t, ...m.filter((x) => !t.includes(x))];
+    return all.length || mine !== undefined || theirs !== undefined ? all : undefined;
+  }
+  // 'pref': this tab's value only if this tab changed it.
+  return same(mine, base) ? clone(theirs) : clone(mine);
+}
+
+/** Puts `src`'s fields into `target` in place (other code holds its inner objects). */
+function assignInPlace(target: Record<string, unknown>, src: Record<string, unknown>): void {
+  for (const k of Object.keys(target)) if (!(k in src)) delete target[k];
+  for (const [k, v] of Object.entries(src)) {
+    const t = target[k];
+    if (isRecord(t) && isRecord(v)) assignInPlace(t, v);
+    else target[k] = clone(v);
+  }
+}
+
+/**
+ * Writes `s`. Item 150: when another tab wrote the settings since this tab last read or wrote
+ * them, `s` first takes the merge (SETTINGS_MERGE) in place, so this tab goes on with the other
+ * tab's unlocks and choices too. After a SAVE DATA import or erase nothing is written (the tab
+ * reloads).
+ */
 export function saveSettings(s: Settings): void {
-  saveJson(SETTINGS_KEY, s);
+  if (storageIsStale()) return;
+  const raw = loadJson<unknown>(SETTINGS_KEY);
+  const at = synced.get(s);
+  if (at && raw !== null && JSON.stringify(raw) !== at.text) {
+    const theirs = parseSettings(raw) as unknown as Record<string, unknown>;
+    const merged = mergeField(
+      SETTINGS_MERGE as MergeRule,
+      s as unknown as Record<string, unknown>,
+      at.copy,
+      theirs,
+    ) as Record<string, unknown>;
+    merged.v = SETTINGS_VERSION;
+    assignInPlace(s as unknown as Record<string, unknown>, merged);
+    // Review MUST 1: from here this tab's changes are measured against what it merged with, so
+    // a write that fails now neither counts the other tab's additions twice nor takes its old
+    // choices for this tab's on the next save.
+    synced.set(s, { text: JSON.stringify(raw), copy: clone(theirs) });
+    mergedHandler?.(s);
+  }
+  if (saveJson(SETTINGS_KEY, s)) remember(s, clone(s));
 }

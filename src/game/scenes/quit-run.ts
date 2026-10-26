@@ -48,7 +48,9 @@ export class QuitRunScene extends MenuScene {
       onNo,
       true,
     );
-    // Item 148: no promise that the run waits in its file when it cannot save there.
+    // Item 148: no promise that the run waits in its file when it cannot save there. Item 151:
+    // the file is checked as the box opens, before any save was refused.
+    game.checkRunFile();
     this.status = game.keepsResume && !game.runFileLost ? QUIT_RUN_KEPT : '';
     this.note = game.takeFileNote();
     // The original's box sounds (MessageBoxSounds SN_CHANGE_SELECTION, SN_CANCEL_ITEM; RC-040).

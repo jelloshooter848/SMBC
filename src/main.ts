@@ -10,7 +10,7 @@ import { layoutScreen } from '@engine/input/touch-layout';
 import { AssetRegistry } from '@engine/assets/registry';
 import { AudioManager } from '@engine/audio/audio-manager';
 import { Announcer } from '@engine/a11y/announcer';
-import { loadSettings, saveSettings, type Settings } from '@engine/save/settings';
+import { loadSettings, onSettingsMerged, saveSettings, type Settings } from '@engine/save/settings';
 import { DATA_EPOCH_KEY, onStaleStorage, storageIsStale } from '@engine/save/storage';
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
 import { getLevel as getBuiltinLevel, levelIds, specialLevelIds } from '@content/levels';
@@ -265,6 +265,15 @@ function boot(): void {
   let packToken = 0;
   function applySettings(): void {
     saveSettings(settings);
+    applyLive();
+  }
+
+  /**
+   * The settings into the live game, without saving: after applySettings' save, and after any
+   * save that merged another tab's settings (item 150 review: onSettingsMerged), so the volume,
+   * bindings, picture and packs in play are the ones the settings now hold.
+   */
+  function applyLive(): void {
     viewport.opts.integerScale = settings.video.integerScale;
     viewport.resize();
     assets.setMode(settings.video.palette);
@@ -286,6 +295,9 @@ function boot(): void {
     });
   }
 
+  onSettingsMerged((s) => {
+    if (s === settings) applyLive();
+  });
   applySettings();
   // In dev, folders listed in user-packs/index.json are imported automatically (and gitignored).
   if (import.meta.env.DEV) {
