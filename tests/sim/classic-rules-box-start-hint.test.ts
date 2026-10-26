@@ -49,4 +49,17 @@ describe('item 135: the rules box on START', () => {
     expect(items(box)[idx(box)]?.label).toBe('Start');
     expect(h.said.at(-1)).not.toMatch(/Left and right/);
   });
+
+  it('changing Game mode with left / right does not repeat "Left and right to change" on each press', () => {
+    const h = rulesBox();
+    const box = h.top();
+    h.idle(8);
+    for (let i = 0; i < 8 && items(box)[idx(box)]?.label !== 'Game mode'; i++) h.tap('up');
+    expect(h.said.at(-1)).toMatch(/Left and right to change/);
+    h.tap('right');
+    expect(h.said.at(-1)).toMatch(/^Game mode: /);
+    expect(h.said.at(-1)).not.toMatch(/Left and right/);
+    h.tap('left');
+    expect(h.said.at(-1)).not.toMatch(/Left and right/);
+  });
 });
