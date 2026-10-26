@@ -10,6 +10,8 @@ import { GuideIndexScene, GuideScene } from '@game/scenes/guide';
 import { ClassicTutorialHeroesScene } from '@game/scenes/how-to-play-boxes';
 import { DEV_LAST_KEY, DevLevelPage, DevStartScene } from '@game/scenes/dev-play';
 import { LevelScene } from '@game/scenes/level';
+import { GameOverScene } from '@game/scenes/game-over';
+import { CardScene, CARD_GUARD_FRAMES } from '@game/scenes/message';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { OptionsScene } from '@game/scenes/options';
 import { ClassicFileRulesScene } from '@game/scenes/original-files-menu';
@@ -290,6 +292,39 @@ describe('items 63 / 64: the dev Level select takes its runs back to itself', ()
     (h.game as unknown as { afterCredits(from: string): void }).afterCredits('8-4');
     expect(h.top()).toBeInstanceOf(DevLevelPage);
     expect(h.game.scenes.find((s) => s instanceof TitleScene)).toBeDefined();
+  });
+
+  it('a game over goes back there too (review: as a clear, Quit and the credits do)', () => {
+    const h = classic({ dev: true });
+    devStart(h);
+    h.game.gameOver('1-2');
+    h.until(() => h.top() instanceof GameOverScene && (h.top() as GameOverScene).prompting, 900);
+    h.tap('down'); // NO
+    h.tap('jump');
+    onPage(h, '1-2');
+  });
+
+  it('Lost 8-4 says only THANK YOU, then goes back to its level page (no PUSH BUTTON B)', () => {
+    const h = classic({ dev: true });
+    h.game.showTitle();
+    h.game.showDevMenu();
+    pick(h, 'Level select');
+    pick(h, 'Classic');
+    pick(h, 'The Lost Levels');
+    pick(h, 'World 8');
+    pick(h, '8-4');
+    pick(h, 'Start');
+    inLevel(h);
+    h.game.showEnding('ll-8-4');
+    const card = h.top() as CardScene;
+    expect(card).toBeInstanceOf(CardScene);
+    expect(card.lines.join(' ')).not.toMatch(/PUSH BUTTON B|SELECT A WORLD/);
+    for (let i = 0; i < 6 && !(h.top() instanceof DevLevelPage); i++) {
+      h.idle(CARD_GUARD_FRAMES + 60);
+      h.tap('start'); // the card's OK (Start or B, as the NES card)
+    }
+    expect(h.top()).toBeInstanceOf(DevLevelPage);
+    expect(focused(h.top())).toBe('8-4');
   });
 
   it('a start with no START page (a dev link) still goes on to the next level', () => {

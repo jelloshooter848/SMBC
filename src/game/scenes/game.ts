@@ -1189,8 +1189,10 @@ export class Game {
     const world = below instanceof LevelScene ? below.world : null;
     // "THANK YOU <hero>!" names the hero who took the axe, as Toad's thanks do (World.castleText).
     const hero = fontText((world?.castleHero ?? s.character).name);
+    // v0.4.73 items 63 / 64: a dev START page start's 8-4 says only THANK YOU (its next stop is
+    // Dev > Level select, not a world to select).
     const card =
-      from === 'll-8-4' || from === 'll-13-4'
+      (from === 'll-8-4' && !this.levelSelectBack) || from === 'll-13-4'
         ? [
             `THANK YOU ${hero}!`,
             '',

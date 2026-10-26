@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultSettings } from '@engine/save/settings';
 import { MARIO } from '@game/characters/mario';
 import { GameOverScene } from '@game/scenes/game-over';
+import { LevelScene } from '@game/scenes/level';
 import { MAP_SETS, ClassicMenuScene, mapSetOf } from '@game/scenes/original-game';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 
@@ -38,6 +39,39 @@ describe('P2: the CLASSIC menu after a run focuses its set', () => {
 
     it(`MAIN MENU after a ${set} run's game over`, () => {
       const h = run(level);
+      h.game.gameOver(level);
+      h.until(() => h.top() instanceof GameOverScene && (h.top() as GameOverScene).prompting, 900);
+      h.tap('down');
+      h.tap('jump');
+      expect(focused(h)).toBe(set);
+    });
+  }
+});
+
+// 36a: a run with no file (Game.runSet's no-file branch) focuses the set of the level it played.
+// v0.4.73 item 94 took the practice runs that reached it; dev Classic runs and link runs still do.
+describe('36a: the CLASSIC menu after a run with no file focuses its set', () => {
+  for (const [set, level] of [
+    ['special', 'sp-1-2'],
+    ['lost', 'll-1-2'],
+  ] as const) {
+    for (const dev of [true, false]) {
+      it(`Quit from a ${set} ${dev ? 'dev Classic' : 'link'} run`, () => {
+        const h = makeGame({ deps: { settings: { ...defaultSettings(), dev }, applySettings: () => {} } });
+        h.game.devClassicGame(MARIO, level, 'classic', dev);
+        h.until(() => h.top() instanceof LevelScene, 900);
+        expect(h.game.classicFile).toBeNull();
+        h.game.quitClassicRun();
+        expect(focused(h)).toBe(set);
+      });
+    }
+
+    it(`MAIN MENU after a ${set} dev Classic run's game over`, () => {
+      const h = makeGame({
+        deps: { settings: { ...defaultSettings(), dev: true }, applySettings: () => {} },
+      });
+      h.game.devClassicGame(MARIO, level, 'classic');
+      h.until(() => h.top() instanceof LevelScene, 900);
       h.game.gameOver(level);
       h.until(() => h.top() instanceof GameOverScene && (h.top() as GameOverScene).prompting, 900);
       h.tap('down');

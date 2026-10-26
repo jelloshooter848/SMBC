@@ -371,3 +371,22 @@ describe('B-L phone touch', () => {
     expect(h.top()?.touchLabels?.()).toMatchObject({ jump: 'OK', attack: 'BACK' });
   });
 });
+
+// Kept from the removed "B-L the Level Select cheat" block (v0.4.73 item 94): it never used the cheat.
+describe('B-E the Tutorials seen with Continue', () => {
+  it('B-E: Continue keeps the Tutorials seen this game; a new file starts with none of its own', () => {
+    const h = classic();
+    keep(h, F1, '3-1');
+    const reset = vi.spyOn(h.game.classicTutorials, 'newGame');
+    const cleared = vi.spyOn(h.game.classicTutorials, 'clearQueue');
+    openSet(h);
+    h.idle(8);
+    h.tap('jump');
+    expect(reset).not.toHaveBeenCalled();
+    expect(cleared).toHaveBeenCalled();
+    h.game.showTitle();
+    openSet(h);
+    newFile(h, 2);
+    expect(reset).toHaveBeenCalledTimes(1);
+  });
+});
