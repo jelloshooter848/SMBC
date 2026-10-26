@@ -18,7 +18,13 @@ import { DATA_EPOCH_KEY, adoptDataEpoch, loadJson, saveJson } from '@engine/save
 import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY } from '@engine/save/settings';
 import { loadProgress, PROGRESS_KEY, saveProgress } from '@engine/save/progress';
 import { listSaves, loadSave, newSave, saveKey, writeSave } from '@game/save/save-files';
-import { classicFileKey, listClassicFiles, migrateClassicFiles } from '@game/original-files';
+import {
+  advancedCheatsKey,
+  classicFileKey,
+  listClassicFiles,
+  migrateClassicFiles,
+} from '@game/original-files';
+import { REPLAY_HELP_KEY } from '@game/scenes/original-replay';
 import { CLASSIC_RESUME_KEY, classicResumeKey } from '@game/run-resume';
 import { LIBRARY_KEY, loadLibrary, saveLibrary } from '@game/level/library';
 import { DEV_LAST_KEY } from '@game/scenes/dev-play';
@@ -114,6 +120,10 @@ describe("the inventory: which keys are the game's", () => {
       classicResumeKey('special'),
       LIBRARY_KEY,
       DEV_LAST_KEY,
+      // v0.4.73's: a Classic file's Advanced cheats, and the replay help seen.
+      advancedCheatsKey({ set: 'smb', slot: 1 }),
+      advancedCheatsKey({ set: 'special', slot: 3 }),
+      REPLAY_HELP_KEY,
       'smbc.anything-newer',
       'smbc-anything-newer',
     ])
