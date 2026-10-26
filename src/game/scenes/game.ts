@@ -159,6 +159,7 @@ import {
 } from './original-replay';
 import { CHOOSE_SFX, heroSet, musicFor, setSong, SMB_SET } from './original-music';
 import { applyRevivalBoost, Survival } from '../survival';
+import type { SaveDataEnv } from './save-data';
 
 export interface GameDeps {
   ctx: GameContext;
@@ -209,6 +210,8 @@ export interface GameDeps {
   shareEnv?: ShareEnv;
   /** Takes `#save=` off the page's address once a resume link was answered (main.ts). */
   clearSaveLink?: () => void;
+  /** Options > Save data's files, packs and restart (save-data.ts; default: the browser's). */
+  saveDataEnv?: SaveDataEnv;
 }
 
 /** Touch when the on-screen pad is shown, else a connected gamepad, else the keyboard. */

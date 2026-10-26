@@ -16,6 +16,7 @@ import { ClassicTutorialHeroesScene } from './how-to-play-boxes';
 import { homeScreenItems } from '../pwa/home-screen';
 import { SaveFilesOptions } from './save-codes';
 import { AboutScene } from './about';
+import { SaveDataOptions } from './save-data';
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const onOff = (b: boolean) => (b ? 'On' : 'Off');
@@ -72,6 +73,12 @@ export class OptionsScene extends MenuScene {
       ...(translucent || classic
         ? []
         : [
+            // Owner items 86-88: export, import or erase everything the game keeps here.
+            {
+              label: 'Save data',
+              select: () => this.push(new SaveDataOptions(game, () => this.pop())),
+              hint: 'Export, import or erase all game data on this device',
+            },
             {
               label: 'Custom levels',
               select: () => game.showCustomLevels(() => this.pop()),
@@ -400,8 +407,11 @@ class PacksOptions extends MenuScene {
     });
     items.push({
       label: 'Export template',
-      select: () => void exportTemplate(game.ctx.assets, game.ctx.assets.ids()),
-      hint: 'Downloads PNGs to repaint',
+      // Item 92: one download, smbc-remix-pack-template.zip (the PNGs, their layouts and a README
+      // listing the ids, read live).
+      select: () =>
+        void exportTemplate(game.ctx.assets, game.ctx.audio.registeredIds?.() ?? { songs: [], sfx: [] }),
+      hint: 'Downloads a zip of PNGs to repaint',
     });
     for (const name of this.names) {
       items.push({

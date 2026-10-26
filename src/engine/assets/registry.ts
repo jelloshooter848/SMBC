@@ -13,7 +13,12 @@ export class AssetRegistry {
   private readonly overrides = new Map<string, SpriteSheet>();
   mode: PaletteMode = 'default';
 
-  constructor(private readonly palettes: PaletteBook) {}
+  /** The built-in palettes at boot: overridePalette (a pack) changes `palettes.default` itself. */
+  private readonly builtin: Readonly<Record<string, readonly string[]>>;
+
+  constructor(private readonly palettes: PaletteBook) {
+    this.builtin = Object.fromEntries(Object.entries(palettes.default).map(([k, v]) => [k, [...v]]));
+  }
 
   define(id: string, def: SpriteDef): void {
     this.defs.set(id, def);
@@ -67,6 +72,14 @@ export class AssetRegistry {
     if (mode === this.mode) return;
     this.mode = mode;
     this.sheets.clear();
+  }
+
+  /**
+   * The built-in palettes, as they were when this registry was made (before any pack recoloured
+   * one), for the pack template's README.
+   */
+  builtinPalettes(): Readonly<Record<string, readonly string[]>> {
+    return this.builtin;
   }
 
   ids(): string[] {
