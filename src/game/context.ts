@@ -13,7 +13,7 @@ import type { ClassicSettings } from '@engine/save/original-options';
 export type Rules = 'campaign' | 'classic';
 
 /**
- * Item 76 (v0.4.74): the Campaign rules were called 'current' before. Kept only so data stored or
+ * Item 76 (v0.4.73): the Campaign rules were called 'current' before. Kept only so data stored or
  * linked before the rename (a kept run, a Classic file, a kept dev start, a `?rules=` link) still
  * reads; nothing writes it.
  */

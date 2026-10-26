@@ -20,7 +20,7 @@ import { DEV_LAST_KEY, loadDevPick } from '@game/scenes/dev-play';
 import { makeGame, store, useStorage, type H } from './heroes-harness';
 import { pickAtContinue } from './continue-select';
 
-// Item 76 (v0.4.74): the rules once called "Current" are called "Campaign" ('campaign'). "current"
+// Item 76 (v0.4.73): the rules once called "Current" are called "Campaign" ('campaign'). "current"
 // is the old name for Campaign: anything stored or linked before the rename (a settings blob, a
 // Classic file's run, an old per-set Continue slot, a kept dev start, a `?rules=` link) reads as
 // 'campaign' and keeps the rest of its data, and nothing writes 'current' again.

@@ -18,7 +18,7 @@ import { flatLevel } from './classic-plumber-harness';
  * which attacks and bounces and never takes damage; a still or just-kicked shell is the exception.
  */
 
-type Rules = 'classic' | 'current';
+type Rules = 'classic' | 'campaign';
 interface Result {
   hits: number;
   hurt: boolean;

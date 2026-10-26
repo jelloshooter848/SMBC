@@ -1191,7 +1191,7 @@ export class Game {
   private recordSetBeaten(from: string): void {
     this.beatRecorded = true;
     const set = mapSetOf(from).id;
-    // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
+    // Under Campaign rules every level plays as Normal (no layers): the beat counts as Normal.
     recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
     // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
     // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
