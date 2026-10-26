@@ -87,7 +87,9 @@ describe('item 84 (1): the folder picker check', () => {
     expect(packsNeedComputer({ touchShown: true, coarsePointer: true, folderPicker: false })).toBe(true);
     expect(packsNeedComputer({ touchShown: true, coarsePointer: false, folderPicker: false })).toBe(true);
     expect(packsNeedComputer({ touchShown: false, coarsePointer: true, folderPicker: false })).toBe(true);
-    expect(packsNeedComputer({ touchShown: true, coarsePointer: true, folderPicker: true })).toBe(false);
+    // Item 128 (owner-approved): a coarse pointer is a phone or tablet, folder picker or not.
+    expect(packsNeedComputer({ touchShown: true, coarsePointer: true, folderPicker: true })).toBe(true);
+    expect(packsNeedComputer({ touchShown: true, coarsePointer: false, folderPicker: true })).toBe(false);
     // A desktop always keeps Import, picker or not (its browser will say what it can do).
     expect(packsNeedComputer({ touchShown: false, coarsePointer: false, folderPicker: false })).toBe(false);
   });
@@ -127,8 +129,17 @@ describe('item 84 (1): ASSET PACKS on a phone that cannot pick a folder', () => 
     expect(labels(h.top())).toEqual(['Back']);
   });
 
-  it('a touch device with a folder picker still offers Import pack', async () => {
+  // Item 128 (owner-approved): an Android phone (coarse pointer) needs a computer even with a
+  // folder picker; a touchscreen laptop (fine pointer, folder picker, pad up) keeps Import.
+  it('an Android phone with a folder picker gets the same page', async () => {
     browser({ dir: true, ua: ANDROID_UA, touchPoints: 5, coarse: true });
+    const h = game(true);
+    await packsPage(h);
+    expect(labels(h.top())).toEqual(['Back']);
+  });
+
+  it('a touchscreen laptop with a folder picker still offers Import pack', async () => {
+    browser({ dir: true, ua: DESKTOP_UA, touchPoints: 10, coarse: false });
     const h = game(true);
     await packsPage(h);
     expect(labels(h.top())).toContain('Import pack');
