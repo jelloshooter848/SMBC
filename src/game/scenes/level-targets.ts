@@ -3,7 +3,7 @@ import type { MapSet } from './original-game';
 
 /*
  * A map set's level as an area id, and a world's name as the original shows it. Used by the dev
- * Level select (dev-play.ts) and a CLEARED file's level replay (original-replay.ts). v0.4.74
+ * Level select (dev-play.ts) and a CLEARED file's level replay (original-replay.ts). v0.4.73
  * item 94: these were the Level Select cheat's (level-select-cheat.ts, removed with it).
  */
 

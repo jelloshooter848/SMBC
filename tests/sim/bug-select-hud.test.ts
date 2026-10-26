@@ -45,7 +45,7 @@ describe('BUG-04 the select HUD shows the coming level', () => {
     expect(hudLevel(h)).toBe('3-2');
   });
 
-  // v0.4.74 item 94: the Level Select jump went with the cheat.
+  // v0.4.73 item 94: the Level Select jump went with the cheat.
   it('a new game: that level', () => {
     const h = classic();
     // A run played earlier left its state at 5-3.

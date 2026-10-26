@@ -56,7 +56,7 @@ export class DevMenuScene extends MenuScene {
             game.deps.applySettings?.();
           }
           if (fromPause) {
-            // Back to the pause menu, which rebuilds without the dev rows. v0.4.74 item 67: its
+            // Back to the pause menu, which rebuilds without the dev rows. v0.4.73 item 67: its
             // cursor goes to a row it still has, and it says so (PauseScene.devModeOff).
             game.scenes.pop();
             (game.scenes.top as { devModeOff?: () => void } | undefined)?.devModeOff?.();

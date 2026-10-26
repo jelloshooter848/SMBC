@@ -44,7 +44,7 @@ describe('38c: BACK from a new file’s select lands on START', () => {
       expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     });
 
-  // v0.4.74 item 53 (owner): it opens on START now, as it does back from the select.
+  // v0.4.73 item 53 (owner): it opens on START now, as it does back from the select.
   it('a rules box opened from the difficulty box starts on START (item 53)', () => {
     const h = makeGame({ deps: { settings: defaultSettings(), applySettings: () => {} } });
     h.game.showClassicMenu();

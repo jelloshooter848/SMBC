@@ -25,7 +25,7 @@ export class PauseScene extends MenuScene {
     game: Game,
     private readonly world: World | null = null,
   ) {
-    // v0.4.74 item 54: the Classic pause is a CLASSIC box (PauseMenu.as, a MenuBox), and BACK
+    // v0.4.73 item 54: the Classic pause is a CLASSIC box (PauseMenu.as, a MenuBox), and BACK
     // closes it as the original's cancel does; every page opened from it is a box too
     // (MenuScene.pushedOver). The campaign's pause is as it was (no BACK, the panel).
     super(game, 'PAUSE', [], classicPause(game) ? () => game.scenes.pop() : null, true);
@@ -45,7 +45,7 @@ export class PauseScene extends MenuScene {
   }
 
   /**
-   * v0.4.74 item 67: back from Dev mode > Dev mode off. Its rows go, so the cursor goes to
+   * v0.4.73 item 67: back from Dev mode > Dev mode off. Its rows go, so the cursor goes to
    * Continue (where the pause opens), and the page says so.
    */
   devModeOff(): void {
@@ -64,14 +64,14 @@ export class PauseScene extends MenuScene {
       // 38f: it opens saying its name, then the focused row ("Paused. Continue").
       this.entryTitle = 'Paused';
       items.push(...this.reserveItem());
-      // v0.4.74 item 55: the Guide is the original's tutorial boxes for the hero played.
+      // v0.4.73 item 55: the Guide is the original's tutorial boxes for the hero played.
       items.push(...this.classicGuideItems());
       items.push({
         label: 'Options',
         // 38f review: BACK says the pause's focused row again.
         select: () => game.scenes.push(new OptionsScene(game, () => backToMenu(game), true, true)),
       });
-      // v0.4.74 item 94 (owner): no Level Select cheat row (PauseMenu.as:37-38 had one).
+      // v0.4.73 item 94 (owner): no Level Select cheat row (PauseMenu.as:37-38 had one).
       items.push(...this.devItems());
       // The cheats mid-run (G-031: the original's Pause > Options > Cheats): the unlocked ones,
       // with Classic rules (the only rules cheats play under). Invincible and the assist-like
@@ -181,7 +181,7 @@ export class PauseScene extends MenuScene {
         label: 'Quit',
         select: () => {
           if (game.playtestDone) game.playtestDone();
-          // v0.4.74 items 63 / 64: a dev START page start goes back to Dev > Level select.
+          // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
           else if (!game.backToLevelSelect()) game.showTitle();
         },
         ...(game.levelSelectBack && !game.playtestDone ? { hint: 'Back to the level select' } : {}),
@@ -203,7 +203,7 @@ export class PauseScene extends MenuScene {
   }
 
   /**
-   * v0.4.74 item 55 (owner): the Classic pause's Guide opens the original's tutorial boxes
+   * v0.4.73 item 55 (owner): the Classic pause's Guide opens the original's tutorial boxes
    * (TutorialBoxScene) for the hero being played (player two's too): its start box, then the
    * boxes of what its Mushroom and Fire Flower bring (original-tutorials.ts guidePages). Each page
    * is read out and waits for a press; after the last the pause says its Guide row again.

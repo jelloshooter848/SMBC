@@ -46,7 +46,7 @@ const inLevel = (h: H) => h.top() instanceof LevelScene;
 const settingsWrites = () => JSON.parse(store.get(SETTINGS_KEY) ?? '{}').classicTutorialsSeen as unknown;
 
 describe('B-L QA 1: the Tutorials seen list is the file’s', () => {
-  // v0.4.74 item 94: the practice run from the Level Select cheat went with the cheat.
+  // v0.4.73 item 94: the practice run from the Level Select cheat went with the cheat.
   it('file A keeps its list when file B starts', () => {
     const h = classic();
     h.game.classicGame(MARIO, '1-1', { ref: A });

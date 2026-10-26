@@ -25,7 +25,7 @@ import {
 } from '@game/tutorial/original-tutorials';
 import { draw, file, intoBonus, makeGame, store, useStorage, type H } from './heroes-harness';
 
-// v0.4.74 PR B (menus): items 53, 54, 55, 61, 63/64 (dev Level select), 67, 82 and 94.
+// v0.4.73 PR B (menus): items 53, 54, 55, 61, 63/64 (dev Level select), 67, 82 and 94.
 
 useStorage();
 afterEach(() => store.clear());

@@ -51,7 +51,7 @@ export interface BoxedMenu {
   /** The action that goes BACK on this page, named in the hint (MenuScene.backAction; 'attack'). */
   backAction?: 'attack' | 'select';
   /**
-   * v0.4.74 item 54: where the box is centred (screen y) when it is not under the CLASSIC logo
+   * v0.4.73 item 54: where the box is centred (screen y) when it is not under the CLASSIC logo
    * (the Classic pause's boxes over the paused level); absent: under the logo.
    */
   cy?: number;

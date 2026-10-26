@@ -165,7 +165,7 @@ describe('O-06: Dev > Classic heroes', () => {
     // 0.4.72 (owner): Release heroes too (yoshi, arthur, warriors), not only the On one.
     for (const id of EXPANSION_HEROES) expect(start.heroes.map((c) => c.id)).toContain(id);
     row(page, 'Yoshi').adjust?.(-1); // Release -> Off
-    // v0.4.74 item 61 (owner): the START page offers every hero; Off is for Classic and campaign play.
+    // v0.4.73 item 61 (owner): the START page offers every hero; Off is for Classic and campaign play.
     expect(start.heroes.map((c) => c.id)).toContain('yoshi');
     // Dev mode off: the release rule (the dev pickers' list is slotsFor itself).
     settings.dev = false;

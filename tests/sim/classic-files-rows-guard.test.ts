@@ -114,7 +114,7 @@ describe('B-L no per-file row outside a file’s creation', () => {
       const seen: string[] = [];
       walk(h, 'Pause', seen);
       expect(seen).toEqual([]);
-      // Walked for real: the pause offers its Options and Cheats (v0.4.74 item 94: no Level Select page).
+      // Walked for real: the pause offers its Options and Cheats (v0.4.73 item 94: no Level Select page).
       const labels = items(new PauseScene(h.game, level.world)).map((i) => i.label);
       expect(labels).toEqual(expect.arrayContaining(['Options', 'Cheats']));
     });

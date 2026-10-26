@@ -15,7 +15,7 @@ import { DEV_VILLAGE } from '../town/secret-house';
 import { CUSTOM_PREFIX } from '../level/library';
 
 /*
- * v0.4.74 items 63 / 64 (owner): Dev > Level select takes its starts back to itself. A level
+ * v0.4.73 items 63 / 64 (owner): Dev > Level select takes its starts back to itself. A level
  * cleared, Quit, and the last castle's credits go back to the world's level page the start was
  * made from (Again too), its cursor on the level just played, which it says (the page's own
  * opening line). The pages under it are rebuilt as the player reached them (Dev mode > Level

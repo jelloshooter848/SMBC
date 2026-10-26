@@ -57,7 +57,7 @@ export function wrapHanging(text: string, cols: number): string[] {
 }
 
 /**
- * The heroes How to play lists, each as the def `rules` play (GuideIndexScene; v0.4.74 item 82's
+ * The heroes How to play lists, each as the def `rules` play (GuideIndexScene; v0.4.73 item 82's
  * Classic list too). `classic`: opened from Classic mode's menus.
  */
 export function guideHeroes(game: Game, classic: boolean): { heroes: CharacterDef[]; rules: Rules } {

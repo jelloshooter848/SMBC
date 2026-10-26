@@ -181,7 +181,7 @@ export interface ClassicCheatsSettings {
    * files' migration reads it once for a run that had no count of its own; nothing writes it.
    */
   continuesUsed: number;
-  // v0.4.74 item 94: no Level Select cheat (the original's 17th, Cheats.as:47). An old save's
+  // v0.4.73 item 94: no Level Select cheat (the original's 17th, Cheats.as:47). An old save's
   // `levelSelect` key is left in storage as it is; nothing reads it.
 }
 

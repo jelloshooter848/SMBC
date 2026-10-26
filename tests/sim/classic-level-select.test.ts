@@ -14,7 +14,7 @@ import { choose as go } from './classic-files-nav';
 import { isolateClassicRegistry } from './classic-registry';
 
 // G-006: the Map Difficulty (B-L: chosen as a file starts, fixed for the file; the run is built
-// for it and its beat status records it). G-007's Level Select cheat was removed in v0.4.74 (item 94).
+// for it and its beat status records it). G-007's Level Select cheat was removed in v0.4.73 (item 94).
 
 isolateClassicRegistry({ hideExtras: true });
 useStorage();
@@ -44,7 +44,7 @@ function pick(h: H, label: string): void {
   const at = labels(h.top()).indexOf(label);
   expect(at, label).toBeGreaterThanOrEqual(0);
   h.idle(8);
-  // From where the cursor is (v0.4.74 item 53: a new file's rules box opens on START).
+  // From where the cursor is (v0.4.73 item 53: a new file's rules box opens on START).
   const n = labels(h.top()).length;
   const from = (h.top() as unknown as { index: number }).index;
   for (let i = 0; i < (at - from + n) % n; i++) h.tap('down');
@@ -120,7 +120,7 @@ describe('G-006: Map Difficulty on the CLASSIC menu', () => {
   });
 });
 
-// v0.4.74 item 94: the Level Select cheat is gone; its level ids stay (the dev Level select, a
+// v0.4.73 item 94: the Level Select cheat is gone; its level ids stay (the dev Level select, a
 // CLEARED file's replay: level-targets.ts).
 describe('level ids', () => {
   it('names worlds as the original (10-13 are A-D) and starts a level at its intro or first area', () => {

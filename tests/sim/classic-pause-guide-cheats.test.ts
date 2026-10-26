@@ -106,8 +106,8 @@ describe('G-031 cheats from the Classic pause', () => {
 });
 
 describe('G-093 the Classic guide', () => {
-  // v0.4.74 item 55 (owner): the Classic pause's Guide is the original's tutorial boxes for the
-  // hero played (tests/sim/v0474-menus.test.ts), no longer the hero's GuideScene page.
+  // v0.4.73 item 55 (owner): the Classic pause's Guide is the original's tutorial boxes for the
+  // hero played (tests/sim/v0473-menus.test.ts), no longer the hero's GuideScene page.
   it('the Classic pause opens the Classic hero’s own tutorial boxes (item 55)', () => {
     const h = classic();
     pausedRun(h, LINK);
@@ -123,7 +123,7 @@ describe('G-093 the Classic guide', () => {
     expect(h.game.liveRules).toBe('current');
     h.game.scenes.push(new OptionsScene(h.game, () => h.game.scenes.pop(), false, true));
     pick(h, 'How to play');
-    // v0.4.74 item 82: a Classic box of the heroes (tests/sim/v0474-menus.test.ts).
+    // v0.4.73 item 82: a Classic box of the heroes (tests/sim/v0473-menus.test.ts).
     const idx = h.top() as ClassicTutorialHeroesScene;
     expect(idx).toBeInstanceOf(ClassicTutorialHeroesScene);
     const names = labels(idx).filter((l) => l !== 'Back');

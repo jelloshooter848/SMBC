@@ -8,7 +8,7 @@ import type { DemoBackdrop } from './original-box-menu';
 import { guidePages, TutorialBoxScene } from '../tutorial/original-tutorials';
 
 /*
- * v0.4.74 item 82 (owner): Classic mode's Options > How to play (CLASSIC > Options > Video, audio,
+ * v0.4.73 item 82 (owner): Classic mode's Options > How to play (CLASSIC > Options > Video, audio,
  * controls, and the Classic pause's Options) is a CLASSIC box of the Classic select's heroes
  * (guideHeroes, as GuideIndexScene lists them), each opening the original's tutorial boxes for that
  * hero (TutorialBoxScene, guidePages): the screens the Classic pause's Guide shows for the hero

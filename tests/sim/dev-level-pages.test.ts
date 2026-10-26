@@ -263,7 +263,7 @@ describe('O-05 QA: kept picks, Rules and spoken titles', () => {
     delete s.classicDev.heroesOn;
     expect(loadDevPick(h.game)?.hero).toBe('yoshi');
     s.classicDev.heroesOff = ['yoshi'];
-    // v0.4.74 item 61 (owner): the START page offers every hero, so a hero set Off is kept too.
+    // v0.4.73 item 61 (owner): the START page offers every hero, so a hero set Off is kept too.
     expect(loadDevPick(h.game)?.hero).toBe('yoshi');
     // A look that is not that hero's is ignored too.
     kept({ hero: 'mario', look: 'link' });
@@ -367,7 +367,7 @@ describe('O-05 review: every area reachable, Again checked on the press, readabl
 
   // 0.4.72 (owner): a hero back on Release is still offered in dev mode, so only Off stops Again.
   it.each(['off'] as const)(
-    // v0.4.74 item 61 (owner): the START page offers every hero, so Again starts it all the same.
+    // v0.4.73 item 61 (owner): the START page offers every hero, so Again starts it all the same.
     'Again is checked on the press: a hero set to %s since still starts (item 61)',
     (now) => {
       const h = dev();

@@ -315,7 +315,7 @@ export function startTutorials(game: Game, hero: string): string[] {
 }
 
 /**
- * v0.4.74 item 55: the boxes the Classic pause's Guide shows for `hero`: its start box(es), then
+ * v0.4.73 item 55: the boxes the Classic pause's Guide shows for `hero`: its start box(es), then
  * what its Mushroom and Fire Flower bring (as the Customize Weapons choice has them). A hero the
  * original has no box for gets the first start's box (how every hero controls).
  */

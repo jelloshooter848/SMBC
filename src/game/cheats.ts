@@ -267,7 +267,7 @@ export function unlockAll(c: ClassicCheatsSettings): void {
 }
 
 /**
- * Whether every cheat is unlocked (Cheats.allUnlocked), so the Enter code row goes. v0.4.74 item
+ * Whether every cheat is unlocked (Cheats.allUnlocked), so the Enter code row goes. v0.4.73 item
  * 94: the 16 rule cheats; the original's 17th, Level Select, is not in this game.
  */
 export function allUnlocked(c: ClassicCheatsSettings): boolean {

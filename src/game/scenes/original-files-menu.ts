@@ -563,7 +563,7 @@ export class ClassicFileRulesScene extends ClassicBox {
     });
     this.spokenTitle = `${fileName(ref.slot)} rules, ${DIFFICULTY_NAMES[draft.difficulty]}. They are fixed once the file starts. Left and right to change`;
     this.refresh();
-    // v0.4.74 item 53 (owner): the box opens on START, so a file with the original's rules starts
+    // v0.4.73 item 53 (owner): the box opens on START, so a file with the original's rules starts
     // at once; the settings are above it (UP). 38c: back from the new game's hero select it is on
     // START again too.
     this.index = Math.max(

@@ -174,7 +174,7 @@ describe('B-L a new file', () => {
     choose(h, 'File 1');
     choose(h, 'Normal');
     const r = h.top() as ClassicFileRulesScene;
-    // Game mode, with left and right, the coin (v0.4.74 item 53: UP from START to it).
+    // Game mode, with left and right, the coin (v0.4.73 item 53: UP from START to it).
     h.idle(8);
     for (let i = 0; i < 6 && idx(r) !== 0; i++) h.tap('up');
     h.audio.sfx.mockClear();
@@ -215,7 +215,7 @@ describe('B-L a new file', () => {
     choose(h, 'Easy');
     const r = h.top() as ClassicFileRulesScene;
     h.idle(8);
-    for (let i = 0; i < 6 && idx(r) !== 0; i++) h.tap('up'); // v0.4.74 item 53: from START
+    for (let i = 0; i < 6 && idx(r) !== 0; i++) h.tap('up'); // v0.4.73 item 53: from START
     h.tap('right'); // Game mode: Survival
     choose(h, 'Start');
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);

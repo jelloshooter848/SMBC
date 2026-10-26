@@ -57,7 +57,7 @@ export function loadDevPick(game: Game): DevPick | null {
 
 /**
  * Kept pick `p` as it can start now, or why it cannot: it must name a level this build has and a
- * hero the START page offers (Game.devAllSlotsFor, v0.4.74 item 61: every hero, whatever Toggle
+ * hero the START page offers (Game.devAllSlotsFor, v0.4.73 item 61: every hero, whatever Toggle
  * heroes says), with one of that hero's looks. A power the played def does not have
  * falls back to its first state.
  */
@@ -76,7 +76,7 @@ export function resolveDevPick(game: Game, p: Partial<DevPick> | null): DevPick 
       return `${name} is not in this build`;
     }
   }
-  // v0.4.74 item 61: every hero, as the START page's Hero row offers them.
+  // v0.4.73 item 61: every hero, as the START page's Hero row offers them.
   const offered = branch === 'campaign' ? game.deps.characters : game.devAllSlotsFor(rules);
   const slot = offered.find((c) => c.id === hero);
   const named = [...game.deps.characters, ...CLASSIC_EXTRAS].find((c) => c.id === hero)?.name ?? String(hero);
@@ -140,7 +140,7 @@ export function playDevPick(game: Game, pick: DevPick): boolean {
     difficulty: pick.difficulty,
     ...(pick.branch === 'classic' ? { mount: pick.mount ?? 'none' } : {}),
   });
-  // v0.4.74 items 63 / 64: a clear, Quit and the last credits come back to Dev > Level select.
+  // v0.4.73 items 63 / 64: a clear, Quit and the last credits come back to Dev > Level select.
   game.keepDevReturn(pick.branch, pick.level);
   return true;
 }
@@ -646,7 +646,7 @@ export class DevStartScene extends DevPage {
   }
 
   /**
-   * The heroes this start offers (v0.4.74 item 61, Game.devAllSlotsFor: every hero, released or
+   * The heroes this start offers (v0.4.73 item 61, Game.devAllSlotsFor: every hero, released or
    * not, whatever Toggle heroes says; the campaign's roster).
    */
   get heroes(): CharacterDef[] {

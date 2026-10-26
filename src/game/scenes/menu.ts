@@ -133,7 +133,7 @@ export class MenuScene implements Scene {
   protected adjustSfx = 'select';
   protected okAdjustSfx: string | null = null;
   /**
-   * v0.4.74 item 54 (owner): the page is a CLASSIC box (menu-box.ts: the orange box, the mushroom
+   * v0.4.73 item 54 (owner): the page is a CLASSIC box (menu-box.ts: the orange box, the mushroom
    * cursor, the original's sounds) over the paused level, as the Classic pause and the pages
    * opened from it are (boxStyle, pushedOver). Every other menu keeps its own look.
    */

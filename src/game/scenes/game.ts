@@ -278,20 +278,20 @@ export class Game {
    */
   private devFreePlay = false;
   /**
-   * v0.4.74 items 63 / 64: this run goes back to Dev > Level select (a clear, Quit, the last
+   * v0.4.73 items 63 / 64: this run goes back to Dev > Level select (a clear, Quit, the last
    * castle's credits): a dev START page start (item 94: the Level Select cheat that also did is gone).
    */
   get levelSelectBack(): boolean {
     return this.devFreePlay && this.devBack !== null;
   }
 
-  /** v0.4.74 items 63 / 64: the dev START page's start just begun (playDevPick) goes back there. */
+  /** v0.4.73 items 63 / 64: the dev START page's start just begun (playDevPick) goes back there. */
   keepDevReturn(branch: 'classic' | 'campaign', level: string): void {
     if (this.devFreePlay) this.devBack = { branch, level };
   }
 
   /**
-   * v0.4.74 items 63 / 64: back to the level select this run was started from, its cursor on the
+   * v0.4.73 items 63 / 64: back to the level select this run was started from, its cursor on the
    * level just played (the one under the scenes on top, else the one picked), which it says. The
    * run is left as Quit leaves it; nothing is written. False (doing nothing) for any other run.
    */
@@ -305,7 +305,7 @@ export class Game {
     return true;
   }
 
-  /** A dev START page free play start is playing (v0.4.74 item 61: its hero is any hero). */
+  /** A dev START page free play start is playing (v0.4.73 item 61: its hero is any hero). */
   get devFreePlaying(): boolean {
     return this.devFreePlay;
   }
@@ -332,12 +332,12 @@ export class Game {
   fileContinues = 0;
   /**
    * B-L: a practice run: no file, and it counts for nothing (no beat, no cheat counts, no
-   * unlocks), as a developer run. Since v0.4.74 (item 94, the Level Select cheat removed) only a
+   * unlocks), as a developer run. Since v0.4.73 (item 94, the Level Select cheat removed) only a
    * CLEARED file's level replay is one (replayRun).
    */
   practiceRun = false;
   /**
-   * v0.4.74 items 63 / 64: a dev START page start (keepDevReturn): its branch and level, for the
+   * v0.4.73 items 63 / 64: a dev START page start (keepDevReturn): its branch and level, for the
    * way back to Dev > Level select. Read only while that free play plays (devFreePlay).
    */
   private devBack: { branch: 'classic' | 'campaign'; level: string } | null = null;
@@ -779,7 +779,7 @@ export class Game {
   }
 
   /**
-   * v0.4.74 item 61 (owner): the dev START page's Hero row offers every hero there is under
+   * v0.4.73 item 61 (owner): the dev START page's Hero row offers every hero there is under
    * `rules`, released or not, whatever Dev > Toggle heroes says (Toggle heroes is for Classic and
    * campaign play only). The heroes in the select's order (slotsFor), on devRosterFor.
    */
@@ -1134,7 +1134,7 @@ export class Game {
       const set = mapSetOf(from).id;
       // Under Current rules every level plays as Normal (no layers): the beat counts as Normal.
       recordClassicBeat(set, this.liveRules === 'classic' ? this.classicDifficulty : 'normal');
-      // v0.4.74 item 94 (owner): every map set beaten on Hard no longer opens a Level Select
+      // v0.4.73 item 94 (owner): every map set beaten on Hard no longer opens a Level Select
       // cheat (the original's, StatManager 516-517): a CLEARED file's replay is the level select.
       // Beating the game unlocks the cheats whose goals it completes (beatGameHandler): SMB
       // All Ground Is Bricks, Super Mario Bros. Special All Hammer Bros (G-020), any set the
@@ -1154,7 +1154,7 @@ export class Game {
       this.autosave();
       if (findLevelNode(mainLevel(from, this.deps.getLevel))) return this.returnToMap();
     }
-    // v0.4.74 items 63 / 64: a dev START page start goes back to Dev > Level select.
+    // v0.4.73 items 63 / 64: a dev START page start goes back to Dev > Level select.
     if (!this.backToLevelSelect()) this.showTitle();
   }
 
@@ -1202,7 +1202,7 @@ export class Game {
           ]
         : ['THANK YOU!'];
     let then: () => void;
-    // v0.4.74 items 63 / 64: a dev START page start's castle is a clear like any other: its card,
+    // v0.4.73 items 63 / 64: a dev START page start's castle is a clear like any other: its card,
     // then Dev > Level select (no games-beaten tally: a dev run writes nothing).
     if (from === 'll-8-4' && !campaign && !this.levelSelectBack) {
       const warped = s.warped;

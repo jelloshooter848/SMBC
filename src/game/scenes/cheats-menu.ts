@@ -71,7 +71,7 @@ export class CheatsScene extends MenuScene {
         select: () => this.beginCode(),
         hint: 'Enter the secret code to unlock every cheat',
       });
-    // v0.4.74 item 94 (owner): no Level Select cheat (a CLEARED file's replay is the level select).
+    // v0.4.73 item 94 (owner): no Level Select cheat (a CLEARED file's replay is the level select).
     items.push({ label: 'Back', select: () => this.onBack?.() });
     this.setItems(items);
     this.status = this.opts.all ? 'Dev mode: all cheats' : '';

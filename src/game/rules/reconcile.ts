@@ -83,7 +83,7 @@ export function reconcileRules(game: Game, rules: Rules): void {
     ({ powerState: s.powerState2, hp: s.hp2 } = start(s.character2));
   const extra = (c: CharacterDef | null): c is CharacterDef => !!c && CLASSIC_EXTRAS.includes(c);
   if (!extra(s.character) && !extra(s.character2)) return;
-  // v0.4.74 item 61: a dev free play start offers every hero (Toggle heroes is for Classic and
+  // v0.4.73 item 61: a dev free play start offers every hero (Toggle heroes is for Classic and
   // campaign play), so its hero stays whatever Toggle heroes says.
   const roster = game.devFreePlaying ? game.devRosterFor(rules) : game.roster;
   if (extra(s.character) && !roster.includes(s.character)) game.setHero(0, game.firstHero);
