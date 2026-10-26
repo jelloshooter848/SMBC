@@ -12,6 +12,7 @@ import {
   originalFileRules,
   type ClassicFile,
   type ClassicFileRef,
+  type ClearedFile,
   type ClassicFileRules,
   type ClassicFileSlot,
 } from '../original-files';
@@ -72,13 +73,13 @@ function livesShown(f: ClassicFile): boolean {
 }
 
 /** The hero a file plays, by name (a hero toggled off in the Dev menu too, 31d). */
-export function fileHeroName(game: Game, f: ClassicFile): string {
+export function fileHeroName(game: Game, f: Pick<ClassicFile, 'run'>): string {
   const all = [...game.rosterFor('classic'), ...CLASSIC_EXTRAS];
   return all.find((c) => c.id === f.run.hero)?.name ?? f.run.hero;
 }
 
 /** The line under the file box for a used file: its hero and score. */
-export function fileDetailLine(game: Game, f: ClassicFile): string {
+export function fileDetailLine(game: Game, f: Pick<ClassicFile, 'run'>): string {
   return `${fileHeroName(game, f)} SCORE ${f.run.score}`;
 }
 
@@ -113,6 +114,25 @@ export function fileSpoken(game: Game, f: ClassicFile): string {
   ];
   return `${parts.filter(Boolean).join(', ')}${own}`;
 }
+
+/**
+ * v0.4.73 (owner 46B): a CLEARED file's row value: its difficulty and CLEARED ("HARD CLEARED").
+ * Its hero and frozen score are on the line under the box (fileDetailLine).
+ */
+export function clearedRowValue(f: ClearedFile): string {
+  return `${DIFFICULTY_NAMES[f.rules.difficulty]} CLEARED`.toUpperCase();
+}
+
+/** A CLEARED file as read out: "Cleared on Hard, score 98700, Mario, 4 lives". */
+export function clearedSpoken(game: Game, f: ClearedFile): string {
+  const r = f.run;
+  const own = fileOwnRules(f.rules) ? '. Your own rules are on' : '';
+  const lives = r.lives > 0 ? `, ${r.lives} ${r.lives === 1 ? 'life' : 'lives'}` : '';
+  return `Cleared on ${DIFFICULTY_NAMES[f.rules.difficulty]}, score ${r.score}, ${fileHeroName(game, f)}${lives}${own}`;
+}
+
+/** What a CLEARED file's row does, said after it. */
+const CLEARED_HINT = "Replay any level of this map set with this file's rules";
 
 /** A kept file that cannot be read (as the campaign's file select shows one). */
 const UNREADABLE = 'UNREADABLE';
@@ -152,6 +172,20 @@ function problemRow(
   };
 }
 
+/**
+ * 42 (v0.4.73, owner): why a file cannot play, shown on the line under the box (at most 31
+ * columns), as problemRow's `why` says it in full.
+ */
+export const PROBLEM_LINE: Record<FileProblem, string> = {
+  'hero-off': 'TURN HERO ON IN TOGGLE HEROES',
+  hero: 'HERO IS NOT IN THIS VERSION',
+  level: 'LEVEL IS NOT IN THIS VERSION',
+  'not-released': 'HERO IS NOT RELEASED YET',
+};
+
+/** 42: an old save waiting for a free file, shown under the box on the ERASE FILE row. */
+export const WAITING_LINE = 'A GAME IS WAITING FOR A FILE';
+
 /** "File 2" */
 const fileName = (slot: ClassicFileSlot) => `File ${slot}`;
 
@@ -166,7 +200,7 @@ const OLD_SAVE = 'A game saved by an older version';
  * demo playing on under it, the rows drawn by renderBoxedMenu with the page's name on top and a
  * status line under the box. Away from the demo (never in play) the usual full-screen page.
  */
-abstract class ClassicBox extends MenuScene {
+export abstract class ClassicBox extends MenuScene {
   protected readonly over: DemoBackdrop | null;
   /** Says the page's name first when it opens. */
   protected abstract readonly spokenTitle: string;
@@ -205,6 +239,11 @@ abstract class ClassicBox extends MenuScene {
     this.game.deps.announcer?.say(this.spoken());
   }
 
+  /** Says `lead`, then the page as it opens (its name and highlighted row). */
+  sayWith(lead: string): void {
+    this.game.deps.announcer?.say(`${lead} ${this.spokenTitle}. ${this.spoken()}`);
+  }
+
   /** Back to this page from one over it: its rows again, then the highlighted one read. */
   comeBack(): void {
     this.refresh();
@@ -240,7 +279,7 @@ abstract class ClassicBox extends MenuScene {
 }
 
 /** Pops scenes until `scene` is on top. */
-function closeTo(game: Game, scene: MenuScene): void {
+export function closeTo(game: Game, scene: MenuScene): void {
   while (game.scenes.top && game.scenes.top !== scene) game.scenes.pop();
 }
 
@@ -253,6 +292,12 @@ export class ClassicFilesScene extends ClassicBox {
   private files: (ClassicFile | null)[] = [];
   /** Every file that reads, playable or not (31d), for ERASE FILE and the line under the box. */
   private readable: (ClassicFile | null)[] = [];
+  /** v0.4.73: the CLEARED files (null: not one). */
+  private clearedFiles: (ClearedFile | null)[] = [];
+  /** 42: why each readable file cannot play (null: it plays, or there is none). */
+  private problems: (FileProblem | null)[] = [];
+  /** 42: an old save waits for a free file of this set. */
+  private waiting = false;
   /**
    * After ERASE, shown under its file until the cursor moves: 31a, an old save just moved into it;
    * 39a, the erase was refused (storage).
@@ -283,11 +328,23 @@ export class ClassicFilesScene extends ClassicBox {
     const game = this.game;
     this.files = game.classicFiles(this.set.id);
     this.readable = CLASSIC_FILE_SLOTS.map((slot) => loadClassicFile({ set: this.set.id, slot }));
+    this.clearedFiles = CLASSIC_FILE_SLOTS.map((slot) => game.classicClearedAt({ set: this.set.id, slot }));
+    this.problems = CLASSIC_FILE_SLOTS.map((slot, i) =>
+      !this.files[i] && this.readable[i] ? game.classicFileProblem({ set: this.set.id, slot }) : null,
+    );
     const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot, i) => {
       const f = this.files[i] ?? null;
-      const ref = { set: this.set.id, slot };
       const kept = this.readable[i] ?? null;
-      const problem = !f && kept ? game.classicFileProblem(ref) : null;
+      const problem = this.problems[i] ?? null;
+      const cleared = this.clearedFiles[i] ?? null;
+      // v0.4.73 (owner 46B): a CLEARED file replays any level of its set (never a new game).
+      if (cleared)
+        return {
+          label: fileName(slot),
+          value: () => clearedRowValue(cleared),
+          select: () => game.openClearedFile(this, cleared),
+          hint: `${clearedSpoken(game, cleared)}. ${CLEARED_HINT}`,
+        };
       if (kept && problem) {
         const { value, why } = problemRow(game, kept, problem);
         return {
@@ -326,6 +383,7 @@ export class ClassicFilesScene extends ClassicBox {
     });
     const used = this.inUse.some(Boolean);
     const waiting = oldRunsWaiting(this.set.id) > 0;
+    this.waiting = waiting;
     items.push(
       {
         label: 'Erase file',
@@ -343,8 +401,22 @@ export class ClassicFilesScene extends ClassicBox {
       return this.note.moved
         ? `OLD SAVE MOVED INTO ${fileName(slot).toUpperCase()}`
         : `${fileName(slot).toUpperCase()} COULD NOT BE ERASED`;
-    const f = slot ? this.readable[slot - 1] : null;
+    // 42: what is only said is shown too: an old save waiting (on ERASE FILE), why a file cannot play.
+    if (!slot) return this.items[this.index]?.label === 'Erase file' && this.waiting ? WAITING_LINE : '';
+    const problem = this.problems[slot - 1];
+    if (problem) return PROBLEM_LINE[problem];
+    const f = this.readable[slot - 1] ?? this.clearedFiles[slot - 1];
     return f ? fileDetailLine(this.game, f) : '';
+  }
+
+  /** v0.4.73: the CLEARED files, by slot (ERASE FILE's picker reads them). */
+  get cleared(): readonly (ClearedFile | null)[] {
+    return this.clearedFiles;
+  }
+
+  /** 42/44: why each readable file cannot play (ERASE FILE's picker reads them). */
+  get fileProblems(): readonly (FileProblem | null)[] {
+    return this.problems;
   }
 
   /** A used file goes on (CONTINUE, then the select). */
@@ -589,6 +661,27 @@ export class ClassicEraseScene extends ClassicBox {
     const inUse = this.files.inUse;
     const items: MenuItem[] = CLASSIC_FILE_SLOTS.map((slot, i) => {
       const f = this.files.shown[i] ?? null;
+      const cleared = this.files.cleared[i] ?? null;
+      const problem = this.files.fileProblems[i] ?? null;
+      if (cleared)
+        return {
+          label: fileName(slot),
+          value: () => clearedRowValue(cleared),
+          select: () =>
+            game.scenes.push(new ClassicEraseConfirmScene(game, slot, null, this.files, this, cleared)),
+          hint: clearedSpoken(game, cleared),
+        };
+      // 44 (v0.4.73, owner): a file that cannot play shows its state here too, and says why.
+      if (f && problem) {
+        const { value, why } = problemRow(game, f, problem);
+        return {
+          label: fileName(slot),
+          value: () => value,
+          select: () =>
+            game.scenes.push(new ClassicEraseConfirmScene(game, slot, f, this.files, this, null, problem)),
+          hint: `${fileSpoken(game, f)}. ${why}`,
+        };
+      }
       if (!f && inUse[i])
         return {
           label: fileName(slot),
@@ -628,12 +721,22 @@ export class ClassicEraseConfirmScene extends ClassicBox {
     readonly file: ClassicFile | null,
     readonly files: ClassicFilesScene,
     readonly picker: ClassicEraseScene,
+    readonly cleared: ClearedFile | null = null,
+    readonly problem: FileProblem | null = null,
   ) {
     super(game, `Erase file ${slot}?`, () => {
       closeTo(game, picker);
       picker.comeBack();
     });
-    const what = file ? fileSpoken(game, file) : 'It cannot be read';
+    // 44: why the file cannot play, said and shown (under the box).
+    const why = file && problem ? problemRow(game, file, problem).why : '';
+    const cannot = why ? `. It cannot play now: ${why.charAt(0).toLowerCase()}${why.slice(1)}` : '';
+    this.status = problem ? PROBLEM_LINE[problem] : '';
+    const what = cleared
+      ? clearedSpoken(game, cleared)
+      : file
+        ? `${fileSpoken(game, file)}${cannot}`
+        : 'It cannot be read';
     // 31a: an old save waiting for a free file moves into this one once it is erased.
     const then =
       oldRunsWaiting(files.set.id) > 0 ? `. ${OLD_SAVE} will then move into ${fileName(slot)}` : '';

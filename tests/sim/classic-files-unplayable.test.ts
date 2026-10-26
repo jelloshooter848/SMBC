@@ -109,7 +109,10 @@ describe('31d: a readable file that cannot play says why', () => {
     const h = game(['yoshi']);
     openBox(h);
     choose(h, 'Erase file');
-    expect(values(h.top())[1]).toBe('NORMAL 1-2 X3');
+    // v0.4.73 (owner item 44): the picker shows the file's state, as the file box does; its
+    // hint still reads it in full.
+    expect(values(h.top())[1]).toBe('HERO OFF');
+    expect(hints(h.top())[1]).toMatch(/Normal, World 1-2, 3 lives, score 4100, Yoshi/);
     choose(h, 'File 2');
     expect(h.top()).toBeInstanceOf(ClassicEraseConfirmScene);
     expect(h.said.at(-1)).toMatch(/^Erase file 2\? Normal, World 1-2, 3 lives, score 4100, Yoshi/);

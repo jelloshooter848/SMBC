@@ -65,6 +65,13 @@ export interface ClassicFile {
   tutorialsSeen: string[];
   /** Where the run is. */
   run: ClassicResume;
+  /**
+   * v0.4.73 (owner 95): which game this is: a token each new game or resume of the file sets
+   * (Game.runToken), kept at its every save. Only the game holding the file now may write it
+   * CLEARED (saveClearedFile's `only`), so a tab whose file was erased and started again in
+   * another tab never writes over that new game. Files from before have none.
+   */
+  runId?: string;
   /** When it was last written (Date.now()). */
   savedAt: number;
   /**
@@ -158,19 +165,62 @@ function parseFile(raw: unknown, ref: ClassicFileRef): ClassicFile | null {
     tutorialsSeen: strings(f.tutorialsSeen),
     run,
     savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
+    ...(typeof f.runId === 'string' ? { runId: f.runId } : {}),
     ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
   };
 }
 
-/** Writes file `f` (stamped now); false when storage refused it. */
+/**
+ * v0.4.73 (owner 46B, 47A): whether what is stored at `ref` must never be written over by a run:
+ * a CLEARED file (v 2), and anything a later version wrote (a newer `v`), readable here or not.
+ * Only ERASE FILE empties such a file.
+ */
+function keptForGood(raw: unknown): boolean {
+  const v = raw && typeof raw === 'object' ? (raw as { v?: unknown }).v : undefined;
+  return typeof v === 'number' && v >= 2;
+}
+
+/** v0.4.73: file `ref` is CLEARED (or a later version's): no run writes or empties it. */
+export function classicFileKept(ref: ClassicFileRef): boolean {
+  const now = storedNow(classicFileKey(ref));
+  return !now.read || keptForGood(now.value);
+}
+
+/**
+ * What is stored at `key` before a write: `read` false when storage could not be read (its
+ * getItem threw), so a CLEARED file there cannot be ruled out and nothing is written; `value`
+ * the parsed value (null when empty, the raw text when it is not JSON).
+ */
+function storedNow(key: string): { read: boolean; value: unknown } {
+  let text: string | null;
+  try {
+    text = localStorage.getItem(key);
+  } catch {
+    return { read: false, value: null };
+  }
+  if (text === null) return { read: true, value: null };
+  try {
+    return { read: true, value: JSON.parse(text) as unknown };
+  } catch {
+    return { read: true, value: text };
+  }
+}
+
+/** Writes file `f` (stamped now); false when storage refused it, or the file is CLEARED. */
 export function saveClassicFile(
   f: Omit<ClassicFile, 'savedAt' | 'v' | 'tutorialsSeen'> & {
     savedAt?: number;
     tutorialsSeen?: readonly string[];
   },
 ): boolean {
+  const stored = storedNow(classicFileKey(f));
+  const now = stored.value;
+  // v0.4.73 (47A): a CLEARED file (or a later version's) is never written again, by any run,
+  // any tab: a stale tab's WORLD card, Tutorials list or continue point leaves it as it is. A
+  // read that fails cannot rule one out: nothing is written then either.
+  if (!stored.read || keptForGood(now)) return false;
   // #205: the file's old-save mark stays through every save that does not set its own.
-  const fromOld = f.fromOld ?? storedMark(loadJson<unknown>(classicFileKey(f)));
+  const fromOld = f.fromOld ?? storedMark(now);
   const out: ClassicFile = {
     v: 1,
     set: f.set,
@@ -180,6 +230,7 @@ export function saveClassicFile(
     tutorialsSeen: strings(f.tutorialsSeen),
     run: { ...f.run },
     savedAt: f.savedAt ?? Date.now(),
+    ...(f.runId ? { runId: f.runId } : {}),
     ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
   };
   // The run carries none of the old slot-only fields (the file holds them).
@@ -188,6 +239,114 @@ export function saveClassicFile(
   delete out.run.continues;
   delete out.run.savedAt;
   return saveJson(classicFileKey(f), out);
+}
+
+/**
+ * v0.4.73 (owner 46B): a map set beaten in a file keeps that file as CLEARED: the run as it was
+ * when the set was beaten (its score, lives and hero frozen), its rules, and the worlds the run
+ * reached (ClassicResume.worlds: the replay's world box). It is stored as `v: 2`, so an older
+ * version (which reads only v 1) keeps it as unreadable and never writes over it. It is never
+ * written again (saveClassicFile and saveClearedFile refuse it); ERASE FILE empties it, and only
+ * then can a new game start there (50A). Migration counts it as used (hasClassicFile).
+ *
+ * `v: 2` is reserved for CLEARED files: a later run format must use v 3 or more (which this
+ * version keeps as unreadable and never writes over), and a later CLEARED format must keep
+ * `cleared: true` beside its own `v`.
+ */
+export interface ClearedFile {
+  v: 2;
+  cleared: true;
+  set: MapSetId;
+  slot: ClassicFileSlot;
+  rules: ClassicFileRules;
+  continues: number;
+  tutorialsSeen: string[];
+  /** The run as the set was beaten (never played on: the replay starts levels afresh). */
+  run: ClassicResume;
+  /** When the set was beaten (Date.now()). */
+  savedAt: number;
+  fromOld?: OldSaveMark;
+}
+
+/** File `ref` when it is CLEARED and reads, else null (empty, a run, or broken). */
+export function loadClearedFile(ref: ClassicFileRef): ClearedFile | null {
+  const raw = loadJson<unknown>(classicFileKey(ref));
+  if (!raw || typeof raw !== 'object') return null;
+  const f = raw as Partial<ClearedFile>;
+  if (f.v !== 2 || f.cleared !== true) return null;
+  const run = parseResume(f.run);
+  if (!run) return null;
+  const c = f.continues;
+  return {
+    v: 2,
+    cleared: true,
+    set: ref.set,
+    slot: ref.slot,
+    rules: parseFileRules(f.rules),
+    continues: Number.isInteger(c) && (c as number) >= 0 ? Math.min(999999, c as number) : 0,
+    tutorialsSeen: strings(f.tutorialsSeen),
+    run,
+    savedAt: typeof f.savedAt === 'number' && Number.isFinite(f.savedAt) ? f.savedAt : 0,
+    ...(storedMark(raw) ? { fromOld: storedMark(raw) as OldSaveMark } : {}),
+  };
+}
+
+/**
+ * The set beaten in file `f` (Game.showEnding): the file becomes CLEARED, once. False when
+ * storage refused it (the file keeps its last run, so nothing is lost) or when it is CLEARED
+ * already (or a later version's): the first clear stays as it was. v0.4.73 (owner 95): with
+ * `only`, it is written only over the game `only` names (ClassicFile.runId): a file emptied or
+ * started again by another tab is left as it is (false).
+ */
+export function saveClearedFile(
+  f: Omit<ClearedFile, 'savedAt' | 'v' | 'cleared' | 'tutorialsSeen'> & {
+    savedAt?: number;
+    tutorialsSeen?: readonly string[];
+  },
+  only?: string,
+): boolean {
+  const stored = storedNow(classicFileKey(f));
+  const now = stored.value;
+  if (!stored.read || keptForGood(now)) return false;
+  if (only !== undefined && !holdsGame(now, only)) return false;
+  const fromOld = f.fromOld ?? storedMark(now);
+  const out: ClearedFile = {
+    v: 2,
+    cleared: true,
+    set: f.set,
+    slot: f.slot,
+    rules: copyFileRules(f.rules),
+    continues: f.continues,
+    tutorialsSeen: strings(f.tutorialsSeen),
+    run: { ...f.run },
+    savedAt: f.savedAt ?? Date.now(),
+    ...(fromOld ? { fromOld: { key: fromOld.key, fp: fromOld.fp } } : {}),
+  };
+  delete out.run.difficulty;
+  delete out.run.gameMode;
+  delete out.run.continues;
+  delete out.run.savedAt;
+  delete out.run.continued;
+  return saveJson(classicFileKey(f), out);
+}
+
+/** Whether stored value `raw` is a v 1 file of game `runId`. */
+function holdsGame(raw: unknown, runId: string): boolean {
+  if (!raw || typeof raw !== 'object') return false;
+  const f = raw as { v?: unknown; runId?: unknown };
+  return f.v === 1 && f.runId === runId;
+}
+
+/**
+ * The worlds a CLEARED file's replay offers (its world box): Worlds 1-8 of every set; The Lost
+ * Levels' World 9 and A-D (10-13) only when its run reached them (a run with no record of that,
+ * from before v0.4.73, reached none of them as far as anyone knows).
+ */
+export function replayWorlds(f: Pick<ClearedFile, 'set' | 'run'>): number[] {
+  const base = [1, 2, 3, 4, 5, 6, 7, 8];
+  if (f.set !== 'lost') return base;
+  const reached = new Set(f.run.worlds ?? []);
+  return [...base, ...[9, 10, 11, 12, 13].filter((w) => reached.has(w))];
 }
 
 /** Whether anything is stored for file `ref` (a broken file too). */
