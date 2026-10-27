@@ -9,6 +9,41 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-27
+
+### Fixed
+
+- Music Lab: a short song link with a huge run of sharps or a long comment inside a repeat no
+  longer freezes the page; it opens at once and says the song is too long.
+- Music Lab: a note above the top of the range or a slide of more than 96 semitones is now an
+  error at its spot, instead of a song that breaks when played.
+- Music Lab: Space presses the focused button (Space on Stop stops the song), and Tab never
+  loses focus to the page: it comes round from the last control to the first and back.
+- Music Lab: after answering a question (or Escape), focus goes back to the text or to Clear
+  song library; the syntax help keeps the panel behind it out of reach while it is open.
+- Music Lab: when several things happen at once (a shared song's intro, its error and the
+  question; "now your copy" and the new tempo), screen readers hear all of them.
+- Music Lab: the song text and the syntax help say how to leave the text (Escape, then Tab, or
+  Shift+Tab).
+- Music Lab: loading one of the game's songs over unsaved changes asks for a second press, as
+  New, Open and Back do.
+- Music Lab: typing a tempo above the top shows the tempo actually set (300); Go to error is no
+  longer read as part of the text box's description.
+- Shared song and level links are unpacked a little at a time and refused once they grow far
+  past any real song or level, so a booby-trapped link can't fill the memory.
+- Online backup: after the online code failed to load, trying again now really loads it again
+  (0.4.77 said it did, but the browser kept the failed load until the page was reloaded). Where
+  the browser gives no way to try again, the first failure says to reload the page, on screen as
+  well as aloud.
+- Online backup: after Delete most recent code reached only some servers, CODE KEPT: TRY AGAIN
+  is shown on screen as well as said.
+- Importing a backup whose online backup code was never backed up online now says the code is
+  not yet backed up online, instead of calling it this device's online backup code.
+- Save data and Reset game now say that Music Lab songs are part of the data.
+- High contrast: the online backup code is drawn in a strong amber, clearly apart from the white
+  text.
+- Classic mode: Ryu on a wall without the ninpo to throw shows a blank ATTACK button caption.
+
 ## [0.4.77] - 2026-10-27
 
 ### Added
@@ -2355,7 +2390,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.77...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/jelloshooter848/SMBC/compare/v0.4.77...v0.5.0
 [0.4.77]: https://github.com/jelloshooter848/SMBC/compare/v0.4.76...v0.4.77
 [0.4.76]: https://github.com/jelloshooter848/SMBC/compare/v0.4.75...v0.4.76
 [0.4.75]: https://github.com/jelloshooter848/SMBC/compare/v0.4.74...v0.4.75
