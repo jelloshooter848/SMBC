@@ -331,3 +331,13 @@ The warp hub has three "???" pads. Once the Koopalings open them, they could hol
 - a boss rush of every mini game boss;
 - time trials on levels you have cleared;
 - a hero gallery and sound test.
+
+### Key bindings across two windows (item 158)
+
+Edge cases when two windows of the game change key bindings:
+
+- after a merge, the Controls page keeps stale bindings (`options.ts` holds the old array, and
+  `assignInPlace` replaces arrays);
+- a P1 rebind in one window and a P2 rebind in another merge as one (`settings.ts`, `input:
+'each'`), losing one of them;
+- Reset keys in one window is undone by the other window's earlier rebind.

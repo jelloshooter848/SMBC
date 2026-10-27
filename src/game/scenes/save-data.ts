@@ -14,12 +14,26 @@ import {
   buildBackup,
   eraseGameData,
   parseBackup,
+  readGameData,
   replaceGameData,
   type Backup,
   type BackupRefusal,
   type ChangeFailure,
 } from '@engine/save/backup';
 import { onStaleStorage } from '@engine/save/storage';
+import {
+  formatBackupCode,
+  loadOnlineCode,
+  onlineCopy,
+  saveOnlineCode,
+  spokenBackupCode,
+  type BackUpResult,
+  type OnlineApi,
+  type RestoreResult,
+  type StoredOnlineCode,
+} from '@engine/online/online-backup';
+import { shareEnv } from './save-codes';
+import { RestoreCodeScene } from './online-backup';
 import { wrapText } from '../hud/text';
 import { MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
@@ -49,6 +63,28 @@ export interface SaveDataEnv {
   packs: { list(): Promise<StoredPack[]>; clear(): Promise<void> };
   /** Starts the game again from its first screen (the page reloaded, without its link). */
   restart(): void;
+  /**
+   * BACK UP ONLINE and RESTORE FROM CODE (item 159); absent or null: no such rows (the offline
+   * build, which makes no network requests).
+   */
+  online?: OnlineEnv | null;
+}
+
+/** The online backup's side of the browser. */
+export interface OnlineEnv {
+  /** navigator.onLine: false means certainly offline. */
+  isOnline(): boolean;
+  /** The crypto and relay code, loaded only now (import(): owner item 160). */
+  load(): Promise<OnlineApi>;
+}
+
+/** The online rows' loader: none in the offline build, so its bundle holds no network code. */
+function browserOnlineEnv(): OnlineEnv | null {
+  if (import.meta.env.MODE === 'offline') return null;
+  return {
+    isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
+    load: () => import('@engine/online/nostr-backup').then((m) => m.browserOnlineApi()),
+  };
 }
 
 /** The browser's: share sheet or downloads, a file input, packStore, a reload. */
@@ -81,6 +117,7 @@ export function browserSaveDataEnv(): SaveDataEnv {
       // The page again from its start: its query (?dev=1) kept, its #link (a save link) dropped.
       location.replace(location.pathname + location.search);
     },
+    online: browserOnlineEnv(),
   };
 }
 
@@ -102,11 +139,10 @@ export function downloadAll(
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 'S'}`;
 const pluralSaid = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
-/** The note under the page's rows, drawn and said. */
+/** The note under the page's rows, drawn and said (four lines: six rows above it online). */
 const NOTE = [
   'A BACKUP HOLDS EVERY SAVE,',
-  'FILE, SETTING AND CUSTOM',
-  'LEVEL ON THIS DEVICE.',
+  'FILE, SETTING AND LEVEL.',
   'IMPORTING ONE DOES NOT',
   'RESTORE ASSET PACKS.',
 ];
@@ -152,6 +188,23 @@ export class SaveDataOptions extends MenuScene {
         gesture: true,
         hint: 'Replace the data on this device with a backup file',
       },
+      // Item 159: online backup over Nostr, on the web build only.
+      ...(this.env.online
+        ? [
+            {
+              label: 'Back up online',
+              select: () => this.backUpOnline(),
+              hint: 'Save an encrypted copy on free servers, found again by a code',
+            },
+            {
+              label: 'Restore from code',
+              select: () => this.restoreFromCode(),
+              // The code box's text field takes the keyboard only from inside the press's event.
+              gesture: true,
+              hint: 'Bring back an online backup with its code',
+            },
+          ]
+        : []),
       {
         label: 'Erase all data',
         select: () => this.askErase(),
@@ -475,9 +528,219 @@ export class SaveDataOptions extends MenuScene {
   override render(r: Renderer): void {
     super.render(r);
     const font = this.game.ctx.assets.sheet('font');
-    NOTE.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 130 + i * 12));
+    // Under the rows: 64 is the first row's y, 14 a row's height.
+    const y = 64 + this.items.length * 14 + 6;
+    NOTE.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + i * 12));
+  }
+
+  // ---- Online backup (item 159) ------------------------------------------------------------
+
+  /** Offline, both online rows say so (and nothing is loaded). */
+  private needsInternet(): boolean {
+    if (this.env.online?.isOnline() !== false) return false;
+    this.tell(
+      'NEEDS AN INTERNET CONNECTION',
+      'Online backup needs an internet connection. Nothing changed.',
+      true,
+    );
+    return true;
+  }
+
+  /** The network side, or null (said: it could not be loaded, which means no connection). */
+  private async onlineApi(): Promise<OnlineApi | null> {
+    try {
+      return (await this.env.online?.load()) ?? null;
+    } catch {
+      this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      return null;
+    }
+  }
+
+  /** BACK UP ONLINE: the explainer the first time (no code kept yet), then the backup. */
+  private backUpOnline(): void {
+    if (this.busy || this.needsInternet()) return;
+    const kept = loadOnlineCode();
+    if (kept) {
+      void this.runBackUp(kept);
+      return;
+    }
+    this.game.scenes.push(
+      new QuestionBox(
+        this.game,
+        'BACK UP ONLINE?',
+        EXPLAINER_SAID,
+        EXPLAINER,
+        [
+          { label: 'No', select: () => this.backHere() },
+          {
+            label: 'Yes, back up',
+            select: () => {
+              this.game.scenes.pop();
+              void this.runBackUp(null);
+            },
+          },
+        ],
+        () => this.backHere(),
+      ),
+    );
+  }
+
+  /** The backup itself, under `kept`'s code or a new one; the code is shown once, after its first. */
+  private async runBackUp(kept: StoredOnlineCode | null): Promise<void> {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      this.tell('BACKING UP...', 'Backing up online. This takes a few seconds.');
+      const api = await this.onlineApi();
+      if (!api) return;
+      const mine = kept ?? { code: api.newCode(), shown: false };
+      // Kept first, so the online copy carries it (a restore elsewhere backs up to the same copy).
+      if (!kept && !saveOnlineCode(mine))
+        return this.tell(
+          'STORAGE CANNOT BE READ',
+          "This device's storage refused the backup code. Nothing changed.",
+          true,
+        );
+      let text: string;
+      try {
+        text = buildBackup({
+          gameVersion: this.env.gameVersion,
+          now: this.env.now(),
+          data: onlineCopy(readGameData()),
+        }).text;
+      } catch {
+        return this.tell(
+          'STORAGE CANNOT BE READ',
+          "Cannot read this device's storage, so nothing was backed up.",
+          true,
+        );
+      }
+      let r: BackUpResult;
+      try {
+        r = await api.backUp(mine.code, text);
+      } catch {
+        return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      }
+      if (!r.ok) {
+        if (r.reason === 'too-big')
+          return this.tell(
+            'TOO BIG TO BACK UP ONLINE',
+            'Your data is too big for an online backup. Use Export backup to save a file instead, or remove some custom levels. Nothing was backed up.',
+            true,
+          );
+        if (r.accepted === 0) return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+        return this.tell(
+          `ONLY ${r.accepted} OF ${r.total} SERVERS TOOK IT`,
+          `Only ${r.accepted} of ${r.total} servers took the backup, so it is not safe yet. Try again later.`,
+          true,
+        );
+      }
+      const done = `BACKED UP (${r.accepted} OF ${r.total} SERVERS)`;
+      const said = `Backed up to ${r.accepted} of ${r.total} servers.`;
+      if (mine.shown) return this.tell(done, said);
+      saveOnlineCode({ ...mine, shown: true });
+      this.status = done;
+      this.showCode(mine.code, done, said);
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** The code, once: COPY CODE and SHARE CODE (in the press's own event), then OK. */
+  private showCode(code: string, done: string, said: string): void {
+    const game = this.game;
+    const shown = formatBackupCode(code);
+    const env = shareEnv(game);
+    const note = (status: string) => {
+      box.note(status);
+      game.deps.announcer?.say(status);
+    };
+    const box: QuestionBox = new QuestionBox(
+      game,
+      'YOUR BACKUP CODE',
+      `${said} Your backup code is ${spokenBackupCode(code)}. Keep this code: it is the only way to get the backup back.`,
+      [shown, done, 'KEEP THIS CODE: IT IS THE', 'ONLY WAY TO GET IT BACK.'],
+      [
+        {
+          label: 'Copy code',
+          gesture: true,
+          select: () =>
+            void (env.copy?.(shown) ?? Promise.resolve(false)).then((ok) =>
+              note(ok ? 'CODE COPIED' : 'COPY FAILED'),
+            ),
+        },
+        {
+          label: 'Share code',
+          gesture: true,
+          select: () => {
+            if (!env.share) return note('NO SHARE SHEET HERE');
+            void env
+              .share({ title: 'SMBC REMIX backup code', text: `My SMBC REMIX backup code: ${shown}` })
+              .then(() => note('CODE SHARED'))
+              .catch(() => note('SHARE CANCELLED'));
+          },
+        },
+        { label: 'OK', select: () => this.backHere() },
+      ],
+      () => this.backHere(),
+    );
+    game.scenes.push(box);
+  }
+
+  /** RESTORE FROM CODE: the code box (in the press's own event), then the lookup. */
+  private restoreFromCode(): void {
+    if (this.busy || this.needsInternet()) return;
+    this.status = '';
+    this.game.scenes.push(new RestoreCodeScene(this.game, (code) => void this.runRestore(code)));
+  }
+
+  private async runRestore(code: string | null): Promise<void> {
+    if (code === null) return this.announce();
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      this.tell('LOOKING FOR THE BACKUP...', 'Looking for your backup. This takes a few seconds.');
+      const api = await this.onlineApi();
+      if (!api) return;
+      let r: RestoreResult;
+      try {
+        r = await api.restore(code);
+      } catch {
+        return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      }
+      if (!r.ok) {
+        if (r.reason === 'servers') return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+        return this.tell(
+          'NO BACKUP FOR THAT CODE',
+          'No backup was found for that code. Check the code and try again. Nothing changed.',
+          true,
+        );
+      }
+      const parsed = parseBackup(r.text, this.env.gameVersion);
+      if (!parsed.ok) return this.refuse(parsed.reason);
+      this.askReplace(parsed.backup);
+    } finally {
+      this.busy = false;
+    }
   }
 }
+
+/** What BACK UP ONLINE? draws (28 columns) and says, the first time (owner item 159). */
+const EXPLAINER = [
+  'SAVES AN ENCRYPTED COPY ON',
+  'FREE SERVERS. THEY SEE AN',
+  'ANONYMOUS ID AND WHEN, NOT',
+  'WHO YOU ARE. THEY MAY LOSE',
+  'IT: KEEP A BACKUP FILE TOO.',
+];
+const EXPLAINER_SAID =
+  'Back up online? This saves an encrypted copy of your data on free servers, found again by a code you keep. The servers see an anonymous ID and when you backed up, nothing personal. Free servers may lose it, so keep a backup file too.';
+
+/** No server answered (or the online code could not even be loaded). */
+const UNREACHABLE = [
+  'COULD NOT REACH THE SERVERS',
+  'Could not reach the backup servers. Check the internet connection and try again. Nothing changed.',
+] as const;
 
 /** A question (or a done card): its title and lines drawn, its question said before the row. */
 class QuestionBox extends MenuScene {

@@ -57,8 +57,9 @@ export class FakeRelays {
         if (this.closed) return;
         const msg = JSON.parse(text) as unknown[];
         const mode = relays.modes.get(this.url) ?? 'down';
-        const reply = (m: unknown[]) =>
+        const reply = (m: unknown[]): void => {
           setTimeout(() => !this.closed && this.onmessage?.({ data: JSON.stringify(m) }), 1);
+        };
         if (mode === 'silent') return;
         if (msg[0] === 'EVENT') {
           const ev = msg[1] as NostrEventLike;
