@@ -232,7 +232,8 @@ has the same guide for the hero you are playing.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
-- **Asset packs** (the title's and the Classic menu's Options, not the pause menu's): import a pack from a `.zip` file (every device, phones included) or, on a
+- **Asset packs** (the title's and the Classic menu's Options, not the pause menu's or the world
+  map's menu): import a pack from a `.zip` file (every device, phones included) or, on a
   computer, from a folder (a pack with a name already stored is replaced only on YES); export repaintable templates (a computer's page); toggle packs (left /
   right) or delete one (OK, then YES).
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own
@@ -405,7 +406,8 @@ rules and the release steps. What's planned next, and ideas kept for later, are 
 The game is playable out of the box with its built-in art. If you own other sprite sheets or
 music you may load them locally without them ever entering the repository:
 
-- **In the game**: Options → Asset packs → _Export template_ downloads
+- **In the game**: Options → Asset packs (the title screen's or the Classic menu's Options, not the
+  pause menu's or the world map's menu) → _Export template_ downloads
   `smbc-remix-pack-template.zip`: one PNG and frame layout per sprite sheet, a `manifest.json`,
   and a `README.txt` listing every song, sound and palette a pack can replace. Unzip it, repaint
   the PNGs keeping the layout, and pick the folder with _Import pack (folder)_, or zip it and pick

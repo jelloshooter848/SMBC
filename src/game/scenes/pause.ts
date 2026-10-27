@@ -111,16 +111,16 @@ export class PauseScene extends MenuScene {
         items.push(advancedCheatsItem(game, rp.ref, undefined, rp.fp));
       if (game.stageRound) items.push(this.giveUp());
       // O-16: Quit asks first (NO / YES). v0.4.77 items 196/197: YES goes to the run's mid-run
-      // select for this level when it has one (Game.quitsToSelect), else the CLASSIC menu.
-      const toSelect = game.quitsToSelect;
+      // select for this level when it has one (Game.quitsToSelect, read as Quit is picked, so
+      // the card always says where YES goes), else the CLASSIC menu.
       items.push({
         label: 'Quit',
         // 38f: NO says "Paused." and the focused row (Quit), as the pause opens.
-        select: () => confirmQuitRun(game, null, toSelect),
+        select: () => confirmQuitRun(game, null, game.quitsToSelect),
         hint: game.replayRun
           ? // v0.4.73 (owner 97a): a CLEARED file's replay goes back to its file box.
             'Back to the file box; the file stays cleared'
-          : toSelect
+          : game.quitsToSelect
             ? 'Back to character select'
             : 'Back to the Classic menu',
       });

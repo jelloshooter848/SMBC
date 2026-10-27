@@ -2547,6 +2547,10 @@ export class Game {
     this.replay = null;
     this.clearedNews = null;
     this.beatRecorded = false;
+    // v0.4.77 review MUST 1: a lost file's notes end with its run.
+    this.fileLost = false;
+    this.fileNote = null;
+    this.lostNote = null;
     // v0.4.73 (item 60): a file's Advanced cheats end with its run.
     this.applyAssists();
   }
@@ -2613,9 +2617,12 @@ export class Game {
     return this.fileLost;
   }
 
-  /** v0.4.77 item 178: the note that the run cannot save to its file, for every Quit box. */
+  /**
+   * v0.4.77 item 178: the note that the run cannot save to its file, for every Quit box; only
+   * while that file run is on (review MUST 1: never a later dev or link run's).
+   */
   get runFileNote(): string | null {
-    return this.fileLost ? this.lostNote : null;
+    return this.fileLost && this.keepsResume ? this.lostNote : null;
   }
 
   /**
