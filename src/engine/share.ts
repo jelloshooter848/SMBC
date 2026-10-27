@@ -82,7 +82,6 @@ const INFLATE_CHUNK = 1024;
 async function inflateCapped(body: Uint8Array, cap: number): Promise<Uint8Array> {
   const ds = new DecompressionStream('deflate-raw');
   const writer = ds.writable.getWriter();
-  let over = false;
   /** Called by the reader on each piece it takes: the next chunk may go in. */
   let took: (() => void) | null = null;
   void (async () => {
@@ -92,8 +91,8 @@ async function inflateCapped(body: Uint8Array, cap: number): Promise<Uint8Array>
       // The reader takes (and measures) what that chunk made before the next goes in; a
       // decompressor that buffers its input, as Node's does, would otherwise take it all at once.
       // A chunk that makes nothing yet waits only a moment.
+      // Once the reader has refused the link it cancels the stream, so the next write throws.
       await Promise.race([taken, new Promise((r) => setTimeout(r, 20))]);
-      if (over) return;
     }
     await writer.close();
   })().catch(() => {});
@@ -106,7 +105,6 @@ async function inflateCapped(body: Uint8Array, cap: number): Promise<Uint8Array>
     if (!value) continue;
     n += value.length;
     if (n > cap) {
-      over = true;
       await reader.cancel().catch(() => {});
       throw new Error('shared link too big');
     }

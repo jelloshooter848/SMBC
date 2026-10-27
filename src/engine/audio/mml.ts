@@ -160,10 +160,10 @@ export function parseMml(
   const repeats: { pos: number; remaining: number }[] = [];
 
   while (i < n) {
-    // The command just read counts its characters (a jump back at ] counts one).
+    // The command just read counts its characters (a ] that jumped back counted its own).
     steps += Math.max(1, i - start);
     start = i;
-    if (steps > maxSteps) fail(`too long: over ${maxSteps} steps (check the repeat counts)`);
+    if (steps > maxSteps) fail('too long to read (check the repeat counts)');
     const ch = src[i] as string;
     if (ch === ' ' || ch === '\n' || ch === '\t' || ch === '|' || ch === '\r') {
       i++;
@@ -291,8 +291,12 @@ export function parseMml(
         const count = readInt() ?? 2; // always consumed, so jumping back re-reads it harmlessly
         if (rep.remaining === -1) rep.remaining = count - 1;
         else rep.remaining--;
-        if (rep.remaining > 0) i = rep.pos;
-        else repeats.pop();
+        if (rep.remaining > 0) {
+          // Its characters (the count is read again each time through) count before the jump.
+          steps += i - start;
+          i = rep.pos;
+          start = i;
+        } else repeats.pop();
         break;
       }
       case 'L':
