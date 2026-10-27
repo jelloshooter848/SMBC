@@ -8,7 +8,7 @@ import { STAR_FRAMES } from '../../constants';
 import { has, isFound } from '../../items/flags';
 import { RYU_GUIDE } from './guide';
 import { activeTool, cycleTool, type ToolInfo } from '../toolbelt';
-import { beltButton, toolButton } from '../../touch-labels';
+import { BLANK_CAPTION, beltButton, toolButton } from '../../touch-labels';
 import { NINPO_ARTS, type NinpoArt } from './weapons';
 
 /** Ninja: fast run, cut-able jump, clings to walls and kicks off them. */
@@ -201,7 +201,8 @@ export const RYU: CharacterDef = {
   touchLabels(p) {
     const belt = tools(p);
     return {
-      attack: 'SLASH',
+      // No slash while clinging (behaviour.update): a blank caption, the button kept (item 201).
+      attack: p.clinging ? BLANK_CAPTION : 'SLASH',
       special: toolButton(belt, p, RYU_TOOL_LABELS),
       select: beltButton(belt, 'NINPO'),
     };

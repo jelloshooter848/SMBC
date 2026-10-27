@@ -511,7 +511,28 @@ type BeamAnim = {
   t: number;
   streaks: { player: Player; x: number; top: number; floor: number; delay: number; landed: number }[];
   target?: WorldEvent & { type: 'pipe' };
+  /**
+   * Up only: a low hop in place before the beam (a Classic Yoshi mount rider hopping off at a pad
+   * into a castle, water or bonus area, item 103), as PipeAnim's.
+   */
+  hop?: { t: number; n: number; y0: number };
 };
+/**
+ * The levels whose pole has a designed route over it, so no barrier (owner decisions 231, 237,
+ * 238): the Lost Levels' warps past the pole (3-1's springboard to the backwards warp, 5-1's to
+ * World 6, A-3's springboard to World C) and Special 4-2's exit area, whose pipe past the pole is
+ * reached only over it.
+ */
+const OVER_POLE_ROUTES: ReadonlySet<string> = new Set(['2-1', 'll-3-1', 'll-5-1', 'll-10-3', 'sp-4-2-exit']);
+
+/** No flagpole barrier in `level` (see OVER_POLE_ROUTES). */
+export function overPoleRoute(level: LevelData): boolean {
+  if (OVER_POLE_ROUTES.has(level.id)) return true;
+  // Campaign 2-1: the Top Secret Area's cloud path leads over the pole (a woken `path` zone:
+  // campaignLevel drops its `campaign` mark; elsewhere it sleeps).
+  return level.id === '2-1' && level.zones.some((z) => z.kind === 'path' && !z.campaign);
+}
+
 /** Player 2's beam-down starts this many frames after player 1's. */
 const BEAM_P2_DELAY = 12;
 
@@ -773,6 +794,8 @@ export class World {
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
+  /** Every goal pole on the map (a custom level may have several), for their barriers. */
+  private readonly poles: Flagpole[] = [];
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
   /**
@@ -1130,6 +1153,7 @@ export class World {
           while (this.map.get(tx, base) === T.FLAG_SHAFT) base++;
           const pole = new Flagpole(tx, ballRow, base);
           this.entities.push(pole);
+          this.poles.push(pole);
           (this as { flagpole: Flagpole | null }).flagpole = pole;
           break;
         }
@@ -2020,6 +2044,9 @@ export class World {
     if (this.vineArrival) this.updateVineArrival();
 
     const anchor = this.cameraAnchor();
+    // Where each hero stood before this frame's moves, for the flagpole's barrier (poleBarrier).
+    const startX = new Map<Player, number>();
+    for (const p of this.players) startX.set(p, p.body.x);
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
       const respawn = this.respawnTimers.get(p);
@@ -2119,6 +2146,7 @@ export class World {
       if (e instanceof Enemy && e.alive && this.cheats.bouncyPits) this.bounceEnemy(e);
     }
     this.resolveLifts();
+    for (const p of this.activePlayers()) this.poleBarrier(p, startX.get(p));
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -2548,8 +2576,11 @@ export class World {
           return on?.centerX === p.vine?.x;
         });
         // A vine to an area with none to climb on arrives as that area starts (its `exit=`).
-        if (z) this.transfer(z.target, z.target.exitDir ?? 'climb', on?.art === 'chain');
-        else b.y = -b.h; // nowhere to go: hang at the top
+        if (z) {
+          // Classic rules: a Yoshi mount left waiting at the vine's foot stays (item 103).
+          if (this.rules === 'classic') classicRules().vineLeave?.(this, p);
+          this.transfer(z.target, z.target.exitDir ?? 'climb', on?.art === 'chain');
+        } else b.y = -b.h; // nowhere to go: hang at the top
       }
       return;
     }
@@ -2559,12 +2590,16 @@ export class World {
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
       if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
-      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
       const overlapY = b.y + px(8) <= v.y + v.h && b.y + b.h > v.y;
       if (!overlapX || !overlapY) continue;
+      // Classic rules: a Yoshi mount rider pressing Up at a vine into a castle, water or bonus area
+      // hops off it and Yoshi waits below (item 103); then the hero grabs it on foot.
+      if (this.rules === 'classic' && input.held('up'))
+        classicRules().vineEntry?.(this, p, this.vineTarget(e));
+      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       if (!b.onGround || input.held('up')) {
         p.stairs = null;
         p.vine = { x: e.centerX, top: e.topPx, bottom: e.basePx };
@@ -2602,6 +2637,14 @@ export class World {
       const ride = e.mount(p, input);
       if (ride) return p.getOnStairs(ride);
     }
+  }
+
+  /** The level the top of vine `e` leads to (its `vine` zone's), or null for none. */
+  private vineTarget(e: Vine): string | null {
+    for (const z of this.level.zones)
+      if (z.kind === 'vine' && (this.vineBlockAt(z.x, z.y) ?? this.placedVineAt(z.x, z.y)) === e)
+        return z.target.level;
+    return null;
   }
 
   private vineBlockAt(tx: number, ty: number): Vine | undefined {
@@ -3852,15 +3895,19 @@ export class World {
   }
 
   private beamUp(p: Player, z: TeleportZone): void {
+    // Classic rules: a Yoshi mount rider bound for a castle, water or bonus area hops off first
+    // (item 103), Yoshi waiting beside the pad.
+    const hop = this.rules === 'classic' ? (classicRules().teleportEntry?.(this, p, z) ?? 0) : 0;
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
       o.anim = 'idle';
-      o.hidden = true;
+      // The hopping hero is seen until the hop ends.
+      o.hidden = hop === 0 || o !== p;
     }
-    this.audio.sfx('beam');
+    if (hop === 0) this.audio.sfx('beam');
     const floor = toPx(p.body.y + p.body.h);
     this.beam = {
       dir: 'up',
@@ -3868,6 +3915,7 @@ export class World {
       // Centred on the pad, as Mega Man's teleporters line him up.
       streaks: [{ player: p, x: z.x * 16 + 8, top: floor - BEAM_H, floor, delay: 0, landed: 0 }],
       target: { type: 'pipe', target: { ...z.target } },
+      ...(hop > 0 ? { hop: { t: 0, n: hop, y0: p.body.y } } : {}),
     };
   }
 
@@ -3879,6 +3927,21 @@ export class World {
    */
   private updateBeam(): void {
     const a = this.beam as BeamAnim;
+    if (a.hop) {
+      // A low hop in place (16 px at its top, as a pipe's), then the beam from where it started.
+      const h = a.hop;
+      const p = a.streaks[0]?.player;
+      h.t++;
+      if (p) p.body.y = h.y0 - Math.round((px(16) * 4 * h.t * (h.n - h.t)) / (h.n * h.n));
+      if (h.t < h.n) return;
+      delete a.hop;
+      if (p) {
+        p.body.y = h.y0;
+        p.hidden = true;
+      }
+      this.audio.sfx('beam');
+      return;
+    }
     a.t++;
     if (a.dir === 'up') {
       const s = a.streaks[0];
@@ -3977,6 +4040,35 @@ export class World {
   }
 
   /* ---------- Level clear ---------- */
+
+  /**
+   * The flagpole's invisible barrier (items 193/194, every ruleset): a wall at the shaft's left
+   * edge from the top of the ball up past any reachable height. A hero whose feet are above the
+   * ball and who crossed it moving left to right this frame (by any move: run, jump, spring, wall
+   * move, thrust, mount or lift) is put back against it with no rightward speed, and falls on
+   * into the shaft. It never blocks a hero coming back from the right, the clear's walk (no
+   * barrier once the pole is touched), enemies, projectiles or the camera. Only touching the shaft
+   * starts the clear, so the grab score is unchanged.
+   *
+   * Owner deviation from the shipped original: FlagPole.as checkPlayerLoc holds the same clamp
+   * (`player.hBot < hTop` and `player.hRht >= nx`: nx = nx - hWidth/2, vx = 0) commented out.
+   * The levels with a designed route over the pole keep none (overPoleRoute).
+   */
+  private poleBarrier(p: Player, fromX: number | undefined): void {
+    if (this.clear || fromX === undefined || overPoleRoute(this.level)) return;
+    const b = p.body;
+    for (const pole of this.poles) {
+      if (!pole.alive) continue;
+      // 1 px into the shaft: a pinned hero overlaps it, so the frame his feet pass the ball's top
+      // he touches it and grabs (never sliding down beside it to the base, item 194 review).
+      const wall = pole.body.x + px(1);
+      if (b.y + b.h > pole.body.y) continue; // feet at or below the ball's top: the shaft is touchable
+      if (fromX + b.w > wall || b.x + b.w <= wall) continue; // not a left-to-right crossing
+      this.placeX(p, wall - b.w);
+      if (b.vx > 0) b.vx = 0;
+      return;
+    }
+  }
 
   private startClear(pole: Flagpole, p: Player): void {
     this.destroyEnemiesAndProjectilesOnScreen();
