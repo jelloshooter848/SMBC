@@ -183,6 +183,20 @@ v0.2.0 was redeployed from a newer `main` commit. So after publishing an older t
 sure `main` has moved on (merge anything, even a docs change) before the next release runs, or
 redeploy the newest tag by hand afterwards.
 
+## Pruning old zips
+
+Only the minor releases (`vX.Y.0`) and the newest release keep their zips; every release page,
+its notes and every tag stay. Actions → **Prune release zips** → **Run workflow** on `main`:
+
+1. Leave **Only list what would be deleted** ticked and run it. The log lists each zip as `keep`
+   or `WOULD DELETE`, and the summary counts them.
+2. If the list is right, run it again with the box unticked. That deletes those zips for good.
+
+Run it only after the newest release has been published, since "newest" is whatever
+`/releases/latest` names at that moment. After the next release, run it again to clear the
+previous one's zips. A deleted zip can't be restored, but any version can be rebuilt from its
+tag (see above).
+
 ## Pre-releases for testers
 
 A release candidate is a normal release with a `-rc.N` suffix:
