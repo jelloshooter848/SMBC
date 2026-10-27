@@ -10,7 +10,7 @@ import {
 } from '@engine/online/online-backup';
 import { defaultSettings, saveSettings } from '@engine/save/settings';
 import { adoptDataEpoch, onStaleStorage } from '@engine/save/storage';
-import { hexToRgb, resolvePalette } from '@engine/gfx/palette';
+import { hexToRgb, NES, PALETTE_MODES, resolvePalette } from '@engine/gfx/palette';
 import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
 import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { PALETTES } from '@content/sprites';
@@ -153,6 +153,7 @@ describe('265: a failed load is tried again under a fresh URL', () => {
         CHROMIUM('http://localhost:5302/src/engine/online/nostr-backup.ts'),
         1,
         'http://localhost:5302/src/game/scenes/save-data.ts',
+        '/',
       ),
     ).toBe('http://localhost:5302/src/engine/online/nostr-backup.ts?retry=1');
   });
@@ -164,6 +165,51 @@ describe('265: a failed load is tried again under a fresh URL', () => {
     expect(freshChunkUrl(CHROMIUM('https://smbc.example/assets/index-AAAA.js'), 1, BASE)).toBeNull();
     expect(freshChunkUrl(CHROMIUM('https://evil.example/nostr-backup-X.js'), 1, BASE)).toBeNull();
     expect(freshChunkUrl(CHROMIUM('data:text/javascript,nostr-backup.js'), 1, BASE)).toBeNull();
+  });
+
+  it('review: only a nostr-backup chunk file itself (not a source map, not a file in a nostr-backup folder)', () => {
+    expect(freshChunkUrl(CHROMIUM('https://smbc.example/assets/nostr-backup-x.js.map'), 1, BASE)).toBeNull();
+    expect(freshChunkUrl(CHROMIUM('https://smbc.example/assets/nostr-backup/evil.js'), 1, BASE)).toBeNull();
+  });
+
+  it("review: the failed URL's own query is dropped, not kept beside retry", () => {
+    expect(freshChunkUrl(CHROMIUM('https://smbc.example/assets/nostr-backup-x.js?a=b'), 1, BASE)).toBe(
+      'https://smbc.example/assets/nostr-backup-x.js?retry=1',
+    );
+    expect(freshChunkUrl(CHROMIUM('https://smbc.example/assets/nostr-backup-x.js#h'), 3, BASE)).toBe(
+      'https://smbc.example/assets/nostr-backup-x.js?retry=3',
+    );
+  });
+
+  it('review: a quoted or bracketed URL in the message is read without its punctuation', () => {
+    const url = 'https://smbc.example/assets/nostr-backup-x.js';
+    const want = `${url}?retry=1`;
+    for (const msg of [`'${url}'`, `"${url}"`, `(${url})`, `module (${url}) failed`])
+      expect(
+        freshChunkUrl(new TypeError(`Failed to fetch dynamically imported module: ${msg}`), 1, BASE),
+        msg,
+      ).toBe(want);
+  });
+
+  it("review: only under the app's own base directory (another repo on the same github.io origin, .., %2e%2e)", () => {
+    const base = 'https://user.github.io/SMBC/assets/index-AAAA.js';
+    const root = '/SMBC/';
+    const ok = 'https://user.github.io/SMBC/assets/nostr-backup-x.js';
+    expect(freshChunkUrl(CHROMIUM(ok), 1, base, root)).toBe(`${ok}?retry=1`);
+    // Without a root, the base module's own folder.
+    expect(freshChunkUrl(CHROMIUM(ok), 1, base)).toBe(`${ok}?retry=1`);
+    for (const bad of [
+      'https://user.github.io/other/assets/nostr-backup-x.js',
+      'https://user.github.io/SMBC/../other/nostr-backup-x.js',
+      'https://user.github.io/SMBC/assets/../../other/nostr-backup-x.js',
+      'https://user.github.io/SMBC/%2e%2e/other/nostr-backup-x.js',
+      'https://user.github.io/SMBC/assets/%2E%2E/%2e%2e/evil/nostr-backup-x.js',
+      'https://user.github.io/SMBCX/nostr-backup-x.js',
+      'https://user.github.io/nostr-backup-x.js',
+    ])
+      expect(freshChunkUrl(CHROMIUM(bad), 1, base, root), bad).toBeNull();
+    // The relative root is read from the base module's folder.
+    expect(freshChunkUrl(CHROMIUM('https://user.github.io/SMBC/nostr-backup-x.js'), 1, base)).toBeNull();
   });
 
   it('onlineLoader: the first load by its own name, each retry by a fresh URL; a good one kept', async () => {
@@ -202,8 +248,31 @@ describe('265: a failed load is tried again under a fresh URL', () => {
     press(r, 'Back up online');
     await flush();
     expect(status(r.h)).toBe('COULD NOT REACH THE SERVERS');
-    expect(r.h.said.at(-1)).toMatch(/reload the page/i);
-    expect(r.h.said.at(-1)).not.toMatch(/twice/i);
+    const said = r.h.said.at(-1) as string;
+    expect(said).toMatch(/reload the page/i);
+    expect(said).not.toMatch(/twice/i);
+    // Review: said once, not "try again ... then try again".
+    expect(said.match(/try again/gi) ?? []).toHaveLength(0);
+    expect(said.match(/reload/gi)).toHaveLength(1);
+    // Review: drawn too.
+    expect(drawn(r.h.top() as never).some((t) => t.str === 'RELOAD THE PAGE')).toBe(true);
+  });
+
+  it('review: the second failure in a row says just to reload, drawn and said', async () => {
+    seenNote();
+    uploadedCode();
+    const r = rig();
+    r.env.online!.load = onlineLoader(() => Promise.reject(new Error('Failed to fetch module')));
+    press(r, 'Back up online');
+    press(r, 'Back up online');
+    await flush();
+    expect(drawn(r.h.top() as never).some((t) => t.str === 'RELOAD THE PAGE')).toBe(false);
+    press(r, 'Back up online');
+    await flush();
+    const said = r.h.said.at(-1) as string;
+    expect(said).toMatch(/reload the page/i);
+    expect(said).not.toMatch(/twice|try again/i);
+    expect(drawn(r.h.top() as never).some((t) => t.str === 'RELOAD THE PAGE')).toBe(true);
   });
 
   it('a failure that has a fresh URL to try does not ask for a reload the first time', async () => {
@@ -224,6 +293,7 @@ describe('265: a failed load is tried again under a fresh URL', () => {
     await flush();
     expect(status(r.h)).toBe('COULD NOT REACH THE SERVERS');
     expect(r.h.said.at(-1)).not.toMatch(/reload/i);
+    expect(drawn(r.h.top() as never).some((t) => t.str === 'RELOAD THE PAGE')).toBe(false);
     press(r, 'Back up online');
     await flush();
     expect(status(r.h)).toBe('BACKED UP (5 OF 5 SERVERS)');
@@ -309,8 +379,8 @@ describe('importing a code that was never backed up online', () => {
     expect(said).toMatch(/Q Q Q Q, Q Q 1 1, 1 1 1 1/);
     const lines = linesOf(r.h);
     expect(lines.some((l) => l.startsWith('CODE NOW'))).toBe(false);
-    expect(lines.join(' ')).toMatch(/NOT YET BACKED UP/);
-    expect(lines.join(' ')).toContain('QQQQ-QQ11-1111');
+    // Review: the code, then what it is.
+    expect(lines.slice(0, 2)).toEqual(['CODE QQQQ-QQ11-1111', 'NOT YET BACKED UP ONLINE']);
     for (const l of lines) expect(l.length).toBeLessThanOrEqual(28);
     expect(stored()).toMatchObject({ code: OTHER });
     expect(stored().uploaded).not.toBe(true);
@@ -324,6 +394,38 @@ describe('importing a code that was never backed up online', () => {
     await importFile(r, t);
     expect(linesOf(r.h)).toContain('CODE NOW QQQQ-QQ11-1111');
     expect(r.h.said.at(-1)).toMatch(/online backup code is now Q Q Q Q/i);
+  });
+
+  it('review: the import question does not call a never-uploaded brought code an online backup code', async () => {
+    uploadedCode();
+    const t = backupFrom((s) =>
+      s.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: OTHER, shown: false, uploaded: false })),
+    );
+    const r = rig();
+    press(r, 'Back up on device');
+    press(r, 'Import backup');
+    r.picks.at(-1)!(new File([t], 'b.json', { type: 'application/json' }));
+    await flush();
+    expect(titleOf(r.h)).toBe('REPLACE ALL DATA ON THIS DEVICE?');
+    const said = r.h.said.at(-1) as string;
+    expect(said).not.toMatch(/another online backup code/i);
+    expect(said).toMatch(/another backup code, not yet backed up online/i);
+    // This device's own (online) code is still shown, to keep.
+    expect(said).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
+    expect(linesOf(r.h)).toContain('ZZZZ-ZZ99-9999');
+  });
+
+  it('review: an uploaded brought code is still "another online backup code" on the question', async () => {
+    uploadedCode();
+    const t = backupFrom((s) =>
+      s.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: OTHER, shown: true, lastAt: 5, uploaded: true })),
+    );
+    const r = rig();
+    press(r, 'Back up on device');
+    press(r, 'Import backup');
+    r.picks.at(-1)!(new File([t], 'b.json', { type: 'application/json' }));
+    await flush();
+    expect(r.h.said.at(-1)).toMatch(/another online backup code/i);
   });
 
   it("this device's own code brought back: nothing said about a code", async () => {
@@ -373,22 +475,51 @@ describe('high contrast: the backup code colour', () => {
     const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p) as [number, number];
     return (x + 0.05) / (y + 0.05);
   };
-  const gold = resolvePalette(PALETTES, FONT_COLOURS.gold, 'highContrast')[1] as string;
-  const white = resolvePalette(PALETTES, 'font', 'highContrast')[1] as string;
+  const hc = (name: string) => resolvePalette(PALETTES, name, 'highContrast')[1] as string;
+  const code = hc(FONT_COLOURS.code);
+  const white = hc('font');
 
   it('is not the old pale #ffffa2', () => {
-    expect(gold.toLowerCase()).not.toBe('#ffffa2');
+    expect(code.toLowerCase()).not.toBe('#ffffa2');
   });
 
   it('meets WCAG AAA (7:1) on the black card', () => {
-    expect(ratio(gold, '#000000')).toBeGreaterThanOrEqual(7);
+    expect(ratio(code, '#000000')).toBeGreaterThanOrEqual(7);
   });
 
   it('stands clearly apart from the white text: a strong hue, not a pale tint', () => {
-    const [r, g, b] = hexToRgb(gold);
+    const [r, g, b] = hexToRgb(code);
     // Saturated: its weakest channel well below its strongest (white's are equal).
     expect(Math.max(r, g, b) - Math.min(r, g, b)).toBeGreaterThanOrEqual(0xc0);
-    expect(ratio(white, gold)).toBeGreaterThanOrEqual(1.4);
+    expect(ratio(white, code)).toBeGreaterThanOrEqual(1.4);
+  });
+
+  it('review: the code has its own font colour; in every other mode it looks as the gold does', () => {
+    for (const mode of PALETTE_MODES) {
+      const gold = resolvePalette(PALETTES, FONT_COLOURS.gold, mode);
+      const mine = resolvePalette(PALETTES, FONT_COLOURS.code, mode);
+      if (mode === 'highContrast') {
+        expect(mine[1]).toBe('#ffb800');
+        expect(mine.filter((_, i) => i !== 1)).toEqual(gold.filter((_, i) => i !== 1));
+      } else expect(mine).toEqual(gold);
+    }
+  });
+
+  it("review: the gold font (CLASSIC box headers on the orange box) keeps main's high-contrast colour", () => {
+    const gold = hc(FONT_COLOURS.gold);
+    expect(gold).toBe('#ffffa2');
+    // The header on the CLASSIC box's orange (menu-box.ts): 4.47:1, as before.
+    expect(ratio(gold, NES.orangeBrown)).toBeGreaterThanOrEqual(4.47);
+  });
+
+  it('review: every backup code line is drawn in the code colour', async () => {
+    seenNote();
+    uploadedCode();
+    const r = rig();
+    press(r, 'Back up online');
+    press(r, 'Show most recent code');
+    const line = drawn(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999');
+    expect(line!.sheet).toBe(`font@${FONT_COLOURS.code}`);
   });
 });
 

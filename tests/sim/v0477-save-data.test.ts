@@ -439,20 +439,20 @@ describe('181.4: the Back Up Online result card', () => {
     const texts = drawSheets(r.h.top() as never);
     const code = texts.filter((t) => t.str === 'ABCD-EF12-3456');
     expect(code).toHaveLength(1);
-    expect(code[0]!.sheet).toBe(`font@${FONT_COLOURS.gold}`);
+    expect(code[0]!.sheet).toBe(`font@${FONT_COLOURS.code}`);
     expect(texts.find((t) => t.str === 'BACKED UP (5 OF 5 SERVERS)')!.sheet).toBe('font');
   });
 
   it("the code's colour comes from the palette system: distinct from the text in every palette mode", () => {
     for (const mode of PALETTE_MODES) {
       const plain = resolvePalette(PALETTES, 'font', mode);
-      const gold = resolvePalette(PALETTES, FONT_COLOURS.gold, mode);
+      const gold = resolvePalette(PALETTES, FONT_COLOURS.code, mode);
       expect(gold[1], mode).not.toBe(plain[1]);
       expect(gold[1], mode).not.toBe(plain[0]);
     }
     // The colour-blind and high-contrast modes have their own version of it.
-    expect(resolvePalette(PALETTES, FONT_COLOURS.gold, 'highContrast')[1]).not.toBe(
-      resolvePalette(PALETTES, FONT_COLOURS.gold, 'default')[1],
+    expect(resolvePalette(PALETTES, FONT_COLOURS.code, 'highContrast')[1]).not.toBe(
+      resolvePalette(PALETTES, FONT_COLOURS.code, 'default')[1],
     );
   });
 
@@ -467,7 +467,7 @@ describe('181.4: the Back Up Online result card', () => {
     expect(labels(r.h.top())).toEqual(['Copy code', 'Share code', 'OK']);
     expect(r.h.said.at(-1)).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
     expect(drawSheets(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
-      `font@${FONT_COLOURS.gold}`,
+      `font@${FONT_COLOURS.code}`,
     );
     expect(r.loads).toBe(0);
   });
@@ -649,7 +649,7 @@ describe('181.5 / 188: RESET GAME', () => {
     expect(said).toMatch(/stays on the servers/i);
     expect(said).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
     expect(drawSheets(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
-      `font@${FONT_COLOURS.gold}`,
+      `font@${FONT_COLOURS.code}`,
     );
     press(r, 'Copy code');
     await flush();
@@ -1271,7 +1271,7 @@ describe('230: an import that replaces an uploaded code shows it first', () => {
     expect(said).toMatch(/stays on the servers/i);
     expect(said).toMatch(/ No$/);
     expect(drawSheets(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
-      `font@${FONT_COLOURS.gold}`,
+      `font@${FONT_COLOURS.code}`,
     );
     press(r, 'Copy code');
     await flush();
