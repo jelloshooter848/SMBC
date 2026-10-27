@@ -31,7 +31,7 @@ export interface LoadedSongs {
   /** The library could not be read at all (storage, or damaged / newer data): it is never written. */
   unreadable: boolean;
   /** Why it is unreadable: storage cannot be read, or the stored library is damaged or newer. */
-  reason?: 'read' | 'damaged';
+  reason?: 'read' | 'damaged' | 'newer';
 }
 
 export type SongRefusal =
@@ -42,6 +42,7 @@ export type SongRefusal =
   | 'too-long'
   | 'read'
   | 'damaged'
+  | 'newer'
   | 'stale'
   | 'quota'
   | 'write'
@@ -56,7 +57,9 @@ export const SONG_REFUSALS: Record<SongRefusal, string> = {
   full: `The library is full (${MAX_SONGS} songs). Delete one first.`,
   'too-long': 'That song is too long to save.',
   read: 'The library cannot be read on this device. Nothing was saved.',
-  damaged: 'The library is damaged or from a newer version. Nothing was saved.',
+  damaged: 'The song library is damaged. Nothing was saved. Clear song library starts a new one.',
+  newer:
+    'The song library was saved by a newer version of the game. Nothing was saved. Update the game, or clear the library.',
   stale: 'The game data changed in another tab. Reloading.',
   quota: 'Storage is full. Nothing was saved.',
   write: 'Storage refused the change. Nothing was saved.',
@@ -72,7 +75,19 @@ export function cleanSongName(name: string): string | null {
   return n ? n : null;
 }
 
-type Raw = { ok: true; lib: StoredSongLibrary } | { ok: false; reason: 'read' | 'damaged' };
+type Raw = { ok: true; lib: StoredSongLibrary } | { ok: false; reason: 'read' | 'damaged' | 'newer' };
+
+/**
+ * A map of songs by name with no prototype, so any name (`__proto__`, `constructor`) is an
+ * ordinary entry: set as an own property, checked with Object.hasOwn.
+ */
+function songMap(from: Record<string, unknown> = {}): Record<string, unknown> {
+  const m = Object.create(null) as Record<string, unknown>;
+  for (const [k, v] of Object.entries(from))
+    Object.defineProperty(m, k, { value: v, enumerable: true, writable: true, configurable: true });
+  return m;
+}
+const has = (m: Record<string, unknown>, k: string): boolean => Object.hasOwn(m, k);
 
 function readRaw(): Raw {
   if (!storageReadable()) return { ok: false, reason: 'read' };
@@ -82,11 +97,13 @@ function readRaw(): Raw {
   } catch {
     return { ok: false, reason: 'read' };
   }
-  if (text === null) return { ok: true, lib: { v: 1, songs: {} } };
+  if (text === null) return { ok: true, lib: { v: 1, songs: songMap() } };
   try {
     const v = JSON.parse(text) as unknown;
     if (isPlainObject(v) && v.v === 1 && isPlainObject(v.songs))
-      return { ok: true, lib: { v: 1, songs: v.songs } };
+      return { ok: true, lib: { v: 1, songs: songMap(v.songs) } };
+    // A later format of the library (review: told apart from a damaged one).
+    if (isPlainObject(v) && typeof v.v === 'number' && v.v > 1) return { ok: false, reason: 'newer' };
   } catch {
     /* damaged */
   }
@@ -97,11 +114,18 @@ const isSong = (t: unknown): t is string => typeof t === 'string' && t.length <=
 
 export function loadSongs(): LoadedSongs {
   const r = readRaw();
-  if (!r.ok) return { songs: {}, damaged: 0, unreadable: true, reason: r.reason };
-  const songs: Record<string, string> = {};
+  if (!r.ok)
+    return { songs: songMap() as Record<string, string>, damaged: 0, unreadable: true, reason: r.reason };
+  const songs = songMap() as Record<string, string>;
   let damaged = 0;
   for (const [name, text] of Object.entries(r.lib.songs)) {
-    if (isSong(text)) songs[name] = text;
+    if (isSong(text))
+      Object.defineProperty(songs, name, {
+        value: text,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
     else damaged++;
   }
   return { songs, damaged, unreadable: false };
@@ -118,7 +142,7 @@ function update(change: (songs: Record<string, unknown>) => SongRefusal | null):
   if (storageIsStale()) return { ok: false, reason: 'stale' };
   const r = readRaw();
   if (!r.ok) return { ok: false, reason: r.reason };
-  const songs = { ...r.lib.songs };
+  const songs = songMap(r.lib.songs);
   const refused = change(songs);
   if (refused) return { ok: false, reason: refused };
   try {
@@ -137,7 +161,7 @@ export function saveSong(name: string, text: string): SongWrite {
   if (!n) return { ok: false, reason: 'name' };
   if (text.length > MAX_SONG_CHARS) return { ok: false, reason: 'too-long' };
   return update((songs) => {
-    if (!isSong(songs[n]) && count(songs) >= MAX_SONGS) return 'full';
+    if (!(has(songs, n) && isSong(songs[n])) && count(songs) >= MAX_SONGS) return 'full';
     songs[n] = text;
     return null;
   });
@@ -147,10 +171,9 @@ export function renameSong(from: string, to: string): SongWrite {
   const n = cleanSongName(to);
   if (!n) return { ok: false, reason: 'name' };
   return update((songs) => {
-    const text = songs[from];
-    if (!isSong(text)) return 'missing';
+    if (!has(songs, from) || !isSong(songs[from])) return 'missing';
     if (n === from) return null;
-    if (n in songs) return 'exists';
+    if (has(songs, n)) return 'exists';
     // Keep the library's order: the renamed song stays where it was.
     const entries = Object.entries(songs).map(([k, v]): [string, unknown] => (k === from ? [n, v] : [k, v]));
     for (const k of Object.keys(songs)) delete songs[k];
@@ -161,7 +184,7 @@ export function renameSong(from: string, to: string): SongWrite {
 
 export function deleteSong(name: string): SongWrite {
   return update((songs) => {
-    if (!(name in songs)) return 'missing';
+    if (!has(songs, name)) return 'missing';
     delete songs[name];
     return null;
   });

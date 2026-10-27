@@ -26,6 +26,12 @@ const KIND: Record<Channel, 'pulse' | 'triangle' | 'noise'> = {
   noise: 'noise',
 };
 
+/**
+ * The most MML commands one channel may read, repeats counted each time through (review): a
+ * repeat of a repeat can't hang the page. The game's longest channel reads under 2,000.
+ */
+export const MAX_SONG_STEPS = 100_000;
+
 export const MIN_TEMPO = 40;
 export const MAX_TEMPO = 300;
 export const DEFAULT_TEMPO = 140;
@@ -75,7 +81,8 @@ export function parseSongDoc(text: string): DocResult {
     const name = m?.[2]?.toLowerCase();
     if (m && name && NAMES.has(name)) {
       const valueAt = lineStart + m[0].length;
-      const value = line.slice(m[0].length);
+      // From the raw line: a channel's text keeps a CRLF's \r, so its offsets stay the document's.
+      const value = raw.slice(m[0].length);
       const nameAt = lineStart + (m[1] ?? '').length;
       if ((CHANNELS as readonly string[]).includes(name)) {
         const ch = name as Channel;
@@ -117,7 +124,7 @@ export function parseSongDoc(text: string): DocResult {
     if (current) {
       const body = bodies[current] as { text: string; offset: number };
       // The channel's text keeps its place in the document: offsets map straight back.
-      body.text += '\n' + line;
+      body.text += '\n' + raw;
       continue;
     }
     const code = line.replace(/;.*$/, '');
@@ -127,11 +134,12 @@ export function parseSongDoc(text: string): DocResult {
       return { ok: false, error: error(text, what, at, at + 1) };
     }
   }
+  let events = 0;
   for (const ch of CHANNELS) {
     const body = bodies[ch];
     if (!body) continue;
     try {
-      parseMml(body.text, KIND[ch]);
+      events += parseMml(body.text, KIND[ch], { maxSteps: MAX_SONG_STEPS }).events.length;
     } catch (e) {
       if (!(e instanceof MmlError)) throw e;
       const s = body.offset + e.start;
@@ -144,7 +152,8 @@ export function parseSongDoc(text: string): DocResult {
     const body = bodies[ch];
     if (body && body.text.trim()) song[ch] = body.text;
   }
-  if (!CHANNELS.some((ch) => song[ch]))
+  // Settings and commands but not one note or rest: nothing to play (and it would never end).
+  if (!CHANNELS.some((ch) => song[ch]) || events === 0)
     return { ok: false, error: error(text, 'no notes yet: write pulse1: and some notes', 0, 1) };
   return { ok: true, doc: { title, tempo, loop, song, compiled: compileSong(song) } };
 }
@@ -198,6 +207,11 @@ export const setTempo = (text: string, bpm: number): string =>
   setHeader(text, 'tempo', String(Math.round(Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, bpm)))));
 export const setLoop = (text: string, on: boolean): string => setHeader(text, 'loop', on ? 'on' : 'off');
 export const setTitle = (text: string, title: string): string => setHeader(text, 'title', title);
+
+/** The `title:` line's text ('' when none), read even while the rest has an error. */
+export function readTitle(text: string): string {
+  return /^[ \t]*title[ \t]*:(.*)$/im.exec(text)?.[1]?.trim().slice(0, 40) ?? '';
+}
 
 /** The tempo and loop the text asks for, read even while the rest has an error. */
 export function readSettings(text: string): { tempo: number; loop: boolean } {

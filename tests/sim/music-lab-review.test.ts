@@ -77,14 +77,17 @@ describe('leaving and the background', () => {
 
   it('the tab going to the background stops the song; leaving removes the listener', () => {
     const s = setup();
+    // The AudioManager keeps its own listener: count only the lab's.
+    const before = docListeners.get('visibilitychange')?.size ?? 0;
     s.h.game.openMusicLab();
+    expect(docListeners.get('visibilitychange')?.size).toBe(before + 1);
     const l = lab(s);
     l.play();
     hide();
     expect(l.playing).toBeNull();
     expect(s.seq().playing).toBeNull();
     s.h.game.showTitle();
-    expect(docListeners.get('visibilitychange')?.size ?? 0).toBe(0);
+    expect(docListeners.get('visibilitychange')?.size ?? 0).toBe(before);
   });
 });
 

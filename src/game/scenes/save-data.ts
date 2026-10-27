@@ -52,6 +52,10 @@ import type { Game } from './game';
  * from its first screen, so nothing of the old state stays in memory.
  */
 
+/** BACK UP ONLINE's "too big" message (Music Lab songs are in the data too, 0.4.77). */
+export const ONLINE_TOO_BIG =
+  'Your data is too big for an online backup. Use Export backup to save a file instead, or remove some custom levels or Music Lab songs. Nothing was backed up.';
+
 /** How the files reached the player. */
 export type DeliverOutcome = 'shared' | 'downloaded' | 'cancelled' | 'failed';
 
@@ -764,12 +768,7 @@ export class SaveDataOptions extends MenuScene {
         return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
       }
       if (!r.ok) {
-        if (r.reason === 'too-big')
-          return this.tell(
-            'TOO BIG TO BACK UP ONLINE',
-            'Your data is too big for an online backup. Use Export backup to save a file instead, or remove some custom levels. Nothing was backed up.',
-            true,
-          );
+        if (r.reason === 'too-big') return this.tell('TOO BIG TO BACK UP ONLINE', ONLINE_TOO_BIG, true);
         if (r.reason === 'newer')
           return this.tell(
             'A NEWER BACKUP IS ONLINE',

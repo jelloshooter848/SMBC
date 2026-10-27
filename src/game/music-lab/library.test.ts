@@ -129,19 +129,22 @@ describe('Music Lab library: rule 33a edge cases', () => {
   });
 
   it('a damaged library (not JSON, not the shape) or a newer format is never written over', () => {
-    for (const bad of [
-      '{nope',
-      '"text"',
-      '[1,2]',
-      JSON.stringify({ v: 1, songs: [] }),
-      JSON.stringify({ v: 2, songs: {} }),
-    ]) {
+    for (const bad of ['{nope', '"text"', '[1,2]', JSON.stringify({ v: 1, songs: [] })]) {
       store.set(SONG_LIBRARY_KEY, bad);
       expect(loadSongs()).toMatchObject({ songs: {}, unreadable: true });
       expect(saveSong('New', 'd')).toEqual({ ok: false, reason: 'damaged' });
       expect(deleteSong('New')).toEqual({ ok: false, reason: 'damaged' });
       expect(store.get(SONG_LIBRARY_KEY)).toBe(bad);
     }
+  });
+
+  it('a library from a newer version is never written over either (told apart: newer)', () => {
+    const newer = JSON.stringify({ v: 2, songs: {} });
+    store.set(SONG_LIBRARY_KEY, newer);
+    expect(loadSongs()).toMatchObject({ songs: {}, unreadable: true, reason: 'newer' });
+    expect(saveSong('New', 'd')).toEqual({ ok: false, reason: 'newer' });
+    expect(deleteSong('New')).toEqual({ ok: false, reason: 'newer' });
+    expect(store.get(SONG_LIBRARY_KEY)).toBe(newer);
   });
 
   it('two tabs: each save re-reads the library, so neither tab loses the other’s songs', () => {

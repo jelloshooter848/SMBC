@@ -38,11 +38,11 @@ const DAMAGED = ['{nope', '"text"', '[1]', JSON.stringify({ v: 1, songs: [] })];
 const NEWER = JSON.stringify({ v: 2, songs: { Future: 'c' } });
 
 describe('item 225: clearing a damaged song library', () => {
-  it('loadSongs says why the library is unreadable: damaged (or newer) vs storage', () => {
+  it('loadSongs says why the library is unreadable: damaged, newer, or storage', () => {
     store.set(SONG_LIBRARY_KEY, '{nope');
     expect(loadSongs()).toMatchObject({ unreadable: true, reason: 'damaged' });
     store.set(SONG_LIBRARY_KEY, NEWER);
-    expect(loadSongs()).toMatchObject({ unreadable: true, reason: 'damaged' });
+    expect(loadSongs()).toMatchObject({ unreadable: true, reason: 'newer' });
     throwOn = 'get';
     expect(loadSongs()).toMatchObject({ unreadable: true, reason: 'read' });
   });

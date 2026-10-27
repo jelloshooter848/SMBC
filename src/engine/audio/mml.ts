@@ -87,7 +87,18 @@ interface State {
   slide: number;
 }
 
-export function parseMml(src: string, channel: 'pulse' | 'triangle' | 'noise' = 'pulse'): Track {
+/**
+ * `maxSteps` (Music Lab, 0.4.77): the most commands read, repeats counted each time through,
+ * before the text is refused as too long; a player's text, or a shared link's, can't hang the
+ * page. Left out (the game's own songs and sounds): no limit.
+ */
+export function parseMml(
+  src: string,
+  channel: 'pulse' | 'triangle' | 'noise' = 'pulse',
+  opts: { maxSteps?: number } = {},
+): Track {
+  const maxSteps = opts.maxSteps ?? Infinity;
+  let steps = 0;
   const events: NoteEvent[] = [];
   const st: State = { octave: 4, len: PPQ, vol: 10, duty: 2, gate: 8, decay: false, slide: 0 };
   let tick = 0;
@@ -147,6 +158,7 @@ export function parseMml(src: string, channel: 'pulse' | 'triangle' | 'noise' = 
 
   while (i < n) {
     start = i;
+    if (++steps > maxSteps) fail(`too long: over ${maxSteps} steps (check the repeat counts)`);
     const ch = src[i] as string;
     if (ch === ' ' || ch === '\n' || ch === '\t' || ch === '|' || ch === '\r') {
       i++;

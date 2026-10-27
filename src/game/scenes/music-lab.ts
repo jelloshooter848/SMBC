@@ -9,6 +9,7 @@ import {
   NEW_SONG,
   parseSongDoc,
   readSettings,
+  readTitle,
   setLoop,
   setTempo,
   songToDoc,
@@ -104,8 +105,23 @@ const STYLE = `
 }
 `;
 
-/** A parsed document's title ('' when none, or the text has an error). */
-const r = (d: ReturnType<typeof parseSongDoc>): string => (d.ok ? d.doc.title : '');
+/**
+ * A question's answers in order; the first is selected when it opens. Clearing the library: NO
+ * first (owner item 225). Adding a shared song: Add first.
+ */
+export function questionAnswers(
+  kind: LabQuestion['kind'],
+): [['no' | 'yes', string], ...['no' | 'yes', string][]] {
+  return kind === 'clear'
+    ? [
+        ['no', 'No'],
+        ['yes', 'Yes, clear it'],
+      ]
+    : [
+        ['yes', 'Add to my songs'],
+        ['no', 'Not now'],
+      ];
+}
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
@@ -180,45 +196,56 @@ export class MusicLabScene implements Scene {
     if (this.start.notice) said.push(this.start.notice);
     const problem = this.libraryProblem;
     if (problem === 'damaged')
+      said.push('Your song library is damaged, so it cannot be read. Clear song library starts a new one.');
+    else if (problem === 'newer')
       said.push(
-        'Your song library is damaged or from a newer version, so it cannot be read here. Clear song library starts a new one.',
+        'Your song library was saved by a newer version of the game. Update the game to use it, or use Clear song library to start a new one.',
       );
     else if (problem === 'read') said.push('Songs cannot be saved: this device’s storage cannot be read.');
     this.say(said.join(' '), problem !== null);
     if (this.start.shared) {
-      const title = parseSongDoc(this.text);
-      const name = r(title);
-      this.ask({
-        kind: 'add',
-        text: `A shared song${name ? `, "${name}"` : ''}. Add it to your songs?`,
-        selected: 'yes',
-      });
+      const name = readTitle(this.text);
+      this.ask('add', `A shared song${name ? `, "${name}"` : ''}. Add it to your songs?`);
     }
+    // A song does not play on in a tab in the background (review).
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function')
+      document.addEventListener('visibilitychange', this.onVisibility);
   }
+
+  private readonly onVisibility = (): void => {
+    if (document.visibilityState !== 'hidden' || !this.playing) return;
+    this.stop(true);
+    this.status = 'Stopped: the game went to the background.';
+    this.sync();
+  };
 
   /* ---------- Questions (item 225; a shared song) ---------- */
 
   /** Why the library cannot be used: damaged (or newer), storage unreadable, or null. */
-  get libraryProblem(): 'damaged' | 'read' | null {
+  get libraryProblem(): 'damaged' | 'newer' | 'read' | null {
     const lib = loadSongs();
     return lib.unreadable ? (lib.reason ?? 'read') : null;
   }
 
   /** Item 225: Clear song library asks first, NO selected. */
   askClearLibrary(): void {
-    if (this.libraryProblem !== 'damaged') {
+    const problem = this.libraryProblem;
+    if (problem !== 'damaged' && problem !== 'newer') {
       this.refreshLibrary();
       this.say(SONG_REFUSALS['not-damaged']);
       return;
     }
-    this.ask({
-      kind: 'clear',
-      text: 'Clear the song library? It cannot be read here, and clearing deletes it for good.',
-      selected: 'no',
-    });
+    this.ask(
+      'clear',
+      problem === 'newer'
+        ? 'Clear the song library? It was saved by a newer version of the game (updating the game would read it), and clearing deletes it for good.'
+        : 'Clear the song library? It is damaged, so it cannot be read, and clearing deletes it for good.',
+    );
   }
 
-  private ask(q: LabQuestion): void {
+  /** Asks `text`; the first answer (questionAnswers) is the one selected. */
+  private ask(kind: LabQuestion['kind'], text: string): void {
+    const q: LabQuestion = { kind, text, selected: questionAnswers(kind)[0][0] };
     this.question = q;
     this.paintQuestion();
     this.game.deps.announcer?.say(`${q.text} ${q.selected === 'no' ? 'No' : 'Yes'} is selected.`);
@@ -249,7 +276,8 @@ export class MusicLabScene implements Scene {
     const songs = loadSongs().songs;
     const base = this.name;
     let name = base;
-    for (let n = 2; name in songs && n < 100; n++) name = cleanSongName(`${base.slice(0, 20)} ${n}`) ?? base;
+    for (let n = 2; Object.hasOwn(songs, name) && n < 100; n++)
+      name = cleanSongName(`${base.slice(0, 20)} ${n}`) ?? base;
     const r = saveSong(name, this.text);
     if (!r.ok) return this.refused(r);
     this.name = name;
@@ -299,6 +327,8 @@ export class MusicLabScene implements Scene {
 
   exit(): void {
     this.stop(true);
+    if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function')
+      document.removeEventListener('visibilitychange', this.onVisibility);
     if (this.checkTimer) clearTimeout(this.checkTimer);
     this.panel?.remove();
     this.panel = null;
@@ -364,6 +394,11 @@ export class MusicLabScene implements Scene {
   /** The text changed (typed, or by a control): an example becomes a copy, then re-check. */
   edit(text: string, fromBox = false): void {
     if (text === this.text) return;
+    // A question is open: the box is inert behind it; anything typed anyway is put back.
+    if (fromBox && this.question) {
+      this.syncBox();
+      return;
+    }
     this.text = text;
     this.confirming = null;
     if (this.example !== null) {
@@ -450,7 +485,11 @@ export class MusicLabScene implements Scene {
     const name = cleanSongName(this.name);
     if (!name) return this.refused({ ok: false, reason: 'name' });
     // Saving over another song of the library needs a second press.
-    if (name !== this.libraryName && name in loadSongs().songs && this.confirming !== `save:${name}`) {
+    if (
+      name !== this.libraryName &&
+      Object.hasOwn(loadSongs().songs, name) &&
+      this.confirming !== `save:${name}`
+    ) {
       this.confirming = `save:${name}`;
       this.say(`"${name}" is already in your library. Press Save again to replace it.`);
       return;
@@ -795,21 +834,15 @@ export class MusicLabScene implements Scene {
     if (!box) return;
     const q = this.question;
     box.hidden = !q;
+    // While a question is open nothing behind it can be reached or typed in.
+    for (const child of Array.from(this.panel?.children ?? []))
+      if (child !== box && child.tagName !== 'STYLE') (child as HTMLElement).inert = !!q;
     if (!q) return;
     (box.querySelector('p') as HTMLElement).textContent = q.text;
     const row = box.querySelector('.row') as HTMLElement;
     row.innerHTML = '';
-    const answers: ['no' | 'yes', string][] =
-      q.kind === 'clear'
-        ? [
-            ['no', 'No'],
-            ['yes', 'Yes, clear it'],
-          ]
-        : [
-            ['yes', 'Add to my songs'],
-            ['no', 'Not now'],
-          ];
-    for (const [which, label] of answers) {
+    const buttons: HTMLButtonElement[] = [];
+    for (const [which, label] of questionAnswers(q.kind)) {
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = label;
@@ -817,13 +850,23 @@ export class MusicLabScene implements Scene {
       b.addEventListener('focus', () => q === this.question && (q.selected = which));
       b.addEventListener('click', () => this.answer(which === 'yes'));
       row.appendChild(b);
+      buttons.push(b);
       if (which === q.selected) queueMicrotask(() => b.focus());
     }
+    // Tab stays on the question's buttons (the rest is inert while it is open).
+    row.onkeydown = (e) => {
+      if (e.key !== 'Tab') return;
+      e.preventDefault();
+      const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const next = buttons[(i + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length];
+      next?.focus();
+    };
   }
 
   private refreshLibrary(): void {
     const damagedRow = this.panel?.querySelector<HTMLElement>('[data-damaged]');
-    if (damagedRow) damagedRow.hidden = this.libraryProblem !== 'damaged';
+    const problem = this.libraryProblem;
+    if (damagedRow) damagedRow.hidden = problem !== 'damaged' && problem !== 'newer';
     const sel = this.panel?.querySelector<HTMLSelectElement>('[data-library]');
     if (!sel) return;
     const lib = loadSongs();
