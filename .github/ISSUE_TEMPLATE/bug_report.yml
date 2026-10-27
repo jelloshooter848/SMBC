@@ -1,0 +1,113 @@
+name: Bug report
+description: Something in the game doesn't work the way it should.
+title: '[Bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make SMBC REMIX better! Please search the [open issues](https://github.com/jelloshooter848/SMBC/issues) first; if your bug is already there, add a comment or a 👍 instead.
+        Not sure it's a bug? Ask in [Discussions](https://github.com/jelloshooter848/SMBC/discussions) first.
+  - type: input
+    id: version
+    attributes:
+      label: Build / version
+      description: Options → About on the title screen shows it, for example VERSION 0.5.0.
+      placeholder: 0.5.0
+    validations:
+      required: true
+  - type: dropdown
+    id: hero
+    attributes:
+      label: Hero
+      description: Who were you playing as?
+      options:
+        - Mario
+        - Luigi
+        - Link
+        - Samus
+        - Simon
+        - Mega Man
+        - Bass
+        - Bill
+        - Ryu
+        - Sophia III
+        - Random
+        - Not in a level (menus, select, editor)
+    validations:
+      required: true
+  - type: input
+    id: level
+    attributes:
+      label: Level and look
+      description: The map set and level, the hero's look if not their own, or where you were if not in a level (hero select, options, level editor, a shared level...).
+      placeholder: The Lost Levels 3-2, as Proto Man
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: How were you playing?
+      options:
+        - Classic, a save file's run
+        - Classic, replaying a level from a cleared file
+        - A ?level= link
+        - A custom or shared level
+        - Online backup or Save data
+        - Music Lab
+        - Other
+    validations:
+      required: false
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Map difficulty
+      options:
+        - Normal
+        - Easy
+        - Hard
+        - Not sure
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you do, step by step? The more exact, the faster it gets fixed.
+      placeholder: |
+        1. Start 2-1 as Link
+        2. Climb the vine to the coin heaven
+        3. Down-thrust onto the last cloud
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Screenshots or a short video help a lot. Drag them into this box.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      description: Include the controls you used (keyboard, gamepad, touch).
+      placeholder: Windows 11, Chrome 141, keyboard / iPhone 15, Safari, touch
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      options:
+        - Every time
+        - Sometimes
+        - Only once so far
+    validations:
+      required: false
