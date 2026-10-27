@@ -173,7 +173,7 @@ describe('NIT 1: the card matches where YES goes, whenever the pause was built',
 });
 
 describe('NIT 3: Survival, Single hero, the Lost Levels 9-1 start', () => {
-  it('Survival: YES is the select, lives kept, the hero not fallen', () => {
+  it('Survival: YES is the select, the level-start lives (item 218), the hero not fallen', () => {
     const h = classic();
     const rules = originalFileRules();
     rules.options.gameMode = 'survival';
@@ -183,6 +183,7 @@ describe('NIT 3: Survival, Single hero, the Lost Levels 9-1 start', () => {
     const lives = h.game.state.lives;
     const hero = h.game.slotOf(h.game.state.character).id;
     expect(h.game.survival?.isFallen(hero)).toBe(false);
+    h.game.state.lives += 1;
     const card = pauseQuit(h);
     expect(card.title).toBe(QUIT_SELECT_TITLE);
     yes(h);

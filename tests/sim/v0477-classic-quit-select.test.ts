@@ -90,28 +90,31 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     expect(screen(h)).not.toMatch(/WAITS IN ITS FILE/);
   });
 
-  it('YES: the select for the same level, the same lives and score; nothing is lost', () => {
+  it('YES: the select for the same level, with the level-start lives and score (item 218: no farming, no life lost)', () => {
     const h = fileRun();
     const s = h.game.state;
-    s.score = 4200;
-    s.lives = 5;
-    s.coins = 7;
+    const start = { lives: s.lives, score: s.score, coins: s.coins };
+    // Gained mid-level: a 1-up, points, coins, a checkpoint.
+    s.score += 4200;
+    s.lives += 1;
+    s.coins += 7;
     s.checkpoint = { level: '1-1', x: 82 };
     pauseQuit(h);
     yes(h);
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.game.selectLevel).toBe('1-1');
-    expect(h.game.state.lives).toBe(5);
-    expect(h.game.state.score).toBe(4200);
-    expect(h.game.state.coins).toBe(7);
+    expect(h.game.state.lives).toBe(start.lives);
+    expect(h.game.state.score).toBe(start.score);
+    expect(h.game.state.coins).toBe(start.coins);
     // A fresh entry: no checkpoint, no clock carried.
     expect(h.game.state.checkpoint).toBeNull();
     expect(h.game.state.time).toBeNull();
-    // The file holds that level's start with the same lives and score (as at a new level).
+    // The file holds that level's start, never the farmed values.
     const f = loadClassicFile(A);
     expect(f?.run.levelId).toBe('1-1');
-    expect(f?.run.lives).toBe(5);
-    expect(f?.run.score).toBe(4200);
+    expect(f?.run.lives).toBe(start.lives);
+    expect(f?.run.score).toBe(start.score);
+    expect(f?.run.coins).toBe(start.coins);
     expect(f?.run.checkpoint ?? null).toBeNull();
   });
 
@@ -160,14 +163,15 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     h.game.devClassicGame(MARIO, '1-1', 'classic');
     h.until(() => inLevel(h), 900);
     h.idle(4);
-    h.game.state.lives = 4;
+    const lives = h.game.state.lives;
+    h.game.state.lives += 2;
     const before = [...store.keys()].filter((k) => k.includes('classic')).sort();
     const card = pauseQuit(h);
     expect(card.title).toBe(QUIT_SELECT_TITLE);
     yes(h);
     expect(h.top()).toBeInstanceOf(CharacterSelectScene);
     expect(h.game.selectLevel).toBe('1-1');
-    expect(h.game.state.lives).toBe(4);
+    expect(h.game.state.lives).toBe(lives);
     expect([...store.keys()].filter((k) => k.includes('classic')).sort()).toEqual(before);
   });
 
@@ -197,10 +201,10 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
   });
 
-  it('storage throwing: YES still reaches the select with the lives and score kept', () => {
+  it('storage throwing: YES still reaches the select with the level-start lives and score', () => {
     const h = fileRun();
-    h.game.state.score = 900;
-    const lives = h.game.state.lives;
+    const { score, lives } = h.game.state;
+    h.game.state.score += 900;
     pauseQuit(h);
     const ls = (globalThis as { localStorage?: unknown }).localStorage;
     const deny = () => {
@@ -214,7 +218,7 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     try {
       yes(h);
       expect(h.top()).toBeInstanceOf(CharacterSelectScene);
-      expect(h.game.state.score).toBe(900);
+      expect(h.game.state.score).toBe(score);
       expect(h.game.state.lives).toBe(lives);
     } finally {
       (globalThis as { localStorage?: unknown }).localStorage = ls;
@@ -285,5 +289,99 @@ describe('203: no BEATEN mark, the beat still kept', () => {
     expect(loadProgress().classicBeat).toEqual({ smb: 'hard', special: 'normal', lost: 'easy' });
     expect(allSetsBeaten(loadProgress(), 'easy')).toBe(true);
     expect(allSetsBeaten(loadProgress(), 'normal')).toBe(false);
+  });
+});
+
+describe('218 (owner): Quit to character select is a true fresh entry', () => {
+  /** The hero's power, synced into the run's state each frame (LevelScene.syncState). */
+  function powerUp(h: G): void {
+    const l = h.top() as LevelScene;
+    l.world.player.powerState = 'fire';
+    h.idle(2);
+    expect(h.game.state.powerState).toBe('fire');
+  }
+
+  it('a 1-up, points, coins and a power-up gained mid-level are gone after Quit > picking a hero', () => {
+    const h = fileRun();
+    const s = h.game.state;
+    const start = { lives: s.lives, score: s.score, coins: s.coins, power: s.powerState };
+    expect(start.power).toBe('small');
+    s.lives += 1;
+    s.score += 5000;
+    s.coins += 12;
+    powerUp(h);
+    pauseQuit(h);
+    yes(h);
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
+    const now = h.game.state;
+    expect({ lives: now.lives, score: now.score, coins: now.coins, power: now.powerState }).toEqual(start);
+    expect((h.top() as LevelScene).world.player.powerState).toBe('small');
+    // And the file was never written with what was farmed.
+    const f = loadClassicFile(A);
+    expect(f?.run.lives).toBe(start.lives);
+    expect(f?.run.score).toBe(start.score);
+    expect(f?.run.powerState).toBe('small');
+  });
+
+  it('quitting costs no life: the same lives as at the level start, again and again', () => {
+    const h = fileRun();
+    const lives = h.game.state.lives;
+    for (let n = 0; n < 3; n++) {
+      pauseQuit(h);
+      yes(h);
+      pickAtContinue(h);
+      h.until(() => inLevel(h), 900);
+      h.idle(4);
+      expect(h.game.state.lives).toBe(lives);
+    }
+    expect(loadClassicFile(A)?.run.lives).toBe(lives);
+  });
+
+  it('after a death, the restart point is the state the death left (one life fewer), not before it', () => {
+    const h = fileRun();
+    const lives = h.game.state.lives;
+    h.game.state.lives -= 1;
+    h.game.respawn('1-1', { mode: 'stand' });
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
+    h.idle(4);
+    h.game.state.score += 3000;
+    h.game.state.lives += 1;
+    pauseQuit(h);
+    yes(h);
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.state.lives).toBe(lives - 1);
+    expect(h.game.state.score).toBe(0);
+  });
+
+  it('a sub-area (a bonus room) restores the main level start, as entered', () => {
+    const h = fileRun();
+    const start = { lives: h.game.state.lives, score: h.game.state.score };
+    h.game.state.score += 800;
+    // Into 1-1's bonus room, as its pipe goes (straight in: no WORLD card, so no new start).
+    h.game.startLevel(h.game.deps.getLevel('1-1-bonus'), { mode: 'stand' });
+    expect((h.top() as LevelScene).level.parent).toBe('1-1');
+    h.idle(4);
+    h.game.state.lives += 1;
+    pauseQuit(h);
+    yes(h);
+    expect(h.game.selectLevel).toBe('1-1');
+    expect(h.game.state.score).toBe(start.score);
+    expect(h.game.state.lives).toBe(start.lives);
+  });
+
+  it('a developer run (no file) restores its level start too', () => {
+    const h = classic((s) => void (s.dev = true));
+    h.game.devClassicGame(MARIO, '1-2', 'classic');
+    h.until(() => inLevel(h), 900);
+    h.idle(4);
+    const { lives, score } = h.game.state;
+    h.game.state.lives += 3;
+    h.game.state.score += 100;
+    pauseQuit(h);
+    yes(h);
+    expect(h.game.state.lives).toBe(lives);
+    expect(h.game.state.score).toBe(score);
   });
 });
