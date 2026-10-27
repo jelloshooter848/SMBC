@@ -525,30 +525,30 @@ export class SaveDataOptions extends MenuScene {
     if (!brought) {
       if (mine) data[ONLINE_BACKUP_KEY] = JSON.stringify(mine);
     } else {
-      const at = restored?.at;
+      // Review: an older file with this device's own code must not take back its upload or its
+      // later backup time (the next backup would be refused as older, Show and Delete would go).
+      const same = mine?.code === brought.code ? mine : null;
+      const times = [brought.lastAt, same?.lastAt, restored?.at].filter((t) => t !== undefined);
+      const uploaded = !!restored || brought.uploaded === true || same?.uploaded === true;
       data[ONLINE_BACKUP_KEY] = JSON.stringify({
         ...brought,
         shown: false,
-        ...(at !== undefined ? { lastAt: Math.max(brought.lastAt ?? 0, at) } : {}),
-        ...(restored ? { uploaded: true } : {}),
+        ...(times.length ? { lastAt: Math.max(...times) } : {}),
+        ...(uploaded ? { uploaded: true } : {}),
       });
     }
-    // Item 184: this device's Home Screen notes stay seen (device facts, not save data).
+    // Item 184: this device's Home Screen flags win outright, set or not (device facts, not
+    // save data): a file from another device neither shows a seen note again nor hides one.
     const flags = this.homeScreenFlags();
-    if (flags) {
-      const raw = data[SETTINGS_KEY];
+    const raw = data[SETTINGS_KEY];
+    if (raw !== undefined || anyFlag(flags)) {
       const s = (raw === undefined ? defaultSettings() : JSON.parse(raw)) as { homeScreen?: unknown };
       const theirs = isRecord(s.homeScreen) ? s.homeScreen : {};
-      const merged: HomeScreenFlags = {
-        tipDone: flags.tipDone || theirs.tipDone === true,
-        noticeDone: flags.noticeDone || theirs.noticeDone === true,
-        offlineDone: flags.offlineDone || theirs.offlineDone === true,
-      };
       if (
         raw === undefined ||
-        (Object.keys(merged) as (keyof HomeScreenFlags)[]).some((k) => theirs[k] !== merged[k])
+        (Object.keys(flags) as (keyof HomeScreenFlags)[]).some((k) => theirs[k] !== flags[k])
       )
-        data[SETTINGS_KEY] = JSON.stringify({ ...s, homeScreen: merged });
+        data[SETTINGS_KEY] = JSON.stringify({ ...s, homeScreen: flags });
     }
     const r = replaceGameData(data);
     if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing changed.');
@@ -723,19 +723,18 @@ export class SaveDataOptions extends MenuScene {
    * Item 184: the Home Screen notes this device has seen (the stored settings' and this tab's):
    * device facts, not save data, so a reset or an import keeps them. Null: none seen.
    */
-  private homeScreenFlags(): HomeScreenFlags | null {
+  private homeScreenFlags(): HomeScreenFlags {
     const stored = loadJson<unknown>(SETTINGS_KEY);
     const hs = isRecord(stored) && isRecord(stored.homeScreen) ? stored.homeScreen : {};
     const mine = this.game.deps.settings?.homeScreen;
     const seen = (k: keyof HomeScreenFlags) => hs[k] === true || mine?.[k] === true;
-    const f = { tipDone: seen('tipDone'), noticeDone: seen('noticeDone'), offlineDone: seen('offlineDone') };
-    return f.tipDone || f.noticeDone || f.offlineDone ? f : null;
+    return { tipDone: seen('tipDone'), noticeDone: seen('noticeDone'), offlineDone: seen('offlineDone') };
   }
 
   private async erase(withPacks: boolean): Promise<void> {
     // Item 184: fresh settings carry the Home Screen flags; nothing else stays.
     const flags = this.homeScreenFlags();
-    const r = flags
+    const r = anyFlag(flags)
       ? replaceGameData({ [SETTINGS_KEY]: JSON.stringify({ ...defaultSettings(), homeScreen: flags }) })
       : eraseGameData();
     if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing was erased.');
@@ -774,10 +773,17 @@ export class SaveDataOptions extends MenuScene {
 
   /** The network side, or null (said: it could not be loaded, which means no connection). */
   private async onlineApi(): Promise<OnlineApi | null> {
+    const load = this.env.online?.load;
+    if (!load) return null;
     try {
-      return (await this.env.online?.load()) ?? null;
+      const api = await load();
+      loadFails.set(load, 0);
+      return api;
     } catch {
-      this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      // Item 185 (review): a browser may keep a failed chunk until the page is reloaded.
+      const n = (loadFails.get(load) ?? 0) + 1;
+      loadFails.set(load, n);
+      this.tell(UNREACHABLE[0], n >= 2 ? `${UNREACHABLE[1]} ${RELOAD_SAID}` : UNREACHABLE[1], true);
       return null;
     }
   }
@@ -1092,6 +1098,12 @@ const RESET_CODE_LINES = [
   'FORGETS ITS CODE. KEEP IT',
   'TO RESTORE THE BACKUP:',
 ];
+
+/** Failed loads in a row, per loader (the tab's one, shared by every Save data page). */
+const loadFails = new WeakMap<() => Promise<OnlineApi>, number>();
+const RELOAD_SAID = 'It failed twice in a row: reload the page, then try again.';
+
+const anyFlag = (f: HomeScreenFlags): boolean => f.tipDone || f.noticeDone || f.offlineDone;
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === 'object' && !Array.isArray(v);

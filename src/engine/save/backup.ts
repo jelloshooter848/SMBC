@@ -341,7 +341,7 @@ export function replaceGameData(data: Record<string, string>, store: KeyValueSto
   return { ok: true };
 }
 
-/** ERASE ALL DATA: every game key goes, all or nothing (the data marker stays, changed). */
+/** RESET GAME: every game key goes, all or nothing (the data marker stays, changed). */
 export function eraseGameData(store: KeyValueStore = local()): ChangeResult {
   return replaceGameData({}, store);
 }

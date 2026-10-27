@@ -212,7 +212,7 @@ export type BackUpResult =
   | { ok: false; reason: 'too-big' | 'servers' | 'refused' | 'newer'; accepted: number; total: number };
 
 /**
- * DELETE ONLINE COPY's outcome (owner item 168): the copy replaced by an empty one on `deleted`
+ * DELETE MOST RECENT CODE's outcome (owner items 168, 181.3): the copy replaced by an empty one on `deleted`
  * of `total` relays at `at`, or why on none.
  */
 export type DeleteResult =
