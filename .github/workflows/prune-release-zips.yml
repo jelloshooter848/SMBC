@@ -1,0 +1,50 @@
+# Deletes the zip files from old patch releases (owner item 5), run by hand: Actions → Prune release
+# zips → Run workflow. Every release page, its notes and every git tag stay; only zips go. Kept:
+# the minor releases (vX.Y.0) and the newest published release. A dry run (the default) only lists
+# what would be deleted; run it again with "dry run" unticked to delete. Deleted zips can't be
+# restored, but any version can be rebuilt from its tag.
+name: Prune release zips
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only list what would be deleted
+        required: true
+        default: true
+        type: boolean
+permissions:
+  contents: write
+concurrency:
+  group: prune-release-zips
+  cancel-in-progress: false
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Delete patch-release zips
+        run: |
+          set -euo pipefail
+          newest=$(gh api "repos/$REPO/releases/latest" --jq .tag_name)
+          echo "Newest release (kept): $newest"
+          gh api --paginate "repos/$REPO/releases?per_page=100" \
+            --jq '.[] | select(.draft | not) | .tag_name as $t | .assets[] | "\($t)\t\(.id)\t\(.name)"' \
+            > assets.tsv
+          kept=0; gone=0
+          while IFS=$'\t' read -r tag id name; do
+            if [[ "$tag" == "$newest" || "$tag" =~ ^v[0-9]+\.[0-9]+\.0$ ]]; then
+              echo "keep    $tag  $name"; kept=$((kept + 1)); continue
+            fi
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "WOULD DELETE  $tag  $name"
+            else
+              gh api -X DELETE "repos/$REPO/releases/assets/$id"
+              echo "deleted $tag  $name"
+            fi
+            gone=$((gone + 1))
+          done < assets.tsv
+          if [[ "$DRY_RUN" == "true" ]]; then verb="would delete"; else verb="deleted"; fi
+          echo "Kept $kept zip(s); $verb $gone." | tee -a "$GITHUB_STEP_SUMMARY"

@@ -370,11 +370,16 @@ export class SaveDataOptions extends MenuScene {
     return this.busy ? null : super.gesture();
   }
 
+  /** The status line of the page open now: BACK UP ON DEVICE's or BACK UP ONLINE's, else this one's. */
+  private setStatus(status: string): void {
+    if (this.sub) this.sub.page.note(status);
+    else this.status = status;
+  }
+
   /** The status line (the open page's, and the question's when one is up) and the screen reader. */
   private tell(status: string, said: string, bump = false): void {
     if (bump) this.game.ctx.audio.sfx('bump');
-    if (this.sub) this.sub.page.note(status);
-    else this.status = status;
+    this.setStatus(status);
     const top = this.game.scenes.top;
     if (top instanceof QuestionBox) top.note(status);
     this.game.deps.announcer?.say(said);
@@ -457,7 +462,7 @@ export class SaveDataOptions extends MenuScene {
   /** IMPORT BACKUP: the chooser, in this press's own event. */
   private pick(): void {
     if (this.busy) return;
-    this.status = '';
+    this.setStatus('');
     this.env.pickFile((file) => void this.readFile(file));
   }
 
@@ -493,11 +498,24 @@ export class SaveDataOptions extends MenuScene {
     const when = new Date(b.exportedAt);
     const day = Number.isNaN(when.getTime()) ? '' : when.toISOString().slice(0, 10);
     const keys = Object.keys(b.data).length;
-    const box = new QuestionBox(
+    // Item 230: the backup brings another code, so this device's (online) one is shown first, as
+    // Reset game does: its copy stays on the servers and this device forgets it.
+    const brought = readOnlineCode(b.data[ONLINE_BACKUP_KEY]);
+    const mine = loadUploadedCode();
+    const gone = mine && brought && brought.code !== mine.code ? formatBackupCode(mine.code) : null;
+    const box: QuestionBox = new QuestionBox(
       this.game,
       'REPLACE ALL DATA ON THIS DEVICE?',
-      `Replace all data on this device? The backup${day ? ` is from ${day},` : ''} game version ${b.gameVersion}, with ${pluralSaid(keys, 'item')}.`,
-      [`BACKUP ${day}`.trim(), `VERSION ${b.gameVersion}`.slice(0, 28), plural(keys, 'ITEM')],
+      `Replace all data on this device? The backup${day ? ` is from ${day},` : ''} game version ${b.gameVersion}, with ${pluralSaid(keys, 'item')}.` +
+        (gone && mine
+          ? ` It brings another online backup code. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore it: ${spokenBackupCode(mine.code)}.`
+          : ''),
+      [
+        `BACKUP ${day}`.trim(),
+        `VERSION ${b.gameVersion}`.slice(0, 28),
+        plural(keys, 'ITEM'),
+        ...(gone ? ['', 'YOUR CODE, KEPT ONLINE:', gone] : []),
+      ],
       [
         { label: 'No', select: () => this.backHere() },
         { label: 'Yes', select: () => this.applyImport(b, restored) },
@@ -507,8 +525,10 @@ export class SaveDataOptions extends MenuScene {
           select: () => this.startExport(),
           hint: "Save a backup of this device's data first",
         },
+        ...(gone ? [this.copyItem(gone, () => box)] : []),
       ],
       () => this.backHere(),
+      gone,
     );
     this.game.scenes.push(box);
   }
@@ -614,23 +634,13 @@ export class SaveDataOptions extends MenuScene {
     if (!kept) return this.askErase();
     const game = this.game;
     const shown = formatBackupCode(kept.code);
-    const env = shareEnv(game);
     const box: QuestionBox = new QuestionBox(
       game,
       'YOUR BACKUP CODE',
       `Reset game. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore the backup: ${spokenBackupCode(kept.code)}.`,
       [...RESET_CODE_LINES, '', shown],
       [
-        {
-          label: 'Copy code',
-          gesture: true,
-          select: () =>
-            void (env.copy?.(shown) ?? Promise.resolve(false)).then((ok) => {
-              const said = ok ? 'CODE COPIED' : 'COPY FAILED';
-              box.note(said);
-              game.deps.announcer?.say(said);
-            }),
-        },
+        this.copyItem(shown, () => box),
         {
           label: 'Continue',
           select: () => {
@@ -643,6 +653,23 @@ export class SaveDataOptions extends MenuScene {
       shown,
     );
     game.scenes.push(box);
+  }
+
+  /** COPY CODE (in the press's own event) on a question showing a code; the outcome noted there. */
+  private copyItem(shown: string, box: () => QuestionBox): MenuItem {
+    const game = this.game;
+    const env = shareEnv(game);
+    return {
+      label: 'Copy code',
+      gesture: true,
+      hint: 'Copy your online backup code',
+      select: () =>
+        void (env.copy?.(shown) ?? Promise.resolve(false)).then((ok) => {
+          const said = ok ? 'CODE COPIED' : 'COPY FAILED';
+          box().note(said);
+          game.deps.announcer?.say(said);
+        }),
+    };
   }
 
   private askErase(): void {
@@ -825,7 +852,9 @@ export class SaveDataOptions extends MenuScene {
       this.tell('BACKING UP...', 'Backing up online. This takes a few seconds.');
       const api = await this.onlineApi();
       if (!api) return;
-      const mine = kept ?? { code: api.newCode(), shown: false };
+      // Item 226: a new code says it is not uploaded yet (an old one without the field is read
+      // as uploaded once it has a backup time).
+      const mine = kept ?? { code: api.newCode(), shown: false, uploaded: false };
       // Kept first, so the online copy carries it (a restore elsewhere backs up to the same copy).
       if (!kept && !saveOnlineCode(mine))
         return this.tell(
@@ -874,6 +903,11 @@ export class SaveDataOptions extends MenuScene {
           );
         // Item 186: a first backup's code is kept by now, so not "Nothing changed".
         if (r.accepted === 0) return this.tell(UNREACHABLE[0], NOT_BACKED_UP, true);
+        // Item 223: a copy is on at least one server, so the code counts as online.
+        if (!mine.uploaded) {
+          saveOnlineCode({ ...mine, uploaded: true });
+          this.rebuild();
+        }
         return this.tell(
           `ONLY ${r.accepted} OF ${r.total} SERVERS TOOK IT`,
           `Only ${r.accepted} of ${r.total} servers took the backup, so it is not safe yet. Try again later.`,
@@ -886,7 +920,8 @@ export class SaveDataOptions extends MenuScene {
       saveOnlineCode({ ...mine, shown: true, lastAt: r.at, uploaded: true });
       this.rebuild();
       if (mine.shown) return this.tell(done, said);
-      this.status = done;
+      // Item 227: the open page's line (BACK UP ONLINE's), not the main page's.
+      this.setStatus(done);
       this.showCode(mine.code, done, said);
     } finally {
       this.busy = false;
@@ -1002,15 +1037,19 @@ export class SaveDataOptions extends MenuScene {
         return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
       }
       // Item 181.3: the code is forgotten here; the next BACK UP ONLINE makes a new one.
+      // Item 212: only when every server confirmed; otherwise the code stays, to try again.
+      if (d.deleted < d.total) {
+        saveOnlineCode({ ...kept, lastAt: d.at });
+        return this.tell(
+          `DELETED ON ${d.deleted} OF ${d.total} SERVERS`,
+          `Online backup deleted on ${d.deleted} of ${d.total} servers. The other servers could not be reached or refused, so a copy may remain there. Your code is kept: try Delete most recent code again to delete the rest.`,
+        );
+      }
       const forgot = forgetOnlineCode();
       this.rebuild();
-      const rest =
-        d.deleted < d.total
-          ? ' The other servers could not be reached or refused, so a copy may remain there.'
-          : '';
       this.tell(
         `DELETED ON ${d.deleted} OF ${d.total} SERVERS`,
-        `Online backup deleted on ${d.deleted} of ${d.total} servers.${rest} ` +
+        `Online backup deleted on ${d.deleted} of ${d.total} servers. ` +
           (forgot
             ? 'This device forgot its code; the next backup makes a new one.'
             : "This device's storage refused, so it could not forget the code."),
@@ -1023,7 +1062,7 @@ export class SaveDataOptions extends MenuScene {
   /** RESTORE FROM CODE: the code box (in the press's own event), then the lookup. */
   private restoreFromCode(): void {
     if (this.busy || this.needsInternet()) return;
-    this.status = '';
+    this.setStatus('');
     this.game.scenes.push(new RestoreCodeScene(this.game, (code) => void this.runRestore(code)));
   }
 

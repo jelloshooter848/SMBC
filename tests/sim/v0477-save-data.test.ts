@@ -537,16 +537,31 @@ describe('181.3 / 183: DELETE MOST RECENT CODE', () => {
     expect(r.api.backUps.at(-1)!.code).toBe('NEWNEW123456');
   });
 
-  it('a partial delete still forgets the code, and says a copy may remain', async () => {
+  it('212: a partial delete KEEPS the code (still uploaded) and says to try again for the rest', async () => {
     seenNote();
     uploadedCode();
-    const r = rig({ deleted: { ok: true, deleted: 2, total: 5, at: 1 } });
+    const r = rig({ deleted: { ok: true, deleted: 2, total: 5, at: 1500 } });
     press(r, 'Back up online');
     press(r, 'Delete most recent code');
     press(r, 'Yes, delete');
     await flush();
+    expect(stored()).toMatchObject({ code: CODE, uploaded: true, lastAt: 1500 });
+    expect(status(r.h)).toBe('DELETED ON 2 OF 5 SERVERS');
+    const said = r.h.said.at(-1) as string;
+    expect(said).toMatch(/may remain/i);
+    expect(said).toMatch(/try .*again/i);
+    expect(said).not.toMatch(/forgot/i);
+    expect(labels(r.h.top())).toContain('Delete most recent code');
+    // Trying again: every server confirms, and only now is the code forgotten.
+    r.api.deleteOnline = async (code, after) => {
+      r.api.deletes.push({ code, after });
+      return { ok: true, deleted: 5, total: 5, at: 1600 };
+    };
+    press(r, 'Delete most recent code');
+    press(r, 'Yes, delete');
+    await flush();
+    expect(r.api.deletes.at(-1)).toEqual({ code: CODE, after: 1500 });
     expect(ls.getItem(ONLINE_BACKUP_KEY)).toBeNull();
-    expect(r.h.said.at(-1)).toMatch(/may remain/i);
   });
 
   it('a failed delete keeps the code (it can be tried again)', async () => {
@@ -927,6 +942,28 @@ describe('185: the online code loader tries again after a failed import()', () =
     expect(r.h.said.at(-1)).not.toMatch(/reload/i);
   });
 
+  it('228: the same loader failing, working, then failing once: no reload line (the count was reset)', async () => {
+    seenNote();
+    uploadedCode();
+    const r = rig();
+    press(r, 'Back up online');
+    expect(titleOf(r.h)).toBe('BACK UP ONLINE');
+    const plan = [false, true, false];
+    // One load function throughout (onlineLoader would keep the good load, so it is left out).
+    r.env.online!.load = () =>
+      plan.shift() ? Promise.resolve(r.api) : Promise.reject(new Error('Failed to fetch module'));
+    for (const want of [
+      'COULD NOT REACH THE SERVERS',
+      'BACKED UP (5 OF 5 SERVERS)',
+      'COULD NOT REACH THE SERVERS',
+    ]) {
+      press(r, 'Back up online');
+      await flush();
+      expect(status(r.h)).toBe(want);
+      expect(r.h.said.at(-1)).not.toMatch(/reload/i);
+    }
+  });
+
   it('on the page: COULD NOT REACH THE SERVERS once, then the next try backs up', async () => {
     seenNote();
     uploadedCode();
@@ -945,10 +982,88 @@ describe('185: the online code loader tries again after a failed import()', () =
   });
 });
 
+describe('223: a first backup only some servers took', () => {
+  it('ONLY 1 OF 5 SERVERS TOOK IT: said, and the code counts as online (Show, Delete, the reset card)', async () => {
+    const r = rig({ backUp: { ok: false, reason: 'servers', accepted: 1, total: 5 } });
+    openOnline(r);
+    press(r, 'Back up online');
+    press(r, 'Yes, back up');
+    await flush();
+    expect(status(r.h)).toBe('ONLY 1 OF 5 SERVERS TOOK IT');
+    expect(r.h.said.at(-1)).not.toMatch(/nothing changed/i);
+    expect(stored()).toMatchObject({ code: 'ABCDEF123456', uploaded: true });
+    expect(labels(r.h.top())).toContain('Show most recent code');
+    expect(labels(r.h.top())).toContain('Delete most recent code');
+  });
+
+  it('none took it: not uploaded', async () => {
+    const r = rig({ backUp: { ok: false, reason: 'servers', accepted: 0, total: 5 } });
+    openOnline(r);
+    press(r, 'Back up online');
+    press(r, 'Yes, back up');
+    await flush();
+    expect(stored()?.uploaded).not.toBe(true);
+  });
+});
+
+describe('226: a code stored by v0.4.76 (no uploaded field, owner exception)', () => {
+  const old = () => ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: CODE, shown: true, lastAt: 900 }));
+
+  it('reads as uploaded when it has a last backup time: Show and Delete appear', async () => {
+    seenNote();
+    old();
+    const r = rig();
+    press(r, 'Back up online');
+    expect(labels(r.h.top())).toEqual([
+      'Back up online',
+      'Restore from code',
+      'Show most recent code',
+      'Delete most recent code',
+      'Back',
+    ]);
+  });
+
+  it('Reset shows its code first', async () => {
+    old();
+    const r = rig();
+    press(r, 'Reset game');
+    expect(titleOf(r.h)).toBe('YOUR BACKUP CODE');
+    expect(linesOf(r.h)).toContain('ZZZZ-ZZ99-9999');
+  });
+
+  it('without a last backup time (never backed up) it is not online; uploaded: false is not either', async () => {
+    seenNote();
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: CODE, shown: false }));
+    const r = rig();
+    press(r, 'Back up online');
+    expect(labels(r.h.top())).not.toContain('Show most recent code');
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: CODE, shown: true, lastAt: 900, uploaded: false }));
+    const r2 = rig();
+    press(r2, 'Back up online');
+    expect(labels(r2.h.top())).not.toContain('Show most recent code');
+  });
+});
+
+describe('227: the online page after the first backup', () => {
+  it('OK on the code card: the online page says BACKED UP, not BACKING UP...', async () => {
+    const r = rig();
+    openOnline(r);
+    press(r, 'Back up online');
+    press(r, 'Yes, back up');
+    await flush();
+    expect(titleOf(r.h)).toBe('YOUR BACKUP CODE');
+    press(r, 'OK');
+    expect(titleOf(r.h)).toBe('BACK UP ONLINE');
+    expect(status(r.h)).toBe('BACKED UP (5 OF 5 SERVERS)');
+    // The main page underneath keeps no stale line of its own.
+    press(r, 'Back');
+    expect(status(r.h)).toBe('');
+  });
+});
+
 describe('186 / 187: a failed first backup', () => {
   for (const [what, setup] of [
     ['no server reached', { backUp: { ok: false, reason: 'servers', accepted: 0, total: 5 } }],
-    ['only one server took it', { backUp: { ok: false, reason: 'servers', accepted: 1, total: 5 } }],
     ['refused', { backUp: { ok: false, reason: 'refused', accepted: 0, total: 5 } }],
     ['too big', { backUp: { ok: false, reason: 'too-big', accepted: 0, total: 5 } }],
   ] as const) {
@@ -1084,7 +1199,10 @@ describe('187: the uploaded flag', () => {
 
   it("a different code in the file replaces this device's, with the file's own uploaded and lastAt", async () => {
     const other = backupFrom((o) =>
-      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'RRRRRR222222', shown: true, lastAt: 5 })),
+      o.setItem(
+        ONLINE_BACKUP_KEY,
+        JSON.stringify({ code: 'RRRRRR222222', shown: true, lastAt: 5, uploaded: false }),
+      ),
     );
     uploadedCode();
     const r = rig();
@@ -1126,6 +1244,75 @@ describe('187: the uploaded flag', () => {
     // The code could not even be kept: said, nothing uploaded.
     expect(r.api.backUps).toEqual([]);
     expect(status(r.h)).toBe('STORAGE CANNOT BE READ');
+  });
+});
+
+describe('230: an import that replaces an uploaded code shows it first', () => {
+  async function toQuestion(r: Rig, text: string): Promise<void> {
+    press(r, 'Back up on device');
+    press(r, 'Import backup');
+    r.picks.at(-1)!(new File([text], 'b.json', { type: 'application/json' }));
+    await flush();
+    expect(titleOf(r.h)).toBe('REPLACE ALL DATA ON THIS DEVICE?');
+  }
+
+  it("a file with another code: this device's code on the question, with Copy code, said", async () => {
+    const t = backupFrom((o) =>
+      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'QQQQQQ111111', shown: true, uploaded: true })),
+    );
+    uploadedCode();
+    const r = rig();
+    await toQuestion(r, t);
+    expect(labels(r.h.top())).toEqual(['No', 'Yes', 'Export first', 'Copy code']);
+    expect(linesOf(r.h)).toContain('ZZZZ-ZZ99-9999');
+    for (const l of linesOf(r.h)) expect(l.length).toBeLessThanOrEqual(28);
+    const said = r.h.said.at(-1) as string;
+    expect(said).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
+    expect(said).toMatch(/stays on the servers/i);
+    expect(said).toMatch(/ No$/);
+    expect(drawSheets(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
+      `font@${FONT_COLOURS.gold}`,
+    );
+    press(r, 'Copy code');
+    await flush();
+    expect(r.copied).toEqual(['ZZZZ-ZZ99-9999']);
+    expect(titleOf(r.h)).toBe('REPLACE ALL DATA ON THIS DEVICE?');
+    press(r, 'Yes');
+    await flush();
+    expect(stored()).toMatchObject({ code: 'QQQQQQ111111' });
+  });
+
+  it('no Copy code row when the file has the same code, no code, or this device has none uploaded', async () => {
+    const same = backupFrom((o) => o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: CODE, shown: true })));
+    const none = backupFrom(() => writeSave(newSave(2, 'link', null)));
+    const other = backupFrom((o) =>
+      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'QQQQQQ111111', shown: true, uploaded: true })),
+    );
+    uploadedCode();
+    for (const t of [same, none]) {
+      const r = rig();
+      await toQuestion(r, t);
+      expect(labels(r.h.top())).toEqual(['No', 'Yes', 'Export first']);
+    }
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: CODE, shown: false }));
+    const r = rig();
+    await toQuestion(r, other);
+    expect(labels(r.h.top())).toEqual(['No', 'Yes', 'Export first']);
+  });
+
+  it('a restore from another code shows it the same way', async () => {
+    const t = backupFrom((o) =>
+      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ABCDEF123456', shown: true, lastAt: 3 })),
+    );
+    seenNote();
+    uploadedCode();
+    const r = rig({ restore: { ok: true, text: t, from: 'x', at: 10 } });
+    press(r, 'Back up online');
+    press(r, 'Restore from code');
+    (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
+    await flush();
+    expect(labels(r.h.top())).toContain('Copy code');
+    expect(linesOf(r.h)).toContain('ZZZZ-ZZ99-9999');
   });
 });
 
