@@ -153,7 +153,7 @@ describe('265: a failed load is tried again under a fresh URL', () => {
         CHROMIUM('http://localhost:5302/src/engine/online/nostr-backup.ts'),
         1,
         'http://localhost:5302/src/game/scenes/save-data.ts',
-        '/',
+        '/src/engine/online/nostr-backup.ts',
       ),
     ).toBe('http://localhost:5302/src/engine/online/nostr-backup.ts?retry=1');
   });
@@ -165,6 +165,73 @@ describe('265: a failed load is tried again under a fresh URL', () => {
     expect(freshChunkUrl(CHROMIUM('https://smbc.example/assets/index-AAAA.js'), 1, BASE)).toBeNull();
     expect(freshChunkUrl(CHROMIUM('https://evil.example/nostr-backup-X.js'), 1, BASE)).toBeNull();
     expect(freshChunkUrl(CHROMIUM('data:text/javascript,nostr-backup.js'), 1, BASE)).toBeNull();
+    // 281: the same path on another site (only the origin check stops it).
+    expect(
+      freshChunkUrl(
+        CHROMIUM('https://evil.example/SMBC/assets/nostr-backup-x.js'),
+        1,
+        'https://user.github.io/SMBC/assets/index-AAAA.js',
+      ),
+    ).toBeNull();
+  });
+
+  it('280: encoded traversal or backslashes in the path are refused', () => {
+    const base = 'https://host.example/SMBC/assets/index-AAAA.js';
+    for (const bad of [
+      'https://host.example/SMBC/assets/%2e%2e%2f%2e%2e%2fother/nostr-backup.js',
+      'https://host.example/SMBC/assets/%2e%2e%2f%2e%2e%2fother/nostr-backup-x.js',
+      'https://host.example/SMBC/assets/nostr-backup%2F..%2F..%2Fevil.js',
+      'https://host.example/SMBC/assets/nostr-backup-x%2F..%2F..%2Fevil.js',
+      'https://host.example/SMBC/assets/nostr-backup-x.js%00',
+      'https://host.example/SMBC/assets/%6eostr-backup-x.js',
+      'https://host.example/SMBC/assets/nostr-backup-%78.js',
+      'https://host.example/SMBC/assets/..%5c..%5cevil/nostr-backup-x.js',
+      'https://host.example/SMBC/assets/..\\..\\evil\\nostr-backup-x.js',
+      'https://host.example/SMBC/assets\\nostr-backup-x.js',
+      '/SMBC/assets/%2e%2e%2fnostr-backup-x.js',
+    ])
+      expect(freshChunkUrl(CHROMIUM(bad), 1, base), bad).toBeNull();
+  });
+
+  it("280: only a built chunk's name (nostr-backup-<hash>.js), in the built chunks' own folder", () => {
+    const base = 'https://host.example/SMBC/assets/index-AAAA.js';
+    const ok = 'https://host.example/SMBC/assets/nostr-backup-Ban9kVUr.js';
+    expect(freshChunkUrl(CHROMIUM(ok), 1, base)).toBe(`${ok}?retry=1`);
+    expect(freshChunkUrl(CHROMIUM('https://host.example/SMBC/assets/nostr-backup-a_b-C9.js'), 1, base)).toBe(
+      'https://host.example/SMBC/assets/nostr-backup-a_b-C9.js?retry=1',
+    );
+    for (const bad of [
+      'https://host.example/SMBC/assets/nostr-backup.js',
+      'https://host.example/SMBC/assets/nostr-backup-.js',
+      'https://host.example/SMBC/assets/nostr-backup-x.ts',
+      'https://host.example/SMBC/assets/nostr-backup-x.mjs',
+      'https://host.example/SMBC/assets/xnostr-backup-x.js',
+      'https://host.example/SMBC/assets/nostr-backup-x.y.js',
+      'https://host.example/SMBC/assets/sub/nostr-backup-x.js',
+      'https://host.example/SMBC/nostr-backup-x.js',
+      'https://host.example/SMBC/assets2/nostr-backup-x.js',
+      // The dev server's module, outside the dev server.
+      'https://host.example/src/engine/online/nostr-backup.ts',
+    ])
+      expect(freshChunkUrl(CHROMIUM(bad), 1, base), bad).toBeNull();
+  });
+
+  it('280: on the dev server, exactly its module path (and still not encoded or elsewhere)', () => {
+    const base = 'http://localhost:5302/src/game/scenes/save-data.ts';
+    const dev = '/src/engine/online/nostr-backup.ts';
+    const ok = 'http://localhost:5302/src/engine/online/nostr-backup.ts';
+    expect(freshChunkUrl(CHROMIUM(`${ok}?t=1`), 2, base, dev)).toBe(`${ok}?retry=2`);
+    // Not without the dev path given (a build).
+    expect(freshChunkUrl(CHROMIUM(ok), 1, base)).toBeNull();
+    for (const bad of [
+      'http://localhost:5302/src/engine/online/%6eostr-backup.ts',
+      'http://localhost:5302/src/engine/online/nostr-backup.ts%2F..%2Fx.ts',
+      'http://localhost:5302/src/engine/online/nostr-backup-x.ts',
+      'http://localhost:5302/src/engine/nostr-backup.ts',
+      'http://localhost:5302/x/src/engine/online/nostr-backup.ts',
+      'http://evil.example/src/engine/online/nostr-backup.ts',
+    ])
+      expect(freshChunkUrl(CHROMIUM(bad), 1, base, dev), bad).toBeNull();
   });
 
   it('review: only a nostr-backup chunk file itself (not a source map, not a file in a nostr-backup folder)', () => {
@@ -193,10 +260,7 @@ describe('265: a failed load is tried again under a fresh URL', () => {
 
   it("review: only under the app's own base directory (another repo on the same github.io origin, .., %2e%2e)", () => {
     const base = 'https://user.github.io/SMBC/assets/index-AAAA.js';
-    const root = '/SMBC/';
     const ok = 'https://user.github.io/SMBC/assets/nostr-backup-x.js';
-    expect(freshChunkUrl(CHROMIUM(ok), 1, base, root)).toBe(`${ok}?retry=1`);
-    // Without a root, the base module's own folder.
     expect(freshChunkUrl(CHROMIUM(ok), 1, base)).toBe(`${ok}?retry=1`);
     for (const bad of [
       'https://user.github.io/other/assets/nostr-backup-x.js',
@@ -207,8 +271,8 @@ describe('265: a failed load is tried again under a fresh URL', () => {
       'https://user.github.io/SMBCX/nostr-backup-x.js',
       'https://user.github.io/nostr-backup-x.js',
     ])
-      expect(freshChunkUrl(CHROMIUM(bad), 1, base, root), bad).toBeNull();
-    // The relative root is read from the base module's folder.
+      expect(freshChunkUrl(CHROMIUM(bad), 1, base), bad).toBeNull();
+    // Only the base module's own folder (the built chunks'), not the app's root.
     expect(freshChunkUrl(CHROMIUM('https://user.github.io/SMBC/nostr-backup-x.js'), 1, base)).toBeNull();
   });
 
@@ -302,7 +366,11 @@ describe('265: a failed load is tried again under a fresh URL', () => {
   it('the browser loader: a fresh specifier through new URL(..., import.meta.url) and @vite-ignore, behind the offline switch', () => {
     const src = readFileSync(resolve(__dirname, '../../src/game/scenes/save-data.ts'), 'utf8');
     expect(src).toMatch(/import\(\s*\/\*\s*@vite-ignore\s*\*\//);
-    expect(src).toMatch(/freshChunkUrl\([^)]*import\.meta\.url,\s*import\.meta\.env\.BASE_URL\s*\)/);
+    expect(src).toMatch(/freshChunkUrl\(\s*e,\s*n,\s*import\.meta\.url,/);
+    // 280: the dev server's module path only on the dev server.
+    expect(src).toMatch(
+      /import\.meta\.env\.DEV\s*\?\s*`\$\{import\.meta\.env\.BASE_URL\}src\/engine\/online\/nostr-backup\.ts`/,
+    );
     expect(src).toMatch(/new URL\(named, base\)/);
     // The fresh import sits after the offline build's early return, so that build drops it.
     const fn = src.slice(src.indexOf('function browserOnlineEnv'));
