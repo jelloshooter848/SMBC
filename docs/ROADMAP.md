@@ -351,3 +351,12 @@ Follow-ups from the third review of the online backup (0.4.76):
   `lastAt`;
 - events that arrive after a restore has finished are still verified and decrypted (item 174);
   they could be skipped.
+
+### Flagpole barrier follow-ups (items 247 and 248)
+
+- Classic 2-1 should get the flagpole barrier (item 247). Today 2-1 has no barrier in any mode,
+  because the Top Secret Area tests measure the jump over the pole on plain 2-1 too; those
+  non-Campaign tests need editing first.
+- Check against the original game whether Mario should be able to jump over the Lost Levels 5-1
+  and A-3 flagpoles (item 248). In this game only Luigi clears 5-1 (and Classic Mario from the
+  tall wall), and only Link, Samus, Bill and Classic Ryu clear A-3.

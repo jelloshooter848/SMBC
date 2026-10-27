@@ -591,19 +591,19 @@ The Lost Levels keep the original game's warp zones, backward ones included. Tak
 world it leads to and moves you there on the map; it clears nothing. Worlds A to D are numbered 10
 to 13 in a warp zone.
 
-| Level    | How to get there                                                                | Leads to |
-| -------- | ------------------------------------------------------------------------------- | -------- |
-| Lost 1-2 | Run along the top of the ceiling past the exit pipe, on to the end of the level | World 2  |
-| Lost 1-2 | Climb the vine from the brick early in the level                                | World 3  |
-| Lost 1-2 | Drop off the end of the ceiling run and go down the pipe in the floor there     | World 4  |
-| Lost 3-1 | Jump over the flagpole and keep going right                                     | World 1  |
-| Lost 3-1 | Go down the first pipe into the bonus room and take its way out                 | World 1  |
-| Lost 5-1 | Jump over the flagpole and keep going right                                     | World 6  |
-| Lost 5-2 | Run along the top of the ceiling past the exit pipe                             | World 7  |
-| Lost 5-2 | Climb the vine                                                                  | World 8  |
-| Lost 8-1 | Go down the pipe near the end into the underwater area and take its exit pipe   | World 5  |
-| Lost A-2 | Run along the top of the ceiling past the exit pipe                             | World B  |
-| Lost A-3 | Jump over the flagpole (use the springboard) and keep going right               | World C  |
-| Lost B-4 | The fourth pipe in the castle                                                   | World D  |
+| Level    | How to get there                                                                               | Leads to |
+| -------- | ---------------------------------------------------------------------------------------------- | -------- |
+| Lost 1-2 | Run along the top of the ceiling past the exit pipe, on to the end of the level                | World 2  |
+| Lost 1-2 | Climb the vine from the brick early in the level                                               | World 3  |
+| Lost 1-2 | Drop off the end of the ceiling run and go down the pipe in the floor there                    | World 4  |
+| Lost 3-1 | Jump over the flagpole and keep going right                                                    | World 1  |
+| Lost 3-1 | Go down the first pipe into the bonus room and take its way out                                | World 1  |
+| Lost 5-1 | Jump over the flagpole and keep going right (Luigi; in Classic, Mario too, from the tall wall) | World 6  |
+| Lost 5-2 | Run along the top of the ceiling past the exit pipe                                            | World 7  |
+| Lost 5-2 | Climb the vine                                                                                 | World 8  |
+| Lost 8-1 | Go down the pipe near the end into the underwater area and take its exit pipe                  | World 5  |
+| Lost A-2 | Run along the top of the ceiling past the exit pipe                                            | World B  |
+| Lost A-3 | Jump over the flagpole (springboard; Link, Samus, Bill or Classic Ryu) and keep going right    | World C  |
+| Lost B-4 | The fourth pipe in the castle                                                                  | World D  |
 
 ![The warp zone at the end of Lost 1-2's ceiling run](img/8-lost-warps-1.png)
