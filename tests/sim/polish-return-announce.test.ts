@@ -143,9 +143,8 @@ describe('38f: the Classic pause', () => {
     expect(h.top()).toBeInstanceOf(QuitRunScene);
     pick(h, 'No');
     expect(h.top()).toBeInstanceOf(PauseScene);
-    expect(h.said.at(-1)).toBe(
-      'Paused. Quit. Back to the Classic menu; your file picks the run up from this level',
-    );
+    // v0.4.77 item 197: the Quit row's hint is the select.
+    expect(h.said.at(-1)).toBe('Paused. Quit. Back to character select');
   });
 
   it('BACK on the quit confirm says the same', () => {

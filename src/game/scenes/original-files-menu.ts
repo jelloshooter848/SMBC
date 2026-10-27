@@ -39,8 +39,8 @@ import { ClassicHeroesScene, type HeroesOffStore } from './disable-heroes';
 /*
  * B-L: Classic mode's save files, in the Classic style (orange boxes over the CLASSIC title's
  * live demo, the mushroom cursor, the original's move, choose, back and coin sounds). Picking a map
- * set on the set box opens its file box: FILE 1-3 (a used file shows its difficulty, where it is
- * and its lives on its row, its hero and score under the box; an empty one NEW GAME), ERASE FILE
+ * set on the set box opens its file box: FILE 1-3 (a used file shows its difficulty and where it
+ * is on its row, its score under the box; an empty one NEW GAME), ERASE FILE
  * and BACK. A used file goes on (Game.resumeClassic: CONTINUE, then the select); an empty one
  * asks the Map difficulty, then its rules box (Game mode, More settings, Weapons, Disable heroes,
  * each starting at the original's), and START plays it. ERASE FILE picks a file, then asks
@@ -54,18 +54,9 @@ export function fileWhere(f: ClassicFile): string {
   return `${worldLabel(f.run.world)}-${f.run.stage}`;
 }
 
-/** A used file's row value: "HARD 4-2 X3". */
+/** A used file's row value: "HARD 4-2" (v0.4.77 item 198: no lives). */
 export function fileRowValue(f: ClassicFile): string {
-  const lives = livesShown(f) ? ` x${f.run.lives}` : '';
-  return `${DIFFICULTY_NAMES[f.rules.difficulty]} ${fileWhere(f)}${lives}`.toUpperCase();
-}
-
-/**
- * Whether a file's lives are shown: always, but for a Survival run with none left (its lives only
- * revive heroes, so "X0" would read as a run that is over).
- */
-function livesShown(f: ClassicFile): boolean {
-  return !(f.run.lives === 0 && f.run.survival);
+  return `${DIFFICULTY_NAMES[f.rules.difficulty]} ${fileWhere(f)}`.toUpperCase();
 }
 
 /** The hero a file plays, by name (a hero toggled off in the Dev menu too, 31d). */
@@ -74,9 +65,9 @@ export function fileHeroName(game: Game, f: Pick<ClassicFile, 'run'>): string {
   return all.find((c) => c.id === f.run.hero)?.name ?? f.run.hero;
 }
 
-/** The line under the file box for a used file: its hero and score. */
-export function fileDetailLine(game: Game, f: Pick<ClassicFile, 'run'>): string {
-  return `${fileHeroName(game, f)} SCORE ${f.run.score}`;
+/** The line under the file box for a used or CLEARED file: "SCORE 12300" (item 199: no hero). */
+export function fileDetailLine(f: Pick<ClassicFile, 'run'>): string {
+  return `SCORE ${f.run.score}`;
 }
 
 /** A file's rules as read out: "Survival, Hard" (its Game mode, then its Map difficulty). */
@@ -93,18 +84,15 @@ export function fileOwnRules(r: ClassicFileRules): boolean {
   return !isOriginalClassic(o) || r.heroesOff.length > 0;
 }
 
-/** A used file in full, as read out. */
-export function fileSpoken(game: Game, f: ClassicFile): string {
+/** A used file in full, as read out (v0.4.77 items 198 and 199: no lives, no hero). */
+export function fileSpoken(f: ClassicFile): string {
   const own = fileOwnRules(f.rules) ? '. Your own rules are on' : '';
   const r = f.run;
   const where = `World ${worldLabel(r.world)}-${r.stage}`;
-  const lives = livesShown(f) ? `${r.lives} ${r.lives === 1 ? 'life' : 'lives'}` : '';
   const parts = [
     DIFFICULTY_NAMES[f.rules.difficulty],
     where,
-    lives,
     `score ${r.score}`,
-    fileHeroName(game, f),
     GAME_MODE_NAMES[f.rules.options.gameMode],
   ];
   return `${parts.filter(Boolean).join(', ')}${own}`;
@@ -112,18 +100,16 @@ export function fileSpoken(game: Game, f: ClassicFile): string {
 
 /**
  * v0.4.73 (owner 46B): a CLEARED file's row value: its difficulty and CLEARED ("HARD CLEARED").
- * Its hero and frozen score are on the line under the box (fileDetailLine).
+ * Its frozen score is on the line under the box (fileDetailLine).
  */
 export function clearedRowValue(f: ClearedFile): string {
   return `${DIFFICULTY_NAMES[f.rules.difficulty]} CLEARED`.toUpperCase();
 }
 
-/** A CLEARED file as read out: "Cleared on Hard, score 98700, Mario, 4 lives". */
-export function clearedSpoken(game: Game, f: ClearedFile): string {
-  const r = f.run;
+/** A CLEARED file as read out: "Cleared on Hard, score 98700" (items 198, 199: no hero or lives). */
+export function clearedSpoken(f: ClearedFile): string {
   const own = fileOwnRules(f.rules) ? '. Your own rules are on' : '';
-  const lives = r.lives > 0 ? `, ${r.lives} ${r.lives === 1 ? 'life' : 'lives'}` : '';
-  return `Cleared on ${DIFFICULTY_NAMES[f.rules.difficulty]}, score ${r.score}, ${fileHeroName(game, f)}${lives}${own}`;
+  return `Cleared on ${DIFFICULTY_NAMES[f.rules.difficulty]}, score ${f.run.score}${own}`;
 }
 
 /** What a CLEARED file's row does, said after it. */
@@ -377,7 +363,7 @@ export class ClassicFilesScene extends ClassicBox {
           label: fileName(slot),
           value: () => clearedRowValue(cleared),
           select: () => game.openClearedFile(this, cleared),
-          hint: `${clearedSpoken(game, cleared)}. ${CLEARED_HINT}`,
+          hint: `${clearedSpoken(cleared)}. ${CLEARED_HINT}`,
         };
       if (kept && problem) {
         const { value, why } = problemRow(game, kept, problem);
@@ -388,7 +374,7 @@ export class ClassicFilesScene extends ClassicBox {
             game.ctx.audio.sfx('bump');
             game.deps.announcer?.say(`${fileName(slot)}: ${why.charAt(0).toLowerCase()}${why.slice(1)}.`);
           },
-          hint: `${fileSpoken(game, kept)}. ${why}`,
+          hint: `${fileSpoken(kept)}. ${why}`,
         };
       }
       if (!f && game.classicFileState({ set: this.set.id, slot }) === 'unreadable')
@@ -406,7 +392,7 @@ export class ClassicFilesScene extends ClassicBox {
             label: fileName(slot),
             value: () => fileRowValue(f),
             select: () => this.play(slot),
-            hint: `${fileSpoken(game, f)}. Continue this file`,
+            hint: `${fileSpoken(f)}. Continue this file`,
           }
         : {
             label: fileName(slot),
@@ -490,7 +476,7 @@ export class ClassicFilesScene extends ClassicBox {
     const problem = this.problems[slot - 1];
     if (problem) return problemLine(this.game, problem);
     const f = this.readable[slot - 1] ?? this.clearedFiles[slot - 1];
-    return f ? fileDetailLine(this.game, f) : '';
+    return f ? fileDetailLine(f) : '';
   }
 
   /** v0.4.73: the CLEARED files, by slot (ERASE FILE's picker reads them). */
@@ -772,7 +758,7 @@ export class ClassicEraseScene extends ClassicBox {
           value: () => clearedRowValue(cleared),
           select: () =>
             game.scenes.push(new ClassicEraseConfirmScene(game, slot, null, this.files, this, cleared)),
-          hint: clearedSpoken(game, cleared),
+          hint: clearedSpoken(cleared),
         };
       // 44 (v0.4.73, owner): a file that cannot play shows its state here too, and says why.
       if (f && problem) {
@@ -782,7 +768,7 @@ export class ClassicEraseScene extends ClassicBox {
           value: () => value,
           select: () =>
             game.scenes.push(new ClassicEraseConfirmScene(game, slot, f, this.files, this, null, problem)),
-          hint: `${fileSpoken(game, f)}. ${why}`,
+          hint: `${fileSpoken(f)}. ${why}`,
         };
       }
       if (!f && inUse[i])
@@ -797,7 +783,7 @@ export class ClassicEraseScene extends ClassicBox {
             label: fileName(slot),
             value: () => fileRowValue(f),
             select: () => game.scenes.push(new ClassicEraseConfirmScene(game, slot, f, this.files, this)),
-            hint: fileSpoken(game, f),
+            hint: fileSpoken(f),
           }
         : {
             label: fileName(slot),
@@ -837,9 +823,9 @@ export class ClassicEraseConfirmScene extends ClassicBox {
     const cannot = why ? `. It cannot play now: ${why.charAt(0).toLowerCase()}${why.slice(1)}` : '';
     this.status = problem ? problemLine(game, problem).replace(KEPT_LINE, '') : '';
     const what = cleared
-      ? clearedSpoken(game, cleared)
+      ? clearedSpoken(cleared)
       : file
-        ? `${fileSpoken(game, file)}${cannot}`
+        ? `${fileSpoken(file)}${cannot}`
         : 'It cannot be read';
     // 31a: an old save waiting for a free file moves into this one once it is erased.
     const then =

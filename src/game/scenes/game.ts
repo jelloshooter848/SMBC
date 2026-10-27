@@ -396,6 +396,8 @@ export class Game {
   private fileClaim: FileClaim | null = null;
   private fileLost = false;
   private fileNote: string | null = null;
+  /** v0.4.77 item 178: the note while the run cannot save, kept for every Quit box (runFileNote). */
+  private lostNote: string | null = null;
   /** Item 142 review: a save before the run's first write was refused as its file could not be read. */
   private fileUnreadEarly = false;
   /**
@@ -2545,6 +2547,11 @@ export class Game {
     this.replay = null;
     this.clearedNews = null;
     this.beatRecorded = false;
+    this.levelStart = null;
+    // v0.4.77 review MUST 1: a lost file's notes end with its run.
+    this.fileLost = false;
+    this.fileNote = null;
+    this.lostNote = null;
     // v0.4.73 (item 60): a file's Advanced cheats end with its run.
     this.applyAssists();
   }
@@ -2592,6 +2599,7 @@ export class Game {
     this.fileClaim = claim;
     this.fileLost = false;
     this.fileNote = null;
+    this.lostNote = null;
     this.fileUnreadEarly = false;
   }
 
@@ -2608,6 +2616,14 @@ export class Game {
   /** Item 142: this file run can no longer save to its file (another window, or a game there). */
   get runFileLost(): boolean {
     return this.fileLost;
+  }
+
+  /**
+   * v0.4.77 item 178: the note that the run cannot save to its file, for every Quit box; only
+   * while that file run is on (review MUST 1: never a later dev or link run's).
+   */
+  get runFileNote(): string | null {
+    return this.fileLost && this.keepsResume ? this.lostNote : null;
   }
 
   /**
@@ -2643,6 +2659,7 @@ export class Game {
       this.fileUnreadEarly && claim.took !== undefined
         ? `File ${ref.slot} already holds a game, so this run can't save to it.`
         : `File ${ref.slot} was changed in another window, so this run can't save to it.`;
+    this.lostNote = this.fileNote;
   }
 
   /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
@@ -3144,6 +3161,52 @@ export class Game {
   }
 
   /**
+   * v0.4.77 item 196: whether the Classic pause's Quit goes to the run's mid-run select (the
+   * one a death or a new level shows), for any Classic run that has one: a file's, a developer,
+   * link or practice run's. A CLEARED file's replay (its file box), a stage round and a Game mode
+   * with no mid-run select (Single random; Single hero once picked) keep the CLASSIC menu.
+   */
+  get quitsToSelect(): boolean {
+    if (!this.classicRun || this.campaign !== null || this.playtestDone) return false;
+    if (this.replayRun || this.stageRound || this.airship) return false;
+    const choice = this.classicHeroChoice(false);
+    return choice === 'select' || (choice === 'keep' && this.heroUnoffered(this.state.character));
+  }
+
+  /**
+   * v0.4.77 items 196/197: Pause > Quit > YES. The run's mid-run select for the level being
+   * played, as the way into a new level (warpToLevel, no warp pipe: no Survival revival): the
+   * picked hero starts it from its first area, with no checkpoint and a fresh clock. Nothing is
+   * lost (no life, no score), and a run with a file writes it there, as at any new level. The
+   * select's BACK is its Quit card, whose YES goes to the CLASSIC menu.
+   */
+  quitToSelect(): void {
+    const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const main = scene ? (scene.level.parent ?? scene.level.id) : this.runLevel;
+    if (!this.quitsToSelect || !main) return this.quitClassicRun();
+    // Item 218 (owner): a true fresh entry: the lives, score, coins and power the level started
+    // with (its last WORLD card: after a death, the state that death left), so nothing gained
+    // in it can be farmed and quitting costs no life.
+    const start = this.levelStart;
+    if (start?.level === main) {
+      const s = this.state as unknown as Record<string, unknown>;
+      for (const k of Object.keys(s)) if (!(k in start.state)) delete s[k];
+      Object.assign(this.state, startCopy(start.state));
+    }
+    // Item 242: the restore above has these null already; this is for when it is skipped (no
+    // start kept for this level), so the level still starts afresh.
+    this.state.checkpoint = null;
+    this.state.time = null;
+    this.warpToLevel(this.firstArea(main), { mode: 'stand' }, false);
+  }
+
+  /**
+   * v0.4.77 item 218: a Classic run's state at its level's WORLD card (goToLevel) and that
+   * level's main id; bonus rooms keep it. Null outside a Classic run.
+   */
+  private levelStart: { level: string; state: GameState } | null = null;
+
+  /**
    * v0.4.73 (owner C): the level replay of a CLEARED file being played (or its select), else
    * null. Only a Classic practice-style run has one: it writes no file and counts for nothing.
    */
@@ -3549,6 +3612,10 @@ export class Game {
     }
     // G-008, B-L: a Classic mode run writes its file at each WORLD card (never a dev run).
     if (this.keepsResume) this.keepResume(levelId);
+    // v0.4.77 item 218: the level's start, for Pause > Quit to character select (quitToSelect).
+    this.levelStart = this.classicRun
+      ? { level: level.parent ?? level.id, state: startCopy(this.state) }
+      : null;
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
     const first = this.sayFirst ? `${this.sayFirst} ` : '';
@@ -3914,4 +3981,15 @@ export class Game {
       return levelId;
     }
   }
+}
+
+/**
+ * v0.4.77 item 218: a copy of a run's state to start a level again from (Game.levelStart): its
+ * kits copied, no checkpoint and no clock.
+ */
+function startCopy(s: GameState): GameState {
+  const c: GameState = { ...s, kit: { ...s.kit }, kit2: { ...s.kit2 }, checkpoint: null, time: null };
+  if (s.swapKit) c.swapKit = { hero: s.swapKit.hero, kit: { ...s.swapKit.kit } };
+  if (s.swapKit2) c.swapKit2 = { hero: s.swapKit2.hero, kit: { ...s.swapKit2.kit } };
+  return c;
 }

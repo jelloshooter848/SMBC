@@ -606,7 +606,7 @@ describe('QA nits', () => {
 
 describe('the Classic pause menu', () => {
   // G-093, G-031 (0.5.0): the hero's Guide row, and Cheats (with Classic rules), as the original's pause has.
-  it('Continue, Guide, Options, Cheats, Quit (and every dev row with dev mode on)', () => {
+  it('Continue, Guide, Options, Cheats, Quit (and Dev mode with dev mode on)', () => {
     const h = classic();
     h.game.classicGame(MARIO);
     enterLevel(h);
@@ -616,7 +616,12 @@ describe('the Classic pause menu', () => {
     expect(pause).toBeInstanceOf(PauseScene);
     expect(labels(pause)).toEqual(['Continue', 'Guide', 'Options', 'Cheats', 'Quit']);
     pick(h, 'Quit');
-    // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
+    // O-16: Quit asks first (NO / YES); v0.4.77 item 196: YES is the run's mid-run select, whose
+    // BACK > YES goes to the CLASSIC menu.
+    pick(h, 'Yes');
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    h.idle(12);
+    h.tap('attack');
     pick(h, 'Yes');
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
     expect(h.game.classicRun).toBe(false);
@@ -627,16 +632,8 @@ describe('the Classic pause menu', () => {
     enterLevel(d);
     d.idle(4);
     d.tap('start');
-    // Every developer row free play or a campaign file's pause has in dev mode.
-    expect(labels(d.top())).toEqual([
-      'Continue',
-      'Guide',
-      'Options',
-      'Dev mode',
-      'Assists',
-      'Cheats',
-      'Quit',
-    ]);
+    // Free play's Dev mode row (v0.4.77 item 190: its menu has Assists, so no row of its own).
+    expect(labels(d.top())).toEqual(['Continue', 'Guide', 'Options', 'Dev mode', 'Cheats', 'Quit']);
   });
 });
 

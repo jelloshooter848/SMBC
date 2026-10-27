@@ -88,7 +88,7 @@ describe('BUG-03 CONTINUE goes through the hero select', () => {
     expect(files.set.id).toBe('smb');
     expect((files as unknown as { over: unknown }).over).toBeInstanceOf(ClassicTitleScene);
     expect((files as unknown as { index: number }).index).toBe(0);
-    expect(h.said.at(-1)).toMatch(/Choose a file\. File 1: NORMAL 4-2 X2/);
+    expect(h.said.at(-1)).toMatch(/Choose a file\. File 1: NORMAL 4-2\. /);
     // No run is on; the slot is untouched.
     expect(h.game.classicRun).toBe(false);
     // BACK from the box: the CLASSIC menu on SMB's row.

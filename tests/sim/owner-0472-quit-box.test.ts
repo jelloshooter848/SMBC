@@ -4,7 +4,7 @@ import type { SpriteSheet } from '@engine/gfx/spritesheet';
 import { CharacterSelectScene } from '@game/scenes/character-select';
 import { LevelScene } from '@game/scenes/level';
 import { PauseScene } from '@game/scenes/pause';
-import { QUIT_RUN_KEPT, QUIT_RUN_TITLE, QuitRunScene } from '@game/scenes/quit-run';
+import { QUIT_RUN_TITLE, QUIT_SELECT_TITLE, QuitRunScene } from '@game/scenes/quit-run';
 import { MUSHROOM_CURSOR } from '@game/scenes/menu-box';
 import { makeGame, useStorage, type H } from './heroes-harness';
 
@@ -42,11 +42,11 @@ function midRunSelect(h: H): CharacterSelectScene {
   return sel;
 }
 
-function expectBox(h: H): void {
+function expectBox(h: H, title = QUIT_RUN_TITLE): void {
   const f = frame(h);
-  // The question and the promise, as before; the menu panel's '>' cursor and dark veil are gone.
-  expect(f.strs).toContain(QUIT_RUN_TITLE);
-  expect(f.strs).toContain(QUIT_RUN_KEPT);
+  // The question (v0.4.77 item 195: no promise line); the menu panel's '>' cursor and dark veil are gone.
+  expect(f.strs).toContain(title);
+  expect(f.strs.join(' ')).not.toMatch(/WAITS IN ITS FILE/);
   expect(f.strs).toContain('NO');
   expect(f.strs).toContain('YES');
   expect(f.strs).not.toContain('>');
@@ -57,7 +57,7 @@ function expectBox(h: H): void {
     .filter((c) => c === 'r').length;
   expect(f.rects.filter((c) => c === '#d82800').length).toBeGreaterThanOrEqual(red);
   // The question is the box's gold header: a different sheet from the rows'.
-  const head = f.texts.find((t) => t.str === QUIT_RUN_TITLE)!;
+  const head = f.texts.find((t) => t.str === title)!;
   const no = f.texts.find((t) => t.str === 'NO')!;
   expect(head.sheet).not.toBe(no.sheet);
 }
@@ -70,7 +70,7 @@ describe('owner 0.4.72 item 3: the Quit card is a CLASSIC box', () => {
     const card = h.top() as QuitRunScene;
     expect(card).toBeInstanceOf(QuitRunScene);
     expect((card as unknown as { index: number }).index).toBe(0);
-    expect(h.said.at(-1)).toBe('Quit to the Classic menu? Your run waits in its file. No');
+    expect(h.said.at(-1)).toBe('Quit to the Classic menu? No');
     h.idle(10);
     expectBox(h);
     // The select stays in view under it.
@@ -87,7 +87,7 @@ describe('owner 0.4.72 item 3: the Quit card is a CLASSIC box', () => {
     expect(h.top()).toBe(sel);
   });
 
-  it('Pause > Quit opens the same box', () => {
+  it('Pause > Quit opens the same box (asking to quit to character select: v0.4.77 item 197)', () => {
     const h = makeGame();
     h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     h.until(() => h.top() instanceof LevelScene, 600);
@@ -103,7 +103,7 @@ describe('owner 0.4.72 item 3: the Quit card is a CLASSIC box', () => {
     h.tap('jump');
     expect(h.top()).toBeInstanceOf(QuitRunScene);
     h.idle(10);
-    expectBox(h);
+    expectBox(h, QUIT_SELECT_TITLE);
   });
 
   it('the box is open the frame it is said (no growing open), Reduce flashing or not', () => {
