@@ -778,6 +778,8 @@ export class World {
   /** Level intro that walks the player into a pipe (1-2 style) ignoring input. */
   autoWalk = false;
   readonly flagpole: Flagpole | null = null;
+  /** Every goal pole on the map (a custom level may have several), for their barriers. */
+  private readonly poles: Flagpole[] = [];
   /** Set by LevelScene in campaign play; see CaptiveRules. */
   captives: CaptiveRules | null = null;
   /**
@@ -1135,6 +1137,7 @@ export class World {
           while (this.map.get(tx, base) === T.FLAG_SHAFT) base++;
           const pole = new Flagpole(tx, ballRow, base);
           this.entities.push(pole);
+          this.poles.push(pole);
           (this as { flagpole: Flagpole | null }).flagpole = pole;
           break;
         }
@@ -2025,6 +2028,9 @@ export class World {
     if (this.vineArrival) this.updateVineArrival();
 
     const anchor = this.cameraAnchor();
+    // Where each hero stood before this frame's moves, for the flagpole's barrier (poleBarrier).
+    const startX = new Map<Player, number>();
+    for (const p of this.players) startX.set(p, p.body.x);
     this.players.forEach((p, i) => {
       if (p.dead || p.out) return;
       const respawn = this.respawnTimers.get(p);
@@ -2124,6 +2130,7 @@ export class World {
       if (e instanceof Enemy && e.alive && this.cheats.bouncyPits) this.bounceEnemy(e);
     }
     this.resolveLifts();
+    for (const p of this.activePlayers()) this.poleBarrier(p, startX.get(p));
     this.checkTalk(inputs);
     for (const p of this.activePlayers()) this.collisions(p);
     this.enemyVsEnemy();
@@ -4014,6 +4021,32 @@ export class World {
   }
 
   /* ---------- Level clear ---------- */
+
+  /**
+   * The flagpole's invisible barrier (items 193/194, every ruleset): a wall at the shaft's left
+   * edge from the top of the ball up past any reachable height. A hero whose feet are above the
+   * ball and who crossed it moving left to right this frame (by any move: run, jump, spring, wall
+   * move, thrust, mount or lift) is put back against it with no rightward speed, and falls on
+   * into the shaft. It never blocks a hero coming back from the right, the clear's walk (no
+   * barrier once the pole is touched), enemies, projectiles or the camera. Only touching the shaft
+   * starts the clear, so the grab score is unchanged.
+   *
+   * Owner deviation from the shipped original: FlagPole.as checkPlayerLoc holds the same clamp
+   * (`player.hBot < hTop` and `player.hRht >= nx`: nx = nx - hWidth/2, vx = 0) commented out.
+   */
+  private poleBarrier(p: Player, fromX: number | undefined): void {
+    if (this.clear || fromX === undefined) return;
+    const b = p.body;
+    for (const pole of this.poles) {
+      if (!pole.alive) continue;
+      const wall = pole.body.x;
+      if (b.y + b.h > pole.body.y) continue; // feet at or below the ball's top: the shaft is touchable
+      if (fromX + b.w > wall || b.x + b.w <= wall) continue; // not a left-to-right crossing
+      this.placeX(p, wall - b.w);
+      if (b.vx > 0) b.vx = 0;
+      return;
+    }
+  }
 
   private startClear(pole: Flagpole, p: Player): void {
     this.destroyEnemiesAndProjectilesOnScreen();
