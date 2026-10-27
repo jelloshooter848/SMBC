@@ -17,6 +17,7 @@ import { crc32 } from './zip';
  * - `smbc-classic-replay-help`   game/scenes/original-replay.ts the replay help seen
  * - `smbc.onlineBackup`        engine/online/online-backup.ts this device's online backup code (item 159)
  * - `smbc.levels`                game/level/library.ts     the level editor's custom levels
+ * - `smbc.songs`                 game/music-lab/library.ts Music Lab's songs (0.4.77, item 136)
  * - `smbc.devLast`               game/scenes/dev-play.ts   the dev Level select's last pick
  * - `smbc.dataEpoch`             engine/save/storage.ts    the data marker (not data: never exported)
  * (`smbc-classic-probe`, engine/save/storage.ts storageReadable, is only ever read, never written.)
@@ -157,6 +158,7 @@ const OBJECT_KEYS: readonly RegExp[] = [
   /^smbc-classic-resume(-|$)/,
   /^smbc\.devLast$/,
   /^smbc\.levels$/,
+  /^smbc\.songs$/,
 ];
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
@@ -180,6 +182,8 @@ export function valueFits(key: string, text: string): boolean {
     if (lib.v !== 1 || !isPlainObject(lib.levels)) return false;
     if (!Object.values(lib.levels).every((t) => typeof t === 'string')) return false;
   }
+  // Music Lab's songs: a `songs` map (its reader skips a single damaged entry, music-lab/library.ts).
+  if (key === 'smbc.songs' && !isPlainObject((v as Record<string, unknown>).songs)) return false;
   return true;
 }
 

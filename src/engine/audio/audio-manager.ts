@@ -56,6 +56,12 @@ export interface AudioSink {
   setMusicMap?(map: MusicMap | null): void;
   /** The song and sound ids registered now (an asset pack may replace any of them; item 92). */
   registeredIds?(): { songs: string[]; sfx: string[] };
+  /**
+   * Music Lab (0.4.77): play a song compiled from the player's own text on the music voices, in
+   * place of any music (looping when `song.loop`; `onEnd` when a song that does not loop ends).
+   * stopMusic stops it. No asset-pack file or music map applies to it.
+   */
+  playSong?(song: CompiledSong, onEnd?: () => void): void;
 }
 
 /** A song id to the song to play in its place (null: none). */
@@ -478,6 +484,20 @@ export class AudioManager implements AudioSink {
     this.seq.tempoScale = 1;
     this.seq.onEnd = onEnd ?? null;
     this.seq.play({ ...s, loop: false });
+  }
+
+  playSong(song: CompiledSong, onEnd?: () => void): void {
+    this.cancelCrossfade();
+    this.pendingMusic = null;
+    this.currentMusic = null;
+    this.fileToken++;
+    this.stopFileMusic();
+    if (!this.seq) return;
+    this.seq.stop();
+    this.unfade();
+    this.seq.tempoScale = 1;
+    this.seq.onEnd = onEnd ?? null;
+    this.seq.play(song);
   }
 
   setTempoScale(scale: number): void {

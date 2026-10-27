@@ -51,7 +51,8 @@ afterEach(() => {
   adoptDataEpoch();
 });
 
-const raw = () => JSON.parse(store.get(SONG_LIBRARY_KEY) ?? 'null') as { v: number; songs: Record<string, unknown> };
+const raw = () =>
+  JSON.parse(store.get(SONG_LIBRARY_KEY) ?? 'null') as { v: number; songs: Record<string, unknown> };
 
 describe('Music Lab library: the plain cases', () => {
   it('starts empty, saves, lists, renames and deletes', () => {
@@ -128,7 +129,13 @@ describe('Music Lab library: rule 33a edge cases', () => {
   });
 
   it('a damaged library (not JSON, not the shape) or a newer format is never written over', () => {
-    for (const bad of ['{nope', '"text"', '[1,2]', JSON.stringify({ v: 1, songs: [] }), JSON.stringify({ v: 2, songs: {} })]) {
+    for (const bad of [
+      '{nope',
+      '"text"',
+      '[1,2]',
+      JSON.stringify({ v: 1, songs: [] }),
+      JSON.stringify({ v: 2, songs: {} }),
+    ]) {
       store.set(SONG_LIBRARY_KEY, bad);
       expect(loadSongs()).toMatchObject({ songs: {}, unreadable: true });
       expect(saveSong('New', 'd')).toEqual({ ok: false, reason: 'damaged' });

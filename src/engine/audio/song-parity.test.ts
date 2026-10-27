@@ -17,14 +17,16 @@ import type { Voice } from './apu';
 
 const FIXTURE = new URL('./song-parity.fixture.json', import.meta.url);
 
-const hash = (v: unknown): string => createHash('sha256').update(JSON.stringify(v)).digest('hex').slice(0, 16);
+const hash = (v: unknown): string =>
+  createHash('sha256').update(JSON.stringify(v)).digest('hex').slice(0, 16);
 
 /** Every note the synth is sent for one pass of the tracks (scheduleOnce on recording voices). */
 function render(tracks: Track[], bpm: number): string {
   const notes: unknown[] = [];
   const voice = (ch: number): Voice =>
     ({
-      note: (n: number, t: number, d: number, o: unknown) => notes.push([ch, n, +t.toFixed(6), +d.toFixed(6), o]),
+      note: (n: number, t: number, d: number, o: unknown) =>
+        notes.push([ch, n, +t.toFixed(6), +d.toFixed(6), o]),
       stop: () => undefined,
     }) as unknown as Voice;
   const ctx = { currentTime: 0 } as unknown as BaseAudioContext;

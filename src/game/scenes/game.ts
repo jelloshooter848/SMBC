@@ -76,6 +76,7 @@ import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
+import { MusicLabScene, type MusicLabStart } from './music-lab';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
@@ -2194,6 +2195,14 @@ export class Game {
     this.deps.ctx.audio.stopMusic();
     this.scenes.clear();
     this.scenes.push(new EditorScene(this, initial));
+  }
+
+  /** MUSIC LAB (item 136): from the title's Options only, as the level editor (never a pause). */
+  openMusicLab(start?: MusicLabStart): void {
+    this.playtestDone = null;
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.clear();
+    this.scenes.push(new MusicLabScene(this, start));
   }
 
   /**
