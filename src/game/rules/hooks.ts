@@ -112,6 +112,11 @@ export interface ClassicRulesHooks {
    */
   vineEntry?(world: World, p: Player, target: string | null): void;
   /**
+   * `p` climbs off the top of a vine into the next area (World.grabVines): a Yoshi waiting below
+   * for him (vineEntry) stays, and the hero is benched (item 103). Optional.
+   */
+  vineLeave?(world: World, p: Player): void;
+  /**
    * `p` is beamed up from the teleport pad `z` (World.beamUp): as pipeEntry, for a pad (item 103).
    * Returns the frames of the hop off before the beam (0: at once). Optional.
    */

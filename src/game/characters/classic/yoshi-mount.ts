@@ -132,6 +132,7 @@ export function mount(p: Player, yoshi: YoshiMount, world: World, quiet = false)
   p.scratch[RIDE_KEY] = 1;
   yoshi.state = 'ridden';
   yoshi.rider = p;
+  yoshi.waitsFor = null;
   ensureFx(p, world);
   if (!quiet) say(world, 'Riding Yoshi');
 }
@@ -214,6 +215,19 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       yoshi.destroy();
       break;
   }
+}
+
+/** Yoshi straight down onto the floor under him (item 103); left where he is over a pit. */
+function toFloor(yoshi: YoshiMount, world: World): void {
+  const b = yoshi.body;
+  const l = tileAt(b.x);
+  const r = tileAt(b.x + b.w - 1);
+  for (let ty = Math.max(0, tileAt(b.y + b.h - 1)); ty < world.level.height; ty++)
+    if (world.map.isSolid(l, ty) || world.map.isSolid(r, ty)) {
+      b.y = tileToSub(ty) - b.h;
+      b.onGround = true;
+      return;
+    }
 }
 
 /**
@@ -439,11 +453,30 @@ export function yoshiVineEntry(world: World, p: Player, target: string | null): 
   if (!world.ctx.classicYoshi || !ride || !target || !benchedLevel(world, target)) return;
   dismount(p, world, 'park');
   const yoshi = ride.mount;
-  // Not parked: he waits like a Yoshi got off on purpose, so the hero may come back down onto him.
+  // Not benched yet, and not parked: he waits like a Yoshi got off on purpose, so the hero may
+  // come back down onto him (or a partner may get on). Only the climb off the top benches the
+  // hero (yoshiVineLeave); a Yoshi lost meanwhile leaves nothing behind.
+  delete p.scratch[RIDE_KEY];
   yoshi.parked = false;
+  yoshi.waitsFor = p;
   yoshi.leftBy = p;
   yoshi.leftT = 0;
   hopToWait(yoshi, p, world);
+}
+
+/**
+ * ClassicRulesHooks.vineLeave (item 103 review): `p` climbs off the top of a vine into the next
+ * area. The Yoshi still waiting for him below (yoshiVineEntry; nobody got on him, he was not
+ * lost) stays there and the hero is benched, so Yoshi rejoins in the next allowed area.
+ */
+export function yoshiVineLeave(world: World, p: Player): void {
+  if (!world.ctx.classicYoshi || RIDES.has(p)) return;
+  const yoshi = world.entities.find(
+    (e): e is YoshiMount => e instanceof YoshiMount && e.alive && e.state === 'wait' && e.waitsFor === p,
+  );
+  if (!yoshi) return;
+  p.scratch[RIDE_KEY] = 2;
+  yoshi.parked = true;
   say(world, WAITS_SAID);
 }
 
@@ -461,6 +494,8 @@ export function yoshiTeleportEntry(world: World, p: Player, z: Zone & { kind: 't
     if (!ride) continue;
     dismount(o, world, 'park');
     parkBehind(ride.mount, o, world);
+    // A partner in mid-air: his Yoshi sits on the floor under that spot, never in the air.
+    if (!o.body.onGround) toFloor(ride.mount, world);
     parked = true;
   }
   if (parked) say(world, WAITS_SAID);
@@ -469,13 +504,18 @@ export function yoshiTeleportEntry(world: World, p: Player, z: Zone & { kind: 't
 
 /**
  * Item 103 (pits): a rider dropping into a pit that falls into a castle, water or bonus area
- * (its `pit` zone's target) parts with Yoshi once 4 px below the floor he left: he hops back
+ * (its `pit` zone's target) parts with Yoshi once 4 px below the floor he left with no floor
+ * under him: he hops back
  * out to that floor and waits (parked, the hero benched), and the hero falls on alone.
  */
 function pitParting(yoshi: YoshiMount, p: Player, world: World): boolean {
   const g = yoshi.lastGround;
   const b = p.body;
   if (!g || b.onGround || b.vy <= 0 || b.y + b.h <= g.feet + px(4)) return false;
+  // Nothing to land on below him in his column, down to the level's bottom.
+  const col = tileAt(b.x + (b.w >> 1));
+  for (let ty = Math.max(0, tileAt(b.y + b.h)); ty < world.level.height; ty++)
+    if (world.map.isSolid(col, ty)) return false;
   const pit = world.level.zones.find(
     (z): z is Zone & { kind: 'pit' } =>
       z.kind === 'pit' &&
@@ -728,6 +768,11 @@ export class YoshiMount extends Entity {
    * nobody gets back on in this area (the rider is benched, RIDE_KEY 2).
    */
   parked = false;
+  /**
+   * The hero who hopped off him onto a vine into a benched area (item 103): benched only once
+   * he climbs off its top (yoshiVineLeave). Cleared when anyone gets on.
+   */
+  waitsFor: Player | null = null;
   /** Where the pair last stood while ridden (item 103: he hops back there to wait). */
   lastGround: { x: number; feet: number } | null = null;
   /** His hop to where he waits (item 103): from, to (subpixels) and the frames. */

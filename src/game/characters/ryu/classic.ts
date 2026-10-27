@@ -485,15 +485,16 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
 
 /**
  * ATTACK's touch caption (item 201): SLASH, but on a wall ATTACK throws the main art (RY-C14),
- * so its name, or a blank caption when the main art is not a throw (the Jump Slash); on a vine
- * or the flagpole ATTACK does nothing, so a blank caption. The button itself stays.
+ * so its name, or a blank caption when the main art is not a throw (the Jump Slash); on the
+ * flagpole ATTACK does nothing, so a blank caption. The button itself stays.
  */
 export function classicAttackLabel(p: Player): string | null {
   if (p.wall) {
     const a = classicMainArt(p);
     return a.spec ? a.label : BLANK_CAPTION;
   }
-  if (p.vine || p.anim === 'climb') return BLANK_CAPTION;
+  // The flagpole climb (the clear's slide); on a vine the shared labels hide the buttons.
+  if (p.anim === 'climb') return BLANK_CAPTION;
   return 'SLASH';
 }
 

@@ -19,9 +19,11 @@ export const MENU_TOUCH_LABELS: Readonly<TouchLabels> = {
 /**
  * A button that stays where it is with no caption: the hero's state makes it do nothing (or
  * something its usual name does not say) for a moment, and the button must not vanish under a
- * thumb or move the layout (item 201). `null` hides the button itself.
+ * thumb or move the layout (item 201). `null` hides the button itself. A space, not '': the touch
+ * button draws nothing either way, but the desktop key hints keep a blank caption under the
+ * ability's name (key-hints.ts), while an empty label (the title's secret B) gives no hint.
  */
-export const BLANK_CAPTION = '';
+export const BLANK_CAPTION = ' ';
 
 /** Every button hidden: cut-scenes and cards that take no input. */
 export const NO_TOUCH_BUTTONS: TouchLabels = {

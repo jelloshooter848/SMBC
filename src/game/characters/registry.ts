@@ -44,6 +44,7 @@ import {
   yoshiPipeEntry,
   yoshiTeleportEntry,
   yoshiVineEntry,
+  yoshiVineLeave,
   yoshiWorldLoaded,
 } from './classic/yoshi-mount';
 import {
@@ -85,6 +86,7 @@ installClassicRules({
   clearHop: yoshiClearHop,
   pipeEntry: yoshiPipeEntry,
   vineEntry: yoshiVineEntry,
+  vineLeave: yoshiVineLeave,
   teleportEntry: yoshiTeleportEntry,
 });
 

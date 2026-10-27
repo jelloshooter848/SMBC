@@ -517,6 +517,22 @@ type BeamAnim = {
    */
   hop?: { t: number; n: number; y0: number };
 };
+/**
+ * The levels whose pole has a designed route over it, so no barrier (owner decisions 231, 237,
+ * 238): the Lost Levels' warps past the pole (3-1's springboard to the backwards warp, 5-1's to
+ * World 6, A-3's springboard to World C) and Special 4-2's exit area, whose pipe past the pole is
+ * reached only over it.
+ */
+const OVER_POLE_ROUTES: ReadonlySet<string> = new Set(['2-1', 'll-3-1', 'll-5-1', 'll-10-3', 'sp-4-2-exit']);
+
+/** No flagpole barrier in `level` (see OVER_POLE_ROUTES). */
+export function overPoleRoute(level: LevelData): boolean {
+  if (OVER_POLE_ROUTES.has(level.id)) return true;
+  // Campaign 2-1: the Top Secret Area's cloud path leads over the pole (a woken `path` zone:
+  // campaignLevel drops its `campaign` mark; elsewhere it sleeps).
+  return level.id === '2-1' && level.zones.some((z) => z.kind === 'path' && !z.campaign);
+}
+
 /** Player 2's beam-down starts this many frames after player 1's. */
 const BEAM_P2_DELAY = 12;
 
@@ -2560,8 +2576,11 @@ export class World {
           return on?.centerX === p.vine?.x;
         });
         // A vine to an area with none to climb on arrives as that area starts (its `exit=`).
-        if (z) this.transfer(z.target, z.target.exitDir ?? 'climb', on?.art === 'chain');
-        else b.y = -b.h; // nowhere to go: hang at the top
+        if (z) {
+          // Classic rules: a Yoshi mount left waiting at the vine's foot stays (item 103).
+          if (this.rules === 'classic') classicRules().vineLeave?.(this, p);
+          this.transfer(z.target, z.target.exitDir ?? 'climb', on?.art === 'chain');
+        } else b.y = -b.h; // nowhere to go: hang at the top
       }
       return;
     }
@@ -4033,13 +4052,16 @@ export class World {
    *
    * Owner deviation from the shipped original: FlagPole.as checkPlayerLoc holds the same clamp
    * (`player.hBot < hTop` and `player.hRht >= nx`: nx = nx - hWidth/2, vx = 0) commented out.
+   * The levels with a designed route over the pole keep none (overPoleRoute).
    */
   private poleBarrier(p: Player, fromX: number | undefined): void {
-    if (this.clear || fromX === undefined) return;
+    if (this.clear || fromX === undefined || overPoleRoute(this.level)) return;
     const b = p.body;
     for (const pole of this.poles) {
       if (!pole.alive) continue;
-      const wall = pole.body.x;
+      // 1 px into the shaft: a pinned hero overlaps it, so the frame his feet pass the ball's top
+      // he touches it and grabs (never sliding down beside it to the base, item 194 review).
+      const wall = pole.body.x + px(1);
       if (b.y + b.h > pole.body.y) continue; // feet at or below the ball's top: the shaft is touchable
       if (fromX + b.w > wall || b.x + b.w <= wall) continue; // not a left-to-right crossing
       this.placeX(p, wall - b.w);

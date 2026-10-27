@@ -72,9 +72,6 @@ function meter(p: Player): MeterInfo | null {
   return { value: ninpo(p), max: ninpoMax(p), colour: '#3cbcfc', label: 'N' };
 }
 
-/** The wall climb's 115 ms per pose, as Classic Ryu's (ANIM_VERY_SLOW): 6.9 game frames. */
-const CLIMB_TICKS = 6.9;
-
 function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   let palette = 'ryu';
   if (p.star > 0) palette = `ryu-star-${reduceFlashing ? 0 : (frame >> 1) & 3}`;
@@ -84,10 +81,7 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   if (p.dead) name = 'die';
   else if (p.anim === 'hurt') name = 'hurt';
   else if ((p.scratch.spin ?? 0) > 0) name = `spin-${(frame >> 1) & 3}`;
-  // Clinging: the wall climb's two poses while he moves up or down the wall, else the cling
-  // (item 202, as Classic Ryu's).
-  else if (p.clinging)
-    name = p.scratch._clingMove ? `wallclimb-${Math.floor(frame / CLIMB_TICKS) & 1}` : 'cling';
+  else if (p.clinging) name = 'cling';
   else if ((p.scratch.throwT ?? 0) > 0) name = 'throw';
   else if (t > 0) name = p.crouching ? 'crouch-slash' : t > SLASH_FRAMES - 3 ? 'slash-0' : 'slash-1';
   else if (p.crouching) name = 'crouch';
@@ -216,11 +210,6 @@ export const RYU: CharacterDef = {
   behaviour: {
     update(p, input, world) {
       const b = p.body;
-      // Item 202: moved up or down while clinging (a frame later than the grab).
-      const s = p.scratch;
-      s._clingMove = p.clinging && s._clingY !== undefined && s._clingY !== b.y ? 1 : 0;
-      if (p.clinging) s._clingY = b.y;
-      else delete s._clingY;
       if (p.scratch.throwT) p.scratch.throwT--;
       cycleTool(p, input, tools(p), world);
       if (p.stun > 0 || p.transition) {

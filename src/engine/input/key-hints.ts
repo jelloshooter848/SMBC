@@ -29,6 +29,15 @@ export function keyHintMap(keyboard: BindingMap | undefined): KeyHints {
 export const HINT_BUTTONS = ['jump', 'attack', 'special', 'select', 'start'] as const;
 export type HintButton = (typeof HINT_BUTTONS)[number];
 
+/** Each hinted button's ability, for a blank caption's hint. */
+const ABILITY_NAMES: Readonly<Record<HintButton, string>> = {
+  jump: 'JUMP',
+  attack: 'ATTACK',
+  special: 'SPECIAL',
+  select: 'SELECT',
+  start: 'MENU',
+};
+
 export interface KeyHintItem {
   /** A face/small button, or 'move' for the d-pad. */
   id: HintButton | 'move';
@@ -40,7 +49,8 @@ export interface KeyHintItem {
 
 /**
  * What the key-hint reference shows: the d-pad as MOVE, then every ability button that the
- * scene shows (a hidden or blank button is left out), each with its key.
+ * scene shows (a hidden button, or an empty label such as the title's secret B, is left out; a
+ * blank caption keeps the ability's name), each with its key.
  */
 export function keyHintItems(labels: TouchLabels, keys: KeyHints): KeyHintItem[] {
   const dirs = (['left', 'right', 'up', 'down'] as const).map((d) => keys[d] ?? '');
@@ -49,7 +59,9 @@ export function keyHintItems(labels: TouchLabels, keys: KeyHints): KeyHintItem[]
   for (const a of HINT_BUTTONS) {
     const label = labels[a];
     if (!label) continue;
-    items.push({ id: a, label: label.toUpperCase(), key: keys[a] ?? '' });
+    // A blank caption (a space: the button stays, saying nothing for now, as Ryu's ATTACK on a
+    // wall with no throw) keeps its hint under the ability's own name.
+    items.push({ id: a, label: (label.trim() || ABILITY_NAMES[a]).toUpperCase(), key: keys[a] ?? '' });
   }
   return items;
 }
