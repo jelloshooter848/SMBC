@@ -126,14 +126,22 @@ export function onlineLoader(
     }));
 }
 
+/** A built online-code chunk's file name (Vite's `<name>-<hash>.js`). */
+const CHUNK_FILE = /^nostr-backup-[\w-]+\.js$/;
+
 /**
  * Item 265: the URL to load a failed chunk again under: its own URL (named in the browser's
  * error, as Chromium and Firefox do), resolved against `base` (the page's module, through
- * new URL(..., import.meta.url)), with `?retry=n`. Null when the error names no online-code
- * chunk file under the app's own folder, `root` (resolved against `base`; by default the base
- * module's own folder): not another site, nor another app on the same origin.
+ * new URL(..., import.meta.url)), with `?retry=n`. Null unless it is this site's built chunk:
+ * a `nostr-backup-<hash>.js` file in `base`'s own folder (the built chunks' folder, item 280),
+ * with nothing encoded in its path; or, on the dev server, exactly `devModule` (its module path).
  */
-export function freshChunkUrl(failure: unknown, retry: number, base: string, root = './'): string | null {
+export function freshChunkUrl(
+  failure: unknown,
+  retry: number,
+  base: string,
+  devModule?: string,
+): string | null {
   const text = failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '';
   // Without the quotes or brackets a message may put around it.
   const named = /(?:https?:\/\/)?[^\s'"()]*nostr-backup[^\s'"()]*/.exec(text)?.[0];
@@ -142,14 +150,18 @@ export function freshChunkUrl(failure: unknown, retry: number, base: string, roo
   let home: URL;
   try {
     u = new URL(named, base);
-    home = new URL(root, base);
+    home = new URL(base);
   } catch {
     return null;
   }
-  if (!/^https?:$/.test(u.protocol) || u.origin !== new URL(base).origin) return null;
-  // Its path as the browser reads it (.. and %2e%2e already resolved), under the app's folder.
-  if (!home.pathname.endsWith('/') || !u.pathname.startsWith(home.pathname)) return null;
-  if (!/\/nostr-backup[^/]*\.[jt]s$/.test(u.pathname)) return null;
+  if (!/^https?:$/.test(u.protocol) || u.origin !== home.origin) return null;
+  // Item 280: nothing encoded (%2e%2e%2f, %2F, %5c) and no backslash, raw or read.
+  const path = u.pathname;
+  if (/[%\\]/.test(path) || /[%\\]/.test(named.split(/[?#]/)[0] as string)) return null;
+  const cut = path.lastIndexOf('/') + 1;
+  const dir = home.pathname.slice(0, home.pathname.lastIndexOf('/') + 1);
+  const built = path.slice(0, cut) === dir && CHUNK_FILE.test(path.slice(cut));
+  if (!built && !(devModule !== undefined && path === devModule)) return null;
   u.search = '';
   u.hash = '';
   u.searchParams.set('retry', String(retry));
@@ -168,7 +180,14 @@ function browserOnlineEnv(): OnlineEnv | null {
         : // Item 265: a fresh specifier, so the browser fetches the chunk again.
           (import(/* @vite-ignore */ url) as Promise<{ browserOnlineApi(): OnlineApi }>)
       ).then((m) => m.browserOnlineApi()),
-    (e, n) => freshChunkUrl(e, n, import.meta.url, import.meta.env.BASE_URL),
+    // The build's chunk sits beside this one (assets/); the dev server serves the module itself.
+    (e, n) =>
+      freshChunkUrl(
+        e,
+        n,
+        import.meta.url,
+        import.meta.env.DEV ? `${import.meta.env.BASE_URL}src/engine/online/nostr-backup.ts` : undefined,
+      ),
   ));
   return {
     isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
