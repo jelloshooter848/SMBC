@@ -20,11 +20,17 @@ import {
   type BackupRefusal,
   type ChangeFailure,
 } from '@engine/save/backup';
-import { onStaleStorage } from '@engine/save/storage';
+import { loadJson, onStaleStorage } from '@engine/save/storage';
+import { defaultSettings, SETTINGS_KEY, type HomeScreenFlags } from '@engine/save/settings';
+import { FONT_COLOURS } from '@content/sprites/font';
 import {
+  forgetOnlineCode,
   formatBackupCode,
   loadOnlineCode,
+  loadUploadedCode,
+  markOnlineNoticeSeen,
   ONLINE_BACKUP_KEY,
+  onlineNoticeSeen,
   readOnlineCode,
   withCodeUnshown,
   onlineCopy,
@@ -39,14 +45,16 @@ import {
 import { shareEnv } from './save-codes';
 import { RestoreCodeScene } from './online-backup';
 import { wrapText } from '../hud/text';
-import { MenuScene, type MenuItem } from './menu';
+import { backToMenu, MenuScene, type MenuItem } from './menu';
 import type { Game } from './game';
 
 /*
- * Options > Save data on the REMIX title (owner items 86-88): EXPORT BACKUP (one .json of every
- * game key, and each asset pack as <name>.zip when the player says YES), IMPORT BACKUP (checked
- * whole before anything changes, then REPLACE ALL DATA ON THIS DEVICE? with EXPORT FIRST) and
- * ERASE ALL DATA (two questions, the first offering a backup; packs only with a third). The
+ * Options > Save data on the REMIX title (owner items 86-88; v0.4.77 item 181: three rows, BACK
+ * UP ON DEVICE, BACK UP ONLINE on the web build, and RESET GAME). BACK UP ON DEVICE holds EXPORT
+ * BACKUP (one .json of every game key, and each asset pack as <name>.zip when the player says
+ * YES) and IMPORT BACKUP (checked whole before anything changes, then REPLACE ALL DATA ON THIS
+ * DEVICE? with EXPORT FIRST); RESET GAME asks two questions, the first offering a backup (packs
+ * only with a third), and never deletes the online copy (its code is shown first). The
  * share sheet, the downloads and the file chooser run inside the press's own event (MenuItem
  * .gesture: iOS allows them only there). After an import or an erase, OK starts the game again
  * from its first screen, so nothing of the old state stays in memory.
@@ -82,12 +90,30 @@ export interface OnlineEnv {
   load(): Promise<OnlineApi>;
 }
 
+/**
+ * `load` once, its promise kept while it works; a rejected one is dropped (item 185), so the
+ * next try loads again instead of failing until the page is reloaded.
+ */
+export function onlineLoader(load: () => Promise<OnlineApi>): () => Promise<OnlineApi> {
+  let loading: Promise<OnlineApi> | null = null;
+  return () =>
+    (loading ??= new Promise<OnlineApi>((res) => res(load())).catch((e: unknown) => {
+      loading = null;
+      throw e;
+    }));
+}
+
+let loadOnline: (() => Promise<OnlineApi>) | null = null;
+
 /** The online rows' loader: none in the offline build, so its bundle holds no network code. */
 function browserOnlineEnv(): OnlineEnv | null {
   if (import.meta.env.MODE === 'offline') return null;
+  const load = (loadOnline ??= onlineLoader(() =>
+    import('@engine/online/nostr-backup').then((m) => m.browserOnlineApi()),
+  ));
   return {
     isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
-    load: () => import('@engine/online/nostr-backup').then((m) => m.browserOnlineApi()),
+    load,
   };
 }
 
@@ -143,15 +169,7 @@ export function downloadAll(
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 'S'}`;
 const pluralSaid = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 
-/** The note under the page's rows, drawn and said (four lines: six rows above it online). */
-const NOTE = [
-  'A BACKUP HOLDS EVERY SAVE,',
-  'FILE, SETTING AND LEVEL.',
-  'IMPORTING ONE DOES NOT',
-  'RESTORE ASSET PACKS.',
-];
-/** The note's one line when the page has too many rows for all four. */
-const NOTE_SHORT = 'IMPORT NEVER RESTORES PACKS';
+/** What a backup holds, said on entering Save data and BACK UP ON DEVICE (item 181: not drawn). */
 const NOTE_SAID =
   'A backup holds every save, file, setting and custom level on this device. Importing one does not restore asset packs.';
 
@@ -175,6 +193,8 @@ export class SaveDataOptions extends MenuScene {
   private zips: { files: File[]; failed: string[] } | null = null;
   private zipping: Promise<void> | null = null;
   private busy = false;
+  /** The page open over this one (BACK UP ON DEVICE or BACK UP ONLINE), null: none. */
+  private sub: { page: SavePage; online: boolean } | null = null;
 
   constructor(game: Game, onBack: () => void) {
     super(game, 'SAVE DATA', [], onBack);
@@ -185,10 +205,37 @@ export class SaveDataOptions extends MenuScene {
     void this.readPacks();
   }
 
-  /** The rows; the code rows only once this device has a backup code (items 162, 168). */
+  /** Item 181: the main page's rows (BACK UP ONLINE on the web build only). */
   private rebuild(): void {
-    const code = this.env.online ? loadOnlineCode() : null;
     this.setItems([
+      {
+        label: 'Back up on device',
+        select: () => this.openDevice(),
+        hint: 'Export a backup file of this device, or import one',
+      },
+      // Item 159: online backup over Nostr, on the web build only.
+      ...(this.env.online
+        ? [
+            {
+              label: 'Back up online',
+              select: () => this.openOnline(),
+              hint: 'Back up online, restore from a code, or see your code',
+            },
+          ]
+        : []),
+      {
+        label: 'Reset game',
+        select: () => this.askReset(),
+        hint: 'Remove every save, file, setting and custom level from this device',
+      },
+      { label: 'Back', select: () => this.onBack?.() },
+    ]);
+    if (this.sub?.online) this.sub.page.setItems(this.onlineItems());
+  }
+
+  /** BACK UP ON DEVICE's rows: today's Export and Import backup. */
+  private deviceItems(): MenuItem[] {
+    return [
       {
         label: 'Export backup',
         select: () => this.startExport(),
@@ -201,44 +248,96 @@ export class SaveDataOptions extends MenuScene {
         gesture: true,
         hint: 'Replace the data on this device with a backup file',
       },
-      // Item 159: online backup over Nostr, on the web build only.
-      ...(this.env.online
-        ? [
-            {
-              label: 'Back up online',
-              select: () => this.backUpOnline(),
-              hint: 'Save an encrypted copy on free servers, found again by a code',
-            },
-            {
-              label: 'Restore from code',
-              select: () => this.restoreFromCode(),
-              // The code box's text field takes the keyboard only from inside the press's event.
-              gesture: true,
-              hint: 'Bring back an online backup with its code',
-            },
-          ]
-        : []),
+      { label: 'Back', select: () => this.closePage() },
+    ];
+  }
+
+  /** BACK UP ONLINE's rows; the code rows only once a copy is online (items 162, 168, 187). */
+  private onlineItems(): MenuItem[] {
+    const code = loadUploadedCode();
+    return [
+      {
+        label: 'Back up online',
+        select: () => this.backUpOnline(),
+        hint: 'Save an encrypted copy on free servers, found again by a code',
+      },
+      {
+        label: 'Restore from code',
+        select: () => this.restoreFromCode(),
+        // The code box's text field takes the keyboard only from inside the press's event.
+        gesture: true,
+        hint: 'Bring back an online backup with its code',
+      },
       ...(code
         ? [
             {
-              label: 'Show my code',
+              label: 'Show most recent code',
               select: () => this.showMyCode(),
               hint: 'Your online backup code, to copy or share',
             },
             {
-              label: 'Delete online copy',
+              label: 'Delete most recent code',
               select: () => this.askDeleteOnline(),
-              hint: 'Delete your backup on the servers; your code is kept',
+              hint: 'Delete your backup on the servers and forget its code on this device',
             },
           ]
         : []),
-      {
-        label: 'Erase all data',
-        select: () => this.askErase(),
-        hint: 'Remove every save, file, setting and custom level from this device',
-      },
-      { label: 'Back', select: () => this.onBack?.() },
-    ]);
+      { label: 'Back', select: () => this.closePage() },
+    ];
+  }
+
+  private openPage(title: string, entry: string, items: MenuItem[], online: boolean): void {
+    this.status = '';
+    const page = new SavePage(
+      this.game,
+      title,
+      entry,
+      items,
+      () => this.closePage(),
+      () => this.busy,
+    );
+    this.sub = { page, online };
+    this.game.scenes.push(page);
+  }
+
+  /** Back on the main page from BACK UP ON DEVICE or BACK UP ONLINE, its row said. */
+  private closePage(): void {
+    if (this.busy || !this.sub) return;
+    this.sub = null;
+    backToMenu(this.game);
+  }
+
+  private openDevice(): void {
+    if (this.busy) return;
+    this.openPage(
+      'BACK UP ON DEVICE',
+      `Back up on device. ${NOTE_SAID.slice(0, -1)}`,
+      this.deviceItems(),
+      false,
+    );
+  }
+
+  /** BACK UP ONLINE, with its experimental note the first time on this device (items 181.3, 182). */
+  private openOnline(): void {
+    if (this.busy) return;
+    this.openPage('BACK UP ONLINE', 'Back up online', this.onlineItems(), true);
+    if (onlineNoticeSeen()) return;
+    const ok = () => {
+      // Kept as a game key: RESET GAME clears it. A refused write shows the note again next time.
+      markOnlineNoticeSeen();
+      this.game.scenes.pop();
+      this.sub?.page.announcePage();
+    };
+    this.game.scenes.push(
+      new QuestionBox(
+        this.game,
+        'EXPERIMENTAL FEATURE',
+        NOTICE_SAID,
+        NOTICE_LINES,
+        [{ label: 'OK', select: ok }],
+        ok,
+      ),
+    );
   }
 
   /** The packs are only listed on opening: they are zipped when the player is asked about them. */
@@ -271,10 +370,16 @@ export class SaveDataOptions extends MenuScene {
     return this.busy ? null : super.gesture();
   }
 
-  /** The status line (the question's too, when one is up) and the screen reader. */
+  /** The status line of the page open now: BACK UP ON DEVICE's or BACK UP ONLINE's, else this one's. */
+  private setStatus(status: string): void {
+    if (this.sub) this.sub.page.note(status);
+    else this.status = status;
+  }
+
+  /** The status line (the open page's, and the question's when one is up) and the screen reader. */
   private tell(status: string, said: string, bump = false): void {
     if (bump) this.game.ctx.audio.sfx('bump');
-    this.status = status;
+    this.setStatus(status);
     const top = this.game.scenes.top;
     if (top instanceof QuestionBox) top.note(status);
     this.game.deps.announcer?.say(said);
@@ -357,7 +462,7 @@ export class SaveDataOptions extends MenuScene {
   /** IMPORT BACKUP: the chooser, in this press's own event. */
   private pick(): void {
     if (this.busy) return;
-    this.status = '';
+    this.setStatus('');
     this.env.pickFile((file) => void this.readFile(file));
   }
 
@@ -385,47 +490,86 @@ export class SaveDataOptions extends MenuScene {
     }
   }
 
-  /** `at`: a copy restored from code, its own time (the next backup or delete follows it). */
-  private askReplace(b: Backup, at?: number): void {
+  /**
+   * `restored`: a copy restored from code, with its own time `at` (the next backup or delete
+   * follows it).
+   */
+  private askReplace(b: Backup, restored?: { at?: number | undefined }): void {
     const when = new Date(b.exportedAt);
     const day = Number.isNaN(when.getTime()) ? '' : when.toISOString().slice(0, 10);
     const keys = Object.keys(b.data).length;
-    const box = new QuestionBox(
+    // Item 230: the backup brings another code, so this device's (online) one is shown first, as
+    // Reset game does: its copy stays on the servers and this device forgets it.
+    const brought = readOnlineCode(b.data[ONLINE_BACKUP_KEY]);
+    const mine = loadUploadedCode();
+    const gone = mine && brought && brought.code !== mine.code ? formatBackupCode(mine.code) : null;
+    const box: QuestionBox = new QuestionBox(
       this.game,
       'REPLACE ALL DATA ON THIS DEVICE?',
-      `Replace all data on this device? The backup${day ? ` is from ${day},` : ''} game version ${b.gameVersion}, with ${pluralSaid(keys, 'item')}.`,
-      [`BACKUP ${day}`.trim(), `VERSION ${b.gameVersion}`.slice(0, 28), plural(keys, 'ITEM')],
+      `Replace all data on this device? The backup${day ? ` is from ${day},` : ''} game version ${b.gameVersion}, with ${pluralSaid(keys, 'item')}.` +
+        (gone && mine
+          ? ` It brings another online backup code. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore it: ${spokenBackupCode(mine.code)}.`
+          : ''),
+      [
+        `BACKUP ${day}`.trim(),
+        `VERSION ${b.gameVersion}`.slice(0, 28),
+        plural(keys, 'ITEM'),
+        ...(gone ? ['', 'YOUR CODE, KEPT ONLINE:', gone] : []),
+      ],
       [
         { label: 'No', select: () => this.backHere() },
-        { label: 'Yes', select: () => this.applyImport(b, at) },
+        { label: 'Yes', select: () => this.applyImport(b, restored) },
         {
           label: 'Export first',
           gesture: true,
           select: () => this.startExport(),
           hint: "Save a backup of this device's data first",
         },
+        ...(gone ? [this.copyItem(gone, () => box)] : []),
       ],
       () => this.backHere(),
+      gone,
     );
     this.game.scenes.push(box);
   }
 
-  private applyImport(b: Backup, at?: number): void {
+  private applyImport(b: Backup, restored?: { at?: number | undefined }): void {
     this.game.scenes.pop();
     // Item 167 and reviews: a backup carrying a valid code brings it (shown once more here, and
     // after a restore its lastAt no earlier than the restored copy's own time); one without a
-    // valid code keeps this device's (Erase all data is what removes it).
+    // valid code keeps this device's (Reset game is what removes it). Item 189: the code is
+    // stored normalised; item 187: online once restored, or when the file says it was uploaded.
     const data = withCodeUnshown(b.data);
     const mine = loadOnlineCode();
     const brought = readOnlineCode(data[ONLINE_BACKUP_KEY]);
     if (!brought) {
       if (mine) data[ONLINE_BACKUP_KEY] = JSON.stringify(mine);
-    } else if (at !== undefined)
+    } else {
+      // Review: an older file with this device's own code must not take back its upload or its
+      // later backup time (the next backup would be refused as older, Show and Delete would go).
+      const same = mine?.code === brought.code ? mine : null;
+      const times = [brought.lastAt, same?.lastAt, restored?.at].filter((t) => t !== undefined);
+      const uploaded = !!restored || brought.uploaded === true || same?.uploaded === true;
       data[ONLINE_BACKUP_KEY] = JSON.stringify({
         ...brought,
         shown: false,
-        lastAt: Math.max(brought.lastAt ?? 0, at),
+        ...(times.length ? { lastAt: Math.max(...times) } : {}),
+        ...(uploaded ? { uploaded: true } : {}),
       });
+    }
+    // Item 184: this device's Home Screen flags win outright, set or not (device facts, not
+    // save data): a file from another device neither shows a seen note again nor hides one.
+    const flags = this.homeScreenFlags();
+    const raw = data[SETTINGS_KEY];
+    if (raw !== undefined || anyFlag(flags)) {
+      const s = (raw === undefined ? defaultSettings() : JSON.parse(raw)) as { homeScreen?: unknown };
+      const theirs = isRecord(s.homeScreen) ? s.homeScreen : {};
+      if (
+        raw === undefined ||
+        (Object.keys(flags) as (keyof HomeScreenFlags)[]).some((k) => theirs[k] !== flags[k])
+      )
+        data[SETTINGS_KEY] = JSON.stringify({ ...s, homeScreen: flags });
+    }
     const r = replaceGameData(data);
     if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing changed.');
     const changed = brought && brought.code !== mine?.code;
@@ -476,16 +620,64 @@ export class SaveDataOptions extends MenuScene {
     );
   }
 
-  // ---- Erase -----------------------------------------------------------------------------
+  // ---- Reset game ------------------------------------------------------------------------
 
-  private askErase(): void {
+  /**
+   * RESET GAME (item 181.5): today's erase, renamed. With a code whose copy is online, the code
+   * comes first, with COPY CODE: the online copy stays on the servers and this device forgets
+   * the code (in the offline build too, for a code an imported file brought: no network).
+   */
+  private askReset(): void {
     if (this.busy) return;
     this.status = '';
+    const kept = loadUploadedCode();
+    if (!kept) return this.askErase();
+    const game = this.game;
+    const shown = formatBackupCode(kept.code);
+    const box: QuestionBox = new QuestionBox(
+      game,
+      'YOUR BACKUP CODE',
+      `Reset game. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore the backup: ${spokenBackupCode(kept.code)}.`,
+      [...RESET_CODE_LINES, '', shown],
+      [
+        this.copyItem(shown, () => box),
+        {
+          label: 'Continue',
+          select: () => {
+            game.scenes.pop();
+            this.askErase();
+          },
+        },
+      ],
+      () => this.cancelErase(),
+      shown,
+    );
+    game.scenes.push(box);
+  }
+
+  /** COPY CODE (in the press's own event) on a question showing a code; the outcome noted there. */
+  private copyItem(shown: string, box: () => QuestionBox): MenuItem {
+    const game = this.game;
+    const env = shareEnv(game);
+    return {
+      label: 'Copy code',
+      gesture: true,
+      hint: 'Copy your online backup code',
+      select: () =>
+        void (env.copy?.(shown) ?? Promise.resolve(false)).then((ok) => {
+          const said = ok ? 'CODE COPIED' : 'COPY FAILED';
+          box().note(said);
+          game.deps.announcer?.say(said);
+        }),
+    };
+  }
+
+  private askErase(): void {
     this.game.scenes.push(
       new QuestionBox(
         this.game,
-        'ERASE ALL DATA?',
-        'Erase all data? Every save, Classic file, setting and custom level on this device goes. Export a backup first?',
+        'RESET GAME?',
+        'Reset game? Every save, Classic file, setting and custom level on this device goes. Export a backup first?',
         ['EVERY SAVE, FILE, SETTING', 'AND CUSTOM LEVEL GOES.', '', 'EXPORT A BACKUP FIRST?'],
         [
           { label: 'No', select: () => this.backHere() },
@@ -513,14 +705,12 @@ export class SaveDataOptions extends MenuScene {
         [
           { label: 'No', select: () => this.backHere() },
           {
-            label: 'Yes, erase',
+            label: 'Yes, reset',
             select: () => {
               this.game.scenes.pop();
-              // Item 167: with a code, the online copy is asked about first.
-              // Offline there is nothing to ask: the card then shows the code that stays online.
-              if (this.env.online && loadOnlineCode() && this.env.online.isOnline() !== false)
-                this.askOnline();
-              else this.askPacksThenErase(false);
+              const n = this.packs?.length ?? 0;
+              if (n > 0) this.askPacks(n);
+              else void this.erase(false);
             },
           },
         ],
@@ -529,45 +719,18 @@ export class SaveDataOptions extends MenuScene {
     );
   }
 
-  /** BACK at any erase question: the whole erase is off. */
+  /** BACK at the code card or the packs question: the whole reset is off. */
   private cancelErase(): void {
     this.game.scenes.pop();
-    this.tell('ERASE CANCELLED', 'Erase cancelled. Nothing was erased.');
+    this.tell('RESET CANCELLED', 'Reset cancelled. Nothing was erased.');
   }
 
-  /** Item 167: ALSO DELETE YOUR ONLINE BACKUP? (NO first; BACK cancels the whole erase). */
-  private askOnline(): void {
+  private askPacks(n: number): void {
     const answer = (yes: boolean): MenuItem => ({
       label: yes ? 'Yes' : 'No',
       select: () => {
         this.game.scenes.pop();
-        this.askPacksThenErase(yes);
-      },
-    });
-    this.game.scenes.push(
-      new QuestionBox(
-        this.game,
-        'ALSO DELETE YOUR ONLINE BACKUP?',
-        'Also delete your online backup? Its code is erased with the rest either way.',
-        ['ITS CODE IS ERASED WITH THE', 'REST EITHER WAY.'],
-        [answer(false), answer(true)],
-        () => this.cancelErase(),
-      ),
-    );
-  }
-
-  private askPacksThenErase(online: boolean): void {
-    const n = this.packs?.length ?? 0;
-    if (n > 0) this.askPacks(n, online);
-    else void this.erase(false, online);
-  }
-
-  private askPacks(n: number, online = false): void {
-    const answer = (yes: boolean): MenuItem => ({
-      label: yes ? 'Yes' : 'No',
-      select: () => {
-        this.game.scenes.pop();
-        void this.erase(yes, online);
+        void this.erase(yes);
       },
     });
     this.game.scenes.push(
@@ -577,102 +740,49 @@ export class SaveDataOptions extends MenuScene {
         `Also erase ${pluralSaid(n, 'asset pack')}? No keeps them, turned off.`,
         ['NO KEEPS THEM, TURNED OFF.'],
         [answer(false), answer(true)],
-        // BACK cancels the whole erase, as on every other question.
+        // BACK cancels the whole reset, as on every other question.
         () => this.cancelErase(),
       ),
     );
   }
 
-  private async erase(withPacks: boolean, online = false): Promise<void> {
-    // The code is erased with the rest: when its online copy stays, the card shows it.
-    const kept = this.env.online ? loadOnlineCode() : null;
-    // Item 167: the online copy goes first (its code is about to be erased with the rest).
-    let gone: { line: string; said: string; deleted: boolean } | null = null;
-    if (online) {
-      this.busy = true;
-      this.tell('DELETING...', 'Deleting your online backup.');
-      gone = await this.deleteForErase();
-      this.busy = false;
-    }
-    const r = eraseGameData();
-    if (!r.ok) {
-      this.failed(r.reason, r.restored, 'Nothing was erased.');
-      if (gone) this.game.deps.announcer?.say(gone.said);
-      return;
-    }
+  /**
+   * Item 184: the Home Screen notes this device has seen (the stored settings' and this tab's):
+   * device facts, not save data, so a reset or an import keeps them. Null: none seen.
+   */
+  private homeScreenFlags(): HomeScreenFlags {
+    const stored = loadJson<unknown>(SETTINGS_KEY);
+    const hs = isRecord(stored) && isRecord(stored.homeScreen) ? stored.homeScreen : {};
+    const mine = this.game.deps.settings?.homeScreen;
+    const seen = (k: keyof HomeScreenFlags) => hs[k] === true || mine?.[k] === true;
+    return { tipDone: seen('tipDone'), noticeDone: seen('noticeDone'), offlineDone: seen('offlineDone') };
+  }
+
+  private async erase(withPacks: boolean): Promise<void> {
+    // Item 184: fresh settings carry the Home Screen flags; nothing else stays.
+    const flags = this.homeScreenFlags();
+    const r = anyFlag(flags)
+      ? replaceGameData({ [SETTINGS_KEY]: JSON.stringify({ ...defaultSettings(), homeScreen: flags }) })
+      : eraseGameData();
+    if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing was erased.');
     // From here this tab's state is stale: no reload on its refused writes, and no second action
     // while the packs are being erased.
     onStaleStorage(null);
     this.busy = true;
     let packsFailed = false;
     if (withPacks) await this.env.packs.clear().catch(() => (packsFailed = true));
-    const stays = kept !== null && !gone?.deleted;
     this.finish(
-      'ALL DATA ERASED',
-      (packsFailed ? 'All data erased, but the asset packs could not be erased.' : 'All data erased.') +
-        (gone ? ` ${gone.said}` : '') +
-        (stays && kept
-          ? ` Your online backup stays online; write down its code to delete it later: ${spokenBackupCode(kept.code)}.`
-          : ''),
-      [
-        ...(packsFailed ? ['ASSET PACKS COULD NOT BE', 'ERASED.'] : []),
-        ...(gone ? [gone.line] : []),
-        ...(stays && kept ? ['STILL ONLINE, ITS CODE:', formatBackupCode(kept.code)] : []),
-      ],
+      'GAME RESET',
+      packsFailed
+        ? 'Game reset: all data erased, but the asset packs could not be erased.'
+        : 'Game reset: all data erased.',
+      packsFailed ? ['ASSET PACKS COULD NOT BE', 'ERASED.'] : [],
     );
   }
 
-  /** The online copy deleted for an erase: a line for its card and what is said. */
-  private async deleteForErase(): Promise<{ line: string; said: string; deleted: boolean }> {
-    const kept = loadOnlineCode();
-    const notDeleted = (why: string) => ({
-      line: 'ONLINE COPY NOT DELETED',
-      said: `The online backup could not be deleted: ${why}`,
-      deleted: false,
-    });
-    if (!kept) return notDeleted('no code is kept on this device.');
-    if (this.env.online?.isOnline() === false) return notDeleted('no internet connection.');
-    let api: OnlineApi | null;
-    try {
-      api = (await this.env.online?.load()) ?? null;
-    } catch {
-      api = null;
-    }
-    if (!api) return notDeleted('the servers could not be reached.');
-    try {
-      const d = await api.deleteOnline(kept.code, kept.lastAt);
-      if (d.ok)
-        return {
-          line: `ONLINE COPY DELETED (${d.deleted} OF ${d.total})`,
-          said:
-            `Online backup deleted on ${d.deleted} of ${d.total} servers.` +
-            (d.deleted < d.total
-              ? ' The other servers could not be reached or refused, so a copy may remain there.'
-              : ''),
-          deleted: true,
-        };
-      return notDeleted(
-        d.reason === 'servers' ? 'the servers could not be reached.' : 'the servers refused.',
-      );
-    } catch {
-      return notDeleted('the servers could not be reached.');
-    }
-  }
-
-  /** Back on this page from a question: its focused row said again. */
+  /** Back on the page under a question: its focused row said again. */
   private backHere(): void {
-    this.game.scenes.pop();
-    this.announce();
-  }
-
-  override render(r: Renderer): void {
-    super.render(r);
-    const font = this.game.ctx.assets.sheet('font');
-    // Under the rows (64 is the first row's y, 14 a row's height), clear of the status line at
-    // 200: the whole note when it fits, else its one line that matters most.
-    const y = 64 + Math.min(this.items.length, this.visibleRows) * 14 + 4;
-    const lines = y + 3 * 12 + 8 <= 198 ? NOTE : y + 8 <= 198 ? [NOTE_SHORT] : [];
-    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + i * 12));
+    backToMenu(this.game);
   }
 
   // ---- Online backup (item 159) ------------------------------------------------------------
@@ -690,10 +800,17 @@ export class SaveDataOptions extends MenuScene {
 
   /** The network side, or null (said: it could not be loaded, which means no connection). */
   private async onlineApi(): Promise<OnlineApi | null> {
+    const load = this.env.online?.load;
+    if (!load) return null;
     try {
-      return (await this.env.online?.load()) ?? null;
+      const api = await load();
+      loadFails.set(load, 0);
+      return api;
     } catch {
-      this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      // Item 185 (review): a browser may keep a failed chunk until the page is reloaded.
+      const n = (loadFails.get(load) ?? 0) + 1;
+      loadFails.set(load, n);
+      this.tell(UNREACHABLE[0], n >= 2 ? `${UNREACHABLE[1]} ${RELOAD_SAID}` : UNREACHABLE[1], true);
       return null;
     }
   }
@@ -735,7 +852,9 @@ export class SaveDataOptions extends MenuScene {
       this.tell('BACKING UP...', 'Backing up online. This takes a few seconds.');
       const api = await this.onlineApi();
       if (!api) return;
-      const mine = kept ?? { code: api.newCode(), shown: false };
+      // Item 226: a new code says it is not uploaded yet (an old one without the field is read
+      // as uploaded once it has a backup time).
+      const mine = kept ?? { code: api.newCode(), shown: false, uploaded: false };
       // Kept first, so the online copy carries it (a restore elsewhere backs up to the same copy).
       if (!kept && !saveOnlineCode(mine))
         return this.tell(
@@ -761,7 +880,7 @@ export class SaveDataOptions extends MenuScene {
       try {
         r = await api.backUp(mine.code, text, mine.lastAt);
       } catch {
-        return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+        return this.tell(UNREACHABLE[0], NOT_BACKED_UP, true);
       }
       if (!r.ok) {
         if (r.reason === 'too-big')
@@ -782,7 +901,13 @@ export class SaveDataOptions extends MenuScene {
             'The servers answered but refused the backup. Try again later, and keep a backup file. Nothing was backed up.',
             true,
           );
-        if (r.accepted === 0) return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+        // Item 186: a first backup's code is kept by now, so not "Nothing changed".
+        if (r.accepted === 0) return this.tell(UNREACHABLE[0], NOT_BACKED_UP, true);
+        // Item 223: a copy is on at least one server, so the code counts as online.
+        if (!mine.uploaded) {
+          saveOnlineCode({ ...mine, uploaded: true });
+          this.rebuild();
+        }
         return this.tell(
           `ONLY ${r.accepted} OF ${r.total} SERVERS TOOK IT`,
           `Only ${r.accepted} of ${r.total} servers took the backup, so it is not safe yet. Try again later.`,
@@ -791,19 +916,21 @@ export class SaveDataOptions extends MenuScene {
       }
       const done = `BACKED UP (${r.accepted} OF ${r.total} SERVERS)`;
       const said = `Backed up to ${r.accepted} of ${r.total} servers.`;
-      saveOnlineCode({ ...mine, shown: true, lastAt: r.at });
+      // Item 187: online now. A refused write still shows the code below (it can be kept).
+      saveOnlineCode({ ...mine, shown: true, lastAt: r.at, uploaded: true });
       this.rebuild();
       if (mine.shown) return this.tell(done, said);
-      this.status = done;
+      // Item 227: the open page's line (BACK UP ONLINE's), not the main page's.
+      this.setStatus(done);
       this.showCode(mine.code, done, said);
     } finally {
       this.busy = false;
     }
   }
 
-  /** SHOW MY CODE (item 162): the kept code, as after the first backup. */
+  /** SHOW MOST RECENT CODE (items 162, 181.3): the kept code, as after the first backup. */
   private showMyCode(): void {
-    const kept = loadOnlineCode();
+    const kept = loadUploadedCode();
     if (!kept) return this.rebuild();
     this.showCode(kept.code, null, '');
   }
@@ -821,7 +948,8 @@ export class SaveDataOptions extends MenuScene {
       game,
       'YOUR BACKUP CODE',
       `${said ? `${said} ` : ''}Your backup code is ${spokenBackupCode(code)}. Keep this code: it is the only way to get the backup back.`,
-      [shown, ...(done ? [done] : []), 'KEEP THIS CODE: IT IS THE', 'ONLY WAY TO GET IT BACK.'],
+      // Item 181.4: the outcome, a blank line, then the code in its own colour.
+      done ? [done, '', shown] : [shown],
       [
         {
           label: 'Copy code',
@@ -845,19 +973,25 @@ export class SaveDataOptions extends MenuScene {
         { label: 'OK', select: () => this.backHere() },
       ],
       () => this.backHere(),
+      shown,
     );
     game.scenes.push(box);
   }
 
-  /** DELETE ONLINE COPY (owner item 168): asked first, NO first. */
+  /** DELETE MOST RECENT CODE (items 168, 181.3, 183): asked first, NO first. */
   private askDeleteOnline(): void {
     if (this.busy || this.needsInternet()) return;
     this.game.scenes.push(
       new QuestionBox(
         this.game,
         'DELETE YOUR ONLINE BACKUP?',
-        "Delete your online backup? The servers' copy is replaced with an empty one and they are asked to delete it. Your code is kept, so you can back up again.",
-        ["THE SERVERS' COPY IS EMPTIED", 'AND THEY ARE ASKED TO DELETE', 'IT. YOUR CODE IS KEPT.'],
+        "Delete your online backup? The servers' copy is replaced with an empty one and they are asked to delete it. This device forgets its code, so the next backup makes a new one.",
+        [
+          "THE SERVERS' COPY IS EMPTIED",
+          'AND THEY ARE ASKED TO DELETE',
+          'IT. THIS DEVICE FORGETS ITS',
+          'CODE.',
+        ],
         [
           { label: 'No', select: () => this.backHere() },
           {
@@ -874,7 +1008,7 @@ export class SaveDataOptions extends MenuScene {
   }
 
   private async runDelete(): Promise<void> {
-    const kept = loadOnlineCode();
+    const kept = loadUploadedCode();
     if (!kept || this.busy) return;
     this.busy = true;
     try {
@@ -902,14 +1036,23 @@ export class SaveDataOptions extends MenuScene {
           );
         return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
       }
-      saveOnlineCode({ ...kept, lastAt: d.at });
-      const rest =
-        d.deleted < d.total
-          ? ' The other servers could not be reached or refused, so a copy may remain there.'
-          : '';
+      // Item 181.3: the code is forgotten here; the next BACK UP ONLINE makes a new one.
+      // Item 212: only when every server confirmed; otherwise the code stays, to try again.
+      if (d.deleted < d.total) {
+        saveOnlineCode({ ...kept, lastAt: d.at });
+        return this.tell(
+          `DELETED ON ${d.deleted} OF ${d.total} SERVERS`,
+          `Online backup deleted on ${d.deleted} of ${d.total} servers. The other servers could not be reached or refused, so a copy may remain there. Your code is kept: try Delete most recent code again to delete the rest.`,
+        );
+      }
+      const forgot = forgetOnlineCode();
+      this.rebuild();
       this.tell(
         `DELETED ON ${d.deleted} OF ${d.total} SERVERS`,
-        `Online backup deleted on ${d.deleted} of ${d.total} servers.${rest} Your code is kept.`,
+        `Online backup deleted on ${d.deleted} of ${d.total} servers. ` +
+          (forgot
+            ? 'This device forgot its code; the next backup makes a new one.'
+            : "This device's storage refused, so it could not forget the code."),
       );
     } finally {
       this.busy = false;
@@ -919,12 +1062,12 @@ export class SaveDataOptions extends MenuScene {
   /** RESTORE FROM CODE: the code box (in the press's own event), then the lookup. */
   private restoreFromCode(): void {
     if (this.busy || this.needsInternet()) return;
-    this.status = '';
+    this.setStatus('');
     this.game.scenes.push(new RestoreCodeScene(this.game, (code) => void this.runRestore(code)));
   }
 
   private async runRestore(code: string | null): Promise<void> {
-    if (code === null) return this.announce();
+    if (code === null) return (this.sub?.page ?? this).announceFocus();
     if (this.busy) return;
     this.busy = true;
     try {
@@ -953,7 +1096,7 @@ export class SaveDataOptions extends MenuScene {
       }
       const parsed = parseBackup(r.text, this.env.gameVersion);
       if (!parsed.ok) return this.refuse(parsed.reason);
-      this.askReplace(parsed.backup, r.at);
+      this.askReplace(parsed.backup, { at: r.at });
     } finally {
       this.busy = false;
     }
@@ -971,6 +1114,39 @@ const EXPLAINER = [
 const EXPLAINER_SAID =
   'Back up online? This saves an encrypted copy of your data on free servers, found again by a code you keep. The servers see an anonymous ID and when you backed up, nothing personal. Free servers may lose it, so keep a backup file too.';
 
+/** Item 186: after a backup was tried (a first one's code is kept by then), not "Nothing changed". */
+const NOT_BACKED_UP =
+  'Could not reach the backup servers. Check the internet connection and try again. Nothing was backed up.';
+
+/** BACK UP ONLINE's note, the first time on this device (items 181.3, 182): drawn and said. */
+const NOTICE_LINES = [
+  'ONLINE BACKUP IS AN',
+  'EXPERIMENTAL SAVE FEATURE:',
+  'SAVES MAY BE LOST. THE',
+  'SAFEST WAY TO KEEP YOUR',
+  'GAME IS A LOCAL BACKUP,',
+  'BACK UP ON DEVICE.',
+];
+const NOTICE_SAID =
+  'Experimental feature. Online backup is an experimental save feature, and saves may be lost. The safest way to keep your game is a local backup: Back up on device.';
+
+/** The code card before a reset (item 181.5), above a blank line and the code. */
+const RESET_CODE_LINES = [
+  'YOUR ONLINE BACKUP STAYS ON',
+  'THE SERVERS, AND THIS DEVICE',
+  'FORGETS ITS CODE. KEEP IT',
+  'TO RESTORE THE BACKUP:',
+];
+
+/** Failed loads in a row, per loader (the tab's one, shared by every Save data page). */
+const loadFails = new WeakMap<() => Promise<OnlineApi>, number>();
+const RELOAD_SAID = 'It failed twice in a row: reload the page, then try again.';
+
+const anyFlag = (f: HomeScreenFlags): boolean => f.tipDone || f.noticeDone || f.offlineDone;
+
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === 'object' && !Array.isArray(v);
+
 /** No server answered (or the online code could not even be loaded). */
 const UNREACHABLE = [
   'COULD NOT REACH THE SERVERS',
@@ -986,6 +1162,8 @@ class QuestionBox extends MenuScene {
     private readonly lines: readonly string[],
     items: MenuItem[],
     onBack: () => void,
+    /** A line drawn in its own colour (a backup code, item 181.4), the palettes' gold. */
+    private readonly highlight: string | null = null,
   ) {
     super(game, title, items, onBack);
   }
@@ -1002,11 +1180,45 @@ class QuestionBox extends MenuScene {
 
   override render(r: Renderer): void {
     super.render(r);
-    const font = this.game.ctx.assets.sheet('font');
+    const assets = this.game.ctx.assets;
+    const font = assets.sheet('font');
+    // Its colour comes from the palette book, so the colour-blind and high-contrast modes recolour it.
+    const gold = this.highlight !== null ? assets.sheet('font', FONT_COLOURS.gold) : font;
     // The font has capitals only (a dev build's version has lower case letters).
     const lines = this.lines
       .flatMap((l) => (l.length > 28 ? wrapText(l, 28) : [l]))
       .map((l) => l.toUpperCase());
-    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, 130 + i * 12));
+    lines.forEach((l, i) => r.text(l === this.highlight ? gold : font, l, 128 - l.length * 4, 130 + i * 12));
+  }
+}
+
+/**
+ * BACK UP ON DEVICE and BACK UP ONLINE (item 181): pages whose rows run on Save data's page,
+ * which shows its outcomes here. While it is busy they take no press, as it does.
+ */
+class SavePage extends MenuScene {
+  constructor(
+    game: Game,
+    title: string,
+    entry: string,
+    items: MenuItem[],
+    onBack: () => void,
+    private readonly busy: () => boolean,
+  ) {
+    super(game, title, items, onBack);
+    this.entryTitle = entry;
+  }
+
+  note(status: string): void {
+    this.status = status;
+  }
+
+  override update(input: InputFrame): void {
+    if (this.busy()) return;
+    super.update(input);
+  }
+
+  override gesture(): (() => void) | null {
+    return this.busy() ? null : super.gesture();
   }
 }
