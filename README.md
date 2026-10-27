@@ -216,11 +216,16 @@ has the same guide for the hero you are playing.
   nothing if it is damaged or from a newer version (it does not restore asset packs); **Erase all
   data** asks twice (offering a backup first), and asks separately about asset packs.
   **Back up online** (not in the downloaded offline copy) saves an encrypted copy on five free
-  Nostr servers, found again by a 10-character backup code shown once (with Copy and Share); the
-  servers see an anonymous ID and when, nothing personal, and free servers may lose it, so keep
-  a backup file too. Backing up again with the same code replaces the online copy. **Restore from
-  code** brings it back on any device through the same checks and question as Import backup. Dev
-  mode's settings are left out of the online copy.
+  Nostr servers, found again by a 12-character backup code (`ABCD-EF12-3456`), shown after the
+  first backup and any time with **Show my code** (with Copy and Share); the servers see an
+  anonymous ID and when, nothing personal, and free servers may lose it, so keep a backup file
+  too. The online copy holds the game saves (Campaign and Classic files), the settings without
+  dev mode's fields (and Campaign files without theirs), custom levels, progress and the names
+  of the asset packs turned on, not the pack files. Backing up again with the same code replaces
+  it. **Restore from code** brings it back on any device through the same checks and question as
+  Import backup. **Delete online copy** empties the copy on the servers and asks them to delete
+  it, keeping the code for a later backup; Erase all data offers the same first. Import keeps
+  this device's code unless the backup brings its own.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.

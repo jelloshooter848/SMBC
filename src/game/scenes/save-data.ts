@@ -30,6 +30,7 @@ import {
   saveOnlineCode,
   spokenBackupCode,
   type BackUpResult,
+  type DeleteResult,
   type OnlineApi,
   type RestoreResult,
   type StoredOnlineCode,
@@ -222,6 +223,11 @@ export class SaveDataOptions extends MenuScene {
               label: 'Show my code',
               select: () => this.showMyCode(),
               hint: 'Your online backup code, to copy or share',
+            },
+            {
+              label: 'Delete online copy',
+              select: () => this.askDeleteOnline(),
+              hint: 'Delete your backup on the servers; your code is kept',
             },
           ]
         : []),
@@ -494,9 +500,9 @@ export class SaveDataOptions extends MenuScene {
             label: 'Yes, erase',
             select: () => {
               this.game.scenes.pop();
-              const n = this.packs?.length ?? 0;
-              if (n > 0) this.askPacks(n);
-              else void this.erase(false);
+              // Item 167: with a code, the online copy is asked about first.
+              if (this.env.online && loadOnlineCode()) this.askOnline();
+              else this.askPacksThenErase(false);
             },
           },
         ],
@@ -505,12 +511,45 @@ export class SaveDataOptions extends MenuScene {
     );
   }
 
-  private askPacks(n: number): void {
+  /** BACK at any erase question: the whole erase is off. */
+  private cancelErase(): void {
+    this.game.scenes.pop();
+    this.tell('ERASE CANCELLED', 'Erase cancelled. Nothing was erased.');
+  }
+
+  /** Item 167: ALSO DELETE YOUR ONLINE BACKUP? (NO first; BACK cancels the whole erase). */
+  private askOnline(): void {
     const answer = (yes: boolean): MenuItem => ({
       label: yes ? 'Yes' : 'No',
       select: () => {
         this.game.scenes.pop();
-        void this.erase(yes);
+        this.askPacksThenErase(yes);
+      },
+    });
+    this.game.scenes.push(
+      new QuestionBox(
+        this.game,
+        'ALSO DELETE YOUR ONLINE BACKUP?',
+        'Also delete your online backup? Its code is erased with the rest either way.',
+        ['ITS CODE IS ERASED WITH THE', 'REST EITHER WAY.'],
+        [answer(false), answer(true)],
+        () => this.cancelErase(),
+      ),
+    );
+  }
+
+  private askPacksThenErase(online: boolean): void {
+    const n = this.packs?.length ?? 0;
+    if (n > 0) this.askPacks(n, online);
+    else void this.erase(false, online);
+  }
+
+  private askPacks(n: number, online = false): void {
+    const answer = (yes: boolean): MenuItem => ({
+      label: yes ? 'Yes' : 'No',
+      select: () => {
+        this.game.scenes.pop();
+        void this.erase(yes, online);
       },
     });
     this.game.scenes.push(
@@ -521,17 +560,26 @@ export class SaveDataOptions extends MenuScene {
         ['NO KEEPS THEM, TURNED OFF.'],
         [answer(false), answer(true)],
         // BACK cancels the whole erase, as on every other question.
-        () => {
-          this.game.scenes.pop();
-          this.tell('ERASE CANCELLED', 'Erase cancelled. Nothing was erased.');
-        },
+        () => this.cancelErase(),
       ),
     );
   }
 
-  private async erase(withPacks: boolean): Promise<void> {
+  private async erase(withPacks: boolean, online = false): Promise<void> {
+    // Item 167: the online copy goes first (its code is about to be erased with the rest).
+    let gone: { line: string; said: string } | null = null;
+    if (online) {
+      this.busy = true;
+      this.tell('DELETING...', 'Deleting your online backup.');
+      gone = await this.deleteForErase();
+      this.busy = false;
+    }
     const r = eraseGameData();
-    if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing was erased.');
+    if (!r.ok) {
+      this.failed(r.reason, r.restored, 'Nothing was erased.');
+      if (gone) this.game.deps.announcer?.say(gone.said);
+      return;
+    }
     // From here this tab's state is stale: no reload on its refused writes, and no second action
     // while the packs are being erased.
     onStaleStorage(null);
@@ -540,9 +588,41 @@ export class SaveDataOptions extends MenuScene {
     if (withPacks) await this.env.packs.clear().catch(() => (packsFailed = true));
     this.finish(
       'ALL DATA ERASED',
-      packsFailed ? 'All data erased, but the asset packs could not be erased.' : 'All data erased.',
-      packsFailed ? ['ASSET PACKS COULD NOT BE', 'ERASED.'] : [],
+      (packsFailed ? 'All data erased, but the asset packs could not be erased.' : 'All data erased.') +
+        (gone ? ` ${gone.said}` : ''),
+      [...(packsFailed ? ['ASSET PACKS COULD NOT BE', 'ERASED.'] : []), ...(gone ? [gone.line] : [])],
     );
+  }
+
+  /** The online copy deleted for an erase: a line for its card and what is said. */
+  private async deleteForErase(): Promise<{ line: string; said: string }> {
+    const kept = loadOnlineCode();
+    const notDeleted = (why: string) => ({
+      line: 'ONLINE COPY NOT DELETED',
+      said: `The online backup could not be deleted: ${why}`,
+    });
+    if (!kept) return notDeleted('no code is kept on this device.');
+    if (this.env.online?.isOnline() === false) return notDeleted('no internet connection.');
+    let api: OnlineApi | null;
+    try {
+      api = (await this.env.online?.load()) ?? null;
+    } catch {
+      api = null;
+    }
+    if (!api) return notDeleted('the servers could not be reached.');
+    try {
+      const d = await api.deleteOnline(kept.code, kept.lastAt);
+      if (d.ok)
+        return {
+          line: `ONLINE COPY DELETED (${d.deleted} OF ${d.total})`,
+          said: `Online backup deleted on ${d.deleted} of ${d.total} servers.`,
+        };
+      return notDeleted(
+        d.reason === 'servers' ? 'the servers could not be reached.' : 'the servers refused.',
+      );
+    } catch {
+      return notDeleted('the servers could not be reached.');
+    }
   }
 
   /** Back on this page from a question: its focused row said again. */
@@ -735,6 +815,73 @@ export class SaveDataOptions extends MenuScene {
     game.scenes.push(box);
   }
 
+  /** DELETE ONLINE COPY (owner item 168): asked first, NO first. */
+  private askDeleteOnline(): void {
+    if (this.busy || this.needsInternet()) return;
+    this.game.scenes.push(
+      new QuestionBox(
+        this.game,
+        'DELETE YOUR ONLINE BACKUP?',
+        "Delete your online backup? The servers' copy is replaced with an empty one and they are asked to delete it. Your code is kept, so you can back up again.",
+        ["THE SERVERS' COPY IS EMPTIED", 'AND THEY ARE ASKED TO DELETE', 'IT. YOUR CODE IS KEPT.'],
+        [
+          { label: 'No', select: () => this.backHere() },
+          {
+            label: 'Yes, delete',
+            select: () => {
+              this.game.scenes.pop();
+              void this.runDelete();
+            },
+          },
+        ],
+        () => this.backHere(),
+      ),
+    );
+  }
+
+  private async runDelete(): Promise<void> {
+    const kept = loadOnlineCode();
+    if (!kept || this.busy) return;
+    this.busy = true;
+    try {
+      this.tell('DELETING...', 'Deleting your online backup.');
+      const api = await this.onlineApi();
+      if (!api) return;
+      let d: DeleteResult;
+      try {
+        d = await api.deleteOnline(kept.code, kept.lastAt);
+      } catch {
+        return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      }
+      if (!d.ok) {
+        if (d.reason === 'refused')
+          return this.tell(
+            'SERVERS REFUSED TO DELETE IT',
+            'The servers refused to delete the backup. Try again later.',
+            true,
+          );
+        if (d.reason === 'newer')
+          return this.tell(
+            'A NEWER BACKUP IS ONLINE',
+            'The servers hold a newer backup under this code, so it was not deleted.',
+            true,
+          );
+        return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+      }
+      saveOnlineCode({ ...kept, lastAt: d.at });
+      const rest =
+        d.deleted < d.total
+          ? ' The other servers could not be reached or refused, so a copy may remain there.'
+          : '';
+      this.tell(
+        `DELETED ON ${d.deleted} OF ${d.total} SERVERS`,
+        `Online backup deleted on ${d.deleted} of ${d.total} servers.${rest} Your code is kept.`,
+      );
+    } finally {
+      this.busy = false;
+    }
+  }
+
   /** RESTORE FROM CODE: the code box (in the press's own event), then the lookup. */
   private restoreFromCode(): void {
     if (this.busy || this.needsInternet()) return;
@@ -758,6 +905,12 @@ export class SaveDataOptions extends MenuScene {
       }
       if (!r.ok) {
         if (r.reason === 'servers') return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
+        if (r.reason === 'deleted')
+          return this.tell(
+            'THAT BACKUP WAS DELETED',
+            'The backup for that code was deleted from the servers. Nothing changed.',
+            true,
+          );
         return this.tell(
           'NO BACKUP FOR THAT CODE',
           'No backup was found for that code. Check the code and try again. Nothing changed.',

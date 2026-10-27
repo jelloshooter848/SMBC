@@ -3,6 +3,7 @@ import { buildBackup, isGameKey } from '@engine/save/backup';
 import {
   ONLINE_BACKUP_KEY,
   type BackUpResult,
+  type DeleteResult,
   type OnlineApi,
   type RestoreResult,
 } from '@engine/online/online-backup';

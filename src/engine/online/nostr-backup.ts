@@ -9,6 +9,7 @@ import {
   newBackupCode,
   normalizeBackupCode,
   type BackUpResult,
+  type DeleteResult,
   type OnlineApi,
   type RestoreResult,
 } from './online-backup';
@@ -175,8 +176,10 @@ async function decodePayload(payload: string): Promise<string | null> {
   }
 }
 
-/** The backup text in `event` when it is this code's backup, every part checked; else null. */
-export async function openBackupEvent(code: string, event: unknown): Promise<string | null> {
+/** What one event is, every part checked: this code's backup, its empty tombstone, or neither. */
+type Opened = { kind: 'backup'; text: string } | { kind: 'deleted' } | null;
+
+async function openEvent(code: string, event: unknown): Promise<Opened> {
   const { sk, pk } = await keysFromCode(code);
   const ev = event as Event | null;
   if (!ev || typeof ev !== 'object' || ev.pubkey !== pk || ev.kind !== KIND) return null;
@@ -187,10 +190,19 @@ export async function openBackupEvent(code: string, event: unknown): Promise<str
     // which a spread copies), so only the event's own fields are checked.
     const { id, pubkey, created_at, kind, tags, content, sig } = ev;
     if (!verifyEvent({ id, pubkey, created_at, kind, tags, content, sig })) return null;
-    return await decodePayload(nip44.decrypt(ev.content, nip44.getConversationKey(sk, pk)));
+    // Item 168: DELETE ONLINE COPY's empty tombstone.
+    if (content === '') return { kind: 'deleted' };
+    const text = await decodePayload(nip44.decrypt(content, nip44.getConversationKey(sk, pk)));
+    return text === null ? null : { kind: 'backup', text };
   } catch {
     return null;
   }
+}
+
+/** The backup text in `event` when it is this code's backup, every part checked; else null. */
+export async function openBackupEvent(code: string, event: unknown): Promise<string | null> {
+  const o = await openEvent(code, event);
+  return o?.kind === 'backup' ? o.text : null;
 }
 
 /** Opens a socket, or rejects (refused, a 503, offline, or no answer within `ms`). */
@@ -308,7 +320,8 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
   const filter = { kinds: [KIND], authors: [pk], '#d': [D_TAG], limit: 5 };
   const W = socketClass(o);
   let answered = 0;
-  let best: { text: string; at: number; from: string } | null = null;
+  /** The newest valid event so far: a backup (its text) or a tombstone (null text). */
+  let best: { text: string | null; at: number; from: string } | null = null;
   return new Promise<RestoreResult>((resolve) => {
     let left = relays.length;
     let graceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -317,14 +330,16 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
       if (done) return;
       done = true;
       if (graceTimer) clearTimeout(graceTimer);
-      if (best) resolve({ ok: true, text: best.text, from: best.from });
+      if (best?.text != null) resolve({ ok: true, text: best.text, from: best.from });
+      else if (best) resolve({ ok: false, reason: 'deleted' });
       else resolve({ ok: false, reason: answered > 0 ? 'not-found' : 'servers' });
     };
     const offer = async (url: string, ev: unknown) => {
-      const text = await openBackupEvent(code, ev);
+      const opened = await openEvent(code, ev);
       const at = (ev as { created_at?: number }).created_at ?? 0;
-      if (text === null || done) return;
-      if (!best || at > best.at) best = { text, at, from: url };
+      if (opened === null || done) return;
+      if (!best || at > best.at)
+        best = { text: opened.kind === 'backup' ? opened.text : null, at, from: url };
       graceTimer ??= setTimeout(finish, grace);
     };
     for (const url of relays) {
@@ -369,11 +384,55 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
   });
 }
 
+/**
+ * DELETE ONLINE COPY (owner item 168): the backup replaced, on every relay, by an empty
+ * tombstone (the same kind and d tag, so it replaces it; a restore reads it as deleted), and a
+ * NIP-09 deletion request (kind 5, naming the address) for relays that honour one. Counted by
+ * the tombstones taken. The code stays valid: a later backup replaces the tombstone.
+ */
+export async function deleteOnline(code: string, o: RelayOptions = {}): Promise<DeleteResult> {
+  const relays = o.relays ?? RELAYS;
+  const total = relays.length;
+  const now = o.now ?? Math.floor(Date.now() / 1000);
+  const at = o.after !== undefined ? Math.max(now, Math.floor(o.after) + 1) : now;
+  const { sk, pk } = await keysFromCode(code);
+  const tomb = finalizeEvent({ kind: KIND, created_at: at, tags: [['d', D_TAG]], content: '' }, sk);
+  const request = finalizeEvent(
+    {
+      kind: 5,
+      created_at: at,
+      tags: [
+        ['a', `${KIND}:${pk}:${D_TAG}`],
+        ['k', String(KIND)],
+      ],
+      content: '',
+    },
+    sk,
+  );
+  const W = socketClass(o);
+  const ms = o.timeoutMs ?? 8000;
+  const answers = await Promise.all(
+    relays.map(async (u) => {
+      const a = await publishOne(W, u, tomb, ms);
+      if (a.kind !== 'unreached') await publishOne(W, u, request, ms);
+      return a;
+    }),
+  );
+  const deleted = answers.filter((a) => a.kind === 'accepted').length;
+  if (deleted > 0) return { ok: true, deleted, total, at };
+  const refusals = answers.flatMap((a) => (a.kind === 'refused' ? [a.message] : []));
+  if (refusals.some((m) => /newer|replaced|duplicate/i.test(m)))
+    return { ok: false, reason: 'newer', deleted, total };
+  if (refusals.length) return { ok: false, reason: 'refused', deleted, total };
+  return { ok: false, reason: 'servers', deleted, total };
+}
+
 /** The browser's: the built-in relays through its own WebSocket. */
 export function browserOnlineApi(): OnlineApi {
   return {
     newCode: () => newBackupCode(),
     backUp: (code, text, after) => backUp(code, text, after !== undefined ? { after } : {}),
     restore: (code) => restore(code),
+    deleteOnline: (code, after) => deleteOnline(code, after !== undefined ? { after } : {}),
   };
 }

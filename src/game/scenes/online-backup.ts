@@ -28,16 +28,16 @@ export class RestoreCodeScene implements Scene {
   enter(): void {
     const game = this.game;
     game.deps.announcer?.say(
-      'Restore from code. Type your backup code, ten letters and numbers, into the text box, then Load.',
+      'Restore from code. Type your backup code, twelve letters and numbers, into the text box, then Load.',
     );
     const overlay = game.deps.overlay;
     if (!overlay || typeof document === 'undefined') return;
     const env = shareEnv(game);
     this.panel = new CodeEntryPanel(overlay, {
       title: 'Restore from code',
-      hint: 'Type or paste your backup code (ten letters and numbers).',
+      hint: 'Type or paste your backup code (twelve letters and numbers).',
       label: 'Backup code',
-      placeholder: 'ABCDE-12345',
+      placeholder: 'ABCD-EF12-3456',
       ...(env.read ? { read: env.read } : {}),
       submit: (text) => this.submit(text),
       cancel: () => this.cancel(),
@@ -56,7 +56,7 @@ export class RestoreCodeScene implements Scene {
     const code = normalizeBackupCode(text);
     if (!code) {
       this.game.ctx.audio.sfx('bump');
-      return 'THAT IS NOT A BACKUP CODE: TEN LETTERS AND NUMBERS';
+      return 'THAT IS NOT A BACKUP CODE: TWELVE LETTERS AND NUMBERS';
     }
     this.finished = true;
     this.game.scenes.pop();
