@@ -130,19 +130,25 @@ export function onlineLoader(
  * Item 265: the URL to load a failed chunk again under: its own URL (named in the browser's
  * error, as Chromium and Firefox do), resolved against `base` (the page's module, through
  * new URL(..., import.meta.url)), with `?retry=n`. Null when the error names no online-code
- * module of this site.
+ * chunk file under the app's own folder, `root` (resolved against `base`; by default the base
+ * module's own folder): not another site, nor another app on the same origin.
  */
-export function freshChunkUrl(failure: unknown, retry: number, base: string): string | null {
+export function freshChunkUrl(failure: unknown, retry: number, base: string, root = './'): string | null {
   const text = failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '';
-  const named = /(\S*nostr-backup[^\s'"]*)/.exec(text)?.[1];
+  // Without the quotes or brackets a message may put around it.
+  const named = /(?:https?:\/\/)?[^\s'"()]*nostr-backup[^\s'"()]*/.exec(text)?.[0];
   if (!named) return null;
   let u: URL;
+  let home: URL;
   try {
     u = new URL(named, base);
+    home = new URL(root, base);
   } catch {
     return null;
   }
   if (!/^https?:$/.test(u.protocol) || u.origin !== new URL(base).origin) return null;
+  // Its path as the browser reads it (.. and %2e%2e already resolved), under the app's folder.
+  if (!home.pathname.endsWith('/') || !u.pathname.startsWith(home.pathname)) return null;
   if (!/\/nostr-backup[^/]*\.[jt]s$/.test(u.pathname)) return null;
   u.search = '';
   u.hash = '';
@@ -162,7 +168,7 @@ function browserOnlineEnv(): OnlineEnv | null {
         : // Item 265: a fresh specifier, so the browser fetches the chunk again.
           (import(/* @vite-ignore */ url) as Promise<{ browserOnlineApi(): OnlineApi }>)
       ).then((m) => m.browserOnlineApi()),
-    (e, n) => freshChunkUrl(e, n, import.meta.url),
+    (e, n) => freshChunkUrl(e, n, import.meta.url, import.meta.env.BASE_URL),
   ));
   return {
     isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
@@ -559,12 +565,14 @@ export class SaveDataOptions extends MenuScene {
     const brought = readOnlineCode(b.data[ONLINE_BACKUP_KEY]);
     const mine = loadUploadedCode();
     const gone = mine && brought && brought.code !== mine.code ? formatBackupCode(mine.code) : null;
+    // Review: a code never backed up online is not called an online backup code.
+    const broughtOnline = !!restored || brought?.uploaded === true;
     const box: QuestionBox = new QuestionBox(
       this.game,
       'REPLACE ALL DATA ON THIS DEVICE?',
       `Replace all data on this device? The backup${day ? ` is from ${day},` : ''} game version ${b.gameVersion}, with ${pluralSaid(keys, 'item')}.` +
         (gone && mine
-          ? ` It brings another online backup code. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore it: ${spokenBackupCode(mine.code)}.`
+          ? ` It brings another ${broughtOnline ? 'online backup code' : 'backup code, not yet backed up online'}. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore it: ${spokenBackupCode(mine.code)}.`
           : ''),
       [
         `BACKUP ${day}`.trim(),
@@ -639,7 +647,7 @@ export class SaveDataOptions extends MenuScene {
         : `Backup imported. It brings a backup code not yet backed up online: ${spokenBackupCode(brought.code)}.`,
       uploaded
         ? [`CODE NOW ${formatBackupCode(brought.code)}`]
-        : ['CODE NOT YET BACKED UP', `ONLINE: ${formatBackupCode(brought.code)}`],
+        : [`CODE ${formatBackupCode(brought.code)}`, 'NOT YET BACKED UP ONLINE'],
     );
   }
 
@@ -878,8 +886,10 @@ export class SaveDataOptions extends MenuScene {
       // 265: where no fresh URL can be tried, that is said after the first failure.
       const n = (loadFails.get(load) ?? 0) + 1;
       loadFails.set(load, n);
-      const reload = n >= 2 ? RELOAD_SAID : e instanceof ReloadToLoad ? RELOAD_NOW_SAID : null;
-      this.tell(UNREACHABLE[0], reload ? `${UNREACHABLE[1]} ${reload}` : UNREACHABLE[1], true);
+      // The reload advice drawn as well as said (review).
+      if (n >= 2 || e instanceof ReloadToLoad)
+        this.tell(UNREACHABLE[0], RELOAD_SAID, true, 'RELOAD THE PAGE');
+      else this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
       return null;
     }
   }
@@ -1207,8 +1217,9 @@ const RESET_CODE_LINES = [
 
 /** Failed loads in a row, per loader (the tab's one, shared by every Save data page). */
 const loadFails = new WeakMap<() => Promise<OnlineApi>, number>();
-const RELOAD_SAID = 'It failed twice in a row: reload the page, then try again.';
-const RELOAD_NOW_SAID = 'Reload the page, then try again.';
+/** A failed load that only a reload can mend (a second in a row, or one with no fresh URL). */
+const RELOAD_SAID =
+  'Could not reach the backup servers. Check the internet connection, then reload the page. Nothing changed.';
 
 const anyFlag = (f: HomeScreenFlags): boolean => f.tipDone || f.noticeDone || f.offlineDone;
 
@@ -1230,7 +1241,7 @@ class QuestionBox extends MenuScene {
     private readonly lines: readonly string[],
     items: MenuItem[],
     onBack: () => void,
-    /** A line drawn in its own colour (a backup code, item 181.4), the palettes' gold. */
+    /** A line drawn in its own colour (a backup code, item 181.4): FONT_COLOURS.code. */
     private readonly highlight: string | null = null,
   ) {
     super(game, title, items, onBack);
@@ -1251,7 +1262,7 @@ class QuestionBox extends MenuScene {
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     // Its colour comes from the palette book, so the colour-blind and high-contrast modes recolour it.
-    const gold = this.highlight !== null ? assets.sheet('font', FONT_COLOURS.gold) : font;
+    const gold = this.highlight !== null ? assets.sheet('font', FONT_COLOURS.code) : font;
     // The font has capitals only (a dev build's version has lower case letters).
     const lines = this.lines
       .flatMap((l) => (l.length > 28 ? wrapText(l, 28) : [l]))

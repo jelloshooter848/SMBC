@@ -302,7 +302,7 @@ describe('265: a failed load is tried again under a fresh URL', () => {
   it('the browser loader: a fresh specifier through new URL(..., import.meta.url) and @vite-ignore, behind the offline switch', () => {
     const src = readFileSync(resolve(__dirname, '../../src/game/scenes/save-data.ts'), 'utf8');
     expect(src).toMatch(/import\(\s*\/\*\s*@vite-ignore\s*\*\//);
-    expect(src).toMatch(/freshChunkUrl\([^)]*import\.meta\.url\s*\)/);
+    expect(src).toMatch(/freshChunkUrl\([^)]*import\.meta\.url,\s*import\.meta\.env\.BASE_URL\s*\)/);
     expect(src).toMatch(/new URL\(named, base\)/);
     // The fresh import sits after the offline build's early return, so that build drops it.
     const fn = src.slice(src.indexOf('function browserOnlineEnv'));
@@ -508,8 +508,8 @@ describe('high contrast: the backup code colour', () => {
   it("review: the gold font (CLASSIC box headers on the orange box) keeps main's high-contrast colour", () => {
     const gold = hc(FONT_COLOURS.gold);
     expect(gold).toBe('#ffffa2');
-    // The header on the CLASSIC box's orange (menu-box.ts): 4.47:1, as before.
-    expect(ratio(gold, NES.orangeBrown)).toBeGreaterThanOrEqual(4.47);
+    // The header on the CLASSIC box's orange (menu-box.ts): 4.47:1 (4.467), as before.
+    expect(ratio(gold, NES.orangeBrown)).toBeCloseTo(4.467, 3);
   });
 
   it('review: every backup code line is drawn in the code colour', async () => {

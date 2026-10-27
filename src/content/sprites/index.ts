@@ -379,11 +379,12 @@ if (modes.highContrast && trueFormHc)
 const costumesHc = modes.highContrast?.costumes;
 if (modes.highContrast && costumesHc)
   modes.highContrast.costumes = costumesHc.map((c, i) => (i === 12 ? NES.gray : c));
-// The gold text (a backup code, a price): high contrast would make it #ffffa2, too close to the
-// white text beside it; a strong amber instead, 12.1:1 on black (WCAG AAA) and 1.7:1 against white.
-const goldHc = modes.highContrast?.[FONT_COLOURS.gold];
-if (modes.highContrast && goldHc)
-  modes.highContrast[FONT_COLOURS.gold] = goldHc.map((c, i) => (i === 1 ? '#ffb800' : c));
+// A backup code's colour (save-data.ts): high contrast would make it #ffffa2, too close to the
+// white text beside it; a strong amber instead, 12.1:1 on the black card (WCAG AAA) and 1.7:1
+// against white. Only the code's own key: the gold (CLASSIC box headers on the orange box) stays.
+const codeHc = modes.highContrast?.[FONT_COLOURS.code];
+if (modes.highContrast && codeHc)
+  modes.highContrast[FONT_COLOURS.code] = codeHc.map((c, i) => (i === 1 ? '#ffb800' : c));
 
 /**
  * 0.4.53: Galesburg's and Galuga Island's earth tones stay put in the red/green modes, as Hyrule's
