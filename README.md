@@ -212,23 +212,29 @@ has the same guide for the hero you are playing.
   copy or paste each file's save code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
-- **Save data** (the title's Options only): **Export backup** saves everything the game keeps in
-  this browser (settings, Campaign saves, Classic files, cheats, progress, custom levels) to one
-  `smbc-remix-backup-YYYY-MM-DD.json` file, and each asset pack as its own `.zip` if you choose;
-  **Import backup** checks a backup file whole, asks before replacing everything, and changes
-  nothing if it is damaged or from a newer version (it does not restore asset packs); **Erase all
-  data** asks twice (offering a backup first), and asks separately about asset packs.
-  **Back up online** (not in the downloaded offline copy) saves an encrypted copy on five free
-  Nostr servers, found again by a 12-character backup code (`ABCD-EF12-3456`), shown after the
-  first backup and any time with **Show my code** (with Copy and Share); the servers see an
-  anonymous ID and when, nothing personal, and free servers may lose it, so keep a backup file
-  too. The online copy holds the game saves (Campaign and Classic files), the settings without
-  dev mode's fields (and Campaign files without theirs), custom levels, progress and the names
-  of the asset packs turned on, not the pack files. Backing up again with the same code replaces
-  it. **Restore from code** brings it back on any device through the same checks and question as
-  Import backup. **Delete online copy** empties the copy on the servers and asks them to delete
-  it, keeping the code for a later backup; Erase all data offers the same first. Import keeps
-  this device's code unless the backup brings its own.
+- **Save data** (the title's Options only) has three rows. **Back up on device** holds **Export
+  backup**, which saves everything the game keeps in this browser (settings, Campaign saves,
+  Classic files, cheats, progress, custom levels) to one `smbc-remix-backup-YYYY-MM-DD.json` file,
+  and each asset pack as its own `.zip` if you choose, and **Import backup**, which checks a backup
+  file whole, asks before replacing everything, and changes nothing if it is damaged or from a
+  newer version (it does not restore asset packs). **Back up online** (not in the downloaded
+  offline copy) opens, the first time on a device, with a note that this is an experimental save
+  feature, that saves may be lost, and that the safest way to keep your game is Back up on device.
+  Its **Back up online** row saves an encrypted copy on five free Nostr servers, found again by a
+  12-character backup code (`ABCD-EF12-3456`), shown after the first backup (in its own colour,
+  which follows the colour-blind and high-contrast palettes) and any time with **Show most recent
+  code** (with Copy and Share); the servers see an anonymous ID and when, nothing personal, and
+  free servers may lose it, so keep a backup file too. The online copy holds the game saves
+  (Campaign and Classic files), the settings without dev mode's fields (and Campaign files without
+  theirs), custom levels, progress and the names of the asset packs turned on, not the pack files.
+  Backing up again with the same code replaces it. **Restore from code** brings it back on any
+  device through the same checks and question as Import backup. **Delete most recent code**
+  empties the copy on the servers, asks them to delete it, and forgets the code on this device,
+  so the next backup makes a new code. Show and Delete appear only once a copy is online. Import
+  keeps this device's code unless the backup brings its own. **Reset game** asks twice (offering
+  a backup first), and asks separately about asset packs; it never deletes the online copy: when
+  one is online, its code is shown first, with Copy code, and this device then forgets it. A
+  reset or an import keeps which Home Screen notes this device has already shown.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.

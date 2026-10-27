@@ -215,7 +215,7 @@ async function openEvent(code: string, event: unknown): Promise<Opened> {
     // which a spread copies), so only the event's own fields are checked.
     const { id, pubkey, created_at, kind, tags, content, sig } = ev;
     if (!verifyEvent({ id, pubkey, created_at, kind, tags, content, sig })) return null;
-    // Item 168: DELETE ONLINE COPY's empty tombstone.
+    // Items 168, 181.3: DELETE MOST RECENT CODE's empty tombstone.
     if (content === '') return { kind: 'deleted', at: created_at };
     const text = await decodePayload(nip44.decrypt(content, nip44.getConversationKey(sk, pk)));
     return text === null ? null : { kind: 'backup', text, at: created_at };
@@ -412,7 +412,7 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
 }
 
 /**
- * DELETE ONLINE COPY (owner item 168): the backup replaced, on every relay, by an empty
+ * DELETE MOST RECENT CODE (owner items 168, 181.3; this device then forgets the code): the backup replaced, on every relay, by an empty
  * tombstone (the same kind and d tag, so it replaces it; a restore reads it as deleted), and a
  * NIP-09 deletion request (kind 5, naming the address) for relays that honour one. Counted by
  * the tombstones taken. The code stays valid: a later backup replaces the tombstone.

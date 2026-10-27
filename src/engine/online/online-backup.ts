@@ -1,5 +1,5 @@
 import { defaultSettings, SETTINGS_KEY } from '../save/settings';
-import { loadJson, saveJson } from '../save/storage';
+import { keyAbsent, loadJson, removeKey, saveJson } from '../save/storage';
 
 /*
  * Online backup (owner item 159), the part the page needs at once: the backup code (typed and
@@ -57,7 +57,7 @@ export function spokenBackupCode(code: string): string {
 /**
  * Where this device keeps its backup code, so BACK UP ONLINE replaces the same online copy
  * every time: a game key, so it is in a backup file and in the online copy (a restore on another
- * device brings it along) and Erase all data removes it, as everything else. `shown`: the code
+ * device brings it along) and Reset game removes it, as everything else (the online copy stays). `shown`: the code
  * has been shown to the player (it is shown once, after the first backup with it).
  */
 export const ONLINE_BACKUP_KEY = 'smbc.onlineBackup';
@@ -70,6 +70,12 @@ export interface StoredOnlineCode {
    * later, so a device clock behind it, or two backups in one second, still replace it.
    */
   lastAt?: number;
+  /**
+   * v0.4.77 item 187: a copy is on the servers under this code (set only by a confirmed upload,
+   * a restore, or an import bringing an uploaded code). Show and Delete Most Recent Code, and
+   * the code shown before a reset, need it: a code whose first backup failed is not online.
+   */
+  uploaded?: boolean;
 }
 
 export function loadOnlineCode(): StoredOnlineCode | null {
@@ -94,7 +100,14 @@ export function readOnlineCode(raw: unknown): StoredOnlineCode | null {
     code,
     shown: v?.shown === true,
     ...(typeof at === 'number' && Number.isFinite(at) ? { lastAt: at } : {}),
+    ...(v?.uploaded === true ? { uploaded: true } : {}),
   };
+}
+
+/** The kept code when a copy of it is online (item 187), else null. */
+export function loadUploadedCode(): StoredOnlineCode | null {
+  const c = loadOnlineCode();
+  return c?.uploaded ? c : null;
 }
 
 /**
@@ -117,6 +130,29 @@ export function withCodeUnshown(data: Readonly<Record<string, string>>): Record<
 
 export function saveOnlineCode(v: StoredOnlineCode): boolean {
   return saveJson(ONLINE_BACKUP_KEY, v);
+}
+
+/**
+ * v0.4.77 item 181.3: DELETE MOST RECENT CODE forgets the code on this device (the next BACK UP
+ * ONLINE makes a new one). False when storage kept it (refused, or this tab is stale).
+ */
+export function forgetOnlineCode(): boolean {
+  removeKey(ONLINE_BACKUP_KEY);
+  return keyAbsent(ONLINE_BACKUP_KEY);
+}
+
+/**
+ * v0.4.77 item 182: the BACK UP ONLINE page's experimental note was seen on this device. A game
+ * key, so RESET GAME clears it and the note shows again after a reset.
+ */
+export const ONLINE_NOTICE_KEY = 'smbc.onlineBackupNotice';
+
+export function onlineNoticeSeen(): boolean {
+  return loadJson<unknown>(ONLINE_NOTICE_KEY) === true;
+}
+
+export function markOnlineNoticeSeen(): boolean {
+  return saveJson(ONLINE_NOTICE_KEY, true);
 }
 
 /** Keys only dev mode uses, left out of the online copy. */
@@ -176,7 +212,7 @@ export type BackUpResult =
   | { ok: false; reason: 'too-big' | 'servers' | 'refused' | 'newer'; accepted: number; total: number };
 
 /**
- * DELETE ONLINE COPY's outcome (owner item 168): the copy replaced by an empty one on `deleted`
+ * DELETE MOST RECENT CODE's outcome (owner items 168, 181.3): the copy replaced by an empty one on `deleted`
  * of `total` relays at `at`, or why on none.
  */
 export type DeleteResult =

@@ -63,7 +63,7 @@ export const packStore = {
   async remove(name: string): Promise<void> {
     await tx('readwrite', (s) => s.delete(name));
   },
-  /** Every pack goes, in one transaction (ERASE ALL DATA): all of them or, on a failure, none. */
+  /** Every pack goes, in one transaction (RESET GAME): all of them or, on a failure, none. */
   async clear(): Promise<void> {
     await tx('readwrite', (s) => s.clear());
   },
