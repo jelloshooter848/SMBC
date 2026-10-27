@@ -1,9 +1,10 @@
 ### Changed
 
 - Classic mode: Pause > Quit now asks "QUIT TO CHARACTER SELECT?" and goes back to the character
-  select for the level you are on, in the game modes that have one. No life or score is lost,
-  and the picked hero starts the level from its beginning. BACK on that select still asks to quit
-  to the Classic menu.
+  select for the level you are on, in the game modes that have one. The picked hero starts the
+  level from its beginning with the lives, score, coins and power you had when it started:
+  quitting costs no life, and nothing gained in the level is kept. BACK on that select still asks
+  to quit to the Classic menu.
 - Classic mode: the title demo's Mario sets off after 1 second instead of 5.
 - Classic mode: a save file's row shows only its difficulty and where it is ("HARD 4-2"), and the
   line under the box only its score. Lives and the hero are no longer shown or read out, on used

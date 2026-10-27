@@ -71,7 +71,8 @@ play by the original's rules: their physics, power states, weapons and swimming,
 points and armour. How to play (Options) and the pause menu's Guide show the original's
 tutorial boxes for each hero. The pause menu and every page it opens are Classic boxes. Its
 **Quit** goes back to the character select for the level you are on, in the game modes that
-have one (no life or score lost; the picked hero starts the level from its beginning), and
+have one. The picked hero starts the level from its beginning with the lives, score, coins and
+power you had when it started: quitting costs no life, and nothing gained in the level is kept.
 BACK there asks to quit to the Classic menu.
 
 ### Chapter 1 (coming soon)

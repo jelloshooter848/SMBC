@@ -2547,6 +2547,7 @@ export class Game {
     this.replay = null;
     this.clearedNews = null;
     this.beatRecorded = false;
+    this.levelStart = null;
     // v0.4.77 review MUST 1: a lost file's notes end with its run.
     this.fileLost = false;
     this.fileNote = null;
@@ -3183,10 +3184,25 @@ export class Game {
     const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
     const main = scene ? (scene.level.parent ?? scene.level.id) : this.runLevel;
     if (!this.quitsToSelect || !main) return this.quitClassicRun();
+    // Item 218 (owner): a true fresh entry: the lives, score, coins and power the level started
+    // with (its last WORLD card: after a death, the state that death left), so nothing gained
+    // in it can be farmed and quitting costs no life.
+    const start = this.levelStart;
+    if (start?.level === main) {
+      const s = this.state as unknown as Record<string, unknown>;
+      for (const k of Object.keys(s)) if (!(k in start.state)) delete s[k];
+      Object.assign(this.state, startCopy(start.state));
+    }
     this.state.checkpoint = null;
     this.state.time = null;
     this.warpToLevel(this.firstArea(main), { mode: 'stand' }, false);
   }
+
+  /**
+   * v0.4.77 item 218: a Classic run's state at its level's WORLD card (goToLevel) and that
+   * level's main id; bonus rooms keep it. Null outside a Classic run.
+   */
+  private levelStart: { level: string; state: GameState } | null = null;
 
   /**
    * v0.4.73 (owner C): the level replay of a CLEARED file being played (or its select), else
@@ -3594,6 +3610,10 @@ export class Game {
     }
     // G-008, B-L: a Classic mode run writes its file at each WORLD card (never a dev run).
     if (this.keepsResume) this.keepResume(levelId);
+    // v0.4.77 item 218: the level's start, for Pause > Quit to character select (quitToSelect).
+    this.levelStart = this.classicRun
+      ? { level: level.parent ?? level.id, state: startCopy(this.state) }
+      : null;
     const hero = this.sayHero ? `${this.sayHero}. ` : '';
     this.sayHero = null;
     const first = this.sayFirst ? `${this.sayFirst} ` : '';
@@ -3959,4 +3979,15 @@ export class Game {
       return levelId;
     }
   }
+}
+
+/**
+ * v0.4.77 item 218: a copy of a run's state to start a level again from (Game.levelStart): its
+ * kits copied, no checkpoint and no clock.
+ */
+function startCopy(s: GameState): GameState {
+  const c: GameState = { ...s, kit: { ...s.kit }, kit2: { ...s.kit2 }, checkpoint: null, time: null };
+  if (s.swapKit) c.swapKit = { hero: s.swapKit.hero, kit: { ...s.swapKit.kit } };
+  if (s.swapKit2) c.swapKit2 = { hero: s.swapKit2.hero, kit: { ...s.swapKit2.kit } };
+  return c;
 }
