@@ -42,6 +42,8 @@ import {
   yoshiEggShown,
   yoshiEggStrike,
   yoshiPipeEntry,
+  yoshiTeleportEntry,
+  yoshiVineEntry,
   yoshiWorldLoaded,
 } from './classic/yoshi-mount';
 import {
@@ -82,6 +84,8 @@ installClassicRules({
   blockShown: yoshiEggShown,
   clearHop: yoshiClearHop,
   pipeEntry: yoshiPipeEntry,
+  vineEntry: yoshiVineEntry,
+  teleportEntry: yoshiTeleportEntry,
 });
 
 /** Playable characters in select-screen order. */

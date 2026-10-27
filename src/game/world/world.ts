@@ -511,6 +511,11 @@ type BeamAnim = {
   t: number;
   streaks: { player: Player; x: number; top: number; floor: number; delay: number; landed: number }[];
   target?: WorldEvent & { type: 'pipe' };
+  /**
+   * Up only: a low hop in place before the beam (a Classic Yoshi mount rider hopping off at a pad
+   * into a castle, water or bonus area, item 103), as PipeAnim's.
+   */
+  hop?: { t: number; n: number; y0: number };
 };
 /** Player 2's beam-down starts this many frames after player 1's. */
 const BEAM_P2_DELAY = 12;
@@ -2559,12 +2564,16 @@ export class World {
     if (p.leftVine !== null && (b.onGround || Math.abs(p.centerX - p.leftVine) > px(16))) p.leftVine = null;
     for (const e of this.entities) {
       if (!(e instanceof Vine) || !e.alive || e.centerX === p.leftVine) continue;
-      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       const v = e.body;
       // Generous sideways reach (the original lets you grab from beside the block it grew from).
       const overlapX = Math.abs(p.centerX - e.centerX) <= px(16);
       const overlapY = b.y + px(8) <= v.y + v.h && b.y + b.h > v.y;
       if (!overlapX || !overlapY) continue;
+      // Classic rules: a Yoshi mount rider pressing Up at a vine into a castle, water or bonus area
+      // hops off it and Yoshi waits below (item 103); then the hero grabs it on foot.
+      if (this.rules === 'classic' && input.held('up'))
+        classicRules().vineEntry?.(this, p, this.vineTarget(e));
+      if (p.def.behaviour.canGrabVine?.(p, e.art, this) === false) continue;
       if (!b.onGround || input.held('up')) {
         p.stairs = null;
         p.vine = { x: e.centerX, top: e.topPx, bottom: e.basePx };
@@ -2602,6 +2611,14 @@ export class World {
       const ride = e.mount(p, input);
       if (ride) return p.getOnStairs(ride);
     }
+  }
+
+  /** The level the top of vine `e` leads to (its `vine` zone's), or null for none. */
+  private vineTarget(e: Vine): string | null {
+    for (const z of this.level.zones)
+      if (z.kind === 'vine' && (this.vineBlockAt(z.x, z.y) ?? this.placedVineAt(z.x, z.y)) === e)
+        return z.target.level;
+    return null;
   }
 
   private vineBlockAt(tx: number, ty: number): Vine | undefined {
@@ -3852,15 +3869,19 @@ export class World {
   }
 
   private beamUp(p: Player, z: TeleportZone): void {
+    // Classic rules: a Yoshi mount rider bound for a castle, water or bonus area hops off first
+    // (item 103), Yoshi waiting beside the pad.
+    const hop = this.rules === 'classic' ? (classicRules().teleportEntry?.(this, p, z) ?? 0) : 0;
     for (const o of this.players) {
       o.frozen = true;
       o.stairs = null;
       o.body.vx = 0;
       o.body.vy = 0;
       o.anim = 'idle';
-      o.hidden = true;
+      // The hopping hero is seen until the hop ends.
+      o.hidden = hop === 0 || o !== p;
     }
-    this.audio.sfx('beam');
+    if (hop === 0) this.audio.sfx('beam');
     const floor = toPx(p.body.y + p.body.h);
     this.beam = {
       dir: 'up',
@@ -3868,6 +3889,7 @@ export class World {
       // Centred on the pad, as Mega Man's teleporters line him up.
       streaks: [{ player: p, x: z.x * 16 + 8, top: floor - BEAM_H, floor, delay: 0, landed: 0 }],
       target: { type: 'pipe', target: { ...z.target } },
+      ...(hop > 0 ? { hop: { t: 0, n: hop, y0: p.body.y } } : {}),
     };
   }
 
@@ -3879,6 +3901,21 @@ export class World {
    */
   private updateBeam(): void {
     const a = this.beam as BeamAnim;
+    if (a.hop) {
+      // A low hop in place (16 px at its top, as a pipe's), then the beam from where it started.
+      const h = a.hop;
+      const p = a.streaks[0]?.player;
+      h.t++;
+      if (p) p.body.y = h.y0 - Math.round((px(16) * 4 * h.t * (h.n - h.t)) / (h.n * h.n));
+      if (h.t < h.n) return;
+      delete a.hop;
+      if (p) {
+        p.body.y = h.y0;
+        p.hidden = true;
+      }
+      this.audio.sfx('beam');
+      return;
+    }
     a.t++;
     if (a.dir === 'up') {
       const s = a.streaks[0];

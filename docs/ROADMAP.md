@@ -92,9 +92,9 @@ Classic mode in the 0.4.5x releases and the 0.5.0 Classic remake.)
   above). In the campaign, Yoshi first: the Top Secret Area's egg will hatch him, as a rideable partner or a hero.
 - ~~Asset packs on phones: import a single .zip pack picked from the Files app (owner item 84B).~~ Done (item 141):
   Options > Asset packs > Import pack (.zip) on every device.
-- **Yoshi waits visibly for vine/pit/teleport entries into benched areas (owner 103A, later).** Classic mode's Yoshi
-  mount already hops the hero off and waits at pipes and at the flagpole before a castle (0.4.73); the other ways in
-  still leave him outside without showing it.
+- ~~Yoshi waits visibly for vine/pit/teleport entries into benched areas (owner 103A, later).~~ Done (item 103):
+  UP at a vine, a fall into a pit, or a teleport pad into a castle, water or bonus area hops the hero off, Yoshi
+  waits in sight there, and he rejoins in the next allowed area as after a pipe.
 - Music Lab: write and play your own songs in the game's MML on its 4-channel synth (text editor first:
   play/loop/tempo, error positions, load game songs as examples, save to library, share links), later custom-level
   music and maybe a tracker grid (owner 136C).
