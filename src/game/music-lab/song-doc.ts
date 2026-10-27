@@ -27,10 +27,18 @@ const KIND: Record<Channel, 'pulse' | 'triangle' | 'noise'> = {
 };
 
 /**
- * The most MML commands one channel may read, repeats counted each time through (review): a
- * repeat of a repeat can't hang the page. The game's longest channel reads under 2,000.
+ * The most MML characters one channel may read, repeats counted each time through (review; 0.5.0
+ * item 255: characters, not commands): a repeat of a repeat, or of a long comment, can't hang the
+ * page. The game's longest channel reads a few thousand; a song as long as a song may be
+ * (MAX_SONG_CHARS) can still repeat its whole text about ten times.
  */
-export const MAX_SONG_STEPS = 100_000;
+export const MAX_SONG_STEPS = 250_000;
+
+/**
+ * The most notes and rests a whole song may come to, repeats counted each time through (0.5.0,
+ * item 285): a short link can't ask for a million. The game's busiest song has 705.
+ */
+export const MAX_SONG_EVENTS = 100_000;
 
 export const MIN_TEMPO = 40;
 export const MAX_TEMPO = 300;
@@ -139,7 +147,10 @@ export function parseSongDoc(text: string): DocResult {
     const body = bodies[ch];
     if (!body) continue;
     try {
-      events += parseMml(body.text, KIND[ch], { maxSteps: MAX_SONG_STEPS }).events.length;
+      events += parseMml(body.text, KIND[ch], {
+        maxSteps: MAX_SONG_STEPS,
+        maxEvents: MAX_SONG_EVENTS - events,
+      }).events.length;
     } catch (e) {
       if (!(e instanceof MmlError)) throw e;
       const s = body.offset + e.start;

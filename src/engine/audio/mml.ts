@@ -88,16 +88,22 @@ interface State {
 }
 
 /**
- * `maxSteps` (Music Lab, 0.4.77): the most commands read, repeats counted each time through,
+ * `maxSteps` (Music Lab, 0.4.77): the most characters read, repeats counted each time through,
  * before the text is refused as too long; a player's text, or a shared link's, can't hang the
- * page. Left out (the game's own songs and sounds): no limit.
+ * page (0.5.0, item 255: characters, not commands, so one command scanning a long run of text
+ * counts it all). Set, notes must also be 0-127 and slides within ±96 semitones (item 256), so
+ * no frequency is out of the synth's reach. `maxEvents` (0.5.0, item 285): the most notes and
+ * rests, so a short text can't ask for a million of them. Left out (the game's own songs and
+ * sounds): no limit.
  */
 export function parseMml(
   src: string,
   channel: 'pulse' | 'triangle' | 'noise' = 'pulse',
-  opts: { maxSteps?: number } = {},
+  opts: { maxSteps?: number; maxEvents?: number } = {},
 ): Track {
   const maxSteps = opts.maxSteps ?? Infinity;
+  const maxEvents = opts.maxEvents ?? Infinity;
+  const bounded = opts.maxSteps !== undefined;
   let steps = 0;
   const events: NoteEvent[] = [];
   const st: State = { octave: 4, len: PPQ, vol: 10, duty: 2, gate: 8, decay: false, slide: 0 };
@@ -131,6 +137,7 @@ export function parseMml(
     return ticks;
   };
   const emit = (note: number | null, len: number, gateOverride?: number): void => {
+    if (events.length >= maxEvents) fail('too many notes (check the repeat counts)');
     const gateFrac = (gateOverride ?? st.gate) / 8;
     events.push({
       tick,
@@ -157,8 +164,10 @@ export function parseMml(
   const repeats: { pos: number; remaining: number }[] = [];
 
   while (i < n) {
+    // The command just read counts its characters (a ] that jumped back counted its own).
+    steps += Math.max(1, i - start);
     start = i;
-    if (++steps > maxSteps) fail(`too long: over ${maxSteps} steps (check the repeat counts)`);
+    if (steps > maxSteps) fail('too long to read (check the repeat counts)');
     const ch = src[i] as string;
     if (ch === ' ' || ch === '\n' || ch === '\t' || ch === '|' || ch === '\r') {
       i++;
@@ -177,8 +186,10 @@ export function parseMml(
         semis += src[i] === '-' ? -1 : 1;
         i++;
       }
+      const note = (st.octave + 1) * 12 + semis;
+      if (bounded && (note < 0 || note > 127)) fail('note out of range (too many + or -)');
       const len = readLen();
-      emit((st.octave + 1) * 12 + semis, len);
+      emit(note, len);
       continue;
     }
     switch (ch) {
@@ -246,6 +257,7 @@ export function parseMml(
         i++;
         const v = readInt();
         if (v === null) fail('slide amount expected');
+        if (bounded && Math.abs(v as number) > 96) fail('slide -96 to 96 expected');
         st.slide = v as number;
         break;
       }
@@ -283,8 +295,12 @@ export function parseMml(
         const count = readInt() ?? 2; // always consumed, so jumping back re-reads it harmlessly
         if (rep.remaining === -1) rep.remaining = count - 1;
         else rep.remaining--;
-        if (rep.remaining > 0) i = rep.pos;
-        else repeats.pop();
+        if (rep.remaining > 0) {
+          // Its characters (the count is read again each time through) count before the jump.
+          steps += i - start;
+          i = rep.pos;
+          start = i;
+        } else repeats.pop();
         break;
       }
       case 'L':

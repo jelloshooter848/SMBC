@@ -15,9 +15,8 @@ import { DATA_EPOCH_KEY, onStaleStorage, storageIsStale } from '@engine/save/sto
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
 import { getLevel as getBuiltinLevel, levelIds, specialLevelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
-import { decodeShare, takeSongCode } from '@engine/share';
+import { takeSongCode } from '@engine/share';
 import { linkCode } from '@game/save/save-code';
-import { parseTextMap } from '@game/level/textmap';
 import { PALETTES, SPRITES } from '@content/sprites';
 import { songs } from '@content/music/songs';
 import { sfx } from '@content/sfx/sfx';
@@ -365,9 +364,7 @@ function boot(): void {
     void game.openSharedSong(songLinkCode);
   } else if (shared) {
     game.showTitle();
-    void decodeShare(shared)
-      .then((text) => game.playShared(parseTextMap(text, 'custom-shared')))
-      .catch((e: Error) => console.warn(`shared level could not be loaded: ${e.message}`));
+    void game.openSharedLevel(shared);
   } else game.showTitle();
   // Dev server only: `?minigame=luigi` plays that hero's mini game straight away, over the title
   // (for tuning and screenshots; the scene is window.__miniGame); the result is logged and the
