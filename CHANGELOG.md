@@ -9,6 +9,90 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.4.77] - 2026-10-27
+
+### Added
+
+- Music Lab (Options on the title screen, beside the Level editor): write your own songs in the
+  game's music language and play them on its 4-channel synth, with Play, Stop, Loop and a tempo
+  control. The first mistake is marked in the text and named by line and column (and said to
+  screen readers). Load any of the game's songs as an example (your changes make a copy), keep up
+  to 50 songs in your library (in backups, Reset game and the online backup), share a song as
+  a link that offers to add it to the other player's songs, and read a short syntax help. Phones
+  type with their own keyboard.
+- Music Lab: a song library that is damaged, or was saved by a newer version, can be cleared from
+  Music Lab itself (it asks first, with NO selected).
+
+### Changed
+
+- Classic mode: Pause > Quit now asks "QUIT TO CHARACTER SELECT?" and goes back to the character
+  select for the level you are on, in the game modes that have one. The picked hero starts the
+  level from its beginning with the lives, score, coins and power you had when it started:
+  quitting costs no life, and nothing gained in the level is kept. BACK on that select still asks
+  to quit to the Classic menu.
+- Classic mode: the title demo's Mario sets off after 1 second instead of 5.
+- Classic mode: a save file's row shows only its difficulty and where it is ("HARD 4-2"), and the
+  line under the box only its score. Lives and the hero are no longer shown or read out, on used
+  and CLEARED files alike.
+- Options: Save files is no longer in Classic mode's Options, and Asset packs is no longer in any
+  pause menu's Options (it stays in the title's and the Classic menu's).
+- Every flagpole has an invisible wall above its ball: a jump toward the pole can no longer sail
+  past it to the right, so the hero falls into the pole and grabs it (the grab's score is as before).
+  It never stops a hero coming back from the right. The designed routes over the pole keep no
+  wall: 2-1 (the Top Secret Area), Lost Levels 3-1, 5-1 and A-3 (their warp zones) and Super Mario
+  Bros. Special 4-2's exit area.
+- Classic Ryu climbs a wall with new hand-drawn climbing poses while he moves up or down it, and
+  clings as before when he holds still, reaches the top or bottom, or rides a lift's side.
+- Ryu's touch ATTACK button says what it does on a wall: the thrown art in Classic (blank when the
+  main art is the Jump Slash), blank while clinging in Campaign, and blank while he climbs the
+  flagpole. The button stays in place, and its desktop key hint stays.
+- Options → Save data has three rows: Back up on device (Export backup and Import backup), Back
+  up online (web version only) and Reset game (Erase all data, renamed). The note drawn under the
+  rows is gone; it is still said.
+- Back up online opens, the first time on a device (and again after a reset), with a note that
+  online backup is an experimental save feature, that saves may be lost, and that a backup on
+  the device is the safest way to keep your game.
+- Show my code is now Show most recent code. Delete online copy is now Delete most recent code:
+  once every server has confirmed the delete, it also forgets the code on this device, so the
+  next online backup makes a new one. When only some servers confirmed, the code is kept, to
+  try again.
+- Importing a backup that brings another online backup code first shows your current code on
+  the question, with Copy code, as Reset game does.
+- The backup code card shows only the servers line, a blank line and the code, drawn in its own
+  colour, which follows the colour-blind and high-contrast palettes.
+- Reset game never deletes the online backup (the "Also delete your online backup?" question is
+  gone). When a backup is online, its code is shown first, with Copy code, in the offline copy too.
+- Reset game and Import backup keep this device's record of the Home Screen notes it has
+  shown, so they do not come back after a reset, and a backup from another device does not
+  change it.
+- Classic mode's Yoshi mount: UP at a vine, a fall into a pit, or a teleport pad into a castle,
+  water or bonus area now hops the hero off where you can see it, and Yoshi waits there, as at
+  pipes and the flagpole. He rejoins in the next allowed area, as after a pipe. Climbing back down
+  a vine onto his back takes the hero again.
+
+### Removed
+
+- Classic mode: the BEATEN mark and "Beaten on" are gone from the map set menu. Beating a set
+  still counts toward the cheats it unlocks.
+- Classic mode: the Quit box no longer says "YOUR RUN WAITS IN ITS FILE."
+
+### Fixed
+
+- Classic mode: the "can't save to this file" note now shows every time the Quit box opens, not
+  only the first time.
+- Classic mode: with dev mode on, the pause menu no longer lists Assists next to Dev mode, which
+  has Assists of its own.
+- Online backup tries to load again after a failed load, instead of failing until the page is
+  reloaded; after two failures in a row it says to reload the page.
+- Importing an older backup file with this device's own online code no longer makes the code
+  look as if it had never been backed up online.
+- A first online backup that failed no longer says "Nothing changed", and its code no longer
+  counts as an online copy (no Show or Delete row, no code shown before a reset) until at least
+  one server has taken a backup with it. Codes from earlier versions that were backed up still
+  count.
+- After the first online backup, the Back up online page no longer keeps saying BACKING UP....
+- A backup code brought by an imported file is stored in its standard form.
+
 ## [0.4.76] - 2026-10-27
 
 ### Added
@@ -2271,7 +2355,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.76...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.77...HEAD
+[0.4.77]: https://github.com/jelloshooter848/SMBC/compare/v0.4.76...v0.4.77
 [0.4.76]: https://github.com/jelloshooter848/SMBC/compare/v0.4.75...v0.4.76
 [0.4.75]: https://github.com/jelloshooter848/SMBC/compare/v0.4.74...v0.4.75
 [0.4.74]: https://github.com/jelloshooter848/SMBC/compare/v0.4.73...v0.4.74
