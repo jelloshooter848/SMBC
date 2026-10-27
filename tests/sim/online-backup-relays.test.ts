@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { verifyEvent } from 'nostr-tools/pure';
 import {
   backUp,
+  deleteOnline,
+  keysFromCode,
   D_TAG,
   EVENT_MAX_BYTES,
   KIND,
@@ -31,7 +33,7 @@ import { FakeRelays, type RelayMode } from './fake-relays';
  * VALID answer (signature, author, tag and content all checked). Relays are faked here.
  */
 
-const CODE = '7KQ2MX9PDA';
+const CODE = '7KQ2MX9PDAB3';
 const TEXT = JSON.stringify({ format: 'smbc-remix-backup', data: { a: 'x'.repeat(500) } });
 
 function relays(modes: RelayMode[]): { fake: FakeRelays; opts: Parameters<typeof backUp>[2] } {
@@ -41,19 +43,21 @@ function relays(modes: RelayMode[]): { fake: FakeRelays; opts: Parameters<typeof
 }
 
 describe('the code (no crypto: the light module)', () => {
-  it('a new code is 10 Crockford characters, shown as two groups of five', () => {
+  it('item 166: a new code is 12 Crockford characters (60 bits), shown as three groups of four', () => {
     for (let i = 0; i < 20; i++) {
       const c = newBackupCode();
-      expect(c).toMatch(/^[0-9A-HJKMNP-TV-Z]{10}$/);
-      expect(formatBackupCode(c)).toBe(`${c.slice(0, 5)}-${c.slice(5)}`);
+      expect(c).toMatch(/^[0-9A-HJKMNP-TV-Z]{12}$/);
+      expect(formatBackupCode(c)).toBe(`${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8)}`);
     }
   });
 
   it('typing is forgiving like save codes: case, spaces, dashes; O as 0, I and L as 1', () => {
-    expect(normalizeBackupCode(' 7kq2m-x9pda ')).toBe(CODE);
-    expect(normalizeBackupCode('OIL23-45678')).toBe('01123' + '45678');
+    expect(normalizeBackupCode(' 7kq2-mx9p-dab3 ')).toBe(CODE);
+    expect(normalizeBackupCode('OIL2-3456-7890')).toBe('0112' + '34567890');
     expect(normalizeBackupCode('7KQ2M X9PD')).toBeNull();
-    expect(normalizeBackupCode('7KQ2M-X9PDAA')).toBeNull();
+    expect(normalizeBackupCode('7KQ2M-X9PDAB3X')).toBeNull();
+    // Item 166: 10-character codes (none shipped) are not codes.
+    expect(normalizeBackupCode('7KQ2M-X9PDA')).toBeNull();
     expect(normalizeBackupCode('7KQ2M-X9PD!')).toBeNull();
     expect(normalizeBackupCode('')).toBeNull();
   });
@@ -157,7 +161,7 @@ describe('the event', () => {
 
   it('opens only for its own code, and not when signature, content, author, kind or tag differ', async () => {
     const ev = await makeBackupEvent(CODE, TEXT);
-    expect(await openBackupEvent('7KQ2MX9PDB', ev)).toBeNull();
+    expect(await openBackupEvent('7KQ2MX9PDAB4', ev)).toBeNull();
     expect(
       await openBackupEvent(CODE, { ...ev, sig: ev.sig.replace(/^./, (c) => (c === '0' ? '1' : '0')) }),
     ).toBeNull();
@@ -227,7 +231,7 @@ describe('RESTORE FROM CODE against faked relays', () => {
   it('backs up, then restores the very same text with only the code (typed loosely)', async () => {
     const { opts } = relays(['accept', 'accept', 'accept', 'accept', 'accept']);
     await backUp(CODE, TEXT, opts);
-    const r = await restore(normalizeBackupCode('7kq2m x9pda') as string, opts);
+    const r = await restore(normalizeBackupCode('7kq2 mx9p dab3') as string, opts);
     expect(r).toMatchObject({ ok: true, text: TEXT });
   });
 
@@ -262,7 +266,7 @@ describe('RESTORE FROM CODE against faked relays', () => {
   it('a mistyped code finds nothing', async () => {
     const { opts } = relays(['accept', 'accept']);
     await backUp(CODE, TEXT, opts);
-    expect(await restore('7KQ2MX9PDB', opts)).toEqual({ ok: false, reason: 'not-found' });
+    expect(await restore('7KQ2MX9PDAB4', opts)).toEqual({ ok: false, reason: 'not-found' });
   });
 
   it('offline, or every relay silent: the servers could not be reached (not "no backup")', async () => {
@@ -327,5 +331,59 @@ describe('review of b6a20d56: clocks, refusals (v0.4.76 fix round)', () => {
   it('none answering at all is still the servers', async () => {
     const { opts } = relays(['down', 'silent']);
     expect(await backUp(CODE, TEXT, opts)).toMatchObject({ ok: false, reason: 'servers', accepted: 0 });
+  });
+});
+
+describe('item 168: DELETE ONLINE COPY (a tombstone plus a NIP-09 deletion request)', () => {
+  it('overwrites the copy with an empty tombstone on every relay, and asks for deletion (kind 5, a tag)', async () => {
+    const { fake, opts } = relays(['accept', 'accept', 'accept', 'accept', 'accept']);
+    await backUp(CODE, TEXT, { ...opts, now: 1000 });
+    const r = await deleteOnline(CODE, { ...opts, now: 1000, after: 1000 });
+    expect(r).toEqual({ ok: true, deleted: 5, total: 5, at: 1001 });
+    const { pk } = await keysFromCode(CODE);
+    for (const url of opts!.relays!) {
+      const got = fake.stored.get(url) ?? [];
+      const tomb = got.find((e) => e.kind === KIND);
+      expect(tomb?.content, url).toBe('');
+      expect(tomb?.created_at).toBe(1001);
+      const req = got.find((e) => e.kind === 5);
+      expect(req?.tags).toContainEqual(['a', `${KIND}:${pk}:${D_TAG}`]);
+    }
+  });
+
+  it('a restore after a delete says the backup was deleted (not just "not found")', async () => {
+    const { opts } = relays(['accept', 'accept', 'accept']);
+    await backUp(CODE, TEXT, { ...opts, now: 1000 });
+    await deleteOnline(CODE, { ...opts, now: 1000, after: 1000 });
+    expect(await restore(CODE, opts)).toEqual({ ok: false, reason: 'deleted' });
+  });
+
+  it('backing up again with the same code after a delete works (the code is kept)', async () => {
+    const { opts } = relays(['accept', 'accept']);
+    await backUp(CODE, 'one', { ...opts, now: 1000 });
+    const d = await deleteOnline(CODE, { ...opts, now: 1000, after: 1000 });
+    await backUp(CODE, 'two', { ...opts, now: 1000, after: d.ok ? d.at : 0 });
+    expect(await restore(CODE, opts)).toMatchObject({ ok: true, text: 'two' });
+  });
+
+  it('partial: deleted where reachable, counted', async () => {
+    const { opts } = relays(['accept', 'accept', 'down', 'silent', 'accept']);
+    await backUp(CODE, TEXT, { ...opts, now: 1000 });
+    expect(await deleteOnline(CODE, { ...opts, now: 1000, after: 1000 })).toEqual({
+      ok: true,
+      deleted: 3,
+      total: 5,
+      at: 1001,
+    });
+  });
+
+  it('offline: nothing deleted, the servers could not be reached', async () => {
+    const { opts } = relays(['down', 'down', 'down']);
+    expect(await deleteOnline(CODE, opts)).toMatchObject({ ok: false, reason: 'servers', deleted: 0 });
+  });
+
+  it('every relay refusing: refused', async () => {
+    const { opts } = relays(['reject', 'reject']);
+    expect(await deleteOnline(CODE, opts)).toMatchObject({ ok: false, reason: 'refused', deleted: 0 });
   });
 });

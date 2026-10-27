@@ -24,10 +24,10 @@ describe('keysFromCode', () => {
   it('a rejected derivation is not kept: the next call derives again', async () => {
     const { keysFromCode } = await import('@engine/online/nostr-backup');
     fail = 1;
-    await expect(keysFromCode('ABCDE12345')).rejects.toThrow('out of memory');
-    const k = await keysFromCode('ABCDE12345');
+    await expect(keysFromCode('ABCDEF123456')).rejects.toThrow('out of memory');
+    const k = await keysFromCode('ABCDEF123456');
     expect(k.pk).toMatch(/^[0-9a-f]{64}$/);
     // A good one is kept (the same promise's result).
-    expect(await keysFromCode('abcde-12345')).toBe(k);
+    expect(await keysFromCode('abcd-ef12-3456')).toBe(k);
   });
 });

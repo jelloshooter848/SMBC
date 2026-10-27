@@ -13,7 +13,7 @@ import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { SaveDataOptions, type SaveDataEnv } from '@game/scenes/save-data';
 import { RestoreCodeScene } from '@game/scenes/online-backup';
 import { newSave, saveKey, writeSave } from '@game/save/save-files';
-import { makeGame, type H } from './heroes-harness';
+import { draw, makeGame, type H } from './heroes-harness';
 import { FakeStorage, installStorage } from './save-data-helpers';
 
 /*
@@ -41,7 +41,11 @@ const flush = async () => {
 
 interface Rig {
   h: H;
-  api: OnlineApi & { backUps: { code: string; text: string; after?: number | undefined }[]; restores: string[] };
+  api: OnlineApi & {
+    deletes: { code: string; after?: number | undefined }[];
+    backUps: { code: string; text: string; after?: number | undefined }[];
+    restores: string[];
+  };
   loads: number;
   online: { value: boolean };
   copied: string[];
@@ -50,14 +54,20 @@ interface Rig {
 }
 
 function rig(
-  opts: { backUp?: BackUpResult; restore?: RestoreResult; offlineBuild?: boolean; code?: string } = {},
+  opts: {
+    backUp?: BackUpResult;
+    restore?: RestoreResult;
+    deleted?: DeleteResult;
+    offlineBuild?: boolean;
+    code?: string;
+  } = {},
 ): Rig {
   const backUps: { code: string; text: string; after?: number | undefined }[] = [];
   const restores: string[] = [];
   const api = {
     backUps,
     restores,
-    newCode: () => opts.code ?? 'ABCDE12345',
+    newCode: () => opts.code ?? 'ABCDEF123456',
     backUp: async (code: string, text: string, after?: number) => {
       backUps.push({ code, text, after });
       return opts.backUp ?? { ok: true as const, accepted: 5, total: 5, at: 1234 };
@@ -65,6 +75,11 @@ function rig(
     restore: async (code: string) => {
       restores.push(code);
       return opts.restore ?? { ok: false as const, reason: 'not-found' as const };
+    },
+    deletes: [] as { code: string; after?: number | undefined }[],
+    deleteOnline: async (code: string, after?: number) => {
+      api.deletes.push({ code, after });
+      return opts.deleted ?? { ok: true as const, deleted: 5, total: 5, at: 4321 };
     },
   };
   const online = { value: true };
@@ -163,28 +178,28 @@ describe('BACK UP ONLINE', () => {
   });
 
   it('YES: backs up under a new code, shows it once with COPY and SHARE, and says it letter by letter', async () => {
-    const r = rig({ code: 'ABCDE12345' });
+    const r = rig({ code: 'ABCDEF123456' });
     writeSave(newSave(1, 'mario', null));
     press(r, 'Back up online');
     press(r, 'Yes, back up');
     await flush();
     expect(r.api.backUps).toHaveLength(1);
-    expect(r.api.backUps[0]!.code).toBe('ABCDE12345');
+    expect(r.api.backUps[0]!.code).toBe('ABCDEF123456');
     expect(titleOf(r.h)).toBe('YOUR BACKUP CODE');
     expect(labels(r.h.top())).toEqual(['Copy code', 'Share code', 'OK']);
     const lines = (r.h.top() as unknown as { lines: string[] }).lines;
-    expect(lines).toContain('ABCDE-12345');
+    expect(lines).toContain('ABCD-EF12-3456');
     expect(lines).toContain('BACKED UP (5 OF 5 SERVERS)');
-    expect(r.h.said.at(-1)).toMatch(/A B C D E, 1 2 3 4 5/);
+    expect(r.h.said.at(-1)).toMatch(/A B C D, E F 1 2, 3 4 5 6/);
     press(r, 'Copy code');
     await flush();
-    expect(r.copied).toEqual(['ABCDE-12345']);
+    expect(r.copied).toEqual(['ABCD-EF12-3456']);
     press(r, 'Share code');
     await flush();
-    expect(r.shared[0]).toContain('ABCDE-12345');
+    expect(r.shared[0]).toContain('ABCD-EF12-3456');
     press(r, 'OK');
     expect(titleOf(r.h)).toBe('SAVE DATA');
-    expect(stored()).toMatchObject({ code: 'ABCDE12345', shown: true });
+    expect(stored()).toMatchObject({ code: 'ABCDEF123456', shown: true });
   });
 
   it("the online copy is the backup file's text, without dev fields, and carries the code", async () => {
@@ -203,17 +218,17 @@ describe('BACK UP ONLINE', () => {
     expect(JSON.parse(b.data[SETTINGS_KEY]).dev).toBeUndefined();
     expect(JSON.parse(b.data[SETTINGS_KEY]).devUnlock).toBeUndefined();
     expect(b.data['smbc.devLast']).toBeUndefined();
-    expect(JSON.parse(b.data[ONLINE_BACKUP_KEY]).code).toBe('ABCDE12345');
+    expect(JSON.parse(b.data[ONLINE_BACKUP_KEY]).code).toBe('ABCDEF123456');
     // This device keeps its own dev settings.
     expect(JSON.parse(ls.getItem(SETTINGS_KEY) as string).dev).toBe(true);
   });
 
   it('again later: the same code, no explainer, no code box, just BACKED UP (N OF 5 SERVERS)', async () => {
     const r = rig({ backUp: { ok: true, accepted: 3, total: 5, at: 1 } });
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
     press(r, 'Back up online');
     await flush();
-    expect(r.api.backUps[0]!.code).toBe('ZZZZZ99999');
+    expect(r.api.backUps[0]!.code).toBe('ZZZZZZ999999');
     expect(titleOf(r.h)).toBe('SAVE DATA');
     expect(status(r.h)).toBe('BACKED UP (3 OF 5 SERVERS)');
     expect(r.h.said.at(-1)).toMatch(/^Backed up to 3 of 5 servers/);
@@ -222,7 +237,7 @@ describe('BACK UP ONLINE', () => {
   it('BACKING UP... shows and is said at once; a second press meanwhile does nothing', async () => {
     let open!: (v: BackUpResult) => void;
     const r = rig();
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
     r.api.backUp = () => new Promise((res) => (open = res));
     press(r, 'Back up online');
     expect(status(r.h)).toBe('BACKING UP...');
@@ -269,7 +284,7 @@ describe('BACK UP ONLINE', () => {
 
   it('the online code module failing to load (no connection): said, nothing changed', async () => {
     const r = rig();
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
     const env = (r.h.game.deps.saveDataEnv as SaveDataEnv).online!;
     env.load = () => Promise.reject(new Error('Failed to fetch dynamically imported module'));
     press(r, 'Back up online');
@@ -293,7 +308,7 @@ describe('RESTORE FROM CODE', () => {
     const other = installStorage(new FakeStorage());
     adoptDataEpoch();
     writeSave(newSave(2, 'link', null));
-    other.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ABCDE12345', shown: true }));
+    other.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ABCDEF123456', shown: true }));
     const t = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
     installStorage(ls);
     adoptDataEpoch();
@@ -334,16 +349,16 @@ describe('RESTORE FROM CODE', () => {
     const r = rig({ restore: { ok: true, text: t, from: 'wss://x' } });
     writeSave(newSave(1, 'mario', null));
     press(r, 'Restore from code');
-    expect((r.h.top() as RestoreCodeScene).submit('abcde-12345')).toBeNull();
+    expect((r.h.top() as RestoreCodeScene).submit('abcd-ef12-3456')).toBeNull();
     expect(status(r.h)).toBe('LOOKING FOR THE BACKUP...');
     await flush();
-    expect(r.api.restores).toEqual(['ABCDE12345']);
+    expect(r.api.restores).toEqual(['ABCDEF123456']);
     expect(titleOf(r.h)).toBe('REPLACE ALL DATA ON THIS DEVICE?');
     press(r, 'Yes');
     await flush();
     expect(ls.getItem(saveKey(1))).toBeNull();
     expect(ls.getItem(saveKey(2))).toBe(JSON.parse(t).data[saveKey(2)]);
-    expect(stored()).toMatchObject({ code: 'ABCDE12345' });
+    expect(stored()).toMatchObject({ code: 'ABCDEF123456' });
     press(r, 'OK');
     expect(r.restart).toHaveBeenCalledTimes(1);
   });
@@ -353,7 +368,7 @@ describe('RESTORE FROM CODE', () => {
     writeSave(newSave(1, 'mario', null));
     const before = ls.snapshot(isGameKey);
     press(r, 'Restore from code');
-    (r.h.top() as RestoreCodeScene).submit('ABCDE12345');
+    (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
     await flush();
     press(r, 'No');
     expect(ls.snapshot(isGameKey)).toEqual(before);
@@ -395,7 +410,7 @@ describe('RESTORE FROM CODE', () => {
       writeSave(newSave(1, 'mario', null));
       const before = ls.snapshot();
       press(r, 'Restore from code');
-      (r.h.top() as RestoreCodeScene).submit('ABCDE12345');
+      (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
       await flush();
       expect(titleOf(r.h)).toBe('SAVE DATA');
       expect(status(r.h)).toBe(shown);
@@ -409,20 +424,20 @@ describe('v0.4.76 fix round', () => {
   it('item 162: SHOW MY CODE only once a code exists; it shows it with COPY and SHARE, said letter by letter', async () => {
     const none = rig();
     expect(labels(none.h.top())).not.toContain('Show my code');
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
     const r = rig();
     expect(labels(r.h.top())).toContain('Show my code');
     press(r, 'Show my code');
     expect(titleOf(r.h)).toBe('YOUR BACKUP CODE');
     expect(labels(r.h.top())).toEqual(['Copy code', 'Share code', 'OK']);
-    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZZ-99999');
-    expect(r.h.said.at(-1)).toMatch(/Z Z Z Z Z, 9 9 9 9 9/);
+    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZ-ZZ99-9999');
+    expect(r.h.said.at(-1)).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
     const items = (r.h.top() as unknown as { items: MenuItem[] }).items;
     expect(items[0]?.gesture).toBe(true);
     expect(items[1]?.gesture).toBe(true);
     press(r, 'Copy code');
     await flush();
-    expect(r.copied).toEqual(['ZZZZZ-99999']);
+    expect(r.copied).toEqual(['ZZZZ-ZZ99-9999']);
     expect(r.loads).toBe(0);
   });
 
@@ -437,10 +452,10 @@ describe('v0.4.76 fix round', () => {
 
   it('the last backup time is kept with the code and handed to the next backup (a clock behind)', async () => {
     const r = rig({ backUp: { ok: true, accepted: 5, total: 5, at: 7777 } });
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
     press(r, 'Back up online');
     await flush();
-    expect(stored()).toMatchObject({ code: 'ZZZZZ99999', lastAt: 7777 });
+    expect(stored()).toMatchObject({ code: 'ZZZZZZ999999', lastAt: 7777 });
     press(r, 'Back up online');
     await flush();
     expect(r.api.backUps[1]!.after).toBe(7777);
@@ -449,17 +464,17 @@ describe('v0.4.76 fix round', () => {
   it('a restored or imported copy shows its code again on this device (shown reset)', async () => {
     const other = installStorage(new FakeStorage());
     adoptDataEpoch();
-    other.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ABCDE12345', shown: true, lastAt: 50 }));
+    other.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ABCDEF123456', shown: true, lastAt: 50 }));
     const t = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
     installStorage(ls);
     adoptDataEpoch();
     const r = rig({ restore: { ok: true, text: t, from: 'x' } });
     press(r, 'Restore from code');
-    (r.h.top() as RestoreCodeScene).submit('ABCDE12345');
+    (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
     await flush();
     press(r, 'Yes');
     await flush();
-    expect(stored()).toEqual({ code: 'ABCDE12345', shown: false, lastAt: 50 });
+    expect(stored()).toEqual({ code: 'ABCDEF123456', shown: false, lastAt: 50 });
   });
 
   for (const [what, result, shown, said] of [
@@ -478,7 +493,7 @@ describe('v0.4.76 fix round', () => {
   ] as const) {
     it(`${what}: its own line, said`, async () => {
       const r = rig({ backUp: result as BackUpResult });
-      ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+      ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
       press(r, 'Back up online');
       await flush();
       expect(status(r.h)).toBe(shown);
@@ -486,4 +501,192 @@ describe('v0.4.76 fix round', () => {
       expect(r.h.said.at(-1)).not.toMatch(/could not reach/i);
     });
   }
+});
+
+describe('items 166-168', () => {
+  const withCode = () =>
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, lastAt: 900 }));
+
+  it('item 166: the code box shows XXXX-XXXX-XXXX and the restore box asks for twelve', async () => {
+    const r = rig({ code: 'ABCDEF123456' });
+    press(r, 'Back up online');
+    press(r, 'Yes, back up');
+    await flush();
+    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ABCD-EF12-3456');
+    press(r, 'OK');
+    press(r, 'Restore from code');
+    expect(r.h.said.at(-1)).toMatch(/twelve letters and numbers/i);
+    expect((r.h.top() as RestoreCodeScene).submit('ABCDE-12345')).toMatch(/not a backup code/i);
+  });
+
+  it('item 168: DELETE ONLINE COPY only while a code exists; 8 rows, and the note and status still fit', async () => {
+    expect(labels(rig().h.top())).not.toContain('Delete online copy');
+    withCode();
+    const r = rig();
+    expect(labels(r.h.top())).toEqual([
+      'Export backup',
+      'Import backup',
+      'Back up online',
+      'Restore from code',
+      'Show my code',
+      'Delete online copy',
+      'Erase all data',
+      'Back',
+    ]);
+    const texts = draw(r.h.top() as never).texts;
+    const back = texts.find((t) => t.str === 'BACK' || t.str.startsWith('BACK'));
+    const note = texts.filter((t) => /PACKS|BACKUP HOLDS/.test(t.str));
+    expect(note.length).toBeGreaterThan(0);
+    for (const t of note) {
+      expect(t.y).toBeGreaterThan((back?.y ?? 0) + 7);
+      expect(t.y + 8).toBeLessThanOrEqual(198);
+    }
+  });
+
+  it('item 168: DELETE YOUR ONLINE BACKUP? NO first; NO does nothing', async () => {
+    withCode();
+    const r = rig();
+    press(r, 'Delete online copy');
+    expect(titleOf(r.h)).toBe('DELETE YOUR ONLINE BACKUP?');
+    expect(labels(r.h.top())).toEqual(['No', 'Yes, delete']);
+    expect(r.h.said.at(-1)).toMatch(/^Delete your online backup\?.* No$/);
+    press(r, 'No');
+    await flush();
+    expect(r.api.deletes).toEqual([]);
+    expect(r.loads).toBe(0);
+  });
+
+  it('item 168: YES deletes it: DELETED ON N OF 5 SERVERS, said; the code is kept for later', async () => {
+    withCode();
+    const r = rig();
+    press(r, 'Delete online copy');
+    press(r, 'Yes, delete');
+    await flush();
+    expect(r.api.deletes).toEqual([{ code: 'ZZZZZZ999999', after: 900 }]);
+    expect(status(r.h)).toBe('DELETED ON 5 OF 5 SERVERS');
+    expect(r.h.said.at(-1)).toMatch(/^Online backup deleted on 5 of 5 servers/);
+    expect(stored()).toMatchObject({ code: 'ZZZZZZ999999', lastAt: 4321 });
+  });
+
+  it('item 168: partly deleted says a copy may remain; failures said', async () => {
+    withCode();
+    const part = rig({ deleted: { ok: true, deleted: 2, total: 5, at: 1 } });
+    press(part, 'Delete online copy');
+    press(part, 'Yes, delete');
+    await flush();
+    expect(status(part.h)).toBe('DELETED ON 2 OF 5 SERVERS');
+    expect(part.h.said.at(-1)).toMatch(/may remain/i);
+    for (const [result, shown] of [
+      [{ ok: false, reason: 'servers', deleted: 0, total: 5 }, 'COULD NOT REACH THE SERVERS'],
+      [{ ok: false, reason: 'refused', deleted: 0, total: 5 }, 'SERVERS REFUSED TO DELETE IT'],
+    ] as const) {
+      const r = rig({ deleted: result as DeleteResult });
+      press(r, 'Delete online copy');
+      press(r, 'Yes, delete');
+      await flush();
+      expect(status(r.h)).toBe(shown);
+    }
+    const off = rig();
+    off.online.value = false;
+    press(off, 'Delete online copy');
+    expect(status(off.h)).toBe('NEEDS AN INTERNET CONNECTION');
+  });
+
+  it('item 168: a deleted backup restores as THAT BACKUP WAS DELETED', async () => {
+    const r = rig({ restore: { ok: false, reason: 'deleted' } });
+    press(r, 'Restore from code');
+    (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
+    await flush();
+    expect(status(r.h)).toBe('THAT BACKUP WAS DELETED');
+    expect(r.h.said.at(-1)).toMatch(/deleted/i);
+  });
+
+  async function toOnlineQuestion(r: Rig): Promise<void> {
+    press(r, 'Erase all data');
+    press(r, 'Yes');
+    press(r, 'Yes, erase');
+    await flush();
+  }
+
+  it('item 167: with a code, Erase asks ALSO DELETE YOUR ONLINE BACKUP? (NO first); NO erases without it', async () => {
+    withCode();
+    const r = rig();
+    await toOnlineQuestion(r);
+    expect(titleOf(r.h)).toBe('ALSO DELETE YOUR ONLINE BACKUP?');
+    expect(labels(r.h.top())).toEqual(['No', 'Yes']);
+    press(r, 'No');
+    await flush();
+    expect(r.api.deletes).toEqual([]);
+    expect(ls.snapshot(isGameKey)).toEqual({});
+  });
+
+  it('item 167: YES deletes the online copy, then erases (the code too)', async () => {
+    withCode();
+    const r = rig();
+    await toOnlineQuestion(r);
+    press(r, 'Yes');
+    await flush();
+    expect(r.api.deletes).toEqual([{ code: 'ZZZZZZ999999', after: 900 }]);
+    expect(ls.snapshot(isGameKey)).toEqual({});
+    expect(r.h.said.join(' | ')).toMatch(/online backup deleted on 5 of 5 servers/i);
+  });
+
+  it('item 167: YES but the online delete fails: the device is still erased, and it says so', async () => {
+    withCode();
+    const r = rig({ deleted: { ok: false, reason: 'servers', deleted: 0, total: 5 } });
+    await toOnlineQuestion(r);
+    press(r, 'Yes');
+    await flush();
+    expect(ls.snapshot(isGameKey)).toEqual({});
+    expect(r.h.said.join(' | ')).toMatch(/online backup could not be deleted/i);
+  });
+
+  it('item 167: BACK at the online question cancels the whole erase', async () => {
+    withCode();
+    const r = rig();
+    const before = ls.snapshot();
+    await toOnlineQuestion(r);
+    r.h.idle(8);
+    r.h.tap('attack');
+    await flush();
+    expect(ls.snapshot()).toEqual(before);
+    expect(r.api.deletes).toEqual([]);
+    expect(titleOf(r.h)).toBe('SAVE DATA');
+  });
+
+  it('item 167: without a code there is no online question', async () => {
+    const r = rig();
+    writeSave(newSave(1, 'mario', null));
+    await toOnlineQuestion(r);
+    expect(ls.snapshot(isGameKey)).toEqual({});
+  });
+
+  it("item 167: an import without a code keeps this device's; one with its own code brings it (shown reset)", async () => {
+    const plain = (() => {
+      const o = installStorage(new FakeStorage());
+      adoptDataEpoch();
+      writeSave(newSave(2, 'link', null));
+      const t = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
+      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'QQQQQQ111111', shown: true }));
+      const t2 = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
+      installStorage(ls);
+      adoptDataEpoch();
+      return [t, t2] as const;
+    })();
+    withCode();
+    const r = rig({ restore: { ok: true, text: plain[0], from: 'x' } });
+    press(r, 'Restore from code');
+    (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
+    await flush();
+    press(r, 'Yes');
+    await flush();
+    expect(stored()).toMatchObject({ code: 'ZZZZZZ999999' });
+    const r2 = rig({ restore: { ok: true, text: plain[1], from: 'x' } });
+    press(r2, 'Restore from code');
+    (r2.h.top() as RestoreCodeScene).submit('ABCDEF123456');
+    await flush();
+    press(r2, 'Yes');
+    await flush();
+    expect(stored()).toMatchObject({ code: 'QQQQQQ111111', shown: false });
+  });
 });
