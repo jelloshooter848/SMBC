@@ -76,6 +76,10 @@ import type { InputManager } from '@engine/input/input-manager';
 import type { Announcer } from '@engine/a11y/announcer';
 import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
+import { MusicLabScene, type MusicLabStart } from './music-lab';
+import { readTitle } from '../music-lab/song-doc';
+import { MAX_SONG_CHARS } from '../music-lab/library';
+import { decodeShare } from '@engine/share';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
@@ -2196,6 +2200,36 @@ export class Game {
     this.deps.ctx.audio.stopMusic();
     this.scenes.clear();
     this.scenes.push(new EditorScene(this, initial));
+  }
+
+  /** MUSIC LAB (item 136): from the title's Options only, as the level editor (never a pause). */
+  openMusicLab(start?: MusicLabStart): void {
+    this.playtestDone = null;
+    this.deps.ctx.audio.stopMusic();
+    this.scenes.clear();
+    this.scenes.push(new MusicLabScene(this, start));
+  }
+
+  /**
+   * A Music Lab share link (`#song=<code>`, item 136): Music Lab opens with the song and offers to
+   * add it to the library. A link that cannot be read opens Music Lab on a new song, said.
+   */
+  async openSharedSong(code: string): Promise<void> {
+    let text: string;
+    try {
+      // Inflated only up to a few times a song's size (review: a link can't fill the memory).
+      text = await decodeShare(code, MAX_SONG_CHARS * 4);
+    } catch {
+      this.openMusicLab({ notice: 'That song link could not be read.' });
+      return;
+    }
+    // Refused before it is parsed: longer than a song may be.
+    if (text.length > MAX_SONG_CHARS) {
+      this.openMusicLab({ notice: 'That shared song is too long to open.' });
+      return;
+    }
+    // The title line names it even when the song has an error.
+    this.openMusicLab({ text, name: readTitle(text) || 'Shared song', shared: true });
   }
 
   /**

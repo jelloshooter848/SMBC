@@ -44,13 +44,30 @@ export interface Track {
 }
 
 export class MmlError extends Error {
+  /** 1-based line of `start` in `src` (Music Lab, 0.4.77). */
+  readonly line: number;
+  /** 1-based column of `pos` on that line. */
+  readonly col: number;
   constructor(
-    message: string,
+    /** What is wrong, without the position (the message adds it). */
+    readonly reason: string,
     readonly pos: number,
     readonly src: string,
+    /** Where the command that failed starts (its first character); `pos` is where reading stopped. */
+    readonly start = pos,
   ) {
-    super(`${message} at ${pos}: "${src.slice(Math.max(0, pos - 10), pos + 10)}"`);
+    super(`${reason} at ${pos}: "${src.slice(Math.max(0, pos - 10), pos + 10)}"`);
+    const { line, col } = lineCol(src, start);
+    this.line = line;
+    this.col = col;
   }
+}
+
+/** The 1-based line and column of offset `pos` in `text`. */
+export function lineCol(text: string, pos: number): { line: number; col: number } {
+  const before = text.slice(0, Math.max(0, pos));
+  const nl = before.lastIndexOf('\n');
+  return { line: before.split('\n').length, col: pos - nl };
 }
 
 const NOTE_OFFSETS: Record<string, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
@@ -70,16 +87,29 @@ interface State {
   slide: number;
 }
 
-export function parseMml(src: string, channel: 'pulse' | 'triangle' | 'noise' = 'pulse'): Track {
+/**
+ * `maxSteps` (Music Lab, 0.4.77): the most commands read, repeats counted each time through,
+ * before the text is refused as too long; a player's text, or a shared link's, can't hang the
+ * page. Left out (the game's own songs and sounds): no limit.
+ */
+export function parseMml(
+  src: string,
+  channel: 'pulse' | 'triangle' | 'noise' = 'pulse',
+  opts: { maxSteps?: number } = {},
+): Track {
+  const maxSteps = opts.maxSteps ?? Infinity;
+  let steps = 0;
   const events: NoteEvent[] = [];
   const st: State = { octave: 4, len: PPQ, vol: 10, duty: 2, gate: 8, decay: false, slide: 0 };
   let tick = 0;
   let loopTick = 0;
   let i = 0;
+  /** Where the command being read starts (MmlError.start, Music Lab's highlight). */
+  let start = 0;
   const n = src.length;
 
   const fail = (m: string): never => {
-    throw new MmlError(m, i, src);
+    throw new MmlError(m, i, src, Math.min(start, i));
   };
   const readInt = (): number | null => {
     const m = /^-?\d+/.exec(src.slice(i));
@@ -127,6 +157,8 @@ export function parseMml(src: string, channel: 'pulse' | 'triangle' | 'noise' = 
   const repeats: { pos: number; remaining: number }[] = [];
 
   while (i < n) {
+    start = i;
+    if (++steps > maxSteps) fail(`too long: over ${maxSteps} steps (check the repeat counts)`);
     const ch = src[i] as string;
     if (ch === ' ' || ch === '\n' || ch === '\t' || ch === '|' || ch === '\r') {
       i++;
@@ -269,7 +301,11 @@ export function parseMml(src: string, channel: 'pulse' | 'triangle' | 'noise' = 
         fail(`unexpected "${ch}"`);
     }
   }
-  if (repeats.length) fail('unclosed [');
+  if (repeats.length) {
+    // Point at the [ left open (its position is just before its saved resume point).
+    start = (repeats[repeats.length - 1] as { pos: number }).pos - 1;
+    fail('unclosed [');
+  }
   return { events, length: tick, loopTick };
 }
 

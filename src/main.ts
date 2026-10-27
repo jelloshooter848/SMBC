@@ -15,7 +15,7 @@ import { DATA_EPOCH_KEY, onStaleStorage, storageIsStale } from '@engine/save/sto
 import { importDevPacks, loadEnabledPacks } from '@engine/assets/pack-loader';
 import { getLevel as getBuiltinLevel, levelIds, specialLevelIds } from '@content/levels';
 import { customLevelId, getCustomLevel, loadLibrary } from '@game/level/library';
-import { decodeShare } from '@engine/share';
+import { decodeShare, takeSongCode } from '@engine/share';
 import { linkCode } from '@game/save/save-code';
 import { parseTextMap } from '@game/level/textmap';
 import { PALETTES, SPRITES } from '@content/sprites';
@@ -321,6 +321,8 @@ function boot(): void {
     applySettings();
   }
   const shared = /^#level=([A-Za-z0-9_-]+)/.exec(location.hash)?.[1];
+  // Read once and taken off the address, so a reload doesn't open the song again (review).
+  const songLinkCode = takeSongCode(window);
   // A save code's resume link: the title asks which file to load it into (Game.offerSaveLink).
   game.saveLink = linkCode(location.hash);
   // A resume link pasted into the address bar of the open game changes only the hash.
@@ -357,6 +359,10 @@ function boot(): void {
         if (hero.damage.kind === 'powerup') game.state.powerState = hero.damage.states.at(-1) ?? 'small';
       } else if (game.state.kit.maxHp) game.state.hp = game.state.kit.maxHp;
     }
+  } else if (songLinkCode !== null) {
+    // A Music Lab share link (item 136): the song opens there, with the offer to add it.
+    game.showTitle();
+    void game.openSharedSong(songLinkCode);
   } else if (shared) {
     game.showTitle();
     void decodeShare(shared)

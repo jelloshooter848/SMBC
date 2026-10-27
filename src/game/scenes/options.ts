@@ -92,6 +92,12 @@ export class OptionsScene extends MenuScene {
               hint: 'Play the levels you made in the level editor',
             },
             { label: 'Level editor', select: () => game.openEditor() },
+            // Item 136: write and play songs; beside the Level editor, with its visibility.
+            {
+              label: 'Music Lab',
+              select: () => game.openMusicLab(),
+              hint: 'Write songs and play them on the game synth',
+            },
             // 0.4.72 (owner, title option A): the version and the credits left the title for here.
             {
               label: 'About',
