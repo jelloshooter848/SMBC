@@ -142,6 +142,31 @@ describe('255 (review): the 71-character link of zeros after ]', () => {
   });
 });
 
+describe('285: the 81-character link of a million notes', () => {
+  const bomb = ['pulse1', 'pulse2', 'triangle']
+    .map((ch) => `${ch}:[${'c'.repeat(440)}]560\n`)
+    .concat(`noise:[${'k'.repeat(440)}]560\n`)
+    .join('');
+
+  it('opens fast, "too many notes" shown and said; Play is refused fast too', async () => {
+    vi.useRealTimers();
+    const s = setup();
+    const code = await encodeShare(bomb);
+    expect(code.length).toBeLessThan(100);
+    let t0 = Date.now();
+    await s.h.game.openSharedSong(code);
+    expect(Date.now() - t0).toBeLessThan(1500);
+    expect(lab(s).error?.message).toMatch(/too many notes/);
+    expect(s.h.said.join(' ')).toMatch(/too many notes/);
+    lab(s).answer(false);
+    t0 = Date.now();
+    lab(s).play();
+    expect(Date.now() - t0).toBeLessThan(1000);
+    expect(lab(s).playing).toBeNull();
+    expect(s.h.said.at(-1)).toMatch(/too many notes/);
+  });
+});
+
 describe('level links: capped, real levels still open', () => {
   it('the largest built-in level opens from its link', async () => {
     vi.useRealTimers();
