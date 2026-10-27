@@ -112,10 +112,10 @@ describe('31d: a readable file that cannot play says why', () => {
     // v0.4.73 (owner item 44): the picker shows the file's state, as the file box does; its
     // hint still reads it in full.
     expect(values(h.top())[1]).toBe('HERO OFF');
-    expect(hints(h.top())[1]).toMatch(/Normal, World 1-2, 3 lives, score 4100, Yoshi/);
+    expect(hints(h.top())[1]).toMatch(/Normal, World 1-2, score 4100, /);
     choose(h, 'File 2');
     expect(h.top()).toBeInstanceOf(ClassicEraseConfirmScene);
-    expect(h.said.at(-1)).toMatch(/^Erase file 2\? Normal, World 1-2, 3 lives, score 4100, Yoshi/);
+    expect(h.said.at(-1)).toMatch(/^Erase file 2\? Normal, World 1-2, score 4100, /);
   });
 
   it('a damaged file is still UNREADABLE', () => {

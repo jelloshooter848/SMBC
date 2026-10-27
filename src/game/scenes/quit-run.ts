@@ -12,10 +12,13 @@ import { drawFileNote } from './intro';
  * 320-330). YES goes to the CLASSIC menu; the run's save file was written before the select
  * and at the level's start (Game.keepResume), so quitting loses nothing.
  *
+ * v0.4.77 items 196/197 (owner): Pause > Quit asks "QUIT TO CHARACTER SELECT?" in a run that has
+ * a mid-run select (Game.quitsToSelect), and YES goes there for the level being played. Item 195:
+ * no "YOUR RUN WAITS IN ITS FILE." line any more; item 178: the "can't save" note on every box.
+ *
  * 0.4.72 (owner): the card is a CLASSIC box (menu-box.ts), not the see-through panel: the
- * question on the box's gold header row, the mushroom cursor on NO / YES, the promise on a line
- * of its own at the box's foot, the original's box sounds (as the CLASSIC
- * boxes set them) and the BACK line under it. It is see-through: over the mid-run select the
+ * question on the box's gold header row, the mushroom cursor on NO / YES, the original's box
+ * sounds (as the CLASSIC boxes set them) and the BACK line under it. It is see-through: over the mid-run select the
  * select stays in view around it; over Pause > Quit the pause menu is not drawn under it (the
  * scene stack draws only the top scene and the first opaque one below: here the level), so the
  * level shows around the box. It is drawn open at
@@ -28,19 +31,26 @@ import { drawFileNote } from './intro';
  */
 export const QUIT_BOX_CY = 146;
 
-/** The question, and the line under it when the run is kept (Game.keepsResume: not dev, link or practice runs). */
+/** The question when YES goes to the CLASSIC menu. */
 export const QUIT_RUN_TITLE = 'QUIT TO THE CLASSIC MENU?';
-export const QUIT_RUN_KEPT = 'YOUR RUN WAITS IN ITS FILE.';
+/** v0.4.77 item 197: Pause > Quit's question when YES goes to the run's mid-run select. */
+export const QUIT_SELECT_TITLE = 'QUIT TO CHARACTER SELECT?';
 /** v0.4.73 (owner 97a): a CLEARED file's level replay goes back to its file box. */
 export const QUIT_REPLAY_TITLE = 'QUIT TO THE FILE BOX?';
 
 export class QuitRunScene extends MenuScene {
-  /** Item 148: the run could not save to its file: said and shown here, once (Game.takeFileNote). */
+  /** Item 148: the run could not save to its file: said and shown on every box (item 178). */
   private readonly note: string | null;
-  constructor(game: Game, onNo: () => void, onYes: () => void) {
+  /** `toSelect`: YES goes to the run's mid-run select (items 196/197), else the CLASSIC menu. */
+  constructor(
+    game: Game,
+    onNo: () => void,
+    onYes: () => void,
+    private readonly toSelect = false,
+  ) {
     super(
       game,
-      game.replayRun ? QUIT_REPLAY_TITLE : QUIT_RUN_TITLE,
+      game.replayRun ? QUIT_REPLAY_TITLE : toSelect ? QUIT_SELECT_TITLE : QUIT_RUN_TITLE,
       [
         { label: 'No', select: onNo },
         { label: 'Yes', select: onYes },
@@ -48,11 +58,11 @@ export class QuitRunScene extends MenuScene {
       onNo,
       true,
     );
-    // Item 148: no promise that the run waits in its file when it cannot save there. Item 151:
-    // the file is checked as the box opens, before any save was refused.
+    // Item 151: the file is checked as the box opens, before any save was refused. Item 178:
+    // its note shows on every Quit box (the WORLD card's once is still taken here).
     game.checkRunFile();
-    this.status = game.keepsResume && !game.runFileLost ? QUIT_RUN_KEPT : '';
-    this.note = game.takeFileNote();
+    game.takeFileNote();
+    this.note = game.runFileNote;
     // The original's box sounds (MessageBoxSounds SN_CHANGE_SELECTION, SN_CANCEL_ITEM; RC-040).
     this.moveSfx = 'fireball';
     this.backSfx = 'bump';
@@ -70,7 +80,6 @@ export class QuitRunScene extends MenuScene {
       t: this.t,
       calm,
       header: this.title,
-      ...(this.status ? { footer: this.status } : {}),
     });
     if (this.note)
       drawFileNote(
@@ -88,20 +97,24 @@ export class QuitRunScene extends MenuScene {
   }
 
   override enter(): void {
-    const kept = this.status ? ' Your run waits in its file.' : '';
     // One line: the question, then the highlighted answer (NO); moving says "Yes" or "No".
-    const to = this.game.replayRun ? 'the file box' : 'the Classic menu';
+    const to = this.game.replayRun ? 'the file box' : this.toSelect ? 'character select' : 'the Classic menu';
     const note = this.note ? ` ${this.note}` : '';
-    this.game.deps.announcer?.say(`Quit to ${to}?${kept}${note} No`);
+    this.game.deps.announcer?.say(`Quit to ${to}?${note} No`);
   }
 }
 
 /**
  * Opens the card over the current scene. NO (or BACK) closes it, saying `back`; with `back` null
  * (38f), the menu under it says its title and focused row (MenuScene.announcePage). YES leaves
- * the run for the CLASSIC menu.
+ * the run for the CLASSIC menu, or with `toSelect` (Pause > Quit, items 196/197) goes to the
+ * run's mid-run select for the level being played (Game.quitToSelect).
  */
-export function confirmQuitRun(game: Game, back: string | null = 'Back to the game.'): void {
+export function confirmQuitRun(
+  game: Game,
+  back: string | null = 'Back to the game.',
+  toSelect = false,
+): void {
   game.ctx.audio.sfx('pause');
   game.scenes.push(
     new QuitRunScene(
@@ -112,7 +125,8 @@ export function confirmQuitRun(game: Game, back: string | null = 'Back to the ga
         if (back !== null) game.deps.announcer?.say(back);
         else if (top instanceof MenuScene) top.announcePage();
       },
-      () => game.quitClassicRun(),
+      () => (toSelect ? game.quitToSelect() : game.quitClassicRun()),
+      toSelect,
     ),
   );
 }

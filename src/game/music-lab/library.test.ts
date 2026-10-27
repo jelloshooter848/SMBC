@@ -15,7 +15,7 @@ import {
 
 /*
  * Music Lab's song library (item 136), rule 33a: the edge cases first. One game key,
- * `smbc.songs` = { v: 1, songs: { name: MML text } }, so a backup, Erase all data and the online
+ * `smbc.songs` = { v: 1, songs: { name: MML text } }, so a backup, Reset game and the online
  * copy carry it as they carry the level editor's `smbc.levels`.
  */
 
@@ -181,7 +181,7 @@ describe('Music Lab library: backups, Erase and the online copy carry it', () =>
     expect(onlineCopy(data)[SONG_LIBRARY_KEY]).toBe(store.get(SONG_LIBRARY_KEY));
   });
 
-  it('Erase all data removes it', () => {
+  it('Reset game (eraseGameData) removes it', () => {
     saveSong('Tune', 'pulse1: c');
     expect(eraseGameData(fakeStorage)).toEqual({ ok: true });
     expect(store.has(SONG_LIBRARY_KEY)).toBe(false);

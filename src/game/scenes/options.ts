@@ -25,7 +25,7 @@ const onOff = (b: boolean) => (b ? 'On' : 'Off');
 const step = (v: number, dir: number, lo: number, hi: number, by: number) =>
   Math.max(lo, Math.min(hi, Math.round((v + dir * by) * 100) / 100));
 
-/** Options root: video, audio, controls, assists and asset packs. Every change is applied and saved immediately. */
+/** Options root: video, audio, controls, assists and asset packs (not over a game). Every change is applied and saved immediately. */
 export class OptionsScene extends MenuScene {
   /** `classic`: opened from Classic mode's menus (How to play then lists its heroes, G-093). */
   /** `name`: what the page is called on entry (the row that opened it, 38f review). */
@@ -39,7 +39,8 @@ export class OptionsScene extends MenuScene {
       { label: 'Controls', select: () => this.push(new ControlsOptions(game, () => this.pop())) },
       // The campaign's save files (and their backup reminders): only while the campaign is open,
       // so with dev mode on until Chapter 1 (O-07 option c, O-08). Classic keeps its Continue.
-      ...(game.campaignOpen
+      // v0.4.77 item 191: never in Classic mode's Options (its pause's or the CLASSIC menu's).
+      ...(game.campaignOpen && !classic
         ? [
             {
               label: 'Save files',
@@ -66,7 +67,11 @@ export class OptionsScene extends MenuScene {
             },
           ]
         : []),
-      { label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) },
+      // v0.4.77 item 192: not in any pause menu (or the map's); the title's and the CLASSIC
+      // menu's Options keep it.
+      ...(translucent
+        ? []
+        : [{ label: 'Asset packs', select: () => this.push(new PacksOptions(game, () => this.pop())) }]),
       // iPhone Home Screen support (0.4.44): only where it can help (hidden in the app itself).
       ...homeScreenItems(game, (s) => (this.status = s)),
       // Custom levels and the editor leave the current game, so they are only offered from the

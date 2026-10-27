@@ -26,7 +26,7 @@ import { CHARACTERS } from '@game/characters/registry';
 import { saveLibrary } from '@game/level/library';
 import { CUSTOM_LEVEL_MISSING } from '@game/scenes/game';
 import { MessageScene } from '@game/scenes/message';
-import { QUIT_RUN_KEPT, QUIT_RUN_TITLE, QuitRunScene } from '@game/scenes/quit-run';
+import { QUIT_RUN_TITLE, QUIT_SELECT_TITLE, QuitRunScene } from '@game/scenes/quit-run';
 import { ClassicMenuScene } from '@game/scenes/original-game';
 import { ClassicTitleScene } from '@game/scenes/original-title';
 import { PauseScene } from '@game/scenes/pause';
@@ -218,9 +218,12 @@ describe('O-07 (option c): Save files is a dev-mode row until the campaign opens
     for (const o of every(h)) expect(labels(o)).not.toContain('Save files');
   });
 
-  it('with dev mode on (the campaign open) every Options lists it again and it opens', () => {
+  it("with dev mode on (the campaign open) every Options but Classic mode's lists it again and it opens", () => {
     const h = makeGame(true);
-    for (const o of every(h)) expect(labels(o)).toContain('Save files');
+    // v0.4.77 item 191: never in Classic mode's Options (the CLASSIC menu's, the Classic pause's).
+    const [titleOpts, classicOpts, classicPause, pause] = every(h);
+    for (const o of [titleOpts, pause]) expect(labels(o)).toContain('Save files');
+    for (const o of [classicOpts, classicPause]) expect(labels(o)).not.toContain('Save files');
     title(h);
     pick(h, 'Options');
     pick(h, 'Save files');
@@ -426,11 +429,12 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     expect(card).toBeInstanceOf(QuitRunScene);
     expect(labels(card)).toEqual(['No', 'Yes']);
     expect(cursor(card)).toBe(0);
-    expect(h.said.at(-1)).toBe('Quit to the Classic menu? Your run waits in its file. No');
+    // v0.4.77 item 195: no "YOUR RUN WAITS IN ITS FILE." line.
+    expect(h.said.at(-1)).toBe('Quit to the Classic menu? No');
     const text = drawn(h);
     expect(text).toContain(QUIT_RUN_TITLE);
-    expect(text).toContain(QUIT_RUN_KEPT);
-    for (const l of [QUIT_RUN_TITLE, QUIT_RUN_KEPT]) expect(l.length).toBeLessThanOrEqual(28);
+    expect(text.join(' ')).not.toMatch(/WAITS IN ITS FILE/);
+    for (const l of [QUIT_RUN_TITLE, QUIT_SELECT_TITLE]) expect(l.length).toBeLessThanOrEqual(28);
     h.idle(8);
     h.tap('jump');
     expect(h.top()).toBe(sel);
@@ -463,7 +467,7 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     expect(h.top()).toBe(sel);
   });
 
-  it('Pause > Quit asks the same, and NO returns to the pause', () => {
+  it('Pause > Quit asks (to character select: v0.4.77 item 197), and NO returns to the pause', () => {
     const h = makeGame();
     h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
@@ -477,10 +481,11 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     expect(h.top()).toBe(pause);
     pick(h, 'Quit');
     pick(h, 'Yes');
-    expect(h.top()).toBeInstanceOf(ClassicMenuScene);
+    // v0.4.77 item 196: the run's mid-run select (v0477-classic-quit-select.test.ts).
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
   });
 
-  it('a link run (never writes Continue, RC-004) promises nothing: no kept line, no Continue hint', () => {
+  it('a link run (never writes Continue, RC-004) promises nothing: no kept line; Quit goes to its select (v0.4.77)', () => {
     const h = makeGame();
     h.game.devClassicGame(h.game.heroSlots[0]!, '1-1', 'classic', false);
     for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
@@ -488,21 +493,21 @@ describe('O-16: Back on the mid-run select, and a confirmed Quit', () => {
     h.idle(4);
     h.tap('start');
     const quit = items(h.top()).find((i) => i.label === 'Quit');
-    expect(quit?.hint).toBe('Back to the Classic menu');
+    expect(quit?.hint).toBe('Back to character select');
     pick(h, 'Quit');
     expect(h.top()).toBeInstanceOf(QuitRunScene);
-    expect(drawn(h)).not.toContain(QUIT_RUN_KEPT);
-    expect(h.said.at(-1)).toBe('Quit to the Classic menu? No');
+    expect(drawn(h).join(' ')).not.toMatch(/WAITS IN ITS FILE/);
+    expect(h.said.at(-1)).toBe('Quit to character select? No');
   });
 
-  it('a Classic mode run keeps the promise', () => {
+  it('a Classic mode run: the Quit hint is the select (v0.4.77 item 197 drops the file-resume hint)', () => {
     const h = makeGame();
     h.game.classicGame(h.game.heroSlots[0]!, '1-1', { ref: { set: 'smb', slot: 1 } });
     for (let i = 0; i < 600 && !(h.top() instanceof LevelScene); i++) h.step();
     expect(h.game.keepsResume).toBe(true);
     h.idle(4);
     h.tap('start');
-    expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toMatch(/your file picks the run up/);
+    expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toBe('Back to character select');
   });
 
   it('the campaign select keeps no BACK of its own (Campaign rules unchanged)', () => {

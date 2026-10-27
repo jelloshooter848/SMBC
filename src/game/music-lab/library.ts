@@ -2,7 +2,7 @@ import { storageIsStale, storageReadable } from '@engine/save/storage';
 
 /*
  * Music Lab's song library (item 136): the player's songs, by name, as their Music Lab text
- * (song-doc.ts). One game key, so a SAVE DATA backup, Erase all data and the online copy carry it
+ * (song-doc.ts). One game key, so a SAVE DATA backup, Reset game and the online copy carry it
  * as they carry the level editor's `smbc.levels` (engine/save/backup.ts lists it).
  *
  * Every change re-reads what is stored and changes only its own entry, so a second tab's songs are

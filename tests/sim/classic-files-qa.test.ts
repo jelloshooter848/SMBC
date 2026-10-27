@@ -173,8 +173,8 @@ describe('B-L QA 3: the file line reads cleanly', () => {
       ...f,
       rules: { ...f.rules, options: { ...f.rules.options, gameMode: 'mystery' as never } },
     };
-    const line = fileSpoken(h.game, odd);
+    const line = fileSpoken(odd);
     expect(line).not.toMatch(/, ?$|, ,/);
-    expect(line).toMatch(/Mario$/);
+    expect(line).toMatch(/score \d+$/);
   });
 });

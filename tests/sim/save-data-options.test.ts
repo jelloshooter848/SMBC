@@ -93,9 +93,17 @@ function rig(
   return { h, env, delivered, picks, restart, clear, inEvent };
 }
 
+/** Rows on v0.4.77's BACK UP ON DEVICE page (item 181.2), opened from Save data on the way. */
+const DEVICE_ROWS = ['Export backup', 'Import backup'];
+
 /** Moves the cursor on the page on top to row `label`. */
 function moveTo(h: H, label: string): void {
   h.idle(8);
+  if (DEVICE_ROWS.includes(label) && (h.top() as MenuScene).title === 'SAVE DATA') {
+    moveTo(h, 'Back up on device');
+    h.tap('jump');
+    h.idle(8);
+  }
   const m = h.top() as MenuScene;
   const at = labels(m).indexOf(label);
   expect(at, `${label} in ${labels(m).join(', ')}`).toBeGreaterThanOrEqual(0);
@@ -129,13 +137,14 @@ describe('where SAVE DATA is', () => {
     expect(labels(new OptionsScene(h.game, () => {}, false, true))).not.toContain('Save data');
   });
 
-  it('opens a page of three rows and Back, said with what a backup leaves out', async () => {
+  it('opens a page of two rows and Back, said with what a backup leaves out', async () => {
     const r = rig();
     r.h.game.scenes.push(new OptionsScene(r.h.game, () => {}));
     press(r, 'Save data');
     await flush();
     expect(titleOf(r.h)).toBe('SAVE DATA');
-    expect(labels(r.h.top())).toEqual(['Export backup', 'Import backup', 'Erase all data', 'Back']);
+    // v0.4.77 item 181.1 (this rig has no online side: the offline build's rows).
+    expect(labels(r.h.top())).toEqual(['Back up on device', 'Reset game', 'Back']);
     const said = r.h.said.join(' | ');
     expect(said).toMatch(/Save data\./);
     expect(said).toMatch(/asset packs/i);
@@ -156,7 +165,7 @@ describe('EXPORT BACKUP', () => {
     const b = JSON.parse(await (files[0] as File).text());
     expect(b.data[saveKey(1)]).toBe(ls.getItem(saveKey(1)));
     expect(b.gameVersion).toBe(VERSION);
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ON DEVICE');
     expect(r.h.said.at(-1)).toMatch(/backup saved/i);
   });
 
@@ -180,7 +189,7 @@ describe('EXPORT BACKUP', () => {
     press(r, 'No');
     await flush();
     expect(r.delivered.map((f) => f.map((x) => x.name))).toEqual([['smbc-remix-backup-2026-10-22.json']]);
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ON DEVICE');
   });
 
   it('packs: YES adds each pack as <name>.zip, in the same event; says a backup import leaves packs out', async () => {
@@ -282,7 +291,7 @@ describe('IMPORT BACKUP', () => {
       }
       r.picks[0]!(fileOf(text));
       await flush();
-      expect(titleOf(r.h)).toBe('SAVE DATA');
+      expect(titleOf(r.h)).toBe('BACK UP ON DEVICE');
       expect(r.h.said.at(-1)).toMatch(said);
       expect(ls.snapshot()).toEqual(before);
       expect(r.restart).not.toHaveBeenCalled();
@@ -302,7 +311,7 @@ describe('IMPORT BACKUP', () => {
     expect(labels(r.h.top())).toEqual(['No', 'Yes', 'Export first']);
     expect(r.h.said.at(-1)).toMatch(/^Replace all data on this device\?.* No/);
     press(r, 'No');
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ON DEVICE');
     expect(ls.snapshot()).toEqual(before);
   });
 
@@ -358,7 +367,7 @@ describe('IMPORT BACKUP', () => {
     expect(ls.snapshot()).toEqual(before);
     expect(r.h.said.at(-1)).toMatch(/not enough space/i);
     expect(r.restart).not.toHaveBeenCalled();
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ON DEVICE');
   });
 });
 
@@ -399,16 +408,16 @@ describe('ERASE ALL DATA', () => {
     seed();
     const before = ls.snapshot();
     await openPage(r);
-    press(r, 'Erase all data');
-    expect(titleOf(r.h)).toBe('ERASE ALL DATA?');
+    press(r, 'Reset game');
+    expect(titleOf(r.h)).toBe('RESET GAME?');
     expect(labels(r.h.top())).toEqual(['No', 'Export backup first', 'Yes']);
-    expect(r.h.said.at(-1)).toMatch(/^Erase all data\? .*Export a backup first\?.* No/);
+    expect(r.h.said.at(-1)).toMatch(/^Reset game\? .*Export a backup first\?.* No/);
     press(r, 'No');
     expect(titleOf(r.h)).toBe('SAVE DATA');
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
     expect(titleOf(r.h)).toBe('ARE YOU SURE?');
-    expect(labels(r.h.top())).toEqual(['No', 'Yes, erase']);
+    expect(labels(r.h.top())).toEqual(['No', 'Yes, reset']);
     press(r, 'No');
     expect(titleOf(r.h)).toBe('SAVE DATA');
     expect(ls.snapshot()).toEqual(before);
@@ -418,21 +427,21 @@ describe('ERASE ALL DATA', () => {
     const r = rig();
     seed();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Export backup first');
     await flush();
     expect(r.delivered).toHaveLength(1);
     expect(r.inEvent).toEqual([true]);
-    expect(titleOf(r.h)).toBe('ERASE ALL DATA?');
+    expect(titleOf(r.h)).toBe('RESET GAME?');
   });
 
   it('no packs: no pack question; every game key goes; OK starts the game again', async () => {
     const r = rig();
     seed();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     await flush();
     expect(ls.snapshot(isGameKey)).toEqual({});
     expect(ls.getItem('other-app')).toBe('keep');
@@ -446,9 +455,9 @@ describe('ERASE ALL DATA', () => {
     const r = rig({ packs: [storedPack('retro')] });
     seed();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     expect(titleOf(r.h)).toBe('ALSO ERASE 1 ASSET PACK?');
     press(r, 'No');
     await flush();
@@ -461,9 +470,9 @@ describe('ERASE ALL DATA', () => {
     seed();
     const before = ls.snapshot();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     expect(titleOf(r.h)).toBe('ALSO ERASE 1 ASSET PACK?');
     r.h.idle(8);
     r.h.tap('attack');
@@ -483,9 +492,9 @@ describe('ERASE ALL DATA', () => {
     const stale = vi.fn();
     onStaleStorage(stale);
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     press(r, 'Yes');
     await flush();
     expect(r.clear).toHaveBeenCalledTimes(1);
@@ -500,7 +509,7 @@ describe('ERASE ALL DATA', () => {
     r.h.idle(8);
     r.h.tap('down');
     expect(index()).toBe(at);
-    for (const row of ['Export backup', 'Import backup', 'Erase all data']) {
+    for (const row of ['Back up on device', 'Reset game']) {
       (r.h.top() as unknown as { index: number }).index = labels(r.h.top()).indexOf(row);
       r.h.game.gestures.key();
       r.h.tap('jump');
@@ -513,16 +522,16 @@ describe('ERASE ALL DATA', () => {
     expect(titleOf(r.h)).toBe('SAVE DATA');
     open();
     await flush();
-    expect(titleOf(r.h)).toBe('ALL DATA ERASED');
+    expect(titleOf(r.h)).toBe('GAME RESET');
   });
 
   it('packs: YES erases them too', async () => {
     const r = rig({ packs: [storedPack('retro'), storedPack('b')] });
     seed();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     expect(titleOf(r.h)).toBe('ALSO ERASE 2 ASSET PACKS?');
     press(r, 'Yes');
     await flush();
@@ -534,9 +543,9 @@ describe('ERASE ALL DATA', () => {
     const r = rig({ packs: [storedPack('retro')], clearFails: true });
     seed();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     press(r, 'Yes');
     await flush();
     expect(ls.snapshot(isGameKey)).toEqual({});
@@ -548,10 +557,10 @@ describe('ERASE ALL DATA', () => {
     seed();
     const before = ls.snapshot();
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
     ls.throwOnWrite = true;
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     await flush();
     ls.throwOnWrite = false;
     expect(ls.snapshot()).toEqual(before);
@@ -565,7 +574,7 @@ describe('all the new text', () => {
     const r = rig({ packs: [storedPack('retro')] });
     const page = await openPage(r);
     for (const l of labels(page)) expect(l.length).toBeLessThanOrEqual(24);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     for (const l of labels(r.h.top())) expect(l.length).toBeLessThanOrEqual(24);
     expect(titleOf(r.h).length).toBeLessThanOrEqual(32);
   });
@@ -638,9 +647,9 @@ describe('review #217: every line drawn on the pack questions is said', () => {
   it('ALSO ERASE N ASSET PACKS? says every line it draws', async () => {
     const r = rig({ packs: [storedPack('retro')] });
     await openPage(r);
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     const b = box(r.h);
     expect(b.said).toContain(b.drawn);
   });

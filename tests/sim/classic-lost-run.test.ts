@@ -201,20 +201,16 @@ describe('G-003/G-004: every map set from the start; the title after the credits
     expect(h.said.at(-1)).not.toMatch(/Beaten/);
   });
 
-  it('a beaten set says so on its line (G-005)', () => {
+  it('a beaten set no longer says so on its line (G-005; v0.4.77 item 203), the beat kept', () => {
     recordClassicBeat('smb');
     const h = classic();
     h.game.showClassicMenu();
     const smb = items(h.top())[0] as MenuItem;
-    expect(smb.hint).toMatch(/Beaten on Normal/);
+    expect(smb.hint).not.toMatch(/Beaten/);
     expect(items(h.top())[1]?.hint).not.toMatch(/Beaten/);
-    // Drawn too: BEATEN at the end of the SMB row only, inside the screen.
-    const marks = draw(h.top() as ClassicMenuScene).texts.filter((t) => t.str === 'BEATEN');
-    expect(marks).toHaveLength(1);
-    const label = draw(h.top() as ClassicMenuScene).texts.find((t) => t.str === 'SUPER MARIO BROS.');
-    expect(marks[0]?.y).toBe(label?.y);
-    expect((marks[0]?.x ?? 0) + 6 * 8).toBeLessThanOrEqual(256);
-    expect(marks[0]?.x ?? 0).toBeGreaterThan((label?.x ?? 0) + 'SUPER MARIO BROS.'.length * 8);
+    // Not drawn either; the progress store still has it.
+    expect(draw(h.top() as ClassicMenuScene).texts.some((t) => t.str === 'BEATEN')).toBe(false);
+    expect(loadProgress().classicBeat?.smb).toBe('normal');
   });
 
   it('nothing is drawn as beaten before a win', () => {

@@ -106,6 +106,22 @@ export interface ClassicRulesHooks {
    */
   pipeEntry?(world: World, p: Player, z: Zone & { kind: 'pipe' }, dir: PipeDir): number;
   /**
+   * `p` presses Up at a vine whose top leads to `target` (World.grabVines; null: nowhere): a
+   * Classic Yoshi mount rider bound for a castle, water or bonus area hops off onto it and Yoshi
+   * waits below (item 103). Optional.
+   */
+  vineEntry?(world: World, p: Player, target: string | null): void;
+  /**
+   * `p` climbs off the top of a vine into the next area (World.grabVines): a Yoshi waiting below
+   * for him (vineEntry) stays, and the hero is benched (item 103). Optional.
+   */
+  vineLeave?(world: World, p: Player): void;
+  /**
+   * `p` is beamed up from the teleport pad `z` (World.beamUp): as pipeEntry, for a pad (item 103).
+   * Returns the frames of the hop off before the beam (0: at once). Optional.
+   */
+  teleportEntry?(world: World, p: Player, z: Zone & { kind: 'teleport' }): number;
+  /**
    * The sound of a hit that took an enemy's hit points (World.hitSound): the hero's own (G-072),
    * or undefined for the shared `hurt-enemy`. Optional.
    */

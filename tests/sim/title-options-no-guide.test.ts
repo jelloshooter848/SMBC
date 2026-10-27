@@ -131,12 +131,12 @@ describe('item 81: the Campaign Options keep How to play', () => {
     expect(h.top()).toBeInstanceOf(GuideIndexScene);
   });
 
-  it('the translucent (in-game) Options keep How to play between Controls and Asset packs', () => {
+  it('the translucent (in-game) Options keep How to play after Controls (v0.4.77 item 192: no Asset packs)', () => {
     const h = game();
     const o = new OptionsScene(h.game, () => {}, true);
     const l = labels(o);
     expect(l.indexOf('How to play')).toBeGreaterThan(l.indexOf('Controls'));
-    expect(l.indexOf('How to play')).toBeLessThan(l.indexOf('Asset packs'));
+    expect(l).not.toContain('Asset packs');
   });
 
   it("Classic's Options keep How to play", () => {

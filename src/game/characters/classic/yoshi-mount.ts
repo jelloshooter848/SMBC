@@ -132,6 +132,7 @@ export function mount(p: Player, yoshi: YoshiMount, world: World, quiet = false)
   p.scratch[RIDE_KEY] = 1;
   yoshi.state = 'ridden';
   yoshi.rider = p;
+  yoshi.waitsFor = null;
   ensureFx(p, world);
   if (!quiet) say(world, 'Riding Yoshi');
 }
@@ -214,6 +215,19 @@ export function dismount(p: Player, world: World, how: Dismount, fromDir: -1 | 1
       yoshi.destroy();
       break;
   }
+}
+
+/** Yoshi straight down onto the floor under him (item 103); left where he is over a pit. */
+function toFloor(yoshi: YoshiMount, world: World): void {
+  const b = yoshi.body;
+  const l = tileAt(b.x);
+  const r = tileAt(b.x + b.w - 1);
+  for (let ty = Math.max(0, tileAt(b.y + b.h - 1)); ty < world.level.height; ty++)
+    if (world.map.isSolid(l, ty) || world.map.isSolid(r, ty)) {
+      b.y = tileToSub(ty) - b.h;
+      b.onGround = true;
+      return;
+    }
 }
 
 /**
@@ -353,7 +367,25 @@ function parkBeside(
     b.onGround = true;
     return;
   }
-  // A side pipe: behind the hero, feet on his floor (where the pair stood, if a wall is there).
+  parkBehind(yoshi, p, world, slot);
+}
+
+/**
+ * Where Yoshi waits behind a hero standing on the floor (a side pipe, a teleport pad, the foot
+ * of a vine): feet on the hero's floor, the nearest free spot behind him (up to 3 tiles further
+ * back, else beside him), facing him. `slot`: a second Yoshi sits one place further out.
+ */
+function parkBehind(yoshi: YoshiMount, p: Player, world: World, slot = 0): void {
+  const b = yoshi.body;
+  const map = world.map;
+  const back = p.facing > 0 ? -1 : 1;
+  yoshi.facing = -back as -1 | 1;
+  const fits = (x: number, feet: number): boolean => {
+    for (let tx = tileAt(x); tx <= tileAt(x + b.w - 1); tx++)
+      for (let ty = tileAt(feet - b.h); ty <= tileAt(feet - 1); ty++) if (map.isSolid(tx, ty)) return false;
+    return true;
+  };
+  const step = back * (b.w + px(4)) * slot;
   const feet = p.body.y + p.body.h;
   const x0 = (back < 0 ? p.body.x - b.w - px(2) : p.body.x + p.body.w + px(2)) + step;
   // A wall right behind: the nearest free spot further back (up to 3 tiles), else beside the hero.
@@ -365,6 +397,137 @@ function parkBeside(
     }
   b.y = feet - b.h;
   b.onGround = true;
+}
+
+/**
+ * The frames of Yoshi's own hop back to where he waits (a vine or a pit, item 103): short enough
+ * to land before a hero walking off a pit's edge has fallen out of sight.
+ */
+export const WAIT_HOP = 12;
+
+/**
+ * Item 103 (vines and pits): the hero has left the saddle in mid-move, so Yoshi is seen hopping
+ * from where they parted to where he waits: behind a hero on the floor, else back to where the
+ * pair last stood (the take-off, before a pit or a vine).
+ */
+function hopToWait(yoshi: YoshiMount, p: Player, world: World): void {
+  const b = yoshi.body;
+  const from = { x: b.x, y: b.y };
+  if (p.body.onGround) parkBehind(yoshi, p, world);
+  else if (yoshi.lastGround) {
+    // Where the pair last stood, moved (up to 2 tiles) until his whole foot is on the floor: the
+    // pair can stand half over a pit's edge.
+    const g = yoshi.lastGround;
+    const row = tileAt(g.feet);
+    const onFloor = (x: number) =>
+      world.map.isSolid(tileAt(x), row) && world.map.isSolid(tileAt(x + b.w - 1), row);
+    b.x = g.x;
+    for (let d = 0; d <= px(32); d += px(1)) {
+      if (onFloor(g.x - d)) {
+        b.x = g.x - d;
+        break;
+      }
+      if (onFloor(g.x + d)) {
+        b.x = g.x + d;
+        break;
+      }
+    }
+    b.y = g.feet - b.h;
+    yoshi.facing = p.centerX < b.x ? -1 : 1;
+  } else return;
+  const to = { x: b.x, y: b.y };
+  b.x = from.x;
+  b.y = from.y;
+  b.onGround = false;
+  yoshi.startHop(to.x, to.y, WAIT_HOP);
+}
+
+/**
+ * ClassicRulesHooks.vineEntry (item 103): a rider pressing Up at a vine into a castle, water or
+ * bonus area hops off onto it; Yoshi hops to the floor and waits there (the hero is benched, RIDE_KEY
+ * 2, so he rejoins in the next allowed area, as after a pipe). The hero may still climb back down
+ * and get on again.
+ */
+export function yoshiVineEntry(world: World, p: Player, target: string | null): void {
+  const ride = RIDES.get(p);
+  if (!world.ctx.classicYoshi || !ride || !target || !benchedLevel(world, target)) return;
+  dismount(p, world, 'park');
+  const yoshi = ride.mount;
+  // Not benched yet, and not parked: he waits like a Yoshi got off on purpose, so the hero may
+  // come back down onto him (or a partner may get on). Only the climb off the top benches the
+  // hero (yoshiVineLeave); a Yoshi lost meanwhile leaves nothing behind.
+  delete p.scratch[RIDE_KEY];
+  yoshi.parked = false;
+  yoshi.waitsFor = p;
+  yoshi.leftBy = p;
+  yoshi.leftT = 0;
+  hopToWait(yoshi, p, world);
+}
+
+/**
+ * ClassicRulesHooks.vineLeave (item 103 review): `p` climbs off the top of a vine into the next
+ * area. The Yoshi still waiting for him below (yoshiVineEntry; nobody got on him, he was not
+ * lost) stays there and the hero is benched, so Yoshi rejoins in the next allowed area.
+ */
+export function yoshiVineLeave(world: World, p: Player): void {
+  if (!world.ctx.classicYoshi || RIDES.has(p)) return;
+  const yoshi = world.entities.find(
+    (e): e is YoshiMount => e instanceof YoshiMount && e.alive && e.state === 'wait' && e.waitsFor === p,
+  );
+  if (!yoshi) return;
+  p.scratch[RIDE_KEY] = 2;
+  yoshi.parked = true;
+  say(world, WAITS_SAID);
+}
+
+/**
+ * ClassicRulesHooks.teleportEntry (item 103): as yoshiPipeEntry, for a teleport pad. Every rider
+ * gets off; each Yoshi waits behind the pad (the pad holds still while it beams, so he is put
+ * there at once), and the hero who stood on it hops off before the beam.
+ */
+export function yoshiTeleportEntry(world: World, p: Player, z: Zone & { kind: 'teleport' }): number {
+  if (!world.ctx.classicYoshi || !benchedLevel(world, z.target.level)) return 0;
+  const hops = RIDES.has(p);
+  let parked = false;
+  for (const o of world.players) {
+    const ride = RIDES.get(o);
+    if (!ride) continue;
+    dismount(o, world, 'park');
+    parkBehind(ride.mount, o, world);
+    // A partner in mid-air: his Yoshi sits on the floor under that spot, never in the air.
+    if (!o.body.onGround) toFloor(ride.mount, world);
+    parked = true;
+  }
+  if (parked) say(world, WAITS_SAID);
+  return hops ? PARK_HOP : 0;
+}
+
+/**
+ * Item 103 (pits): a rider dropping into a pit that falls into a castle, water or bonus area
+ * (its `pit` zone's target) parts with Yoshi once 4 px below the floor he left with no floor
+ * under him: he hops back
+ * out to that floor and waits (parked, the hero benched), and the hero falls on alone.
+ */
+function pitParting(yoshi: YoshiMount, p: Player, world: World): boolean {
+  const g = yoshi.lastGround;
+  const b = p.body;
+  if (!g || b.onGround || b.vy <= 0 || b.y + b.h <= g.feet + px(4)) return false;
+  // Nothing to land on below him in his column, down to the level's bottom.
+  const col = tileAt(b.x + (b.w >> 1));
+  for (let ty = Math.max(0, tileAt(b.y + b.h)); ty < world.level.height; ty++)
+    if (world.map.isSolid(col, ty)) return false;
+  const pit = world.level.zones.find(
+    (z): z is Zone & { kind: 'pit' } =>
+      z.kind === 'pit' &&
+      !z.campaign &&
+      b.x >= tileToSub(z.x) &&
+      (z.w === undefined || b.x < tileToSub(z.x + z.w)),
+  );
+  if (!pit || !benchedLevel(world, pit.target.level)) return false;
+  dismount(p, world, 'park');
+  hopToWait(yoshi, p, world);
+  say(world, WAITS_SAID);
+  return true;
 }
 
 /* ---------- the overlay def (YM-9..YM-16, YM-25) ---------- */
@@ -605,6 +768,15 @@ export class YoshiMount extends Entity {
    * nobody gets back on in this area (the rider is benched, RIDE_KEY 2).
    */
   parked = false;
+  /**
+   * The hero who hopped off him onto a vine into a benched area (item 103): benched only once
+   * he climbs off its top (yoshiVineLeave). Cleared when anyone gets on.
+   */
+  waitsFor: Player | null = null;
+  /** Where the pair last stood while ridden (item 103: he hops back there to wait). */
+  lastGround: { x: number; feet: number } | null = null;
+  /** His hop to where he waits (item 103): from, to (subpixels) and the frames. */
+  private hop: { x0: number; y0: number; x1: number; y1: number; t: number; n: number } | null = null;
   /** Frames walking after the hatch, and the drop's carried speed (stepping off the block). */
   private walkT = 0;
   private stepVx = 0;
@@ -619,9 +791,35 @@ export class YoshiMount extends Entity {
     this.spriteOffsetY = 8;
   }
 
+  /** Hop to (x, y) (subpixels, his body's top-left) over `n` frames, then sit (item 103). */
+  startHop(x: number, y: number, n: number): void {
+    this.hop = { x0: this.body.x, y0: this.body.y, x1: x, y1: y, t: 0, n };
+    this.body.vx = 0;
+    this.body.vy = 0;
+  }
+
+  /** Mid-hop (item 103). */
+  get hopping(): boolean {
+    return this.hop !== null;
+  }
+
   update(world: World): void {
     const b = this.body;
     if (this.state === 'gone') return this.destroy();
+    if (this.hop) {
+      // A 16 px arc from where the hero left the saddle to where he waits.
+      const h = this.hop;
+      h.t++;
+      const f = h.t / h.n;
+      b.x = Math.round(h.x0 + (h.x1 - h.x0) * f);
+      b.y = Math.round(h.y0 + (h.y1 - h.y0) * f - (px(16) * 4 * h.t * (h.n - h.t)) / (h.n * h.n));
+      if (h.t < h.n) return;
+      b.x = h.x1;
+      b.y = h.y1;
+      b.onGround = true;
+      this.hop = null;
+      return;
+    }
     if (this.parked) return;
     if (this.state === 'ridden') {
       const p = this.rider;
@@ -633,6 +831,8 @@ export class YoshiMount extends Entity {
       b.x = p.body.x;
       b.y = p.body.y + p.body.h - b.h;
       this.facing = p.facing;
+      if (p.body.onGround) this.lastGround = { x: b.x, feet: b.y + b.h };
+      else if (world.ctx.classicYoshi) pitParting(this, p, world);
       return;
     }
     if (this.state === 'flee') {
@@ -692,7 +892,7 @@ export class YoshiMount extends Entity {
     const frame =
       this.state === 'flee'
         ? 'tongue'
-        : this.state === 'drop'
+        : this.state === 'drop' || this.hop
           ? 'jump'
           : this.state === 'walk'
             ? `walk-${(view.frame >> 3) % 3}`

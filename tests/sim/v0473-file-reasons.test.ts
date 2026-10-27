@@ -137,7 +137,7 @@ describe('44: ERASE FILE shows a file that cannot play with its state, and says 
     expect(h.top()).toBeInstanceOf(ClassicEraseScene);
     expect(values(h.top())).toEqual(['HERO OFF', 'CANNOT PLAY', expect.stringMatching(/CLEARED/), null]);
     // The file in full is still read out, with why it cannot play.
-    expect(items(h.top())[0]?.hint).toMatch(/Normal, World 1-2, 3 lives, score 4100, Yoshi/);
+    expect(items(h.top())[0]?.hint).toMatch(/Normal, World 1-2, score 4100, /);
     expect(items(h.top())[0]?.hint).toMatch(/off in Dev > Toggle heroes/);
   });
 
@@ -168,7 +168,7 @@ describe('44: ERASE FILE shows a file that cannot play with its state, and says 
     openFiles(h);
     choose(h, 'Erase file');
     choose(h, 'File 2');
-    expect(h.said.at(-1)).toMatch(/^Erase file 2\? Normal, World 1-2, 3 lives, score 4100, Mario/);
+    expect(h.said.at(-1)).toMatch(/^Erase file 2\? Normal, World 1-2, score 4100, /);
     expect(h.said.at(-1)).not.toMatch(/cannot play/);
   });
 });

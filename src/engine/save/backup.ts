@@ -16,6 +16,7 @@ import { crc32 } from './zip';
  * - `smbc-classic-advanced-{set}-{1..3}` game/original-files.ts a Classic file's Advanced cheats
  * - `smbc-classic-replay-help`   game/scenes/original-replay.ts the replay help seen
  * - `smbc.onlineBackup`        engine/online/online-backup.ts this device's online backup code (item 159)
+ * - `smbc.onlineBackupNotice`  engine/online/online-backup.ts the online page's experimental note seen (item 182)
  * - `smbc.levels`                game/level/library.ts     the level editor's custom levels
  * - `smbc.songs`                 game/music-lab/library.ts Music Lab's songs (0.4.77, item 136)
  * - `smbc.devLast`               game/scenes/dev-play.ts   the dev Level select's last pick
@@ -344,7 +345,7 @@ export function replaceGameData(data: Record<string, string>, store: KeyValueSto
   return { ok: true };
 }
 
-/** ERASE ALL DATA: every game key goes, all or nothing (the data marker stays, changed). */
+/** RESET GAME: every game key goes, all or nothing (the data marker stays, changed). */
 export function eraseGameData(store: KeyValueStore = local()): ChangeResult {
   return replaceGameData({}, store);
 }

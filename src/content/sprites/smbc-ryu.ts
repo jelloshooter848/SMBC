@@ -197,6 +197,39 @@ const legsCling = [
   '........00000..',
 ];
 
+// Climbing a wall (item 202, drawn new): the front knee drawn up with its boot braced high on the
+// wall and the back leg hanging, then the back knee drawn up and the front leg reaching down it.
+const legsWallClimb0 = [
+  '....0211110....',
+  '....0211111000.',
+  '....02100111110',
+  '....0210...0440',
+  '....0210...0220',
+  '....0440...000.',
+  '....0440.......',
+  '....0440.......',
+  '....0440.......',
+  '....0440.......',
+  '....02220......',
+  '....00000......',
+];
+const legsWallClimb1 = [
+  '....0211110....',
+  '....02111110...',
+  '...02110011110.',
+  '..0210....0440.',
+  '..0440....0440.',
+  '..0220....0440.',
+  '..000.....0440.',
+  '..........0440.',
+  '..........0440.',
+  '..........0440.',
+  '.........02220.',
+  '.........00000.',
+];
+// The gripping arm a hand lower, between pulls (6 rows: glove, wraps, sleeve).
+const armPull = ['0220', '0220', '0440', '0440', '0110', '0110'];
+
 /* ---------- the sword ---------- */
 
 // The sword layer (swordStg, 14x7): the blade out from the glove with the sweep's light trail.
@@ -528,6 +561,29 @@ export const ryuSmbcDef: SpriteDef = {
     'cling-throw': at(
       ...pose(-7.5, -31, [scarfDown, 0, 9], [head, 2, 0], [torsoReach, -2, 10], [legsCling, 0, 19]),
       [['000000', '444220', '000000'], 7.5, -21],
+    ),
+    // Climbing up or down a wall (item 202, new poses in the cling's 15x31 box and anchor), at 115 ms.
+    'wallclimb-0': at(
+      ...pose(
+        -7.5,
+        -31,
+        [scarfDown, 0, 9],
+        [head, 2, 0],
+        [armUp, 11, 0],
+        [torsoUp, -2, 10],
+        [legsWallClimb0, 0, 19],
+      ),
+    ),
+    'wallclimb-1': at(
+      ...pose(
+        -7.5,
+        -31,
+        [scarfDown, 0, 9],
+        [head, 2, 0],
+        [armPull, 11, 3],
+        [torsoUp, -2, 10],
+        [legsWallClimb1, 0, 19],
+      ),
     ),
     // Climbing a vine or the flagpole (climbPoleStart 15x31, climbPole-2 15x29), at 115 ms.
     'climb-0': at(
