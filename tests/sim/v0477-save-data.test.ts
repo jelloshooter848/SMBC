@@ -806,6 +806,64 @@ describe('184: the Home Screen flags outlive a reset and an import', () => {
     expect(standaloneNoticeDue(g.game)).toBe(false);
     expect(offlineNoticeDue(g.game)).toBe(false);
     expect(g.game.deps.settings!.audio.sfx).toBe(0.1);
+    expect(g.game.deps.settings!.homeScreen).toEqual({ tipDone: true, noticeDone: true, offlineDone: true });
+  });
+
+  it("review: the device's flags win outright, false over the file's true too", async () => {
+    // This device: only the phone tip seen. The file (another device): every note seen.
+    const t = backupFrom((o) => {
+      const s = defaultSettings();
+      s.homeScreen = { tipDone: false, noticeDone: true, offlineDone: true };
+      o.setItem(SETTINGS_KEY, JSON.stringify(s));
+    });
+    const mine = defaultSettings();
+    mine.homeScreen = { tipDone: true, noticeDone: false, offlineDone: false };
+    ls.setItem(SETTINGS_KEY, JSON.stringify(mine));
+    const r = rig({ settings: mine, homeScreen: hooks() });
+    await importFile(r, t);
+    const g = restarted();
+    expect(g.game.deps.settings!.homeScreen).toEqual({
+      tipDone: true,
+      noticeDone: false,
+      offlineDone: false,
+    });
+    expect(standaloneNoticeDue(g.game)).toBe(true);
+    expect(offlineNoticeDue(g.game)).toBe(true);
+  });
+
+  it("review: a device that has seen no note takes none of the file's", async () => {
+    const t = backupFrom((o) => {
+      const s = defaultSettings();
+      s.homeScreen = { tipDone: true, noticeDone: true, offlineDone: true };
+      o.setItem(SETTINGS_KEY, JSON.stringify(s));
+    });
+    const r = rig({ homeScreen: hooks() });
+    await importFile(r, t);
+    const g = restarted();
+    expect(g.game.deps.settings!.homeScreen).toEqual({
+      tipDone: false,
+      noticeDone: false,
+      offlineDone: false,
+    });
+  });
+
+  it('review: the tip seen only in this tab (not stored) is kept by a reset and an import', async () => {
+    const s = defaultSettings();
+    s.homeScreen = { tipDone: true, noticeDone: false, offlineDone: false };
+    const r = rig({ settings: s, homeScreen: hooks() });
+    press(r, 'Reset game');
+    press(r, 'Yes');
+    press(r, 'Yes, reset');
+    await flush();
+    expect(restarted().game.deps.settings!.homeScreen?.tipDone).toBe(true);
+    ls = installStorage(new FakeStorage());
+    adoptDataEpoch();
+    const t = backupFrom(() => writeSave(newSave(2, 'link', null)));
+    const s2 = defaultSettings();
+    s2.homeScreen = { tipDone: true, noticeDone: false, offlineDone: false };
+    const r2 = rig({ settings: s2, homeScreen: hooks() });
+    await importFile(r2, t);
+    expect(restarted().game.deps.settings!.homeScreen?.tipDone).toBe(true);
   });
 
   it('an import without settings still keeps the flags', async () => {
@@ -841,6 +899,32 @@ describe('185: the online code loader tries again after a failed import()', () =
     open({} as OnlineApi);
     expect(await a).toBe(await b);
     expect(raw).toHaveBeenCalledTimes(1);
+  });
+
+  it('review: a second failed load in a row says to reload the page; a load that works resets that', async () => {
+    seenNote();
+    uploadedCode();
+    const r = rig();
+    let fails = 2;
+    r.env.online!.load = onlineLoader(() =>
+      fails-- > 0 ? Promise.reject(new Error('Failed to fetch module')) : Promise.resolve(r.api),
+    );
+    press(r, 'Back up online');
+    press(r, 'Back up online');
+    await flush();
+    expect(r.h.said.at(-1)).not.toMatch(/reload/i);
+    press(r, 'Back up online');
+    await flush();
+    expect(status(r.h)).toBe('COULD NOT REACH THE SERVERS');
+    expect(r.h.said.at(-1)).toMatch(/reload the page/i);
+    press(r, 'Back up online');
+    await flush();
+    expect(status(r.h)).toBe('BACKED UP (5 OF 5 SERVERS)');
+    // One failure after a good load is a first failure again.
+    r.env.online!.load = onlineLoader(() => Promise.reject(new Error('x')));
+    press(r, 'Back up online');
+    await flush();
+    expect(r.h.said.at(-1)).not.toMatch(/reload/i);
   });
 
   it('on the page: COULD NOT REACH THE SERVERS once, then the next try backs up', async () => {
@@ -948,6 +1032,9 @@ describe('187: the uploaded flag', () => {
     const r = rig();
     await importFile(r, up);
     expect(stored()).toMatchObject({ code: 'QQQQQQ111111', uploaded: true, shown: false });
+    // From empty storage: a file's code never uploaded stays not uploaded.
+    ls = installStorage(new FakeStorage());
+    adoptDataEpoch();
     const never = backupFrom((o) =>
       o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'QQQQQQ111111', shown: true })),
     );
@@ -958,6 +1045,51 @@ describe('187: the uploaded flag', () => {
     const r3 = rig();
     press(r3, 'Back up online');
     expect(labels(r3.h.top())).not.toContain('Show most recent code');
+  });
+
+  it('review MUST 1: an import of an older file with the SAME code keeps uploaded and the later lastAt', async () => {
+    // The first backup failed (code kept, not uploaded), the file was exported, then a backup worked.
+    const older = backupFrom((o) =>
+      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'qqqq-qq11-1111', shown: false, lastAt: 100 })),
+    );
+    ls.setItem(
+      ONLINE_BACKUP_KEY,
+      JSON.stringify({ code: 'QQQQQQ111111', shown: true, lastAt: 900, uploaded: true }),
+    );
+    const r = rig();
+    await importFile(r, older);
+    expect(stored()).toMatchObject({ code: 'QQQQQQ111111', uploaded: true, lastAt: 900 });
+    seenNote();
+    adoptDataEpoch();
+    const r2 = rig();
+    press(r2, 'Back up online');
+    expect(labels(r2.h.top())).toContain('Delete most recent code');
+    press(r2, 'Back');
+    press(r2, 'Reset game');
+    expect(titleOf(r2.h)).toBe('YOUR BACKUP CODE');
+  });
+
+  it('review MUST 1: the same code, the file uploaded and later: uploaded, and its lastAt', async () => {
+    const newer = backupFrom((o) =>
+      o.setItem(
+        ONLINE_BACKUP_KEY,
+        JSON.stringify({ code: 'QQQQQQ111111', shown: true, lastAt: 2000, uploaded: true }),
+      ),
+    );
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'QQQQQQ111111', shown: true, lastAt: 900 }));
+    const r = rig();
+    await importFile(r, newer);
+    expect(stored()).toMatchObject({ code: 'QQQQQQ111111', uploaded: true, lastAt: 2000 });
+  });
+
+  it("a different code in the file replaces this device's, with the file's own uploaded and lastAt", async () => {
+    const other = backupFrom((o) =>
+      o.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'RRRRRR222222', shown: true, lastAt: 5 })),
+    );
+    uploadedCode();
+    const r = rig();
+    await importFile(r, other);
+    expect(stored()).toEqual({ code: 'RRRRRR222222', shown: false, lastAt: 5 });
   });
 
   it('damaged: an uploaded field that is not true reads as not uploaded', async () => {
