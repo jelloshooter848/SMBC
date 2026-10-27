@@ -691,3 +691,85 @@ describe('items 166-168', () => {
     expect(stored()).toMatchObject({ code: 'QQQQQQ111111', shown: false });
   });
 });
+
+describe('second review of the online backup (page)', () => {
+  const withCode = () =>
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, lastAt: 900 }));
+  const textWith = (entry: string | null) => {
+    const o = installStorage(new FakeStorage());
+    adoptDataEpoch();
+    writeSave(newSave(2, 'link', null));
+    if (entry !== null) o.setItem(ONLINE_BACKUP_KEY, entry);
+    const t = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
+    installStorage(ls);
+    adoptDataEpoch();
+    return t;
+  };
+  async function restoreYes(r: Rig): Promise<void> {
+    press(r, 'Restore from code');
+    (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
+    await flush();
+    press(r, 'Yes');
+    await flush();
+  }
+
+  it("after Restore from code, lastAt follows the restored copy's own time", async () => {
+    const t = textWith(JSON.stringify({ code: 'ABCDEF123456', shown: true, lastAt: 50 }));
+    const r = rig({ restore: { ok: true, text: t, from: 'x', at: 9000 } });
+    await restoreYes(r);
+    expect(stored()).toEqual({ code: 'ABCDEF123456', shown: false, lastAt: 9000 });
+  });
+
+  it("an imported entry that is not a valid code does not replace this device's", async () => {
+    withCode();
+    const t = textWith(JSON.stringify({ code: 'not a code', shown: true }));
+    const r = rig({ restore: { ok: true, text: t, from: 'x', at: 1 } });
+    await restoreYes(r);
+    expect(stored()).toMatchObject({ code: 'ZZZZZZ999999' });
+  });
+
+  it("the import card names the code a backup brought, when it is not this device's", async () => {
+    withCode();
+    const t = textWith(JSON.stringify({ code: 'QQQQQQ111111', shown: true }));
+    const r = rig({ restore: { ok: true, text: t, from: 'x', at: 1 } });
+    await restoreYes(r);
+    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('CODE NOW QQQQ-QQ11-1111');
+    expect(r.h.said.at(-1)).toMatch(/online backup code is now Q Q Q Q, Q Q 1 1, 1 1 1 1/i);
+  });
+
+  async function eraseWithOnline(r: Rig, yes = true): Promise<void> {
+    press(r, 'Erase all data');
+    press(r, 'Yes');
+    press(r, 'Yes, erase');
+    await flush();
+    if (yes) press(r, 'Yes');
+    await flush();
+  }
+
+  it('Erase with a failed online delete: the card shows and says the code (it stays online)', async () => {
+    withCode();
+    const r = rig({ deleted: { ok: false, reason: 'servers', deleted: 0, total: 5 } });
+    await eraseWithOnline(r);
+    expect(titleOf(r.h)).toBe('ALL DATA ERASED');
+    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZ-ZZ99-9999');
+    expect(r.h.said.at(-1)).toMatch(/stays online.*write down its code.*Z Z Z Z, Z Z 9 9, 9 9 9 9/i);
+  });
+
+  it('Erase offline: no ALSO DELETE question; the card shows the code that stays online', async () => {
+    withCode();
+    const r = rig();
+    r.online.value = false;
+    await eraseWithOnline(r, false);
+    expect(titleOf(r.h)).toBe('ALL DATA ERASED');
+    expect(r.api.deletes).toEqual([]);
+    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZ-ZZ99-9999');
+    expect(r.h.said.at(-1)).toMatch(/stays online/i);
+  });
+
+  it('Erase with a partial online delete says a copy may remain there', async () => {
+    withCode();
+    const r = rig({ deleted: { ok: true, deleted: 3, total: 5, at: 1 } });
+    await eraseWithOnline(r);
+    expect(r.h.said.at(-1)).toMatch(/3 of 5 servers.*may remain/i);
+  });
+});

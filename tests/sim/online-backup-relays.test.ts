@@ -387,3 +387,37 @@ describe('item 168: DELETE ONLINE COPY (a tombstone plus a NIP-09 deletion reque
     expect(await deleteOnline(CODE, opts)).toMatchObject({ ok: false, reason: 'refused', deleted: 0 });
   });
 });
+
+describe('second review of the online backup', () => {
+  it('a partial delete on NIP-09 relays: the tombstone survives its own request, so a restore says DELETED', async () => {
+    const { fake, opts } = relays(['nip09', 'nip09', 'nip09', 'nip09', 'nip09']);
+    await backUp(CODE, 'the old data', { ...opts, now: 1000 });
+    const last = opts!.relays![4] as string;
+    fake.modes.set(last, 'down');
+    const d = await deleteOnline(CODE, { ...opts, now: 1000, after: 1000 });
+    expect(d).toMatchObject({ ok: true, deleted: 4, total: 5 });
+    fake.modes.set(last, 'nip09');
+    // The 5th still holds the old copy; the 4 others must still hold the (newer) tombstone.
+    for (const u of opts!.relays!.slice(0, 4))
+      expect(fake.stored.get(u)?.some((e) => e.kind === KIND && e.content === '')).toBe(true);
+    expect(await restore(CODE, opts)).toEqual({ ok: false, reason: 'deleted' });
+  });
+
+  it('a restore says when its copy was made (created_at), so the next backup can follow it', async () => {
+    const { opts } = relays(['accept', 'accept']);
+    await backUp(CODE, TEXT, { ...opts, now: 9000 });
+    expect(await restore(CODE, opts)).toMatchObject({ ok: true, text: TEXT, at: 9000 });
+  });
+
+  it('newer is reported only when no relay took the backup', async () => {
+    const { fake, opts } = relays(['accept', 'accept', 'accept']);
+    await backUp(CODE, 'future', { ...opts, now: 9_999_999 });
+    // One relay lost it: it takes the new one; the other two hold the newer copy.
+    fake.stored.set(opts!.relays![0] as string, []);
+    expect(await backUp(CODE, 'now', { ...opts, now: 1000 })).toMatchObject({
+      ok: false,
+      reason: 'servers',
+      accepted: 1,
+    });
+  });
+});

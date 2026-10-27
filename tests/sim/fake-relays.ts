@@ -7,7 +7,10 @@
  * reachable from the test machine.
  */
 
-export type RelayMode = 'accept' | 'reject' | 'silent' | 'down' | 'wrong-sig' | 'tampered' | { cap: number };
+/** 'nip09': keeps events like 'accept', and honours NIP-09 `a` deletions: every version of the
+ * address up to AND including the request's created_at goes. */
+export type RelayMode =
+  'accept' | 'nip09' | 'reject' | 'silent' | 'down' | 'wrong-sig' | 'tampered' | { cap: number };
 
 export interface NostrEventLike {
   id: string;
@@ -66,6 +69,24 @@ export class FakeRelays {
           if (mode === 'reject') return reply(['OK', ev.id, false, 'blocked: kind not allowed']);
           if (typeof mode === 'object' && JSON.stringify(ev).length > mode.cap)
             return reply(['OK', ev.id, false, `invalid: event too large: ${JSON.stringify(ev).length}`]);
+          if (mode === 'nip09' && ev.kind === 5) {
+            for (const t of ev.tags.filter((x) => x[0] === 'a')) {
+              const [kind, pubkey, dTag] = (t[1] ?? '').split(':');
+              if (pubkey !== ev.pubkey) continue;
+              relays.stored.set(
+                this.url,
+                (relays.stored.get(this.url) ?? []).filter(
+                  (e) =>
+                    !(
+                      String(e.kind) === kind &&
+                      e.pubkey === pubkey &&
+                      e.tags.find((x) => x[0] === 'd')?.[1] === dTag &&
+                      e.created_at <= ev.created_at
+                    ),
+                ),
+              );
+            }
+          }
           const d = (e: NostrEventLike) => e.tags.find((t) => t[0] === 'd')?.[1];
           // A replaceable event keeps the newest (strfry's answers): the same event again is a
           // duplicate, an older or same-second one is refused.
