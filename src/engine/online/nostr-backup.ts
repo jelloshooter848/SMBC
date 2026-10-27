@@ -72,6 +72,8 @@ export interface RelayOptions {
   graceMs?: number;
   /** The event's time (seconds; tests). */
   now?: number;
+  /** The last backup's time: this one is at least a second later (a clock behind, the same second). */
+  after?: number;
 }
 
 const enc = new TextEncoder();
@@ -95,6 +97,11 @@ export function keysFromCode(code: string): Promise<{ sk: Uint8Array; pk: string
       }
     })();
     keyCache.set(c, k);
+    // A failed derivation (out of memory on a phone) is not kept: the next try derives again.
+    const failed = k;
+    failed.catch(() => {
+      if (keyCache.get(c) === failed) keyCache.delete(c);
+    });
   }
   return k;
 }
@@ -226,29 +233,34 @@ const parse = (data: unknown): unknown[] | null => {
 
 const socketClass = (o: RelayOptions): SocketClass => (o.WebSocket ?? globalThis.WebSocket) as SocketClass;
 
-/** Sends `event` to one relay: whether it answered OK true. */
-async function publishOne(W: SocketClass, url: string, ev: Event, ms: number): Promise<boolean> {
+/** One relay's answer to a backup: took it, said no (and why), or never answered. */
+type RelayAnswer = { kind: 'accepted' } | { kind: 'refused'; message: string } | { kind: 'unreached' };
+
+/** Sends `event` to one relay. */
+async function publishOne(W: SocketClass, url: string, ev: Event, ms: number): Promise<RelayAnswer> {
   let ws: InstanceType<SocketClass> | undefined;
   try {
     ws = await connect(W, url, ms);
     const sock = ws;
-    return await new Promise<boolean>((resolve) => {
-      const t = setTimeout(() => resolve(false), ms);
+    return await new Promise<RelayAnswer>((resolve) => {
+      const t = setTimeout(() => resolve({ kind: 'unreached' }), ms);
       sock.onclose = () => {
         clearTimeout(t);
-        resolve(false);
+        resolve({ kind: 'unreached' });
       };
       sock.onmessage = (m) => {
         const msg = parse(m.data);
         if (msg && msg[0] === 'OK' && msg[1] === ev.id) {
           clearTimeout(t);
-          resolve(msg[2] === true);
+          resolve(
+            msg[2] === true ? { kind: 'accepted' } : { kind: 'refused', message: String(msg[3] ?? '') },
+          );
         }
       };
       sock.send(JSON.stringify(['EVENT', ev]));
     });
   } catch {
-    return false;
+    return { kind: 'unreached' };
   } finally {
     try {
       ws?.close();
@@ -262,19 +274,25 @@ async function publishOne(W: SocketClass, url: string, ev: Event, ms: number): P
 export async function backUp(code: string, text: string, o: RelayOptions = {}): Promise<BackUpResult> {
   const relays = o.relays ?? RELAYS;
   const total = relays.length;
+  const now = o.now ?? Math.floor(Date.now() / 1000);
+  const at = o.after !== undefined ? Math.max(now, Math.floor(o.after) + 1) : now;
   let ev: Event;
   try {
-    ev = await makeBackupEvent(code, text, o.now);
+    ev = await makeBackupEvent(code, text, at);
   } catch (e) {
     if (e instanceof TooBigError) return { ok: false, reason: 'too-big', accepted: 0, total };
     throw e;
   }
   const W = socketClass(o);
   const answers = await Promise.all(relays.map((u) => publishOne(W, u, ev, o.timeoutMs ?? 8000)));
-  const accepted = answers.filter(Boolean).length;
-  return accepted >= MIN_ACCEPTS
-    ? { ok: true, accepted, total }
-    : { ok: false, reason: 'servers', accepted, total };
+  const accepted = answers.filter((a) => a.kind === 'accepted').length;
+  if (accepted >= MIN_ACCEPTS) return { ok: true, accepted, total, at };
+  const refusals = answers.flatMap((a) => (a.kind === 'refused' ? [a.message] : []));
+  // strfry says "replaced: have newer event"; other relays say "newer" or "duplicate".
+  if (refusals.some((m) => /newer|replaced|duplicate/i.test(m)))
+    return { ok: false, reason: 'newer', accepted, total };
+  if (accepted === 0 && refusals.length) return { ok: false, reason: 'refused', accepted, total };
+  return { ok: false, reason: 'servers', accepted, total };
 }
 
 /**
@@ -355,7 +373,7 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
 export function browserOnlineApi(): OnlineApi {
   return {
     newCode: () => newBackupCode(),
-    backUp: (code, text) => backUp(code, text),
+    backUp: (code, text, after) => backUp(code, text, after !== undefined ? { after } : {}),
     restore: (code) => restore(code),
   };
 }

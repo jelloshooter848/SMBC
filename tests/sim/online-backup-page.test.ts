@@ -41,7 +41,7 @@ const flush = async () => {
 
 interface Rig {
   h: H;
-  api: OnlineApi & { backUps: { code: string; text: string; after?: number }[]; restores: string[] };
+  api: OnlineApi & { backUps: { code: string; text: string; after?: number | undefined }[]; restores: string[] };
   loads: number;
   online: { value: boolean };
   copied: string[];
@@ -52,7 +52,7 @@ interface Rig {
 function rig(
   opts: { backUp?: BackUpResult; restore?: RestoreResult; offlineBuild?: boolean; code?: string } = {},
 ): Rig {
-  const backUps: { code: string; text: string }[] = [];
+  const backUps: { code: string; text: string; after?: number | undefined }[] = [];
   const restores: string[] = [];
   const api = {
     backUps,
@@ -199,8 +199,9 @@ describe('BACK UP ONLINE', () => {
     await flush();
     const b = JSON.parse(r.api.backUps[0]!.text);
     expect(b.format).toBe('smbc-remix-backup');
-    expect(JSON.parse(b.data[SETTINGS_KEY]).dev).toBe(false);
-    expect(JSON.parse(b.data[SETTINGS_KEY]).devUnlock).toBe('');
+    // Item 161: the dev fields are left out (a restore reads them as their defaults).
+    expect(JSON.parse(b.data[SETTINGS_KEY]).dev).toBeUndefined();
+    expect(JSON.parse(b.data[SETTINGS_KEY]).devUnlock).toBeUndefined();
     expect(b.data['smbc.devLast']).toBeUndefined();
     expect(JSON.parse(b.data[ONLINE_BACKUP_KEY]).code).toBe('ABCDE12345');
     // This device keeps its own dev settings.

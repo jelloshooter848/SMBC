@@ -24,6 +24,8 @@ import { onStaleStorage } from '@engine/save/storage';
 import {
   formatBackupCode,
   loadOnlineCode,
+  ONLINE_BACKUP_KEY,
+  withCodeUnshown,
   onlineCopy,
   saveOnlineCode,
   spokenBackupCode,
@@ -146,6 +148,8 @@ const NOTE = [
   'IMPORTING ONE DOES NOT',
   'RESTORE ASSET PACKS.',
 ];
+/** The note's one line when the page has too many rows for all four. */
+const NOTE_SHORT = 'IMPORT NEVER RESTORES PACKS';
 const NOTE_SAID =
   'A backup holds every save, file, setting and custom level on this device. Importing one does not restore asset packs.';
 
@@ -175,6 +179,13 @@ export class SaveDataOptions extends MenuScene {
     this.env = game.deps.saveDataEnv ?? browserSaveDataEnv();
     // MenuScene adds the period before the focused row.
     this.entryTitle = `Save data. ${NOTE_SAID.slice(0, -1)}`;
+    this.rebuild();
+    void this.readPacks();
+  }
+
+  /** The rows; the code rows only once this device has a backup code (items 162, 168). */
+  private rebuild(): void {
+    const code = this.env.online ? loadOnlineCode() : null;
     this.setItems([
       {
         label: 'Export backup',
@@ -205,6 +216,15 @@ export class SaveDataOptions extends MenuScene {
             },
           ]
         : []),
+      ...(code
+        ? [
+            {
+              label: 'Show my code',
+              select: () => this.showMyCode(),
+              hint: 'Your online backup code, to copy or share',
+            },
+          ]
+        : []),
       {
         label: 'Erase all data',
         select: () => this.askErase(),
@@ -212,7 +232,6 @@ export class SaveDataOptions extends MenuScene {
       },
       { label: 'Back', select: () => this.onBack?.() },
     ]);
-    void this.readPacks();
   }
 
   /** The packs are only listed on opening: they are zipped when the player is asked about them. */
@@ -385,7 +404,14 @@ export class SaveDataOptions extends MenuScene {
 
   private applyImport(b: Backup): void {
     this.game.scenes.pop();
-    const r = replaceGameData(b.data);
+    // Item 167 and review: the imported code (if any) is shown once more on this device; a
+    // backup without one keeps this device's code (Erase all data is what removes it).
+    const data = withCodeUnshown(b.data);
+    if (data[ONLINE_BACKUP_KEY] === undefined) {
+      const mine = loadOnlineCode();
+      if (mine) data[ONLINE_BACKUP_KEY] = JSON.stringify(mine);
+    }
+    const r = replaceGameData(data);
     if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing changed.');
     this.finish('BACKUP IMPORTED', 'Backup imported.', []);
   }
@@ -528,9 +554,11 @@ export class SaveDataOptions extends MenuScene {
   override render(r: Renderer): void {
     super.render(r);
     const font = this.game.ctx.assets.sheet('font');
-    // Under the rows: 64 is the first row's y, 14 a row's height.
-    const y = 64 + this.items.length * 14 + 6;
-    NOTE.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + i * 12));
+    // Under the rows (64 is the first row's y, 14 a row's height), clear of the status line at
+    // 200: the whole note when it fits, else its one line that matters most.
+    const y = 64 + Math.min(this.items.length, this.visibleRows) * 14 + 4;
+    const lines = y + 3 * 12 + 8 <= 198 ? NOTE : y + 8 <= 198 ? [NOTE_SHORT] : [];
+    lines.forEach((l, i) => r.text(font, l, 128 - l.length * 4, y + i * 12));
   }
 
   // ---- Online backup (item 159) ------------------------------------------------------------
@@ -617,7 +645,7 @@ export class SaveDataOptions extends MenuScene {
       }
       let r: BackUpResult;
       try {
-        r = await api.backUp(mine.code, text);
+        r = await api.backUp(mine.code, text, mine.lastAt);
       } catch {
         return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
       }
@@ -626,6 +654,18 @@ export class SaveDataOptions extends MenuScene {
           return this.tell(
             'TOO BIG TO BACK UP ONLINE',
             'Your data is too big for an online backup. Use Export backup to save a file instead, or remove some custom levels. Nothing was backed up.',
+            true,
+          );
+        if (r.reason === 'newer')
+          return this.tell(
+            'A NEWER BACKUP IS ONLINE',
+            'The servers already hold a newer backup under this code, from another device or a clock set ahead. Nothing was replaced.',
+            true,
+          );
+        if (r.reason === 'refused')
+          return this.tell(
+            'SERVERS REFUSED THE BACKUP',
+            'The servers answered but refused the backup. Try again later, and keep a backup file. Nothing was backed up.',
             true,
           );
         if (r.accepted === 0) return this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
@@ -637,8 +677,9 @@ export class SaveDataOptions extends MenuScene {
       }
       const done = `BACKED UP (${r.accepted} OF ${r.total} SERVERS)`;
       const said = `Backed up to ${r.accepted} of ${r.total} servers.`;
+      saveOnlineCode({ ...mine, shown: true, lastAt: r.at });
+      this.rebuild();
       if (mine.shown) return this.tell(done, said);
-      saveOnlineCode({ ...mine, shown: true });
       this.status = done;
       this.showCode(mine.code, done, said);
     } finally {
@@ -646,8 +687,15 @@ export class SaveDataOptions extends MenuScene {
     }
   }
 
-  /** The code, once: COPY CODE and SHARE CODE (in the press's own event), then OK. */
-  private showCode(code: string, done: string, said: string): void {
+  /** SHOW MY CODE (item 162): the kept code, as after the first backup. */
+  private showMyCode(): void {
+    const kept = loadOnlineCode();
+    if (!kept) return this.rebuild();
+    this.showCode(kept.code, null, '');
+  }
+
+  /** The code: COPY CODE and SHARE CODE (in the press's own event), then OK. */
+  private showCode(code: string, done: string | null, said: string): void {
     const game = this.game;
     const shown = formatBackupCode(code);
     const env = shareEnv(game);
@@ -658,8 +706,8 @@ export class SaveDataOptions extends MenuScene {
     const box: QuestionBox = new QuestionBox(
       game,
       'YOUR BACKUP CODE',
-      `${said} Your backup code is ${spokenBackupCode(code)}. Keep this code: it is the only way to get the backup back.`,
-      [shown, done, 'KEEP THIS CODE: IT IS THE', 'ONLY WAY TO GET IT BACK.'],
+      `${said ? `${said} ` : ''}Your backup code is ${spokenBackupCode(code)}. Keep this code: it is the only way to get the backup back.`,
+      [shown, ...(done ? [done] : []), 'KEEP THIS CODE: IT IS THE', 'ONLY WAY TO GET IT BACK.'],
       [
         {
           label: 'Copy code',

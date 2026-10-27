@@ -67,7 +67,7 @@ describe('the code (no crypto: the light module)', () => {
 });
 
 describe('the online copy has no dev fields (owner default 3)', () => {
-  it('dev, devUnlock, the dev toggles and assists go back to their defaults; the dev level pick goes', () => {
+  it('dev and devUnlock go, the dev toggles and assists go back to their defaults; the dev level pick goes', () => {
     const s = defaultSettings();
     s.dev = true;
     s.devUnlock = 'abc123';
@@ -81,8 +81,9 @@ describe('the online copy has no dev fields (owner default 3)', () => {
     });
     const got = JSON.parse(out[SETTINGS_KEY] as string);
     const d = defaultSettings();
-    expect(got.dev).toBe(false);
-    expect(got.devUnlock).toBe('');
+    // Item 161: left out (a restore reads them as their defaults).
+    expect(got.dev).toBeUndefined();
+    expect(got.devUnlock).toBeUndefined();
     expect(got.classicDev).toEqual(d.classicDev);
     expect(got.assist).toEqual(d.assist);
     expect(got.audio.master).toBe(0.9);

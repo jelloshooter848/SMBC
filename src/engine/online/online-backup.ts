@@ -62,12 +62,41 @@ export const ONLINE_BACKUP_KEY = 'smbc.onlineBackup';
 export interface StoredOnlineCode {
   code: string;
   shown: boolean;
+  /**
+   * The last backup's time (its event's created_at, seconds): the next one is at least a second
+   * later, so a device clock behind it, or two backups in one second, still replace it.
+   */
+  lastAt?: number;
 }
 
 export function loadOnlineCode(): StoredOnlineCode | null {
   const v = loadJson<Partial<StoredOnlineCode>>(ONLINE_BACKUP_KEY);
   const code = typeof v?.code === 'string' ? normalizeBackupCode(v.code) : null;
-  return code ? { code, shown: v?.shown === true } : null;
+  if (!code) return null;
+  const at = v?.lastAt;
+  return {
+    code,
+    shown: v?.shown === true,
+    ...(typeof at === 'number' && Number.isFinite(at) ? { lastAt: at } : {}),
+  };
+}
+
+/**
+ * `data` as restored or imported onto this device: its backup code (if any) marked not yet
+ * shown here, so this device shows it once, as after a first backup (v0.4.76 review).
+ */
+export function withCodeUnshown(data: Readonly<Record<string, string>>): Record<string, string> {
+  const out = { ...data };
+  const raw = out[ONLINE_BACKUP_KEY];
+  if (raw === undefined) return out;
+  try {
+    const v = JSON.parse(raw) as Record<string, unknown>;
+    if (v && typeof v === 'object' && !Array.isArray(v))
+      out[ONLINE_BACKUP_KEY] = JSON.stringify({ ...v, shown: false });
+  } catch {
+    /* kept as it is: loadOnlineCode reads no code from it */
+  }
+  return out;
 }
 
 export function saveOnlineCode(v: StoredOnlineCode): boolean {
@@ -76,40 +105,58 @@ export function saveOnlineCode(v: StoredOnlineCode): boolean {
 
 /** Keys only dev mode uses, left out of the online copy. */
 const DEV_KEYS = ['smbc.devLast'];
+/** A dev field's name: dev, devUnlock, devUnlockAll… (not "device"). */
+const DEV_FIELD = /^dev([A-Z]|$)/;
+/** A Campaign file's key. */
+const SAVE_KEY = /^smbc\.save\.\d+$/;
+
+/** `raw` (JSON) without its top-level dev fields, `also` applied; as it is when it does not read. */
+function withoutDev(raw: string, also?: (o: Record<string, unknown>) => void): string {
+  try {
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return raw;
+    for (const k of Object.keys(o)) if (DEV_FIELD.test(k)) delete o[k];
+    also?.(o);
+    return JSON.stringify(o);
+  } catch {
+    return raw;
+  }
+}
 
 /**
- * The online copy of this device's data (owner default 3): every key as stored, but with dev
- * mode's own fields back at their defaults in the settings (dev, devUnlock, the Classic dev
- * toggles, and the assists, which only dev mode plays) and the dev level pick left out, so a
- * restore never opens dev mode, or its tools, on another device. Settings that do not read
- * are sent as they are: the restore checks them as it checks a backup file.
+ * The online copy of this device's data (owner defaults 3 and item 161): every key as stored,
+ * but the settings and every Campaign file without their dev fields (dev, devUnlock,
+ * devUnlockAll, devAllHeroes, devGateOpen, devInventory, any dev*), the settings' Classic dev
+ * toggles and assists (only dev mode plays them) at their defaults, and the dev level pick left
+ * out, so a restore never opens dev mode, or its tools, on another device. (A Classic file's
+ * run keeps its devHero mark: a guard that stops a dev-only hero's file playing outside dev
+ * mode.) Values that do not read are sent as they are: the restore checks them as it checks a
+ * backup file.
  */
 export function onlineCopy(data: Readonly<Record<string, string>>): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(data)) if (!DEV_KEYS.includes(k)) out[k] = v;
-  const raw = out[SETTINGS_KEY];
-  if (raw !== undefined) {
-    try {
-      const s = JSON.parse(raw) as Record<string, unknown>;
-      if (s && typeof s === 'object' && !Array.isArray(s)) {
+  for (const [k, v] of Object.entries(data)) {
+    if (DEV_KEYS.includes(k)) continue;
+    if (k === SETTINGS_KEY)
+      out[k] = withoutDev(v, (s) => {
         const d = defaultSettings();
-        s.dev = d.dev;
-        s.devUnlock = d.devUnlock;
         s.classicDev = d.classicDev;
         s.assist = d.assist;
-        out[SETTINGS_KEY] = JSON.stringify(s);
-      }
-    } catch {
-      /* sent as it is */
-    }
+      });
+    else if (SAVE_KEY.test(k)) out[k] = withoutDev(v);
+    else out[k] = v;
   }
   return out;
 }
 
-/** BACK UP ONLINE's outcome: backed up on `accepted` of `total` relays, or why not. */
+/**
+ * BACK UP ONLINE's outcome: backed up on `accepted` of `total` relays at `at` (the event's
+ * time), or why not: 'too-big'; 'newer' (the servers hold a newer copy under this code);
+ * 'refused' (every relay that answered said no); 'servers' (too few, or none, answered).
+ */
 export type BackUpResult =
-  | { ok: true; accepted: number; total: number }
-  | { ok: false; reason: 'too-big' | 'servers'; accepted: number; total: number };
+  | { ok: true; accepted: number; total: number; at: number }
+  | { ok: false; reason: 'too-big' | 'servers' | 'refused' | 'newer'; accepted: number; total: number };
 
 /** RESTORE FROM CODE's outcome: the backup's text, or why not ('servers': none answered). */
 export type RestoreResult =
@@ -118,6 +165,7 @@ export type RestoreResult =
 /** The network side, from the lazily loaded nostr-backup.ts. */
 export interface OnlineApi {
   newCode(): string;
-  backUp(code: string, text: string): Promise<BackUpResult>;
+  /** `after`: the last backup's time; this one is at least a second later. */
+  backUp(code: string, text: string, after?: number): Promise<BackUpResult>;
   restore(code: string): Promise<RestoreResult>;
 }
