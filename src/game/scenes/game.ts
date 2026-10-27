@@ -3193,6 +3193,8 @@ export class Game {
       for (const k of Object.keys(s)) if (!(k in start.state)) delete s[k];
       Object.assign(this.state, startCopy(start.state));
     }
+    // Item 242: the restore above has these null already; this is for when it is skipped (no
+    // start kept for this level), so the level still starts afresh.
     this.state.checkpoint = null;
     this.state.time = null;
     this.warpToLevel(this.firstArea(main), { mode: 'stand' }, false);

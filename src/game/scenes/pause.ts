@@ -34,6 +34,9 @@ export class PauseScene extends MenuScene {
     this.rebuild();
   }
 
+  /** Item 241: where the Classic pause's Quit row says YES goes (Game.quitsToSelect), as built. */
+  private quitToSelect = false;
+
   /** The original's pause box has no title row (PauseMenu.as). */
   protected override boxHeader(): string | null {
     return null;
@@ -112,7 +115,9 @@ export class PauseScene extends MenuScene {
       if (game.stageRound) items.push(this.giveUp());
       // O-16: Quit asks first (NO / YES). v0.4.77 items 196/197: YES goes to the run's mid-run
       // select for this level when it has one (Game.quitsToSelect, read as Quit is picked, so
-      // the card always says where YES goes), else the CLASSIC menu.
+      // the card always says where YES goes), else the CLASSIC menu. Item 241: its hint is
+      // rebuilt when that changes while the pause is up (update).
+      this.quitToSelect = game.quitsToSelect;
       items.push({
         label: 'Quit',
         // 38f: NO says "Paused." and the focused row (Quit), as the pause opens.
@@ -120,7 +125,7 @@ export class PauseScene extends MenuScene {
         hint: game.replayRun
           ? // v0.4.73 (owner 97a): a CLEARED file's replay goes back to its file box.
             'Back to the file box; the file stays cleared'
-          : game.quitsToSelect
+          : this.quitToSelect
             ? 'Back to character select'
             : 'Back to the Classic menu',
       });
@@ -300,6 +305,8 @@ export class PauseScene extends MenuScene {
     // Returning from a sub-menu (dev mode off) must refresh the entries.
     const has = (label: string) => this.items.some((i) => i.label === label);
     if (has('Dev mode') !== this.showDev || has('Assists') !== this.showAssists) this.rebuild();
+    // v0.4.77 item 241: a hero toggled off in Dev mode changes where Quit goes: its hint follows.
+    else if (classicPause(this.game) && this.game.quitsToSelect !== this.quitToSelect) this.rebuild();
     // Start selects the highlighted entry (Continue by default), so a double tap of Start still resumes.
     super.update(input);
   }

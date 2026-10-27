@@ -162,11 +162,14 @@ describe('NIT 1: the card matches where YES goes, whenever the pause was built',
     const pause = openPause(h);
     // A stage round begins while the pause is up: Quit is the CLASSIC menu's now.
     h.game.stageRound = { base: null, done: () => {} };
+    h.idle(2);
     const card = pauseQuit(h, pause);
     expect(card.title).toBe(QUIT_RUN_TITLE);
     h.game.stageRound = null;
     h.game.scenes.pop();
     expect(h.top()).toBe(pause);
+    // Item 241: the pause rebuilds its rows (Give up gone) a frame after the change.
+    h.idle(2);
     const again = pauseQuit(h, pause);
     expect(again.title).toBe(QUIT_SELECT_TITLE);
   });
