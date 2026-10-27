@@ -25,6 +25,7 @@ import {
   formatBackupCode,
   loadOnlineCode,
   ONLINE_BACKUP_KEY,
+  readOnlineCode,
   withCodeUnshown,
   onlineCopy,
   saveOnlineCode,
@@ -384,7 +385,8 @@ export class SaveDataOptions extends MenuScene {
     }
   }
 
-  private askReplace(b: Backup): void {
+  /** `at`: a copy restored from code, its own time (the next backup or delete follows it). */
+  private askReplace(b: Backup, at?: number): void {
     const when = new Date(b.exportedAt);
     const day = Number.isNaN(when.getTime()) ? '' : when.toISOString().slice(0, 10);
     const keys = Object.keys(b.data).length;
@@ -395,7 +397,7 @@ export class SaveDataOptions extends MenuScene {
       [`BACKUP ${day}`.trim(), `VERSION ${b.gameVersion}`.slice(0, 28), plural(keys, 'ITEM')],
       [
         { label: 'No', select: () => this.backHere() },
-        { label: 'Yes', select: () => this.applyImport(b) },
+        { label: 'Yes', select: () => this.applyImport(b, at) },
         {
           label: 'Export first',
           gesture: true,
@@ -408,18 +410,32 @@ export class SaveDataOptions extends MenuScene {
     this.game.scenes.push(box);
   }
 
-  private applyImport(b: Backup): void {
+  private applyImport(b: Backup, at?: number): void {
     this.game.scenes.pop();
-    // Item 167 and review: the imported code (if any) is shown once more on this device; a
-    // backup without one keeps this device's code (Erase all data is what removes it).
+    // Item 167 and reviews: a backup carrying a valid code brings it (shown once more here, and
+    // after a restore its lastAt no earlier than the restored copy's own time); one without a
+    // valid code keeps this device's (Erase all data is what removes it).
     const data = withCodeUnshown(b.data);
-    if (data[ONLINE_BACKUP_KEY] === undefined) {
-      const mine = loadOnlineCode();
+    const mine = loadOnlineCode();
+    const brought = readOnlineCode(data[ONLINE_BACKUP_KEY]);
+    if (!brought) {
       if (mine) data[ONLINE_BACKUP_KEY] = JSON.stringify(mine);
-    }
+    } else if (at !== undefined)
+      data[ONLINE_BACKUP_KEY] = JSON.stringify({
+        ...brought,
+        shown: false,
+        lastAt: Math.max(brought.lastAt ?? 0, at),
+      });
     const r = replaceGameData(data);
     if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing changed.');
-    this.finish('BACKUP IMPORTED', 'Backup imported.', []);
+    const changed = brought && brought.code !== mine?.code;
+    this.finish(
+      'BACKUP IMPORTED',
+      changed
+        ? `Backup imported. This device's online backup code is now ${spokenBackupCode(brought.code)}.`
+        : 'Backup imported.',
+      changed ? [`CODE NOW ${formatBackupCode(brought.code)}`] : [],
+    );
   }
 
   /**
@@ -501,7 +517,9 @@ export class SaveDataOptions extends MenuScene {
             select: () => {
               this.game.scenes.pop();
               // Item 167: with a code, the online copy is asked about first.
-              if (this.env.online && loadOnlineCode()) this.askOnline();
+              // Offline there is nothing to ask: the card then shows the code that stays online.
+              if (this.env.online && loadOnlineCode() && this.env.online.isOnline() !== false)
+                this.askOnline();
               else this.askPacksThenErase(false);
             },
           },
@@ -566,8 +584,10 @@ export class SaveDataOptions extends MenuScene {
   }
 
   private async erase(withPacks: boolean, online = false): Promise<void> {
+    // The code is erased with the rest: when its online copy stays, the card shows it.
+    const kept = this.env.online ? loadOnlineCode() : null;
     // Item 167: the online copy goes first (its code is about to be erased with the rest).
-    let gone: { line: string; said: string } | null = null;
+    let gone: { line: string; said: string; deleted: boolean } | null = null;
     if (online) {
       this.busy = true;
       this.tell('DELETING...', 'Deleting your online backup.');
@@ -586,20 +606,29 @@ export class SaveDataOptions extends MenuScene {
     this.busy = true;
     let packsFailed = false;
     if (withPacks) await this.env.packs.clear().catch(() => (packsFailed = true));
+    const stays = kept !== null && !gone?.deleted;
     this.finish(
       'ALL DATA ERASED',
       (packsFailed ? 'All data erased, but the asset packs could not be erased.' : 'All data erased.') +
-        (gone ? ` ${gone.said}` : ''),
-      [...(packsFailed ? ['ASSET PACKS COULD NOT BE', 'ERASED.'] : []), ...(gone ? [gone.line] : [])],
+        (gone ? ` ${gone.said}` : '') +
+        (stays && kept
+          ? ` Your online backup stays online; write down its code to delete it later: ${spokenBackupCode(kept.code)}.`
+          : ''),
+      [
+        ...(packsFailed ? ['ASSET PACKS COULD NOT BE', 'ERASED.'] : []),
+        ...(gone ? [gone.line] : []),
+        ...(stays && kept ? ['STILL ONLINE, ITS CODE:', formatBackupCode(kept.code)] : []),
+      ],
     );
   }
 
   /** The online copy deleted for an erase: a line for its card and what is said. */
-  private async deleteForErase(): Promise<{ line: string; said: string }> {
+  private async deleteForErase(): Promise<{ line: string; said: string; deleted: boolean }> {
     const kept = loadOnlineCode();
     const notDeleted = (why: string) => ({
       line: 'ONLINE COPY NOT DELETED',
       said: `The online backup could not be deleted: ${why}`,
+      deleted: false,
     });
     if (!kept) return notDeleted('no code is kept on this device.');
     if (this.env.online?.isOnline() === false) return notDeleted('no internet connection.');
@@ -615,7 +644,12 @@ export class SaveDataOptions extends MenuScene {
       if (d.ok)
         return {
           line: `ONLINE COPY DELETED (${d.deleted} OF ${d.total})`,
-          said: `Online backup deleted on ${d.deleted} of ${d.total} servers.`,
+          said:
+            `Online backup deleted on ${d.deleted} of ${d.total} servers.` +
+            (d.deleted < d.total
+              ? ' The other servers could not be reached or refused, so a copy may remain there.'
+              : ''),
+          deleted: true,
         };
       return notDeleted(
         d.reason === 'servers' ? 'the servers could not be reached.' : 'the servers refused.',
@@ -919,7 +953,7 @@ export class SaveDataOptions extends MenuScene {
       }
       const parsed = parseBackup(r.text, this.env.gameVersion);
       if (!parsed.ok) return this.refuse(parsed.reason);
-      this.askReplace(parsed.backup);
+      this.askReplace(parsed.backup, r.at);
     } finally {
       this.busy = false;
     }

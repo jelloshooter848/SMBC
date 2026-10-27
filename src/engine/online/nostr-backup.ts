@@ -301,7 +301,7 @@ export async function backUp(code: string, text: string, o: RelayOptions = {}): 
   if (accepted >= MIN_ACCEPTS) return { ok: true, accepted, total, at };
   const refusals = answers.flatMap((a) => (a.kind === 'refused' ? [a.message] : []));
   // strfry says "replaced: have newer event"; other relays say "newer" or "duplicate".
-  if (refusals.some((m) => /newer|replaced|duplicate/i.test(m)))
+  if (accepted === 0 && refusals.some((m) => /newer|replaced|duplicate/i.test(m)))
     return { ok: false, reason: 'newer', accepted, total };
   if (accepted === 0 && refusals.length) return { ok: false, reason: 'refused', accepted, total };
   return { ok: false, reason: 'servers', accepted, total };
@@ -330,7 +330,7 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
       if (done) return;
       done = true;
       if (graceTimer) clearTimeout(graceTimer);
-      if (best?.text != null) resolve({ ok: true, text: best.text, from: best.from });
+      if (best?.text != null) resolve({ ok: true, text: best.text, from: best.from, at: best.at });
       else if (best) resolve({ ok: false, reason: 'deleted' });
       else resolve({ ok: false, reason: answered > 0 ? 'not-found' : 'servers' });
     };
@@ -400,7 +400,9 @@ export async function deleteOnline(code: string, o: RelayOptions = {}): Promise<
   const request = finalizeEvent(
     {
       kind: 5,
-      created_at: at,
+      // A second before the tombstone (still after the last backup): NIP-09 `a` deletions take
+      // every version up to AND including their own time, so the tombstone itself survives.
+      created_at: at - 1,
       tags: [
         ['a', `${KIND}:${pk}:${D_TAG}`],
         ['k', String(KIND)],

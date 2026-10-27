@@ -73,7 +73,20 @@ export interface StoredOnlineCode {
 }
 
 export function loadOnlineCode(): StoredOnlineCode | null {
-  const v = loadJson<Partial<StoredOnlineCode>>(ONLINE_BACKUP_KEY);
+  return readOnlineCode(loadJson<unknown>(ONLINE_BACKUP_KEY));
+}
+
+/** A stored code entry's value (parsed JSON, or its text) as a code, or null when it is not one. */
+export function readOnlineCode(raw: unknown): StoredOnlineCode | null {
+  let parsed = raw;
+  if (typeof raw === 'string') {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  const v = parsed && typeof parsed === 'object' ? (parsed as Partial<StoredOnlineCode>) : null;
   const code = typeof v?.code === 'string' ? normalizeBackupCode(v.code) : null;
   if (!code) return null;
   const at = v?.lastAt;
@@ -131,9 +144,10 @@ function withoutDev(raw: string, also?: (o: Record<string, unknown>) => void): s
  * but the settings and every Campaign file without their dev fields (dev, devUnlock,
  * devUnlockAll, devAllHeroes, devGateOpen, devInventory, any dev*), the settings' Classic dev
  * toggles and assists (only dev mode plays them) at their defaults, and the dev level pick left
- * out, so a restore never opens dev mode, or its tools, on another device. (A Classic file's
- * run keeps its devHero mark: a guard that stops a dev-only hero's file playing outside dev
- * mode.) Values that do not read are sent as they are: the restore checks them as it checks a
+ * out, so a restore never opens dev mode, or its tools, on another device. (Progress marks
+ * that are not dev settings stay: a Classic run's devHero, a guard that stops a dev-only hero's
+ * file playing outside dev mode, and the swapped / swapped2 marks, which put a hero's power
+ * back to his own design's once he plays it again.) Values that do not read are sent as they are: the restore checks them as it checks a
  * backup file.
  */
 export function onlineCopy(data: Readonly<Record<string, string>>): Record<string, string> {
@@ -171,7 +185,9 @@ export type DeleteResult =
 
 /** RESTORE FROM CODE's outcome: the backup's text, or why not ('servers': none answered). */
 export type RestoreResult =
-  { ok: true; text: string; from: string } | { ok: false; reason: 'not-found' | 'servers' | 'deleted' };
+  /** `at`: the copy's own time (its event's created_at; the next backup follows it). */
+  | { ok: true; text: string; from: string; at?: number }
+  | { ok: false; reason: 'not-found' | 'servers' | 'deleted' };
 
 /** The network side, from the lazily loaded nostr-backup.ts. */
 export interface OnlineApi {
