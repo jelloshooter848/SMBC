@@ -27,10 +27,12 @@ const KIND: Record<Channel, 'pulse' | 'triangle' | 'noise'> = {
 };
 
 /**
- * The most MML commands one channel may read, repeats counted each time through (review): a
- * repeat of a repeat can't hang the page. The game's longest channel reads under 2,000.
+ * The most MML characters one channel may read, repeats counted each time through (review; 0.5.0
+ * item 255: characters, not commands): a repeat of a repeat, or of a long comment, can't hang the
+ * page. The game's longest channel reads a few thousand; a song as long as a song may be
+ * (MAX_SONG_CHARS) can still repeat its whole text about ten times.
  */
-export const MAX_SONG_STEPS = 100_000;
+export const MAX_SONG_STEPS = 250_000;
 
 export const MIN_TEMPO = 40;
 export const MAX_TEMPO = 300;

@@ -20,12 +20,12 @@ export class KeyboardSource implements InputSource {
       this.latched.add(ev.code);
       this.justPressed.push(ev.code);
       this.onAnyPress?.(ev.code);
-      if (PREVENT.has(ev.code)) ev.preventDefault();
+      if (PREVENT.has(ev.code) && !onNativeKeysPanel(ev)) ev.preventDefault();
     });
     target.addEventListener('keyup', (e) => {
       const ev = e as KeyboardEvent;
       this.down.delete(ev.code);
-      if (PREVENT.has(ev.code)) ev.preventDefault();
+      if (PREVENT.has(ev.code) && !onNativeKeysPanel(ev)) ev.preventDefault();
     });
     if (typeof window !== 'undefined') window.addEventListener('blur', () => this.down.clear());
   }
@@ -45,3 +45,13 @@ export class KeyboardSource implements InputSource {
 }
 
 const PREVENT = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'Tab']);
+
+/**
+ * The key is on a DOM panel that takes its own keys (Music Lab: `data-native-keys`): the browser
+ * keeps Space and Tab there, so Space presses the focused button and Tab moves focus (0.5.0, items
+ * 266-267). In play and the menus focus is on the page or the canvas, so nothing changes there.
+ */
+function onNativeKeysPanel(ev: Event): boolean {
+  const t = ev.target as { closest?: (sel: string) => unknown } | null;
+  return typeof t?.closest === 'function' && t.closest('[data-native-keys]') != null;
+}

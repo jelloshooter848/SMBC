@@ -49,6 +49,8 @@ const STYLE = `
   background: #000; color: #fcfcfc; font: 15px/1.3 ui-monospace, Menlo, Consolas, monospace;
   -webkit-touch-callout: default; }
 .music-lab * { box-sizing: border-box; }
+.music-lab:focus { outline: none; }
+.music-lab .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .music-lab header { display: flex; align-items: center; gap: 8px; }
 .music-lab h2 { flex: 1; margin: 0; font-size: 18px; letter-spacing: 2px; }
 .music-lab .body { flex: 1; min-height: 0; display: flex; gap: 10px; }
@@ -78,7 +80,7 @@ const STYLE = `
 .music-lab .foot { display: flex; gap: 10px; align-items: baseline; min-height: 2.6em; }
 .music-lab .status { flex: 1; margin: 0; color: #fcfcfc; }
 .music-lab .status.error { color: #fc9838; }
-.music-lab .status button { min-height: 32px; margin-left: 6px; }
+.music-lab .foot button { min-height: 32px; }
 .music-lab .where { color: #bcbcbc; font-size: 13px; white-space: nowrap; }
 .music-lab [hidden] { display: none !important; }
 .music-lab input[data-share-out] { width: 100%; font-size: 12px; }
@@ -123,6 +125,10 @@ export function questionAnswers(
       ];
 }
 
+/** How to leave the song text, which takes Tab itself (0.5.0, item 261): its description and the help page. */
+export const LEAVE_EDITOR_HELP =
+  'In the song text, Tab types two spaces. To leave it, press Escape, then Tab, or press Shift+Tab.';
+
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 
@@ -147,6 +153,115 @@ export interface LabQuestion {
   kind: 'clear' | 'add';
   text: string;
   selected: 'yes' | 'no';
+}
+
+/** The Music Lab panel's markup (built once, as text: its parts are tested without a DOM). */
+export function panelMarkup(): string {
+  return `<style>${STYLE}</style>
+      <header>
+        <h2 id="music-lab-title">MUSIC LAB</h2>
+        <button type="button" class="alt" data-act="help">Syntax help</button>
+        <button type="button" class="alt" data-act="back">Back</button>
+      </header>
+      <div class="body">
+        <div class="side">
+          <fieldset><legend>Play</legend>
+            <div class="row wide">
+              <button type="button" class="grow" data-act="play">Play</button>
+              <button type="button" class="alt grow" data-act="stop">Stop</button>
+              <button type="button" class="alt grow" data-act="loop" aria-pressed="true">Loop</button>
+            </div>
+            <div class="row">
+              <label for="music-lab-tempo" class="grow">Tempo</label>
+              <button type="button" class="alt" data-act="slower" aria-label="Slower">-</button>
+              <input id="music-lab-tempo" class="tempo" type="number" inputmode="numeric" min="${MIN_TEMPO}" max="${MAX_TEMPO}" data-tempo>
+              <button type="button" class="alt" data-act="faster" aria-label="Faster">+</button>
+            </div>
+          </fieldset>
+          <fieldset><legend>My songs</legend>
+            <div class="row">
+              <input class="grow" type="text" data-name aria-label="Song name" maxlength="24" autocomplete="off" spellcheck="false">
+              <button type="button" data-act="save">Save</button>
+              <button type="button" class="alt" data-act="rename">Rename</button>
+            </div>
+            <div class="row">
+              <select class="grow" data-library aria-label="Your saved songs"></select>
+              <button type="button" class="alt" data-act="open">Open</button>
+              <button type="button" class="alt" data-act="delete">Delete</button>
+            </div>
+            <div class="row" data-damaged hidden>
+              <button type="button" class="grow" data-act="clear">Clear song library</button>
+            </div>
+          </fieldset>
+          <fieldset><legend>Game songs (examples)</legend>
+            <div class="row">
+              <select class="grow" data-example aria-label="The game's songs">${EXAMPLES.map(
+                (s) => `<option value="${esc(s.id)}">${esc(s.id)}</option>`,
+              ).join('')}</select>
+              <button type="button" class="alt" data-act="example">Load</button>
+            </div>
+          </fieldset>
+          <fieldset><legend>Song</legend>
+            <div class="row">
+              <button type="button" class="alt grow" data-act="new">New</button>
+              <button type="button" class="alt grow" data-act="share">Share link</button>
+            </div>
+            <input type="text" readonly data-share-out aria-label="Share link" hidden>
+          </fieldset>
+        </div>
+        <div class="editor">
+          <pre aria-hidden="true"></pre>
+          <textarea aria-label="Song text" aria-describedby="music-lab-status music-lab-keys" spellcheck="false"
+            autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off"></textarea>
+          <span class="sr-only" id="music-lab-keys">${esc(LEAVE_EDITOR_HELP)}</span>
+        </div>
+      </div>
+      <div class="question" role="alertdialog" aria-labelledby="music-lab-question" hidden>
+        <p id="music-lab-question"></p>
+        <div class="row"></div>
+      </div>
+      <section class="help-page" aria-labelledby="music-lab-help" hidden>
+        <div class="row"><h3 id="music-lab-help" tabindex="-1" class="grow">SYNTAX HELP</h3>
+          <button type="button" data-act="close-help">Close</button></div>
+        <p>A song is a few settings lines, then its channels. Each channel's notes run until the next
+        channel's name. Spaces and new lines don't matter. Every channel should come out the same length.</p>
+        <p>${esc(LEAVE_EDITOR_HELP)}</p>
+        <table><tbody>${SYNTAX_HELP.map(
+          ([code, what]) => `<tr><th scope="row"><code>${esc(code)}</code></th><td>${esc(what)}</td></tr>`,
+        ).join('')}</tbody></table>
+      </section>
+      <div class="foot">
+        <p class="status" id="music-lab-status"></p>
+        <button type="button" class="alt" data-act="go-to-error" hidden>Go to error</button>
+        <span class="where" aria-hidden="true"></span>
+      </div>`;
+}
+
+/**
+ * Where Tab (or Shift+Tab with `shift`) moves focus to, among the controls Tab reaches now
+ * (`stops`, in order), from `at` (item 267): round from the last to the first and back, and into
+ * the panel from the panel itself or from outside it (the page); null leaves it to the browser.
+ */
+export function tabTarget<T>(stops: readonly T[], at: T | null, panel: T, shift: boolean): T | null {
+  if (!stops.length) return null;
+  const first = stops[0] as T;
+  const last = stops[stops.length - 1] as T;
+  const inside = at !== null && at !== panel && stops.includes(at);
+  if (inside && at !== (shift ? first : last)) return null;
+  return shift ? last : first;
+}
+
+/** What stays live (item 260): an open question, else the open help page, else everything. */
+export function openLayer(question: boolean, help: boolean): 'question' | 'help' | null {
+  return question ? 'question' : help ? 'help' : null;
+}
+
+/**
+ * Where focus goes once a question is answered (item 258): back on Clear song library while it
+ * shows (the clearing question came from it), else the song text.
+ */
+export function focusAfterAnswer(kind: LabQuestion['kind'], clearShown: boolean): 'clear' | 'text' {
+  return kind === 'clear' && clearShown ? 'clear' : 'text';
 }
 
 export class MusicLabScene implements Scene {
@@ -214,6 +329,8 @@ export class MusicLabScene implements Scene {
   }
 
   private readonly onVisibility = (): void => {
+    // Frames stop while the tab is hidden: the lines said before are not run onto the next (259).
+    this.spoken = [];
     if (document.visibilityState !== 'hidden' || !this.playing) return;
     this.stop(true);
     this.status = 'Stopped: the game went to the background.';
@@ -249,7 +366,7 @@ export class MusicLabScene implements Scene {
     const q: LabQuestion = { kind, text, selected: questionAnswers(kind)[0][0] };
     this.question = q;
     this.paintQuestion();
-    this.game.deps.announcer?.say(`${q.text} ${q.selected === 'no' ? 'No' : 'Yes'} is selected.`);
+    this.speak(`${q.text} ${q.selected === 'no' ? 'No' : 'Yes'} is selected.`);
   }
 
   /** The answer to the question on screen. */
@@ -259,16 +376,22 @@ export class MusicLabScene implements Scene {
     this.question = null;
     this.paintQuestion();
     if (q.kind === 'clear') {
-      if (!yes) return this.say('The song library was left as it is.');
-      const r = clearDamagedSongLibrary();
-      this.refreshLibrary();
-      this.sync();
-      if (!r.ok) return this.refused(r);
-      this.say('The song library was cleared. Save adds songs again.');
+      if (yes) {
+        const r = clearDamagedSongLibrary();
+        this.refreshLibrary();
+        this.sync();
+        if (!r.ok) this.refused(r);
+        else this.say('The song library was cleared. Save adds songs again.');
+      } else this.say('The song library was left as it is.');
+      // Focus back where it was asked from (item 258): Clear song library, or the text once that is gone.
+      const clear = this.panel?.querySelector<HTMLElement>('[data-act="clear"]');
+      const shown = !!clear && !clear.closest('[hidden]');
+      if (focusAfterAnswer('clear', shown) === 'clear') clear?.focus();
+      else this.box()?.focus({ preventScroll: true });
       return;
     }
-    if (!yes) return this.say('Not added. Save keeps it whenever you like.');
-    this.addShared();
+    if (!yes) this.say('Not added. Save keeps it whenever you like.');
+    else this.addShared();
     this.box()?.focus({ preventScroll: true });
   }
 
@@ -320,6 +443,8 @@ export class MusicLabScene implements Scene {
     const page = this.panel?.querySelector<HTMLElement>('.help-page');
     if (page) {
       page.hidden = !open;
+      // While it is open nothing behind it can be reached (item 260).
+      this.applyInert();
       if (open) page.querySelector<HTMLElement>('h3')?.focus();
       else this.panel?.querySelector<HTMLElement>('[data-act="help"]')?.focus();
     }
@@ -331,6 +456,7 @@ export class MusicLabScene implements Scene {
     if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function')
       document.removeEventListener('visibilitychange', this.onVisibility);
     if (this.checkTimer) clearTimeout(this.checkTimer);
+    if (typeof window !== 'undefined') window.removeEventListener('keydown', this.onWindowKey, true);
     this.panel?.remove();
     this.panel = null;
   }
@@ -461,6 +587,8 @@ export class MusicLabScene implements Scene {
   loadExample(id: string): void {
     const s = EXAMPLES.find((x) => x.id === id);
     if (!s) return;
+    // Unsaved changes: a second press, as New, Open and Back (item 268).
+    if (!this.confirmDrop(`example:${id}`)) return;
     this.stop(true);
     this.text = songToDoc(s);
     this.savedText = this.text;
@@ -607,7 +735,24 @@ export class MusicLabScene implements Scene {
   private say(text: string, isError = false): void {
     this.status = text;
     this.sync(isError);
-    this.game.deps.announcer?.say(text);
+    this.speak(text);
+  }
+
+  /** Lines said this frame (item 259). */
+  private spoken: string[] = [];
+
+  /**
+   * Says `text` after any other line said this frame (item 259): the announcer reads only the
+   * last text set in a frame, so a link's intro and its question, or "now your copy" and the
+   * tempo, are said together rather than one over the other.
+   */
+  private speak(text: string): void {
+    const a = this.game.deps.announcer;
+    if (!a) return;
+    if (typeof requestAnimationFrame !== 'function') return a.say(text);
+    if (!this.spoken.length) requestAnimationFrame(() => (this.spoken = []));
+    this.spoken.push(text);
+    a.say(this.spoken.join(' '));
   }
 
   private box(): HTMLTextAreaElement | null {
@@ -620,83 +765,13 @@ export class MusicLabScene implements Scene {
     const el = document.createElement('div');
     el.className = 'music-lab';
     el.dataset.nativeTouch = '';
+    // Space and Tab are the browser's here (engine/input/keyboard.ts; items 266-267).
+    el.dataset.nativeKeys = '';
+    // A press on the panel's background keeps focus on the panel, never the page (item 267).
+    el.tabIndex = -1;
     el.setAttribute('role', 'region');
     el.setAttribute('aria-labelledby', 'music-lab-title');
-    el.innerHTML = `<style>${STYLE}</style>
-      <header>
-        <h2 id="music-lab-title">MUSIC LAB</h2>
-        <button type="button" class="alt" data-act="help">Syntax help</button>
-        <button type="button" class="alt" data-act="back">Back</button>
-      </header>
-      <div class="body">
-        <div class="side">
-          <fieldset><legend>Play</legend>
-            <div class="row wide">
-              <button type="button" class="grow" data-act="play">Play</button>
-              <button type="button" class="alt grow" data-act="stop">Stop</button>
-              <button type="button" class="alt grow" data-act="loop" aria-pressed="true">Loop</button>
-            </div>
-            <div class="row">
-              <label for="music-lab-tempo" class="grow">Tempo</label>
-              <button type="button" class="alt" data-act="slower" aria-label="Slower">-</button>
-              <input id="music-lab-tempo" class="tempo" type="number" inputmode="numeric" min="${MIN_TEMPO}" max="${MAX_TEMPO}" data-tempo>
-              <button type="button" class="alt" data-act="faster" aria-label="Faster">+</button>
-            </div>
-          </fieldset>
-          <fieldset><legend>My songs</legend>
-            <div class="row">
-              <input class="grow" type="text" data-name aria-label="Song name" maxlength="24" autocomplete="off" spellcheck="false">
-              <button type="button" data-act="save">Save</button>
-              <button type="button" class="alt" data-act="rename">Rename</button>
-            </div>
-            <div class="row">
-              <select class="grow" data-library aria-label="Your saved songs"></select>
-              <button type="button" class="alt" data-act="open">Open</button>
-              <button type="button" class="alt" data-act="delete">Delete</button>
-            </div>
-            <div class="row" data-damaged hidden>
-              <button type="button" class="grow" data-act="clear">Clear song library</button>
-            </div>
-          </fieldset>
-          <fieldset><legend>Game songs (examples)</legend>
-            <div class="row">
-              <select class="grow" data-example aria-label="The game's songs">${EXAMPLES.map(
-                (s) => `<option value="${esc(s.id)}">${esc(s.id)}</option>`,
-              ).join('')}</select>
-              <button type="button" class="alt" data-act="example">Load</button>
-            </div>
-          </fieldset>
-          <fieldset><legend>Song</legend>
-            <div class="row">
-              <button type="button" class="alt grow" data-act="new">New</button>
-              <button type="button" class="alt grow" data-act="share">Share link</button>
-            </div>
-            <input type="text" readonly data-share-out aria-label="Share link" hidden>
-          </fieldset>
-        </div>
-        <div class="editor">
-          <pre aria-hidden="true"></pre>
-          <textarea aria-label="Song text" aria-describedby="music-lab-status" spellcheck="false"
-            autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off"></textarea>
-        </div>
-      </div>
-      <div class="question" role="alertdialog" aria-labelledby="music-lab-question" hidden>
-        <p id="music-lab-question"></p>
-        <div class="row"></div>
-      </div>
-      <section class="help-page" aria-labelledby="music-lab-help" hidden>
-        <div class="row"><h3 id="music-lab-help" tabindex="-1" class="grow">SYNTAX HELP</h3>
-          <button type="button" data-act="close-help">Close</button></div>
-        <p>A song is a few settings lines, then its channels. Each channel's notes run until the next
-        channel's name. Spaces and new lines don't matter. Every channel should come out the same length.</p>
-        <table><tbody>${SYNTAX_HELP.map(
-          ([code, what]) => `<tr><th scope="row"><code>${esc(code)}</code></th><td>${esc(what)}</td></tr>`,
-        ).join('')}</tbody></table>
-      </section>
-      <div class="foot">
-        <p class="status" id="music-lab-status"></p>
-        <span class="where" aria-hidden="true"></span>
-      </div>`;
+    el.innerHTML = panelMarkup();
     // Keys typed here are the panel's: the game's keyboard (on window) never sees them go down.
     for (const type of ['keydown', 'keypress']) el.addEventListener(type, (e) => e.stopPropagation());
     // While a question is open, focus never leaves its buttons: a press anywhere else on the
@@ -722,6 +797,17 @@ export class MusicLabScene implements Scene {
       if (this.question) this.answer(false);
       else if (this.helpOpen) this.openHelp(false);
     });
+    // Tab past the last control comes round to the first, and Shift+Tab the other way: focus
+    // never leaves the panel for the page, where the game takes Tab (item 267).
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab' || e.defaultPrevented) return;
+      const to = tabTarget<Element>(this.tabStops(), document.activeElement, el, e.shiftKey);
+      if (!to) return;
+      e.preventDefault();
+      (to as HTMLElement).focus();
+    });
+    // Focus on the page itself (a control it was on went away): Tab comes back to the panel.
+    window.addEventListener('keydown', this.onWindowKey, true);
     // Touches on the panel are the panel's (the touch pad under it must not see them).
     for (const type of ['pointerdown', 'pointerup', 'touchstart', 'touchend'])
       el.addEventListener(type, (e) => e.stopPropagation());
@@ -755,7 +841,8 @@ export class MusicLabScene implements Scene {
     tempo.addEventListener('change', () => {
       const v = Number(tempo.value);
       if (Number.isFinite(v) && v > 0) this.setTempo(v);
-      else tempo.value = String(this.tempo);
+      // The box shows the tempo set: 999 typed shows 300 (sync leaves a focused box alone).
+      tempo.value = String(this.tempo);
     });
     el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
       b.addEventListener('click', () => this.act(b.dataset.act ?? '')),
@@ -766,6 +853,24 @@ export class MusicLabScene implements Scene {
     box.focus({ preventScroll: true });
   }
   private tabOut = false;
+
+  /** The panel's controls Tab reaches now (not hidden, not behind a question or the help). */
+  private tabStops(): HTMLElement[] {
+    const el = this.panel;
+    if (!el) return [];
+    return Array.from(el.querySelectorAll<HTMLElement>('button, input, select, textarea')).filter(
+      (c) => !c.closest('[inert], [hidden]') && c.getClientRects().length > 0,
+    );
+  }
+
+  private readonly onWindowKey = (e: KeyboardEvent): void => {
+    const el = this.panel;
+    if (!el || e.key !== 'Tab' || el.contains(document.activeElement)) return;
+    e.preventDefault();
+    (
+      tabTarget<Element>(this.tabStops(), document.activeElement, el, e.shiftKey) as HTMLElement | null
+    )?.focus();
+  };
 
   private act(what: string): void {
     const sel = (s: string) => this.panel?.querySelector<HTMLSelectElement>(s)?.value ?? '';
@@ -798,6 +903,8 @@ export class MusicLabScene implements Scene {
         return this.openHelp(true);
       case 'close-help':
         return this.openHelp(false);
+      case 'go-to-error':
+        return this.goToError();
       case 'clear':
         return this.askClearLibrary();
       case 'back':
@@ -861,8 +968,7 @@ export class MusicLabScene implements Scene {
     const q = this.question;
     box.hidden = !q;
     // While a question is open nothing behind it can be reached or typed in.
-    for (const child of Array.from(this.panel?.children ?? []))
-      if (child !== box && child.tagName !== 'STYLE') (child as HTMLElement).inert = !!q;
+    this.applyInert();
     if (!q) return;
     (box.querySelector('p') as HTMLElement).textContent = q.text;
     const row = box.querySelector('.row') as HTMLElement;
@@ -887,6 +993,16 @@ export class MusicLabScene implements Scene {
       const next = buttons[(i + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length];
       next?.focus();
     };
+  }
+
+  /** Only the question, else only the open help page, can be reached; with neither, everything. */
+  private applyInert(): void {
+    const panel = this.panel;
+    if (!panel) return;
+    const layer = openLayer(this.question !== null, this.helpOpen);
+    const open = layer && panel.querySelector(layer === 'question' ? '.question' : '.help-page');
+    for (const child of Array.from(panel.children))
+      if (child.tagName !== 'STYLE') (child as HTMLElement).inert = open !== null && child !== open;
   }
 
   private refreshLibrary(): void {
@@ -922,13 +1038,12 @@ export class MusicLabScene implements Scene {
     const status = q<HTMLElement>('.status');
     status.textContent = this.status;
     status.classList.toggle('error', isError || (this.error !== null && this.status.startsWith('Line ')));
-    if (this.error && this.status.startsWith('Line ')) {
-      const go = document.createElement('button');
-      go.type = 'button';
-      go.className = 'alt';
-      go.textContent = 'Go to error';
-      go.addEventListener('click', () => this.goToError());
-      status.appendChild(go);
-    }
+    // Beside the line, not in it: the line is the text box's description, the button isn't.
+    // Shown while there is an error, whatever the line says now.
+    const go = q<HTMLButtonElement>('[data-act="go-to-error"]');
+    const hide = this.error === null;
+    // Hidden while focused (the error fixed): focus goes to the text, not the page (review).
+    if (hide && !go.hidden && document.activeElement === go) this.box()?.focus({ preventScroll: true });
+    go.hidden = hide;
   }
 }
