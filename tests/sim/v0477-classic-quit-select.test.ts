@@ -3,6 +3,8 @@ import { toPx } from '@engine/math/units';
 import { loadProgress, allSetsBeaten } from '@engine/save/progress';
 import { MARIO } from '@game/characters/mario';
 import { LINK } from '@game/characters/link';
+import { SAMUS } from '@game/characters/samus';
+import { CLASSIC_EXTRAS } from '@game/characters/registry';
 import {
   classicFileKey,
   eraseClassicFile,
@@ -11,6 +13,7 @@ import {
   type ClassicFileRef,
 } from '@game/original-files';
 import { CharacterSelectScene } from '@game/scenes/character-select';
+import { IntroScene } from '@game/scenes/intro';
 import type { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import { PauseScene } from '@game/scenes/pause';
@@ -383,5 +386,97 @@ describe('218 (owner): Quit to character select is a true fresh entry', () => {
     yes(h);
     expect(h.game.state.lives).toBe(lives);
     expect(h.game.state.score).toBe(score);
+  });
+});
+
+describe('240-242: the level start restored whole, the Quit hint kept true', () => {
+  const start = (h: G) =>
+    (h.game as unknown as { levelStart: { level: string; state: { kit: Record<string, number> } } | null })
+      .levelStart;
+
+  /** Samus's file run: 1-1 with 3 missiles picked up, then on to 1-2, its WORLD card up. */
+  function samusInto12(): G {
+    const h = classic();
+    h.game.classicGame(SAMUS, '1-1', { ref: A });
+    h.until(() => inLevel(h), 900);
+    h.idle(4);
+    (h.top() as LevelScene).world.player.scratch.missiles = 3;
+    h.idle(2);
+    h.game.levelExitTo('1-2');
+    pickAtContinue(h);
+    h.until(() => h.top() instanceof IntroScene, 900);
+    return h;
+  }
+
+  it("240: a kit counter raised mid-level is back to the level start's, in the state and the file", () => {
+    const h = samusInto12();
+    const kit0 = { ...h.game.state.kit };
+    expect(kit0.missiles).toBe(3);
+    // Changed in place under the WORLD card: the level start is a copy of its own.
+    h.game.state.kit.missiles = 5;
+    h.until(() => inLevel(h), 900);
+    h.idle(4);
+    expect(h.game.state.kit.missiles).toBe(5);
+    // And raised again mid-level, through the hero's own carried state.
+    (h.top() as LevelScene).world.player.scratch.missiles = 9;
+    h.idle(2);
+    expect(h.game.state.kit.missiles).toBe(9);
+    pauseQuit(h);
+    yes(h);
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.selectLevel).toBe('1-2');
+    expect(h.game.state.kit).toEqual(kit0);
+    expect(loadClassicFile(A)?.run.kit).toEqual(kit0);
+    // The restored kit is a copy too: changing it leaves the level start as it was.
+    h.game.state.kit.missiles = 7;
+    expect(start(h)?.state.kit).toEqual(kit0);
+    h.game.state.kit.missiles = 3;
+    // The same hero picked: the level with the level-start kit.
+    pickAtContinue(h);
+    h.until(() => inLevel(h), 900);
+    h.idle(2);
+    expect(h.game.state.kit).toEqual(kit0);
+  });
+
+  it('240: a state field the level start did not have goes', () => {
+    const h = fileRun();
+    expect('swapped' in h.game.state).toBe(false);
+    h.game.state.swapped = true;
+    pauseQuit(h);
+    yes(h);
+    expect('swapped' in h.game.state).toBe(false);
+  });
+
+  it('241: the Quit hint follows a hero toggled off in Dev mode while the pause is up', () => {
+    const h = classic((s) => void (s.dev = true));
+    const rules = originalFileRules();
+    rules.options.gameMode = 'single';
+    // An Expansion hero (Dev > Toggle heroes can set it Off).
+    const arthur = CLASSIC_EXTRAS.find((c) => c.id === 'arthur');
+    expect(arthur).toBeDefined();
+    h.game.classicGame(arthur!, '1-1', { ref: A, rules });
+    h.until(() => inLevel(h), 900);
+    h.idle(4);
+    const pause = openPause(h);
+    expect(items(pause).find((i) => i.label === 'Quit')?.hint).toBe('Back to the Classic menu');
+    // Dev mode > Toggle heroes: Arthur off, then back to the pause.
+    h.settings.classicDev.heroesOff.push('arthur');
+    expect(h.game.quitsToSelect).toBe(true);
+    h.idle(2);
+    expect(items(pause).find((i) => i.label === 'Quit')?.hint).toBe('Back to character select');
+    const card = pauseQuit(h, pause);
+    expect(card.title).toBe(QUIT_SELECT_TITLE);
+  });
+
+  it('242: with no level start for this level, Quit still clears the checkpoint and the clock', () => {
+    const h = fileRun();
+    (h.game as unknown as { levelStart: null }).levelStart = null;
+    h.game.state.checkpoint = { level: '1-1', x: 82 };
+    h.game.state.time = 123;
+    pauseQuit(h);
+    yes(h);
+    expect(h.top()).toBeInstanceOf(CharacterSelectScene);
+    expect(h.game.state.checkpoint).toBeNull();
+    expect(h.game.state.time).toBeNull();
   });
 });
