@@ -41,7 +41,7 @@ const flush = async () => {
 
 interface Rig {
   h: H;
-  api: OnlineApi & { backUps: { code: string; text: string }[]; restores: string[] };
+  api: OnlineApi & { backUps: { code: string; text: string; after?: number }[]; restores: string[] };
   loads: number;
   online: { value: boolean };
   copied: string[];
@@ -58,9 +58,9 @@ function rig(
     backUps,
     restores,
     newCode: () => opts.code ?? 'ABCDE12345',
-    backUp: async (code: string, text: string) => {
-      backUps.push({ code, text });
-      return opts.backUp ?? { ok: true as const, accepted: 5, total: 5 };
+    backUp: async (code: string, text: string, after?: number) => {
+      backUps.push({ code, text, after });
+      return opts.backUp ?? { ok: true as const, accepted: 5, total: 5, at: 1234 };
     },
     restore: async (code: string) => {
       restores.push(code);
@@ -208,7 +208,7 @@ describe('BACK UP ONLINE', () => {
   });
 
   it('again later: the same code, no explainer, no code box, just BACKED UP (N OF 5 SERVERS)', async () => {
-    const r = rig({ backUp: { ok: true, accepted: 3, total: 5 } });
+    const r = rig({ backUp: { ok: true, accepted: 3, total: 5, at: 1 } });
     ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
     press(r, 'Back up online');
     await flush();
@@ -230,7 +230,7 @@ describe('BACK UP ONLINE', () => {
     press(r, 'Back up online');
     await flush();
     expect(r.loads).toBe(1);
-    open({ ok: true, accepted: 5, total: 5 });
+    open({ ok: true, accepted: 5, total: 5, at: 1 });
     await flush();
     expect(status(r.h)).toBe('BACKED UP (5 OF 5 SERVERS)');
   });
@@ -400,6 +400,89 @@ describe('RESTORE FROM CODE', () => {
       expect(status(r.h)).toBe(shown);
       expect(r.h.said.at(-1)).toMatch(said);
       expect(ls.snapshot()).toEqual(before);
+    });
+  }
+});
+
+describe('v0.4.76 fix round', () => {
+  it('item 162: SHOW MY CODE only once a code exists; it shows it with COPY and SHARE, said letter by letter', async () => {
+    const none = rig();
+    expect(labels(none.h.top())).not.toContain('Show my code');
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    const r = rig();
+    expect(labels(r.h.top())).toContain('Show my code');
+    press(r, 'Show my code');
+    expect(titleOf(r.h)).toBe('YOUR BACKUP CODE');
+    expect(labels(r.h.top())).toEqual(['Copy code', 'Share code', 'OK']);
+    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZZ-99999');
+    expect(r.h.said.at(-1)).toMatch(/Z Z Z Z Z, 9 9 9 9 9/);
+    const items = (r.h.top() as unknown as { items: MenuItem[] }).items;
+    expect(items[0]?.gesture).toBe(true);
+    expect(items[1]?.gesture).toBe(true);
+    press(r, 'Copy code');
+    await flush();
+    expect(r.copied).toEqual(['ZZZZZ-99999']);
+    expect(r.loads).toBe(0);
+  });
+
+  it('item 162: the row appears after the first backup', async () => {
+    const r = rig();
+    press(r, 'Back up online');
+    press(r, 'Yes, back up');
+    await flush();
+    press(r, 'OK');
+    expect(labels(r.h.top())).toContain('Show my code');
+  });
+
+  it('the last backup time is kept with the code and handed to the next backup (a clock behind)', async () => {
+    const r = rig({ backUp: { ok: true, accepted: 5, total: 5, at: 7777 } });
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+    press(r, 'Back up online');
+    await flush();
+    expect(stored()).toMatchObject({ code: 'ZZZZZ99999', lastAt: 7777 });
+    press(r, 'Back up online');
+    await flush();
+    expect(r.api.backUps[1]!.after).toBe(7777);
+  });
+
+  it('a restored or imported copy shows its code again on this device (shown reset)', async () => {
+    const other = installStorage(new FakeStorage());
+    adoptDataEpoch();
+    other.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ABCDE12345', shown: true, lastAt: 50 }));
+    const t = buildBackup({ gameVersion: VERSION, now: new Date() }).text;
+    installStorage(ls);
+    adoptDataEpoch();
+    const r = rig({ restore: { ok: true, text: t, from: 'x' } });
+    press(r, 'Restore from code');
+    (r.h.top() as RestoreCodeScene).submit('ABCDE12345');
+    await flush();
+    press(r, 'Yes');
+    await flush();
+    expect(stored()).toEqual({ code: 'ABCDE12345', shown: false, lastAt: 50 });
+  });
+
+  for (const [what, result, shown, said] of [
+    [
+      'the servers refused it',
+      { ok: false, reason: 'refused', accepted: 0, total: 5 },
+      'SERVERS REFUSED THE BACKUP',
+      /refused/i,
+    ],
+    [
+      'a newer backup is online',
+      { ok: false, reason: 'newer', accepted: 0, total: 5 },
+      'A NEWER BACKUP IS ONLINE',
+      /newer backup/i,
+    ],
+  ] as const) {
+    it(`${what}: its own line, said`, async () => {
+      const r = rig({ backUp: result as BackUpResult });
+      ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZ99999', shown: true }));
+      press(r, 'Back up online');
+      await flush();
+      expect(status(r.h)).toBe(shown);
+      expect(r.h.said.at(-1)).toMatch(said);
+      expect(r.h.said.at(-1)).not.toMatch(/could not reach/i);
     });
   }
 });

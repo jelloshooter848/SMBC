@@ -67,6 +67,14 @@ export class FakeRelays {
           if (typeof mode === 'object' && JSON.stringify(ev).length > mode.cap)
             return reply(['OK', ev.id, false, `invalid: event too large: ${JSON.stringify(ev).length}`]);
           const d = (e: NostrEventLike) => e.tags.find((t) => t[0] === 'd')?.[1];
+          // A replaceable event keeps the newest (strfry's answers): the same event again is a
+          // duplicate, an older or same-second one is refused.
+          const held = (relays.stored.get(this.url) ?? []).find(
+            (e) => e.pubkey === ev.pubkey && e.kind === ev.kind && d(e) === d(ev),
+          );
+          if (held?.id === ev.id) return reply(['OK', ev.id, true, 'duplicate: have this event']);
+          if (held && held.created_at >= ev.created_at)
+            return reply(['OK', ev.id, false, 'replaced: have newer event']);
           const kept = (relays.stored.get(this.url) ?? []).filter(
             (e) => !(e.pubkey === ev.pubkey && e.kind === ev.kind && d(e) === d(ev)),
           );

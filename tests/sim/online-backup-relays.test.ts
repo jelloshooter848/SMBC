@@ -18,7 +18,9 @@ import {
   onlineCopy,
   RELAY_COUNT,
 } from '@engine/online/online-backup';
-import { defaultSettings, SETTINGS_KEY } from '@engine/save/settings';
+import { defaultSettings, loadSettings, SETTINGS_KEY } from '@engine/save/settings';
+import { loadSave, newSave, saveKey } from '@game/save/save-files';
+import { FakeStorage, installStorage } from './save-data-helpers';
 import { FakeRelays, type RelayMode } from './fake-relays';
 
 /*
@@ -94,6 +96,52 @@ describe('the online copy has no dev fields (owner default 3)', () => {
   });
 });
 
+describe('item 161: no dev field anywhere in the online copy', () => {
+  /** Every property name in a JSON value, at any depth, with its path. */
+  function names(v: unknown, path: string, out: string[]): string[] {
+    if (Array.isArray(v)) v.forEach((x, i) => names(x, `${path}[${i}]`, out));
+    else if (v && typeof v === 'object')
+      for (const [k, x] of Object.entries(v)) {
+        out.push(`${path}.${k}`);
+        names(x, `${path}.${k}`, out);
+      }
+    return out;
+  }
+
+  it('settings and every Campaign file lose their dev* fields; the files still load', async () => {
+    const s = defaultSettings();
+    s.dev = true;
+    s.devUnlock = 'abc';
+    const save = {
+      ...newSave(1, 'mario', null),
+      devUnlockAll: true,
+      devAllHeroes: true,
+      devGateOpen: true,
+      devInventory: true,
+    };
+    const data: Record<string, string> = {
+      [SETTINGS_KEY]: JSON.stringify(s),
+      [saveKey(1)]: JSON.stringify(save),
+      [saveKey(2)]: JSON.stringify({ ...newSave(2, 'luigi', null), devSomethingNew: 1 }),
+      'smbc.devLast': '{"level":"1-1"}',
+      // A Classic file's devHero mark is a guard, not a dev setting: it keeps a dev-only hero's
+      // file from playing outside dev mode, so it stays (and is said so here).
+      'smbc-classic-file-smb-1': JSON.stringify({ v: 1, run: { devHero: true } }),
+    };
+    const out = onlineCopy(data);
+    const found: string[] = [];
+    for (const [k, v] of Object.entries(out)) names(JSON.parse(v), k, found);
+    const dev = found.filter((p) => /\.dev([A-Z]|$)/.test(p) && !p.endsWith('.run.devHero'));
+    expect(dev).toEqual([]);
+    installStorage(new FakeStorage());
+    for (const [k, v] of Object.entries(out)) localStorage.setItem(k, v);
+    expect(loadSave(1)?.devUnlockAll).toBe(false);
+    expect(loadSave(1)?.slot).toBe(1);
+    expect(loadSave(2)?.slot).toBe(2);
+    expect(loadSettings().dev).toBe(false);
+  });
+});
+
 describe('the event', () => {
   it("is kind 30078 with the d tag, signed by the code's key, its content not the text", async () => {
     const ev = await makeBackupEvent(CODE, TEXT);
@@ -140,27 +188,37 @@ describe('the event', () => {
 describe('BACK UP ONLINE against faked relays', () => {
   it('all 5 accept: backed up, 5 of 5', async () => {
     const { opts } = relays(['accept', 'accept', 'accept', 'accept', 'accept']);
-    expect(await backUp(CODE, TEXT, opts)).toEqual({ ok: true, accepted: 5, total: 5 });
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({ ok: true, accepted: 5, total: 5 });
   });
 
   it('2 accept (one refuses, one never answers, one is down with a 503): backed up, 2 of 5', async () => {
     const { opts } = relays(['accept', 'reject', 'silent', 'down', 'accept']);
-    expect(await backUp(CODE, TEXT, opts)).toEqual({ ok: true, accepted: 2, total: 5 });
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({ ok: true, accepted: 2, total: 5 });
   });
 
   it('only 1 accepts: not backed up', async () => {
     const { opts } = relays(['accept', 'reject', 'silent', 'down', 'down']);
-    expect(await backUp(CODE, TEXT, opts)).toEqual({ ok: false, reason: 'servers', accepted: 1, total: 5 });
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({
+      ok: false,
+      reason: 'servers',
+      accepted: 1,
+      total: 5,
+    });
   });
 
   it('offline (every relay fails to connect): not backed up, 0 of 5', async () => {
     const { opts } = relays(['down', 'down', 'down', 'down', 'down']);
-    expect(await backUp(CODE, TEXT, opts)).toEqual({ ok: false, reason: 'servers', accepted: 0, total: 5 });
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({
+      ok: false,
+      reason: 'servers',
+      accepted: 0,
+      total: 5,
+    });
   });
 
   it('a relay with a small event cap refuses it; the others take it', async () => {
     const { opts } = relays([{ cap: 500 }, 'accept', 'accept', 'accept', 'accept']);
-    expect(await backUp(CODE, TEXT, opts)).toEqual({ ok: true, accepted: 4, total: 5 });
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({ ok: true, accepted: 4, total: 5 });
   });
 });
 
@@ -227,5 +285,46 @@ describe('RESTORE FROM CODE against faked relays', () => {
     const t0 = Date.now();
     expect(await restore(CODE, { ...opts, timeoutMs: 2000, graceMs: 20 })).toMatchObject({ ok: true });
     expect(Date.now() - t0).toBeLessThan(1500);
+  });
+});
+
+describe('review of b6a20d56: clocks, refusals (v0.4.76 fix round)', () => {
+  it('two backups in the same second: the second is a second later (after = the last one) and wins', async () => {
+    const { opts } = relays(['accept', 'accept', 'accept']);
+    const a = await backUp(CODE, 'first', { ...opts, now: 1000 });
+    expect(a).toMatchObject({ ok: true, at: 1000 });
+    const b = await backUp(CODE, 'second', { ...opts, now: 1000, after: 1000 });
+    expect(b).toMatchObject({ ok: true, at: 1001 });
+    expect(await restore(CODE, opts)).toMatchObject({ ok: true, text: 'second' });
+  });
+
+  it('a device clock behind the last backup still replaces it (max(now, last + 1))', async () => {
+    const { opts } = relays(['accept', 'accept']);
+    await backUp(CODE, 'old', { ...opts, now: 5000 });
+    const r = await backUp(CODE, 'new', { ...opts, now: 1000, after: 5000 });
+    expect(r).toMatchObject({ ok: true, at: 5001 });
+    expect(await restore(CODE, opts)).toMatchObject({ ok: true, text: 'new' });
+  });
+
+  it('the servers hold a newer backup (another device, a clock set ahead): its own reason', async () => {
+    const { opts } = relays(['accept', 'accept', 'accept']);
+    await backUp(CODE, 'from the future', { ...opts, now: 9_999_999 });
+    const r = await backUp(CODE, 'now', { ...opts, now: 1000 });
+    expect(r).toMatchObject({ ok: false, reason: 'newer', accepted: 0, total: 3 });
+  });
+
+  it('every relay answering NO (not unreachable): refused, not "could not reach"', async () => {
+    const { opts } = relays(['reject', 'reject', { cap: 10 }]);
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({
+      ok: false,
+      reason: 'refused',
+      accepted: 0,
+      total: 3,
+    });
+  });
+
+  it('none answering at all is still the servers', async () => {
+    const { opts } = relays(['down', 'silent']);
+    expect(await backUp(CODE, TEXT, opts)).toMatchObject({ ok: false, reason: 'servers', accepted: 0 });
   });
 });
