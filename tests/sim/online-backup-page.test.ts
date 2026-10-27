@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildBackup, isGameKey } from '@engine/save/backup';
 import {
   ONLINE_BACKUP_KEY,
+  ONLINE_NOTICE_KEY,
   type BackUpResult,
   type DeleteResult,
   type OnlineApi,
@@ -31,6 +32,8 @@ let ls: FakeStorage;
 beforeEach(() => {
   ls = installStorage(new FakeStorage());
   adoptDataEpoch();
+  // v0.4.77 item 182: the experimental note already seen (v0477-save-data.test.ts covers it).
+  ls.setItem(ONLINE_NOTICE_KEY, 'true');
 });
 
 const labels = (m: unknown) => (m as { items: MenuItem[] }).items.map((i) => i.label);
@@ -117,7 +120,24 @@ function rig(
   return r;
 }
 
+/** Rows on v0.4.77's BACK UP ONLINE page (item 181.3), opened from Save data on the way. */
+const ONLINE_ROWS = [
+  'Back up online',
+  'Restore from code',
+  'Show most recent code',
+  'Delete most recent code',
+];
+
 function press(r: Rig, label: string): void {
+  if (ONLINE_ROWS.includes(label) && titleOf(r.h) === 'SAVE DATA') {
+    pick(r, 'Back up online');
+    // A restore replaces the note's seen flag with the backup's data: the note again.
+    if (titleOf(r.h) === 'EXPERIMENTAL FEATURE') pick(r, 'OK');
+  }
+  pick(r, label);
+}
+
+function pick(r: Rig, label: string): void {
   r.h.idle(8);
   const at = labels(r.h.top()).indexOf(label);
   expect(at, `${label} in ${labels(r.h.top()).join(', ')}`).toBeGreaterThanOrEqual(0);
@@ -133,14 +153,10 @@ describe('where the rows are', () => {
   it('under Save data, on the web build', async () => {
     const r = rig();
     await flush();
-    expect(labels(r.h.top())).toEqual([
-      'Export backup',
-      'Import backup',
-      'Back up online',
-      'Restore from code',
-      'Erase all data',
-      'Back',
-    ]);
+    // v0.4.77 item 181: the online rows are on their own page.
+    expect(labels(r.h.top())).toEqual(['Back up on device', 'Back up online', 'Reset game', 'Back']);
+    pick(r, 'Back up online');
+    expect(labels(r.h.top())).toEqual(['Back up online', 'Restore from code', 'Back']);
   });
 
   it('not in the offline build (it makes no network requests)', async () => {
@@ -175,7 +191,7 @@ describe('BACK UP ONLINE', () => {
     await flush();
     expect(r.loads).toBe(0);
     expect(ls.getItem(ONLINE_BACKUP_KEY)).toBeNull();
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ONLINE');
   });
 
   it('YES: backs up under a new code, shows it once with COPY and SHARE, and says it letter by letter', async () => {
@@ -199,7 +215,7 @@ describe('BACK UP ONLINE', () => {
     await flush();
     expect(r.shared[0]).toContain('ABCD-EF12-3456');
     press(r, 'OK');
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ONLINE');
     expect(stored()).toMatchObject({ code: 'ABCDEF123456', shown: true });
   });
 
@@ -226,11 +242,11 @@ describe('BACK UP ONLINE', () => {
 
   it('again later: the same code, no explainer, no code box, just BACKED UP (N OF 5 SERVERS)', async () => {
     const r = rig({ backUp: { ok: true, accepted: 3, total: 5, at: 1 } });
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, uploaded: true }));
     press(r, 'Back up online');
     await flush();
     expect(r.api.backUps[0]!.code).toBe('ZZZZZZ999999');
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ONLINE');
     expect(status(r.h)).toBe('BACKED UP (3 OF 5 SERVERS)');
     expect(r.h.said.at(-1)).toMatch(/^Backed up to 3 of 5 servers/);
   });
@@ -238,7 +254,7 @@ describe('BACK UP ONLINE', () => {
   it('BACKING UP... shows and is said at once; a second press meanwhile does nothing', async () => {
     let open!: (v: BackUpResult) => void;
     const r = rig();
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, uploaded: true }));
     r.api.backUp = () => new Promise((res) => (open = res));
     press(r, 'Back up online');
     expect(status(r.h)).toBe('BACKING UP...');
@@ -277,7 +293,7 @@ describe('BACK UP ONLINE', () => {
       press(r, 'Back up online');
       press(r, 'Yes, back up');
       await flush();
-      expect(titleOf(r.h)).toBe('SAVE DATA');
+      expect(titleOf(r.h)).toBe('BACK UP ONLINE');
       expect(status(r.h)).toBe(shown);
       expect(r.h.said.at(-1)).toMatch(said);
     });
@@ -285,7 +301,7 @@ describe('BACK UP ONLINE', () => {
 
   it('the online code module failing to load (no connection): said, nothing changed', async () => {
     const r = rig();
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, uploaded: true }));
     const env = (r.h.game.deps.saveDataEnv as SaveDataEnv).online!;
     env.load = () => Promise.reject(new Error('Failed to fetch dynamically imported module'));
     press(r, 'Back up online');
@@ -331,7 +347,7 @@ describe('RESTORE FROM CODE', () => {
     expect(box).toBeInstanceOf(RestoreCodeScene);
     expect(r.h.said.at(-1)).toMatch(/^Restore from code\. Type your backup code/);
     box.cancel();
-    expect(titleOf(r.h)).toBe('SAVE DATA');
+    expect(titleOf(r.h)).toBe('BACK UP ONLINE');
     expect(r.loads).toBe(0);
   });
 
@@ -413,7 +429,7 @@ describe('RESTORE FROM CODE', () => {
       press(r, 'Restore from code');
       (r.h.top() as RestoreCodeScene).submit('ABCDEF123456');
       await flush();
-      expect(titleOf(r.h)).toBe('SAVE DATA');
+      expect(titleOf(r.h)).toBe('BACK UP ONLINE');
       expect(status(r.h)).toBe(shown);
       expect(r.h.said.at(-1)).toMatch(said);
       expect(ls.snapshot()).toEqual(before);
@@ -424,11 +440,13 @@ describe('RESTORE FROM CODE', () => {
 describe('v0.4.76 fix round', () => {
   it('item 162: SHOW MY CODE only once a code exists; it shows it with COPY and SHARE, said letter by letter', async () => {
     const none = rig();
-    expect(labels(none.h.top())).not.toContain('Show my code');
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
+    pick(none, 'Back up online');
+    expect(labels(none.h.top())).not.toContain('Show most recent code');
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, uploaded: true }));
     const r = rig();
-    expect(labels(r.h.top())).toContain('Show my code');
-    press(r, 'Show my code');
+    pick(r, 'Back up online');
+    expect(labels(r.h.top())).toContain('Show most recent code');
+    press(r, 'Show most recent code');
     expect(titleOf(r.h)).toBe('YOUR BACKUP CODE');
     expect(labels(r.h.top())).toEqual(['Copy code', 'Share code', 'OK']);
     expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZ-ZZ99-9999');
@@ -448,12 +466,12 @@ describe('v0.4.76 fix round', () => {
     press(r, 'Yes, back up');
     await flush();
     press(r, 'OK');
-    expect(labels(r.h.top())).toContain('Show my code');
+    expect(labels(r.h.top())).toContain('Show most recent code');
   });
 
   it('the last backup time is kept with the code and handed to the next backup (a clock behind)', async () => {
     const r = rig({ backUp: { ok: true, accepted: 5, total: 5, at: 7777 } });
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
+    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, uploaded: true }));
     press(r, 'Back up online');
     await flush();
     expect(stored()).toMatchObject({ code: 'ZZZZZZ999999', lastAt: 7777 });
@@ -475,7 +493,8 @@ describe('v0.4.76 fix round', () => {
     await flush();
     press(r, 'Yes');
     await flush();
-    expect(stored()).toEqual({ code: 'ABCDEF123456', shown: false, lastAt: 50 });
+    // v0.4.77 item 187: a restored code is online.
+    expect(stored()).toEqual({ code: 'ABCDEF123456', shown: false, lastAt: 50, uploaded: true });
   });
 
   for (const [what, result, shown, said] of [
@@ -494,7 +513,7 @@ describe('v0.4.76 fix round', () => {
   ] as const) {
     it(`${what}: its own line, said`, async () => {
       const r = rig({ backUp: result as BackUpResult });
-      ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true }));
+      ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, uploaded: true }));
       press(r, 'Back up online');
       await flush();
       expect(status(r.h)).toBe(shown);
@@ -506,7 +525,10 @@ describe('v0.4.76 fix round', () => {
 
 describe('items 166-168', () => {
   const withCode = () =>
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, lastAt: 900 }));
+    ls.setItem(
+      ONLINE_BACKUP_KEY,
+      JSON.stringify({ code: 'ZZZZZZ999999', shown: true, lastAt: 900, uploaded: true }),
+    );
 
   it('item 166: the code box shows XXXX-XXXX-XXXX and the restore box asks for twelve', async () => {
     const r = rig({ code: 'ABCDEF123456' });
@@ -520,34 +542,32 @@ describe('items 166-168', () => {
     expect((r.h.top() as RestoreCodeScene).submit('ABCDE-12345')).toMatch(/not a backup code/i);
   });
 
-  it('item 168: DELETE ONLINE COPY only while a code exists; 8 rows, and the note and status still fit', async () => {
-    expect(labels(rig().h.top())).not.toContain('Delete online copy');
+  it('item 168: DELETE MOST RECENT CODE only while a code exists; 5 rows, and the status still fits', async () => {
+    const none = rig();
+    pick(none, 'Back up online');
+    expect(labels(none.h.top())).not.toContain('Delete most recent code');
     withCode();
     const r = rig();
+    pick(r, 'Back up online');
+    // v0.4.77 items 181.1 and 181.3: the online page's rows; no note is drawn any more.
     expect(labels(r.h.top())).toEqual([
-      'Export backup',
-      'Import backup',
       'Back up online',
       'Restore from code',
-      'Show my code',
-      'Delete online copy',
-      'Erase all data',
+      'Show most recent code',
+      'Delete most recent code',
       'Back',
     ]);
     const texts = draw(r.h.top() as never).texts;
-    const back = texts.find((t) => t.str === 'BACK' || t.str.startsWith('BACK'));
-    const note = texts.filter((t) => /PACKS|BACKUP HOLDS/.test(t.str));
-    expect(note.length).toBeGreaterThan(0);
-    for (const t of note) {
-      expect(t.y).toBeGreaterThan((back?.y ?? 0) + 7);
-      expect(t.y + 8).toBeLessThanOrEqual(198);
-    }
+    expect(texts.filter((t) => /PACKS|BACKUP HOLDS/.test(t.str))).toEqual([]);
+    const rows = texts.filter((t) => t.str === 'DELETE MOST RECENT CODE');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.y + 8).toBeLessThanOrEqual(198);
   });
 
   it('item 168: DELETE YOUR ONLINE BACKUP? NO first; NO does nothing', async () => {
     withCode();
     const r = rig();
-    press(r, 'Delete online copy');
+    press(r, 'Delete most recent code');
     expect(titleOf(r.h)).toBe('DELETE YOUR ONLINE BACKUP?');
     expect(labels(r.h.top())).toEqual(['No', 'Yes, delete']);
     expect(r.h.said.at(-1)).toMatch(/^Delete your online backup\?.* No$/);
@@ -557,22 +577,23 @@ describe('items 166-168', () => {
     expect(r.loads).toBe(0);
   });
 
-  it('item 168: YES deletes it: DELETED ON N OF 5 SERVERS, said; the code is kept for later', async () => {
+  it('item 168: YES deletes it: DELETED ON N OF 5 SERVERS, said; the code is forgotten (v0.4.77)', async () => {
     withCode();
     const r = rig();
-    press(r, 'Delete online copy');
+    press(r, 'Delete most recent code');
     press(r, 'Yes, delete');
     await flush();
     expect(r.api.deletes).toEqual([{ code: 'ZZZZZZ999999', after: 900 }]);
     expect(status(r.h)).toBe('DELETED ON 5 OF 5 SERVERS');
     expect(r.h.said.at(-1)).toMatch(/^Online backup deleted on 5 of 5 servers/);
-    expect(stored()).toMatchObject({ code: 'ZZZZZZ999999', lastAt: 4321 });
+    // v0.4.77 item 181.3: Delete Most Recent Code forgets the code on this device.
+    expect(ls.getItem(ONLINE_BACKUP_KEY)).toBeNull();
   });
 
   it('item 168: partly deleted says a copy may remain; failures said', async () => {
     withCode();
     const part = rig({ deleted: { ok: true, deleted: 2, total: 5, at: 1 } });
-    press(part, 'Delete online copy');
+    press(part, 'Delete most recent code');
     press(part, 'Yes, delete');
     await flush();
     expect(status(part.h)).toBe('DELETED ON 2 OF 5 SERVERS');
@@ -581,15 +602,18 @@ describe('items 166-168', () => {
       [{ ok: false, reason: 'servers', deleted: 0, total: 5 }, 'COULD NOT REACH THE SERVERS'],
       [{ ok: false, reason: 'refused', deleted: 0, total: 5 }, 'SERVERS REFUSED TO DELETE IT'],
     ] as const) {
+      // The partial delete above forgot the code (v0.4.77 item 181.3).
+      withCode();
       const r = rig({ deleted: result as DeleteResult });
-      press(r, 'Delete online copy');
+      press(r, 'Delete most recent code');
       press(r, 'Yes, delete');
       await flush();
       expect(status(r.h)).toBe(shown);
     }
+    withCode();
     const off = rig();
     off.online.value = false;
-    press(off, 'Delete online copy');
+    press(off, 'Delete most recent code');
     expect(status(off.h)).toBe('NEEDS AN INTERNET CONNECTION');
   });
 
@@ -602,58 +626,14 @@ describe('items 166-168', () => {
     expect(r.h.said.at(-1)).toMatch(/deleted/i);
   });
 
+  // v0.4.77 item 181.5 removed ALSO DELETE YOUR ONLINE BACKUP? from the reset (Reset game
+  // never deletes the online copy): v0477-save-data.test.ts covers the reset with a code.
   async function toOnlineQuestion(r: Rig): Promise<void> {
-    press(r, 'Erase all data');
+    press(r, 'Reset game');
     press(r, 'Yes');
-    press(r, 'Yes, erase');
+    press(r, 'Yes, reset');
     await flush();
   }
-
-  it('item 167: with a code, Erase asks ALSO DELETE YOUR ONLINE BACKUP? (NO first); NO erases without it', async () => {
-    withCode();
-    const r = rig();
-    await toOnlineQuestion(r);
-    expect(titleOf(r.h)).toBe('ALSO DELETE YOUR ONLINE BACKUP?');
-    expect(labels(r.h.top())).toEqual(['No', 'Yes']);
-    press(r, 'No');
-    await flush();
-    expect(r.api.deletes).toEqual([]);
-    expect(ls.snapshot(isGameKey)).toEqual({});
-  });
-
-  it('item 167: YES deletes the online copy, then erases (the code too)', async () => {
-    withCode();
-    const r = rig();
-    await toOnlineQuestion(r);
-    press(r, 'Yes');
-    await flush();
-    expect(r.api.deletes).toEqual([{ code: 'ZZZZZZ999999', after: 900 }]);
-    expect(ls.snapshot(isGameKey)).toEqual({});
-    expect(r.h.said.join(' | ')).toMatch(/online backup deleted on 5 of 5 servers/i);
-  });
-
-  it('item 167: YES but the online delete fails: the device is still erased, and it says so', async () => {
-    withCode();
-    const r = rig({ deleted: { ok: false, reason: 'servers', deleted: 0, total: 5 } });
-    await toOnlineQuestion(r);
-    press(r, 'Yes');
-    await flush();
-    expect(ls.snapshot(isGameKey)).toEqual({});
-    expect(r.h.said.join(' | ')).toMatch(/online backup could not be deleted/i);
-  });
-
-  it('item 167: BACK at the online question cancels the whole erase', async () => {
-    withCode();
-    const r = rig();
-    const before = ls.snapshot();
-    await toOnlineQuestion(r);
-    r.h.idle(8);
-    r.h.tap('attack');
-    await flush();
-    expect(ls.snapshot()).toEqual(before);
-    expect(r.api.deletes).toEqual([]);
-    expect(titleOf(r.h)).toBe('SAVE DATA');
-  });
 
   it('item 167: without a code there is no online question', async () => {
     const r = rig();
@@ -694,7 +674,10 @@ describe('items 166-168', () => {
 
 describe('second review of the online backup (page)', () => {
   const withCode = () =>
-    ls.setItem(ONLINE_BACKUP_KEY, JSON.stringify({ code: 'ZZZZZZ999999', shown: true, lastAt: 900 }));
+    ls.setItem(
+      ONLINE_BACKUP_KEY,
+      JSON.stringify({ code: 'ZZZZZZ999999', shown: true, lastAt: 900, uploaded: true }),
+    );
   const textWith = (entry: string | null) => {
     const o = installStorage(new FakeStorage());
     adoptDataEpoch();
@@ -717,7 +700,7 @@ describe('second review of the online backup (page)', () => {
     const t = textWith(JSON.stringify({ code: 'ABCDEF123456', shown: true, lastAt: 50 }));
     const r = rig({ restore: { ok: true, text: t, from: 'x', at: 9000 } });
     await restoreYes(r);
-    expect(stored()).toEqual({ code: 'ABCDEF123456', shown: false, lastAt: 9000 });
+    expect(stored()).toEqual({ code: 'ABCDEF123456', shown: false, lastAt: 9000, uploaded: true });
   });
 
   it("an imported entry that is not a valid code does not replace this device's", async () => {
@@ -737,39 +720,6 @@ describe('second review of the online backup (page)', () => {
     expect(r.h.said.at(-1)).toMatch(/online backup code is now Q Q Q Q, Q Q 1 1, 1 1 1 1/i);
   });
 
-  async function eraseWithOnline(r: Rig, yes = true): Promise<void> {
-    press(r, 'Erase all data');
-    press(r, 'Yes');
-    press(r, 'Yes, erase');
-    await flush();
-    if (yes) press(r, 'Yes');
-    await flush();
-  }
-
-  it('Erase with a failed online delete: the card shows and says the code (it stays online)', async () => {
-    withCode();
-    const r = rig({ deleted: { ok: false, reason: 'servers', deleted: 0, total: 5 } });
-    await eraseWithOnline(r);
-    expect(titleOf(r.h)).toBe('ALL DATA ERASED');
-    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZ-ZZ99-9999');
-    expect(r.h.said.at(-1)).toMatch(/stays online.*write down its code.*Z Z Z Z, Z Z 9 9, 9 9 9 9/i);
-  });
-
-  it('Erase offline: no ALSO DELETE question; the card shows the code that stays online', async () => {
-    withCode();
-    const r = rig();
-    r.online.value = false;
-    await eraseWithOnline(r, false);
-    expect(titleOf(r.h)).toBe('ALL DATA ERASED');
-    expect(r.api.deletes).toEqual([]);
-    expect((r.h.top() as unknown as { lines: string[] }).lines).toContain('ZZZZ-ZZ99-9999');
-    expect(r.h.said.at(-1)).toMatch(/stays online/i);
-  });
-
-  it('Erase with a partial online delete says a copy may remain there', async () => {
-    withCode();
-    const r = rig({ deleted: { ok: true, deleted: 3, total: 5, at: 1 } });
-    await eraseWithOnline(r);
-    expect(r.h.said.at(-1)).toMatch(/3 of 5 servers.*may remain/i);
-  });
+  // v0.4.77 item 181.5: the reset no longer deletes the online copy, and a code that is online
+  // is shown before the reset, not on its card (v0477-save-data.test.ts).
 });

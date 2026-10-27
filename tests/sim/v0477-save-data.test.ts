@@ -24,7 +24,7 @@ import { FONT_COLOURS } from '@content/sprites/font';
 import type { ShareEnv } from '@game/save/share-code';
 import type { MenuItem, MenuScene } from '@game/scenes/menu';
 import { SaveDataOptions, onlineLoader, type SaveDataEnv } from '@game/scenes/save-data';
-import { RestoreCodeScene } from '@game/scenes/online-backup';
+import type { RestoreCodeScene } from '@game/scenes/online-backup';
 import { offlineNoticeDue, standaloneNoticeDue, type HomeScreenHooks } from '@game/pwa/home-screen';
 import { newSave, saveKey, writeSave } from '@game/save/save-files';
 import { makeGame, type H } from './heroes-harness';
@@ -228,7 +228,7 @@ describe('181.1: the main Save data page', () => {
   it('no note is drawn under the rows; what a backup holds is still said', async () => {
     const r = rig();
     await flush();
-    const drawn = drawSheets(r.h.top()).map((t) => t.str);
+    const drawn = drawSheets(r.h.top() as never).map((t) => t.str);
     expect(drawn.filter((s) => /PACKS|BACKUP HOLDS|IMPORT NEVER/.test(s))).toEqual([]);
     expect(r.h.said.join(' | ')).toMatch(/does not restore asset packs/i);
   });
@@ -265,6 +265,8 @@ describe('181.2: BACK UP ON DEVICE', () => {
     const r = rig();
     const delivered: File[][] = [];
     r.env.deliver = (f) => (delivered.push(f), Promise.resolve('downloaded'));
+    // The packs are listed on opening (asynchronously): Export waits for that.
+    await flush();
     press(r, 'Back up on device');
     press(r, 'Export backup');
     await flush();
@@ -434,7 +436,7 @@ describe('181.4: the Back Up Online result card', () => {
     press(r, 'Back up online');
     press(r, 'Yes, back up');
     await flush();
-    const texts = drawSheets(r.h.top());
+    const texts = drawSheets(r.h.top() as never);
     const code = texts.filter((t) => t.str === 'ABCD-EF12-3456');
     expect(code).toHaveLength(1);
     expect(code[0]!.sheet).toBe(`font@${FONT_COLOURS.gold}`);
@@ -464,7 +466,7 @@ describe('181.4: the Back Up Online result card', () => {
     expect(linesOf(r.h)).toContain('ZZZZ-ZZ99-9999');
     expect(labels(r.h.top())).toEqual(['Copy code', 'Share code', 'OK']);
     expect(r.h.said.at(-1)).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
-    expect(drawSheets(r.h.top()).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
+    expect(drawSheets(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
       `font@${FONT_COLOURS.gold}`,
     );
     expect(r.loads).toBe(0);
@@ -631,7 +633,7 @@ describe('181.5 / 188: RESET GAME', () => {
     const said = r.h.said.at(-1) as string;
     expect(said).toMatch(/stays on the servers/i);
     expect(said).toMatch(/Z Z Z Z, Z Z 9 9, 9 9 9 9/);
-    expect(drawSheets(r.h.top()).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
+    expect(drawSheets(r.h.top() as never).find((t) => t.str === 'ZZZZ-ZZ99-9999')!.sheet).toBe(
       `font@${FONT_COLOURS.gold}`,
     );
     press(r, 'Copy code');
@@ -708,7 +710,7 @@ describe('181.5 / 188: RESET GAME', () => {
   it('a reset that fails keeps everything, the code included', async () => {
     uploadedCode();
     const r = rig();
-    ls.writesLeft = 0;
+    ls.throwOnWrite = true;
     await resetAll(r);
     expect(stored()).toMatchObject({ code: CODE, uploaded: true });
     expect(titleOf(r.h)).toBe('SAVE DATA');
@@ -733,7 +735,7 @@ describe('184: the Home Screen flags outlive a reset and an import', () => {
     phone: true,
     standalone: true,
     fileCopy: true,
-    variant: () => 'ios',
+    variant: () => 'ios-safari',
     prompt: async () => 'unavailable',
     updateReady: () => false,
     applyUpdate: () => {},
@@ -741,7 +743,7 @@ describe('184: the Home Screen flags outlive a reset and an import', () => {
   const withFlags = () => {
     const s = defaultSettings();
     s.homeScreen = { tipDone: true, noticeDone: true, offlineDone: true };
-    s.music = 3;
+    s.audio.sfx = 0.3;
     ls.setItem(SETTINGS_KEY, JSON.stringify(s));
     return s;
   };
@@ -763,7 +765,7 @@ describe('184: the Home Screen flags outlive a reset and an import', () => {
     expect(standaloneNoticeDue(g.game)).toBe(false);
     expect(offlineNoticeDue(g.game)).toBe(false);
     expect(g.game.deps.settings!.homeScreen).toEqual({ tipDone: true, noticeDone: true, offlineDone: true });
-    expect(g.game.deps.settings!.music).toBe(defaultSettings().music);
+    expect(g.game.deps.settings!.audio.sfx).toBe(defaultSettings().audio.sfx);
     expect(Object.keys(ls.snapshot(isGameKey))).toEqual([SETTINGS_KEY]);
   });
 
@@ -794,7 +796,7 @@ describe('184: the Home Screen flags outlive a reset and an import', () => {
     const t = backupFrom((o) => {
       const s = defaultSettings();
       s.homeScreen = { tipDone: false, noticeDone: false, offlineDone: false };
-      s.music = 1;
+      s.audio.sfx = 0.1;
       o.setItem(SETTINGS_KEY, JSON.stringify(s));
     });
     const r = rig({ settings: withFlags(), homeScreen: hooks() });
@@ -803,7 +805,7 @@ describe('184: the Home Screen flags outlive a reset and an import', () => {
     const g = restarted();
     expect(standaloneNoticeDue(g.game)).toBe(false);
     expect(offlineNoticeDue(g.game)).toBe(false);
-    expect(g.game.deps.settings!.music).toBe(1);
+    expect(g.game.deps.settings!.audio.sfx).toBe(0.1);
   });
 
   it('an import without settings still keeps the flags', async () => {
