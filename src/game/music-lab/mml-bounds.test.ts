@@ -133,8 +133,8 @@ describe('285: with a budget, the notes are capped too', () => {
     }
     expect(e).toBeInstanceOf(MmlError);
     expect((e as MmlError).reason).toBe('too many notes (check the repeat counts)');
-    // The 101st event: the rest, then 50 times through c d.
-    expect((e as MmlError).start).toBe(3);
+    // The 101st event: the rest, then c d 50 times, the last d.
+    expect((e as MmlError).start).toBe(5);
     expect(() => parseMml('r [c d]2', 'pulse', { maxSteps: MAX_SONG_STEPS, maxEvents: 5 })).not.toThrow();
   });
 

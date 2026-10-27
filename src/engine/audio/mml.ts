@@ -92,14 +92,17 @@ interface State {
  * before the text is refused as too long; a player's text, or a shared link's, can't hang the
  * page (0.5.0, item 255: characters, not commands, so one command scanning a long run of text
  * counts it all). Set, notes must also be 0-127 and slides within ±96 semitones (item 256), so
- * no frequency is out of the synth's reach. Left out (the game's own songs and sounds): no limit.
+ * no frequency is out of the synth's reach. `maxEvents` (0.5.0, item 285): the most notes and
+ * rests, so a short text can't ask for a million of them. Left out (the game's own songs and
+ * sounds): no limit.
  */
 export function parseMml(
   src: string,
   channel: 'pulse' | 'triangle' | 'noise' = 'pulse',
-  opts: { maxSteps?: number } = {},
+  opts: { maxSteps?: number; maxEvents?: number } = {},
 ): Track {
   const maxSteps = opts.maxSteps ?? Infinity;
+  const maxEvents = opts.maxEvents ?? Infinity;
   const bounded = opts.maxSteps !== undefined;
   let steps = 0;
   const events: NoteEvent[] = [];
@@ -134,6 +137,7 @@ export function parseMml(
     return ticks;
   };
   const emit = (note: number | null, len: number, gateOverride?: number): void => {
+    if (events.length >= maxEvents) fail('too many notes (check the repeat counts)');
     const gateFrac = (gateOverride ?? st.gate) / 8;
     events.push({
       tick,
