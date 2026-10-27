@@ -215,6 +215,17 @@ has the same guide for the hero you are playing.
   **Import backup** checks a backup file whole, asks before replacing everything, and changes
   nothing if it is damaged or from a newer version (it does not restore asset packs); **Erase all
   data** asks twice (offering a backup first), and asks separately about asset packs.
+  **Back up online** (not in the downloaded offline copy) saves an encrypted copy on five free
+  Nostr servers, found again by a 12-character backup code (`ABCD-EF12-3456`), shown after the
+  first backup and any time with **Show my code** (with Copy and Share); the servers see an
+  anonymous ID and when, nothing personal, and free servers may lose it, so keep a backup file
+  too. The online copy holds the game saves (Campaign and Classic files), the settings without
+  dev mode's fields (and Campaign files without theirs), custom levels, progress and the names
+  of the asset packs turned on, not the pack files. Backing up again with the same code replaces
+  it. **Restore from code** brings it back on any device through the same checks and question as
+  Import backup. **Delete online copy** empties the copy on the servers and asks them to delete
+  it, keeping the code for a later backup; Erase all data offers the same first. Import keeps
+  this device's code unless the backup brings its own.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
@@ -340,6 +351,11 @@ pnpm release:check # package.json version, CHANGELOG.md format and changes/ frag
 pnpm changelog:preview # the next release's changelog section, from changes/*.md
 node tools/smoke/screenshot.mjs out/   # headless Playwright smoke run with screenshots
 ```
+
+The game has no runtime dependencies, with one owner-approved exception (item 160): online backup
+(Options → Save data) uses `nostr-tools` and `@noble/hashes`, pinned to exact versions and loaded
+only through `import()` when one of its rows is used (`src/engine/online/nostr-backup.ts`), so the
+main bundle and startup never load them, and the offline build has neither the rows nor the code.
 
 Levels are text files (`src/content/levels/world*/*.map`); see `src/game/level/textmap.ts`
 for the format. All eight worlds are playable, from 1-1 to the princess at the end of 8-4 (World 2 brings the water levels with

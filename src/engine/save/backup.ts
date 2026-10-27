@@ -15,6 +15,7 @@ import { crc32 } from './zip';
  *                                                          (0.4.67, 0.4.68) waiting to migrate
  * - `smbc-classic-advanced-{set}-{1..3}` game/original-files.ts a Classic file's Advanced cheats
  * - `smbc-classic-replay-help`   game/scenes/original-replay.ts the replay help seen
+ * - `smbc.onlineBackup`        engine/online/online-backup.ts this device's online backup code (item 159)
  * - `smbc.levels`                game/level/library.ts     the level editor's custom levels
  * - `smbc.devLast`               game/scenes/dev-play.ts   the dev Level select's last pick
  * - `smbc.dataEpoch`             engine/save/storage.ts    the data marker (not data: never exported)
@@ -94,12 +95,18 @@ export function backupFileName(now: Date): string {
 }
 
 /** The backup of everything stored now. Throws when storage cannot be read (no half backup). */
-export function buildBackup(opts: { gameVersion: string; now: Date; store?: KeyValueStore }): {
+export function buildBackup(opts: {
+  gameVersion: string;
+  now: Date;
+  store?: KeyValueStore;
+  /** What to back up instead of storage as it is (the online copy, item 159: dev fields out). */
+  data?: Record<string, string>;
+}): {
   text: string;
   fileName: string;
   keys: number;
 } {
-  const data = readGameData(opts.store);
+  const data = opts.data ?? readGameData(opts.store);
   const b: Backup = {
     format: BACKUP_FORMAT,
     formatVersion: BACKUP_FORMAT_VERSION,

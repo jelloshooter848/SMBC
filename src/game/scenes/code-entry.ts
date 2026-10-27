@@ -16,6 +16,10 @@ export interface CodeEntryOptions {
   cancel: () => void;
   /** Says a line to screen readers (the panel's own alert region says it too). */
   say?: (text: string) => void;
+  /** The line under the heading, the box's name and its placeholder (default: a save code's). */
+  hint?: string;
+  label?: string;
+  placeholder?: string;
 }
 
 const STYLE = `
@@ -66,9 +70,9 @@ export class CodeEntryPanel {
     el.setAttribute('aria-labelledby', 'code-entry-title');
     el.innerHTML = `<style>${STYLE}</style>
       <h2 id="code-entry-title"></h2>
-      <p>Paste the code, or the whole message with the link. You can type it too.</p>
-      <textarea aria-label="Save code" autocapitalize="characters" autocomplete="off" autocorrect="off"
-        spellcheck="false" enterkeyhint="done" placeholder="Paste the code or the message here"></textarea>
+      <p></p>
+      <textarea autocapitalize="characters" autocomplete="off" autocorrect="off"
+        spellcheck="false" enterkeyhint="done"></textarea>
       <div class="status" role="alert" aria-live="assertive"></div>
       <div class="row">
         ${opts.read ? '<button type="button" data-paste class="alt">Paste</button>' : ''}
@@ -76,6 +80,11 @@ export class CodeEntryPanel {
         <button type="button" data-cancel class="alt">Cancel</button>
       </div>`;
     (el.querySelector('h2') as HTMLElement).textContent = opts.title;
+    (el.querySelector('p') as HTMLElement).textContent =
+      opts.hint ?? 'Paste the code, or the whole message with the link. You can type it too.';
+    const area = el.querySelector('textarea') as HTMLTextAreaElement;
+    area.setAttribute('aria-label', opts.label ?? 'Save code');
+    area.placeholder = opts.placeholder ?? 'Paste the code or the message here';
     this.el = el;
     this.box = el.querySelector('textarea') as HTMLTextAreaElement;
     this.status = el.querySelector('.status') as HTMLElement;
