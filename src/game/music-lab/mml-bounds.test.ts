@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MmlError, midiToHz, parseMml } from '@engine/audio/mml';
 import { songs } from '@content/music/songs';
-import { MAX_SONG_STEPS, parseSongDoc } from './song-doc';
+import { songToDoc as songToDocText } from './song-doc';
+import { MAX_SONG_EVENTS, MAX_SONG_STEPS, parseSongDoc } from './song-doc';
 
 /*
  * Pre-0.5.0 items 255 and 256 (Music Lab review), tests first: with a step budget set, one command
@@ -113,5 +114,61 @@ describe('256: with a budget, notes stay 0-127 and slides within ±96', () => {
   it('without a budget nothing changes: big slides and notes still parse', () => {
     expect(parseMml('p200 c').events[0]?.slide).toBe(200);
     expect(parseMml(`c${'+'.repeat(200)}`).events[0]?.note).toBe(260);
+  });
+});
+
+/** Item 285: the 81-character link of the review, about a million notes over four channels. */
+const NOTE_BOMB = ['pulse1', 'pulse2', 'triangle']
+  .map((ch) => `${ch}:[${'c'.repeat(440)}]560\n`)
+  .concat(`noise:[${'k'.repeat(440)}]560\n`)
+  .join('');
+
+describe('285: with a budget, the notes are capped too', () => {
+  it('a channel past maxEvents is "too many notes", at the note that passed it', () => {
+    let e: unknown = null;
+    try {
+      parseMml('r [c d]200', 'pulse', { maxSteps: MAX_SONG_STEPS, maxEvents: 100 });
+    } catch (x) {
+      e = x;
+    }
+    expect(e).toBeInstanceOf(MmlError);
+    expect((e as MmlError).reason).toBe('too many notes (check the repeat counts)');
+    // The 101st event: the rest, then c d 50 times, the last d.
+    expect((e as MmlError).start).toBe(5);
+    expect(() => parseMml('r [c d]2', 'pulse', { maxSteps: MAX_SONG_STEPS, maxEvents: 5 })).not.toThrow();
+  });
+
+  it('the review link is refused fast, as too many notes', () => {
+    const t0 = performance.now();
+    const r = parseSongDoc(NOTE_BOMB);
+    expect(performance.now() - t0).toBeLessThan(1000);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.message).toMatch(/^pulse1: too many notes/);
+  });
+
+  it('the cap is for the whole song: four channels of 30,000 notes each are refused, on the fourth', () => {
+    const doc = ['pulse1', 'pulse2', 'triangle']
+      .map((ch) => `${ch}: [c]30000\n`)
+      .concat('noise: [k]30000\n')
+      .join('');
+    const r = parseSongDoc(doc);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.message).toMatch(/^noise: too many notes/);
+    expect(MAX_SONG_EVENTS).toBe(100_000);
+  });
+
+  it('the game’s songs are far under it (the most, 705 notes, about 140 times under)', () => {
+    for (const s of songs) {
+      const r = parseSongDoc(songToDocText(s));
+      expect(r.ok, s.id).toBe(true);
+      if (r.ok) {
+        const n = Object.values(r.doc.compiled.tracks).reduce((a, t) => a + (t?.events.length ?? 0), 0);
+        expect(n * 100, s.id).toBeLessThan(MAX_SONG_EVENTS);
+      }
+    }
+  });
+
+  it('without a budget nothing changes: no cap on notes', () => {
+    expect(parseMml('[c]200000').events).toHaveLength(200_000);
   });
 });
