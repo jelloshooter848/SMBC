@@ -100,7 +100,11 @@ export function readOnlineCode(raw: unknown): StoredOnlineCode | null {
     code,
     shown: v?.shown === true,
     ...(typeof at === 'number' && Number.isFinite(at) ? { lastAt: at } : {}),
-    ...(v?.uploaded === true ? { uploaded: true } : {}),
+    // Item 226 (owner exception): a code stored by v0.4.76 has no `uploaded`; one with a backup
+    // time was uploaded then.
+    ...(v?.uploaded === true || (v?.uploaded === undefined && typeof at === 'number' && Number.isFinite(at))
+      ? { uploaded: true }
+      : {}),
   };
 }
 

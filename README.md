@@ -226,9 +226,11 @@ has the same guide for the hero you are playing.
   theirs), custom levels, progress and the names of the asset packs turned on, not the pack files.
   Backing up again with the same code replaces it. **Restore from code** brings it back on any
   device through the same checks and question as Import backup. **Delete most recent code**
-  empties the copy on the servers, asks them to delete it, and forgets the code on this device,
-  so the next backup makes a new code. Show and Delete appear only once a copy is online. Import
-  keeps this device's code unless the backup brings its own. **Reset game** asks twice (offering
+  empties the copy on the servers, asks them to delete it, and, once every server has confirmed,
+  forgets the code on this device, so the next backup makes a new code (when some servers did not
+  confirm, the code is kept so you can try again). Show and Delete appear only once a copy is
+  online (on at least one server). Import keeps this device's code unless the backup brings its
+  own; when it does, the import question first shows your current code, with Copy code. **Reset game** asks twice (offering
   a backup first), and asks separately about asset packs; it never deletes the online copy: when
   one is online, its code is shown first, with Copy code, and this device then forgets it. A
   reset or an import keeps which Home Screen notes this device has already shown.

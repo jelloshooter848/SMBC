@@ -949,9 +949,9 @@ describe('185: the online code loader tries again after a failed import()', () =
     press(r, 'Back up online');
     expect(titleOf(r.h)).toBe('BACK UP ONLINE');
     const plan = [false, true, false];
-    r.env.online!.load = onlineLoader(() =>
-      plan.shift() ? Promise.resolve(r.api) : Promise.reject(new Error('Failed to fetch module')),
-    );
+    // One load function throughout (onlineLoader would keep the good load, so it is left out).
+    r.env.online!.load = () =>
+      plan.shift() ? Promise.resolve(r.api) : Promise.reject(new Error('Failed to fetch module'));
     for (const want of [
       'COULD NOT REACH THE SERVERS',
       'BACKED UP (5 OF 5 SERVERS)',
