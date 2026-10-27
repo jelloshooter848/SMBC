@@ -341,3 +341,13 @@ Edge cases when two windows of the game change key bindings:
 - a P1 rebind in one window and a P2 rebind in another merge as one (`settings.ts`, `input:
 'each'`), losing one of them;
 - Reset keys in one window is undone by the other window's earlier rebind.
+
+### Online backup: relays that are slow or old (items 173 and 174)
+
+Follow-ups from the third review of the online backup (0.4.76):
+
+- a fast relay serving an older genuine copy beats a newer copy that arrives after the 400 ms
+  grace (item 173); a fix could be to reject, on the same device, copies older than the stored
+  `lastAt`;
+- events that arrive after a restore has finished are still verified and decrypted (item 174);
+  they could be skipped.

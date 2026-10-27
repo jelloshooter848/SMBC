@@ -28,6 +28,11 @@ export class FakeRelays {
   readonly stored = new Map<string, NostrEventLike[]>();
   /** Every socket opened, by URL (none: nothing was contacted). */
   readonly opened: string[] = [];
+  /**
+   * Raw frames a hostile relay sends for a REQ, before what it holds, ignoring the filter:
+   * `sub` gives the subscription id to put in them. Sent as they are (not JSON-encoded again).
+   */
+  readonly inject = new Map<string, (sub: string) => string[]>();
 
   constructor(modes: Record<string, RelayMode>) {
     for (const [u, m] of Object.entries(modes)) this.modes.set(u, m);
@@ -105,6 +110,8 @@ export class FakeRelays {
         if (msg[0] === 'REQ') {
           const sub = msg[1] as string;
           const f = msg[2] as { authors?: string[]; kinds?: number[]; '#d'?: string[] };
+          for (const frame of relays.inject.get(this.url)?.(sub) ?? [])
+            setTimeout(() => !this.closed && this.onmessage?.({ data: frame }), 1);
           for (const e of relays.stored.get(this.url) ?? []) {
             if (f.authors && !f.authors.includes(e.pubkey)) continue;
             if (f.kinds && !f.kinds.includes(e.kind)) continue;

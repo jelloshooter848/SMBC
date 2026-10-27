@@ -21,14 +21,14 @@ export const MIN_ACCEPTS = 2;
 const BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const READ_AS: Readonly<Record<string, string>> = { O: '0', I: '1', L: '1' };
 
-/** A new random code (10 canonical characters), from the browser's crypto random numbers. */
+/** A new random code (12 canonical characters), from the browser's crypto random numbers. */
 export function newBackupCode(
   rand: (n: number) => Uint8Array = (n) => crypto.getRandomValues(new Uint8Array(n)),
 ): string {
   return [...rand(CODE_CHARS)].map((b) => BASE32[b & 31]).join('');
 }
 
-/** Typed text as a code's 10 canonical characters, or null when it is not one. */
+/** Typed text as a code's 12 canonical characters, or null when it is not one. */
 export function normalizeBackupCode(text: string): string | null {
   let out = '';
   for (const ch of text) {

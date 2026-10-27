@@ -53,6 +53,13 @@ const SCRYPT = { N: 2 ** 15, r: 8, p: 1, dkLen: 32 };
 export const EVENT_MAX_BYTES = 60_000;
 /** NIP-44 encrypts at most this many bytes. */
 const NIP44_MAX = 65_535;
+/**
+ * Item 171: the longest event content opened (NIP-44's largest payload is 87,472 characters),
+ * checked before the event is hashed, verified or decrypted; and the longest relay message read
+ * at all (that content plus room for the rest), dropped before JSON.parse.
+ */
+const CONTENT_MAX = 90_000;
+const FRAME_MAX = 100_000;
 
 /** Whatever WebSocket the caller gives (the browser's; a test's fake). */
 type SocketClass = new (url: string) => {
@@ -176,24 +183,42 @@ async function decodePayload(payload: string): Promise<string | null> {
   }
 }
 
-/** What one event is, every part checked: this code's backup, its empty tombstone, or neither. */
-type Opened = { kind: 'backup'; text: string } | { kind: 'deleted' } | null;
+/**
+ * What one event is, every part checked: this code's backup, its empty tombstone, or neither;
+ * with when it was made.
+ */
+type Opened = { kind: 'backup'; text: string; at: number } | { kind: 'deleted'; at: number } | null;
+
+/** Item 170: every field of an event the right type (a relay can send anything, null included). */
+function isEventShape(e: unknown): e is Event {
+  if (!e || typeof e !== 'object') return false;
+  const ev = e as Record<string, unknown>;
+  return (
+    typeof ev.id === 'string' &&
+    typeof ev.pubkey === 'string' &&
+    Number.isSafeInteger(ev.created_at) &&
+    typeof ev.kind === 'number' &&
+    Array.isArray(ev.tags) &&
+    typeof ev.content === 'string' &&
+    typeof ev.sig === 'string'
+  );
+}
 
 async function openEvent(code: string, event: unknown): Promise<Opened> {
   const { sk, pk } = await keysFromCode(code);
-  const ev = event as Event | null;
-  if (!ev || typeof ev !== 'object' || ev.pubkey !== pk || ev.kind !== KIND) return null;
-  if (!Array.isArray(ev.tags) || !ev.tags.some((t) => Array.isArray(t) && t[0] === 'd' && t[1] === D_TAG))
-    return null;
+  if (!isEventShape(event)) return null;
+  const ev = event;
+  if (ev.pubkey !== pk || ev.kind !== KIND || ev.content.length > CONTENT_MAX) return null;
+  if (!ev.tags.some((t) => Array.isArray(t) && t[0] === 'd' && t[1] === D_TAG)) return null;
   try {
     // A clean copy: nostr-tools remembers a verified event on the object itself (a symbol key,
     // which a spread copies), so only the event's own fields are checked.
     const { id, pubkey, created_at, kind, tags, content, sig } = ev;
     if (!verifyEvent({ id, pubkey, created_at, kind, tags, content, sig })) return null;
     // Item 168: DELETE ONLINE COPY's empty tombstone.
-    if (content === '') return { kind: 'deleted' };
+    if (content === '') return { kind: 'deleted', at: created_at };
     const text = await decodePayload(nip44.decrypt(content, nip44.getConversationKey(sk, pk)));
-    return text === null ? null : { kind: 'backup', text };
+    return text === null ? null : { kind: 'backup', text, at: created_at };
   } catch {
     return null;
   }
@@ -236,7 +261,10 @@ function connect(W: SocketClass, url: string, ms: number): Promise<InstanceType<
 
 const parse = (data: unknown): unknown[] | null => {
   try {
-    const m: unknown = JSON.parse(typeof data === 'string' ? data : String(data));
+    const text = typeof data === 'string' ? data : String(data);
+    // Item 171: a message too long for any event this code reads is not parsed at all.
+    if (text.length > FRAME_MAX) return null;
+    const m: unknown = JSON.parse(text);
     return Array.isArray(m) ? m : null;
   } catch {
     return null;
@@ -336,10 +364,9 @@ export async function restore(code: string, o: RelayOptions = {}): Promise<Resto
     };
     const offer = async (url: string, ev: unknown) => {
       const opened = await openEvent(code, ev);
-      const at = (ev as { created_at?: number }).created_at ?? 0;
       if (opened === null || done) return;
-      if (!best || at > best.at)
-        best = { text: opened.kind === 'backup' ? opened.text : null, at, from: url };
+      if (!best || opened.at > best.at)
+        best = { text: opened.kind === 'backup' ? opened.text : null, at: opened.at, from: url };
       graceTimer ??= setTimeout(finish, grace);
     };
     for (const url of relays) {
