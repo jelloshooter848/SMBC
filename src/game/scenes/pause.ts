@@ -110,18 +110,18 @@ export class PauseScene extends MenuScene {
       if (rp && game.advancedCheatsOf(rp.ref, rp.fp))
         items.push(advancedCheatsItem(game, rp.ref, undefined, rp.fp));
       if (game.stageRound) items.push(this.giveUp());
-      // O-16: Quit asks first (NO / YES), then goes to the CLASSIC menu.
+      // O-16: Quit asks first (NO / YES). v0.4.77 items 196/197: YES goes to the run's mid-run
+      // select for this level when it has one (Game.quitsToSelect), else the CLASSIC menu.
+      const toSelect = game.quitsToSelect;
       items.push({
         label: 'Quit',
         // 38f: NO says "Paused." and the focused row (Quit), as the pause opens.
-        select: () => confirmQuitRun(game, null),
-        // G-008, B-L: the run's file holds this level's start, only when the run has one
-        // (Game.keepsResume: not a developer, link or practice run).
+        select: () => confirmQuitRun(game, null, toSelect),
         hint: game.replayRun
           ? // v0.4.73 (owner 97a): a CLEARED file's replay goes back to its file box.
             'Back to the file box; the file stays cleared'
-          : game.keepsResume
-            ? 'Back to the Classic menu; your file picks the run up from this level'
+          : toSelect
+            ? 'Back to character select'
             : 'Back to the Classic menu',
       });
       this.setItems(items);
@@ -272,9 +272,13 @@ export class PauseScene extends MenuScene {
     return this.game.devMode && !this.game.campaign && !this.game.stageRound;
   }
 
-  /** Campaign play in dev mode gets the assists on their own. */
+  /**
+   * Campaign play in dev mode gets the assists on their own. v0.4.77 item 190: not while Dev
+   * mode's menu shows (a Classic run's), which has Assists itself.
+   */
   private get showAssists(): boolean {
-    return this.game.devMode && (!!this.game.campaign || this.game.classicRun);
+    const game = this.game;
+    return game.devMode && !this.showDev && (!!game.campaign || game.classicRun);
   }
 
   override enter(): void {

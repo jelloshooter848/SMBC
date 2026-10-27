@@ -75,10 +75,10 @@ describe('151: the Quit box checks the file as it opens', () => {
     expect(store.get(classicFileKey(A))).toBe(theirs);
   });
 
-  it('its own file: the promise as before, no note', () => {
+  it('its own file: no note (v0.4.77 item 195: no promise line either)', () => {
     const t1 = tab1In();
     confirmQuitRun(t1.game, null);
-    expect(t1.said.at(-1)).toMatch(/waits in its file/i);
+    expect(t1.said.at(-1)).toBe('Quit to the Classic menu? No');
     expect(t1.said.at(-1)).not.toMatch(NOTE);
   });
 });

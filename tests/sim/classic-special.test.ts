@@ -305,9 +305,10 @@ describe('G-005 / G-020: beat status and the end of the game', () => {
     h.game.classicDifficulty = 'hard';
     (h.game as unknown as { afterCredits(from: string): void }).afterCredits('sp-8-4-end4');
     expect(loadProgress().classicBeat?.special).toBe('hard');
+    // v0.4.77 item 203: the menu no longer says it.
     h.game.showClassicMenu();
     const row = items(h.top()).find((i) => /Special/.test(String(i.label)));
-    expect(row?.hint).toMatch(/Beaten on Hard/);
+    expect(row?.hint).not.toMatch(/Beaten/);
   });
 });
 

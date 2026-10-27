@@ -59,8 +59,8 @@ tool, which is named after the selected tool. Touch size runs from 100% to 160%.
 **CLASSIC** on the title opens the original game's menu: **Super Mario Bros.**, **Super Mario
 Bros. Special** (SMB Special: 32 more levels, with its own enemies and items) and **The Lost
 Levels**, the original's heroes on its select screen (with their alternative looks), and
-three save files for each set. A used file shows its difficulty, where it is, its lives, score
-and hero, and picking it goes on from there. An empty file starts a new game: first its map
+three save files for each set. A used file shows its difficulty, where it is and its score, and
+picking it goes on from there. An empty file starts a new game: first its map
 difficulty (Easy, Normal or Hard), then its rules (game mode, including **Survival**, where every
 hero has one life; lives, attack, damage and the other settings; the weapons; heroes left out).
 A file's rules stay fixed for that file, and each file keeps its own continues, so **ERASE FILE**
@@ -69,7 +69,10 @@ file shares: the music set, tutorials, the **Cheats** the original unlocks (all 
 Select: a cleared file's level replay does that job), and video, audio and controls. The heroes
 play by the original's rules: their physics, power states, weapons and swimming, enemy hit
 points and armour. How to play (Options) and the pause menu's Guide show the original's
-tutorial boxes for each hero. The pause menu and every page it opens are Classic boxes.
+tutorial boxes for each hero. The pause menu and every page it opens are Classic boxes. Its
+**Quit** goes back to the character select for the level you are on, in the game modes that
+have one (no life or score lost; the picked hero starts the level from its beginning), and
+BACK there asks to quit to the Classic menu.
 
 ### Chapter 1 (coming soon)
 
@@ -205,8 +208,8 @@ has the same guide for the hero you are playing.
   **Key hints** (off by default) shows the same ability buttons with their current labels and
   bound keys beside the game ("JUMP / Z"), and a key line on the touch buttons. Instructions
   name abilities (JUMP, BACK, TOOLS), with your bound key or pad button when not on touch.
-- **Save files** (developer mode only until Chapter 1 opens): share, copy or paste each file's save
-  code, and backup reminders on or off, off by default
+- **Save files** (developer mode only until Chapter 1 opens; not in Classic mode's Options): share,
+  copy or paste each file's save code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
 - **Save data** (the title's Options only): **Export backup** saves everything the game keeps in
@@ -229,7 +232,7 @@ has the same guide for the hero you are playing.
 - **How to play** (not in the title screen's Options): the per-hero guides (also in the pause
   menu for the hero you are playing),
   written for the controls you are using: touch, gamepad or keyboard.
-- **Asset packs**: import a pack from a `.zip` file (every device, phones included) or, on a
+- **Asset packs** (the title's and the Classic menu's Options, not the pause menu's): import a pack from a `.zip` file (every device, phones included) or, on a
   computer, from a folder (a pack with a name already stored is replaced only on YES); export repaintable templates (a computer's page); toggle packs (left /
   right) or delete one (OK, then YES).
 - **Add to Home Screen** (phones, and browsers that can install the game): the browser's own

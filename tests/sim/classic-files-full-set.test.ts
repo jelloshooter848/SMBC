@@ -146,7 +146,7 @@ describe('31a: the file box announces the move', () => {
     h.game.showClassicMenu();
     choose(h, 'Super Mario Bros.');
     const box = h.top() as ClassicFilesScene;
-    expect(values(box).slice(0, 3)).toEqual(['NORMAL 1-1 X4', 'NORMAL 2-1 X4', 'NORMAL 3-1 X4']);
+    expect(values(box).slice(0, 3)).toEqual(['NORMAL 1-1', 'NORMAL 2-1', 'NORMAL 3-1']);
     // The waiting run is told on the set's ERASE FILE row.
     const erase = items(box).find((i) => i.label === 'Erase file');
     expect(erase?.hint).toMatch(/older version is waiting for a free file/);
@@ -158,10 +158,10 @@ describe('31a: the file box announces the move', () => {
     );
     choose(h, 'Yes');
     expect(h.top()).toBe(box);
-    expect(values(box).slice(0, 3)).toEqual(['NORMAL 1-1 X4', 'NORMAL 4-2 X4', 'NORMAL 3-1 X4']);
+    expect(values(box).slice(0, 3)).toEqual(['NORMAL 1-1', 'NORMAL 4-2', 'NORMAL 3-1']);
     const said = h.said.at(-1) ?? '';
     expect(said).toMatch(
-      /^File 2 erased\. A game saved by an older version moved into File 2: Normal, World 4-2, 4 lives, score 77, Mario/,
+      /^File 2 erased\. A game saved by an older version moved into File 2: Normal, World 4-2, score 77, /,
     );
     expect(said).not.toMatch(/NEW GAME|Empty/);
     // The line under the box says it too, until the cursor moves.

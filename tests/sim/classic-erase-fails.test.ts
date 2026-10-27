@@ -107,7 +107,7 @@ describe('39a: ERASE FILE when storage refuses it', () => {
     // Nothing changed: the file, and the old save still waiting.
     expect(loadClassicFile(F2)?.run.score).toBe(2);
     expect(store.has(classicResumeKey('smb'))).toBe(true);
-    expect(values(box)[1]).toBe('NORMAL 2-1 X4');
+    expect(values(box)[1]).toBe('NORMAL 2-1');
   });
 
   it('removeItem throws, nothing waiting: it says the erase failed', () => {

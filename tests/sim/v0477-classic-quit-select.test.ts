@@ -11,17 +11,14 @@ import {
   type ClassicFileRef,
 } from '@game/original-files';
 import { CharacterSelectScene } from '@game/scenes/character-select';
-import { LevelScene } from '@game/scenes/level';
+import type { LevelScene } from '@game/scenes/level';
 import type { MenuItem } from '@game/scenes/menu';
 import { PauseScene } from '@game/scenes/pause';
 import { QUIT_RUN_TITLE, QUIT_SELECT_TITLE, QuitRunScene } from '@game/scenes/quit-run';
-import {
-  ClassicMenuScene,
-  classicBeatStatus,
-  recordClassicBeat,
-} from '@game/scenes/original-game';
+import { ClassicMenuScene, classicBeatStatus, recordClassicBeat } from '@game/scenes/original-game';
 import { draw, store, useStorage } from './heroes-harness';
 import { classic, inLevel, type G } from './cleared-nav';
+import { pickAtContinue } from './continue-select';
 
 /*
  * v0.4.77 (owner-approved), rule 33a: these tests come before the change.
@@ -51,12 +48,17 @@ function fileRun(h: G = classic()): G {
   return h;
 }
 
-/** Pause, then its Quit row: the Quit card. */
-function pauseQuit(h: G): QuitRunScene {
+/** The pause over the level. */
+function openPause(h: G): PauseScene {
   h.tap('start');
   const pause = h.top() as PauseScene;
   expect(pause).toBeInstanceOf(PauseScene);
   h.idle(6);
+  return pause;
+}
+
+/** Pause, then its Quit row: the Quit card. */
+function pauseQuit(h: G, pause: PauseScene = openPause(h)): QuitRunScene {
   const row = labels(pause).indexOf('Quit');
   expect(row).toBeGreaterThan(0);
   for (let n = 0; idx(pause) !== row && n < 20; n++) h.tap('down');
@@ -76,12 +78,10 @@ function yes(h: G): void {
 describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
   it('the Quit row and the card: "Back to character select", "QUIT TO CHARACTER SELECT?", no file promise', () => {
     const h = fileRun();
-    h.tap('start');
-    const quit = items(h.top()).find((i) => i.label === 'Quit');
+    const pause = openPause(h);
+    const quit = items(pause).find((i) => i.label === 'Quit');
     expect(quit?.hint).toBe('Back to character select');
-    h.tap('start');
-    h.idle(4);
-    const card = pauseQuit(h);
+    const card = pauseQuit(h, pause);
     expect(card.title).toBe(QUIT_SELECT_TITLE);
     expect(QUIT_SELECT_TITLE).toBe('QUIT TO CHARACTER SELECT?');
     expect(h.said.at(-1)).toBe('Quit to character select? No');
@@ -120,10 +120,7 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     h.game.state.checkpoint = { level: '1-1', x: 82 };
     pauseQuit(h);
     yes(h);
-    const sel = h.top() as CharacterSelectScene;
-    expect(sel).toBeInstanceOf(CharacterSelectScene);
-    h.idle(12);
-    h.tap('jump');
+    pickAtContinue(h);
     h.until(() => inLevel(h), 900);
     const l = h.top() as LevelScene;
     expect(l.level.id).toBe('1-1');
@@ -192,11 +189,9 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     h.game.classicGame(MARIO, '1-1', { ref: A, rules });
     h.until(() => inLevel(h), 900);
     h.idle(4);
-    h.tap('start');
-    expect(items(h.top()).find((i) => i.label === 'Quit')?.hint).toBe('Back to the Classic menu');
-    h.tap('start');
-    h.idle(4);
-    const card = pauseQuit(h);
+    const pause = openPause(h);
+    expect(items(pause).find((i) => i.label === 'Quit')?.hint).toBe('Back to the Classic menu');
+    const card = pauseQuit(h, pause);
     expect(card.title).toBe(QUIT_RUN_TITLE);
     yes(h);
     expect(h.top()).toBeInstanceOf(ClassicMenuScene);
@@ -211,7 +206,11 @@ describe('196/197: Pause > Quit > YES goes to the mid-run select', () => {
     const deny = () => {
       throw new Error('denied');
     };
-    (globalThis as { localStorage?: unknown }).localStorage = { getItem: deny, setItem: deny, removeItem: deny };
+    (globalThis as { localStorage?: unknown }).localStorage = {
+      getItem: deny,
+      setItem: deny,
+      removeItem: deny,
+    };
     try {
       yes(h);
       expect(h.top()).toBeInstanceOf(CharacterSelectScene);

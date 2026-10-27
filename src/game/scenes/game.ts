@@ -396,6 +396,8 @@ export class Game {
   private fileClaim: FileClaim | null = null;
   private fileLost = false;
   private fileNote: string | null = null;
+  /** v0.4.77 item 178: the note while the run cannot save, kept for every Quit box (runFileNote). */
+  private lostNote: string | null = null;
   /** Item 142 review: a save before the run's first write was refused as its file could not be read. */
   private fileUnreadEarly = false;
   /**
@@ -2592,6 +2594,7 @@ export class Game {
     this.fileClaim = claim;
     this.fileLost = false;
     this.fileNote = null;
+    this.lostNote = null;
     this.fileUnreadEarly = false;
   }
 
@@ -2608,6 +2611,11 @@ export class Game {
   /** Item 142: this file run can no longer save to its file (another window, or a game there). */
   get runFileLost(): boolean {
     return this.fileLost;
+  }
+
+  /** v0.4.77 item 178: the note that the run cannot save to its file, for every Quit box. */
+  get runFileNote(): string | null {
+    return this.fileLost ? this.lostNote : null;
   }
 
   /**
@@ -2643,6 +2651,7 @@ export class Game {
       this.fileUnreadEarly && claim.took !== undefined
         ? `File ${ref.slot} already holds a game, so this run can't save to it.`
         : `File ${ref.slot} was changed in another window, so this run can't save to it.`;
+    this.lostNote = this.fileNote;
   }
 
   /** The run as its file keeps it at the WORLD card of `levelId` (keepResume, clearFile). */
@@ -3141,6 +3150,35 @@ export class Game {
     this.scenes.clear();
     this.showClassicMenu(set);
     this.playedFile = played;
+  }
+
+  /**
+   * v0.4.77 item 196: whether the Classic pause's Quit goes to the run's mid-run select (the
+   * one a death or a new level shows), for any Classic run that has one: a file's, a developer,
+   * link or practice run's. A CLEARED file's replay (its file box), a stage round and a Game mode
+   * with no mid-run select (Single random; Single hero once picked) keep the CLASSIC menu.
+   */
+  get quitsToSelect(): boolean {
+    if (!this.classicRun || this.campaign !== null || this.playtestDone) return false;
+    if (this.replayRun || this.stageRound || this.airship) return false;
+    const choice = this.classicHeroChoice(false);
+    return choice === 'select' || (choice === 'keep' && this.heroUnoffered(this.state.character));
+  }
+
+  /**
+   * v0.4.77 items 196/197: Pause > Quit > YES. The run's mid-run select for the level being
+   * played, as the way into a new level (warpToLevel, no warp pipe: no Survival revival): the
+   * picked hero starts it from its first area, with no checkpoint and a fresh clock. Nothing is
+   * lost (no life, no score), and a run with a file writes it there, as at any new level. The
+   * select's BACK is its Quit card, whose YES goes to the CLASSIC menu.
+   */
+  quitToSelect(): void {
+    const scene = this.scenes.find((s) => s instanceof LevelScene) as LevelScene | undefined;
+    const main = scene ? (scene.level.parent ?? scene.level.id) : this.runLevel;
+    if (!this.quitsToSelect || !main) return this.quitClassicRun();
+    this.state.checkpoint = null;
+    this.state.time = null;
+    this.warpToLevel(this.firstArea(main), { mode: 'stand' }, false);
   }
 
   /**

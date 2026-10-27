@@ -86,23 +86,23 @@ describe('B-L the set box', () => {
 });
 
 describe('B-L the file box', () => {
-  it('FILE 1-3, ERASE FILE, BACK: a used file shows difficulty, world, lives, score and hero', () => {
+  it('FILE 1-3, ERASE FILE, BACK: a used file shows difficulty, world and score (no lives or hero: v0.4.77 items 198/199)', () => {
     const h = classic();
     keep(h, F2, '4-2', 2, 12300);
     const box = openSet(h);
     expect(labels(box)).toEqual(['File 1', 'File 2', 'File 3', 'Erase file', 'Back']);
-    expect(values(box).slice(0, 3)).toEqual(['NEW GAME', 'HARD 4-2 X2', 'NEW GAME']);
+    expect(values(box).slice(0, 3)).toEqual(['NEW GAME', 'HARD 4-2', 'NEW GAME']);
     expect(h.said.at(-1)).toMatch(/^Super Mario Bros\. Choose a file\. File 1: NEW GAME\. Empty/);
     expect(box.translucent).toBe(true);
     h.idle(8);
     h.tap('down');
     expect(h.said.at(-1)).toBe(
-      'File 2: HARD 4-2 X2. Hard, World 4-2, 2 lives, score 12300, Mario, Survival. Continue this file',
+      'File 2: HARD 4-2. Hard, World 4-2, score 12300, Survival. Continue this file',
     );
     const t = draw(box).texts.map((x) => x.str);
-    expect(t).toEqual(expect.arrayContaining(['SUPER MARIO BROS.', 'FILE 2', 'HARD 4-2 X2', 'ERASE FILE']));
-    // The hero and score under the box, for the highlighted used file.
-    expect(t).toContain('MARIO SCORE 12300');
+    expect(t).toEqual(expect.arrayContaining(['SUPER MARIO BROS.', 'FILE 2', 'HARD 4-2', 'ERASE FILE']));
+    // The score under the box, for the highlighted used file.
+    expect(t).toContain('SCORE 12300');
     expect(titles(h)).toBe(1);
   });
 
@@ -255,7 +255,7 @@ describe('B-L ERASE FILE', () => {
     choose(h, 'Erase file');
     const pick = h.top() as ClassicEraseScene;
     expect(pick).toBeInstanceOf(ClassicEraseScene);
-    expect(values(pick).slice(0, 3)).toEqual(['HARD 2-1 X3', 'HARD 5-1 X3', 'EMPTY']);
+    expect(values(pick).slice(0, 3)).toEqual(['HARD 2-1', 'HARD 5-1', 'EMPTY']);
     choose(h, 'File 2');
     const c = h.top() as ClassicEraseConfirmScene;
     expect(c).toBeInstanceOf(ClassicEraseConfirmScene);
@@ -269,7 +269,7 @@ describe('B-L ERASE FILE', () => {
     choose(h, 'Yes');
     const box = h.top() as ClassicFilesScene;
     expect(box).toBeInstanceOf(ClassicFilesScene);
-    expect(values(box).slice(0, 3)).toEqual(['HARD 2-1 X3', 'NEW GAME', 'NEW GAME']);
+    expect(values(box).slice(0, 3)).toEqual(['HARD 2-1', 'NEW GAME', 'NEW GAME']);
     expect(idx(box)).toBe(1);
     expect(h.said.at(-1)).toMatch(/^File 2 erased\./);
     expect(loadClassicFile(F2)).toBeNull();

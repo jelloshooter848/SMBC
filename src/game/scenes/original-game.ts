@@ -60,7 +60,7 @@ export const MAP_SETS: readonly MapSet[] = [
   },
   {
     id: 'special',
-    // The original's menu name (MenuBoxItems.SMB_SPECIAL); a longer one would run into BEATEN.
+    // The original's menu name (MenuBoxItems.SMB_SPECIAL).
     label: 'SMB Special',
     start: 'sp-1-1',
     // levelDataSpecial.xml: eight worlds, 8-4 ends the game as in SMB1 (LevelData.worldCount).
@@ -99,11 +99,6 @@ export function classicNextWorld(levelId: string): string | null {
   return `${set.start.replace(/\d+-\d+$/, '')}${world + 1}-1`;
 }
 
-/** The beat status a map set's menu hint ends with (G-005), or nothing while unbeaten. */
-export function beatHint(status: BeatStatus): string {
-  return status === 'none' ? '' : `. Beaten on ${status.charAt(0).toUpperCase()}${status.slice(1)}`;
-}
-
 /**
  * A Classic mode run beat map set `set` (StatManager.beatGameHandler: setBeatGameStatus):
  * kept in the global progress store, never a campaign save file, with the run's Map Difficulty
@@ -115,7 +110,10 @@ export function recordClassicBeat(set: MapSetId, difficulty: BeatDifficulty = 'n
   if (next !== p) saveProgress(next);
 }
 
-/** Map set `set`'s beat status (G-005). */
+/**
+ * Map set `set`'s beat status (G-005). v0.4.77 item 203: kept (the cheat unlocks read the beats),
+ * but no menu shows or says it any more.
+ */
 export function classicBeatStatus(set: MapSetId): BeatStatus {
   return loadProgress().classicBeat?.[set] ?? 'none';
 }
@@ -202,9 +200,8 @@ export class ClassicMenuScene extends MenuScene {
   /** The entries (rebuilt on the way back from a file box, so the hints follow the files). */
   private build(): void {
     const game = this.game;
-    // Every map set from the start (G-003, D3), each with its beat status (G-005): read out in
-    // the hint, drawn as BEATEN at the row's end (render).
-    this.beaten = MAP_SETS.map((set) => classicBeatStatus(set.id) !== 'none');
+    // Every map set from the start (G-003, D3). v0.4.77 item 203: no beat status (G-005's BEATEN
+    // mark and "Beaten on" are gone; progress.classicBeat stays for the cheat unlocks).
     // B-L: each set has three save files; picking a set opens its file box (original-files-menu.ts).
     // Map difficulty and Options are no longer here: a file's rules are chosen when it starts,
     // and the shared options are in the Start box's OPTIONS.
@@ -225,7 +222,7 @@ export class ClassicMenuScene extends MenuScene {
         label: set.label,
         // 38e: on the file just played, after a run.
         select: () => game.scenes.push(filesBoxFor(game, set.id, game.playedSlot(set.id))),
-        hint: `${set.about}${beatHint(classicBeatStatus(set.id))}. ${files}`,
+        hint: `${set.about}. ${files}`,
       };
     });
     items.push({ label: 'Back', select: () => this.leave(), hint: 'To the Start box' });
@@ -246,24 +243,16 @@ export class ClassicMenuScene extends MenuScene {
     this.game.deps.announcer?.say(spokenItem(this.items[this.index]));
   }
 
-  /** Per map set row (MAP_SETS order): beaten at least once (G-005). */
-  private beaten: boolean[] = [];
-
   /**
-   * Over the CLASSIC title (O-04): the rows in a box over the demo (each value and BEATEN at the
-   * row's right), the Campaign-rules status line under it and the BACK line.
+   * Over the CLASSIC title (O-04): the rows in a box over the demo (each value at the row's
+   * right), the Campaign-rules status line under it and the BACK line.
    */
   private renderBox(r: Renderer): void {
     const game = this.game;
     const calm = game.ctx.reduceFlashing;
-    const rows: BoxRow[] = this.items.map((it, i) => {
-      const set = i;
+    const rows: BoxRow[] = this.items.map((it) => {
       const value = it.value?.();
-      return {
-        label: it.label,
-        ...(value !== undefined ? { value } : {}),
-        ...(set >= 0 && set < MAP_SETS.length && this.beaten[set] ? { mark: BEATEN_MARK } : {}),
-      };
+      return { label: it.label, ...(value !== undefined ? { value } : {}) };
     });
     const grow = this.boxAt === null ? 1 : boxGrowth(this.t - this.boxAt, calm);
     // Clear of the status line and the BACK hint under it, whatever its row count (O-04).
@@ -287,32 +276,11 @@ export class ClassicMenuScene extends MenuScene {
     super.update(input);
   }
 
-  /**
-   * A beaten set's row ends in BEATEN, right-aligned where a menu value goes (the menu is full
-   * screen and short, so its rows never scroll); the spoken hint carries the difficulty.
-   */
   override render(r: Renderer): void {
     if (this.over) return this.renderBox(r);
     super.render(r);
-    const font = this.game.ctx.assets.sheet('font');
-    this.beaten.forEach((b, i) => {
-      if (b)
-        r.text(
-          font,
-          BEATEN_MARK,
-          MENU_VALUE_RIGHT - BEATEN_MARK.length * 8,
-          CLASSIC_RULES_Y + i * MENU_ROW_H,
-        );
-    });
   }
 }
-
-/** The CLASSIC menu's mark on a beaten map set's row, and where menu rows and values go (menu.ts). */
-const BEATEN_MARK = 'BEATEN';
-const MENU_VALUE_RIGHT = 232;
-const MENU_ROW_H = 14;
-/** The first full-screen menu row's y (the CLASSIC menu's BEATEN marks line up with its rows). */
-const CLASSIC_RULES_Y = 64;
 
 /** Classic mode's shared options (the Start box's OPTIONS): Music set, Tutorials, Cheats, the usual Options. */
 export class ClassicOptionsScene extends MenuScene {

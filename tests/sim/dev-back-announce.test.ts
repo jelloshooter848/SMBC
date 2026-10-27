@@ -58,13 +58,15 @@ function inClassicRun(h: H): PauseScene {
 }
 
 describe('32a: dev BACK exits say the menu under them again', () => {
-  it('Pause > Assists > BACK', () => {
+  it('Pause > Dev mode > Assists > BACK (v0.4.77 item 190: a Classic pause has Assists in Dev mode only)', () => {
     const h = dev();
-    const pause = inClassicRun(h);
+    inClassicRun(h);
+    open(h, 'Dev mode');
+    const devMenu = h.top() as MenuScene;
     open(h, 'Assists');
     expect(h.top()).toBeInstanceOf(AssistOptionsScene);
-    back(h, pause);
-    expect(focusLine(pause)).toMatch(/^Assists/);
+    back(h, devMenu);
+    expect(focusLine(devMenu)).toMatch(/^Assists/);
   });
 
   it("a mini game's menu > Assists > BACK", () => {
