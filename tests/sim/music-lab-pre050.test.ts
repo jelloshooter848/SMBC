@@ -129,6 +129,19 @@ describe('257: a song link is inflated only up to its cap', () => {
   });
 });
 
+describe('255 (review): the 71-character link of zeros after ]', () => {
+  it('opens fast, its error shown', async () => {
+    vi.useRealTimers();
+    const s = setup();
+    const code = await encodeShare('pulse1:[c]' + '0'.repeat(19_000) + '99999');
+    expect(code.length).toBeLessThan(100);
+    const t0 = Date.now();
+    await s.h.game.openSharedSong(code);
+    expect(Date.now() - t0).toBeLessThan(2000);
+    expect(lab(s).error?.message).toMatch(/too long to read/);
+  });
+});
+
 describe('level links: capped, real levels still open', () => {
   it('the largest built-in level opens from its link', async () => {
     vi.useRealTimers();
@@ -224,6 +237,29 @@ describe('259: several lines at once are all said', () => {
     const heard = l.frame();
     expect(heard).toMatch(/this is now your copy/);
     expect(heard).toMatch(/Loop (on|off)/);
+  });
+
+  it('the tab hidden (frames paused), then back: the next line is not run onto the old ones', () => {
+    const l = live();
+    const listeners = new Map<string, () => void>();
+    let state = 'visible';
+    vi.stubGlobal('document', {
+      get visibilityState() {
+        return state;
+      },
+      addEventListener: (t: string, f: () => void) => listeners.set(t, f),
+      removeEventListener: () => {},
+    });
+    const s = setup(l.announcer);
+    s.h.game.openMusicLab();
+    l.frame();
+    lab(s).toggleLoop();
+    state = 'hidden';
+    listeners.get('visibilitychange')?.();
+    state = 'visible';
+    listeners.get('visibilitychange')?.();
+    lab(s).toggleLoop();
+    expect(l.frame()).toBe('Loop on.');
   });
 
   it('a line in a later frame is said on its own', () => {

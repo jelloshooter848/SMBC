@@ -41,6 +41,33 @@ describe('255: the budget counts the characters read', () => {
     expect(err(`[c${'+-'.repeat(2000)}]200`).reason).toMatch(/too long/);
   });
 
+  it('the digits after ] count each time they are read again (review: a 71-character link)', () => {
+    const t0 = performance.now();
+    const r = parseSongDoc('pulse1:[c]' + '0'.repeat(19_000) + '99999');
+    expect(performance.now() - t0).toBeLessThan(1000);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.message).toMatch(/too long/);
+  });
+
+  it('three channels of the same, each with 6,000 zeros, are refused fast too', () => {
+    const ch = (name: string) => `${name}:[c]${'0'.repeat(6_000)}99999\n`;
+    const t0 = performance.now();
+    const r = parseSongDoc(ch('pulse1') + ch('pulse2') + ch('triangle'));
+    expect(performance.now() - t0).toBeLessThan(1000);
+    expect(r.ok).toBe(false);
+  });
+
+  it('a nested repeat’s long count is counted too', () => {
+    const t0 = performance.now();
+    expect(err(`[[c]${'0'.repeat(5_000)}99]${'0'.repeat(5_000)}99`).reason).toMatch(/too long/);
+    expect(performance.now() - t0).toBeLessThan(1000);
+  });
+
+  it('the refusal says the text is too long to read, not a step count', () => {
+    const e = err(`[c]${'0'.repeat(19_000)}99999`);
+    expect(e.reason).toBe('too long to read (check the repeat counts)');
+  });
+
   it('every game song still reads within Music Lab’s budget', () => {
     for (const s of songs)
       for (const ch of ['pulse1', 'pulse2', 'triangle', 'noise'] as const) {
