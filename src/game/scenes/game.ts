@@ -77,6 +77,8 @@ import type { Announcer } from '@engine/a11y/announcer';
 import type { Viewport } from '@engine/viewport';
 import { EditorScene } from './editor';
 import { MusicLabScene, type MusicLabStart } from './music-lab';
+import { parseSongDoc } from '../music-lab/song-doc';
+import { decodeShare } from '@engine/share';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
@@ -2203,6 +2205,23 @@ export class Game {
     this.deps.ctx.audio.stopMusic();
     this.scenes.clear();
     this.scenes.push(new MusicLabScene(this, start));
+  }
+
+  /**
+   * A Music Lab share link (`#song=<code>`, item 136): Music Lab opens with the song and offers to
+   * add it to the library. A link that cannot be read opens Music Lab on a new song, said.
+   */
+  async openSharedSong(code: string): Promise<void> {
+    let text: string;
+    try {
+      text = await decodeShare(code);
+    } catch {
+      this.openMusicLab({ notice: 'That song link could not be read.' });
+      return;
+    }
+    const parsed = parseSongDoc(text);
+    const name = (parsed.ok && parsed.doc.title) || 'Shared song';
+    this.openMusicLab({ text, name, shared: true });
   }
 
   /**

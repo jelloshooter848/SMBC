@@ -209,8 +209,10 @@ has the same guide for the hero you are playing.
   code, and backup reminders on or off, off by default
   (see [Save codes and resume links](#save-codes-and-resume-links)).
 - **Custom levels** and **Level editor** (the title's Options only): play your own levels or make them.
+- **Music Lab** (the title's Options only): write songs and play them on the game's synth
+  (see [Music Lab](#music-lab)).
 - **Save data** (the title's Options only): **Export backup** saves everything the game keeps in
-  this browser (settings, Campaign saves, Classic files, cheats, progress, custom levels) to one
+  this browser (settings, Campaign saves, Classic files, cheats, progress, custom levels, Music Lab songs) to one
   `smbc-remix-backup-YYYY-MM-DD.json` file, and each asset pack as its own `.zip` if you choose;
   **Import backup** checks a backup file whole, asks before replacing everything, and changes
   nothing if it is damaged or from a newer version (it does not restore asset packs); **Erase all
@@ -220,7 +222,7 @@ has the same guide for the hero you are playing.
   first backup and any time with **Show my code** (with Copy and Share); the servers see an
   anonymous ID and when, nothing personal, and free servers may lose it, so keep a backup file
   too. The online copy holds the game saves (Campaign and Classic files), the settings without
-  dev mode's fields (and Campaign files without theirs), custom levels, progress and the names
+  dev mode's fields (and Campaign files without theirs), custom levels, Music Lab songs, progress and the names
   of the asset packs turned on, not the pack files. Backing up again with the same code replaces
   it. **Restore from code** brings it back on any device through the same checks and question as
   Import backup. **Delete online copy** empties the copy on the servers and asks them to delete
@@ -236,6 +238,7 @@ has the same guide for the hero you are playing.
   install prompt where there is one (Android, Chrome, Edge), else a short guide; hidden when the
   game already runs from the Home Screen and on desktop browsers that can't install it.
 - **Level editor** (title screen only): build and share your own levels.
+- **Music Lab** (title screen only): write, play and share your own songs.
 
 ### Add to Home Screen (play full screen and offline)
 
@@ -271,7 +274,7 @@ that one file, so it plays offline on Windows, macOS and Linux with nothing to i
 in Chrome; it should work in Edge, Firefox and Safari). The downloaded copy keeps **its own
 saves, separate from the website's** (it says so on its first launch); once Chapter 1 is open, move a
 save file either way with **Options → Save files → COPY CODE** in one and **PASTE CODE** in the other. Links it shares (resume links, the
-level editor's SHARE) open the website, never a file on your disk. To build it yourself, run
+level editor's SHARE, Music Lab's Share link) open the website, never a file on your disk. To build it yourself, run
 `pnpm build:offline` (it writes `dist-offline/`; see [docs/RELEASING.md](docs/RELEASING.md)).
 
 ### Developer mode
@@ -337,6 +340,22 @@ scenery, set exits, checkpoints and pipe links, then **Play test**, **Save** (le
 in the browser and appear under the title's **Options → Custom levels**), **Export .map** / **Import .map**, or
 **Copy share link**. A share link carries the whole level compressed in the URL, so anyone
 who opens it plays it immediately; nothing is uploaded anywhere.
+
+### Music Lab
+
+**Options → Music Lab** on the title screen (never from a pause) opens a text editor for songs in
+the game's own MML, played on its 4-channel synth (two pulse channels, triangle and noise). A song
+is a few settings lines (`title:`, `tempo:`, `loop:`) and its channels (`pulse1:`, `pulse2:`,
+`triangle:`, `noise:`); **Syntax help** lists every command. **Play**, **Stop**, **Loop** and the
+**Tempo** buttons play it; the first error is marked in the text and named by line and column
+(and said to screen readers), with **Go to error**. **Game songs** loads any of the game's own
+songs as an example: they are read-only, and the first change makes your own copy. **My songs**
+saves up to 50 songs in the browser (Save, Rename, Open, Delete); they are in **Save data**
+backups, Erase all data and the online backup. If the song library is damaged, or was saved by a
+newer version, Music Lab offers **Clear song library** (it asks first, with NO selected).
+**Share link** puts the whole song, compressed, in a `#song=` link (nothing is uploaded; it works
+in the offline copy too); opening one shows the song in Music Lab and offers to add it to your
+songs. On phones the text box uses the phone's own keyboard.
 
 ## Develop
 

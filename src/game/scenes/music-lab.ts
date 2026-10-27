@@ -14,10 +14,14 @@ import {
   songToDoc,
   MAX_TEMPO,
   MIN_TEMPO,
+  SYNTAX_HELP,
   type DocError,
 } from '../music-lab/song-doc';
+import { encodeShare, songLink } from '@engine/share';
+import { SITE_URL } from '@engine/site';
 import {
   SONG_REFUSALS,
+  clearDamagedSongLibrary,
   cleanSongName,
   deleteSong,
   loadSongs,
@@ -60,6 +64,8 @@ const STYLE = `
 .music-lab textarea:focus-visible { outline: 3px solid #fcfc00; outline-offset: 1px; }
 .music-lab select, .music-lab input { background: #0c1c48; color: #fcfcfc; border: 2px solid #3cbcfc; padding: 0 6px; min-width: 0; }
 .music-lab .grow { flex: 1; min-width: 0; }
+.music-lab select.grow, .music-lab input.grow { width: 0; }
+.music-lab .question button:focus { outline: 3px solid #fcfc00; outline-offset: 2px; }
 .music-lab input.tempo { width: 4.5em; text-align: center; }
 .music-lab .editor { position: relative; flex: 1; min-width: 0; min-height: 0; border: 2px solid #3cbcfc; background: #0c1c48; }
 .music-lab .editor textarea, .music-lab .editor pre { position: absolute; inset: 0; margin: 0; padding: 8px; border: 0;
@@ -73,6 +79,19 @@ const STYLE = `
 .music-lab .status.error { color: #fc9838; }
 .music-lab .status button { min-height: 32px; margin-left: 6px; }
 .music-lab .where { color: #bcbcbc; font-size: 13px; white-space: nowrap; }
+.music-lab [hidden] { display: none !important; }
+.music-lab input[data-share-out] { width: 100%; font-size: 12px; }
+.music-lab .question { position: absolute; z-index: 2; left: 50%; top: 30%; transform: translateX(-50%);
+  width: min(520px, calc(100% - 32px)); padding: 14px; background: #000; border: 4px solid #fcfcfc; }
+.music-lab .question p { margin: 0 0 12px; font-size: 16px; }
+.music-lab .question button { flex: 1; }
+.music-lab .help-page { position: absolute; z-index: 1; inset: 0; overflow-y: auto; background: #000;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 16px max(10px, env(safe-area-inset-left)); }
+.music-lab .help-page h3 { margin: 0; font-size: 18px; letter-spacing: 2px; outline: none; }
+.music-lab .help-page p { color: #bcbcbc; max-width: 60em; }
+.music-lab .help-page table { border-collapse: collapse; max-width: 60em; }
+.music-lab .help-page th { text-align: left; padding: 4px 16px 4px 0; vertical-align: top; white-space: nowrap; color: #3cbcfc; font-weight: normal; }
+.music-lab .help-page td { padding: 4px 0; }
 @media (max-width: 760px) {
   .music-lab { font-size: 14px; gap: 6px; }
   .music-lab .body { flex-direction: column; }
@@ -85,6 +104,9 @@ const STYLE = `
 }
 `;
 
+/** A parsed document's title ('' when none, or the text has an error). */
+const r = (d: ReturnType<typeof parseSongDoc>): string => (d.ok ? d.doc.title : '');
+
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 
@@ -93,10 +115,22 @@ const EXAMPLES = [...gameSongs].sort((a, b) => a.id.localeCompare(b.id));
 
 export interface MusicLabStart {
   /** Text to open with (a shared link's song), and the name to offer for it. */
-  text: string;
+  text?: string;
   name?: string;
   /** The song came from a share link: offer to add it to the library. */
   shared?: boolean;
+  /** A line to say once open (a share link that could not be read). */
+  notice?: string;
+}
+
+/**
+ * A yes/no question on the panel, spoken: clear a library this build cannot read (item 225, NO
+ * selected first), or add a shared song to the library.
+ */
+export interface LabQuestion {
+  kind: 'clear' | 'add';
+  text: string;
+  selected: 'yes' | 'no';
 }
 
 export class MusicLabScene implements Scene {
@@ -118,21 +152,149 @@ export class MusicLabScene implements Scene {
   /** A press that needs a second to confirm (leaving with unsaved changes, deleting a song). */
   private confirming: string | null = null;
   private checkTimer: ReturnType<typeof setTimeout> | null = null;
+  /** The question on screen, if any. */
+  question: LabQuestion | null = null;
+  /** The syntax help page is open. */
+  helpOpen = false;
+  /** The last share link made (shown under the buttons). */
+  shareUrl = '';
+  private readonly start: MusicLabStart;
 
   constructor(
     private readonly game: Game,
-    start?: MusicLabStart,
+    start: MusicLabStart = {},
   ) {
-    this.text = start?.text ?? NEW_SONG;
-    this.name = start?.name ?? 'New song';
-    this.savedText = start?.shared ? '' : this.text;
+    this.start = start;
+    this.text = start.text ?? NEW_SONG;
+    this.name = cleanSongName(start.name ?? '') ?? 'New song';
+    this.savedText = start.shared ? '' : this.text;
   }
 
   enter(): void {
     this.game.ctx.audio.stopMusic();
     this.buildPanel();
     this.check();
-    this.say('Music Lab. Write a song in the text box, then press Play. Syntax help explains the notes.');
+    const said = [
+      'Music Lab. Write a song in the text box, then press Play. Syntax help explains the notes.',
+    ];
+    if (this.start.notice) said.push(this.start.notice);
+    const problem = this.libraryProblem;
+    if (problem === 'damaged')
+      said.push(
+        'Your song library is damaged or from a newer version, so it cannot be read here. Clear song library starts a new one.',
+      );
+    else if (problem === 'read') said.push('Songs cannot be saved: this device’s storage cannot be read.');
+    this.say(said.join(' '), problem !== null);
+    if (this.start.shared) {
+      const title = parseSongDoc(this.text);
+      const name = r(title);
+      this.ask({
+        kind: 'add',
+        text: `A shared song${name ? `, "${name}"` : ''}. Add it to your songs?`,
+        selected: 'yes',
+      });
+    }
+  }
+
+  /* ---------- Questions (item 225; a shared song) ---------- */
+
+  /** Why the library cannot be used: damaged (or newer), storage unreadable, or null. */
+  get libraryProblem(): 'damaged' | 'read' | null {
+    const lib = loadSongs();
+    return lib.unreadable ? (lib.reason ?? 'read') : null;
+  }
+
+  /** Item 225: Clear song library asks first, NO selected. */
+  askClearLibrary(): void {
+    if (this.libraryProblem !== 'damaged') {
+      this.refreshLibrary();
+      this.say(SONG_REFUSALS['not-damaged']);
+      return;
+    }
+    this.ask({
+      kind: 'clear',
+      text: 'Clear the song library? It cannot be read here, and clearing deletes it for good.',
+      selected: 'no',
+    });
+  }
+
+  private ask(q: LabQuestion): void {
+    this.question = q;
+    this.paintQuestion();
+    this.game.deps.announcer?.say(`${q.text} ${q.selected === 'no' ? 'No' : 'Yes'} is selected.`);
+  }
+
+  /** The answer to the question on screen. */
+  answer(yes: boolean): void {
+    const q = this.question;
+    if (!q) return;
+    this.question = null;
+    this.paintQuestion();
+    if (q.kind === 'clear') {
+      if (!yes) return this.say('The song library was left as it is.');
+      const r = clearDamagedSongLibrary();
+      this.refreshLibrary();
+      this.sync();
+      if (!r.ok) return this.refused(r);
+      this.say('The song library was cleared. Save adds songs again.');
+      return;
+    }
+    if (!yes) return this.say('Not added. Save keeps it whenever you like.');
+    this.addShared();
+    this.box()?.focus({ preventScroll: true });
+  }
+
+  /** A shared song into the library, under its title (a free name when that one is taken). */
+  private addShared(): void {
+    const songs = loadSongs().songs;
+    const base = this.name;
+    let name = base;
+    for (let n = 2; name in songs && n < 100; n++) name = cleanSongName(`${base.slice(0, 20)} ${n}`) ?? base;
+    const r = saveSong(name, this.text);
+    if (!r.ok) return this.refused(r);
+    this.name = name;
+    this.libraryName = name;
+    this.savedText = this.text;
+    this.refreshLibrary();
+    this.sync();
+    this.say(`Added "${name}" to your songs.`);
+  }
+
+  /* ---------- Share and help ---------- */
+
+  /** A link with the song in it (no server: the text is in the link), copied when allowed. */
+  async share(): Promise<void> {
+    const code = await encodeShare(this.text);
+    const url = songLink(code, typeof location === 'undefined' ? SITE_URL : location.href);
+    this.shareUrl = url;
+    const out = this.panel?.querySelector<HTMLInputElement>('[data-share-out]');
+    if (out) {
+      out.value = url;
+      out.hidden = false;
+    }
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      /* shown below to copy by hand */
+    }
+    this.say(
+      copied
+        ? 'Share link copied. Anyone who opens it can play the song and add it to their songs.'
+        : 'Copy the share link from the box under Share link.',
+    );
+  }
+
+  openHelp(open = true): void {
+    this.helpOpen = open;
+    const page = this.panel?.querySelector<HTMLElement>('.help-page');
+    if (page) {
+      page.hidden = !open;
+      if (open) page.querySelector<HTMLElement>('h3')?.focus();
+      else this.panel?.querySelector<HTMLElement>('[data-act="help"]')?.focus();
+    }
+    this.say(open ? 'Syntax help. Close returns to your song.' : 'Back to your song.');
   }
 
   exit(): void {
@@ -452,6 +614,9 @@ export class MusicLabScene implements Scene {
               <button type="button" class="alt" data-act="open">Open</button>
               <button type="button" class="alt" data-act="delete">Delete</button>
             </div>
+            <div class="row" data-damaged hidden>
+              <button type="button" class="grow" data-act="clear">Clear song library</button>
+            </div>
           </fieldset>
           <fieldset><legend>Game songs (examples)</legend>
             <div class="row">
@@ -466,6 +631,7 @@ export class MusicLabScene implements Scene {
               <button type="button" class="alt grow" data-act="new">New</button>
               <button type="button" class="alt grow" data-act="share">Share link</button>
             </div>
+            <input type="text" readonly data-share-out aria-label="Share link" hidden>
           </fieldset>
         </div>
         <div class="editor">
@@ -474,12 +640,31 @@ export class MusicLabScene implements Scene {
             autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off"></textarea>
         </div>
       </div>
+      <div class="question" role="alertdialog" aria-labelledby="music-lab-question" hidden>
+        <p id="music-lab-question"></p>
+        <div class="row"></div>
+      </div>
+      <section class="help-page" aria-labelledby="music-lab-help" hidden>
+        <div class="row"><h3 id="music-lab-help" tabindex="-1" class="grow">SYNTAX HELP</h3>
+          <button type="button" data-act="close-help">Close</button></div>
+        <p>A song is a few settings lines, then its channels. Each channel's notes run until the next
+        channel's name. Spaces and new lines don't matter. Every channel should come out the same length.</p>
+        <table><tbody>${SYNTAX_HELP.map(
+          ([code, what]) => `<tr><th scope="row"><code>${esc(code)}</code></th><td>${esc(what)}</td></tr>`,
+        ).join('')}</tbody></table>
+      </section>
       <div class="foot">
         <p class="status" id="music-lab-status"></p>
         <span class="where" aria-hidden="true"></span>
       </div>`;
     // Keys typed here are the panel's: the game's keyboard (on window) never sees them go down.
     for (const type of ['keydown', 'keypress']) el.addEventListener(type, (e) => e.stopPropagation());
+    // Escape answers a question NO, or closes the help.
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (this.question) this.answer(false);
+      else if (this.helpOpen) this.openHelp(false);
+    });
     // Touches on the panel are the panel's (the touch pad under it must not see them).
     for (const type of ['pointerdown', 'pointerup', 'touchstart', 'touchend'])
       el.addEventListener(type, (e) => e.stopPropagation());
@@ -551,9 +736,13 @@ export class MusicLabScene implements Scene {
       case 'new':
         return this.newSong();
       case 'share':
-        return this.say('Share links are coming in the full build.');
+        return void this.share();
       case 'help':
-        return this.say('Syntax help is coming in the full build.');
+        return this.openHelp(true);
+      case 'close-help':
+        return this.openHelp(false);
+      case 'clear':
+        return this.askClearLibrary();
       case 'back':
         return this.back();
     }
@@ -600,7 +789,41 @@ export class MusicLabScene implements Scene {
     out.textContent = `Ln ${line}, Col ${col}`;
   }
 
+  /** The question box shows this.question, its selected answer focused (NO first for clearing). */
+  private paintQuestion(): void {
+    const box = this.panel?.querySelector<HTMLElement>('.question');
+    if (!box) return;
+    const q = this.question;
+    box.hidden = !q;
+    if (!q) return;
+    (box.querySelector('p') as HTMLElement).textContent = q.text;
+    const row = box.querySelector('.row') as HTMLElement;
+    row.innerHTML = '';
+    const answers: ['no' | 'yes', string][] =
+      q.kind === 'clear'
+        ? [
+            ['no', 'No'],
+            ['yes', 'Yes, clear it'],
+          ]
+        : [
+            ['yes', 'Add to my songs'],
+            ['no', 'Not now'],
+          ];
+    for (const [which, label] of answers) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      if (which === 'no') b.className = 'alt';
+      b.addEventListener('focus', () => q === this.question && (q.selected = which));
+      b.addEventListener('click', () => this.answer(which === 'yes'));
+      row.appendChild(b);
+      if (which === q.selected) queueMicrotask(() => b.focus());
+    }
+  }
+
   private refreshLibrary(): void {
+    const damagedRow = this.panel?.querySelector<HTMLElement>('[data-damaged]');
+    if (damagedRow) damagedRow.hidden = this.libraryProblem !== 'damaged';
     const sel = this.panel?.querySelector<HTMLSelectElement>('[data-library]');
     if (!sel) return;
     const lib = loadSongs();

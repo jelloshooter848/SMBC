@@ -30,10 +30,22 @@ export interface LoadedSongs {
   damaged: number;
   /** The library could not be read at all (storage, or damaged / newer data): it is never written. */
   unreadable: boolean;
+  /** Why it is unreadable: storage cannot be read, or the stored library is damaged or newer. */
+  reason?: 'read' | 'damaged';
 }
 
 export type SongRefusal =
-  'name' | 'exists' | 'missing' | 'full' | 'too-long' | 'read' | 'damaged' | 'stale' | 'quota' | 'write';
+  | 'name'
+  | 'exists'
+  | 'missing'
+  | 'full'
+  | 'too-long'
+  | 'read'
+  | 'damaged'
+  | 'stale'
+  | 'quota'
+  | 'write'
+  | 'not-damaged';
 export type SongWrite = { ok: true } | { ok: false; reason: SongRefusal };
 
 /** What each refusal tells the player. */
@@ -48,6 +60,7 @@ export const SONG_REFUSALS: Record<SongRefusal, string> = {
   stale: 'The game data changed in another tab. Reloading.',
   quota: 'Storage is full. Nothing was saved.',
   write: 'Storage refused the change. Nothing was saved.',
+  'not-damaged': 'The song library reads fine now. Nothing was cleared.',
 };
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
@@ -84,7 +97,7 @@ const isSong = (t: unknown): t is string => typeof t === 'string' && t.length <=
 
 export function loadSongs(): LoadedSongs {
   const r = readRaw();
-  if (!r.ok) return { songs: {}, damaged: 0, unreadable: true };
+  if (!r.ok) return { songs: {}, damaged: 0, unreadable: true, reason: r.reason };
   const songs: Record<string, string> = {};
   let damaged = 0;
   for (const [name, text] of Object.entries(r.lib.songs)) {
@@ -152,4 +165,22 @@ export function deleteSong(name: string): SongWrite {
     delete songs[name];
     return null;
   });
+}
+
+/**
+ * Owner item 225: clear a library this build cannot read (damaged as a whole, or written by a
+ * newer version), so saving works again without Reset game. A readable library (another tab may
+ * have mended it), nothing stored, storage that cannot be read, or a stale tab: nothing cleared.
+ */
+export function clearDamagedSongLibrary(): SongWrite {
+  if (storageIsStale()) return { ok: false, reason: 'stale' };
+  const r = readRaw();
+  if (r.ok) return { ok: false, reason: 'not-damaged' };
+  if (r.reason === 'read') return { ok: false, reason: 'read' };
+  try {
+    localStorage.removeItem(SONG_LIBRARY_KEY);
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: 'write' };
+  }
 }

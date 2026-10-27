@@ -42,7 +42,7 @@ export async function decodeShare(code: string): Promise<string> {
   const body = fromBase64Url(code.slice(1));
   if (kind === 'z') {
     if (typeof DecompressionStream === 'undefined')
-      throw new Error('this browser cannot decompress shared levels');
+      throw new Error('this browser cannot decompress shared links');
     return new TextDecoder().decode(await pipe(body, new DecompressionStream('deflate-raw')));
   }
   if (kind === 'r') return new TextDecoder().decode(body);
@@ -54,8 +54,22 @@ export async function decodeShare(code: string): Promise<string> {
  * hash; on the public site when the page is the downloaded copy (file://, engine/site.ts).
  */
 export function levelLink(code: string, href: string): string {
+  return shareLink('level', code, href);
+}
+
+/** Music Lab's share link (0.4.77, item 136): as levelLink, with `#song=<code>`. */
+export function songLink(code: string, href: string): string {
+  return shareLink('song', code, href);
+}
+
+/** The code of a `#song=` link's hash, or null when the hash is not one. */
+export function songCode(hash: string): string | null {
+  return /^#song=([A-Za-z0-9_-]+)$/.exec(hash)?.[1] ?? null;
+}
+
+function shareLink(kind: 'level' | 'song', code: string, href: string): string {
   const url = new URL(shareBase(href));
   url.search = '';
-  url.hash = `level=${code}`;
+  url.hash = `${kind}=${code}`;
   return url.toString();
 }

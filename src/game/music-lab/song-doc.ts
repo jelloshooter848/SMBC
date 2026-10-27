@@ -233,3 +233,33 @@ triangle:
 noise:
   l8 [k h s h]8
 `;
+
+/**
+ * Music Lab's syntax help (item 136): each row is what to write and what it does, from the MML
+ * dialect's own reference (engine/audio/mml.ts).
+ */
+export const SYNTAX_HELP: readonly (readonly [string, string])[] = [
+  ['title: My song', 'The song’s name (optional).'],
+  ['tempo: 140', `Beats per minute, ${MIN_TEMPO} to ${MAX_TEMPO}. The Tempo buttons change this line.`],
+  ['loop: on', 'on: the song repeats. off: it plays once. The Loop button changes this line.'],
+  ['pulse1: pulse2:', 'Two square-wave channels: melody and harmony. Their notes follow, on any lines.'],
+  ['triangle:', 'The bass channel (volume and duty do nothing on it).'],
+  ['noise:', 'The drum channel: k s h and n only, no pitched notes.'],
+  ['c d e f g a b', 'Notes. Add + or # for sharp, - for flat: c+ e-.'],
+  ['c4 c8 c16 c4.', 'A length after a note: 1 whole, 2 half, 4 quarter, 8, 16, 32, 64. A dot adds half.'],
+  ['r r8', 'A rest (silence), with an optional length.'],
+  ['c4^8  c4&8', 'A tie: ^ or & adds the next length to the note before.'],
+  ['o4  <  >', 'Octave 0 to 8; < goes one octave down, > one up.'],
+  ['l8', 'The length for notes written without one.'],
+  ['v12', 'Volume 0 to 15.'],
+  ['@2', 'Duty 0 to 3: the pulse channels’ tone, from thin to round.'],
+  ['q6', 'Gate 1 to 8: how much of each note sounds (8 = smooth, joined notes).'],
+  ['x1  x0', 'Decay on or off: each note fades out.'],
+  ['p-12 c8', 'Slide: the next note glides by that many semitones.'],
+  ['k s h', 'Drums on the noise channel: kick, snare, hi-hat (lengths as notes).'],
+  ['n5', 'A noise sound with period 0 to 15 (noise channel).'],
+  ['[c d e]3', 'Repeat what is inside [ ] 3 times (2 if no number). Repeats can nest.'],
+  ['L', 'Loop point: a looping song comes back here, not to the start.'],
+  ['|', 'A bar line, for reading only (ignored, as spaces and new lines are).'],
+  ['; note', 'A comment, up to the end of the line.'],
+];
