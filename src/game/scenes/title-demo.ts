@@ -19,8 +19,11 @@ import { MARIO } from '../characters/mario';
  * The demo reads no player input at all: the title scene above it owns every press.
  */
 
-/** Mario's wait before he runs (TitleLevel.as MARIO_WAIT_TMR_DEL, 5000 ms); the prompt blinks from then. */
-export const MARIO_WAIT = 300;
+/**
+ * Mario's wait before he runs, 60 frames (1 s), on every run of the demo; the prompt blinks from
+ * then. v0.4.77 item 179 (owner deviation): TitleLevel.as MARIO_WAIT_TMR_DEL is 5000 ms.
+ */
+export const MARIO_WAIT = 60;
 /**
  * A hero wakes when the screen's right edge comes within this many px of his spot
  * (TitleLevel.as gameLoop: `locStgRht + 20 > activatePnt.x`, 20 stage px = 10 of ours).

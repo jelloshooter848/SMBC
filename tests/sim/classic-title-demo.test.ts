@@ -70,7 +70,7 @@ function health(p: Player): number {
 }
 
 describe('O-04 the demo (TitleLevel.as)', () => {
-  it('Mario waits 5 s, then runs right by himself and clears 1-1; the demo then starts again', () => {
+  it('Mario waits 1 s (owner item 179), then runs right by himself and clears 1-1; the demo then starts again', () => {
     const d = new ClassicDemo(demoCtx(classic()));
     const x0 = d.world.player.body.x;
     for (let i = 0; i < MARIO_WAIT; i++) d.update();
@@ -172,7 +172,7 @@ describe('O-04 the CLASSIC title', () => {
     expect(d.texts.some((t) => t.str.startsWith('VER '))).toBe(true);
   });
 
-  it("the prompt: first at 5.5 s (the blink timer's first tick), then 500 ms on and 500 ms off; it names the ability", () => {
+  it("the prompt: first at 1.5 s (the blink timer's first tick), then 500 ms on and 500 ms off; it names the ability", () => {
     const h = classic();
     h.game.ctx.reduceFlashing = false;
     const ct = new ClassicTitleScene(h.game);
@@ -184,7 +184,7 @@ describe('O-04 the CLASSIC title', () => {
       shown.push(ct.promptShown());
     }
     const first = MARIO_WAIT + PROMPT_BLINK;
-    expect(first).toBe(330);
+    expect(first).toBe(90);
     expect(shown.slice(0, first).some(Boolean)).toBe(false);
     expect(shown.slice(first, first + PROMPT_BLINK).every(Boolean)).toBe(true);
     expect(shown.slice(first + PROMPT_BLINK, first + PROMPT_BLINK * 2).some(Boolean)).toBe(false);
@@ -302,11 +302,10 @@ describe('O-04 the CLASSIC title', () => {
     const t0 = ct.demo.t;
     h.idle(10);
     expect(ct.demo.t).toBe(t0 + 10);
-    // Drawn as a box: BEATEN at the SMB row's right, the BACK line named by ability.
+    // Drawn as a box, the BACK line named by ability; no BEATEN mark (v0.4.77 item 203).
     const d = draw(menu);
-    const smb = d.texts.find((t) => t.str === 'SUPER MARIO BROS.');
-    const mark = d.texts.find((t) => t.str === 'BEATEN');
-    expect(mark?.y).toBe(smb?.y);
+    expect(d.texts.some((t) => t.str === 'SUPER MARIO BROS.')).toBe(true);
+    expect(d.texts.some((t) => t.str === 'BEATEN')).toBe(false);
     expect(d.texts.some((t) => t.str.startsWith('BACK'))).toBe(true);
     h.tap('attack');
     expect(h.top()).toBe(ct);
