@@ -151,7 +151,8 @@ describe('level links: capped, real levels still open', () => {
       for (let x = 0; x < w; x++) tiles[y * w + x] = base.tiles[y * base.width + (x % base.width)] as number;
     const entities = [];
     for (let k = 0; k * base.width < w; k++)
-      for (const e of base.entities) if (e.x + k * base.width < w) entities.push({ ...e, x: e.x + k * base.width });
+      for (const e of base.entities)
+        if (e.x + k * base.width < w) entities.push({ ...e, x: e.x + k * base.width });
     const text = serializeTextMap({ ...base, width: w, tiles, entities, decor: [] });
     expect(text.length).toBeLessThan(MAX_LEVEL_LINK_BYTES / 20);
     await s.h.game.openSharedLevel(await encodeShare(text));

@@ -79,7 +79,8 @@ import { EditorScene } from './editor';
 import { MusicLabScene, type MusicLabStart } from './music-lab';
 import { readTitle } from '../music-lab/song-doc';
 import { MAX_SONG_CHARS } from '../music-lab/library';
-import { decodeShare } from '@engine/share';
+import { decodeLevelShare, decodeShare } from '@engine/share';
+import { parseTextMap } from '../level/textmap';
 import { DevMenuScene } from './dev';
 import { MenuScene } from './menu';
 import { loadLibrary, customLevelId, CUSTOM_PREFIX } from '../level/library';
@@ -2230,6 +2231,19 @@ export class Game {
     }
     // The title line names it even when the song has an error.
     this.openMusicLab({ text, name: readTitle(text) || 'Shared song', shared: true });
+  }
+
+  /**
+   * A level editor share link (`#level=<code>`): the level is played. Inflated only up to
+   * MAX_LEVEL_LINK_BYTES (0.5.0: far above any real level), so a link can't fill the memory; a
+   * link that cannot be read is logged and the title stays, as before.
+   */
+  async openSharedLevel(code: string): Promise<void> {
+    try {
+      this.playShared(parseTextMap(await decodeLevelShare(code), 'custom-shared'));
+    } catch (e) {
+      console.warn(`shared level could not be loaded: ${(e as Error).message}`);
+    }
   }
 
   /**

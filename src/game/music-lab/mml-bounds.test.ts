@@ -32,8 +32,8 @@ describe('255: the budget counts the characters read', () => {
   });
 
   it('a long comment inside a repeat counts each time through', () => {
-    // Four commands a time through (under the old count: 800 steps); 200,000 characters.
-    const src = `[c ;${'x'.repeat(1000)}\n]200`;
+    // Four commands a time through (under the old count: 1,600 steps); 400,000 characters.
+    const src = `[c ;${'x'.repeat(1000)}\n]400`;
     expect(err(src).reason).toMatch(/too long/);
   });
 

@@ -38,9 +38,9 @@ export async function encodeShare(text: string): Promise<string> {
 }
 
 /**
- * `maxBytes` (Music Lab's song links, 0.4.77): the most bytes the text may come to; a link that
- * inflates past it is refused ("too big") without inflating the rest. Left out (level links, as
- * before): no limit.
+ * `maxBytes` (Music Lab's song links, 0.4.77; level links, 0.5.0): the most bytes the text may
+ * come to; a link that inflates past it is refused ("too big") without inflating the rest. Left
+ * out: no limit.
  */
 export async function decodeShare(code: string, maxBytes = Infinity): Promise<string> {
   const kind = code[0];
@@ -59,14 +59,44 @@ export async function decodeShare(code: string, maxBytes = Infinity): Promise<st
   throw new Error('unknown share code');
 }
 
-/** Inflates `body`, stopping (and throwing) once it passes `cap` bytes (as nostr-backup's decodePayload). */
+/**
+ * The most a level link may inflate to (0.5.0): far above any real level. The largest built-in
+ * level (Lost Levels 5-1) is about 19 KB of text and an editor level at its widest (1,024 tiles)
+ * about 28 KB, so this is some seventy times that, and still a sliver of the browser's storage.
+ */
+export const MAX_LEVEL_LINK_BYTES = 2_000_000;
+
+/** A level link's text (`#level=<code>`), capped at MAX_LEVEL_LINK_BYTES. */
+export function decodeLevelShare(code: string): Promise<string> {
+  return decodeShare(code, MAX_LEVEL_LINK_BYTES);
+}
+
+/** How much compressed link the decompressor is given at a time (item 257). */
+const INFLATE_CHUNK = 1024;
+
+/**
+ * Inflates `body`, stopping (and throwing) once it passes `cap` bytes (as nostr-backup's
+ * decodePayload). The body goes in about 1 KB at a time, the cap checked between writes (item
+ * 257), so a small link that inflates hugely is stopped after a chunk or two, not handed over whole.
+ */
 async function inflateCapped(body: Uint8Array, cap: number): Promise<Uint8Array> {
   const ds = new DecompressionStream('deflate-raw');
   const writer = ds.writable.getWriter();
-  void writer
-    .write(body as BufferSource)
-    .then(() => writer.close())
-    .catch(() => {});
+  let over = false;
+  /** Called by the reader on each piece it takes: the next chunk may go in. */
+  let took: (() => void) | null = null;
+  void (async () => {
+    for (let at = 0; at < body.length; at += INFLATE_CHUNK) {
+      const taken = new Promise<void>((r) => (took = r));
+      await writer.write(body.subarray(at, at + INFLATE_CHUNK) as BufferSource);
+      // The reader takes (and measures) what that chunk made before the next goes in; a
+      // decompressor that buffers its input, as Node's does, would otherwise take it all at once.
+      // A chunk that makes nothing yet waits only a moment.
+      await Promise.race([taken, new Promise((r) => setTimeout(r, 20))]);
+      if (over) return;
+    }
+    await writer.close();
+  })().catch(() => {});
   const reader = ds.readable.getReader();
   const parts: Uint8Array[] = [];
   let n = 0;
@@ -76,10 +106,12 @@ async function inflateCapped(body: Uint8Array, cap: number): Promise<Uint8Array>
     if (!value) continue;
     n += value.length;
     if (n > cap) {
+      over = true;
       await reader.cancel().catch(() => {});
       throw new Error('shared link too big');
     }
     parts.push(value);
+    (took as (() => void) | null)?.();
   }
   const all = new Uint8Array(n);
   let at = 0;
