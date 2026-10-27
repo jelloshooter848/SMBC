@@ -252,7 +252,7 @@ describe('share links', () => {
     const lab = s.h.top() as MusicLabScene;
     expect(lab).toBeInstanceOf(MusicLabScene);
     expect(lab.text).toBe(NEW_SONG);
-    expect(lab.question).toMatchObject({ kind: 'add' });
+    expect(lab.question).toMatchObject({ kind: 'add', selected: 'yes' });
     expect(s.h.said.join(' ')).toMatch(/shared song.*Add it to your songs\?/i);
     lab.answer(true);
     // Its title is taken: the copy gets a free name, nothing is replaced.
