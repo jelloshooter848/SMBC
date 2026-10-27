@@ -1,7 +1,7 @@
 import { NES, type PaletteBook } from '@engine/gfx/palette';
 import type { SpriteDef } from '@engine/gfx/pixelart';
 import { tilePalettes, tilesDef } from './tiles';
-import { fontPalettes, fontDef, fontTints } from './font';
+import { FONT_COLOURS, fontPalettes, fontDef, fontTints } from './font';
 import { itemPalettes, itemsDef } from './items';
 import { decorPalettes, decorDef } from './decor';
 import { marioPalettes, marioDef } from './mario';
@@ -379,6 +379,11 @@ if (modes.highContrast && trueFormHc)
 const costumesHc = modes.highContrast?.costumes;
 if (modes.highContrast && costumesHc)
   modes.highContrast.costumes = costumesHc.map((c, i) => (i === 12 ? NES.gray : c));
+// The gold text (a backup code, a price): high contrast would make it #ffffa2, too close to the
+// white text beside it; a strong amber instead, 12.1:1 on black (WCAG AAA) and 1.7:1 against white.
+const goldHc = modes.highContrast?.[FONT_COLOURS.gold];
+if (modes.highContrast && goldHc)
+  modes.highContrast[FONT_COLOURS.gold] = goldHc.map((c, i) => (i === 1 ? '#ffb800' : c));
 
 /**
  * 0.4.53: Galesburg's and Galuga Island's earth tones stay put in the red/green modes, as Hyrule's

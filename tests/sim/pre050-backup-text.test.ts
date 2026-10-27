@@ -232,7 +232,8 @@ describe('265: a failed load is tried again under a fresh URL', () => {
   it('the browser loader: a fresh specifier through new URL(..., import.meta.url) and @vite-ignore, behind the offline switch', () => {
     const src = readFileSync(resolve(__dirname, '../../src/game/scenes/save-data.ts'), 'utf8');
     expect(src).toMatch(/import\(\s*\/\*\s*@vite-ignore\s*\*\//);
-    expect(src).toMatch(/new URL\([^)]*import\.meta\.url\s*\)/);
+    expect(src).toMatch(/freshChunkUrl\([^)]*import\.meta\.url\s*\)/);
+    expect(src).toMatch(/new URL\(named, base\)/);
     // The fresh import sits after the offline build's early return, so that build drops it.
     const fn = src.slice(src.indexOf('function browserOnlineEnv'));
     expect(fn.indexOf("import.meta.env.MODE === 'offline'")).toBeGreaterThan(-1);
