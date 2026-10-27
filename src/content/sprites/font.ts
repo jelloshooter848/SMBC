@@ -10,6 +10,8 @@ export const fontPalette: string[] = [NES.black, NES.white, NES.redBright, NES.y
 /** Coloured text: the font with its white (role 1) swapped, asked for as `sheet('font', FONT_COLOURS.gold)`. */
 export const FONT_COLOURS = {
   gold: 'font-gold',
+  /** An online backup code (save-data.ts): the gold, but its own amber in high contrast. */
+  code: 'font-code',
   // Not 'font-grey': that id is Zebes Escape's darker held-clock grey (fontTints below).
   grey: 'font-silver',
   cyan: 'font-cyan',
@@ -23,6 +25,7 @@ const tint = (c: string): string[] => fontPalette.map((x, i) => (i === 1 ? c : x
 export const fontPalettes: Record<string, readonly string[]> = {
   font: fontPalette,
   [FONT_COLOURS.gold]: tint('#f8d878'),
+  [FONT_COLOURS.code]: tint('#f8d878'),
   [FONT_COLOURS.grey]: tint(NES.lightGray),
   [FONT_COLOURS.cyan]: tint(NES.skyLight),
   [FONT_COLOURS.black]: tint(NES.black),

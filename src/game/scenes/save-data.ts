@@ -95,16 +95,77 @@ export interface OnlineEnv {
 }
 
 /**
- * `load` once, its promise kept while it works; a rejected one is dropped (item 185), so the
- * next try loads again instead of failing until the page is reloaded.
+ * A failed load that only reloading the page can mend (265): the browser keeps a rejected
+ * import() by its URL, and no fresh URL could be made for the next try.
  */
-export function onlineLoader(load: () => Promise<OnlineApi>): () => Promise<OnlineApi> {
+export class ReloadToLoad extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+  }
+}
+
+/**
+ * `load` once, its promise kept while it works; a rejected one is dropped (item 185), so the
+ * next try loads again. Item 265: Chromium keeps a rejected import() by its URL, so with `fresh`
+ * each try after a failure loads `fresh(failure, n)` (the n-th retry's URL) instead of the
+ * module's own name; when `fresh` has none, the failure is a ReloadToLoad.
+ */
+export function onlineLoader(
+  load: (url: string | null) => Promise<OnlineApi>,
+  fresh?: (failure: unknown, retry: number) => string | null,
+): () => Promise<OnlineApi> {
   let loading: Promise<OnlineApi> | null = null;
+  let retries = 0;
+  let url: string | null = null;
   return () =>
-    (loading ??= new Promise<OnlineApi>((res) => res(load())).catch((e: unknown) => {
+    (loading ??= new Promise<OnlineApi>((res) => res(load(url))).catch((e: unknown) => {
       loading = null;
-      throw e;
+      if (!fresh) throw e;
+      url = fresh(e, ++retries);
+      throw url === null ? new ReloadToLoad(e) : e;
     }));
+}
+
+/** A built online-code chunk's file name (Vite's `<name>-<hash>.js`). */
+const CHUNK_FILE = /^nostr-backup-[\w-]+\.js$/;
+
+/**
+ * Item 265: the URL to load a failed chunk again under: its own URL (named in the browser's
+ * error, as Chromium and Firefox do), resolved against `base` (the page's module, through
+ * new URL(..., import.meta.url)), with `?retry=n`. Null unless it is this site's built chunk:
+ * a `nostr-backup-<hash>.js` file in `base`'s own folder (the built chunks' folder, item 280),
+ * with nothing encoded in its path; or, on the dev server, exactly `devModule` (its module path).
+ */
+export function freshChunkUrl(
+  failure: unknown,
+  retry: number,
+  base: string,
+  devModule?: string,
+): string | null {
+  const text = failure instanceof Error ? failure.message : typeof failure === 'string' ? failure : '';
+  // Without the quotes or brackets a message may put around it.
+  const named = /(?:https?:\/\/)?[^\s'"()]*nostr-backup[^\s'"()]*/.exec(text)?.[0];
+  if (!named) return null;
+  let u: URL;
+  let home: URL;
+  try {
+    u = new URL(named, base);
+    home = new URL(base);
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(u.protocol) || u.origin !== home.origin) return null;
+  // Item 280: nothing encoded (%2e%2e%2f, %2F, %5c) and no backslash, raw or read.
+  const path = u.pathname;
+  if (/[%\\]/.test(path) || /[%\\]/.test(named.split(/[?#]/)[0] as string)) return null;
+  const cut = path.lastIndexOf('/') + 1;
+  const dir = home.pathname.slice(0, home.pathname.lastIndexOf('/') + 1);
+  const built = path.slice(0, cut) === dir && CHUNK_FILE.test(path.slice(cut));
+  if (!built && !(devModule !== undefined && path === devModule)) return null;
+  u.search = '';
+  u.hash = '';
+  u.searchParams.set('retry', String(retry));
+  return u.href;
 }
 
 let loadOnline: (() => Promise<OnlineApi>) | null = null;
@@ -112,8 +173,21 @@ let loadOnline: (() => Promise<OnlineApi>) | null = null;
 /** The online rows' loader: none in the offline build, so its bundle holds no network code. */
 function browserOnlineEnv(): OnlineEnv | null {
   if (import.meta.env.MODE === 'offline') return null;
-  const load = (loadOnline ??= onlineLoader(() =>
-    import('@engine/online/nostr-backup').then((m) => m.browserOnlineApi()),
+  const load = (loadOnline ??= onlineLoader(
+    (url) =>
+      (url === null
+        ? import('@engine/online/nostr-backup')
+        : // Item 265: a fresh specifier, so the browser fetches the chunk again.
+          (import(/* @vite-ignore */ url) as Promise<{ browserOnlineApi(): OnlineApi }>)
+      ).then((m) => m.browserOnlineApi()),
+    // The build's chunk sits beside this one (assets/); the dev server serves the module itself.
+    (e, n) =>
+      freshChunkUrl(
+        e,
+        n,
+        import.meta.url,
+        import.meta.env.DEV ? `${import.meta.env.BASE_URL}src/engine/online/nostr-backup.ts` : undefined,
+      ),
   ));
   return {
     isOnline: () => typeof navigator === 'undefined' || navigator.onLine !== false,
@@ -175,7 +249,7 @@ const pluralSaid = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}
 
 /** What a backup holds, said on entering Save data and BACK UP ON DEVICE (item 181: not drawn). */
 const NOTE_SAID =
-  'A backup holds every save, file, setting and custom level on this device. Importing one does not restore asset packs.';
+  'A backup holds every save, file, setting, custom level and Music Lab song on this device. Importing one does not restore asset packs.';
 
 /** The pack question's lines, drawn and said (review #217: every drawn line is said). */
 const PACK_ZIP_LINES = [
@@ -230,7 +304,7 @@ export class SaveDataOptions extends MenuScene {
       {
         label: 'Reset game',
         select: () => this.askReset(),
-        hint: 'Remove every save, file, setting and custom level from this device',
+        hint: 'Remove every save, file, setting, custom level and Music Lab song from this device',
       },
       { label: 'Back', select: () => this.onBack?.() },
     ]);
@@ -374,16 +448,19 @@ export class SaveDataOptions extends MenuScene {
     return this.busy ? null : super.gesture();
   }
 
-  /** The status line of the page open now: BACK UP ON DEVICE's or BACK UP ONLINE's, else this one's. */
-  private setStatus(status: string): void {
-    if (this.sub) this.sub.page.note(status);
+  /**
+   * The status line of the page open now: BACK UP ON DEVICE's or BACK UP ONLINE's (with `more`,
+   * a second line under it), else this one's.
+   */
+  private setStatus(status: string, more = ''): void {
+    if (this.sub) this.sub.page.note(status, more);
     else this.status = status;
   }
 
   /** The status line (the open page's, and the question's when one is up) and the screen reader. */
-  private tell(status: string, said: string, bump = false): void {
+  private tell(status: string, said: string, bump = false, more = ''): void {
     if (bump) this.game.ctx.audio.sfx('bump');
-    this.setStatus(status);
+    this.setStatus(status, more);
     const top = this.game.scenes.top;
     if (top instanceof QuestionBox) top.note(status);
     this.game.deps.announcer?.say(said);
@@ -507,12 +584,14 @@ export class SaveDataOptions extends MenuScene {
     const brought = readOnlineCode(b.data[ONLINE_BACKUP_KEY]);
     const mine = loadUploadedCode();
     const gone = mine && brought && brought.code !== mine.code ? formatBackupCode(mine.code) : null;
+    // Review: a code never backed up online is not called an online backup code.
+    const broughtOnline = !!restored || brought?.uploaded === true;
     const box: QuestionBox = new QuestionBox(
       this.game,
       'REPLACE ALL DATA ON THIS DEVICE?',
       `Replace all data on this device? The backup${day ? ` is from ${day},` : ''} game version ${b.gameVersion}, with ${pluralSaid(keys, 'item')}.` +
         (gone && mine
-          ? ` It brings another online backup code. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore it: ${spokenBackupCode(mine.code)}.`
+          ? ` It brings another ${broughtOnline ? 'online backup code' : 'backup code, not yet backed up online'}. Your online backup stays on the servers, and this device forgets its code. Keep the code to restore it: ${spokenBackupCode(mine.code)}.`
           : ''),
       [
         `BACKUP ${day}`.trim(),
@@ -546,6 +625,7 @@ export class SaveDataOptions extends MenuScene {
     const data = withCodeUnshown(b.data);
     const mine = loadOnlineCode();
     const brought = readOnlineCode(data[ONLINE_BACKUP_KEY]);
+    let uploaded = false;
     if (!brought) {
       if (mine) data[ONLINE_BACKUP_KEY] = JSON.stringify(mine);
     } else {
@@ -553,7 +633,7 @@ export class SaveDataOptions extends MenuScene {
       // later backup time (the next backup would be refused as older, Show and Delete would go).
       const same = mine?.code === brought.code ? mine : null;
       const times = [brought.lastAt, same?.lastAt, restored?.at].filter((t) => t !== undefined);
-      const uploaded = !!restored || brought.uploaded === true || same?.uploaded === true;
+      uploaded = !!restored || brought.uploaded === true || same?.uploaded === true;
       data[ONLINE_BACKUP_KEY] = JSON.stringify({
         ...brought,
         shown: false,
@@ -577,12 +657,16 @@ export class SaveDataOptions extends MenuScene {
     const r = replaceGameData(data);
     if (!r.ok) return this.failed(r.reason, r.restored, 'Nothing changed.');
     const changed = brought && brought.code !== mine?.code;
+    if (!changed) return this.finish('BACKUP IMPORTED', 'Backup imported.', []);
+    // Pre-0.5.0: a code never backed up online is not called this device's online backup code.
     this.finish(
       'BACKUP IMPORTED',
-      changed
+      uploaded
         ? `Backup imported. This device's online backup code is now ${spokenBackupCode(brought.code)}.`
-        : 'Backup imported.',
-      changed ? [`CODE NOW ${formatBackupCode(brought.code)}`] : [],
+        : `Backup imported. It brings a backup code not yet backed up online: ${spokenBackupCode(brought.code)}.`,
+      uploaded
+        ? [`CODE NOW ${formatBackupCode(brought.code)}`]
+        : [`CODE ${formatBackupCode(brought.code)}`, 'NOT YET BACKED UP ONLINE'],
     );
   }
 
@@ -681,8 +765,14 @@ export class SaveDataOptions extends MenuScene {
       new QuestionBox(
         this.game,
         'RESET GAME?',
-        'Reset game? Every save, Classic file, setting and custom level on this device goes. Export a backup first?',
-        ['EVERY SAVE, FILE, SETTING', 'AND CUSTOM LEVEL GOES.', '', 'EXPORT A BACKUP FIRST?'],
+        'Reset game? Every save, Classic file, setting, custom level and Music Lab song on this device goes. Export a backup first?',
+        [
+          'EVERY SAVE, FILE, SETTING,',
+          'CUSTOM LEVEL AND MUSIC LAB',
+          'SONG GOES.',
+          '',
+          'EXPORT A BACKUP FIRST?',
+        ],
         [
           { label: 'No', select: () => this.backHere() },
           { label: 'Export backup first', gesture: true, select: () => this.startExport() },
@@ -810,11 +900,15 @@ export class SaveDataOptions extends MenuScene {
       const api = await load();
       loadFails.set(load, 0);
       return api;
-    } catch {
-      // Item 185 (review): a browser may keep a failed chunk until the page is reloaded.
+    } catch (e) {
+      // Item 185 (review): a browser may keep a failed chunk until the page is reloaded. Item
+      // 265: where no fresh URL can be tried, that is said after the first failure.
       const n = (loadFails.get(load) ?? 0) + 1;
       loadFails.set(load, n);
-      this.tell(UNREACHABLE[0], n >= 2 ? `${UNREACHABLE[1]} ${RELOAD_SAID}` : UNREACHABLE[1], true);
+      // The reload advice drawn as well as said (review).
+      if (n >= 2 || e instanceof ReloadToLoad)
+        this.tell(UNREACHABLE[0], RELOAD_SAID, true, 'RELOAD THE PAGE');
+      else this.tell(UNREACHABLE[0], UNREACHABLE[1], true);
       return null;
     }
   }
@@ -1039,9 +1133,12 @@ export class SaveDataOptions extends MenuScene {
       // Item 212: only when every server confirmed; otherwise the code stays, to try again.
       if (d.deleted < d.total) {
         saveOnlineCode({ ...kept, lastAt: d.at });
+        // Drawn as well as said (pre-0.5.0): the code is kept, to try again.
         return this.tell(
           `DELETED ON ${d.deleted} OF ${d.total} SERVERS`,
           `Online backup deleted on ${d.deleted} of ${d.total} servers. The other servers could not be reached or refused, so a copy may remain there. Your code is kept: try Delete most recent code again to delete the rest.`,
+          false,
+          'CODE KEPT: TRY AGAIN',
         );
       }
       const forgot = forgetOnlineCode();
@@ -1139,7 +1236,9 @@ const RESET_CODE_LINES = [
 
 /** Failed loads in a row, per loader (the tab's one, shared by every Save data page). */
 const loadFails = new WeakMap<() => Promise<OnlineApi>, number>();
-const RELOAD_SAID = 'It failed twice in a row: reload the page, then try again.';
+/** A failed load that only a reload can mend (a second in a row, or one with no fresh URL). */
+const RELOAD_SAID =
+  'Could not reach the backup servers. Check the internet connection, then reload the page. Nothing changed.';
 
 const anyFlag = (f: HomeScreenFlags): boolean => f.tipDone || f.noticeDone || f.offlineDone;
 
@@ -1161,7 +1260,7 @@ class QuestionBox extends MenuScene {
     private readonly lines: readonly string[],
     items: MenuItem[],
     onBack: () => void,
-    /** A line drawn in its own colour (a backup code, item 181.4), the palettes' gold. */
+    /** A line drawn in its own colour (a backup code, item 181.4): FONT_COLOURS.code. */
     private readonly highlight: string | null = null,
   ) {
     super(game, title, items, onBack);
@@ -1182,7 +1281,7 @@ class QuestionBox extends MenuScene {
     const assets = this.game.ctx.assets;
     const font = assets.sheet('font');
     // Its colour comes from the palette book, so the colour-blind and high-contrast modes recolour it.
-    const gold = this.highlight !== null ? assets.sheet('font', FONT_COLOURS.gold) : font;
+    const gold = this.highlight !== null ? assets.sheet('font', FONT_COLOURS.code) : font;
     // The font has capitals only (a dev build's version has lower case letters).
     const lines = this.lines
       .flatMap((l) => (l.length > 28 ? wrapText(l, 28) : [l]))
@@ -1208,8 +1307,30 @@ class SavePage extends MenuScene {
     this.entryTitle = entry;
   }
 
-  note(status: string): void {
+  /** A second status line, under the first (a partial delete's CODE KEPT: TRY AGAIN). */
+  private more = '';
+
+  note(status: string, more = ''): void {
     this.status = status;
+    this.more = more;
+  }
+
+  /**
+   * With a second line: the status line moves up a row and the second goes in its place (the
+   * menu's full-screen status row, y 200), both above the BACK line. Save data is only ever a
+   * full-screen page (the title's Options), never a panel or a CLASSIC box.
+   */
+  override render(r: Renderer): void {
+    if (!this.more) return super.render(r);
+    const status = this.status;
+    this.status = '';
+    super.render(r);
+    this.status = status;
+    const font = this.game.ctx.assets.sheet('font');
+    [status, this.more].forEach((l, i) => {
+      const t = l.toUpperCase().slice(0, 28);
+      r.text(font, t, 128 - t.length * 4, 188 + i * 12);
+    });
   }
 
   override update(input: InputFrame): void {

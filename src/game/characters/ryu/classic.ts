@@ -47,6 +47,7 @@ import {
   classicRespawn,
   classicStarPaletteStep,
   classicStartKit,
+  hasAmmo,
   spendAmmo,
   type ClassicAmmo,
   type ClassicPowerKit,
@@ -490,8 +491,9 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
  */
 export function classicAttackLabel(p: Player): string | null {
   if (p.wall) {
+    // Blank when he cannot throw: the Jump Slash, or too little ninpo for the art (pre-0.5.0).
     const a = classicMainArt(p);
-    return a.spec ? a.label : BLANK_CAPTION;
+    return a.spec && hasAmmo(p, 'ninpo', a.cost) ? a.label : BLANK_CAPTION;
   }
   // The flagpole climb (the clear's slide); on a vine the shared labels hide the buttons.
   if (p.anim === 'climb') return BLANK_CAPTION;
