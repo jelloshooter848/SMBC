@@ -35,7 +35,15 @@ class MRig {
   readonly world: World;
   readonly events: WorldEvent[] = [];
   private readonly input = new ScriptedInput({ steps: [] });
-  constructor(level: LevelData, mount: GameContext['classicYoshi'], kit: Record<string, number> = {}) {
+  private readonly input2 = new ScriptedInput({ steps: [] });
+  /** Player 2's held actions (co-op rigs). */
+  hold2: Action[] = [];
+  constructor(
+    level: LevelData,
+    mount: GameContext['classicYoshi'],
+    kit: Record<string, number> = {},
+    second = false,
+  ) {
     const ctx: GameContext = {
       assets: new AssetRegistry({ default: {} }),
       audio: NULL_AUDIO,
@@ -44,7 +52,7 @@ class MRig {
       rules: 'classic',
       ...(mount ? { classicYoshi: mount } : {}),
     };
-    const state = { ...newGameState(MARIO, null, 'classic'), powerState: 'small', kit };
+    const state = { ...newGameState(MARIO, second ? MARIO : null, 'classic'), powerState: 'small', kit };
     this.world = new World(level, ctx, state, { seed: 1 });
     this.events.push(...this.world.events.splice(0));
   }
@@ -54,7 +62,9 @@ class MRig {
   step(hold: Action[] = []): void {
     this.input.setHeld(hold);
     this.input.next();
-    this.world.update([this.input]);
+    this.input2.setHeld(this.hold2);
+    this.input2.next();
+    this.world.update([this.input, this.input2]);
     this.events.push(...this.world.events.splice(0));
   }
   said(text: string): number {
@@ -124,8 +134,9 @@ describe('item 103: a vine into a benched area', () => {
     expect(ridingOf(r.p)).toBeNull();
     expect(r.p.def).toBe(heroFor(MARIO, 'classic'));
     expect(r.p.vine).not.toBeNull();
-    expect(r.p.scratch[RIDE_KEY]).toBe(2);
-    expect(r.said(WAITS_SAID)).toBe(1);
+    // Not benched yet: only the climb off the top does that (review SHOULD 1).
+    expect(r.p.scratch[RIDE_KEY]).toBeUndefined();
+    expect(r.said(WAITS_SAID)).toBe(0);
     // Seen hopping, then sitting on the floor behind the hero, facing him.
     expect(y.hopping).toBe(true);
     let n = 0;
@@ -143,7 +154,56 @@ describe('item 103: a vine into a benched area', () => {
       expect(seen(r.world, y)).toBe(true);
     }
     expect(r.pipe()?.target.level).toBe(SKY);
+    // Off the top: benched, the line said once, and he stays sitting there.
+    expect(r.p.scratch[RIDE_KEY]).toBe(2);
     expect(r.said(WAITS_SAID)).toBe(1);
+    expect(y.parked).toBe(true);
+  });
+
+  it('back down the vine and walking away: Yoshi lost off screen leaves nothing benched', () => {
+    const r = new MRig(vineLevel(SKY), 'ride');
+    r.until(() => r.p.centerX >= tileToSub(10) - px(4), ['right'], 200);
+    r.step(['up']);
+    const y = yoshis(r.world)[0] as YoshiMount;
+    for (let i = 0; i < 30; i++) r.step(['up']);
+    r.until(() => r.p.vine === null && r.p.body.onGround, ['down'], 300);
+    // Away right until he is off the screen behind and lost.
+    r.until(() => !y.alive, ['right', 'run'], 900);
+    expect(y.alive).toBe(false);
+    expect(r.p.scratch[RIDE_KEY]).toBeUndefined();
+    expect(yoshis(r.world)).toHaveLength(0);
+    expect(r.said(WAITS_SAID)).toBe(0);
+  });
+
+  it('co-op: player 2 gets on the waiting Yoshi; player 1 climbs away unbenched, one Yoshi', () => {
+    const r = new MRig(vineLevel(SKY), 'ride', {}, true);
+    const p2 = r.world.players[1] as Player;
+    // Player 2 rides too ('ride'): off his Yoshi first, which runs nowhere (it waits).
+    r.until(() => r.p.centerX >= tileToSub(10) - px(4), ['right'], 200);
+    r.step(['up']);
+    const y = yoshis(r.world).find((e) => e.waitsFor === r.p) as YoshiMount;
+    expect(y).toBeDefined();
+    r.until(() => !y.hopping, ['up'], 60);
+    // Player 2, on foot, drops onto his back.
+    if (ridingOf(p2)) {
+      r.hold2 = ['down', 'jump'];
+      r.step(['up']);
+      r.hold2 = [];
+      for (let i = 0; i < 40; i++) r.step(['up']);
+    }
+    const before = yoshis(r.world).length;
+    const b = p2.body;
+    b.x = y.body.x;
+    b.y = y.body.y - b.h - px(16);
+    b.onGround = false;
+    r.until(() => ridingOf(p2) !== null && ridingOf(p2)?.mount === y, ['up'], 60);
+    expect(ridingOf(p2)?.mount).toBe(y);
+    expect(y.waitsFor).toBeNull();
+    let frames = 0;
+    while (!r.pipe() && frames++ < 600) r.step(['up']);
+    expect(r.pipe()?.target.level).toBe(SKY);
+    expect(r.p.scratch[RIDE_KEY]).toBeUndefined();
+    expect(yoshis(r.world).length).toBe(before);
   });
 
   it('the cloud area keeps him outside with no second line, and back he rejoins as after a pipe', () => {
@@ -225,6 +285,38 @@ describe('item 103: a pit into a benched area', () => {
     expect(seen(r.world, y)).toBe(true);
   });
 
+  it("over the pit's columns only: a drop outside the zone's range is no parting", () => {
+    // The zone covers only columns 20-21 of the 4-wide hole: a fall at 22-23 is a death pit.
+    const lv = pitLevel(SKY);
+    (lv.zones[0] as { w: number }).w = 2;
+    const r = new MRig(lv, 'ride');
+    const y = yoshis(r.world)[0] as YoshiMount;
+    const b = r.p.body;
+    b.x = tileToSub(22) + px(2);
+    b.y = px(13 * 16) - b.h;
+    b.vy = 0;
+    y.lastGround = { x: tileToSub(19), feet: px(13 * 16) };
+    for (let i = 0; i < 30 && !r.p.dead; i++) r.step();
+    expect(y.hopping).toBe(false);
+    expect(r.said(WAITS_SAID)).toBe(0);
+  });
+
+  it('a floor below inside the pit: no parting while he can still land', () => {
+    // A ledge in the hole (row 14 at column 21): he lands on it, no parting.
+    const lv = pitLevel(SKY);
+    lv.tiles[14 * lv.width + 21] = lv.tiles[14 * lv.width + 0] as number;
+    const r = new MRig(lv, 'ride');
+    const y = yoshis(r.world)[0] as YoshiMount;
+    const b = r.p.body;
+    b.x = tileToSub(21);
+    b.y = px(13 * 16) - b.h;
+    b.vy = 0;
+    y.lastGround = { x: tileToSub(19), feet: px(13 * 16) };
+    for (let i = 0; i < 40; i++) r.step();
+    expect(ridingOf(r.p)).not.toBeNull();
+    expect(r.said(WAITS_SAID)).toBe(0);
+  });
+
   it('a pit into an allowed area: he falls on in with the hero, as before', () => {
     const r = new MRig(pitLevel(ALLOWED), 'ride');
     let frames = 0;
@@ -270,6 +362,28 @@ describe('item 103: a teleport pad into a benched area', () => {
       expect(seen(r.world, y)).toBe(true);
     }
     expect(r.pipe()?.target.level).toBe(SKY);
+  });
+
+  it('co-op: a partner riding in mid-air: his Yoshi waits on the floor, never in the air', () => {
+    const r = new MRig(padLevel(SKY), 'ride', {}, true);
+    const p2 = r.world.players[1] as Player;
+    expect(ridingOf(p2)).not.toBeNull();
+    const y2 = ridingOf(p2)!.mount;
+    // Player 2 held up in the air (well back from the pad) until player 1's beam starts.
+    for (let i = 0; i < 300 && !r.world.beaming; i++) {
+      const b = p2.body;
+      b.x = tileToSub(4);
+      b.y = px(9 * 16) - b.h;
+      b.vy = 0;
+      b.onGround = false;
+      r.step(['right']);
+    }
+    expect(r.world.beaming).toBe(true);
+    expect(p2.body.onGround).toBe(false);
+    expect(ridingOf(p2)).toBeNull();
+    expect(y2.parked).toBe(true);
+    expect(y2.body.y + y2.body.h).toBe(px(13 * 16));
+    expect(y2.body.onGround).toBe(true);
   });
 
   it('a pad into an allowed area: beamed straight up riding, as before', () => {

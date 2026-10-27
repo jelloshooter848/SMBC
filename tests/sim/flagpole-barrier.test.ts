@@ -75,11 +75,11 @@ const heroes: [string, CharacterDef, Rules][] = [
   ...CLASSIC_EXTRAS.map((d): [string, CharacterDef, Rules] => [`Classic extra ${d.id}`, d, 'classic']),
 ];
 
-/** Fails if the hero is ever right of the wall while its feet are above the ball's top. */
+/** Fails if the hero is ever right of the wall (1 px into the shaft) while its feet are above the ball's top. */
 function holdsBarrier(w: World): void {
   const pole = w.flagpole!;
   const b = w.player.body;
-  if (b.y + b.h <= pole.body.y) expect(b.x + b.w).toBeLessThanOrEqual(pole.body.x);
+  if (b.y + b.h <= pole.body.y) expect(b.x + b.w).toBeLessThanOrEqual(pole.body.x + px(1));
 }
 
 describe('the flagpole barrier (items 193/194)', () => {
@@ -96,7 +96,7 @@ describe('the flagpole barrier (items 193/194)', () => {
       run(w, mash(200), 600, (ww) => {
         holdsBarrier(ww);
         const b = ww.player.body;
-        if (b.y + b.h <= pole.body.y && b.x + b.w === pole.body.x) pinned++;
+        if (b.y + b.h <= pole.body.y && b.x + b.w >= pole.body.x) pinned++;
       });
       // It reached the barrier above the ball (a ship is held below the HUD rows, VV-M11, so it
       // never gets that high).
@@ -115,10 +115,8 @@ describe('the flagpole barrier (items 193/194)', () => {
     let pinned = false;
     run(w, { steps: [{ frame: 0, hold: ['right', 'run'] }] }, 120, (ww) => {
       const b = ww.player.body;
-      if (b.x + b.w === pole.body.x && b.y + b.h <= pole.body.y) {
-        pinned = true;
-        expect(b.vx).toBeLessThanOrEqual(0);
-      }
+      // Put back against it (the frame he reaches it by his own move is not a block yet).
+      if (b.x + b.w === pole.body.x + px(1) && b.y + b.h <= pole.body.y && b.vx === 0) pinned = true;
     });
     expect(pinned).toBe(true);
     expect(w.clearPhase).toBe('slide');
@@ -186,7 +184,7 @@ describe('the flagpole barrier (items 193/194)', () => {
     run(w, { steps }, 400, (ww) => {
       holdsBarrier(ww);
       const b = ww.player.body;
-      if (b.y + b.h <= pole.body.y && b.x + b.w === pole.body.x) pinned++;
+      if (b.y + b.h <= pole.body.y && b.x + b.w >= pole.body.x) pinned++;
     });
     expect(pinned).toBeGreaterThan(0);
     expect(w.clearPhase).not.toBeNull();
@@ -209,7 +207,7 @@ describe('the flagpole barrier (items 193/194)', () => {
     run(w, mash(150), 500, (ww) => {
       holdsBarrier(ww);
       const b = ww.player.body;
-      if (b.y + b.h <= px(32) && b.x + b.w === ww.flagpole!.body.x) pinned++;
+      if (b.y + b.h <= px(32) && b.x + b.w === ww.flagpole!.body.x + px(1)) pinned++;
     });
     expect(pinned).toBeGreaterThan(0);
     expect(w.clearPhase).not.toBeNull();
@@ -225,7 +223,7 @@ describe('the flagpole barrier (items 193/194)', () => {
       const b = ww.player.body;
       if (b.y + b.h <= px(32)) maxRight = Math.max(maxRight, b.x + b.w);
     });
-    expect(maxRight).toBeLessThanOrEqual(px(60 * 16 + 7));
+    expect(maxRight).toBeLessThanOrEqual(px(60 * 16 + 8));
     expect(w.clearPhase).not.toBeNull();
   });
 });

@@ -264,33 +264,6 @@ const legsCling = [
   '...........00000',
 ];
 
-// Climbing a wall (item 202, drawn new; rows 22..31): the front knee drawn up with its boot braced
-// high on the wall and the back leg hanging, then the back knee up and the front leg down the wall.
-const legsWallClimb0 = [
-  '.......0211110..',
-  '.......02111110.',
-  '.......021001110',
-  '.......0210.0440',
-  '.......0210.0220',
-  '.......0440.000.',
-  '.......0440.....',
-  '.......0440.....',
-  '.......02220....',
-  '.......00000....',
-];
-const legsWallClimb1 = [
-  '.......0211110..',
-  '......02111111..',
-  '.....0210001110.',
-  '.....0440..0440.',
-  '.....0220..0440.',
-  '.....000...0440.',
-  '...........0440.',
-  '...........0440.',
-  '..........02220.',
-  '..........00000.',
-];
-
 // Folded legs for the crouch (rows 30..31): both legs flat, boot, shin wrap and thigh each.
 const legsCrouch = ['.0224410224410..', '.0000000000000..'];
 
@@ -340,29 +313,6 @@ const cling = compose(
   [torsoArmUp, 2, 13],
   [hilt, 2, 18],
   [legsCling, 0, 22],
-);
-
-// Climbing up or down a wall (item 202): the cling's figure, the gripping arm reaching up then a
-// hand lower, the legs stepping.
-const wallClimb0 = compose(
-  W,
-  H,
-  [scarfDown, -1, 9],
-  [head, 0, 3],
-  [armUp, 13, 1],
-  [torsoArmUp, 2, 13],
-  [hilt, 2, 18],
-  [legsWallClimb0, 0, 22],
-);
-const wallClimb1 = compose(
-  W,
-  H,
-  [scarfDown, -1, 9],
-  [head, 0, 3],
-  [armUp.slice(0, 10), 13, 3],
-  [torsoArmUp, 2, 13],
-  [hilt, 2, 18],
-  [legsWallClimb1, 0, 22],
 );
 
 // Tossing a sub-weapon: head leaning forward, front arm flung straight out.
@@ -559,8 +509,6 @@ export const ryuDef: SpriteDef = {
     'walk-2': walk2,
     jump,
     cling,
-    'wallclimb-0': wallClimb0,
-    'wallclimb-1': wallClimb1,
     crouch,
     throw: throwFrame,
     hurt,

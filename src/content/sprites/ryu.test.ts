@@ -13,9 +13,6 @@ const ryuFrames: Record<string, Size> = {
   'walk-2': [16, 32],
   jump: [16, 32],
   cling: [16, 32],
-  // The wall climb (item 202).
-  'wallclimb-0': [16, 32],
-  'wallclimb-1': [16, 32],
   crouch: [16, 32],
   throw: [16, 32],
   hurt: [16, 32],
