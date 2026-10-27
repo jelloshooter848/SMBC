@@ -96,7 +96,7 @@ const STYLE = `
 @media (max-width: 760px) {
   .music-lab { font-size: 14px; gap: 6px; }
   .music-lab .body { flex-direction: column; }
-  .music-lab .side { width: auto; flex: none; max-height: 42%; gap: 6px; }
+  .music-lab .side { width: auto; flex: none; max-height: 52%; gap: 6px; }
   .music-lab fieldset { padding: 4px 6px 6px; gap: 4px; }
   .music-lab .wide { flex-wrap: wrap; }
   .music-lab .editor { min-height: 9em; }
@@ -194,6 +194,7 @@ export class MusicLabScene implements Scene {
       'Music Lab. Write a song in the text box, then press Play. Syntax help explains the notes.',
     ];
     if (this.start.notice) said.push(this.start.notice);
+    if (this.error) said.push(`Line ${this.error.line}, column ${this.error.col}: ${this.error.message}.`);
     const problem = this.libraryProblem;
     if (problem === 'damaged')
       said.push('Your song library is damaged, so it cannot be read. Clear song library starts a new one.');
@@ -698,6 +699,23 @@ export class MusicLabScene implements Scene {
       </div>`;
     // Keys typed here are the panel's: the game's keyboard (on window) never sees them go down.
     for (const type of ['keydown', 'keypress']) el.addEventListener(type, (e) => e.stopPropagation());
+    // While a question is open, focus never leaves its buttons: a press anywhere else on the
+    // panel keeps it there (so Escape always answers it).
+    el.addEventListener(
+      'pointerdown',
+      (e) => {
+        const q = el.querySelector<HTMLElement>('.question');
+        if (!this.question || !q || q.contains(e.target as Node)) return;
+        e.preventDefault();
+        this.focusAnswer();
+      },
+      true,
+    );
+    el.querySelector('.question')?.addEventListener('focusout', (e) => {
+      const q = el.querySelector<HTMLElement>('.question');
+      const to = (e as FocusEvent).relatedTarget as Node | null;
+      if (this.question && q && !(to && q.contains(to))) queueMicrotask(() => this.focusAnswer());
+    });
     // Escape answers a question NO, or closes the help.
     el.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
@@ -826,6 +844,14 @@ export class MusicLabScene implements Scene {
     const line = before.split('\n').length;
     const col = box.selectionStart - before.lastIndexOf('\n');
     out.textContent = `Ln ${line}, Col ${col}`;
+  }
+
+  /** Focus the question's selected answer. */
+  private focusAnswer(): void {
+    const q = this.question;
+    if (!q) return;
+    const i = questionAnswers(q.kind).findIndex(([w]) => w === q.selected);
+    this.panel?.querySelectorAll<HTMLButtonElement>('.question button')[i]?.focus();
   }
 
   /** The question box shows this.question, its selected answer focused (NO first for clearing). */
