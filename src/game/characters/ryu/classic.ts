@@ -15,6 +15,7 @@ import { Projectile } from '../../entities/projectiles/projectile';
 import { CLASSIC_RYU_WALL_HOPS, CLASSIC_SWIM } from '../../rules/classic-swim';
 import { cycleTool, toolIndex, type ToolInfo } from '../toolbelt';
 import { RYU } from './index';
+import { BLANK_CAPTION } from '../../touch-labels';
 import { RYU_CLASSIC_GUIDE } from './classic-guide';
 import {
   CLASSIC_HURT,
@@ -366,6 +367,11 @@ function update(p: Player, input: InputFrame, world: World): void {
   classicStartKit(p, START);
   const b = p.body;
   const s = p.scratch;
+  // Item 202: climbing up or down a wall this frame (not on a lift's side; still, or held at the
+  // wall's top or bottom, is the cling).
+  s._wallMove = p.wall && !p.wall.lift && s._wallY !== undefined && s._wallY !== b.y ? 1 : 0;
+  if (p.wall) s._wallY = b.y;
+  else delete s._wallY;
   const wasAir = s._air === 1;
   s._air = b.onGround ? 0 : 1;
   trackFlip(p);
@@ -449,7 +455,10 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
   else if (p.anim === 'hurt') name = 'hurt';
   else if (p.scratch._jslash) name = `jslash-${(frame >> 1) & 3}`;
   else if ((p.scratch._throwT ?? 0) > 0) name = p.wall ? 'cling-throw' : 'throw';
-  else if (p.wall) name = 'cling';
+  // On a wall: the climb (two poses at the pole climb's 115 ms) while he moves up or down it,
+  // else the cling (item 202).
+  else if (p.wall)
+    name = p.scratch._wallMove ? `wallclimb-${Math.floor(frame / RYU_CLIMB_TICKS) & 1}` : 'cling';
   // On a vine or the flagpole: the pole climb (climbPoleStart / climbPole-2), 115 ms a pose.
   else if (p.anim === 'climb') name = `climb-${Math.floor(frame / RYU_CLIMB_TICKS) & 1}`;
   else if (t > 0 && t <= slashLive(p)[0] && t >= slashLive(p)[1] && p.powerState !== 'small') {
@@ -472,6 +481,20 @@ function sprite(p: Player, frame: number, reduceFlashing: boolean): SpriteSpec {
     flip: p.facing < 0,
     ...canvasOffsets(RYU_SMBC_CANVAS, box.w, box.h),
   };
+}
+
+/**
+ * ATTACK's touch caption (item 201): SLASH, but on a wall ATTACK throws the main art (RY-C14),
+ * so its name, or a blank caption when the main art is not a throw (the Jump Slash); on a vine
+ * or the flagpole ATTACK does nothing, so a blank caption. The button itself stays.
+ */
+export function classicAttackLabel(p: Player): string | null {
+  if (p.wall) {
+    const a = classicMainArt(p);
+    return a.spec ? a.label : BLANK_CAPTION;
+  }
+  if (p.vine || p.anim === 'climb') return BLANK_CAPTION;
+  return 'SLASH';
 }
 
 /** The pole climb's 115 ms per pose (ANIM_VERY_SLOW): 6.9 game frames. */
@@ -524,7 +547,7 @@ export const RYU_CLASSIC: CharacterDef = {
   touchLabels(p) {
     const extra = extraArt(p);
     return {
-      attack: 'SLASH',
+      attack: classicAttackLabel(p),
       special: classicMainArt(p).label,
       select: fullKit(p) ? 'NINPO' : extra ? extra.label : null,
     };

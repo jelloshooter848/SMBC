@@ -387,7 +387,8 @@ describe('Campaign sheets unchanged', () => {
     megaman: 'da10ae9b4ba18d70',
     bass: 'f660c33560e3badf',
     protoman: '585d717e72600199',
-    ryu: '578590c7901cd92a',
+    // Item 202 (v0.4.77) added the hand-drawn wall climb poses wallclimb-0 and wallclimb-1.
+    ryu: '6c0e08fb394b2038',
     bill: '02183bc69f656ddf',
   };
   for (const [sheet, hash] of Object.entries(HASHES))
