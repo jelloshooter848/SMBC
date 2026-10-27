@@ -7,13 +7,13 @@ import { loadJson, saveJson } from '../save/storage';
  * the network side. Nothing here talks to the network or loads crypto: that is
  * nostr-backup.ts, reached only through import() when a row is used (owner item 160).
  *
- * The code IS the key (nostr-backup.ts): 10 random Crockford Base32 characters (50 bits),
- * shown as two groups of five. Typing is as forgiving as save codes: any case, spaces and
+ * The code IS the key (nostr-backup.ts): 12 random Crockford Base32 characters (60 bits, owner
+ * item 166), shown as three groups of four. Typing is as forgiving as save codes: any case, spaces and
  * dashes ignored, O read as 0, I and L as 1.
  */
 
 /** Characters in a backup code. */
-export const CODE_CHARS = 10;
+export const CODE_CHARS = 12;
 /** The built-in relays (nostr-backup.ts RELAYS) and how many must accept a backup. */
 export const RELAY_COUNT = 5;
 export const MIN_ACCEPTS = 2;
@@ -41,14 +41,17 @@ export function normalizeBackupCode(text: string): string | null {
   return out.length === CODE_CHARS ? out : null;
 }
 
-/** 'ABCDE-12345'. */
+/** 'ABCD-EF12-3456'. */
 export function formatBackupCode(code: string): string {
-  return `${code.slice(0, 5)}-${code.slice(5)}`;
+  return `${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8)}`;
 }
 
-/** The code letter by letter, its two groups apart, so a screen reader spells it. */
+/** The code letter by letter, its groups apart, so a screen reader spells it. */
 export function spokenBackupCode(code: string): string {
-  return `${code.slice(0, 5).split('').join(' ')}, ${code.slice(5).split('').join(' ')}`;
+  return formatBackupCode(code)
+    .split('-')
+    .map((g) => g.split('').join(' '))
+    .join(', ');
 }
 
 /**
@@ -158,9 +161,17 @@ export type BackUpResult =
   | { ok: true; accepted: number; total: number; at: number }
   | { ok: false; reason: 'too-big' | 'servers' | 'refused' | 'newer'; accepted: number; total: number };
 
+/**
+ * DELETE ONLINE COPY's outcome (owner item 168): the copy replaced by an empty one on `deleted`
+ * of `total` relays at `at`, or why on none.
+ */
+export type DeleteResult =
+  | { ok: true; deleted: number; total: number; at: number }
+  | { ok: false; reason: 'servers' | 'refused' | 'newer'; deleted: number; total: number };
+
 /** RESTORE FROM CODE's outcome: the backup's text, or why not ('servers': none answered). */
 export type RestoreResult =
-  { ok: true; text: string; from: string } | { ok: false; reason: 'not-found' | 'servers' };
+  { ok: true; text: string; from: string } | { ok: false; reason: 'not-found' | 'servers' | 'deleted' };
 
 /** The network side, from the lazily loaded nostr-backup.ts. */
 export interface OnlineApi {
@@ -168,4 +179,6 @@ export interface OnlineApi {
   /** `after`: the last backup's time; this one is at least a second later. */
   backUp(code: string, text: string, after?: number): Promise<BackUpResult>;
   restore(code: string): Promise<RestoreResult>;
+  /** `after`: the last backup's time; the empty copy is at least a second later. */
+  deleteOnline(code: string, after?: number): Promise<DeleteResult>;
 }
