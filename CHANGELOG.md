@@ -9,6 +9,20 @@ fragments into its section, so `## [Unreleased]` stays empty.
 
 ## [Unreleased]
 
+## [0.4.75] - 2026-10-26
+
+### Fixed
+
+- Settings saved in two windows no longer undo each other: cheats unlocked, games beaten and
+  cheat counts from either window are kept, and a setting changed in one window (a skin, video,
+  sound...) is not put back by the other.
+- Classic mode: the Quit box checks the run's file as it opens; if another window has taken it,
+  the box says so instead of "Your run waits in its file".
+- Classic mode: the WORLD card that says a run can't save to its file shows and says which button
+  goes on; a stale Advanced cheats page says the file changed in another window and its values
+  stay as they were.
+- The asset pack template's README says to import the pack as a .zip, on any device.
+
 ## [0.4.74] - 2026-10-26
 
 ### Added
@@ -2237,7 +2251,8 @@ The first version: everything up to pull request #23.
   get a short no-hit window and landing on a still shell no longer bounces.
 - Jump physics matched to SMB1; audio unlocks on iOS; load errors show on screen; Safari support.
 
-[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.74...HEAD
+[Unreleased]: https://github.com/jelloshooter848/SMBC/compare/v0.4.75...HEAD
+[0.4.75]: https://github.com/jelloshooter848/SMBC/compare/v0.4.74...v0.4.75
 [0.4.74]: https://github.com/jelloshooter848/SMBC/compare/v0.4.73...v0.4.74
 [0.4.73]: https://github.com/jelloshooter848/SMBC/compare/v0.4.72...v0.4.73
 [0.4.72]: https://github.com/jelloshooter848/SMBC/compare/v0.4.71...v0.4.72
